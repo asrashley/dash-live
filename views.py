@@ -71,7 +71,7 @@ class MainPage(RequestHandler):
         context["headers"]=[]
         context['routes'] = routes
         context['video_fields'] = [ 'id', 'codecs', 'bandwidth', 'height', 'width', 'frameRate' ]
-        context['video_representations'] = [ media.representations['V1'], media.representations['V2'], media.representations['V3'], media.representations['V4'] ]
+        context['video_representations'] = [ media.representations['V1'], media.representations['V2'], media.representations['V3'] ]
         context['audio_fields'] = [ 'id', 'codecs', 'bandwidth', 'sampleRate', 'numChannels', 'lang' ]
         context['audio_representations'] = [ media.representations['A1'] ]
         context['rows'] = [
@@ -194,7 +194,7 @@ class LiveManifest(RequestHandler):
             pass
         context['timescale'] = 1000
         context['media_duration'] = 9*60 + 32.52 #"PT0H9M32.52S"
-        context['video_representations'] = [ media.representations['V1'], media.representations['V2'], media.representations['V3'], media.representations['V4'] ]
+        context['video_representations'] = [ media.representations['V1'], media.representations['V2'], media.representations['V3'] ]
         context['audio_representations'] = [ media.representations['A1'] ]
         #{'id':'V1', 'codecs':"avc1.4D001E", 'width':352, 'height':288, 'duration':5120, 'startWithSAP':1, 'bandwidth':683133, 'frameRate':25, 'sar':"22:17", 'scanType':"progressive", 'segments':media.atoms['V1'].fragments },
         #{'id':'V2', 'codecs':"avc1.640028", 'width':1024, 'height':576, 'duration':5120, 'startWithSAP':1, 'bandwidth':1005158, 'frameRate':25, 'sar':"22:17", 'scanType':"progressive", 'segments':media.atoms['V2'].fragments},

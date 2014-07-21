@@ -1,6 +1,6 @@
 #
 
-import V1,V2,V3,V4,A1
+import V1,V2,V3,A1
 
 class Representation(object):
     def __init__(self, id, codecs, filename, duration, bandwidth, segments, **kwargs):
@@ -71,20 +71,6 @@ representations = { 'V1':Representation(
                           filename=V3.filename, 
                           segments=V3.fragments 
                           ),                   
-                   'V4':Representation( 
-                         id='V4', 
-                         codecs="avc1.640028", 
-                         width=1024, 
-                         height=576, 
-                         duration=5120, 
-                         startWithSAP=1, 
-                         bandwidth=1552841, 
-                         frameRate=25, 
-                         sar="22:17", 
-                         scanType="progressive", 
-                         filename=V4.filename, 
-                         segments=V4.fragments
-                         ),
                    'A1':Representation( 
                          id='A1', 
                          codecs="mp4a.40.02", 
