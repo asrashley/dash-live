@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MPD
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns="urn:mpeg:dash:schema:mpd:2011"
+  xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd"
+  type="dynamic"
+  availabilityStartTime="{{availabilityStartTime|isoDateTime}}"
+  publishTime="{{now|isoDateTime}}"
+  {% if minimumUpdatePeriod %}minimumUpdatePeriod="{{minimumUpdatePeriod|isoDuration}}"{% endif %}
+  timeShiftBufferDepth="{{timeShiftBufferDepth|isoDuration}}"
+  maxSegmentDuration="{{maxSegmentDuration|isoDuration}}"
+  minBufferTime="PT10S"
+  profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:com:dashif:dash264,urn:hbbtv:dash:profile:isoff-live:2012">
+  <Period
+    id="1"
+    start="PT0S">
+    <BaseURL>dash/</BaseURL>
+    <AdaptationSet
+      group="2"
+      mimeType="video/mp4"
+      par="16:9"
+      minBandwidth="{{minBandwidth}}"
+      maxBandwidth="{{maxBandwidth}}"
+      minWidth="{{minWidth}}"
+      maxWidth="{{maxWidth}}"
+      minHeight="{{minHeight}}"
+      maxHeight="{{maxHeight}}"
+      segmentAlignment="true"
+      startWithSAP="1">
+      <SegmentTemplate
+        timescale="{{timescale}}"
+        initialization="$RepresentationID$/init.mp4"
+        media="$RepresentationID$/$Number$.mp4"
+        startNumber="1">
+        {% for repr in video_representations %}
+        {% if loop.first %}
+          <SegmentTimeline>
+          	{% for seg in repr.segments %}<S {% if loop.first %}t="0"{% endif %} d="{{repr.duration}}" />
+          	{% endfor %}
+          </SegmentTimeline>
+        {% endif %}
+        {% endfor %}
+      </SegmentTemplate>
+      {% for repr in video_representations %}
+      	<Representation
+	        id="{{repr.id}}"
+        	bandwidth="{{repr.bandwidth}}"
+        	codecs="{{repr.codecs}}"
+        	width="{{repr.width}}"
+        	height="{{repr.height}}"
+        	frameRate="{{repr.frameRate}}">
+      	</Representation>
+      {% endfor %}
+    </AdaptationSet>
+  </Period>
+</MPD>

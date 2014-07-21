@@ -1,0 +1,68 @@
+{% extends 'layout.html' %}
+
+{% block extraheaders %}
+<link rel="stylesheet" href="/css/tooltipster.css" />
+{% endblock %}
+
+{% block content %}
+<div id="buttons" data-page="{{page}}">
+	<table class="btn-grid table">
+		<tbody>
+	{% if page>1 %}
+			<tr class="prev-next"><td colspan="4" id="btn0" class="prev"><a href="{{uri_for("home")}}?page=1"><span class="key">0:</span>Previous page</a></td></tr>
+	{% endif %}
+			{% for row in rows %}
+				<tr><th class="title">{{row.title}}</th>
+					{% for btn in row.buttons %}
+				<td class="btn" id="btn{{btn.key}}"><a href="{{btn.url}}"><span class="key">{{btn.key}}:</span>
+					<p class="tooltip" title="Adaptive bitrate enabled?">ABR {% if btn.abr %}&radic;{% else %}&times;{% endif %}</p>
+					<p class="tooltip" title="BaseURL element present?">BaseURL {% if btn.BaseURL %}&radic;{% else %}&times;{% endif %}</p>
+					{% if not btn.static %}
+					<p class="tooltip" title="minimumUpdatePeriod attribute present?">Update {% if btn.mup %}&radic;{% else %}&times;{% endif %}</p>
+					{% endif %}
+					</a>
+				</td> 
+					{% endfor %}
+				</tr>
+			{% endfor %}
+	{% if page<2 %}
+			<tr class="prev-next"><td colspan="4" id="btn9" class="next"><a href="{{uri_for("home")}}?page=2"><span class="key">9:</span>Next page</a></td></tr>
+	{% endif %}
+		</tbody>
+	</table>
+</div>
+	<p class="info">These test streams use <a href="http://www.bigbuckbunny.org/">the Big Buck Bunny movie</a> from the 
+		<a href="http://www.blender.org/foundation/">Blender Foundation</a> as the media. The MPD files for live streams are dynamically
+		generated so that they appear to be live sources, using static media files.
+		</p>
+		<div class="representations">
+		<table class="representations table table-striped">
+			<caption>Video Representations</caption>
+			<thead><tr>{% for f in video_fields %}<th class="{{f}}">{{f}}</th>{% endfor %}</tr></thead>
+			<tbody>
+				{% for repr in video_representations %}
+				<tr>
+					{% for f in video_fields %}<td class="{{f}}">{{repr[f]}}</td>{% endfor %}
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+		<table class="representations table table-striped">
+			<caption>Audio Representations</caption>
+			<thead><tr>{% for f in audio_fields %}<th class="{{f}}">{{f}}</th>{% endfor %}</tr></thead>
+			<tbody>
+				{% for repr in audio_representations %}
+				<tr>
+					{% for f in audio_fields %}<td class="{{f}}">{{repr[f]}}</td>{% endfor %}
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+		</div>
+{% endblock %}
+
+{% block scripts %}
+	{{import_script("jquery-1.11.1")}}
+	{{import_script("jquery.tooltipster")}}
+	<script src="/js/main.js" type="text/javascript"></script>
+{% endblock %}

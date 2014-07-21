@@ -1,0 +1,26 @@
+<MPD type="static" xmlns="urn:mpeg:DASH:schema:MPD:2011" profiles="urn:mpeg:dash:profile:isoff-on-demand:2011" minBufferTime="PT1.5S"
+	 mediaPresentationDuration="{{media_duration|isoDuration}}">
+ <ProgramInformation>
+  <Title>{{title}}</Title>
+ </ProgramInformation>
+ <Period start="PT0S" duration="{{media_duration|isoDuration}}">
+ {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
+  <AdaptationSet>
+   <ContentComponent id="1" contentType="video"/>
+   {% for repr in video_representations %}
+   <Representation id="{{repr.id}}" mimeType="video/mp4" codecs="{{repr.codecs}}" width="{{repr.width}}" height="{{repr.height}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bandwidth}}">
+      <SegmentTemplate startNumber="1" timescale="{{timescale}}" duration="{{repr.duration}}" initialization="{{repr.id}}/init.mp4" media="{{repr.id}}/$Number$.mp4"/>
+   </Representation>
+   {% endfor %}
+  </AdaptationSet>
+  <AdaptationSet>
+     <ContentComponent id="1" contentType="audio" lang="eng"/>
+     {% for repr in audio_representations %}
+     <Representation id="{{repr.id}}" mimeType="audio/mp4" codecs="{{repr.codecs}}" sampleRate="{{repr.sampleRate}}" numChannels="{{repr.numChannels}}" lang="{{repr.lang}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bandwidth}}">
+        <SegmentTemplate startNumber="1" timescale="{{timescale}}" duration="{{repr.duration}}" initialization="{{repr.id}}/init.mp4" media="{{repr.id}}/$Number$.m4a"/>
+     </Representation>
+     {% endfor %}
+  </AdaptationSet>  
+ </Period>
+</MPD>
+

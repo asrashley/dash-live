@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011" 
+	xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd" type="dynamic" 
+	{% if minimumUpdatePeriod %}minimumUpdatePeriod="{{minimumUpdatePeriod|isoDuration}}"{% endif %} 
+	minBufferTime="PT5.000S" maxSegmentDuration="{{maxSegmentDuration|isoDuration}}" 
+	availabilityStartTime="{{availabilityStartTime|isoDateTime}}" timeShiftBufferDepth="{{timeShiftBufferDepth|isoDuration}}" 
+	profiles="urn:mpeg:dash:profile:isoff-live:2011">
+ {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
+	<Period id="0" start="PT0S">
+		<AdaptationSet mimeType="video/mp4" segmentAlignment="true" startWithSAP="1" maxWidth="{{maxWidth}}" maxHeight="{{maxHeight}}" maxFrameRate="{{maxFrameRate}}" par="16:9">
+	    {% for repr in video_representations %}
+	    	{% if loop.first %}
+				<SegmentTemplate presentationTimeOffset="0" timescale="{{timescale}}" initialization="$RepresentationID$/init.m4v" media="$RepresentationID$/$Number$.m4v" duration="{{repr.duration}}" startNumber="1"/>
+			{% endif %}
+			<Representation id="{{repr.id}}" codecs="{{repr.codecs}}" width="{{repr.width}}" height="{{repr.height}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bandwidth}}" frameRate="{{repr.frameRate}}" sar="{{repr.sar}}" scanType="{{repr.scanType}}" /> 
+		{% endfor %}			
+		</AdaptationSet>
+	     {% for repr in audio_representations %}
+     	 	{% if loop.first %}
+				<AdaptationSet mimeType="audio/mp4" lang="{{repr.lang}}" segmentAlignment="true" startWithSAP="{{repr.startWithSAP}}">
+		    	<SegmentTemplate presentationTimeOffset="0" timescale="{{timescale}}" initialization="$RepresentationID$/init.m4a" media="$RepresentationID$/$Number$.m4a" duration="{{repr.duration}}" startNumber="1"/>
+     	 	{% endif %}
+     	 	<Representation id="{{repr.id}}" mimeType="audio/mp4" codecs="{{repr.codecs}}" sampleRate="{{repr.sampleRate}}" numChannels="{{repr.numChannels}}" lang="{{repr.lang}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bandwidth}}">
+	 	 		<AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
+     	 	</Representation>
+     	 	{% if loop.last %}
+				</AdaptationSet>
+     	 	{% endif %}
+     	{% endfor %}
+	</Period>
+</MPD>
