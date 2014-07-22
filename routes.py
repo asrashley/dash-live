@@ -12,6 +12,8 @@ routes = {
     "dash-media":Route(r'/dash/<filename:(A1|V[1-4])>/<segment:(\d+|init)>.<ext:(mp4|m4v|m4a|m4s)>', handler='views.LiveMedia', title="DASH fragment"),
     "video":Route(r'/video', handler='views.VideoPlayer', title="DASH test stream"),
     "home":Route(r'/', handler='views.MainPage', title="DASH test streams"),
+    "uploadBlob":Route(r'/blob', handler='views.UploadHandler', title='Upload blob'),
+    "upload":Route(r'/upload', handler='views.UploadFormHandler', title="Upload media file"),
 }
 
 for name,r in routes.iteritems():

@@ -1,6 +1,7 @@
 #
 
 import V1,V2,V3,A1
+import os
 
 class Representation(object):
     def __init__(self, id, codecs, filename, duration, bandwidth, segments, **kwargs):

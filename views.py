@@ -4,12 +4,14 @@ import datetime, decimal, math, time, os, sys, urllib, urlparse
 
 import webapp2, jinja2
 from google.appengine.api import users
+from google.appengine.ext import blobstore
+from google.appengine.ext.webapp import blobstore_handlers
 from webapp2_extras import securecookie
 from webapp2_extras import security
 
 from settings import cookie_secret, csrf_secret, DEBUG
 from routes import routes
-import media, utils
+import media, utils, models
 
 templates = jinja2.Environment(
                                loader=jinja2.FileSystemLoader(
@@ -226,7 +228,7 @@ class LiveManifest(RequestHandler):
             pass
         self.response.write(template.render(context))
 
-class LiveMedia(RequestHandler):
+class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
     """Handler that returns media fragments"""
     def get(self,filename,segment,ext):
         try:
@@ -247,19 +249,31 @@ class LiveMedia(RequestHandler):
                 self.response.set_status(404)
                 return
             segment = 1+((segment-1)%(len(repr.segments)-1))
-        try:
-            src = open(repr.filename,'rb')
-            src.seek(repr.segments[segment][0])
-            data = src.read(repr.segments[segment][1])
-            if ext=='m4a':
-                self.response.content_type='audio/mp4'
-            elif ext=='m4v':
-                self.response.content_type='video/mp4'
-            else:
-                self.response.content_type='application/mp4'
-            self.response.write(data)
-        finally:
-            src.close()
+        mf = models.MediaFile.query(models.MediaFile.name==repr.filename).get()
+        #blob_info = blobstore.BlobInfo.get(mf.blob)
+        if ext=='m4a':
+            self.response.content_type='audio/mp4'
+        elif ext=='m4v':
+            self.response.content_type='video/mp4'
+        else:
+            self.response.content_type='application/mp4'
+        blob_reader = blobstore.BlobReader(mf.blob, position=repr.segments[segment][0], buffer_size=repr.segments[segment][1])
+        data = blob_reader.read(repr.segments[segment][1])
+        self.response.write(data)
+        #self.send_blob(blob_info, start=repr.segments[segment][0], end=(repr.segments[segment][0]+repr.segments[segment][1]))
+        #src = open(repr.filename,'rb')
+        #try:
+        #    src.seek(repr.segments[segment][0])
+        #    data = src.read(repr.segments[segment][1])
+        #    if ext=='m4a':
+        #        self.response.content_type='audio/mp4'
+        #    elif ext=='m4v':
+        #        self.response.content_type='video/mp4'
+        #    else:
+        #        self.response.content_type='application/mp4'
+        #    self.response.write(data)
+        #finally:
+        #    src.close()
         
 class VideoPlayer(RequestHandler):
     """Responds with a HTML page that contains a video element to play the specified MPD"""
@@ -277,4 +291,29 @@ class VideoPlayer(RequestHandler):
             context['title'] = self.request.params['title']
         template = templates.get_template('video.html')
         self.response.write(template.render(context))
-            
+
+class UploadFormHandler(RequestHandler):
+    def get(self, **kwargs):
+        context = self.create_context(**kwargs)
+        context['upload_url'] = blobstore.create_upload_url(self.uri_for('uploadBlob'))
+        context['representations'] = media.representations
+        template = templates.get_template('upload.html')
+        self.response.write(template.render(context))
+    
+class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
+    def post(self):
+        upload_files = self.get_uploads('file')
+        blob_info = upload_files[0]
+        try:
+            media_id = self.request.get('media')
+            repr = media.representations[media_id.upper()]
+        except KeyError,e:
+            self.response.write('%s not found: %s'%(media_id,str(e)))
+            self.response.set_status(404)
+            blob_info.delete()
+            return
+        mf = models.MediaFile(name=repr.filename, blob=blob_info.key())
+        mf.put()
+        template = templates.get_template('upload-done.html')
+        context={'title':'File %s uploaded'%(media_id), 'blob':blob_info.key()}
+        self.response.write(template.render(context))
