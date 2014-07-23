@@ -43,4 +43,5 @@ skip_files:
 - ^\.git.*
 - ^\.gaedata
 - ^.*\.txt
+- ^.*\.mp4
 - ^README.md
