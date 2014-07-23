@@ -67,13 +67,22 @@ class RequestHandler(webapp2.RequestHandler):
         """generate a CSRF token as a hidden form field and a secure cookie"""
         csrf = security.generate_random_string(length=32)
         sig = hmac.new(csrf_secret,csrf,hashlib.sha1)
-        sig.update(self.request.headers['X-AppEngine-country'])
+        #logging.debug('X-AppEngine-country = %s'%self.request.headers['X-AppEngine-country'])
+        logging.debug('User-Agent = %s'%self.request.headers['User-Agent'])
+        #logging.debug('remote_addr = %s'%self.request.remote_addr)
+        cur_url = urlparse.urlparse(self.request.uri, 'http')
+        origin = '%s://%s'%(cur_url.scheme, cur_url.netloc)
+        logging.debug('origin = %s'%origin)
+        #sig.update(self.request.headers['X-AppEngine-country'])
+        sig.update(origin)
+        sig.update(self.request.uri)
+        #sig.update(self.request.remote_addr)
         sig.update(self.request.headers['User-Agent'])
         sig = sig.digest()
         context['csrf_token'] ='<input type="hidden" name="csrf_token" value="%s" />'%urllib.quote(binascii.b2a_base64(sig))
         sc = securecookie.SecureCookieSerializer(cookie_secret)
         cookie = sc.serialize(self.CSRF_COOKIE_NAME, csrf)
-        self.response.set_cookie(self.CSRF_COOKIE_NAME, cookie, httponly=True, max_age=3600)
+        self.response.set_cookie(self.CSRF_COOKIE_NAME, cookie, httponly=True, max_age=7200)
         
     def check_csrf(self):
         """check that the CSRF token from the cookie and the submitted form match"""
@@ -84,13 +93,25 @@ class RequestHandler(webapp2.RequestHandler):
             try:
                 token = urllib.unquote(self.request.params['csrf_token'])
                 sig = hmac.new(csrf_secret,csrf,hashlib.sha1)
-                sig.update(self.request.headers['X-AppEngine-country'])
+                #logging.debug('X-AppEngine-country = %s'%self.request.headers['X-AppEngine-country'])
+                logging.debug('User-Agent = %s'%self.request.headers['User-Agent'])
+                logging.debug('origin = %s'%self.request.headers['Origin'])
+                logging.debug('Referer = %s'%self.request.headers['Referer'])
+                #logging.debug('remote_addr = %s'%self.request.remote_addr)
+                #sig.update(self.request.remote_addr)
+                sig.update(self.request.headers['Origin'])
+                sig.update(self.request.headers['Referer'])
+                #sig.update(self.request.headers['X-AppEngine-country'])
                 sig.update(self.request.headers['User-Agent'])
                 sig_hex = sig.hexdigest()
                 tk_hex = binascii.b2a_hex(binascii.a2b_base64(token))
+                logging.debug('signatures match %s %s %s'%(str(sig_hex==tk_hex),sig_hex,tk_hex))
                 return sig_hex==tk_hex 
-            except KeyError:
+            except KeyError,e:
+                logging.debug("KeyError %s"%str(e))
                 pass
+        else:
+            logging.debug("csrf cookie not present")
         return False
         
 class MainPage(RequestHandler):
@@ -337,15 +358,16 @@ class UploadHandler(RequestHandler):
     class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
         def post(self, *args, **kwargs):
             upload_files = self.get_uploads('file')
-            logging.debug("upload_files=%d"%len(upload_files))
+            logging.debug("uploaded file count: %d"%len(upload_files))
             if len(upload_files)==0:
                 self.outer.get()
                 return
+            blob_info = upload_files[0]
             if not self.outer.check_csrf():
+                logging.debug("csrf check failed")
                 self.response.set_status(401)
                 blob_info.delete()
                 return
-            blob_info = upload_files[0]
             try:
                 media_id = self.request.get('media')
                 repr = media.representations[media_id.upper()]
