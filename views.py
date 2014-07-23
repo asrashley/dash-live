@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-import datetime, decimal, math, time, os, sys, urllib, urlparse
+import binascii, datetime, decimal, hashlib, hmac, logging, math, time, os, sys, urllib, urlparse
 
 import webapp2, jinja2
 from google.appengine.api import users
@@ -8,6 +8,7 @@ from google.appengine.ext import blobstore
 from google.appengine.ext.webapp import blobstore_handlers
 from webapp2_extras import securecookie
 from webapp2_extras import security
+from webapp2_extras.appengine.users import login_required, admin_required
 
 from settings import cookie_secret, csrf_secret, DEBUG
 from routes import routes
@@ -29,7 +30,7 @@ def import_script(filename):
     return SCRIPT_TEMPLATE.format(mode=mode, filename=filename, min=min)
 
 class RequestHandler(webapp2.RequestHandler):
-    CLIENT_COOKIE_NAME='discovery'
+    CLIENT_COOKIE_NAME='dash'
     CSRF_COOKIE_NAME='csrf'
     
     def create_context(self, **kwargs):
@@ -61,6 +62,36 @@ class RequestHandler(webapp2.RequestHandler):
         context['remote_addr'] = self.request.remote_addr
         context['request_uri'] = self.request.uri
         return context
+    
+    def generate_csrf(self,context):
+        """generate a CSRF token as a hidden form field and a secure cookie"""
+        csrf = security.generate_random_string(length=32)
+        sig = hmac.new(csrf_secret,csrf,hashlib.sha1)
+        sig.update(self.request.headers['X-AppEngine-country'])
+        sig.update(self.request.headers['User-Agent'])
+        sig = sig.digest()
+        context['csrf_token'] ='<input type="hidden" name="csrf_token" value="%s" />'%urllib.quote(binascii.b2a_base64(sig))
+        sc = securecookie.SecureCookieSerializer(cookie_secret)
+        cookie = sc.serialize(self.CSRF_COOKIE_NAME, csrf)
+        self.response.set_cookie(self.CSRF_COOKIE_NAME, cookie, httponly=True, max_age=3600)
+        
+    def check_csrf(self):
+        """check that the CSRF token from the cookie and the submitted form match"""
+        sc = securecookie.SecureCookieSerializer(cookie_secret)
+        csrf = sc.deserialize(self.CSRF_COOKIE_NAME, self.request.cookies[self.CSRF_COOKIE_NAME])
+        self.response.delete_cookie(self.CSRF_COOKIE_NAME)
+        if csrf:
+            try:
+                token = urllib.unquote(self.request.params['csrf_token'])
+                sig = hmac.new(csrf_secret,csrf,hashlib.sha1)
+                sig.update(self.request.headers['X-AppEngine-country'])
+                sig.update(self.request.headers['User-Agent'])
+                sig_hex = sig.hexdigest()
+                tk_hex = binascii.b2a_hex(binascii.a2b_base64(token))
+                return sig_hex==tk_hex 
+            except KeyError:
+                pass
+        return False
         
 class MainPage(RequestHandler):
     """handler for main index page"""
@@ -293,27 +324,49 @@ class VideoPlayer(RequestHandler):
         self.response.write(template.render(context))
 
 class UploadFormHandler(RequestHandler):
+    @admin_required
     def get(self, **kwargs):
         context = self.create_context(**kwargs)
         context['upload_url'] = blobstore.create_upload_url(self.uri_for('uploadBlob'))
         context['representations'] = media.representations
+        self.generate_csrf(context)
         template = templates.get_template('upload.html')
         self.response.write(template.render(context))
     
-class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
-    def post(self):
-        upload_files = self.get_uploads('file')
-        blob_info = upload_files[0]
-        try:
-            media_id = self.request.get('media')
-            repr = media.representations[media_id.upper()]
-        except KeyError,e:
-            self.response.write('%s not found: %s'%(media_id,str(e)))
-            self.response.set_status(404)
-            blob_info.delete()
-            return
-        mf = models.MediaFile(name=repr.filename, blob=blob_info.key())
-        mf.put()
-        template = templates.get_template('upload-done.html')
-        context={'title':'File %s uploaded'%(media_id), 'blob':blob_info.key()}
-        self.response.write(template.render(context))
+class UploadHandler(RequestHandler):
+    class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
+        def post(self, *args, **kwargs):
+            upload_files = self.get_uploads('file')
+            logging.debug("upload_files=%d"%len(upload_files))
+            if len(upload_files)==0:
+                self.outer.get()
+                return
+            if not self.outer.check_csrf():
+                self.response.set_status(401)
+                blob_info.delete()
+                return
+            blob_info = upload_files[0]
+            try:
+                media_id = self.request.get('media')
+                repr = media.representations[media_id.upper()]
+            except KeyError,e:
+                self.response.write('%s not found: %s'%(media_id,str(e)))
+                self.response.set_status(404)
+                blob_info.delete()
+                return
+            context = self.outer.create_context(title='File %s uploaded'%(media_id), blob=blob_info.key())
+            mf = models.MediaFile.query(models.MediaFile.name==repr.filename).get()
+            if mf:
+                logging.info(dir(mf))
+                mf.key.delete()
+            mf = models.MediaFile(name=repr.filename, blob=blob_info.key())
+            mf.put()
+            template = templates.get_template('upload-done.html')
+            self.response.write(template.render(context))
+            
+    def __init__(self, request, response):
+        self.initialize(request, response)
+        self.upload_handler = self.UploadHandler()
+        self.upload_handler.initialize(request, response)
+        self.upload_handler.outer = self
+        self.post = self.upload_handler.post

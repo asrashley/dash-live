@@ -1,0 +1,18 @@
+{% extends 'layout.html' %}
+
+
+{% block content %}
+	<form action="{{upload_url}}" method="POST" enctype="multipart/form-data">
+		{{csrf_token}}
+    	Upload File: <input type="file" name="file"><br />
+    	Media ID: <select name="media">
+    	{% for repr in representations.keys() %}
+    	<option value="{{repr}}">{{repr}}</option>
+    	{% endfor %} 
+    	</select>
+    	<input type="submit" name="submit" value="Submit">
+    </form>
+{% endblock %}
+
+{% block scripts %}
+{% endblock %}
