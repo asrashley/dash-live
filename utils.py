@@ -27,6 +27,39 @@ def toIsoDuration(secs):
         rv.append('%fS'%secs)
     return ''.join(rv)
 
+def toHtmlString(item, className=None):
+    """Converts an object in to a form suitable for rendering in an HTML page.
+    """
+    rv=item
+    if isinstance(item,dict):
+        if className:
+            rv='<table class="%s">'%className
+        else:
+            rv='<table>'
+        for key,val in item.iteritems():
+            rv.append('<tr><td>%s</td><td>%s</td></tr>'%(str(key),toHtmlString(val)))
+        rv.append('</table>')
+        rv = '\n'.join(rv)
+    elif isinstance(item,(list,tuple)):
+        rv = []
+        for val in item:
+            rv.append(toHtmlString(val))
+        if item.__class__ == tuple:
+            rv = ''.join(['(',','.join(rv),')'])
+        else:
+            rv = ''.join(['[',','.join(rv),']'])
+        if className:
+            rv = '<span class="%s">%s</span>'%(className,rv)
+    elif isinstance(item,bool):
+        if className is None:
+            className=''
+        rv = '<span class="bool-yes %s">&check;</span>'%className if item else '<span class="bool-no %s">&cross;</span>'%className
+    else:
+        if className:
+            rv = '<span class="%s">%s</span>'%(className,str(rv))
+        else:
+            rv = str(rv)
+    return rv
 
 #
 # The following code is from djangoappengine/utils.py

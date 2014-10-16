@@ -15,11 +15,12 @@
 				<tr><th class="title">{{row.title}}</th>
 					{% for btn in row.buttons %}
 				<td class="btn" id="btn{{btn.key}}"><a href="{{btn.url}}"><span class="key">{{btn.key}}:</span>
-					<p class="tooltip" title="Adaptive bitrate enabled?">ABR {% if btn.abr %}&radic;{% else %}&times;{% endif %}</p>
-					<p class="tooltip" title="BaseURL element present?">BaseURL {% if btn.BaseURL %}&radic;{% else %}&times;{% endif %}</p>
+					<p class="tooltip" title="Adaptive bitrate enabled?">ABR {{btn.abr|toHtmlString}}</p>
+					<p class="tooltip" title="BaseURL element present?">BaseURL {{btn.BaseURL|toHtmlString}}</p>
 					{% if not btn.static %}
-					<p class="tooltip" title="minimumUpdatePeriod attribute present?">Update {% if btn.mup %}&radic;{% else %}&times;{% endif %}</p>
+					<p class="tooltip" title="minimumUpdatePeriod attribute present?">Update {% if btn.mup %}&check;{% else %}&cross;{% endif %}</p>
 					{% endif %}
+					<p class="tooltip" title="Stream is encrypted?">Encrypted {{btn.encrypted|toHtmlString}}</p>
 					</a>
 				</td> 
 					{% endfor %}
@@ -42,7 +43,7 @@
 			<tbody>
 				{% for repr in video_representations %}
 				<tr>
-					{% for f in video_fields %}<td class="{{f}}">{{repr[f]}}</td>{% endfor %}
+					{% for f in video_fields %}<td class="{{f}}">{{repr[f]|toHtmlString}}</td>{% endfor %}
 				</tr>
 				{% endfor %}
 			</tbody>
@@ -53,7 +54,7 @@
 			<tbody>
 				{% for repr in audio_representations %}
 				<tr>
-					{% for f in audio_fields %}<td class="{{f}}">{{repr[f]}}</td>{% endfor %}
+					{% for f in audio_fields %}<td class="{{f}}">{{repr[f]|toHtmlString}}</td>{% endfor %}
 				</tr>
 				{% endfor %}
 			</tbody>
