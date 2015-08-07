@@ -37,6 +37,7 @@ class CsrfFailureException(Exception):
 class RequestHandler(webapp2.RequestHandler):
     CLIENT_COOKIE_NAME='dash'
     CSRF_COOKIE_NAME='csrf'
+    ALLOWED_DOMAINS = re.compile(r'^http://(dashif\.org)|(shaka-player-demo\.appspot\.com)|(mediapm\.edgesuite\.net)')
     
     def create_context(self, **kwargs):
         route = routes[self.request.route.name]
@@ -155,6 +156,15 @@ class RequestHandler(webapp2.RequestHandler):
         compute_values(audio)
         maxSegmentDuration = max(video['maxSegmentDuration'],audio['maxSegmentDuration'])
         return locals()
+
+    def add_allowed_origins(self):
+        try:
+            if self.ALLOWED_DOMAINS.search(self.request.headers['Origin']):
+                self.response.headers.add_header("Access-Control-Allow-Origin", self.request.headers['Origin'])
+                self.response.headers.add_header("Access-Control-Allow-Methods", "GET")
+        except KeyError:
+            pass
+
 class MainPage(RequestHandler):
     """handler for main index page"""
     def get(self, **kwargs):
@@ -289,6 +299,7 @@ class LiveManifest(RequestHandler):
         if context['minimumUpdatePeriod']<=0:
             del context['minimumUpdatePeriod']
         template = templates.get_template(manifest)
+        self.add_allowed_origins()
         self.response.write(template.render(context))
 
 class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
@@ -366,6 +377,7 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
             #arr[offset:offset+4] = b'skip'
         except AttributeError:
             pass
+        self.add_allowed_origins()
         self.response.write(data)
         #self.send_blob(blob_info, start=repr.segments[segment][0], end=(repr.segments[segment][0]+repr.segments[segment][1]))
         #src = open(repr.filename,'rb')
