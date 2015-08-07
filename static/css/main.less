@@ -70,6 +70,11 @@ a {
 	color: inherit;
 }
 
+.link {
+  text-decoration: underline;
+  color: blue;
+}
+
 #content {
 	padding: 0;
 	h1 {
@@ -101,6 +106,11 @@ a {
 	position: relative;
 	left: 50%;
 	margin-left: -(@width/2);
+}
+#buttons .subtitle {
+  font-size: 0.75em;
+  font-style: italic;
+  color: #444;
 }
 .button:hover,
 .button.hover {
@@ -399,7 +409,17 @@ div.representations {
   .bandwidth, .sampleRate, .numChannels, .height, .width, .frameRate {
     text-align: right;
   }
+  thead {
+    font-size: 85%;
+  }
+  .encrypted, .frameRate {
+    max-width: 3em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 }
+
 
 @media only screen and (min-width: 40em) {
 	#chat,
