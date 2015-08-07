@@ -8,11 +8,12 @@
 	availabilityStartTime="{{availabilityStartTime|isoDateTime}}" timeShiftBufferDepth="{{timeShiftBufferDepth|isoDuration}}" 
 	profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014">
  {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
+    <UTCTiming schemeIdUri="urn:mpeg:dash:utc:http-xsdate:2014" value="{{timeSource}}"/>
 	<Period id="0" start="PT0S">
 		<AdaptationSet mimeType="video/mp4" contentType="video" segmentAlignment="true" startWithSAP="1" maxWidth="{{video.maxWidth}}" maxHeight="{{video.maxHeight}}" maxFrameRate="{{video.maxFrameRate}}" par="16:9">
 	    {% for repr in video.representations %}
 	    	{% if loop.first %}
-				<SegmentTemplate presentationTimeOffset="{{video.presentationTimeOffset}}" timescale="{{video.timescale}}" startNumber="{{startNumber}}" initialization="$RepresentationID$/init.m4v" media="$RepresentationID$/$Number$.m4v" duration="{{repr.segment_duration}}"/>
+				<SegmentTemplate presentationTimeOffset="{{video.presentationTimeOffset}}" timescale="{{video.timescale}}" startNumber="{{startNumber}}" initialization="$RepresentationID$/init.m4v" media="{{video.mediaURL}}" duration="{{repr.segment_duration}}"/>
 			{% endif %}
 			<Representation id="{{repr.id}}" codecs="{{repr.codecs}}" width="{{repr.width}}" height="{{repr.height}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}" frameRate="{{repr.frameRate}}" sar="{{repr.sar}}" scanType="{{repr.scanType}}" /> 
 		{% endfor %}			
@@ -20,7 +21,7 @@
 	     {% for repr in audio.representations %}
      	 	{% if loop.first %}
 				<AdaptationSet mimeType="audio/mp4" contentType="audio" lang="{{repr.language}}" segmentAlignment="true" startWithSAP="{{repr.startWithSAP}}">
-		    	<SegmentTemplate presentationTimeOffset="{{audio.presentationTimeOffset}}" timescale="{{audio.timescale}}" initialization="$RepresentationID$/init.m4a" media="$RepresentationID$/$Number$.m4a" duration="{{repr.segment_duration}}" startNumber="{{startNumber}}"/>
+		        <SegmentTemplate presentationTimeOffset="{{audio.presentationTimeOffset}}" timescale="{{audio.timescale}}" initialization="$RepresentationID$/init.m4a" media="{{audio.mediaURL}}" duration="{{repr.segment_duration}}" startNumber="{{startNumber}}"/>
      	 	{% endif %}
      	 	<Representation id="{{repr.id}}" mimeType="audio/mp4" codecs="{{repr.codecs}}" sampleRate="{{repr.sampleRate}}" numChannels="{{repr.numChannels}}" lang="{{repr.lang}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
 	 	 		<AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="{{repr.numChannels}}"/>

@@ -133,17 +133,23 @@ class RequestHandler(webapp2.RequestHandler):
         #media_duration = 9*60 + 32.52 #"PT0H9M32.52S"
         startNumber = 1
         now = datetime.datetime.now(tz=utils.UTC())
-        #now = time.time()
-        publishTime = datetime.datetime.now(tz=utils.UTC())
+        clockDrift=0
+        try:
+            clockDrift = int(self.request.params.get('drift','0'),10)
+            if clockDrift:
+                now -= datetime.timedelta(seconds=clockDrift)
+        except ValueError:
+            pass
+        publishTime = now.replace(microsecond=0)
         suggestedPresentationDelay = 30
         availabilityStartTime = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        #availabilityStartTime = utils.dateTimeToUnixEpoch(availabilityStartTime)
         elapsedTime = now - availabilityStartTime
         if elapsedTime.seconds<timeShiftBufferDepth:
             timeShiftBufferDepth = elapsedTime.seconds
         video = { 'representations' : [ media.representations['V1'],
                                         media.representations['V2'],
-                                        media.representations['V3'] ]
+                                        media.representations['V3'] ],
+                 'mediaURL':'$RepresentationID$/$Number$.m4v'
                  }
         compute_values(video)
         media_duration = video['representations'][0].media_duration / video['representations'][0].timescale
@@ -152,9 +158,16 @@ class RequestHandler(webapp2.RequestHandler):
         video['maxWidth'] = max([ a.width for a in video['representations']])
         video['maxHeight'] = max([ a.height for a in video['representations']])
         video['maxFrameRate'] = max([ a.frameRate for a in video['representations']])
-        audio = {'representations':[ media.representations['A1'] ] }
+        audio = {'representations':[ media.representations['A1'] ],
+                 'mediaURL':'$RepresentationID$/$Number$.m4a'
+        }
         compute_values(audio)
         maxSegmentDuration = max(video['maxSegmentDuration'],audio['maxSegmentDuration'])
+        timeSource = urlparse.urljoin(self.request.host_url, self.uri_for('time',format='xsd'))
+        if clockDrift:
+            timeSource += '?drift=%d'%clockDrift
+            video['mediaURL'] += '?drift=%d'%clockDrift
+            audio['mediaURL'] += '?drift=%d'%clockDrift
         return locals()
 
     def add_allowed_origins(self):
@@ -410,6 +423,38 @@ class VideoPlayer(RequestHandler):
             context['title'] = self.request.params['title']
         template = templates.get_template('video.html')
         self.response.write(template.render(context))
+
+class UTCTimeHandler(RequestHandler):
+    def get(self, format, **kwargs):
+        #context = self.create_context(**kwargs)
+        now = datetime.datetime.now(tz=utils.UTC())
+        try:
+            drift = int(self.request.params.get('drift','0'),10)
+            if drift:
+                now -= datetime.timedelta(seconds=drift)
+        except ValueError:
+            pass
+        self.response.content_type='text/plain'
+        rv = ''
+        if format=='xsd':
+            rv = utils.toIsoDateTime(now)
+        elif format=='iso':
+            # This code picks an obscure option from ISO 8601, so that a simple parser
+            # will fail
+            isocal = now.isocalendar()
+            rv = '%04d-W%02d-%dT%02d:%02d:%02dZ'%(isocal[0],isocal[1],isocal[2],now.hour, now.minute, now.second)
+        elif format=='ntp':
+            # NTP epoch is 1st Jan 1900
+            epoch = datetime.datetime(year=1900, month=1, day=1, tzinfo=utils.UTC())
+            seconds = (now - epoch).total_seconds()
+            fraction = seconds - int(seconds)
+            seconds = int(seconds) % (1<<32)
+            fraction = int(fraction*(1<<32))
+            #rv = '%f   %d , %d\n'%((now - epoch).total_seconds(), seconds,fraction)
+            # See RFC5905 for "NTP Timestamp format"
+            rv = struct.pack('>II',seconds,fraction)
+            self.response.content_type='application/octet-stream'
+        self.response.write(rv)
 
 class UploadFormHandler(RequestHandler):
     @admin_required
