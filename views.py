@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-import binascii, datetime, decimal, hashlib, hmac, logging, math, time, os, sys, urllib, urlparse
+import binascii, copy, datetime, decimal, hashlib, hmac, logging, math, time, os, re, struct, sys, urllib, urlparse
 
 import webapp2, jinja2
 from google.appengine.api import users
@@ -115,6 +115,49 @@ class RequestHandler(webapp2.RequestHandler):
             logging.debug("csrf cookie not present")
         return False
         
+    def calculate_dash_params(self):
+        def scale_timedelta(delta, num, denom):
+            secs = num * delta.seconds
+            msecs = num* delta.microseconds
+            secs += msecs / 1000000.0
+            return secs / denom
+
+        def compute_values(av):
+            av['timescale'] = av['representations'][0].timescale
+            av['lastFragment'] = startNumber + int(scale_timedelta(elapsedTime, av['timescale'], av['representations'][0].segment_duration))
+            av['firstFragment'] = av['lastFragment'] - int(av['timescale']*timeShiftBufferDepth / av['representations'][0].segment_duration)
+            av['presentationTimeOffset'] = int((startNumber-1) * av['representations'][0].segment_duration)
+            av['minBitrate'] = min([ a.bitrate for a in av['representations']])
+            av['maxBitrate'] = max([ a.bitrate for a in av['representations']])
+            av['maxSegmentDuration'] = max([ a.segment_duration for a in av['representations']]) / av['timescale']
+
+        timeShiftBufferDepth = 60 # in seconds
+        #media_duration = 9*60 + 32.52 #"PT0H9M32.52S"
+        startNumber = 1
+        now = datetime.datetime.now(tz=utils.UTC())
+        #now = time.time()
+        publishTime = datetime.datetime.now(tz=utils.UTC())
+        suggestedPresentationDelay = 30
+        availabilityStartTime = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        #availabilityStartTime = utils.dateTimeToUnixEpoch(availabilityStartTime)
+        elapsedTime = now - availabilityStartTime
+        if elapsedTime.seconds<timeShiftBufferDepth:
+            timeShiftBufferDepth = elapsedTime.seconds
+        video = { 'representations' : [ media.representations['V1'],
+                                        media.representations['V2'],
+                                        media.representations['V3'] ]
+                 }
+        compute_values(video)
+        media_duration = video['representations'][0].media_duration / video['representations'][0].timescale
+        video['minWidth'] = min([ a.width for a in video['representations']])
+        video['minHeight'] = min([ a.height for a in video['representations']])
+        video['maxWidth'] = max([ a.width for a in video['representations']])
+        video['maxHeight'] = max([ a.height for a in video['representations']])
+        video['maxFrameRate'] = max([ a.frameRate for a in video['representations']])
+        audio = {'representations':[ media.representations['A1'] ] }
+        compute_values(audio)
+        maxSegmentDuration = max(video['maxSegmentDuration'],audio['maxSegmentDuration'])
+        return locals()
 class MainPage(RequestHandler):
     """handler for main index page"""
     def get(self, **kwargs):
@@ -125,10 +168,13 @@ class MainPage(RequestHandler):
             context['page'] = 1
         context["headers"]=[]
         context['routes'] = routes
-        context['video_fields'] = [ 'id', 'codecs', 'bandwidth', 'height', 'width', 'frameRate' ]
-        context['video_representations'] = [ media.representations['V1'], media.representations['V2'], media.representations['V3'] ]
-        context['audio_fields'] = [ 'id', 'codecs', 'bandwidth', 'sampleRate', 'numChannels', 'lang' ]
-        context['audio_representations'] = [ media.representations['A1'] ]
+        context['video_fields'] = [ 'id', 'codecs', 'bitrate', 'height', 'width', 'frameRate', 'encrypted' ]
+        print(media.representations['V1'].codecs)
+        context['video_representations'] = [ r for r in media.representations.values() if r.codecs.startswith('avc')] 
+        # [ media.representations['V1'], media.representations['V2'], media.representations['V3'] ]
+        context['audio_fields'] = [ 'id', 'codecs', 'bitrate', 'sampleRate', 'numChannels', 'lang', 'encrypted' ]
+        context['audio_representations'] = [ r for r in media.representations.values() if r.codecs.startswith('mp4')]  
+        #[ media.representations['A1'] ]
         context['rows'] = [
                            { 'title':'Hand-made on demand profile', 'buttons':[
                                                                                {
@@ -215,70 +261,37 @@ class LiveManifest(RequestHandler):
         context = self.create_context(**kwargs) 
         context["headers"]=[]
         context['routes'] = routes
-        now = math.floor(time.time())
         self.response.content_type='application/dash+xml'
-        try:
-            start = int(self.request.params['start'], 10)
-        except (KeyError,ValueError):
-            cur_url = urlparse.urlparse(self.request.uri, 'http')
-            cur_qs = urlparse.parse_qs(cur_url.query)
-            cur_qs['start'] = ['%d'%int(now)]
-            new_url = urlparse.urlunparse(( cur_url.scheme, cur_url.netloc, cur_url.path, cur_url.params, urllib.urlencode(cur_qs,True), cur_url.fragment ))
-            self.response.headers.add_header("Access-Control-Allow-Origin", "*")
-            self.redirect(new_url)
-            return
-        if not start:
-            start = now
-        timeShiftBufferDepth = 20
-        availabilityStartTime = datetime.datetime.utcfromtimestamp(start - timeShiftBufferDepth)
-        if (1+now-start)>timeShiftBufferDepth:
-            timeShiftBufferDepth = 1+now-start
         context['title'] = 'Big Buck Bunny DASH test stream'
-        context['now'] = datetime.datetime.fromtimestamp(now)
+        dash = self.calculate_dash_params()
+        context.update(dash)
         try:
             context['repr'] = int(self.request.params.get('rep','-1'),10)
         except ValueError:
             context['repr'] = -1
-        context['timeShiftBufferDepth'] = timeShiftBufferDepth
-        context['availabilityStartTime'] = datetime.datetime.utcfromtimestamp(start - timeShiftBufferDepth)
+        #context['availabilityStartTime'] = datetime.datetime.utcfromtimestamp(dash['availabilityStartTime'])
         context['baseURL'] = urlparse.urljoin(self.request.host_url,'/dash')+'/'
         try:
             if not int(self.request.params.get('base','1'),10):
                 del context['baseURL']
         except ValueError:
             pass
-        context['timescale'] = 1000
-        context['media_duration'] = 9*60 + 32.52 #"PT0H9M32.52S"
-        context['video_representations'] = [ media.representations['V1'], media.representations['V2'], media.representations['V3'] ]
-        context['audio_representations'] = [ media.representations['A1'] ]
-        #{'id':'V1', 'codecs':"avc1.4D001E", 'width':352, 'height':288, 'duration':5120, 'startWithSAP':1, 'bandwidth':683133, 'frameRate':25, 'sar':"22:17", 'scanType':"progressive", 'segments':media.atoms['V1'].fragments },
-        #{'id':'V2', 'codecs':"avc1.640028", 'width':1024, 'height':576, 'duration':5120, 'startWithSAP':1, 'bandwidth':1005158, 'frameRate':25, 'sar':"22:17", 'scanType':"progressive", 'segments':media.atoms['V2'].fragments},
-        #{'id':'V3', 'codecs':"avc1.640028", 'width':1024, 'height':576, 'duration':5120, 'startWithSAP':1, 'bandwidth':1289886, 'frameRate':25, 'sar':"22:17", 'scanType':"progressive", 'segments':media.atoms['V3'].fragments},
-        #{'id':'V4', 'codecs':"avc1.640028", 'width':1024, 'height':576, 'duration':5120, 'startWithSAP':1, 'bandwidth':1552841, 'frameRate':25, 'sar':"22:17", 'scanType':"progressive", 'segments':media.atoms['V4'].fragments}
-        #{'id':'A1', 'codecs':"mp4a.40.02", 'sampleRate':48000, 'duration':3989, 'numChannels':2, 'lang':'eng', 'startWithSAP':1, 'bandwidth':95170 },
-        if context['repr']>=0 and context['repr']<len(context['video_representations']):
-            context['video_representations'] = [context['video_representations'][context['repr']]]
-        context['minWidth'] = min([ a.width for a in context['video_representations']])
-        context['minHeight'] = min([ a.height for a in context['video_representations']])
-        context['minBandwidth'] = min([ a.bandwidth for a in context['video_representations']])
-        context['maxWidth'] = max([ a.width for a in context['video_representations']])
-        context['maxHeight'] = max([ a.height for a in context['video_representations']])
-        context['maxBandwidth'] = max([ a.bandwidth for a in context['video_representations']])
-        context['maxFrameRate'] = max([ a.frameRate for a in context['video_representations']])
-        context['maxSegmentDuration'] = max([ a.duration for a in context['video_representations']]) / float(context['timescale'])
         try:
-            context['minimumUpdatePeriod'] = float(self.request.params.get('mup',2.0*context['maxSegmentDuration']))
+            enc = int(self.request.params.get('enc','0'),10)
+            iv_size = int(self.request.params.get('iv','0'),10)
+            if enc and iv_size:
+                context['video']['representations'] = [ media.representations['V1enc%d'%iv_size] ]
         except ValueError:
-            context['minimumUpdatePeriod'] = 2.0*context['maxSegmentDuration']
+            pass
+        if context['repr']>=0 and context['repr']<len(context['video']['representations']):
+            context['video']['representations'] = [context['video']['representations'][context['repr']]]
+        try:
+            context['minimumUpdatePeriod'] = float(self.request.params.get('mup',2.0*context['video']['maxSegmentDuration']))
+        except ValueError:
+            context['minimumUpdatePeriod'] = 2.0*context['video']['maxSegmentDuration']
         if context['minimumUpdatePeriod']<=0:
             del context['minimumUpdatePeriod']
         template = templates.get_template(manifest)
-        try:
-            if self.request.headers['Origin']=='http://dashif.org':
-                self.response.headers.add_header("Access-Control-Allow-Origin", "http://dashif.org")
-                self.response.headers.add_header("Access-Control-Allow-Methods", "GET")
-        except KeyError:
-            pass
         self.response.write(template.render(context))
 
 class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
@@ -290,18 +303,21 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
             self.response.write('%s not found: %s'%(filename,str(e)))
             self.response.set_status(404)
             return
+        dash = self.calculate_dash_params()
         if segment=='init':
-            segment = 0
+            mod_segment = segment = 0
         else:
             try:
                 segment = int(segment,10)
             except ValueError:
                 segment=-1
-            if segment<0:
-                self.response.write('Segment not found')
+            avInfo = dash['video'] if filename[0]=='V' else dash['audio']
+            if segment<avInfo['firstFragment'] or segment>avInfo['lastFragment']:
+                #raise IOError("incorrect fragment request %s %d %d->%d\n"%(filename, segment, avInfo['firstFragment'],avInfo['lastFragment']))
+                self.response.write('Segment not found (valid range= %d->%d)'%(avInfo['firstFragment'],avInfo['lastFragment']))
                 self.response.set_status(404)
                 return
-            segment = 1+((segment-1)%(len(repr.segments)-1))
+            mod_segment = 1+((segment-1)%repr.num_segments)
         mf = models.MediaFile.query(models.MediaFile.name==repr.filename).get()
         #blob_info = blobstore.BlobInfo.get(mf.blob)
         if ext=='m4a':
@@ -310,8 +326,49 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
             self.response.content_type='video/mp4'
         else:
             self.response.content_type='application/mp4'
-        blob_reader = blobstore.BlobReader(mf.blob, position=repr.segments[segment][0], buffer_size=repr.segments[segment][1])
-        data = blob_reader.read(repr.segments[segment][1])
+        frag = repr.segments[mod_segment]
+        blob_reader = blobstore.BlobReader(mf.blob, position=frag.seg.pos, buffer_size=frag.seg.size)
+        data = blob_reader.read(frag.seg.size)
+        #arr = bytearray(data)
+        if segment==0:
+            try:
+                # remove the mehd box as this stream is not supposed to have a fixed duration
+                offset = frag.mehd.pos + 4 # keep the length field of the old mehd box
+                #arr[offset:offset+4] = b'skip'
+                data = ''.join([data[:offset], 'skip', data[offset+4:]]) # convert it to a skip box
+            except AttributeError:
+                pass
+        else:
+            # Update the baseMediaDecodeTime to take account of the number of times the
+            # stream would have looped since availabilityStartTime
+            dec_time_sz = frag.tfdt.size-12
+            if dec_time_sz==8:
+                fmt='>Q'
+            else:
+                fmt='>I'
+            offset = frag.tfdt.pos + 12 #dec_time_pos - frag_pos
+            base_media_decode_time = struct.unpack(fmt, data[offset:offset+dec_time_sz])[0]
+            #segment * repr.segment_duration
+            #num_loops = (segment-1) // repr.num_segments
+            #delta = dash['media_duration'] * num_loops
+            delta = (segment - mod_segment) * repr.segment_duration
+            base_media_decode_time += long(delta)
+            if base_media_decode_time > (1<<(8*dec_time_sz)):
+                raise IOError("base_media_time overflow: %d does not fit in %d bytes"%(base_media_decode_time,dec_time_sz))
+            base_media_decode_time = struct.pack(fmt,base_media_decode_time)
+            data = ''.join([data[:offset], base_media_decode_time, data[offset+dec_time_sz:]])
+            #arr[offset:offset+dec_time_sz] = base_media_decode_time
+            # Update the sequenceNumber field in the MovieFragmentHeader box
+            offset = frag.mfhd.pos + 12
+            #arr[offset:offset+4] = struct.pack('>I',segment)
+            data = ''.join([data[:offset], struct.pack('>I',segment), data[offset+4:]])
+        try:
+            # remove any sidx box as it has a baseMediaDecodeTime and it's an optional index
+            offset = frag.sidx.pos + 4 # keep the length field of the old sidx box
+            data = ''.join([data[:offset], 'skip', data[offset+4:]]) # convert it to a skip box
+            #arr[offset:offset+4] = b'skip'
+        except AttributeError:
+            pass
         self.response.write(data)
         #self.send_blob(blob_info, start=repr.segments[segment][0], end=(repr.segments[segment][0]+repr.segments[segment][1]))
         #src = open(repr.filename,'rb')

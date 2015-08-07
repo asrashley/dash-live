@@ -11,31 +11,31 @@
 		<AdaptationSet
    		 segmentAlignment="true"
    		 bitstreamSwitching="true">
-	     {% for repr in video_representations %}
+	     {% for repr in video.representations %}
      	 	{% if loop.first %}
 	 		  <SegmentTemplate
-   		   	timescale="{{timescale}}"
-   		   	duration="{{repr.duration}}"
+   		   	timescale="{{video.timescale}}"
+   		   	duration="{{repr.segment_duration}}"
    		   	initialization="$RepresentationID$/init.mp4"
   		   	media="$RepresentationID$/$Number$.m4v"
-   		   	startNumber="1" >
+   		   	startNumber="{{startNumber}}" >
 		  	</SegmentTemplate>
 		  	{% endif %}
-		  <Representation id="{{repr.id}}" mimeType="video/mp4" codecs="{{repr.codecs}}"  width="{{repr.width}}" height="{{repr.height}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bandwidth}}" />
+		  <Representation id="{{repr.id}}" mimeType="video/mp4" codecs="{{repr.codecs}}"  width="{{repr.width}}" height="{{repr.height}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}" />
 		{% endfor %}
 		</AdaptationSet>
 		<AdaptationSet lang="und"
    		  segmentAlignment="true">
-	     {% for repr in audio_representations %}
+	     {% for repr in audio.representations %}
      	 	{% if loop.first %}
 		  <SegmentTemplate
-   		   timescale="{{timescale}}"
-   		   duration="{{repr.duration}}"
+   		   timescale="{{audio.timescale}}"
+   		   duration="{{repr.segment_duration}}"
    		   initialization="$RepresentationID$/init.m4a"
    		   media="$RepresentationID$/$Number$.m4a"
    		   startNumber="1" />
    		   {% endif %}
-		  <Representation id="{{repr.id}}" mimeType="audio/mp4" codecs="{{repr.codecs}}"  audioSamplingRate="{{repr.audioSamplingRate}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bandwidth}}">
+		  <Representation id="{{repr.id}}" mimeType="audio/mp4" codecs="{{repr.codecs}}"  audioSamplingRate="{{repr.sampleRate}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
 		  </Representation>
 		  {% endfor %}
 		</AdaptationSet>

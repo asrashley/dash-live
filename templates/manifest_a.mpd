@@ -5,7 +5,7 @@
   xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd"
   type="dynamic"
   availabilityStartTime="{{availabilityStartTime|isoDateTime}}"
-  publishTime="{{now|isoDateTime}}"
+  publishTime="{{publishTime|isoDateTime}}"
   {% if minimumUpdatePeriod %}minimumUpdatePeriod="{{minimumUpdatePeriod|isoDuration}}"{% endif %}
   timeShiftBufferDepth="{{timeShiftBufferDepth|isoDuration}}"
   maxSegmentDuration="{{maxSegmentDuration|isoDuration}}"
@@ -19,32 +19,32 @@
       group="2"
       mimeType="video/mp4"
       par="16:9"
-      minBandwidth="{{minBandwidth}}"
-      maxBandwidth="{{maxBandwidth}}"
-      minWidth="{{minWidth}}"
-      maxWidth="{{maxWidth}}"
-      minHeight="{{minHeight}}"
-      maxHeight="{{maxHeight}}"
+      minBandwidth="{{video.minBitrate}}"
+      maxBandwidth="{{video.maxBitrate}}"
+      minWidth="{{video.minWidth}}"
+      maxWidth="{{video.maxWidth}}"
+      minHeight="{{video.minHeight}}"
+      maxHeight="{{video.maxHeight}}"
       segmentAlignment="true"
       startWithSAP="1">
       <SegmentTemplate
-        timescale="{{timescale}}"
+        timescale="{{video.timescale}}"
         initialization="$RepresentationID$/init.mp4"
         media="$RepresentationID$/$Number$.mp4"
         startNumber="1">
-        {% for repr in video_representations %}
+        {% for repr in video.representations %}
         {% if loop.first %}
           <SegmentTimeline>
-          	{% for seg in repr.segments %}<S {% if loop.first %}t="0"{% endif %} d="{{repr.duration}}" />
+          	{% for seg in repr.segments %}<S {% if loop.first %}t="0"{% endif %} d="{{repr.segment_duration}}" />
           	{% endfor %}
           </SegmentTimeline>
         {% endif %}
         {% endfor %}
       </SegmentTemplate>
-      {% for repr in video_representations %}
+      {% for repr in video.representations %}
       	<Representation
 	        id="{{repr.id}}"
-        	bandwidth="{{repr.bandwidth}}"
+        	bandwidth="{{repr.bitrate}}"
         	codecs="{{repr.codecs}}"
         	width="{{repr.width}}"
         	height="{{repr.height}}"

@@ -7,17 +7,17 @@
  {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
   <AdaptationSet>
    <ContentComponent id="1" contentType="video"/>
-   {% for repr in video_representations %}
-   <Representation id="{{repr.id}}" mimeType="video/mp4" codecs="{{repr.codecs}}" width="{{repr.width}}" height="{{repr.height}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bandwidth}}">
-      <SegmentTemplate startNumber="1" timescale="{{timescale}}" duration="{{repr.duration}}" initialization="{{repr.id}}/init.mp4" media="{{repr.id}}/$Number$.mp4"/>
+   {% for repr in video.representations %}
+   <Representation id="{{repr.id}}" mimeType="video/mp4" codecs="{{repr.codecs}}" width="{{repr.width}}" height="{{repr.height}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
+      <SegmentTemplate startNumber="{{startNumber}}" timescale="{{video.timescale}}" duration="{{repr.segment_duration}}" initialization="{{repr.id}}/init.mp4" media="{{repr.id}}/$Number$.mp4"/>
    </Representation>
    {% endfor %}
   </AdaptationSet>
   <AdaptationSet>
      <ContentComponent id="1" contentType="audio" lang="eng"/>
-     {% for repr in audio_representations %}
-     <Representation id="{{repr.id}}" mimeType="audio/mp4" codecs="{{repr.codecs}}" sampleRate="{{repr.sampleRate}}" numChannels="{{repr.numChannels}}" lang="{{repr.lang}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bandwidth}}">
-        <SegmentTemplate startNumber="1" timescale="{{timescale}}" duration="{{repr.duration}}" initialization="{{repr.id}}/init.mp4" media="{{repr.id}}/$Number$.m4a"/>
+     {% for repr in audio.representations %}
+     <Representation id="{{repr.id}}" mimeType="audio/mp4" codecs="{{repr.codecs}}" sampleRate="{{repr.sampleRate}}" numChannels="{{repr.numChannels}}" lang="{{repr.language}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
+        <SegmentTemplate startNumber="1" timescale="{{audio.timescale}}" duration="{{repr.segment_duration}}" initialization="{{repr.id}}/init.mp4" media="{{repr.id}}/$Number$.m4a"/>
      </Representation>
      {% endfor %}
   </AdaptationSet>  
