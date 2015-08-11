@@ -23,7 +23,7 @@
 				<AdaptationSet mimeType="audio/mp4" contentType="audio" lang="{{repr.language}}" segmentAlignment="true" startWithSAP="{{repr.startWithSAP}}">
 		        <SegmentTemplate presentationTimeOffset="{{audio.presentationTimeOffset}}" timescale="{{audio.timescale}}" initialization="$RepresentationID$/init.m4a" media="{{audio.mediaURL}}" duration="{{repr.segment_duration}}" startNumber="{{startNumber}}"/>
      	 	{% endif %}
-     	 	<Representation id="{{repr.id}}" mimeType="audio/mp4" codecs="{{repr.codecs}}" sampleRate="{{repr.sampleRate}}" numChannels="{{repr.numChannels}}" lang="{{repr.lang}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
+            <Representation id="{{repr.id}}" mimeType="audio/mp4" codecs="{{repr.codecs}}" sampleRate="{{repr.sampleRate}}" numChannels="{{repr.numChannels}}" lang="{{repr.language}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
 	 	 		<AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="{{repr.numChannels}}"/>
      	 	</Representation>
      	 	{% if loop.last %}
