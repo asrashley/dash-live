@@ -8,7 +8,7 @@
 	availabilityStartTime="{{availabilityStartTime|isoDateTime}}" timeShiftBufferDepth="{{timeShiftBufferDepth|isoDuration}}" 
 	profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014">
  {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
-    <UTCTiming schemeIdUri="urn:mpeg:dash:utc:http-xsdate:2014" value="{{timeSource}}"/>
+    <UTCTiming schemeIdUri="{{timeSource.method}}" value="{{timeSource.url}}"/>
 	<Period id="0" start="PT0S">
 		<AdaptationSet mimeType="video/mp4" contentType="video" segmentAlignment="true" startWithSAP="1" maxWidth="{{video.maxWidth}}" maxHeight="{{video.maxHeight}}" maxFrameRate="{{video.maxFrameRate}}" par="16:9">
 	    {% for repr in video.representations %}

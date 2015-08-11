@@ -163,9 +163,24 @@ class RequestHandler(webapp2.RequestHandler):
         }
         compute_values(audio)
         maxSegmentDuration = max(video['maxSegmentDuration'],audio['maxSegmentDuration'])
-        timeSource = urlparse.urljoin(self.request.host_url, self.uri_for('time',format='xsd'))
+        try:
+            timeSource = { 'format':self.request.params['time'] }
+            if timeSource['format']=='xsd':
+                timeSource['method']='urn:mpeg:dash:utc:http-xsdate:2014'
+            elif timeSource['format']=='iso':
+                timeSource['method']='urn:mpeg:dash:utc:http-iso:2014'
+            elif timeSource['format']=='ntp':
+                timeSource['method']='urn:mpeg:dash:utc:http-ntp:2014'
+            else:
+                raise KeyError('Unknown time format')
+        except KeyError:
+            timeSource = {
+                          'method':'urn:mpeg:dash:utc:http-xsdate:2014',
+                          'format':'xsd'
+            }
+        timeSource['url']= urlparse.urljoin(self.request.host_url, self.uri_for('time',format=timeSource['format']))
         if clockDrift:
-            timeSource += '?drift=%d'%clockDrift
+            timeSource['url'] += '?drift=%d'%clockDrift
             video['mediaURL'] += '?drift=%d'%clockDrift
             audio['mediaURL'] += '?drift=%d'%clockDrift
         return locals()
