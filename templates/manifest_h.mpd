@@ -7,22 +7,22 @@
 	xsi:schemaLocation="urn:mpeg:DASH:schema:MPD:2011 DASH-MPD.xsd">
  {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
 	<Period start="PT0S">
-	     {% for repr in video_representations %}
+	     {% for repr in video.representations %}
      	 	{% if loop.first %}
 				<AdaptationSet mimeType="video/mp4" startWithSAP="{{repr.startWithSAP}}" segmentAlignment="true">
-		    	<SegmentTemplate presentationTimeOffset="0" timescale="{{timescale}}" initialization="$RepresentationID$/init.mp4" media="$RepresentationID$/$Number$.mp4" duration="{{repr.duration}}" startNumber="1"/>
+		        <SegmentTemplate presentationTimeOffset="{{video.presentationTimeOffset}}" timescale="{{video.timescale}}" initialization="$RepresentationID$/init.mp4" media="$RepresentationID$/$Number$.mp4" duration="{{repr.segment_duration}}" startNumber="{{startNumber}}"/>
      	 	{% endif %}
-			<Representation id="{{repr.id}}" codecs="{{repr.codecs}}" width="{{repr.width}}" height="{{repr.height}}" bandwidth="{{repr.bandwidth}}" frameRate="{{repr.frameRate}}" sar="{{repr.sar}}" scanType="{{repr.scanType}}" /> 
+			<Representation id="{{repr.id}}" codecs="{{repr.codecs}}" width="{{repr.width}}" height="{{repr.height}}" bandwidth="{{repr.bitrate}}" frameRate="{{repr.frameRate}}" sar="{{repr.sar}}" scanType="{{repr.scanType}}" /> 
      	 	{% if loop.last %}
 				</AdaptationSet>
      	 	{% endif %}
      	{% endfor %}
-	     {% for repr in audio_representations %}
+	     {% for repr in audio.representations %}
      	 	{% if loop.first %}
-				<AdaptationSet mimeType="audio/mp4" lang="{{repr.lang}}" segmentAlignment="true" startWithSAP="{{repr.startWithSAP}}">
-			    	<SegmentTemplate presentationTimeOffset="0" timescale="{{timescale}}" initialization="$RepresentationID$/init.m4a" media="$RepresentationID$/$Number$.m4a" duration="{{repr.duration}}" startNumber="1"/>
+				<AdaptationSet mimeType="audio/mp4" lang="{{repr.language}}" segmentAlignment="true" startWithSAP="{{repr.startWithSAP}}">
+			    <SegmentTemplate presentationTimeOffset="{{audio.presentationTimeOffset}}" timescale="{{audio.timescale}}" initialization="$RepresentationID$/init.m4a" media="$RepresentationID$/$Number$.m4a" duration="{{repr.segment_duration}}" startNumber="{{startNumber}}"/>
      	 	{% endif %}
-    		 	 	<Representation id="{{repr.id}}" codecs="{{repr.codecs}}" audioSamplingRate="{{repr.sampleRate}}" bandwidth="{{repr.bandwidth}}" />
+                <Representation id="{{repr.id}}" codecs="{{repr.codecs}}" audioSamplingRate="{{repr.sampleRate}}" bandwidth="{{repr.bitrate}}" />
      	 	{% if loop.last %}
 				</AdaptationSet>
      	 	{% endif %}
