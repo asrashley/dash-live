@@ -14,7 +14,7 @@
   <Period
     id="1"
     start="PT0S">
-    <BaseURL>dash/</BaseURL>
+    {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
     <AdaptationSet
       group="2"
       mimeType="video/mp4"
