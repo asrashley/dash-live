@@ -196,6 +196,9 @@ class RequestHandler(webapp2.RequestHandler):
                 timeSource['method']='urn:mpeg:dash:utc:http-iso:2014'
             elif timeSource['format']=='ntp':
                 timeSource['method']='urn:mpeg:dash:utc:http-ntp:2014'
+            elif timeSource['format']=='head':
+                timeSource['method']='urn:mpeg:dash:utc:http-head:2014'
+                timeSource['format']='ntp'
             else:
                 raise KeyError('Unknown time format')
         except KeyError:
@@ -203,7 +206,8 @@ class RequestHandler(webapp2.RequestHandler):
                           'method':'urn:mpeg:dash:utc:http-xsdate:2014',
                           'format':'xsd'
             }
-        timeSource['url']= urlparse.urljoin(self.request.host_url, self.uri_for('time',format=timeSource['format']))
+        if not timeSource.has_key('url'):
+            timeSource['url']= urlparse.urljoin(self.request.host_url, self.uri_for('time',format=timeSource['format']))
         if clockDrift:
             timeSource['url'] += '?drift=%d'%clockDrift
             video['mediaURL'] += '?drift=%d'%clockDrift
@@ -469,6 +473,9 @@ class VideoPlayer(RequestHandler):
         self.response.write(template.render(context))
 
 class UTCTimeHandler(RequestHandler):
+    def head(self, format, **kwargs):
+        self.get(format, **kwargs)
+
     def get(self, format, **kwargs):
         #context = self.create_context(**kwargs)
         now = datetime.datetime.now(tz=utils.UTC())
