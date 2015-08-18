@@ -1,0 +1,33 @@
+<MPD type="static" xmlns="urn:mpeg:DASH:schema:MPD:2011" profiles="urn:mpeg:dash:profile:isoff-on-demand:2011" minBufferTime="PT1.5S"
+	 mediaPresentationDuration="{{media_duration|isoDuration}}">
+ <ProgramInformation>
+  <Title>{{title}}</Title>
+ </ProgramInformation>
+ <Period start="PT0S" duration="{{media_duration|isoDuration}}">
+ {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
+ <!-- {{request_uri}} -->
+  <AdaptationSet>
+   <ContentComponent id="1" contentType="video"/>
+   <ContentProtection schemeIdUri="urn:mpeg:dash:mp4protection:2011" value="cenc"/>
+   <ContentProtection xmlns:mas="urn:marlin:mas:1-0:services:schemas:mpd" schemeIdUri="urn:uuid:5e629af5-38da-4063-8977-97ffbd9902d4">
+		<mas:MarlinContentIds>
+		<mas:MarlinContentId>urn:marlin:kid:02020202020202020202020202020202</mas:MarlinContentId>
+		</mas:MarlinContentIds>
+   </ContentProtection>
+   {% for repr in video.representations %}
+   <Representation id="{{repr.id}}" mimeType="video/mp4" codecs="{{repr.codecs}}" width="{{repr.width}}" height="{{repr.height}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
+      <SegmentTemplate startNumber="{{startNumber}}" timescale="{{video.timescale}}" duration="{{repr.segment_duration}}" initialization="{{repr.id}}/init.mp4" media="{{video.mediaURL}}"/>
+   </Representation>
+   {% endfor %}
+  </AdaptationSet>
+  <AdaptationSet>
+     <ContentComponent id="1" contentType="audio" lang="{{audio.representations[0].language}}"/>
+     {% for repr in audio.representations %}
+     <Representation id="{{repr.id}}" mimeType="audio/mp4" codecs="{{repr.codecs}}" sampleRate="{{repr.sampleRate}}" numChannels="{{repr.numChannels}}" lang="{{repr.lang}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
+        <SegmentTemplate startNumber="{{startNumber}}" timescale="{{audio.timescale}}" duration="{{repr.segment_duration}}" initialization="{{repr.id}}/init.mp4" media="{{audio.mediaURL}}"/>
+     </Representation>
+     {% endfor %}
+  </AdaptationSet>  
+ </Period>
+</MPD>
+

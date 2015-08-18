@@ -130,6 +130,11 @@ class RequestHandler(webapp2.RequestHandler):
             av['maxBitrate'] = max([ a.bitrate for a in av['representations']])
             av['maxSegmentDuration'] = max([ a.segment_duration for a in av['representations']]) / av['timescale']
 
+        try:
+            encrypted = int(self.request.params.get('enc',''),10)
+            encrypted = encrypted>0
+        except ValueError:
+            encrypted = self.request.uri[-7:]=='enc.mpd'
         if mode is None:
             if re.search('manifest_vod',self.request.uri):
                 mode='vod'
@@ -158,14 +163,19 @@ class RequestHandler(webapp2.RequestHandler):
             availabilityStartTime = now
         request_uri=self.request.uri
         baseURL = urlparse.urljoin(self.request.host_url,'/dash/'+mode)+'/'
+        if encrypted:
+            video = { 'representations': [ media.representations['V3ENC'] ],
+                     'mediaURL':'$RepresentationID$/$Number$.m4v'
+            }
+        else:
+            video = { 'representations' : [ media.representations['V1'],
+                                           media.representations['V2'],
+                                           media.representations['V3'] ],
+                     'mediaURL':'$RepresentationID$/$Number$.m4v'
+            }
         if mode=='vod':
             elapsedTime = datetime.timedelta(seconds = video['representations'][0].media_duration / video['representations'][0].timescale)
             timeShiftBufferDepth = elapsedTime.seconds
-        video = { 'representations' : [ media.representations['V1'],
-                                        media.representations['V2'],
-                                        media.representations['V3'] ],
-                 'mediaURL':'$RepresentationID$/$Number$.m4v'
-                 }
         compute_values(video)
         media_duration = video['representations'][0].media_duration / video['representations'][0].timescale
         video['minWidth'] = min([ a.width for a in video['representations']])
@@ -300,6 +310,18 @@ class MainPage(RequestHandler):
                                                                                     'abr':True, 'BaseURL':True, 'static':False, 'mup':True
                                                                                     }
                                                                                    ] 
+                                { 'title':'CENC VOD profile',
+                                 'details':['DASH on demand profile',
+                                            '128bit IV',
+                                            'kid=02020202020202020202020202020202',
+                                            'key=0123456789ABCDEF0123456789ABCDEF'],
+                                 'buttons':[
+                                            {
+                                             'key':4,
+                                             'url':self.uri_for('dash-mpd', manifest='enc.mpd')+'?enc=1',
+                                             'abr':False, 'BaseURL':True, 'static':True, 'mup':False, 'encrypted':True
+                                             }
+                                            ]
                                 }
                                ]
         template = templates.get_template('index.html')
@@ -323,13 +345,6 @@ class LiveManifest(RequestHandler):
         try:
             if not int(self.request.params.get('base','1'),10):
                 del context['baseURL']
-        except ValueError:
-            pass
-        try:
-            enc = int(self.request.params.get('enc','0'),10)
-            iv_size = int(self.request.params.get('iv','0'),10)
-            if enc and iv_size:
-                context['video']['representations'] = [ media.representations['V1enc%d'%iv_size] ]
         except ValueError:
             pass
         if context['repr']>=0 and context['repr']<len(context['video']['representations']):

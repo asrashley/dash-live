@@ -1,5 +1,4 @@
 import datetime, fnmatch, io, re, os, struct, sys
-from encodings.punycode import generate_integers
 
 sys.path.append(os.path.join(os.path.dirname(__file__),'..'))
 
@@ -199,7 +198,7 @@ class FullBox(Mp4Atom):
 class BoxWithChildren(Mp4Atom):
     parse_children = True    
 
-for box in ['mdia', 'minf', 'mvex', 'moof', 'moov', 'stbl', 'traf', 'trak']:
+for box in ['mdia', 'minf', 'mvex', 'moof', 'moov', 'sinf', 'stbl', 'traf', 'trak']:
     MP4_BOXES[box] = BoxWithChildren
 
 class SampleEntry (Mp4Atom):
@@ -214,7 +213,7 @@ class SampleEntry (Mp4Atom):
         return fields
 
 class VisualSampleEntry(SampleEntry):
-    parse_children = True    
+    parse_children = True
     def __init__(self, src, *args, **kwargs):
         super(VisualSampleEntry,self).__init__(src, *args,**kwargs)
         self.pre_defined = struct.unpack('>H', src.read(2))[0]
@@ -275,6 +274,14 @@ class AVCSampleEntry(VisualSampleEntry):
     pass
 MP4_BOXES['avc1'] = AVCSampleEntry
 MP4_BOXES['avc3'] = AVCSampleEntry
+MP4_BOXES['encv'] = AVCSampleEntry
+MP4_BOXES['enca'] = AVCSampleEntry
+
+class OriginalFormatBox(Mp4Atom):
+    def __init__(self, src, *args, **kwargs):
+        super(OriginalFormatBox,self).__init__(src, *args,**kwargs)
+        self.data_format = src.read(4)
+MP4_BOXES['frma'] = OriginalFormatBox
 
 class MP4A(Mp4Atom):
     parse_children = True
@@ -735,12 +742,28 @@ def create_index_file(filename):
                     try:
                         avc = atom.trak.mdia.minf.stbl.stsd.avc3
                     except AttributeError:
+                        pass
+                    if avc is None:
                         try:
                             avc = atom.trak.mdia.minf.stbl.stsd.avc1
                         except AttributeError:
                             pass
+                    if avc is None:
+                        try:
+                            avc = atom.trak.mdia.minf.stbl.stsd.encv
+                        except AttributeError:
+                            pass
+                    if avc is None:
+                        try:
+                            avc = atom.trak.mdia.minf.stbl.stsd.enca
+                        except AttributeError:
+                            pass
                     if avc is not None:
-                        repr.codecs = '%s.%02x%02x%02x'%(avc.type,
+                        avc_type = avc.type
+                        if avc_type=='encv' or avc_type=='enca':
+                            avc_type = avc.sinf.frma.data_format
+                            repr.encrypted=True
+                        repr.codecs = '%s.%02x%02x%02x'%(avc_type,
                                                          avc.avcC.AVCProfileIndication,
                                                          avc.avcC.profile_compatibility,
                                                          avc.avcC.AVCLevelIndication)
