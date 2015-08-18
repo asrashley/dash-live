@@ -136,7 +136,7 @@ class RequestHandler(webapp2.RequestHandler):
         except ValueError:
             encrypted = self.request.uri[-7:]=='enc.mpd'
         if mode is None:
-            if re.search('manifest_vod',self.request.uri):
+            if re.search('manifest_vod',self.request.uri) or encrypted:
                 mode='vod'
             else:
                 mode='live'
@@ -313,7 +313,8 @@ class MainPage(RequestHandler):
                                                                                     'url':self.uri_for('dash-mpd', manifest='manifest_i.mpd'),
                                                                                     'abr':True, 'BaseURL':True, 'static':False, 'mup':True
                                                                                     }
-                                                                                   ] 
+                                                                                   ]
+                                }, 
                                 { 'title':'CENC VOD profile',
                                  'details':['DASH on demand profile',
                                             '128bit IV',
