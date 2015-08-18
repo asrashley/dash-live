@@ -113,7 +113,8 @@ class RequestHandler(webapp2.RequestHandler):
         if sig_hex!=tk_hex:
             raise CsrfFailureException("signatures do not match")
         return True
-    def calculate_dash_params(self):
+
+    def calculate_dash_params(self, mode=None):
         def scale_timedelta(delta, num, denom):
             secs = num * delta.seconds
             msecs = num* delta.microseconds
@@ -129,7 +130,13 @@ class RequestHandler(webapp2.RequestHandler):
             av['maxBitrate'] = max([ a.bitrate for a in av['representations']])
             av['maxSegmentDuration'] = max([ a.segment_duration for a in av['representations']]) / av['timescale']
 
-        timeShiftBufferDepth = 60 # in seconds
+        if mode is None:
+            if re.search('manifest_vod',self.request.uri):
+                mode='vod'
+            else:
+                mode='live'
+        if mode=='live':
+            timeShiftBufferDepth = 60 # in seconds
         #media_duration = 9*60 + 32.52 #"PT0H9M32.52S"
         startNumber = 1
         now = datetime.datetime.now(tz=utils.UTC())
@@ -142,9 +149,17 @@ class RequestHandler(webapp2.RequestHandler):
             pass
         publishTime = now.replace(microsecond=0)
         suggestedPresentationDelay = 30
-        availabilityStartTime = now.replace(hour=0, minute=0, second=0, microsecond=0)
-        elapsedTime = now - availabilityStartTime
-        if elapsedTime.seconds<timeShiftBufferDepth:
+        if mode=='live':
+            availabilityStartTime = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            elapsedTime = now - availabilityStartTime
+            if elapsedTime.seconds<timeShiftBufferDepth:
+                timeShiftBufferDepth = elapsedTime.seconds
+        else:
+            availabilityStartTime = now
+        request_uri=self.request.uri
+        baseURL = urlparse.urljoin(self.request.host_url,'/dash/'+mode)+'/'
+        if mode=='vod':
+            elapsedTime = datetime.timedelta(seconds = video['representations'][0].media_duration / video['representations'][0].timescale)
             timeShiftBufferDepth = elapsedTime.seconds
         video = { 'representations' : [ media.representations['V1'],
                                         media.representations['V2'],
@@ -305,7 +320,6 @@ class LiveManifest(RequestHandler):
         except ValueError:
             context['repr'] = -1
         #context['availabilityStartTime'] = datetime.datetime.utcfromtimestamp(dash['availabilityStartTime'])
-        context['baseURL'] = urlparse.urljoin(self.request.host_url,'/dash')+'/'
         try:
             if not int(self.request.params.get('base','1'),10):
                 del context['baseURL']
@@ -332,14 +346,14 @@ class LiveManifest(RequestHandler):
 
 class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
     """Handler that returns media fragments"""
-    def get(self,filename,segment,ext):
+    def get(self,mode,filename,segment,ext):
         try:
             repr = media.representations[filename.upper()]
         except KeyError,e:
             self.response.write('%s not found: %s'%(filename,str(e)))
             self.response.set_status(404)
             return
-        dash = self.calculate_dash_params()
+        dash = self.calculate_dash_params(mode)
         if segment=='init':
             mod_segment = segment = 0
         else:
