@@ -345,11 +345,8 @@ class LiveManifest(RequestHandler):
         context.update(dash)
         context['repr'] = self.request.params.get('repr')
         #context['availabilityStartTime'] = datetime.datetime.utcfromtimestamp(dash['availabilityStartTime'])
-        try:
-            if not int(self.request.params.get('base','1'),10):
-                del context['baseURL']
-        except ValueError:
-            pass
+        if re.search(r'(True|0)',self.request.params.get('base','False'),re.I) is not None:
+            del context['baseURL']
         if context['repr'] is not None:
             context['video']['representations'] = [r for r in context['video']['representations'] if r.id==context['repr']]
         try:
