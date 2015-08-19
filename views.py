@@ -235,7 +235,7 @@ class MainPage(RequestHandler):
             context['page'] = 1
         context["headers"]=[]
         context['routes'] = routes
-        context['video_fields'] = [ 'id', 'codecs', 'bitrate', 'height', 'width', 'frameRate', 'encrypted' ]
+        context['video_fields'] = [ 'id', 'codecs', 'bitrate', 'height', 'width', 'encrypted' ]
         print(media.representations['V1'].codecs)
         context['video_representations'] = [ r for r in media.representations.values() if r.codecs.startswith('avc')] 
         # [ media.representations['V1'], media.representations['V2'], media.representations['V3'] ]
