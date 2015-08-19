@@ -134,7 +134,8 @@ class RequestHandler(webapp2.RequestHandler):
             encrypted = int(self.request.params.get('enc',''),10)
             encrypted = encrypted>0
         except ValueError:
-            encrypted = self.request.uri[-7:]=='enc.mpd'
+            encrypted = re.search('enc.mpd',self.request.uri) is not None
+            encrypted = re.search('true',self.request.params.get('enc',str(encrypted)),re.I) is not None
         if mode is None:
             if re.search('manifest_vod',self.request.uri) or encrypted:
                 mode='vod'
@@ -323,7 +324,7 @@ class MainPage(RequestHandler):
                                  'buttons':[
                                             {
                                              'key':4,
-                                             'url':self.uri_for('dash-mpd', manifest='enc.mpd')+'?enc=1',
+                                             'url':self.uri_for('dash-mpd', manifest='enc.mpd'),
                                              'abr':False, 'BaseURL':True, 'static':True, 'mup':False, 'encrypted':True
                                              }
                                             ]
