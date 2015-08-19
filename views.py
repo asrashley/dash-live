@@ -244,12 +244,12 @@ class MainPage(RequestHandler):
                            { 'title':'Hand-made on demand profile', 'buttons':[
                                                                                {
                                                                                 'key':0,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd')+'?rep=0',
+                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd')+'?repr=V3',
                                                                                 'abr':False, 'BaseURL':True, 'static':True
                                                                                 },
                                                                                {
                                                                                 'key':1,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd')+'?rep=0&base=0',
+                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd')+'?repr=V3&base=0',
                                                                                 'abr':False, 'BaseURL':False, 'static':True
                                                                                 },
                                                                                {
@@ -262,12 +262,12 @@ class MainPage(RequestHandler):
                            { 'title':'Vendor B live profile', 'buttons':[
                                                                                {
                                                                                 'key':3,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_b.mpd')+'?rep=0&mup=-1',
+                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_b.mpd')+'?repr=V3&mup=-1',
                                                                                 'abr':False, 'BaseURL':True, 'static':False, 'mup':False
                                                                                 },
                                                                                {
                                                                                 'key':4,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_b.mpd')+'?rep=0',
+                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_b.mpd')+'?repr=V3',
                                                                                 'abr':False, 'BaseURL':True, 'static':False, 'mup':True
                                                                                 },
                                                                                {
@@ -280,12 +280,12 @@ class MainPage(RequestHandler):
                            { 'title':'Vendor E live profile', 'buttons':[
                                                                                {
                                                                                 'key':6,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_e.mpd')+'?rep=0&mup=-1',
+                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_e.mpd')+'?repr=V3&mup=-1',
                                                                                 'abr':False, 'BaseURL':True, 'static':False, 'mup':False
                                                                                 },
                                                                                {
                                                                                 'key':7,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_e.mpd')+'?rep=0',
+                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_e.mpd')+'?repr=V3',
                                                                                 'abr':False, 'BaseURL':True, 'static':False, 'mup':True
                                                                                 },
                                                                                {
@@ -301,13 +301,13 @@ class MainPage(RequestHandler):
                                { 'title':'Vendor I live profile', 'buttons':[
                                                                                    {
                                                                                     'key':1,
-                                                                                    'url':self.uri_for('dash-mpd', manifest='manifest_i.mpd')+'?rep=0&mup=-1',
+                                                                                    'url':self.uri_for('dash-mpd', manifest='manifest_i.mpd')+'?repr=V3&mup=-1',
                                                                                     'abr':False, 'BaseURL':True, 'static':False, 'mup':False
                                                                                     },
                                                                                    {
                                                                                     'key':2,
-                                                                                    'url':self.uri_for('dash-mpd', manifest='manifest_i.mpd')+'?rep=0',
-                                                                                    'abr':False, 'BaseURL':False, 'static':False, 'mup':True
+                                                                                    'url':self.uri_for('dash-mpd', manifest='manifest_i.mpd')+'?repr=V3',
+                                                                                    'abr':False, 'BaseURL':True, 'static':False, 'mup':True
                                                                                     },
                                                                                    {
                                                                                     'key':3,
@@ -343,18 +343,15 @@ class LiveManifest(RequestHandler):
         context['title'] = 'Big Buck Bunny DASH test stream'
         dash = self.calculate_dash_params()
         context.update(dash)
-        try:
-            context['repr'] = int(self.request.params.get('rep','-1'),10)
-        except ValueError:
-            context['repr'] = -1
+        context['repr'] = self.request.params.get('repr')
         #context['availabilityStartTime'] = datetime.datetime.utcfromtimestamp(dash['availabilityStartTime'])
         try:
             if not int(self.request.params.get('base','1'),10):
                 del context['baseURL']
         except ValueError:
             pass
-        if context['repr']>=0 and context['repr']<len(context['video']['representations']):
-            context['video']['representations'] = [context['video']['representations'][context['repr']]]
+        if context['repr'] is not None:
+            context['video']['representations'] = [r for r in context['video']['representations'] if r.id==context['repr']]
         try:
             context['minimumUpdatePeriod'] = float(self.request.params.get('mup',2.0*context['video']['maxSegmentDuration']))
         except ValueError:
