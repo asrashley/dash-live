@@ -60,6 +60,35 @@
 			</tbody>
 		</table>
 		</div>
+		<p class="info">There are a number of CGI parameters that can be used to modify
+		manifests, media segments and time sources.</p>
+        <table class="cgi-params table table-striped">
+            <caption>CGI parameters</caption>
+            <thead><tr><th>Name</th><th>Description</th><th>Manifest</th><th>Media</th><th>Time source</th></tr></thead>
+            <tbody>
+            <tr><td>base=(true|false)</td><td>Include a BaseURL element?</td>
+                <td>&check;</td><td>&cross;</td><td>&cross;</td>
+            </tr>
+            <tr><td>drift=&lt;number&gt;</td><td>Number of seconds of delay to add to wall clock time</td>
+                <td>&check;</td><td>&check;</td><td>&check;</td>
+            </tr>
+            <tr><td>enc=(true|false)</td><td>Encrypted or clear</td>
+                <td>&check;</td><td>&cross;</td><td>&cross;</td>
+            </tr>
+            <tr><td>mode=(live|vod)</td><td>Select vod or live mode</td>
+                <td>&check;</td><td>&cross;</td><td>&cross;</td>
+            </tr>
+            <tr><td>mup=&lt;number&gt;</td><td>Specify minimumUpdatePeriod (in seconds) or -1 to disable updates</td>
+                <td>&check;</td><td>&cross;</td><td>&cross;</td>
+            </tr>
+            <tr><td>repr=&lt;string&gt;</td><td>Select a video representation by ID</td>
+                <td>&check;</td><td>&cross;</td><td>&cross;</td>
+            </tr>
+            <tr><td>time=(xsd|iso|ntp|head)</td><td>Select UTCTiming element method</td>
+                <td>&check;</td><td>&cross;</td><td>&cross;</td>
+            </tr>
+            </tbody>
+        </table>		
 {% endblock %}
 
 {% block scripts %}
