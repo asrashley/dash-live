@@ -137,6 +137,8 @@ class RequestHandler(webapp2.RequestHandler):
             encrypted = re.search('enc.mpd',self.request.uri) is not None
             encrypted = re.search('true',self.request.params.get('enc',str(encrypted)),re.I) is not None
         if mode is None:
+            mode = self.request.params.get('mode',None)
+        if mode is None:
             if re.search('manifest_vod',self.request.uri) or encrypted:
                 mode='vod'
             else:
