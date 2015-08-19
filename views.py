@@ -239,7 +239,7 @@ class MainPage(RequestHandler):
         print(media.representations['V1'].codecs)
         context['video_representations'] = [ r for r in media.representations.values() if r.codecs.startswith('avc')] 
         # [ media.representations['V1'], media.representations['V2'], media.representations['V3'] ]
-        context['audio_fields'] = [ 'id', 'codecs', 'bitrate', 'sampleRate', 'numChannels', 'lang', 'encrypted' ]
+        context['audio_fields'] = [ 'id', 'codecs', 'bitrate', 'sampleRate', 'numChannels', 'language', 'encrypted' ]
         context['audio_representations'] = [ r for r in media.representations.values() if r.codecs.startswith('mp4')]  
         #[ media.representations['A1'] ]
         context['rows'] = [
