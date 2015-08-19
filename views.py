@@ -320,14 +320,25 @@ class MainPage(RequestHandler):
                                 }, 
                                 { 'title':'CENC VOD profile',
                                  'details':['DASH on demand profile',
-                                            '128bit IV',
-                                            'kid=02020202020202020202020202020202',
+                                            'kid=00000000000000000000000000000000',
                                             'key=0123456789ABCDEF0123456789ABCDEF'],
                                  'buttons':[
                                             {
                                              'key':4,
                                              'url':self.uri_for('dash-mpd', manifest='enc.mpd'),
                                              'abr':False, 'BaseURL':True, 'static':True, 'mup':False, 'encrypted':True
+                                             }
+                                            ]
+                                },
+                                { 'title':'CENC live profile',
+                                 'details':['DASH live profile',
+                                            'kid=00000000000000000000000000000000',
+                                            'key=0123456789ABCDEF0123456789ABCDEF'],
+                                 'buttons':[
+                                            {
+                                             'key':5,
+                                             'url':self.uri_for('dash-mpd', manifest='enc.mpd')+'?mode=live',
+                                             'abr':False, 'BaseURL':True, 'static':False, 'mup':True, 'encrypted':True
                                              }
                                             ]
                                 }
