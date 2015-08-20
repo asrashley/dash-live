@@ -2,8 +2,7 @@ $(document).ready(function(){
 	'use strict';
 	function changePage(anchor){
 		var $a = $(anchor);
-		var title = [$(anchor.parentNode.parentNode).find('th').text(), $a.text().substring(2)];
-		title = title.join(': ');
+		var title = $(anchor).parents('tr').find('th.title > .title').text();
 		document.location.assign('/video?url='+encodeURI($a.attr('href'))+'&title='+encodeURI(title));
 	}
 	
