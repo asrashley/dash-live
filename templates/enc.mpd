@@ -12,6 +12,7 @@
  <ProgramInformation>
   <Title>{{title}}</Title>
  </ProgramInformation>
+ {% if mode=='live' %}<UTCTiming schemeIdUri="{{timeSource.method}}" value="{{timeSource.url}}"/>{% endif %}
  <Period start="PT0S" {% if mode=='vod' %}duration="{{media_duration|isoDuration}}"{% endif %}>
  {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
  <!-- {{request_uri}} -->
