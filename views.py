@@ -248,17 +248,17 @@ class MainPage(RequestHandler):
                                                                                {
                                                                                 'key':0,
                                                                                 'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd')+'?repr=V3',
-                                                                                'abr':False, 'BaseURL':True, 'static':True
+                                                                                'abr':False, 'BaseURL':True, 'static':True, 'encrypted':False
                                                                                 },
                                                                                {
                                                                                 'key':1,
                                                                                 'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd')+'?repr=V3&base=0',
-                                                                                'abr':False, 'BaseURL':False, 'static':True
+                                                                                'abr':False, 'BaseURL':False, 'static':True, 'encrypted':False
                                                                                 },
                                                                                {
                                                                                 'key':2,
                                                                                 'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd'),
-                                                                                'abr':True, 'BaseURL':True, 'static':True
+                                                                                'abr':True, 'BaseURL':True, 'static':True, 'encrypted':False
                                                                                 }
                                                                                ] 
                             },
@@ -266,17 +266,17 @@ class MainPage(RequestHandler):
                                                                                {
                                                                                 'key':3,
                                                                                 'url':self.uri_for('dash-mpd', manifest='manifest_b.mpd')+'?repr=V3&mup=-1',
-                                                                                'abr':False, 'BaseURL':True, 'static':False, 'mup':False
+                                                                                'abr':False, 'BaseURL':True, 'static':False, 'mup':False, 'encrypted':False
                                                                                 },
                                                                                {
                                                                                 'key':4,
                                                                                 'url':self.uri_for('dash-mpd', manifest='manifest_b.mpd')+'?repr=V3',
-                                                                                'abr':False, 'BaseURL':True, 'static':False, 'mup':True
+                                                                                'abr':False, 'BaseURL':True, 'static':False, 'mup':True, 'encrypted':False
                                                                                 },
                                                                                {
                                                                                 'key':5,
                                                                                 'url':self.uri_for('dash-mpd', manifest='manifest_b.mpd')+'?mup=-1',
-                                                                                'abr':True, 'BaseURL':True, 'static':False, 'mup':False
+                                                                                'abr':True, 'BaseURL':True, 'static':False, 'mup':False, 'encrypted':False
                                                                                 }
                                                                                ] 
                             },
@@ -284,17 +284,17 @@ class MainPage(RequestHandler):
                                                                                {
                                                                                 'key':6,
                                                                                 'url':self.uri_for('dash-mpd', manifest='manifest_e.mpd')+'?repr=V3&mup=-1',
-                                                                                'abr':False, 'BaseURL':True, 'static':False, 'mup':False
+                                                                                'abr':False, 'BaseURL':True, 'static':False, 'mup':False, 'encrypted':False
                                                                                 },
                                                                                {
                                                                                 'key':7,
                                                                                 'url':self.uri_for('dash-mpd', manifest='manifest_e.mpd')+'?repr=V3',
-                                                                                'abr':False, 'BaseURL':True, 'static':False, 'mup':True
+                                                                                'abr':False, 'BaseURL':True, 'static':False, 'mup':True, 'encrypted':False
                                                                                 },
                                                                                {
                                                                                 'key':8,
                                                                                 'url':self.uri_for('dash-mpd', manifest='manifest_e.mpd')+'?mup=-1',
-                                                                                'abr':True, 'BaseURL':True, 'static':False, 'mup':False
+                                                                                'abr':True, 'BaseURL':True, 'static':False, 'mup':False, 'encrypted':False
                                                                                 }
                                                                                ] 
                             }
@@ -305,17 +305,17 @@ class MainPage(RequestHandler):
                                                                                    {
                                                                                     'key':1,
                                                                                     'url':self.uri_for('dash-mpd', manifest='manifest_i.mpd')+'?repr=V3&mup=-1',
-                                                                                    'abr':False, 'BaseURL':True, 'static':False, 'mup':False
+                                                                                    'abr':False, 'BaseURL':True, 'static':False, 'mup':False, 'encrypted':False
                                                                                     },
                                                                                    {
                                                                                     'key':2,
                                                                                     'url':self.uri_for('dash-mpd', manifest='manifest_i.mpd')+'?repr=V3',
-                                                                                    'abr':False, 'BaseURL':True, 'static':False, 'mup':True
+                                                                                    'abr':False, 'BaseURL':True, 'static':False, 'mup':True, 'encrypted':False
                                                                                     },
                                                                                    {
                                                                                     'key':3,
                                                                                     'url':self.uri_for('dash-mpd', manifest='manifest_i.mpd'),
-                                                                                    'abr':True, 'BaseURL':True, 'static':False, 'mup':True
+                                                                                    'abr':True, 'BaseURL':True, 'static':False, 'mup':True, 'encrypted':False
                                                                                     }
                                                                                    ]
                                 }, 
