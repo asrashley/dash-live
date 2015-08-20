@@ -10,9 +10,8 @@ from webapp2_extras import securecookie
 from webapp2_extras import security
 from webapp2_extras.appengine.users import login_required, admin_required
 
-from settings import cookie_secret, csrf_secret, DEBUG
 from routes import routes
-import media, utils, models
+import media, utils, models, settings
 from webob import exc
 
 templates = jinja2.Environment(
@@ -27,8 +26,8 @@ templates.filters['toHtmlString'] = utils.toHtmlString
 
 SCRIPT_TEMPLATE=r'<script src="/js/{mode}/{filename}{min}.js" type="text/javascript"></script>'
 def import_script(filename):
-    mode = 'dev' if DEBUG else 'prod'
-    min = '' if DEBUG else '.min'
+    mode = 'dev' if settings.DEBUG else 'prod'
+    min = '' if settings.DEBUG else '.min'
     return SCRIPT_TEMPLATE.format(mode=mode, filename=filename, min=min)
 
 class CsrfFailureException(Exception):
@@ -72,7 +71,7 @@ class RequestHandler(webapp2.RequestHandler):
     def generate_csrf(self,context):
         """generate a CSRF token as a hidden form field and a secure cookie"""
         csrf = security.generate_random_string(length=32)
-        sig = hmac.new(csrf_secret,csrf,hashlib.sha1)
+        sig = hmac.new(settings.csrf_secret,csrf,hashlib.sha1)
         #logging.debug('X-AppEngine-country = %s'%self.request.headers['X-AppEngine-country'])
         logging.debug('User-Agent = %s'%self.request.headers['User-Agent'])
         #logging.debug('remote_addr = %s'%self.request.remote_addr)
@@ -86,20 +85,20 @@ class RequestHandler(webapp2.RequestHandler):
         sig.update(self.request.headers['User-Agent'])
         sig = sig.digest()
         context['csrf_token'] ='<input type="hidden" name="csrf_token" value="%s" />'%urllib.quote(binascii.b2a_base64(sig))
-        sc = securecookie.SecureCookieSerializer(cookie_secret)
+        sc = securecookie.SecureCookieSerializer(settings.cookie_secret)
         cookie = sc.serialize(self.CSRF_COOKIE_NAME, csrf)
         self.response.set_cookie(self.CSRF_COOKIE_NAME, cookie, httponly=True, max_age=7200)
         
     def check_csrf(self):
         """check that the CSRF token from the cookie and the submitted form match"""
-        sc = securecookie.SecureCookieSerializer(cookie_secret)
+        sc = securecookie.SecureCookieSerializer(settings.cookie_secret)
         csrf = sc.deserialize(self.CSRF_COOKIE_NAME, self.request.cookies[self.CSRF_COOKIE_NAME])
         self.response.delete_cookie(self.CSRF_COOKIE_NAME)
         if not csrf:
             logging.debug("csrf cookie not present")
             raise CsrfFailureException("csrf cookie not present")
         token = urllib.unquote(self.request.params['csrf_token'])
-        sig = hmac.new(csrf_secret,csrf,hashlib.sha1)
+        sig = hmac.new(settings.csrf_secret,csrf,hashlib.sha1)
         try:
             origin = self.request.headers['Origin']
         except KeyError:
@@ -114,7 +113,7 @@ class RequestHandler(webapp2.RequestHandler):
             raise CsrfFailureException("signatures do not match")
         return True
 
-    def calculate_dash_params(self, mode=None):
+    def calculate_dash_params(self, mode=None, mpd_url=None):
         def scale_timedelta(delta, num, denom):
             secs = num * delta.seconds
             msecs = num* delta.microseconds
@@ -130,16 +129,18 @@ class RequestHandler(webapp2.RequestHandler):
             av['maxBitrate'] = max([ a.bitrate for a in av['representations']])
             av['maxSegmentDuration'] = max([ a.segment_duration for a in av['representations']]) / av['timescale']
 
+        if mpd_url is None:
+            mpd_url = self.request.uri
         try:
             encrypted = int(self.request.params.get('enc',''),10)
             encrypted = encrypted>0
         except ValueError:
-            encrypted = re.search('enc.mpd',self.request.uri) is not None
+            encrypted = re.search('enc.mpd',mpd_url) is not None
             encrypted = re.search('true',self.request.params.get('enc',str(encrypted)),re.I) is not None
         if mode is None:
             mode = self.request.params.get('mode',None)
         if mode is None:
-            if re.search('manifest_vod',self.request.uri) or encrypted:
+            if re.search('manifest_vod',mpd_url) or encrypted:
                 mode='vod'
             else:
                 mode='live'
@@ -465,7 +466,7 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
         #    src.close()
         
 class VideoPlayer(RequestHandler):
-    """Responds with a HTML page that contains a video element to play the specified MPD"""
+    """Responds with an HTML page that contains a video element to play the specified MPD"""
     def get(self, **kwargs):
         try:
             mpd_url = self.request.params['url']
@@ -474,7 +475,13 @@ class VideoPlayer(RequestHandler):
             self.response.set_status(404)
             return
         context = self.create_context(**kwargs)
-        context['source'] = mpd_url 
+        context.update(self.calculate_dash_params(mpd_url=mpd_url))
+        context['source'] = urlparse.urljoin(self.request.host_url,mpd_url)
+        if context['encrypted']:
+            try:
+                context['source'] = '#'.join([settings.sas_url,urllib.quote(context['source'])])
+            except AttributeError:
+                pass
         context['mimeType'] = 'application/dash+xml'
         if self.request.params.has_key('title'):
             context['title'] = self.request.params['title']
