@@ -145,7 +145,10 @@ class RequestHandler(webapp2.RequestHandler):
             else:
                 mode='live'
         if mode=='live':
-            timeShiftBufferDepth = 60 # in seconds
+            try:
+                timeShiftBufferDepth = int(self.request.params.get('depth','60'),10)
+            except ValueError:
+                timeShiftBufferDepth = 60 # in seconds
         #media_duration = 9*60 + 32.52 #"PT0H9M32.52S"
         startNumber = 1
         now = datetime.datetime.now(tz=utils.UTC())
