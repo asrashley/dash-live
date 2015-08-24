@@ -215,10 +215,15 @@ class RequestHandler(webapp2.RequestHandler):
             }
         if not timeSource.has_key('url'):
             timeSource['url']= urlparse.urljoin(self.request.host_url, self.uri_for('time',format=timeSource['format']))
+	cgiParams = []
         if clockDrift:
             timeSource['url'] += '?drift=%d'%clockDrift
-            video['mediaURL'] += '?drift=%d'%clockDrift
-            audio['mediaURL'] += '?drift=%d'%clockDrift
+	    cgiParams.append('drift=%d'%clockDrift)
+        if timeShiftBufferDepth != 60:
+	    cgiParams.append('depth=%d'%timeShiftBufferDepth)
+        if cgiParams:
+            video['mediaURL'] += '?' + '&'.join(cgiParams)
+            audio['mediaURL'] += '?' + '&'.join(cgiParams)
         return locals()
 
     def add_allowed_origins(self):
