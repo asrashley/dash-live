@@ -1,4 +1,4 @@
-import datetime, fnmatch, io, re, os, struct, sys
+import argparse, datetime, fnmatch, io, re, os, struct, sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__),'..'))
 
@@ -684,7 +684,7 @@ class IsoParser(object):
             return atom
         return atoms
 
-def create_index_file(filename):
+def create_index_file(filename, args):
     print filename
     stats = os.stat(filename)
     parser = IsoParser()
@@ -789,39 +789,59 @@ def create_index_file(filename):
         repr.max_bitrate = 8 * repr.timescale * max([seg.seg.size for seg in repr.segments]) / seg_dur
         repr.segment_duration = seg_dur
         repr.bitrate = int(8 * repr.timescale * stats.st_size/repr.media_duration + 0.5)
-    print('Creating '+repr.id+'.py')
-    dest = open(repr.id+'.py', 'wb')
-    dest.write('from segment import Representation\n')
-    dest.write('representation=')
-    dest.write(str(repr))
-    #dest.write('filename="')
-    #dest.write(filename.replace('\\','/'))
-    #dest.write('"\r\n')
-    #dest.write('timescale=%d\n'%timescale)
-    #if height is not None:
-    #    dest.write('height=%f\n'%height)
-    #    dest.write('width=%f\n'%width)
-    #dest.write('profile="%s"\n'%profile)
-    #if len(fragments)>2:
-    #    seg_dur = base_media_decode_time/(len(fragments)-2)
-    #    media_dur = seg_dur * (len(fragments)-1)
-    #    max_bitrate = 8*timescale*max([seg.seg.size for seg in fragments]) / seg_dur
-    #    dest.write('max_bitrate=%d # bits/sec\n'%max_bitrate)
-    #    dest.write('average_bitrate=%d # bits/sec\n'%int(8*timescale*stats.st_size/media_dur + 0.5))
-    #    dest.write('media_duration=%d # timescale units\n'%media_dur)
-    #    dest.write('segment_duration=%d # timescale units\n'%seg_dur)
-    #dest.write('fragments=')
-    #dest.write(str(fragments))
-    dest.write('\r\n')
-    dest.close()
+    if args.manifest:
+        print('Creating manifest '+args.manifest[0])
+        dest = open(args.manifest[0], 'wb')
+        dest.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+        dest.write('<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ')
+        dest.write('mediaPresentationDuration="%s" minBufferTime="PT10S" '%utils.toIsoDuration(repr.media_duration/repr.timescale))
+        dest.write('profiles="urn:mpeg:dash:profile:isoff-on-demand:2011" type="static" ')
+        dest.write('xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd">\n')
+        dest.write(' <Period>\n')
+        if hasattr(repr, 'frameRate'):
+            mimeType='video/mp4'
+            contentType="video"
+        else:
+            mimeType='audio/mp4'
+            contentType="audio"
+        dest.write('  <AdaptationSet contentType="%s" group="1" lang="%s" mimeType="%s" segmentAlignment="true" subsegmentAlignment="true" subsegmentStartsWithSAP="1">\n'%(contentType,repr.language,mimeType))
+        try:
+            dest.write('   <Representation audioSamplingRate="%d" bandwidth="%d" codecs="%s" id="%s">\n'%(repr.sampleRate, repr.bitrate, repr.codecs, repr.id))
+        except AttributeError:
+            dest.write('   <Representation frameRate="%d" bandwidth="%d" codecs="%s" id="%s" height="%d" width="%d">\n'%(repr.frameRate, repr.bitrate, repr.codecs, repr.id, repr.height, repr.width))
+        dest.write('     <BaseURL>%s</BaseURL>\n'%filename)
+        dest.write('     <SegmentList duration="%d" timescale="%d">\n'%(repr.media_duration, repr.timescale))
+        dest.write('       <Initialization range="%d-%d"/>\n'%(repr.segments[0].seg.pos,repr.segments[0].seg.pos+repr.segments[0].seg.size-1))
+        for seg in repr.segments[1:]:
+            dest.write('       <SegmentURL d="%d" mediaRange="%d-%d"/>\n'%(repr.segment_duration, seg.seg.pos, seg.seg.pos+seg.seg.size-1))
+        dest.write('     </SegmentList>\n')
+        dest.write('   </Representation>\n')
+        dest.write('  </AdaptationSet>\n')
+        dest.write(' </Period>\n')
+        dest.write('</MPD>\n')
+        dest.close()
+    else:
+        print('Creating '+repr.id+'.py')
+        dest = open(repr.id+'.py', 'wb')
+        dest.write('from segment import Representation\n')
+        dest.write('representation=')
+        dest.write(str(repr))
+        dest.write('\r\n')
+        dest.close()
 
-for arg in sys.argv[1:]:
-    if '*' in arg or '?' in arg:
-        directory = os.path.dirname(arg)
+parser = argparse.ArgumentParser(description='MP4 parser and index generation')
+parser.add_argument('-d', '--debug', action="store_true")
+parser.add_argument('-m', '--manifest', help='Generate a manifest file', nargs=1, metavar=('mpdfile'))
+parser.add_argument('mp4file', help='Filename of MP4 file', nargs='+', default=None)
+args = parser.parse_args()
+
+for fname in args.mp4file:
+    if '*' in fname or '?' in fname:
+        directory = os.path.dirname(fname)
         if directory=='':
             directory='.'
         files = os.listdir(directory)
-        for filename in fnmatch.filter(files, arg):
-            create_index_file(filename)
+        for filename in fnmatch.filter(files, fname):
+            create_index_file(filename, args)
     else:
-        create_index_file(arg)
+        create_index_file(fname, args)
