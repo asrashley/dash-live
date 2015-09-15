@@ -131,8 +131,16 @@ class Mp4Atom(object):
                 return d
         raise AttributeError(name)
     
-    def _field_repr(self):
-        return ['size=%d'%self.size,'position=%d'%self.position]
+    def _field_repr(self, exclude=[]):
+        fields = []
+        exclude = exclude + ['parent', 'type']
+        for k,v in self.__dict__.iteritems():
+            if not k in exclude:
+                if isinstance(v, (list,dict)):
+                    if not v:
+                        continue
+                fields.append('%s=%s'%(k,str(v)))
+        return fields
     
     def _int_field_repr(self, fields, names):
         for name in names:
@@ -140,19 +148,7 @@ class Mp4Atom(object):
         return fields
     
     def __repr__(self):
-        fields = []
-        for k,v in self.__dict__.iteritems():
-            if k!='parent' and k!='type':
-                if isinstance(v, (list,dict)):
-                    if not v:
-                        continue
-                fields.append('%s=%s'%(k,str(v)))
-        #return rv
-        #fields = self._field_repr()
-        #if self.children:
-        #    fields.append('children=%s'%str(self.children))
-        #if self.descriptors:
-        #    fields.append('descriptors=%s'%str(self.descriptors))
+        fields = self._field_repr()
         fields = ','.join(fields)
         return ''.join([self.type,'(',fields,')'])
     
@@ -189,9 +185,11 @@ class FullBox(Mp4Atom):
         self.flags = struct.unpack('>I', f)[0]
         #print 'FullBox version=%d flags=%x'%(self.version,self.flags)
         
-    def _field_repr(self):
-        fields = super(FullBox,self)._field_repr()
-        fields.append('version=%d'%self.version)
+    def _field_repr(self, **args):
+        if not args.has_key('exclude'):
+            args['exclude'] = []
+        args['exclude'].append('flags')
+        fields = super(FullBox,self)._field_repr(**args)
         fields.append('flags=0x%x'%self.flags)
         return fields
 
@@ -207,10 +205,6 @@ class SampleEntry (Mp4Atom):
         #unsigned int(32) format
         src.read(6) # reserved
         self.data_reference_index = struct.unpack('>H', src.read(2))[0]
-    def _field_repr(self):
-        fields = super(SampleEntry,self)._field_repr()
-        fields.append('data_reference_index=%d'%self.data_reference_index)
-        return fields
 
 class VisualSampleEntry(SampleEntry):
     parse_children = True
@@ -228,16 +222,6 @@ class VisualSampleEntry(SampleEntry):
         self.compressorname = src.read(32)
         self.depth = struct.unpack('>H', src.read(2))[0]
         src.read(2) # int(16) pre_defined = -1;
-
-    def _field_repr(self):
-        fields = super(VisualSampleEntry,self)._field_repr()
-        fields.append('width=%d'%self.width)
-        fields.append('height=%d'%self.height)
-        fields.append('horizresolution=%d'%self.horizresolution)
-        fields.append('vertresolution=%d'%self.vertresolution)
-        fields.append('frame_count=%d'%self.frame_count)
-        fields.append('depth=%d'%self.depth)
-        return fields
     
 class AVCConfigurationBox(Mp4Atom):
     #class AVCDecoderConfigurationRecord(object):
@@ -262,12 +246,6 @@ class AVCConfigurationBox(Mp4Atom):
             pictureParameterSetLength = struct.unpack('>H', src.read(2))[0]
             pictureParameterSetNALUnit = src.read(pictureParameterSetLength)
             self.pps.append(pictureParameterSetNALUnit)
-    def _field_repr(self):
-        fields = super(AVCConfigurationBox,self)._field_repr()
-        self._int_field_repr(fields, ['configurationVersion','AVCProfileIndication',
-                                      'profile_compatibility','AVCLevelIndication',
-                                      'lengthSizeMinusOne'])
-        return fields
 MP4_BOXES['avcC'] = AVCConfigurationBox
 
 class AVCSampleEntry(VisualSampleEntry):
@@ -292,10 +270,6 @@ class MP4A(Mp4Atom):
         src.read(8+4+4) # (32)[2], (16)[2], (32) reserved
         self.timescale = struct.unpack('>H', src.read(2))[0]
         src.read(2) # (16) reserved
-    def _field_repr(self):
-        fields = super(MP4A,self)._field_repr()
-        self._int_field_repr(fields, ['data_reference_index','timescale'])
-        return fields
 MP4_BOXES['mp4a'] = MP4A
 
 class ESDescriptorBox(FullBox):
@@ -309,13 +283,9 @@ class SampleDescriptionBox(FullBox):
     def __init__(self,src, *args,**kwargs):
         super(SampleDescriptionBox,self).__init__(src, *args,**kwargs)
         self.entry_count = struct.unpack('>I', src.read(4))[0]
-    def _field_repr(self):
-        fields = super(SampleDescriptionBox,self)._field_repr()
-        self._int_field_repr(fields, ['entry_count'])
-        return fields
 MP4_BOXES['stsd'] = SampleDescriptionBox
 
-class Tfhd(FullBox):
+class TrackFragmentHeaderBox(FullBox):
     base_data_offset_present = 0x000001 
     sample_description_index_present = 0x000002 
     default_sample_duration_present = 0x000008 
@@ -324,12 +294,13 @@ class Tfhd(FullBox):
     duration_is_empty = 0x010000
     
     def __init__(self,src, *args,**kwargs):
-        super(Tfhd,self).__init__(src, *args,**kwargs)
+        super(TrackFragmentHeaderBox,self).__init__(src, *args,**kwargs)
         self.base_data_offset = 0
         self.sample_description_index = 0
         self.default_sample_duration = 0
         self.default_sample_size = 0
         self.default_sample_flags = 0
+        self.track_id = struct.unpack('>I', src.read(4))[0]
         if self.flags & self.base_data_offset_present:
             self.base_data_offset = struct.unpack('>Q', src.read(8))[0]
         else:
@@ -345,13 +316,10 @@ class Tfhd(FullBox):
             self.default_sample_flags = struct.unpack('>I', src.read(4))[0]
             
     def _field_repr(self):
-        fields = super(Tfhd,self)._field_repr()
-        fields.append('sample_description_index=%d'%self.sample_description_index)
-        fields.append('default_sample_duration=%d'%self.default_sample_duration)
-        fields.append('default_sample_size=%d'%self.default_sample_size)
-        fields.append('default_sample_flags=%d'%self.default_sample_flags)
+        fields = super(TrackFragmentHeaderBox,self)._field_repr(exclude=['default_sample_flags'])
+        fields.append('default_sample_flags=0x%08x'%self.default_sample_flags)
         return fields
-MP4_BOXES['tfhd'] = Tfhd
+MP4_BOXES['tfhd'] = TrackFragmentHeaderBox
 
 class TrackHeaderBox(FullBox):
     Track_enabled    = 0x000001
@@ -386,22 +354,6 @@ class TrackHeaderBox(FullBox):
         self.height = struct.unpack('>I', src.read(4))[0] / 65536.0 # value is fixed point 16.16
         self.creation_time = ISO_EPOCH + datetime.timedelta(seconds=self.creation_time)
         self.modification_time = ISO_EPOCH + datetime.timedelta(seconds=self.modification_time)
-
-    def _field_repr(self):
-        fields = super(TrackHeaderBox,self)._field_repr()
-        fields.append('is_enabled=%s'%str(self.is_enabled))
-        fields.append('in_movie=%s'%str(self.in_movie))
-        fields.append('in_preview=%s'%str(self.in_preview))
-        fields.append('creation_time=%s'%utils.toIsoDateTime(self.creation_time))
-        fields.append('modification_time=%s'%utils.toIsoDateTime(self.modification_time))
-        fields.append('track_id=%d'%self.track_ID)
-        fields.append('duration=%d'%self.duration)
-        fields.append('layer=%d'%self.layer)
-        fields.append('alternate_group=%d'%self.alternate_group)
-        fields.append('volume=%d'%self.volume)
-        fields.append('width=%d'%self.width)
-        fields.append('height=%d'%self.height)
-        return fields
 MP4_BOXES['tkhd'] = TrackHeaderBox
         
 class TrackFragmentDecodeTimeBox(FullBox):
@@ -411,11 +363,6 @@ class TrackFragmentDecodeTimeBox(FullBox):
             self.base_media_decode_time = struct.unpack('>Q', src.read(8))[0]
         else:
             self.base_media_decode_time = struct.unpack('>I', src.read(4))[0]
-
-    def _field_repr(self):
-        fields = super(TrackFragmentDecodeTimeBox,self)._field_repr()
-        fields.append('base_media_decode_time=%d'%self.base_media_decode_time)
-        return fields
 MP4_BOXES['tfdt'] = TrackFragmentDecodeTimeBox
 
 class TrackExtendsBox(FullBox):
@@ -426,13 +373,6 @@ class TrackExtendsBox(FullBox):
         self.default_sample_duration  = struct.unpack('>I', src.read(4))[0]
         self.default_sample_size  = struct.unpack('>I', src.read(4))[0]
         self.default_sample_flags = struct.unpack('>I', src.read(4))[0]
-    def _field_repr(self):
-        fields = super(AVCConfigurationBox,self)._field_repr()
-        self._int_field_repr(fields, ['default_sample_description_index',
-                                      'default_sample_duration',
-                                      'default_sample_size',
-                                      'default_sample_flags' ])
-        return fields
 MP4_BOXES['trex'] = TrackExtendsBox
 
 class MediaHeaderBox(FullBox):
@@ -454,12 +394,9 @@ class MediaHeaderBox(FullBox):
         self.language = chr(0x60+((tmp>>10)&0x1F)) + chr(0x60+((tmp>>5)&0x1F)) + chr(0x60+(tmp&0x1F))
 
     def _field_repr(self):
-        fields = super(MediaHeaderBox,self)._field_repr()
+        fields = super(MediaHeaderBox,self)._field_repr(exclude=['creation_time','modification_time'])
         fields.append('creation_time=%s'%utils.toIsoDateTime(self.creation_time))
         fields.append('modification_time=%s'%utils.toIsoDateTime(self.modification_time))
-        fields.append('duration=%d'%self.duration)
-        fields.append('timescale=%d'%self.timescale)
-        fields.append('language="%s"'%self.language)
         return fields
 MP4_BOXES['mdhd'] = MediaHeaderBox
 
@@ -477,11 +414,6 @@ class HandlerBox(FullBox):
         src.read(12) # const unsigned int(32)[3] reserved = 0;
         name_len = self.position + self.size - src.tell()
         self.name = src.read(name_len)
-    def _field_repr(self):
-        fields = super(HandlerBox,self)._field_repr()
-        fields.append('handler_type=%s'%self.handler_type)
-        fields.append('name="%s"'%self.name)
-        return fields
 MP4_BOXES['hdlr'] = HandlerBox
 
 class MovieExtendsHeaderBox(FullBox):
@@ -491,10 +423,6 @@ class MovieExtendsHeaderBox(FullBox):
             self.fragment_duration = struct.unpack('>Q', src.read(8))[0]
         else:
             self.fragment_duration = struct.unpack('>I', src.read(4))[0]
-    def _field_repr(self):
-        fields = super(MovieExtendsHeaderBox,self)._field_repr()
-        fields.append('fragment_duration=%d'%self.fragment_duration)
-        return fields
 MP4_BOXES['mehd'] = MovieExtendsHeaderBox
 
 class TrackSample(object):
@@ -553,7 +481,7 @@ class Nal(object):
             fields.append('ref=True')
         return ''.join(['Nal(', ','.join(fields), ')']) 
 
-class Trun(FullBox):
+class TrackFragmentRunBox(FullBox):
     data_offset_present = 0x000001 
     first_sample_flags_present = 0x000004
     sample_duration_present = 0x000100 #each sample has its own duration?
@@ -562,7 +490,7 @@ class Trun(FullBox):
     sample_composition_time_offsets_present = 0x000800
      
     def __init__(self,src, *args,**kwargs):
-        super(Trun,self).__init__(src, *args,**kwargs)
+        super(TrackFragmentRunBox,self).__init__(src, *args,**kwargs)
         tfhd = self.parent.tfhd
         self.sample_count = struct.unpack('>I', src.read(4))[0]
         if self.flags & self.data_offset_present:
@@ -598,11 +526,6 @@ class Trun(FullBox):
             #print ts
             self.samples.append(ts)
             offset += ts.size
-            
-    def _field_repr(self):
-        fields = super(Trun,self)._field_repr()
-        fields.append('sample_count=%d'%self.sample_count)
-        return fields
 
     def parse_samples(self,src, nal_length_field_length):
         for sample in self.samples:
@@ -619,7 +542,7 @@ class Trun(FullBox):
                 pos += nal_length + nal_length_field_length
                 sample.nals.append(nal)
                 print nal
-MP4_BOXES['trun']=Trun
+MP4_BOXES['trun']=TrackFragmentRunBox
 
 #
 # The following class is based on code from http://www.bok.net/trac/bento4/browser/trunk/Source/Python/utils/mp4-dash.py
