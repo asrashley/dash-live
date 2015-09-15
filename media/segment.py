@@ -1,7 +1,9 @@
 class Box(object):
-    def __init__(self, pos, size):
+    def __init__(self, pos, size, duration=None):
         self.pos = pos
         self.size = size
+        if duration is not None:
+            self.duration = duration
 
 class Segment(object):
     def __init__(self, **kwargs):
@@ -11,6 +13,8 @@ class Segment(object):
         for k,v in kwargs.iteritems():
             try:
                 self.boxes[k]=Box(v.position,v.size)
+                if hasattr(v, 'duration'):
+                    self.boxes[k].duration = v.duration
             except AttributeError:
                 self.boxes[k]=Box(v[0],v[1])
     def __getattr__(self, key):
@@ -28,12 +32,15 @@ class Segment(object):
             if k!='seg' and v.pos>seg.pos:
                 rv.append('"%s":(%d,%d)'%(k,v.pos-seg.pos,v.size))
             else:
-                rv.append('"%s":(%d,%d)'%(k,v.pos,v.size))
+                try:
+                    rv.append('"%s":(%d,%d,%d)'%(k,v.pos,v.size,v.duration))
+                except AttributeError:
+                    rv.append('"%s":(%d,%d)'%(k,v.pos,v.size))
         rv = ','.join(rv)
         return '{'+rv+'}'
 
 class Representation(object):
-    FIELDS = ['bitrate', 'codecs', 'duration', 'encrypted', 'filename', 
+    FIELDS = ['bitrate', 'codecs', 'contentType', 'duration', 'encrypted', 'filename',
               'frameRate', 'height', 'lang', 'numChannels', 'sampleRate',
               'sar', 'scanType', 'segments',
               'startWithSAP', 'timescale', 'width']

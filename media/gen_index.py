@@ -616,6 +616,7 @@ def create_index_file(filename, args):
                           filename=filename.replace('\\','/'))
     base_media_decode_time=None
     default_sample_duration=None
+    moov = None
     for atom in atoms:
         if atom.type=='ftyp':
             #print 'Init seg',atom
@@ -628,6 +629,12 @@ def create_index_file(filename, args):
             sys.stdout.flush()
             #print 'Fragment %d '%len(fragments)
             seg = Segment(seg=atom, tfdt=atom.traf.tfdt, mfhd=atom.mfhd)
+            dur=0
+            for sample in atom.traf.trun.samples:
+                if sample.duration is None:
+                    sample.duration=moov.mvex.trex.default_sample_duration
+                dur += sample.duration
+            seg.seg.duration = dur
             base_media_decode_time = atom.traf.tfdt.base_media_decode_time
             repr.segments.append(seg)
             #try:
@@ -645,6 +652,7 @@ def create_index_file(filename, args):
             seg = repr.segments[-1]
             seg.seg.size = atom.position - seg.seg.pos + atom.size
             if atom.type=='moov':
+                moov = atom
                 repr.timescale = atom.trak.mdia.mdhd.timescale
                 repr.language =  atom.trak.mdia.mdhd.language
                 try:
@@ -708,7 +716,9 @@ def create_index_file(filename, args):
     sys.stdout.write('\r\n')
     if len(repr.segments)>2:
         seg_dur = base_media_decode_time/(len(repr.segments)-2)
-        repr.media_duration = seg_dur * (len(repr.segments)-1)
+        repr.media_duration = 0
+        for seg in repr.segments[1:]:
+            repr.media_duration += seg.seg.duration
         repr.max_bitrate = 8 * repr.timescale * max([seg.seg.size for seg in repr.segments]) / seg_dur
         repr.segment_duration = seg_dur
         repr.bitrate = int(8 * repr.timescale * stats.st_size/repr.media_duration + 0.5)
@@ -736,7 +746,7 @@ def create_index_file(filename, args):
         dest.write('     <SegmentList duration="%d" timescale="%d">\n'%(repr.media_duration, repr.timescale))
         dest.write('       <Initialization range="%d-%d"/>\n'%(repr.segments[0].seg.pos,repr.segments[0].seg.pos+repr.segments[0].seg.size-1))
         for seg in repr.segments[1:]:
-            dest.write('       <SegmentURL d="%d" mediaRange="%d-%d"/>\n'%(repr.segment_duration, seg.seg.pos, seg.seg.pos+seg.seg.size-1))
+            dest.write('       <SegmentURL d="%d" mediaRange="%d-%d"/>\n'%(seg.seg.duration, seg.seg.pos, seg.seg.pos+seg.seg.size-1))
         dest.write('     </SegmentList>\n')
         dest.write('   </Representation>\n')
         dest.write('  </AdaptationSet>\n')
