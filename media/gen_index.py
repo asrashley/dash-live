@@ -607,7 +607,7 @@ class IsoParser(object):
             return atom
         return atoms
 
-def create_index_file(filename, args):
+def create_representation(filename, args):
     print filename
     stats = os.stat(filename)
     parser = IsoParser()
@@ -722,6 +722,23 @@ def create_index_file(filename, args):
         repr.max_bitrate = 8 * repr.timescale * max([seg.seg.size for seg in repr.segments]) / seg_dur
         repr.segment_duration = seg_dur
         repr.bitrate = int(8 * repr.timescale * stats.st_size/repr.media_duration + 0.5)
+    return repr
+
+def create_index_file(filename, args):
+    repr = create_representation(filename, args)
+    if args.codec:
+        codec_src = create_representation(args.codec[0], args)
+        repr.codecs = codec_src.codecs
+        if repr.contentType=='video':
+            repr.height = codec_src.height
+            repr.width = codec_src.width
+            try:
+                repr.frameRate = codec_src.frameRate
+            except AttributeError:
+                pass
+        else:
+            repr.sampleRate = codec_src.sampleRate
+            repr.numChannels = codec_src.numChannels
     if args.manifest:
         print('Creating manifest '+args.manifest[0])
         dest = open(args.manifest[0], 'wb')
@@ -764,6 +781,7 @@ def create_index_file(filename, args):
 
 parser = argparse.ArgumentParser(description='MP4 parser and index generation')
 parser.add_argument('-d', '--debug', action="store_true")
+parser.add_argument('-c', '--codec', help='MP4 file that contains codec information', nargs=1, metavar=('mp4file'))
 parser.add_argument('-m', '--manifest', help='Generate a manifest file', nargs=1, metavar=('mpdfile'))
 parser.add_argument('mp4file', help='Filename of MP4 file', nargs='+', default=None)
 args = parser.parse_args()
