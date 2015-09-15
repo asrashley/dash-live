@@ -15,11 +15,11 @@
   </AdaptationSet>
   <AdaptationSet>
      <ContentComponent id="1" contentType="audio" lang="eng"/>
-     {% for repr in audio.representations %}
+     {% for repr in audio.representations %}{% if repr.role=="main" %}
      <Representation id="{{repr.id}}" mimeType="audio/mp4" codecs="{{repr.codecs}}" sampleRate="{{repr.sampleRate}}" numChannels="{{repr.numChannels}}" lang="{{repr.language}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
         <SegmentTemplate startNumber="1" timescale="{{audio.timescale}}" duration="{{repr.segment_duration}}" initialization="{{repr.id}}/init.mp4" media="{{repr.id}}/$Number$.m4a"/>
      </Representation>
-     {% endfor %}
+     {% endif %}{% endfor %}
   </AdaptationSet>  
  </Period>
 </MPD>

@@ -18,15 +18,12 @@
 				</AdaptationSet>
      	 	{% endif %}
      	{% endfor %}
-	     {% for repr in audio.representations %}
-     	 	{% if loop.first %}
-				<AdaptationSet mimeType="audio/mp4" lang="{{repr.language}}" segmentAlignment="true" startWithSAP="{{repr.startWithSAP}}">
+	     {% for repr in audio.representations %}{% if repr.role=="main" %}
+		  <AdaptationSet mimeType="audio/mp4" lang="{{repr.language}}" segmentAlignment="true" startWithSAP="{{repr.startWithSAP}}">
 			    <SegmentTemplate presentationTimeOffset="{{audio.presentationTimeOffset}}" timescale="{{audio.timescale}}" initialization="$RepresentationID$/init.m4a" media="$RepresentationID$/$Number$.m4a" duration="{{repr.segment_duration}}" startNumber="{{startNumber}}"/>
-     	 	{% endif %}
                 <Representation id="{{repr.id}}" codecs="{{repr.codecs}}" audioSamplingRate="{{repr.sampleRate}}" bandwidth="{{repr.bitrate}}" />
-     	 	{% if loop.last %}
-				</AdaptationSet>
-     	 	{% endif %}
+  		</AdaptationSet>
+   	 	{% endif %}
      	{% endfor %}
 	</Period>
 </MPD>

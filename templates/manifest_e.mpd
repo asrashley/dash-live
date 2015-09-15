@@ -18,17 +18,14 @@
 			<Representation id="{{repr.id}}" codecs="{{repr.codecs}}" width="{{repr.width}}" height="{{repr.height}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}" frameRate="{{repr.frameRate}}" sar="{{repr.sar}}" scanType="{{repr.scanType}}" /> 
 		{% endfor %}			
 		</AdaptationSet>
-	     {% for repr in audio.representations %}
-     	 	{% if loop.first %}
-				<AdaptationSet mimeType="audio/mp4" contentType="audio" lang="{{repr.language}}" segmentAlignment="true" startWithSAP="{{repr.startWithSAP}}">
-		        <SegmentTemplate presentationTimeOffset="{{audio.presentationTimeOffset}}" timescale="{{audio.timescale}}" initialization="$RepresentationID$/init.m4a" media="{{audio.mediaURL}}" duration="{{repr.segment_duration}}" startNumber="{{startNumber}}"/>
-     	 	{% endif %}
+	    {% for repr in audio.representations %}
+    	<AdaptationSet mimeType="audio/mp4" contentType="audio" lang="{{repr.language}}" segmentAlignment="true" startWithSAP="{{repr.startWithSAP}}">
+	        <Role schemeIdUri="urn:mpeg:dash:role:2011" value="{{repr.role}}"/>
+	        <SegmentTemplate presentationTimeOffset="{{audio.presentationTimeOffset}}" timescale="{{audio.timescale}}" initialization="$RepresentationID$/init.m4a" media="{{audio.mediaURL}}" duration="{{repr.segment_duration}}" startNumber="{{startNumber}}"/>
             <Representation id="{{repr.id}}" mimeType="audio/mp4" codecs="{{repr.codecs}}" sampleRate="{{repr.sampleRate}}" numChannels="{{repr.numChannels}}" lang="{{repr.language}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
 	 	 		<AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="{{repr.numChannels}}"/>
      	 	</Representation>
-     	 	{% if loop.last %}
-				</AdaptationSet>
-     	 	{% endif %}
+		</AdaptationSet>
      	{% endfor %}
 	</Period>
 </MPD>

@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <MPD 
 {% if mode=='vod' %}type="static" xmlns="urn:mpeg:DASH:schema:MPD:2011" profiles="urn:mpeg:dash:profile:isoff-on-demand:2011"
     mediaPresentationDuration="{{media_duration|isoDuration}}"
@@ -30,14 +31,15 @@
    </Representation>
    {% endfor %}
   </AdaptationSet>
+  {% for repr in audio.representations %}{% if repr.role=="main" %}
   <AdaptationSet>
      <ContentComponent id="1" contentType="audio" lang="{{audio.representations[0].language}}"/>
-     {% for repr in audio.representations %}
      <Representation id="{{repr.id}}" mimeType="audio/mp4" codecs="{{repr.codecs}}" sampleRate="{{repr.sampleRate}}" numChannels="{{repr.numChannels}}" lang="{{repr.lang}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
         <SegmentTemplate startNumber="{{startNumber}}" timescale="{{audio.timescale}}" duration="{{repr.segment_duration}}" initialization="{{repr.id}}/init.mp4" media="{{audio.mediaURL}}"/>
      </Representation>
-     {% endfor %}
   </AdaptationSet>  
+  {% endif %}
+ {% endfor %}
  </Period>
 </MPD>
 
