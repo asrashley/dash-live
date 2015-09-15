@@ -124,7 +124,10 @@ class Mp4Atom(object):
         
     def __getattr__(self, name):
         for c in self.children:
-            if c.type==name:
+            if '-' in c.type:
+                if c.type.replace('-','_')==name:
+                    return c
+            elif c.type==name:
                 return c
         for d in self.descriptors:
             if d.__class__.__name__==name:
@@ -254,6 +257,54 @@ MP4_BOXES['avc1'] = AVCSampleEntry
 MP4_BOXES['avc3'] = AVCSampleEntry
 MP4_BOXES['encv'] = AVCSampleEntry
 MP4_BOXES['enca'] = AVCSampleEntry
+
+class EC3SampleEntry(SampleEntry):
+    parse_children = True
+    def __init__(self, src, *args, **kwargs):
+        super(EC3SampleEntry,self).__init__(src, *args,**kwargs)
+        src.read(8) # reserved
+        self.channel_count = struct.unpack('>H', src.read(2))[0]
+        self.sample_size = struct.unpack('>H', src.read(2))[0]
+        src.read(4) # reserved
+        self.sampling_frequency = struct.unpack('>H', src.read(2))[0]
+        src.read(2) # reserved
+MP4_BOXES['ec-3'] = EC3SampleEntry
+
+class EC3SpecificBox(Mp4Atom):
+    ACMOD_NUM_CHANS = [2,1,2,3,3,4,4,5]
+
+    class SubStream(object):
+        def __init__(self, bs):
+            self.fscod = bs.read('uint:2')
+            self.bsid = bs.read('uint:5')
+            self.bsmod = bs.read('uint:5')
+            self.acmod = bs.read('uint:3')
+            self.channel_count = EC3SpecificBox.ACMOD_NUM_CHANS[self.acmod]
+            self.lfeon = bs.read('bool')
+            bs.read('uint:3') #reserved
+            self.num_dep_sub  = bs.read('uint:4')
+            if self.num_dep_sub>0:
+                self.chan_loc = bs.read('uint:9')
+            else:
+                bs.read('uint:1') #reserved
+        def __repr__(self):
+            fields = []
+            for k,v in self.__dict__.iteritems():
+                if k!='parent':
+                    fields.append('%s=%s'%(k,str(v)))
+            fields = ','.join(fields)
+            return ''.join([ self.__class__.__name__, '(',fields,')'])
+
+    def __init__(self, src, *args, **kwargs):
+        super(EC3SpecificBox,self).__init__(src, *args,**kwargs)
+        data = src.read(self.size)
+        bs = ConstBitStream(bytes=data)
+        self.data_rate = bs.read('uint:13')
+        self.num_ind_sub = 1+bs.read('uint:3')
+        self.substreams = []
+        for i in range(self.num_ind_sub):
+            self.substreams.append(EC3SpecificBox.SubStream(bs))
+MP4_BOXES['dec3'] = EC3SpecificBox
 
 class OriginalFormatBox(Mp4Atom):
     def __init__(self, src, *args, **kwargs):
@@ -661,6 +712,7 @@ def create_representation(filename, args):
                     print('Unable to find default_sample_duation')
                     default_sample_duration = None
                 if atom.trak.mdia.hdlr.handler_type=='vide':
+                    repr.contentType="video"
                     if default_sample_duration is not None:
                         repr.frameRate = repr.timescale / default_sample_duration
                     repr.width = int(atom.trak.tkhd.width)
@@ -699,14 +751,27 @@ def create_representation(filename, args):
                                                          avc.avcC.profile_compatibility,
                                                          avc.avcC.AVCLevelIndication)
                 elif atom.trak.mdia.hdlr.handler_type=='soun':
-                    avc = atom.trak.mdia.minf.stbl.stsd.mp4a
-                    dsi = avc.esds.DecoderSpecificInfo
-                    repr.sampleRate = dsi.sampling_frequency
-                    repr.numChannels = dsi.channel_configuration
-                    if repr.numChannels==7:
-                        # 7 is a special case that means 7.1
-                        repr.numChannels=8
-                    repr.codecs = "%s.%02x.%02x"%(avc.type, avc.esds.DecoderSpecificInfo.object_type, dsi.audio_object_type)
+                    repr.contentType="audio"
+                    try:
+                        avc = atom.trak.mdia.minf.stbl.stsd.mp4a
+                        dsi = avc.esds.DecoderSpecificInfo
+                        repr.sampleRate = dsi.sampling_frequency
+                        repr.numChannels = dsi.channel_configuration
+                        repr.codecs = "%s.%02x.%02x"%(avc.type, avc.esds.DecoderSpecificInfo.object_type, dsi.audio_object_type)
+                        if repr.numChannels==7:
+                            # 7 is a special case that means 7.1
+                            repr.numChannels=8
+                    except AttributeError:
+                        avc = atom.trak.mdia.minf.stbl.stsd.ec_3
+                        repr.sampleRate = avc.sampling_frequency
+                        repr.numChannels = avc.channel_count
+                        if avc.dec3.substreams:
+                            repr.numChannels = 0
+                            for s in avc.dec3.substreams:
+                                repr.numChannels += s.channel_count
+                                if s.lfeon:
+                                    repr.numChannels += 1
+                        repr.codecs = avc.type
                 try:
                     seg.add(mehd=atom.mvex.mehd)
                 except AttributeError:

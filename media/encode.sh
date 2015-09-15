@@ -85,10 +85,11 @@ encode () {
 	       -i ${VIDDIR}/${SRCFILE} \
 	       -vf drawtext='fontfile=/usr/share/fonts/truetype/freefont/FreeSansBold.ttf:fontsize=48:text='${3}'Kbps:x=(w-tw)/2:y=h-(2*lh):fontcolor=white:box=1:boxcolor=0x000000@0.7' \
                -video_track_timescale ${TIMESCALE} \
+	       -map 0:v:0 -map 0:a:0 -map 0:a:0 \
 	       -codec:v libx264 -profile:v $PROFILE -level:v ${LEVEL} -field_order progressive -bufsize ${BUFSIZE} -maxrate ${3}k -minrate ${MINRATE}k -b:v ${CBR}k -pix_fmt yuv420p -s "${1}x${2}" -x264opts keyint=${FRAME_SEGMENT_DURATION}:videoformat=pal -flags +cgop+global_header -flags2 -local_header -g ${FRAME_SEGMENT_DURATION}  -sc_threshold 0  \
 	       -force_key_frames ${KEYFRAMES}  \
-	       -codec:a aac -b:a 96k -ac 2 -strict -2 \
-	       -map 0:v:0 -map 0:a:0  \
+	       -codec:a:0 aac -b:a:0 96k -ac:a:0 2 -strict -2 \
+               -codec:a:1 eac3 -b:a:1 320k -ac:a:1 6 \
 	       -y -t $DURATION -threads 0 "${DESTFILE}.mp4") \
        && ffprobe -show_frames -print_format compact "${DESTDIR}/$3/${DESTFILE}.mp4" | awk -F '|' '($2 == "media_type=video") { \
     if ($4 == "key_frame=1") { \
@@ -115,8 +116,12 @@ package () {
     for bitrate in $*; do
         FILES="${DESTDIR}/${bitrate}/${DESTFILE}.mp4#video ${FILES}"
     done
-    FILES="${FILES} ${DESTDIR}/${1}/${DESTFILE}.mp4#audio"
-    (cd ${DESTDIR} && MP4Box -dash `expr ${SEGMENT_DURATION} '*' 1000` -rap -frag-rap -single-file -profile dashavc264:live -bs-switching inband -segment-ext m4s -segment-name 'dash_$RepresentationID$_$number%03d$' -out dash/manifest $FILES)
+    # Add AAC audio track
+    FILES="${FILES} ${DESTDIR}/${1}/${DESTFILE}.mp4#trackID=2:role=main"
+    # Add E-AC3 audio track
+    FILES="${FILES} ${DESTDIR}/${1}/${DESTFILE}.mp4#trackID=3:role=alternate"
+    echo $FILES
+    (cd ${DESTDIR} && MP4Box -dash `expr ${SEGMENT_DURATION} '*' 1000` -rap -frag-rap -single-file -profile dashavc264:live -profile-ext "urn:dvb:dash:profile:dvbdash:2014" -bs-switching inband -segment-ext m4s -segment-name 'dash_$RepresentationID$_$number%03d$' -out dash/manifest $FILES)
     rm ${DESTDIR}/${DESTFILE}_[1-9].mp4
     for repr in 1 2 3 4 5 6 7 8 9; do
         if [ -f ${DESTDIR}/dash/dash_${repr}_.mp4 ]; then

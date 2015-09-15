@@ -140,7 +140,7 @@ class RequestHandler(webapp2.RequestHandler):
         if mode is None:
             mode = self.request.params.get('mode',None)
         if mode is None:
-            if re.search('manifest_vod',mpd_url) or encrypted:
+            if re.search('vod',mpd_url) or encrypted:
                 mode='vod'
             else:
                 mode='live'
@@ -170,16 +170,9 @@ class RequestHandler(webapp2.RequestHandler):
             availabilityStartTime = now
         request_uri=self.request.uri
         baseURL = urlparse.urljoin(self.request.host_url,'/dash/'+mode)+'/'
-        if encrypted:
-            video = { 'representations': [ media.representations['V3ENC'] ],
-                     'mediaURL':'$RepresentationID$/$Number$.m4v'
-            }
-        else:
-            video = { 'representations' : [ media.representations['V1'],
-                                           media.representations['V2'],
-                                           media.representations['V3'] ],
-                     'mediaURL':'$RepresentationID$/$Number$.m4v'
-            }
+        video = { 'representations' : [ r for r in media.representations.values() if r.contentType=="video" and r.encrypted==encrypted], 
+                 'mediaURL':'$RepresentationID$/$Number$.m4v'
+        }
         if mode=='vod':
             elapsedTime = datetime.timedelta(seconds = video['representations'][0].media_duration / video['representations'][0].timescale)
             timeShiftBufferDepth = elapsedTime.seconds
@@ -190,9 +183,14 @@ class RequestHandler(webapp2.RequestHandler):
         video['maxWidth'] = max([ a.width for a in video['representations']])
         video['maxHeight'] = max([ a.height for a in video['representations']])
         video['maxFrameRate'] = max([ a.frameRate for a in video['representations']])
-        audio = {'representations':[ media.representations['A1'] ],
+        audio = {'representations':[ r for r in media.representations.values() if r.contentType=="audio" and r.encrypted==encrypted],
                  'mediaURL':'$RepresentationID$/$Number$.m4a'
         }
+        for rep in audio['representations']:
+            if rep.codecs.startswith(self.request.params.get('audio','mp4a')):
+                rep.role='main'
+            else:
+                rep.role='alternate'
         compute_values(audio)
         maxSegmentDuration = max(video['maxSegmentDuration'],audio['maxSegmentDuration'])
         try:
@@ -245,11 +243,10 @@ class MainPage(RequestHandler):
         context["headers"]=[]
         context['routes'] = routes
         context['video_fields'] = [ 'id', 'codecs', 'bitrate', 'height', 'width', 'encrypted' ]
-        print(media.representations['V1'].codecs)
-        context['video_representations'] = [ r for r in media.representations.values() if r.codecs.startswith('avc')] 
+        context['video_representations'] = [ r for r in media.representations.values() if r.contentType=="video"]
         # [ media.representations['V1'], media.representations['V2'], media.representations['V3'] ]
         context['audio_fields'] = [ 'id', 'codecs', 'bitrate', 'sampleRate', 'numChannels', 'language', 'encrypted' ]
-        context['audio_representations'] = [ r for r in media.representations.values() if r.codecs.startswith('mp4')]  
+        context['audio_representations'] = [ r for r in media.representations.values() if r.contentType=="audio"]
         #[ media.representations['A1'] ]
         context['rows'] = [
                            { 'title':'Hand-made on demand profile', 'buttons':[
