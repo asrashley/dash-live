@@ -48,7 +48,7 @@ class ESDescriptor(Descriptor):
         self.stream_dependence_flag = (b&0x80)==0x80
         self.url_flag = (b&0x40)==0x40
         self.ocr_stream_flag = (b&0x20)==0x20
-        self.stream_priority = b&0x1f    
+        self.stream_priority = b&0x1f
         if self.stream_dependence_flag:
             self.depends_on_es_id = struct.unpack('>H', src.read(2))[0]
         if self.url_flag:
@@ -85,7 +85,7 @@ class DecoderSpecificInfo(Descriptor):
         data = src.read(self.size)
         bs = ConstBitStream(bytes=data)
         if object_type==0x40: # Audio ISO/IEC 14496-3 subpart 1
-            self.audio_object_type = bs.read('uint:5') 
+            self.audio_object_type = bs.read('uint:5')
             self.sampling_frequency_index = bs.read('uint:4')
             if self.sampling_frequency_index==0xf:
                 self.sampling_frequency = bs.read('uint:24')
@@ -111,7 +111,7 @@ class DecoderSpecificInfo(Descriptor):
                     self.aac_spectral_data_resilience_flag =  bs.read('bool')
                 self.extension_flag_3 =  bs.read('bool')
 MP4_DESCRIPTORS[0x05] = DecoderSpecificInfo
-    
+
 class Mp4Atom(object):
     parse_children=False
     def __init__(self, src, type, position, size, parent):
@@ -121,7 +121,7 @@ class Mp4Atom(object):
         self.parent = parent
         self.children = []
         self.descriptors = []
-        
+
     def __getattr__(self, name):
         for c in self.children:
             if '-' in c.type:
@@ -133,7 +133,7 @@ class Mp4Atom(object):
             if d.__class__.__name__==name:
                 return d
         raise AttributeError(name)
-    
+
     def _field_repr(self, exclude=[]):
         fields = []
         exclude = exclude + ['parent', 'type']
@@ -144,24 +144,24 @@ class Mp4Atom(object):
                         continue
                 fields.append('%s=%s'%(k,str(v)))
         return fields
-    
+
     def _int_field_repr(self, fields, names):
         for name in names:
             fields.append('%s=%d'%(name,self.__getattribute__(name)))
         return fields
-    
+
     def __repr__(self):
         fields = self._field_repr()
         fields = ','.join(fields)
         return ''.join([self.type,'(',fields,')'])
-    
+
     def find_parent(self,type):
         if self.parent:
             if self.parent.type==type:
                 return self.parent
             return self.parent.find_parent(type)
         raise AttributeError(type)
-    
+
     def parse_descriptors(self,src):
         self.descriptors=[]
         end = self.position+self.size
@@ -169,7 +169,7 @@ class Mp4Atom(object):
             d = self.parse_descriptor(src)
             self.descriptors.append(d)
             src.seek(d.position+d.size+d.header_size)
-            
+
     def parse_descriptor(self,src, **kwargs):
         pos = src.tell()
         tag = struct.unpack('B', src.read(1))[0]
@@ -178,8 +178,8 @@ class Mp4Atom(object):
         except KeyError:
             Desc = Descriptor
         return Desc(src, tag=tag, position=pos, parent=self, **kwargs)
-        
-class FullBox(Mp4Atom):    
+
+class FullBox(Mp4Atom):
     def __init__(self, src, *args, **kwargs):
         super(FullBox,self).__init__(src, *args,**kwargs)
         #print 'parse FullBox'
@@ -187,7 +187,7 @@ class FullBox(Mp4Atom):
         f = '\000'+src.read(3)
         self.flags = struct.unpack('>I', f)[0]
         #print 'FullBox version=%d flags=%x'%(self.version,self.flags)
-        
+
     def _field_repr(self, **args):
         if not args.has_key('exclude'):
             args['exclude'] = []
@@ -197,7 +197,7 @@ class FullBox(Mp4Atom):
         return fields
 
 class BoxWithChildren(Mp4Atom):
-    parse_children = True    
+    parse_children = True
 
 for box in ['mdia', 'minf', 'mvex', 'moof', 'moov', 'sinf', 'stbl', 'traf', 'trak']:
     MP4_BOXES[box] = BoxWithChildren
@@ -225,7 +225,7 @@ class VisualSampleEntry(SampleEntry):
         self.compressorname = src.read(32)
         self.depth = struct.unpack('>H', src.read(2))[0]
         src.read(2) # int(16) pre_defined = -1;
-    
+
 class AVCConfigurationBox(Mp4Atom):
     #class AVCDecoderConfigurationRecord(object):
     def __init__(self, src, *args, **kwargs):
@@ -328,7 +328,7 @@ class ESDescriptorBox(FullBox):
         super(ESDescriptorBox,self).__init__(src, *args,**kwargs)
         self.parse_descriptors(src)
 MP4_BOXES['esds'] = ESDescriptorBox
-    
+
 class SampleDescriptionBox(FullBox):
     parse_children = True
     def __init__(self,src, *args,**kwargs):
@@ -337,13 +337,13 @@ class SampleDescriptionBox(FullBox):
 MP4_BOXES['stsd'] = SampleDescriptionBox
 
 class TrackFragmentHeaderBox(FullBox):
-    base_data_offset_present = 0x000001 
-    sample_description_index_present = 0x000002 
-    default_sample_duration_present = 0x000008 
-    default_sample_size_present = 0x000010 
-    default_sample_flags_present = 0x000020 
+    base_data_offset_present = 0x000001
+    sample_description_index_present = 0x000002
+    default_sample_duration_present = 0x000008
+    default_sample_size_present = 0x000010
+    default_sample_flags_present = 0x000020
     duration_is_empty = 0x010000
-    
+
     def __init__(self,src, *args,**kwargs):
         super(TrackFragmentHeaderBox,self).__init__(src, *args,**kwargs)
         self.base_data_offset = 0
@@ -365,7 +365,7 @@ class TrackFragmentHeaderBox(FullBox):
             self.default_sample_size = struct.unpack('>I', src.read(4))[0]
         if self.flags & self.default_sample_flags_present:
             self.default_sample_flags = struct.unpack('>I', src.read(4))[0]
-            
+
     def _field_repr(self):
         fields = super(TrackFragmentHeaderBox,self)._field_repr(exclude=['default_sample_flags'])
         fields.append('default_sample_flags=0x%08x'%self.default_sample_flags)
@@ -406,7 +406,7 @@ class TrackHeaderBox(FullBox):
         self.creation_time = ISO_EPOCH + datetime.timedelta(seconds=self.creation_time)
         self.modification_time = ISO_EPOCH + datetime.timedelta(seconds=self.modification_time)
 MP4_BOXES['tkhd'] = TrackHeaderBox
-        
+
 class TrackFragmentDecodeTimeBox(FullBox):
     def __init__(self,src, *args,**kwargs):
         super(TrackFragmentDecodeTimeBox,self).__init__(src, *args,**kwargs)
@@ -484,7 +484,7 @@ class TrackSample(object):
         self.size = None
         self.flags = None
         self.composition_time_offset = None
-        
+
     def __repr__(self, *args, **kwargs):
         rv = [str(self.index),str(self.offset)]
         if self.duration is not None:
@@ -510,7 +510,7 @@ class Nal(object):
     END_OF_SEQ=10
     END_OF_STREAM=11
     FILLER=12
-    
+
     def __init__(self, src, sample, nal_length):
         #src.seek(sample.offset)
         b0 = struct.unpack('B', src.read(1))[0]
@@ -523,23 +523,23 @@ class Nal(object):
         self.is_ref_frame = self.is_idr_frame
         if self.ref_idc!=0 and not self.unit_type in [self.SPS, self.PPS, self.IDR]:
             self.is_ref_frame = True
-        
+
     def __repr__(self):
         fields = ['%d'%self.unit_type,'length=%d'%self.size,'idc=0x%x'%self.ref_idc]
         if self.is_idr_frame:
             fields.append('idr=True')
         elif self.is_ref_frame:
             fields.append('ref=True')
-        return ''.join(['Nal(', ','.join(fields), ')']) 
+        return ''.join(['Nal(', ','.join(fields), ')'])
 
 class TrackFragmentRunBox(FullBox):
-    data_offset_present = 0x000001 
+    data_offset_present = 0x000001
     first_sample_flags_present = 0x000004
     sample_duration_present = 0x000100 #each sample has its own duration?
     sample_size_present = 0x000200 #each sample has its own size, otherwise the default is used.
     sample_flags_present = 0x000400 # each sample has its own flags, otherwise the default is used.
     sample_composition_time_offsets_present = 0x000800
-     
+
     def __init__(self,src, *args,**kwargs):
         super(TrackFragmentRunBox,self).__init__(src, *args,**kwargs)
         tfhd = self.parent.tfhd
@@ -553,7 +553,7 @@ class TrackFragmentRunBox(FullBox):
             self.first_sample_flags = struct.unpack('>I', src.read(4))[0]
         else:
             self.first_sample_flags = 0
-        #print('Trun: count=%d offset=%d flags=%x'%(self.sample_count,self.data_offset,self.first_sample_flags)) 
+        #print('Trun: count=%d offset=%d flags=%x'%(self.sample_count,self.data_offset,self.first_sample_flags))
         self.samples = []
         offset = self.data_offset
         for i in range(self.sample_count):
@@ -597,7 +597,7 @@ MP4_BOXES['trun']=TrackFragmentRunBox
 
 #
 # The following class is based on code from http://www.bok.net/trac/bento4/browser/trunk/Source/Python/utils/mp4-dash.py
-#    
+#
 class IsoParser(object):
     def walk_atoms(self, filename, atom=None, parent=None):
         if isinstance(filename,(str,unicode)):
