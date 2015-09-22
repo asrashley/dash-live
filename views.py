@@ -37,7 +37,7 @@ class RequestHandler(webapp2.RequestHandler):
     CLIENT_COOKIE_NAME='dash'
     CSRF_COOKIE_NAME='csrf'
     ALLOWED_DOMAINS = re.compile(r'^http://(dashif\.org)|(shaka-player-demo\.appspot\.com)|(mediapm\.edgesuite\.net)')
-    
+
     def create_context(self, **kwargs):
         route = routes[self.request.route.name]
         context = {
@@ -67,7 +67,7 @@ class RequestHandler(webapp2.RequestHandler):
         context['remote_addr'] = self.request.remote_addr
         context['request_uri'] = self.request.uri
         return context
-    
+
     def generate_csrf(self,context):
         """generate a CSRF token as a hidden form field and a secure cookie"""
         csrf = security.generate_random_string(length=32)
@@ -88,7 +88,7 @@ class RequestHandler(webapp2.RequestHandler):
         sc = securecookie.SecureCookieSerializer(settings.cookie_secret)
         cookie = sc.serialize(self.CSRF_COOKIE_NAME, csrf)
         self.response.set_cookie(self.CSRF_COOKIE_NAME, cookie, httponly=True, max_age=7200)
-        
+
     def check_csrf(self):
         """check that the CSRF token from the cookie and the submitted form match"""
         sc = securecookie.SecureCookieSerializer(settings.cookie_secret)
@@ -170,7 +170,7 @@ class RequestHandler(webapp2.RequestHandler):
             availabilityStartTime = now
         request_uri=self.request.uri
         baseURL = urlparse.urljoin(self.request.host_url,'/dash/'+mode)+'/'
-        video = { 'representations' : [ r for r in media.representations.values() if r.contentType=="video" and r.encrypted==encrypted], 
+        video = { 'representations' : [ r for r in media.representations.values() if r.contentType=="video" and r.encrypted==encrypted],
                  'mediaURL':'$RepresentationID$/$Number$.m4v'
         }
         if mode=='vod':
@@ -218,12 +218,12 @@ class RequestHandler(webapp2.RequestHandler):
             }
         if not timeSource.has_key('url'):
             timeSource['url']= urlparse.urljoin(self.request.host_url, self.uri_for('time',format=timeSource['format']))
-	cgiParams = []
+        cgiParams = []
         if clockDrift:
             timeSource['url'] += '?drift=%d'%clockDrift
-	    cgiParams.append('drift=%d'%clockDrift)
+            cgiParams.append('drift=%d'%clockDrift)
         if timeShiftBufferDepth != 60:
-	    cgiParams.append('depth=%d'%timeShiftBufferDepth)
+            cgiParams.append('depth=%d'%timeShiftBufferDepth)
         if cgiParams:
             video['mediaURL'] += '?' + '&'.join(cgiParams)
             audio['mediaURL'] += '?' + '&'.join(cgiParams)
@@ -240,7 +240,7 @@ class RequestHandler(webapp2.RequestHandler):
 class MainPage(RequestHandler):
     """handler for main index page"""
     def get(self, **kwargs):
-        context = self.create_context(**kwargs) 
+        context = self.create_context(**kwargs)
         try:
             context['page'] = int(self.request.params.get('page','1'),10)
         except ValueError:
@@ -270,7 +270,7 @@ class MainPage(RequestHandler):
                                                                                 'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd'),
                                                                                 'abr':True, 'BaseURL':True, 'static':True, 'encrypted':False
                                                                                 }
-                                                                               ] 
+                                                                               ]
                             },
                            { 'title':'Vendor B live profile', 'buttons':[
                                                                                {
@@ -288,7 +288,7 @@ class MainPage(RequestHandler):
                                                                                 'url':self.uri_for('dash-mpd', manifest='manifest_b.mpd')+'?mup=-1',
                                                                                 'abr':True, 'BaseURL':True, 'static':False, 'mup':False, 'encrypted':False
                                                                                 }
-                                                                               ] 
+                                                                               ]
                             },
                            { 'title':'Vendor E live profile', 'buttons':[
                                                                                {
@@ -306,7 +306,7 @@ class MainPage(RequestHandler):
                                                                                 'url':self.uri_for('dash-mpd', manifest='manifest_e.mpd')+'?mup=-1',
                                                                                 'abr':True, 'BaseURL':True, 'static':False, 'mup':False, 'encrypted':False
                                                                                 }
-                                                                               ] 
+                                                                               ]
                             }
                            ]
         if context['page']==2:
@@ -328,7 +328,7 @@ class MainPage(RequestHandler):
                                                                                     'abr':True, 'BaseURL':True, 'static':False, 'mup':True, 'encrypted':False
                                                                                     }
                                                                                    ]
-                                }, 
+                                },
                                 { 'title':'CENC VOD profile',
                                  'details':['DASH on demand profile',
                                             'kid=00000000000000000000000000000000',
@@ -360,7 +360,7 @@ class MainPage(RequestHandler):
 class LiveManifest(RequestHandler):
     """handler for generating MPD files"""
     def get(self, manifest, **kwargs):
-        context = self.create_context(**kwargs) 
+        context = self.create_context(**kwargs)
         context["headers"]=[]
         context['routes'] = routes
         self.response.content_type='application/dash+xml'
@@ -474,7 +474,7 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
         #    self.response.write(data)
         #finally:
         #    src.close()
-        
+
 class VideoPlayer(RequestHandler):
     """Responds with an HTML page that contains a video element to play the specified MPD"""
     def get(self, **kwargs):
@@ -542,7 +542,7 @@ class UploadFormHandler(RequestHandler):
         self.generate_csrf(context)
         template = templates.get_template('upload.html')
         self.response.write(template.render(context))
-    
+
 class UploadHandler(RequestHandler):
     class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
         def post(self, *args, **kwargs):

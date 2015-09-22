@@ -6,66 +6,69 @@
 
 {% block content %}
 <div id="buttons" data-page="{{page}}">
-	<table class="btn-grid table">
-		<tbody>
-	{% if page>1 %}
-			<tr class="prev-next"><td colspan="4" id="btn0" class="prev"><a href="{{uri_for("home")}}?page=1"><span class="key">0:</span>Previous page</a></td></tr>
-	{% endif %}
-			{% for row in rows %}
-				<tr><th class="title"><p class="title">{{row.title}}</p>{% for sub in row.details %}<p class="subtitle">{{sub}}</p>{% endfor %}</th>
-					{% for btn in row.buttons %}
-				<td class="btn" id="btn{{btn.key}}"><a href="{{btn.url}}"><span class="key">{{btn.key}}:</span>
-					<p class="tooltip" title="Adaptive bitrate enabled?">ABR {{btn.abr|toHtmlString}}</p>
-					<p class="tooltip" title="BaseURL element present?">BaseURL {{btn.BaseURL|toHtmlString}}</p>
-					{% if not btn.static %}
-					<p class="tooltip" title="minimumUpdatePeriod attribute present?">Update {% if btn.mup %}&check;{% else %}&cross;{% endif %}</p>
-					{% endif %}
-					<p class="tooltip" title="Stream is encrypted?">Encrypted {{btn.encrypted|toHtmlString}}</p>
-					</a>
-				</td> 
-					{% endfor %}
-				</tr>
-			{% endfor %}
-	{% if page<2 %}
-			<tr class="prev-next"><td colspan="4" id="btn9" class="next"><a href="{{uri_for("home")}}?page=2"><span class="key">9:</span>Next page</a></td></tr>
-	{% endif %}
-		</tbody>
-	</table>
+  <table class="btn-grid table">
+    <tbody>
+  {% if page>1 %}
+      <tr class="prev-next"><td colspan="4" id="btn0" class="prev"><a href="{{uri_for("home")}}?page=1"><span class="key">0:</span>Previous page</a></td></tr>
+  {% endif %}
+      {% for row in rows %}
+        <tr><th class="title"><p class="title">{{row.title}}</p>{% for sub in row.details %}<p class="subtitle">{{sub}}</p>{% endfor %}</th>
+          {% for btn in row.buttons %}
+        <td class="btn" id="btn{{btn.key}}"><a href="{{btn.url}}"><span class="key">{{btn.key}}:</span>
+          <p class="tooltip" title="Adaptive bitrate enabled?">ABR {{btn.abr|toHtmlString}}</p>
+          <p class="tooltip" title="BaseURL element present?">BaseURL {{btn.BaseURL|toHtmlString}}</p>
+          {% if not btn.static %}
+          <p class="tooltip" title="minimumUpdatePeriod attribute present?">Update {% if btn.mup %}&check;{% else %}&cross;{% endif %}</p>
+          {% endif %}
+          <p class="tooltip" title="Stream is encrypted?">Encrypted {{btn.encrypted|toHtmlString}}</p>
+          </a>
+        </td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+  {% if page<2 %}
+      <tr class="prev-next"><td colspan="4" id="btn9" class="next"><a href="{{uri_for("home")}}?page=2"><span class="key">9:</span>Next page</a></td></tr>
+  {% endif %}
+    </tbody>
+  </table>
 </div>
-	<p class="info">These test streams use <a href="http://www.bigbuckbunny.org/">the Big Buck Bunny movie</a> from the 
-		<a href="http://www.blender.org/foundation/">Blender Foundation</a> as the media. The MPD files for live streams are dynamically
-		generated so that they appear to be live sources, using static media files.
-		</p>
-		<div class="representations">
-		<table class="representations table table-striped">
-			<caption>Video Representations</caption>
-			<thead><tr>{% for f in video_fields %}<th class="{{f}}">{{f}}</th>{% endfor %}</tr></thead>
-			<tbody>
-				{% for repr in video_representations %}
-				<tr>
-					{% for f in video_fields %}<td class="{{f}}">{{repr[f]|toHtmlString}}</td>{% endfor %}
-				</tr>
-				{% endfor %}
-			</tbody>
-		</table>
-		<table class="representations table table-striped">
-			<caption>Audio Representations</caption>
-			<thead><tr>{% for f in audio_fields %}<th class="{{f}}">{{f}}</th>{% endfor %}</tr></thead>
-			<tbody>
-				{% for repr in audio_representations %}
-				<tr>
-					{% for f in audio_fields %}<td class="{{f}}">{{repr[f]|toHtmlString}}</td>{% endfor %}
-				</tr>
-				{% endfor %}
-			</tbody>
-		</table>
-		</div>
-		<p class="info">There are a number of CGI parameters that can be used to modify
-		manifests, media segments and time sources.</p>
+  <p class="info">These test streams use <a href="http://www.bigbuckbunny.org/">the Big Buck Bunny movie</a> from the
+    <a href="http://www.blender.org/foundation/">Blender Foundation</a> as the media. The MPD files for live streams are dynamically
+    generated so that they appear to be live sources, using static media files.
+    </p>
+    <div class="representations">
+    <table class="representations table table-striped">
+      <caption>Video Representations</caption>
+      <thead><tr>{% for f in video_fields %}<th class="{{f}}">{{f}}</th>{% endfor %}</tr></thead>
+      <tbody>
+        {% for repr in video_representations %}
+        <tr>
+          {% for f in video_fields %}<td class="{{f}}">{{repr[f]|toHtmlString}}</td>{% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <table class="representations table table-striped">
+      <caption>Audio Representations</caption>
+      <thead><tr>{% for f in audio_fields %}<th class="{{f}}">{{f}}</th>{% endfor %}</tr></thead>
+      <tbody>
+        {% for repr in audio_representations %}
+        <tr>
+          {% for f in audio_fields %}<td class="{{f}}">{{repr[f]|toHtmlString}}</td>{% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    <p class="info">There are a number of CGI parameters that can be used to modify
+    manifests, media segments and time sources.</p>
         <table class="cgi-params table table-striped">
             <caption>CGI parameters</caption>
             <thead><tr><th>Name</th><th>Description</th><th>Manifest</th><th>Media</th><th>Time source</th></tr></thead>
             <tbody>
+            <tr><td>acodec=(mp4a|ec-3)</td><td>Select audio codec (AAC or E-AC3)</td>
+                <td>&check;</td><td>&cross;</td><td>&cross;</td>
+            </tr>
             <tr><td>base=(true|false)</td><td>Include a BaseURL element?</td>
                 <td>&check;</td><td>&cross;</td><td>&cross;</td>
             </tr>
@@ -94,11 +97,11 @@
                 <td>&check;</td><td>&cross;</td><td>&cross;</td>
             </tr>
             </tbody>
-        </table>		
+        </table>
 {% endblock %}
 
 {% block scripts %}
-	{{import_script("jquery-1.11.1")}}
-	{{import_script("jquery.tooltipster")}}
-	<script src="/js/main.js" type="text/javascript"></script>
+  {{import_script("jquery-1.11.1")}}
+  {{import_script("jquery.tooltipster")}}
+  <script src="/js/main.js" type="text/javascript"></script>
 {% endblock %}
