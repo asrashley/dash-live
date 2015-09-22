@@ -183,7 +183,7 @@ class RequestHandler(webapp2.RequestHandler):
         video['maxWidth'] = max([ a.width for a in video['representations']])
         video['maxHeight'] = max([ a.height for a in video['representations']])
         video['maxFrameRate'] = max([ a.frameRate for a in video['representations']])
-        audio = {'representations':[ r for r in media.representations.values() if r.contentType=="audio" and r.encrypted==encrypted],
+        audio = {'representations':[ r for r in media.representations.values() if r.contentType=="audio"],
                  'mediaURL':'$RepresentationID$/$Number$.m4a'
         }
         for rep in audio['representations']:
