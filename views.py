@@ -225,8 +225,8 @@ class RequestHandler(webapp2.RequestHandler):
         if timeShiftBufferDepth != 60:
             cgiParams.append('depth=%d'%timeShiftBufferDepth)
         if cgiParams:
-            video['mediaURL'] += '?' + '&'.join(cgiParams)
-            audio['mediaURL'] += '?' + '&'.join(cgiParams)
+            video['mediaURL'] += '?' + '&amp;'.join(cgiParams)
+            audio['mediaURL'] += '?' + '&amp;'.join(cgiParams)
         return locals()
 
     def add_allowed_origins(self):
