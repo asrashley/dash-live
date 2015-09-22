@@ -186,11 +186,16 @@ class RequestHandler(webapp2.RequestHandler):
         audio = {'representations':[ r for r in media.representations.values() if r.contentType=="audio"],
                  'mediaURL':'$RepresentationID$/$Number$.m4a'
         }
-        for rep in audio['representations']:
-            if rep.codecs.startswith(self.request.params.get('audio','mp4a')):
-                rep.role='main'
-            else:
-                rep.role='alternate'
+        if self.request.params.get('acodec'):
+            audio['representations'] = [r for r in audio['representations'] if r.codecs.startswith(self.request.params.get('acodec'))]
+        if len(audio['representations'])==1:
+            audio['representations'][0].role='main'
+        else:
+            for rep in audio['representations']:
+                if rep.codecs.startswith(self.request.params.get('main_audio','mp4a')):
+                    rep.role='main'
+                else:
+                    rep.role='alternate'
         compute_values(audio)
         maxSegmentDuration = max(video['maxSegmentDuration'],audio['maxSegmentDuration'])
         try:
