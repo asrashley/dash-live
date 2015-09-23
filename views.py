@@ -115,16 +115,8 @@ class RequestHandler(webapp2.RequestHandler):
         return True
 
     def calculate_dash_params(self, mode=None, mpd_url=None):
-        def scale_timedelta(delta, num, denom):
-            secs = num * delta.seconds
-            msecs = num* delta.microseconds
-            secs += msecs / 1000000.0
-            return secs / denom
-
         def compute_values(av):
             av['timescale'] = av['representations'][0].timescale
-            av['lastFragment'] = startNumber + int(scale_timedelta(elapsedTime, av['timescale'], av['representations'][0].segment_duration))
-            av['firstFragment'] = av['lastFragment'] - int(av['timescale']*timeShiftBufferDepth / av['representations'][0].segment_duration)
             av['presentationTimeOffset'] = int((startNumber-1) * av['representations'][0].segment_duration)
             av['minBitrate'] = min([ a.bitrate for a in av['representations']])
             av['maxBitrate'] = max([ a.bitrate for a in av['representations']])
@@ -397,12 +389,14 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
             except ValueError:
                 segment=-1
             avInfo = dash['video'] if filename[0]=='V' else dash['audio']
-            if segment<avInfo['firstFragment'] or segment>avInfo['lastFragment']:
-                #raise IOError("incorrect fragment request %s %d %d->%d\n"%(filename, segment, avInfo['firstFragment'],avInfo['lastFragment']))
-                self.response.write('Segment not found (valid range= %d->%d)'%(avInfo['firstFragment'],avInfo['lastFragment']))
+            lastFragment = dash['startNumber'] + int(utils.scale_timedelta(dash['elapsedTime'], repr.timescale, repr.segment_duration))
+            firstFragment = lastFragment - int(repr.timescale*dash['timeShiftBufferDepth'] / repr.segment_duration)
+            if segment<firstFragment or segment>lastFragment:
+                #raise IOError("Incorrect fragment request %s %d %d->%d\n"%(filename, segment, firstFragment,lastFragment))
+                self.response.write('Segment not found (valid range= %d->%d)'%(firstFragment,lastFragment))
                 self.response.set_status(404)
                 return
-            mod_segment = 1+((segment-1)%repr.num_segments)
+            mod_segment = 1+((segment-dash['startNumber'])%repr.num_segments)
         mf = models.MediaFile.query(models.MediaFile.name==repr.filename).get()
         #blob_info = blobstore.BlobInfo.get(mf.blob)
         if ext=='m4a':
@@ -415,45 +409,47 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
         blob_reader = blobstore.BlobReader(mf.blob, position=frag.seg.pos, buffer_size=frag.seg.size)
         data = blob_reader.read(frag.seg.size)
         #arr = bytearray(data)
-        if segment==0:
+        if dash['mode']=='live':
+            if segment==0:
+                try:
+                    # remove the mehd box as this stream is not supposed to have a fixed duration
+                    offset = frag.mehd.pos + 4 # keep the length field of the old mehd box
+                    #arr[offset:offset+4] = b'skip'
+                    data = ''.join([data[:offset], 'skip', data[offset+4:]]) # convert it to a skip box
+                except AttributeError:
+                    pass
+            else:
+                # Update the baseMediaDecodeTime to take account of the number of times the
+                # stream would have looped since availabilityStartTime
+                dec_time_sz = frag.tfdt.size-12
+                if dec_time_sz==8:
+                    fmt='>Q'
+                else:
+                    fmt='>I'
+                offset = frag.tfdt.pos + 12 #dec_time_pos - frag_pos
+                base_media_decode_time = struct.unpack(fmt, data[offset:offset+dec_time_sz])[0]
+                #num_loops = (segment-dash['startNumber']) // repr.num_segments
+                #delta = repr.media_duration * num_loops
+                #raise IOError('%s segment=%d num=%d mod=%d loops=%d delta=%s dec_tc=%s %s'%(filename,segment,repr.num_segments,mod_segment,num_loops,str(delta),str(base_media_decode_time),fmt))
+                delta = (1 - segment - mod_segment - dash['startNumber']) * repr.segment_duration
+                base_media_decode_time += delta
+                #base_media_decode_time = (segment-dash['startNumber']) * repr.segment_duration
+                if base_media_decode_time > (1<<(8*dec_time_sz)):
+                    raise IOError("base_media_time overflow: %d does not fit in %d bytes"%(base_media_decode_time,dec_time_sz))
+                base_media_decode_time = struct.pack(fmt,base_media_decode_time)
+                data = ''.join([data[:offset], base_media_decode_time, data[offset+dec_time_sz:]])
+                #arr[offset:offset+dec_time_sz] = base_media_decode_time
+                # Update the sequenceNumber field in the MovieFragmentHeader box
+                offset = frag.mfhd.pos + 12
+                #arr[offset:offset+4] = struct.pack('>I',segment)
+                data = ''.join([data[:offset], struct.pack('>I',segment), data[offset+4:]])
             try:
-                # remove the mehd box as this stream is not supposed to have a fixed duration
-                offset = frag.mehd.pos + 4 # keep the length field of the old mehd box
-                #arr[offset:offset+4] = b'skip'
+                # remove any sidx box as it has a baseMediaDecodeTime and it's an optional index
+                offset = frag.sidx.pos + 4 # keep the length field of the old sidx box
                 data = ''.join([data[:offset], 'skip', data[offset+4:]]) # convert it to a skip box
+                #arr[offset:offset+4] = b'skip'
             except AttributeError:
                 pass
-        else:
-            # Update the baseMediaDecodeTime to take account of the number of times the
-            # stream would have looped since availabilityStartTime
-            dec_time_sz = frag.tfdt.size-12
-            if dec_time_sz==8:
-                fmt='>Q'
-            else:
-                fmt='>I'
-            offset = frag.tfdt.pos + 12 #dec_time_pos - frag_pos
-            base_media_decode_time = struct.unpack(fmt, data[offset:offset+dec_time_sz])[0]
-            #segment * repr.segment_duration
-            #num_loops = (segment-1) // repr.num_segments
-            #delta = dash['media_duration'] * num_loops
-            delta = (segment - mod_segment) * repr.segment_duration
-            base_media_decode_time += long(delta)
-            if base_media_decode_time > (1<<(8*dec_time_sz)):
-                raise IOError("base_media_time overflow: %d does not fit in %d bytes"%(base_media_decode_time,dec_time_sz))
-            base_media_decode_time = struct.pack(fmt,base_media_decode_time)
-            data = ''.join([data[:offset], base_media_decode_time, data[offset+dec_time_sz:]])
-            #arr[offset:offset+dec_time_sz] = base_media_decode_time
-            # Update the sequenceNumber field in the MovieFragmentHeader box
-            offset = frag.mfhd.pos + 12
-            #arr[offset:offset+4] = struct.pack('>I',segment)
-            data = ''.join([data[:offset], struct.pack('>I',segment), data[offset+4:]])
-        try:
-            # remove any sidx box as it has a baseMediaDecodeTime and it's an optional index
-            offset = frag.sidx.pos + 4 # keep the length field of the old sidx box
-            data = ''.join([data[:offset], 'skip', data[offset+4:]]) # convert it to a skip box
-            #arr[offset:offset+4] = b'skip'
-        except AttributeError:
-            pass
         self.add_allowed_origins()
         self.response.write(data)
         #self.send_blob(blob_info, start=repr.segments[segment][0], end=(repr.segments[segment][0]+repr.segments[segment][1]))

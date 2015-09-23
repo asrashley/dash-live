@@ -14,13 +14,13 @@ class UTC(datetime.tzinfo):
 
     def dst(self, dt):
         return self.ZERO
-    
+
 def dateTimeToUnixEpoch(dt):
     """ Convert a dateTime to number of seconds since the Unix epoch
     """
     epoch = datetime.datetime(year=1970, month=1, day=1, tzinfo=UTC())
     return (dt - epoch).total_seconds()
-    
+
 def toIsoDateTime(value):
     """ Convert a datetime to an ISO8601 formatted dateTime string.
     @param {datetime} value the dateTime to convert
@@ -36,7 +36,7 @@ def toIsoDateTime(value):
 
 def toIsoDuration(secs):
     """ Convert a time (in seconds) to an ISO8601 formatted duration string.
-     @param {number} secs the duration to convert, in seconds 
+     @param {number} secs the duration to convert, in seconds
      @returns {string} an ISO8601 formatted version of the duration
      """
     if isinstance(secs,str):
@@ -49,7 +49,7 @@ def toIsoDuration(secs):
     if hrs:
         rv.append('%dH'%hrs)
     if hrs or mins:
-        rv.append('%dM'%mins)        
+        rv.append('%dM'%mins)
     if secs:
         rv.append('%fS'%secs)
     return ''.join(rv)
@@ -88,12 +88,19 @@ def toHtmlString(item, className=None):
             rv = str(rv)
     return rv
 
+"""Scale the given timedelta, avoiding overflows"""
+def scale_timedelta(delta, num, denom):
+    secs = num * delta.seconds
+    msecs = num* delta.microseconds
+    secs += msecs / 1000000.0
+    return secs / denom
+
 #
 # The following code is from djangoappengine/utils.py
 #
 try:
     from google.appengine.api import apiproxy_stub_map
-    
+
     have_appserver = bool(apiproxy_stub_map.apiproxy.GetStub('datastore_v3'))
     on_production_server = have_appserver and not os.environ.get('SERVER_SOFTWARE', '').lower().startswith('devel')
 except ImportError:
