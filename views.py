@@ -299,8 +299,8 @@ class MainPage(RequestHandler):
                                                                                 },
                                                                                {
                                                                                 'key':8,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_e.mpd')+'?mup=-1',
-                                                                                'abr':True, 'BaseURL':True, 'static':False, 'mup':False, 'encrypted':False
+                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_e.mpd'),
+                                                                                'abr':True, 'BaseURL':True, 'static':False, 'mup':True, 'encrypted':False
                                                                                 }
                                                                                ]
                             }
