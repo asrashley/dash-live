@@ -273,21 +273,16 @@ class MainPage(RequestHandler):
                                                                                 }
                                                                                ]
                             },
-                           { 'title':'Vendor B live profile', 'buttons':[
+                           { 'title':'Vendor B live profile, static', 'buttons':[
                                                                                {
                                                                                 'key':3,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_b.mpd')+'?repr=V3&mup=-1',
-                                                                                'abr':False, 'BaseURL':True, 'static':False, 'mup':False, 'encrypted':False
+                                                                                'url':self.uri_for('dash-mpd', manifest='vod_manifest_b.mpd')+'?repr=V3',
+                                                                                'abr':False, 'BaseURL':True, 'static':True, 'encrypted':False
                                                                                 },
                                                                                {
                                                                                 'key':4,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_b.mpd')+'?repr=V3',
-                                                                                'abr':False, 'BaseURL':True, 'static':False, 'mup':True, 'encrypted':False
-                                                                                },
-                                                                               {
-                                                                                'key':5,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_b.mpd')+'?mup=-1',
-                                                                                'abr':True, 'BaseURL':True, 'static':False, 'mup':False, 'encrypted':False
+                                                                                'url':self.uri_for('dash-mpd', manifest='vod_manifest_b.mpd'),
+                                                                                'abr':True, 'BaseURL':True, 'static':True, 'encrypted':False
                                                                                 }
                                                                                ]
                             },
