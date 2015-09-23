@@ -37,6 +37,7 @@ class RequestHandler(webapp2.RequestHandler):
     CLIENT_COOKIE_NAME='dash'
     CSRF_COOKIE_NAME='csrf'
     ALLOWED_DOMAINS = re.compile(r'^http://(dashif\.org)|(shaka-player-demo\.appspot\.com)|(mediapm\.edgesuite\.net)')
+    DEFAULT_TIMESHIFT_BUFFER_DEPTH=60
 
     def create_context(self, **kwargs):
         route = routes[self.request.route.name]
@@ -146,9 +147,9 @@ class RequestHandler(webapp2.RequestHandler):
                 mode='live'
         if mode=='live':
             try:
-                timeShiftBufferDepth = int(self.request.params.get('depth','60'),10)
+                timeShiftBufferDepth = int(self.request.params.get('depth',str(self.DEFAULT_TIMESHIFT_BUFFER_DEPTH)),10)
             except ValueError:
-                timeShiftBufferDepth = 60 # in seconds
+                timeShiftBufferDepth = self.DEFAULT_TIMESHIFT_BUFFER_DEPTH # in seconds
         #media_duration = 9*60 + 32.52 #"PT0H9M32.52S"
         startNumber = 1
         now = datetime.datetime.now(tz=utils.UTC())
@@ -222,7 +223,7 @@ class RequestHandler(webapp2.RequestHandler):
         if clockDrift:
             timeSource['url'] += '?drift=%d'%clockDrift
             cgiParams.append('drift=%d'%clockDrift)
-        if timeShiftBufferDepth != 60:
+        if mode=='live' and timeShiftBufferDepth != self.DEFAULT_TIMESHIFT_BUFFER_DEPTH:
             cgiParams.append('depth=%d'%timeShiftBufferDepth)
         if cgiParams:
             video['mediaURL'] += '?' + '&amp;'.join(cgiParams)
