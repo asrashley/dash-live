@@ -431,12 +431,17 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
                 #num_loops = (segment-dash['startNumber']) // repr.num_segments
                 #delta = repr.media_duration * num_loops
                 #raise IOError('%s segment=%d num=%d mod=%d loops=%d delta=%s dec_tc=%s %s'%(filename,segment,repr.num_segments,mod_segment,num_loops,str(delta),str(base_media_decode_time),fmt))
-                delta = (1 - segment - mod_segment - dash['startNumber']) * repr.segment_duration
+                delta = (1L + long(segment) - long(mod_segment) - long(dash['startNumber'])) * long(repr.segment_duration)
+                if delta < 0L:
+                    raise IOError("Failure in calculating delta %s %d %d %d"%(str(delta),segment,mod_segment,dash['startNumber']))
                 base_media_decode_time += delta
                 #base_media_decode_time = (segment-dash['startNumber']) * repr.segment_duration
                 if base_media_decode_time > (1<<(8*dec_time_sz)):
                     raise IOError("base_media_time overflow: %d does not fit in %d bytes"%(base_media_decode_time,dec_time_sz))
-                base_media_decode_time = struct.pack(fmt,base_media_decode_time)
+                try:
+                    base_media_decode_time = struct.pack(fmt,base_media_decode_time)
+                except:
+                    raise IOError("struck.pack failure %s"%str(base_media_decode_time))
                 data = ''.join([data[:offset], base_media_decode_time, data[offset+dec_time_sz:]])
                 #arr[offset:offset+dec_time_sz] = base_media_decode_time
                 # Update the sequenceNumber field in the MovieFragmentHeader box
