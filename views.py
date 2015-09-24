@@ -155,7 +155,10 @@ class RequestHandler(webapp2.RequestHandler):
         publishTime = now.replace(microsecond=0)
         suggestedPresentationDelay = 30
         if mode=='live':
-            availabilityStartTime = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            if now.hour>=5:
+                availabilityStartTime = now.replace(hour=5, minute=0, second=0, microsecond=0)
+            else:
+                availabilityStartTime = now.replace(hour=0, minute=0, second=0, microsecond=0)
             elapsedTime = now - availabilityStartTime
             if elapsedTime.seconds<timeShiftBufferDepth:
                 timeShiftBufferDepth = elapsedTime.seconds
