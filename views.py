@@ -173,7 +173,6 @@ class RequestHandler(webapp2.RequestHandler):
             elapsedTime = datetime.timedelta(seconds = video['representations'][0].media_duration / video['representations'][0].timescale)
             timeShiftBufferDepth = elapsedTime.seconds
         compute_values(video)
-        media_duration = video['representations'][0].media_duration / video['representations'][0].timescale
         video['minWidth'] = min([ a.width for a in video['representations']])
         video['minHeight'] = min([ a.height for a in video['representations']])
         video['maxWidth'] = max([ a.width for a in video['representations']])
@@ -193,6 +192,14 @@ class RequestHandler(webapp2.RequestHandler):
                 else:
                     rep.role='alternate'
         compute_values(audio)
+        shortest_representation=None
+        media_duration = 0
+        for rep in video['representations']+audio['representations']:
+            dur = rep.media_duration / rep.timescale
+            if shortest_representation is None or dur<media_duration:
+                shortest_representation = rep
+                media_duration = dur
+        del dur
         maxSegmentDuration = max(video['maxSegmentDuration'],audio['maxSegmentDuration'])
         try:
             timeSource = { 'format':self.request.params['time'] }
@@ -392,14 +399,36 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
             except ValueError:
                 segment=-1
             avInfo = dash['video'] if filename[0]=='V' else dash['audio']
-            lastFragment = dash['startNumber'] + int(utils.scale_timedelta(dash['elapsedTime'], repr.timescale, repr.segment_duration))
-            firstFragment = lastFragment - int(repr.timescale*dash['timeShiftBufferDepth'] / repr.segment_duration)
+            if dash['mode']=='live':
+                lastFragment = dash['startNumber'] + int(utils.scale_timedelta(dash['elapsedTime'], repr.timescale, repr.segment_duration))
+                firstFragment = lastFragment - int(repr.timescale*dash['timeShiftBufferDepth'] / repr.segment_duration)
+            else:
+                firstFragment = dash['startNumber']
+                lastFragment = firstFragment + repr.num_segments
             if segment<firstFragment or segment>lastFragment:
                 #raise IOError("Incorrect fragment request %s %d %d->%d\n"%(filename, segment, firstFragment,lastFragment))
                 self.response.write('Segment not found (valid range= %d->%d)'%(firstFragment,lastFragment))
                 self.response.set_status(404)
                 return
-            mod_segment = 1+((segment-dash['startNumber'])%repr.num_segments)
+            if dash['mode']=='live':
+                # nominal_duration is the duration (in seconds) of the shorted representation
+                # this is used to decide how many times the stream has looped since
+                # availabilityStartTime
+                nominal_duration = dash['shortest_representation'].segment_duration * dash['shortest_representation'].num_segments / float(dash['shortest_representation'].timescale)
+                # elapsed_time is the time (in seconds) since availabilityStartTime
+                # for the request fragment
+                elapsed_time = (segment - dash['startNumber']) * repr.segment_duration / float(repr.timescale)
+                num_loops = long(elapsed_time / nominal_duration)
+                # origin time is the time (in seconds) that maps to segment 1 for
+                # all adaptation sets. It represents the time of day when the
+                # video started from the beginning
+                origin_time = num_loops * nominal_duration
+                assert elapsed_time >= origin_time
+                # the difference between elapsed_time and origin_time now needs
+                # to be mapped to the segment index of this representation
+                mod_segment = 1 + long((elapsed_time - origin_time) * repr.timescale / repr.segment_duration)
+            else:
+                mod_segment = segment
         mf = models.MediaFile.query(models.MediaFile.name==repr.filename).get()
         #blob_info = blobstore.BlobInfo.get(mf.blob)
         if ext=='m4a':
@@ -408,6 +437,7 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
             self.response.content_type='video/mp4'
         else:
             self.response.content_type='application/mp4'
+        assert mod_segment>=0 and mod_segment<=repr.num_segments
         frag = repr.segments[mod_segment]
         blob_reader = blobstore.BlobReader(mf.blob, position=frag.seg.pos, buffer_size=frag.seg.size)
         data = blob_reader.read(frag.seg.size)
@@ -431,20 +461,16 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
                     fmt='>I'
                 offset = frag.tfdt.pos + 12 #dec_time_pos - frag_pos
                 base_media_decode_time = struct.unpack(fmt, data[offset:offset+dec_time_sz])[0]
-                #num_loops = (segment-dash['startNumber']) // repr.num_segments
-                #delta = repr.media_duration * num_loops
-                #raise IOError('%s segment=%d num=%d mod=%d loops=%d delta=%s dec_tc=%s %s'%(filename,segment,repr.num_segments,mod_segment,num_loops,str(delta),str(base_media_decode_time),fmt))
-                delta = (1L + long(segment) - long(mod_segment) - long(dash['startNumber'])) * long(repr.segment_duration)
+                delta = long(origin_time*repr.timescale)
                 if delta < 0L:
                     raise IOError("Failure in calculating delta %s %d %d %d"%(str(delta),segment,mod_segment,dash['startNumber']))
                 base_media_decode_time += delta
-                #base_media_decode_time = (segment-dash['startNumber']) * repr.segment_duration
                 if base_media_decode_time > (1<<(8*dec_time_sz)):
-                    raise IOError("base_media_time overflow: %d does not fit in %d bytes"%(base_media_decode_time,dec_time_sz))
+                    raise IOError("base_media_time overflow: %s does not fit in %d bytes"%(str(base_media_decode_time),dec_time_sz))
                 try:
                     base_media_decode_time = struct.pack(fmt,base_media_decode_time)
                 except:
-                    raise IOError("struck.pack failure %s"%str(base_media_decode_time))
+                    raise IOError("struct.pack failure %s"%str(base_media_decode_time))
                 data = ''.join([data[:offset], base_media_decode_time, data[offset+dec_time_sz:]])
                 #arr[offset:offset+dec_time_sz] = base_media_decode_time
                 # Update the sequenceNumber field in the MovieFragmentHeader box
