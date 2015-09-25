@@ -486,20 +486,6 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
                 pass
         self.add_allowed_origins()
         self.response.write(data)
-        #self.send_blob(blob_info, start=repr.segments[segment][0], end=(repr.segments[segment][0]+repr.segments[segment][1]))
-        #src = open(repr.filename,'rb')
-        #try:
-        #    src.seek(repr.segments[segment][0])
-        #    data = src.read(repr.segments[segment][1])
-        #    if ext=='m4a':
-        #        self.response.content_type='audio/mp4'
-        #    elif ext=='m4v':
-        #        self.response.content_type='video/mp4'
-        #    else:
-        #        self.response.content_type='application/mp4'
-        #    self.response.write(data)
-        #finally:
-        #    src.close()
 
 class VideoPlayer(RequestHandler):
     """Responds with an HTML page that contains a video element to play the specified MPD"""
