@@ -115,6 +115,31 @@ class RequestHandler(webapp2.RequestHandler):
         return True
 
     def calculate_dash_params(self, mode=None, mpd_url=None):
+        def generateSegmentTimeline(repr):
+            rv = ['<SegmentTemplate timescale="%d" '%repr.timescale,
+                  'initialization="$RepresentationID$/init.mp4"',
+                  ' media="$RepresentationID$/$Number$.mp4" ' ]
+            timeline_start = elapsedTime - datetime.timedelta(seconds=timeShiftBufferDepth)
+            first=True
+            first_seg = self.calculate_segment_from_timecode(utils.scale_timedelta(timeline_start,1,1), repr, shortest_representation)
+            dur=0
+            while dur<=(timeShiftBufferDepth*repr.timescale):
+                seg = repr.segments[first_seg['segment_num']]
+                if first:
+                    rv.append('startNumber="%d">'%(startNumber+long(first_seg['seg_start_time']/repr.segment_duration)))
+                    rv.append('<SegmentTimeline>')
+                    t = 't="%d" '%first_seg['seg_start_time']
+                    first=False
+                else:
+                    t=''
+                rv.append('<S %sd="%d"/>'%(t,seg.seg.duration))
+                dur += seg.seg.duration
+                first_seg['segment_num'] += 1
+                if first_seg['segment_num']>repr.num_segments:
+                    first_seg['segment_num']=1
+            rv.append('</SegmentTimeline></SegmentTemplate>')
+            return '\n'.join(rv)
+
         def compute_values(av):
             av['timescale'] = av['representations'][0].timescale
             av['presentationTimeOffset'] = int((startNumber-1) * av['representations'][0].segment_duration)
@@ -240,6 +265,33 @@ class RequestHandler(webapp2.RequestHandler):
         except KeyError:
             pass
 
+    def calculate_segment_from_timecode(self, timecode, repr, shortest_representation):
+        """find the correct segment for the given timecode.
+
+        :param timecode: the time (in seconds) since availabilityStartTime
+            for the requested fragment.
+        :param repr: the Representation to use
+        :param shortest_representation: the Representation with the shortest total duration
+        """
+        # nominal_duration is the duration (in seconds) of the shortest representation.
+        # This is used to decide how many times the stream has looped since
+        # availabilityStartTime.
+        nominal_duration = shortest_representation.segment_duration * shortest_representation.num_segments / float(shortest_representation.timescale)
+        num_loops = long(timecode / nominal_duration)
+        # origin time is the time (in seconds) that maps to segment 1 for
+        # all adaptation sets. It represents the time of day when the
+        # content started from the beginning, relative to availabilityStartTime
+        origin_time = num_loops * nominal_duration
+        assert timecode >= origin_time
+        # the difference between timecode and origin_time now needs
+        # to be mapped to the segment index of this representation
+        segment_num = 1 + long((timecode - origin_time) * repr.timescale / repr.segment_duration)
+        assert segment_num>0 and segment_num<=repr.num_segments
+        # seg_start_time is the time (in repr timescale units) when this
+        # segment started, relative to availabilityStartTime
+        seg_start_time = origin_time * repr.timescale + (segment_num-1) * repr.segment_duration
+        return locals()
+
 class MainPage(RequestHandler):
     """handler for main index page"""
     def get(self, **kwargs):
@@ -248,6 +300,7 @@ class MainPage(RequestHandler):
             context['page'] = int(self.request.params.get('page','1'),10)
         except ValueError:
             context['page'] = 1
+        context['num_pages']=3
         context["headers"]=[]
         context['routes'] = routes
         context['video_fields'] = [ 'id', 'codecs', 'bitrate', 'height', 'width', 'encrypted' ]
@@ -257,25 +310,85 @@ class MainPage(RequestHandler):
         context['audio_representations'] = [ r for r in media.representations.values() if r.contentType=="audio"]
         #[ media.representations['A1'] ]
         context['rows'] = [
-                           { 'title':'Hand-made on demand profile', 'buttons':[
+                           { 'title':'Hand-made on demand profile',
+                            'details':['AAC audio'],
+                            'buttons':[
                                                                                {
                                                                                 'key':0,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd')+'?repr=V3',
+                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd')+'?repr=V3&acodec=mp4a',
                                                                                 'abr':False, 'BaseURL':True, 'static':True, 'encrypted':False
                                                                                 },
                                                                                {
                                                                                 'key':1,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd')+'?repr=V3&base=0',
+                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd')+'?repr=V3&base=0&acodec=mp4a',
                                                                                 'abr':False, 'BaseURL':False, 'static':True, 'encrypted':False
                                                                                 },
                                                                                {
                                                                                 'key':2,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd'),
+                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd')+'?acodec=mp4a',
                                                                                 'abr':True, 'BaseURL':True, 'static':True, 'encrypted':False
                                                                                 }
                                                                                ]
                             },
-                           { 'title':'Vendor B live profile, static', 'buttons':[
+                           { 'title':'Hand-made on demand profile',
+                            'details':['E-AC3 audio'],
+                            'buttons':[
+                                                                               {
+                                                                                'key':3,
+                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd')+'?repr=V3&acodec=ec-3',
+                                                                                'abr':False, 'BaseURL':True, 'static':True, 'encrypted':False
+                                                                                },
+                                                                               {
+                                                                                'key':4,
+                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd')+'?repr=V3&base=0&acodec=ec-3',
+                                                                                'abr':False, 'BaseURL':False, 'static':True, 'encrypted':False
+                                                                                },
+                                                                               {
+                                                                                'key':5,
+                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd')+'?acodec=ec-3',
+                                                                                'abr':True, 'BaseURL':True, 'static':True, 'encrypted':False
+                                                                                }
+                                                                               ]
+                            },
+                           { 'title':'Hand-made on demand profile',
+                            'details':['AAC and E-AC3 audio'],
+                            'buttons':[
+                                                                               {
+                                                                                'key':6,
+                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd')+'?repr=V3',
+                                                                                'abr':False, 'BaseURL':True, 'static':True, 'encrypted':False
+                                                                                },
+                                                                               {
+                                                                                'key':7,
+                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd')+'?repr=V3&base=0',
+                                                                                'abr':False, 'BaseURL':False, 'static':True, 'encrypted':False
+                                                                                },
+                                                                               {
+                                                                                'key':8,
+                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd'),
+                                                                                'abr':True, 'BaseURL':True, 'static':True, 'encrypted':False
+                                                                                }
+                                                                               ]
+                            }
+                           ]
+        if context['page']==2:
+            context['rows'] = [
+                           { 'title':'Vendor A live profile',
+                            'details':['AAC audio'], 'buttons':[
+                                                                               {
+                                                                                'key':1,
+                                                                                'url':self.uri_for('dash-mpd', manifest='vod_manifest_a.mpd')+'?repr=V3',
+                                                                                'abr':False, 'BaseURL':True, 'static':False, 'encrypted':False, 'mup':True
+                                                                                },
+                                                                               {
+                                                                                'key':2,
+                                                                                'url':self.uri_for('dash-mpd', manifest='vod_manifest_a.mpd'),
+                                                                                'abr':True, 'BaseURL':True, 'static':False, 'encrypted':False, 'mup':True
+                                                                                }
+                                                                               ]
+                            },
+                           { 'title':'Vendor B live profile',
+                            'details':['type="static"','AAC audio'], 'buttons':[
                                                                                {
                                                                                 'key':3,
                                                                                 'url':self.uri_for('dash-mpd', manifest='vod_manifest_b.mpd')+'?repr=V3',
@@ -411,12 +524,12 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
                 self.response.set_status(404)
                 return
             if dash['mode']=='live':
-                # nominal_duration is the duration (in seconds) of the shorted representation
-                # this is used to decide how many times the stream has looped since
-                # availabilityStartTime
+                # nominal_duration is the duration (in seconds) of the shortest representation.
+                # This is used to decide how many times the stream has looped since
+                # availabilityStartTime.
                 nominal_duration = dash['shortest_representation'].segment_duration * dash['shortest_representation'].num_segments / float(dash['shortest_representation'].timescale)
                 # elapsed_time is the time (in seconds) since availabilityStartTime
-                # for the request fragment
+                # for the requested fragment
                 elapsed_time = (segment - dash['startNumber']) * repr.segment_duration / float(repr.timescale)
                 num_loops = long(elapsed_time / nominal_duration)
                 # origin time is the time (in seconds) that maps to segment 1 for
@@ -427,6 +540,9 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
                 # the difference between elapsed_time and origin_time now needs
                 # to be mapped to the segment index of this representation
                 mod_segment = 1 + long((elapsed_time - origin_time) * repr.timescale / repr.segment_duration)
+                segpos = self.calculate_segment_from_timecode(elapsed_time, repr, dash['shortest_representation'])
+                mod_segment = segpos['segment_num']
+                origin_time = segpos['origin_time']
             else:
                 mod_segment = segment
         mf = models.MediaFile.query(models.MediaFile.name==repr.filename).get()
