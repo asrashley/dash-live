@@ -88,8 +88,8 @@ def toHtmlString(item, className=None):
             rv = str(rv)
     return rv
 
-"""Scale the given timedelta, avoiding overflows"""
 def scale_timedelta(delta, num, denom):
+    """Scale the given timedelta, avoiding overflows"""
     secs = num * delta.seconds
     msecs = num* delta.microseconds
     secs += msecs / 1000000.0
