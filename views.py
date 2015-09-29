@@ -403,38 +403,60 @@ class MainPage(RequestHandler):
                             },
                            { 'title':'Vendor E live profile', 'buttons':[
                                                                                {
-                                                                                'key':6,
+                                                                                'key':5,
                                                                                 'url':self.uri_for('dash-mpd', manifest='manifest_e.mpd')+'?repr=V3&mup=-1',
                                                                                 'abr':False, 'BaseURL':True, 'static':False, 'mup':False, 'encrypted':False
                                                                                 },
                                                                                {
-                                                                                'key':7,
+                                                                                'key':6,
                                                                                 'url':self.uri_for('dash-mpd', manifest='manifest_e.mpd')+'?repr=V3',
                                                                                 'abr':False, 'BaseURL':True, 'static':False, 'mup':True, 'encrypted':False
                                                                                 },
                                                                                {
-                                                                                'key':8,
+                                                                                'key':7,
                                                                                 'url':self.uri_for('dash-mpd', manifest='manifest_e.mpd'),
                                                                                 'abr':True, 'BaseURL':True, 'static':False, 'mup':True, 'encrypted':False
                                                                                 }
                                                                                ]
                             }
-                           ]
-        if context['page']==2:
+                               ]
+        if context['page']==3:
             context['rows'] = [
-                               { 'title':'Vendor I live profile', 'buttons':[
+                               { 'title':'Vendor H live profile',
+                                'details':['utc:ntp UTCTiming element'],
+                                 'buttons':[
                                                                                    {
                                                                                     'key':1,
-                                                                                    'url':self.uri_for('dash-mpd', manifest='manifest_i.mpd')+'?repr=V3&mup=-1',
+                                                                                    'url':self.uri_for('dash-mpd', manifest='manifest_h.mpd')+'?repr=V3&mup=-1',
                                                                                     'abr':False, 'BaseURL':True, 'static':False, 'mup':False, 'encrypted':False
                                                                                     },
                                                                                    {
                                                                                     'key':2,
-                                                                                    'url':self.uri_for('dash-mpd', manifest='manifest_i.mpd')+'?repr=V3',
+                                                                                    'url':self.uri_for('dash-mpd', manifest='manifest_h.mpd')+'?repr=V3',
                                                                                     'abr':False, 'BaseURL':True, 'static':False, 'mup':True, 'encrypted':False
                                                                                     },
                                                                                    {
                                                                                     'key':3,
+                                                                                    'url':self.uri_for('dash-mpd', manifest='manifest_h.mpd'),
+                                                                                    'abr':True, 'BaseURL':True, 'static':False, 'mup':True, 'encrypted':False
+                                                                                    }
+                                                                                   ]
+                                },
+                               { 'title':'Vendor I live profile',
+                                'details':['utc:direct UTCTiming element'],
+                                 'buttons':[
+                                                                                   {
+                                                                                    'key':4,
+                                                                                    'url':self.uri_for('dash-mpd', manifest='manifest_i.mpd')+'?repr=V3&mup=-1',
+                                                                                    'abr':False, 'BaseURL':True, 'static':False, 'mup':False, 'encrypted':False
+                                                                                    },
+                                                                                   {
+                                                                                    'key':5,
+                                                                                    'url':self.uri_for('dash-mpd', manifest='manifest_i.mpd')+'?repr=V3',
+                                                                                    'abr':False, 'BaseURL':True, 'static':False, 'mup':True, 'encrypted':False
+                                                                                    },
+                                                                                   {
+                                                                                    'key':6,
                                                                                     'url':self.uri_for('dash-mpd', manifest='manifest_i.mpd'),
                                                                                     'abr':True, 'BaseURL':True, 'static':False, 'mup':True, 'encrypted':False
                                                                                     }
@@ -446,7 +468,7 @@ class MainPage(RequestHandler):
                                             'key=0123456789ABCDEF0123456789ABCDEF'],
                                  'buttons':[
                                             {
-                                             'key':4,
+                                             'key':7,
                                              'url':self.uri_for('dash-mpd', manifest='enc.mpd'),
                                              'abr':False, 'BaseURL':True, 'static':True, 'mup':False, 'encrypted':True
                                              }
@@ -458,7 +480,7 @@ class MainPage(RequestHandler):
                                             'key=0123456789ABCDEF0123456789ABCDEF'],
                                  'buttons':[
                                             {
-                                             'key':5,
+                                             'key':8,
                                              'url':self.uri_for('dash-mpd', manifest='enc.mpd')+'?mode=live',
                                              'abr':False, 'BaseURL':True, 'static':False, 'mup':True, 'encrypted':True
                                              }
