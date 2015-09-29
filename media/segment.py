@@ -16,7 +16,10 @@ class Segment(object):
                 if hasattr(v, 'duration'):
                     self.boxes[k].duration = v.duration
             except AttributeError:
-                self.boxes[k]=Box(v[0],v[1])
+                try:
+                    self.boxes[k]=Box(v[0],v[1],v[2])
+                except IndexError:
+                    self.boxes[k]=Box(v[0],v[1])
     def __getattr__(self, key):
         if key=='boxes':
             return object.__getattribute__(self, 'boxes')
