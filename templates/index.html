@@ -9,10 +9,10 @@
   <table class="btn-grid table">
     <tbody>
   {% if page>1 %}
-      <tr class="prev-next"><td colspan="4" id="btn0" class="prev"><a href="{{uri_for("home")}}?page=1"><span class="key">0:</span>Previous page</a></td></tr>
+      <tr class="prev-next"><td colspan="4" id="btn0" class="prev"><a href="{{uri_for("home")}}?page={{page-1}}"><span class="key">0:</span>Previous page</a></td></tr>
   {% endif %}
       {% for row in rows %}
-        <tr><th class="title"><p class="title">{{row.title}}</p>{% for sub in row.details %}<p class="subtitle">{{sub}}</p>{% endfor %}</th>
+        <tr><th class="title"><p class="title">{{row.title}}</p>{% for sub in row.details %}<p class="subtitle">{{sub|escape}}</p>{% endfor %}</th>
           {% for btn in row.buttons %}
         <td class="btn" id="btn{{btn.key}}"><a href="{{btn.url}}"><span class="key">{{btn.key}}:</span>
           <p class="tooltip" title="Adaptive bitrate enabled?">ABR {{btn.abr|toHtmlString}}</p>
@@ -26,8 +26,8 @@
           {% endfor %}
         </tr>
       {% endfor %}
-  {% if page<2 %}
-      <tr class="prev-next"><td colspan="4" id="btn9" class="next"><a href="{{uri_for("home")}}?page=2"><span class="key">9:</span>Next page</a></td></tr>
+  {% if page<num_pages %}
+      <tr class="prev-next"><td colspan="4" id="btn9" class="next"><a href="{{uri_for("home")}}?page={{page+1}}"><span class="key">9:</span>Next page</a></td></tr>
   {% endif %}
     </tbody>
   </table>
