@@ -27,29 +27,40 @@
       maxHeight="{{video.maxHeight}}"
       segmentAlignment="true"
       startWithSAP="1">
-      <SegmentTemplate
-        timescale="{{video.timescale}}"
-        initialization="$RepresentationID$/init.mp4"
-        media="$RepresentationID$/$Number$.mp4"
-        startNumber="1">
-        {% for repr in video.representations %}
-        {% if loop.first %}
-          <SegmentTimeline>
-          	{% for seg in repr.segments %}<S {% if loop.first %}t="0"{% endif %} d="{{repr.segment_duration}}" />
-          	{% endfor %}
-          </SegmentTimeline>
-        {% endif %}
-        {% endfor %}
-      </SegmentTemplate>
       {% for repr in video.representations %}
-      	<Representation
-	        id="{{repr.id}}"
-        	bandwidth="{{repr.bitrate}}"
-        	codecs="{{repr.codecs}}"
-        	width="{{repr.width}}"
-        	height="{{repr.height}}"
-        	frameRate="{{repr.frameRate}}">
-      	</Representation>
+        {% if loop.first %}
+        {{generateSegmentTimeline(repr)}}
+        {% endif %}
+        <Representation
+          id="{{repr.id}}"
+          bandwidth="{{repr.bitrate}}"
+          codecs="{{repr.codecs}}"
+          width="{{repr.width}}"
+          height="{{repr.height}}"
+          frameRate="{{repr.frameRate}}">
+        </Representation>
+      {% endfor %}
+    </AdaptationSet>
+    <AdaptationSet
+      group="2"
+      mimeType="audio/mp4"
+      minBandwidth="{{audio.minBitrate}}"
+      maxBandwidth="{{audio.maxBitrate}}"
+      segmentAlignment="true"
+      startWithSAP="1">
+      {% for repr in audio.representations %}
+        {% if loop.first %}
+        {{generateSegmentTimeline(repr)}}
+        {% endif %}
+        <Representation
+          id="{{repr.id}}"
+          bandwidth="{{repr.bitrate}}"
+          codecs="{{repr.codecs}}"
+          sampleRate="{{repr.sampleRate}}"
+          numChannels="{{repr.numChannels}}"
+          lang="{{repr.language}}"
+        >
+        </Representation>
       {% endfor %}
     </AdaptationSet>
   </Period>
