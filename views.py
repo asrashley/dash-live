@@ -607,8 +607,20 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
                         return
             avInfo = dash['video'] if filename[0]=='V' else dash['audio']
             if dash['mode']=='live':
+                #5.3.9.5.3 Media Segment information
+                # For services with MPD@type='dynamic', the Segment availability
+                # start time of a Media Segment is the sum of:
+                #    the value of the MPD@availabilityStartTime,
+                #    the PeriodStart time of the containing Period as defined in 5.3.2.1,
+                #    the MPD start time of the Media Segment, and
+                #    the MPD duration of the Media Segment.
+                #
+                # The Segment availability end time of a Media Segment is the sum of
+                # the Segment availability start time, the MPD duration of the
+                # Media Segment and the value of the attribute @timeShiftBufferDepth
+                # for this Representation
                 lastFragment = dash['startNumber'] + int(utils.scale_timedelta(dash['elapsedTime'], repr.timescale, repr.segment_duration))
-                firstFragment = lastFragment - int(repr.timescale*dash['timeShiftBufferDepth'] / repr.segment_duration)
+                firstFragment = lastFragment - int(repr.timescale*dash['timeShiftBufferDepth'] / repr.segment_duration) - 1
             else:
                 firstFragment = dash['startNumber']
                 lastFragment = firstFragment + repr.num_segments
