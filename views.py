@@ -618,22 +618,9 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
                 self.response.set_status(404)
                 return
             if dash['mode']=='live':
-                # nominal_duration is the duration (in seconds) of the shortest representation.
-                # This is used to decide how many times the stream has looped since
-                # availabilityStartTime.
-                nominal_duration = dash['shortest_representation'].segment_duration * dash['shortest_representation'].num_segments / float(dash['shortest_representation'].timescale)
                 # elapsed_time is the time (in seconds) since availabilityStartTime
                 # for the requested fragment
                 elapsed_time = (segment - dash['startNumber']) * repr.segment_duration / float(repr.timescale)
-                num_loops = long(elapsed_time / nominal_duration)
-                # origin time is the time (in seconds) that maps to segment 1 for
-                # all adaptation sets. It represents the time of day when the
-                # video started from the beginning
-                origin_time = num_loops * nominal_duration
-                assert elapsed_time >= origin_time
-                # the difference between elapsed_time and origin_time now needs
-                # to be mapped to the segment index of this representation
-                mod_segment = 1 + long((elapsed_time - origin_time) * repr.timescale / repr.segment_duration)
                 segpos = self.calculate_segment_from_timecode(elapsed_time, repr, dash['shortest_representation'])
                 mod_segment = segpos['segment_num']
                 origin_time = segpos['origin_time']
