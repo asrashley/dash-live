@@ -117,6 +117,11 @@ def toHtmlString(item, className=None):
             rv = str(rv)
     return rv
 
+def xmlSafe(value):
+    """Convert the given string to a format that is safe for inclusion in an XML document.
+    """
+    return value.replace('&','&amp;')
+
 def scale_timedelta(delta, num, denom):
     """Scale the given timedelta, avoiding overflows"""
     secs = num * delta.seconds

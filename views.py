@@ -23,6 +23,7 @@ templates = jinja2.Environment(
 templates.filters['isoDuration'] = utils.toIsoDuration
 templates.filters['isoDateTime'] = utils.toIsoDateTime
 templates.filters['toHtmlString'] = utils.toHtmlString
+templates.filters['xmlSafe'] = utils.xmlSafe
 
 SCRIPT_TEMPLATE=r'<script src="/js/{mode}/{filename}{min}.js" type="text/javascript"></script>'
 def import_script(filename):

@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<MPD 
+<MPD
 {% if mode=='vod' %}type="static" xmlns="urn:mpeg:DASH:schema:MPD:2011" profiles="urn:mpeg:dash:profile:isoff-on-demand:2011"
     mediaPresentationDuration="{{media_duration|isoDuration}}"
 {% else %}type="dynamic" profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014"
-{% endif %} 
+{% endif %}
     minBufferTime="PT1.5S"
     {% if minimumUpdatePeriod %}minimumUpdatePeriod="{{minimumUpdatePeriod|isoDuration}}"{% endif %}
     {% if suggestedPresentationDelay %}suggestedPresentationDelay="{{suggestedPresentationDelay|isoDuration}}"{%endif%}
     {% if availabilityStartTime %}availabilityStartTime="{{availabilityStartTime|isoDateTime}}"{% endif %}
-    {% if timeShiftBufferDepth %}timeShiftBufferDepth="{{timeShiftBufferDepth|isoDuration}}"{% endif %} 
-	 >
+    {% if timeShiftBufferDepth %}timeShiftBufferDepth="{{timeShiftBufferDepth|isoDuration}}"{% endif %}
+   >
  <ProgramInformation>
   <Title>{{title}}</Title>
  </ProgramInformation>
@@ -21,13 +21,13 @@
    <ContentComponent id="1" contentType="video"/>
    <ContentProtection schemeIdUri="urn:mpeg:dash:mp4protection:2011" value="cenc"/>
    <ContentProtection xmlns:mas="urn:marlin:mas:1-0:services:schemas:mpd" schemeIdUri="urn:uuid:5e629af5-38da-4063-8977-97ffbd9902d4">
-		<mas:MarlinContentIds>
-		<mas:MarlinContentId>urn:marlin:kid:00000000000000000000000000000000</mas:MarlinContentId>
-		</mas:MarlinContentIds>
+    <mas:MarlinContentIds>
+    <mas:MarlinContentId>urn:marlin:kid:00000000000000000000000000000000</mas:MarlinContentId>
+    </mas:MarlinContentIds>
    </ContentProtection>
    {% for repr in video.representations %}
    <Representation id="{{repr.id}}" mimeType="video/mp4" codecs="{{repr.codecs}}" width="{{repr.width}}" height="{{repr.height}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
-      <SegmentTemplate startNumber="{{startNumber}}" timescale="{{video.timescale}}" duration="{{repr.segment_duration}}" initialization="{{repr.id}}/init.mp4" media="{{video.mediaURL}}"/>
+      <SegmentTemplate startNumber="{{startNumber}}" timescale="{{video.timescale}}" duration="{{repr.segment_duration}}" initialization="{{repr.id}}/init.mp4" media="{{video.mediaURL|xmlSafe}}"/>
    </Representation>
    {% endfor %}
   </AdaptationSet>
@@ -35,9 +35,9 @@
   <AdaptationSet>
      <ContentComponent id="1" contentType="audio" lang="{{audio.representations[0].language}}"/>
      <Representation id="{{repr.id}}" mimeType="audio/mp4" codecs="{{repr.codecs}}" sampleRate="{{repr.sampleRate}}" numChannels="{{repr.numChannels}}" lang="{{repr.lang}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
-        <SegmentTemplate startNumber="{{startNumber}}" timescale="{{audio.timescale}}" duration="{{repr.segment_duration}}" initialization="{{repr.id}}/init.mp4" media="{{audio.mediaURL}}"/>
+        <SegmentTemplate startNumber="{{startNumber}}" timescale="{{audio.timescale}}" duration="{{repr.segment_duration}}" initialization="{{repr.id}}/init.mp4" media="{{audio.mediaURL|xmlSafe}}"/>
      </Representation>
-  </AdaptationSet>  
+  </AdaptationSet>
   {% endif %}
  {% endfor %}
  </Period>

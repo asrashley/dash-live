@@ -1,5 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
 <MPD type="static" xmlns="urn:mpeg:DASH:schema:MPD:2011" profiles="urn:mpeg:dash:profile:isoff-on-demand:2011" minBufferTime="PT1.5S"
-	 mediaPresentationDuration="{{media_duration|isoDuration}}">
+   mediaPresentationDuration="{{media_duration|isoDuration}}">
  <ProgramInformation>
   <Title>{{title}}</Title>
  </ProgramInformation>
@@ -9,7 +10,7 @@
    <ContentComponent id="1" contentType="video"/>
    {% for repr in video.representations %}
    <Representation id="{{repr.id}}" mimeType="video/mp4" codecs="{{repr.codecs}}" width="{{repr.width}}" height="{{repr.height}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
-      <SegmentTemplate startNumber="{{startNumber}}" timescale="{{video.timescale}}" duration="{{repr.segment_duration}}" initialization="{{repr.id}}/init.mp4" media="{{video.mediaURL}}"/>
+      <SegmentTemplate startNumber="{{startNumber}}" timescale="{{video.timescale}}" duration="{{repr.segment_duration}}" initialization="{{repr.id}}/init.mp4" media="{{video.mediaURL|xmlSafe}}"/>
    </Representation>
    {% endfor %}
   </AdaptationSet>
@@ -17,10 +18,10 @@
      <ContentComponent id="1" contentType="audio" lang="{{audio.representations[0].language}}"/>
      {% for repr in audio.representations %}
      <Representation id="{{repr.id}}" mimeType="audio/mp4" codecs="{{repr.codecs}}" sampleRate="{{repr.sampleRate}}" numChannels="{{repr.numChannels}}" lang="{{repr.language}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
-        <SegmentTemplate startNumber="{{startNumber}}" timescale="{{audio.timescale}}" duration="{{repr.segment_duration}}" initialization="{{repr.id}}/init.mp4" media="{{audio.mediaURL}}"/>
+        <SegmentTemplate startNumber="{{startNumber}}" timescale="{{audio.timescale}}" duration="{{repr.segment_duration}}" initialization="{{repr.id}}/init.mp4" media="{{audio.mediaURL|xmlSafe}}"/>
      </Representation>
      {% endfor %}
-  </AdaptationSet>  
+  </AdaptationSet>
  </Period>
 </MPD>
 

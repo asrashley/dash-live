@@ -1,29 +1,29 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<MPD profiles="urn:mpeg:dash:profile:isoff-live:2011" type="dynamic" 
-	availabilityStartTime="{{availabilityStartTime|isoDateTime}}" 
-	{% if minimumUpdatePeriod %}minimumUpdatePeriod="{{minimumUpdatePeriod|isoDuration}}"{% endif %}	
-	minBufferTime="PT1S" timeShiftBufferDepth="{{timeShiftBufferDepth|isoDuration}}" 
-	xmlns="urn:mpeg:DASH:schema:MPD:2011" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-	xsi:schemaLocation="urn:mpeg:DASH:schema:MPD:2011 DASH-MPD.xsd">
+<MPD profiles="urn:mpeg:dash:profile:isoff-live:2011" type="dynamic"
+  availabilityStartTime="{{availabilityStartTime|isoDateTime}}"
+  {% if minimumUpdatePeriod %}minimumUpdatePeriod="{{minimumUpdatePeriod|isoDuration}}"{% endif %}
+  minBufferTime="PT1S" timeShiftBufferDepth="{{timeShiftBufferDepth|isoDuration}}"
+  xmlns="urn:mpeg:DASH:schema:MPD:2011" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="urn:mpeg:DASH:schema:MPD:2011 DASH-MPD.xsd">
  {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
    <UTCTiming schemeIdUri="urn:mpeg:dash:utc:ntp:2014" value="0.europe.pool.ntp.org 1.europe.pool.ntp.org 2.europe.pool.ntp.org 3.europe.pool.ntp.org"/>
-	<Period start="PT0S">
-	     {% for repr in video.representations %}
-     	 	{% if loop.first %}
-				<AdaptationSet mimeType="video/mp4" startWithSAP="{{repr.startWithSAP}}" segmentAlignment="true">
-		        <SegmentTemplate presentationTimeOffset="{{video.presentationTimeOffset}}" timescale="{{video.timescale}}" initialization="$RepresentationID$/init.mp4" media="$RepresentationID$/$Number$.mp4" duration="{{repr.segment_duration}}" startNumber="{{startNumber}}"/>
-     	 	{% endif %}
-			<Representation id="{{repr.id}}" codecs="{{repr.codecs}}" width="{{repr.width}}" height="{{repr.height}}" bandwidth="{{repr.bitrate}}" frameRate="{{repr.frameRate}}" sar="{{repr.sar}}" scanType="{{repr.scanType}}" /> 
-     	 	{% if loop.last %}
-				</AdaptationSet>
-     	 	{% endif %}
-     	{% endfor %}
-	     {% for repr in audio.representations %}{% if repr.role=="main" %}
-		  <AdaptationSet mimeType="audio/mp4" lang="{{repr.language}}" segmentAlignment="true" startWithSAP="{{repr.startWithSAP}}">
-			    <SegmentTemplate presentationTimeOffset="{{audio.presentationTimeOffset}}" timescale="{{audio.timescale}}" initialization="$RepresentationID$/init.m4a" media="$RepresentationID$/$Number$.m4a" duration="{{repr.segment_duration}}" startNumber="{{startNumber}}"/>
+  <Period start="PT0S">
+       {% for repr in video.representations %}
+          {% if loop.first %}
+        <AdaptationSet mimeType="video/mp4" startWithSAP="{{repr.startWithSAP}}" segmentAlignment="true">
+            <SegmentTemplate presentationTimeOffset="{{video.presentationTimeOffset}}" timescale="{{video.timescale}}" initialization="$RepresentationID$/init.mp4" media="{{video.mediaURL|xmlSafe}}" duration="{{repr.segment_duration}}" startNumber="{{startNumber}}"/>
+          {% endif %}
+      <Representation id="{{repr.id}}" codecs="{{repr.codecs}}" width="{{repr.width}}" height="{{repr.height}}" bandwidth="{{repr.bitrate}}" frameRate="{{repr.frameRate}}" sar="{{repr.sar}}" scanType="{{repr.scanType}}" />
+          {% if loop.last %}
+        </AdaptationSet>
+          {% endif %}
+       {% endfor %}
+       {% for repr in audio.representations %}{% if repr.role=="main" %}
+      <AdaptationSet mimeType="audio/mp4" lang="{{repr.language}}" segmentAlignment="true" startWithSAP="{{repr.startWithSAP}}">
+          <SegmentTemplate presentationTimeOffset="{{audio.presentationTimeOffset}}" timescale="{{audio.timescale}}" initialization="$RepresentationID$/init.m4a" media="{{audio.mediaURL|xmlSafe}}" duration="{{repr.segment_duration}}" startNumber="{{startNumber}}"/>
                 <Representation id="{{repr.id}}" codecs="{{repr.codecs}}" audioSamplingRate="{{repr.sampleRate}}" bandwidth="{{repr.bitrate}}" />
-  		</AdaptationSet>
-   	 	{% endif %}
-     	{% endfor %}
-	</Period>
+      </AdaptationSet>
+        {% endif %}
+       {% endfor %}
+  </Period>
 </MPD>
