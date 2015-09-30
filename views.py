@@ -3,7 +3,7 @@
 import binascii, copy, datetime, decimal, hashlib, hmac, logging, math, time, os, re, struct, sys, urllib, urlparse
 
 import webapp2, jinja2
-from google.appengine.api import users
+from google.appengine.api import users, memcache
 from google.appengine.ext import blobstore
 from google.appengine.ext.webapp import blobstore_handlers
 from webapp2_extras import securecookie
@@ -39,6 +39,7 @@ class RequestHandler(webapp2.RequestHandler):
     CSRF_COOKIE_NAME='csrf'
     ALLOWED_DOMAINS = re.compile(r'^http://(dashif\.org)|(shaka-player-demo\.appspot\.com)|(mediapm\.edgesuite\.net)')
     DEFAULT_TIMESHIFT_BUFFER_DEPTH=60
+    INJECTED_ERROR_CODES=[404, 410, 503, 504]
 
     def create_context(self, **kwargs):
         route = routes[self.request.route.name]
@@ -115,11 +116,18 @@ class RequestHandler(webapp2.RequestHandler):
             raise CsrfFailureException("signatures do not match")
         return True
 
+    def compute_av_values(self, av, startNumber):
+        av['timescale'] = av['representations'][0].timescale
+        av['presentationTimeOffset'] = int((startNumber-1) * av['representations'][0].segment_duration)
+        av['minBitrate'] = min([ a.bitrate for a in av['representations']])
+        av['maxBitrate'] = max([ a.bitrate for a in av['representations']])
+        av['maxSegmentDuration'] = max([ a.segment_duration for a in av['representations']]) / av['timescale']
+
     def calculate_dash_params(self, mode=None, mpd_url=None):
         def generateSegmentTimeline(repr):
             rv = ['<SegmentTemplate timescale="%d" '%repr.timescale,
-                  'initialization="$RepresentationID$/init.mp4"',
-                  ' media="$RepresentationID$/$Number$.mp4" ' ]
+                  'initialization="$RepresentationID$/init.mp4" ',
+                  'media="$RepresentationID$/$Number$.mp4" ' ]
             timeline_start = elapsedTime - datetime.timedelta(seconds=timeShiftBufferDepth)
             first=True
             first_seg = self.calculate_segment_from_timecode(utils.scale_timedelta(timeline_start,1,1), repr, shortest_representation)
@@ -140,13 +148,6 @@ class RequestHandler(webapp2.RequestHandler):
                     first_seg['segment_num']=1
             rv.append('</SegmentTimeline></SegmentTemplate>')
             return '\n'.join(rv)
-
-        def compute_values(av):
-            av['timescale'] = av['representations'][0].timescale
-            av['presentationTimeOffset'] = int((startNumber-1) * av['representations'][0].segment_duration)
-            av['minBitrate'] = min([ a.bitrate for a in av['representations']])
-            av['maxBitrate'] = max([ a.bitrate for a in av['representations']])
-            av['maxSegmentDuration'] = max([ a.segment_duration for a in av['representations']]) / av['timescale']
 
         if mpd_url is None:
             mpd_url = self.request.uri
@@ -198,7 +199,7 @@ class RequestHandler(webapp2.RequestHandler):
         if mode=='vod':
             elapsedTime = datetime.timedelta(seconds = video['representations'][0].media_duration / video['representations'][0].timescale)
             timeShiftBufferDepth = elapsedTime.seconds
-        compute_values(video)
+        self.compute_av_values(video, startNumber)
         video['minWidth'] = min([ a.width for a in video['representations']])
         video['minHeight'] = min([ a.height for a in video['representations']])
         video['maxWidth'] = max([ a.width for a in video['representations']])
@@ -217,7 +218,7 @@ class RequestHandler(webapp2.RequestHandler):
                     rep.role='main'
                 else:
                     rep.role='alternate'
-        compute_values(audio)
+        self.compute_av_values(audio, startNumber)
         shortest_representation=None
         media_duration = 0
         for rep in video['representations']+audio['representations']:
@@ -247,15 +248,26 @@ class RequestHandler(webapp2.RequestHandler):
             }
         if not timeSource.has_key('url'):
             timeSource['url']= urlparse.urljoin(self.request.host_url, self.uri_for('time',format=timeSource['format']))
-        cgiParams = []
+        v_cgi_params = []
+        a_cgi_params = []
         if clockDrift:
             timeSource['url'] += '?drift=%d'%clockDrift
-            cgiParams.append('drift=%d'%clockDrift)
+            v_cgi_params.append('drift=%d'%clockDrift)
+            a_cgi_params.append('drift=%d'%clockDrift)
         if mode=='live' and timeShiftBufferDepth != self.DEFAULT_TIMESHIFT_BUFFER_DEPTH:
-            cgiParams.append('depth=%d'%timeShiftBufferDepth)
-        if cgiParams:
-            video['mediaURL'] += '?' + '&amp;'.join(cgiParams)
-            audio['mediaURL'] += '?' + '&amp;'.join(cgiParams)
+            v_cgi_params.append('depth=%d'%timeShiftBufferDepth)
+            a_cgi_params.append('depth=%d'%timeShiftBufferDepth)
+        for code in self.INJECTED_ERROR_CODES:
+            if self.request.params.get('v%03d'%code) is not None:
+                v_cgi_params.append('%03d=%s'%(code,self.calculate_injected_error_segments(self.request.params.get('v%03d'%code), availabilityStartTime, video['representations'][0])))
+            if self.request.params.get('a%03d'%code) is not None:
+                a_cgi_params.append('%03d=%s'%(code,self.calculate_injected_error_segments(self.request.params.get('a%03d'%code), availabilityStartTime, audio['representations'][0])))
+        if v_cgi_params:
+            video['mediaURL'] += '?' + '&'.join(v_cgi_params)
+        del v_cgi_params
+        if a_cgi_params:
+            audio['mediaURL'] += '?' + '&'.join(a_cgi_params)
+        del a_cgi_params
         return locals()
 
     def add_allowed_origins(self):
@@ -292,6 +304,41 @@ class RequestHandler(webapp2.RequestHandler):
         # segment started, relative to availabilityStartTime
         seg_start_time = origin_time * repr.timescale + (segment_num-1) * repr.segment_duration
         return locals()
+
+    def calculate_injected_error_segments(self, times, availabilityStartTime, representation):
+        """Calculate a list of segment numbers for injecting errors
+
+        :param times: a string of comma separated ISO8601 times
+        :param availabilityStartTime: datetime.datetime containing availability start time
+        :param representation: the Representation to use when calculating segment numbering
+        """
+        drops=[]
+        for d in times.split(','):
+            tm = utils.from_isodatetime(d)
+            tm = availabilityStartTime.replace(hour=tm.hour, minute=tm.minute, second=tm.second)
+            if tm < availabilityStartTime:
+                continue
+            drop_delta = tm - availabilityStartTime
+            drop_seg = long(utils.scale_timedelta(drop_delta, representation.timescale, representation.segment_duration))
+            drops.append('%d'%drop_seg)
+        return urllib.quote_plus(','.join(drops))
+
+    def increment_memcache_counter(self, segment, code):
+        try:
+            key = 'inject-%06d-%03d-%s'%(segment,code,self.request.headers['Referer'])
+        except KeyError:
+            key = 'inject-%06d-%03d-%s'%(segment,code,self.request.headers['Host'])
+        client = memcache.Client()
+        timeout = 10
+        while timeout:
+            counter = client.gets(key)
+            if counter is None:
+                client.add(key,1,time=60)
+                return 1
+            if client.cas(key, counter+1, time=60):
+                return counter+1
+            timeout -= 1
+        return -1
 
 class MainPage(RequestHandler):
     """handler for main index page"""
@@ -526,7 +573,12 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
             self.response.write('%s not found: %s'%(filename,str(e)))
             self.response.set_status(404)
             return
-        dash = self.calculate_dash_params(mode)
+        try:
+            dash = self.calculate_dash_params(mode)
+        except ValueError, e:
+            self.response.write('Invalid CGI parameters: %s'%(str(e)))
+            self.response.set_status(400)
+            return
         if segment=='init':
             mod_segment = segment = 0
         else:
@@ -534,6 +586,25 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
                 segment = int(segment,10)
             except ValueError:
                 segment=-1
+            for code in self.INJECTED_ERROR_CODES:
+                if self.request.params.get('%03d'%code) is not None:
+                    try:
+                        for d in self.request.params.get('%03d'%code).split(','):
+                            if int(d,10)==segment:
+                                if code>=500:
+                                    # We don't want to constantly fail 500 errors
+                                    if self.increment_memcache_counter(segment,code)<=1:
+                                        self.response.write('Synthetic %d for segment %d'%(code,segment))
+                                        self.response.set_status(code)
+                                        return
+                                else:
+                                    self.response.write('Synthetic %d for segment %d'%(code,segment))
+                                    self.response.set_status(code)
+                                    return
+                    except ValueError, e:
+                        self.response.write('Invalid CGI parameter %s: %s'%(self.request.params.get(str(code)),str(e)))
+                        self.response.set_status(400)
+                        return
             avInfo = dash['video'] if filename[0]=='V' else dash['audio']
             if dash['mode']=='live':
                 lastFragment = dash['startNumber'] + int(utils.scale_timedelta(dash['elapsedTime'], repr.timescale, repr.segment_duration))

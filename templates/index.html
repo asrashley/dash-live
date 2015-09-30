@@ -64,9 +64,35 @@
     manifests, media segments and time sources.</p>
         <table class="cgi-params table table-striped">
             <caption>CGI parameters</caption>
-            <thead><tr><th>Name</th><th>Description</th><th>Manifest</th><th>Media</th><th>Time source</th></tr></thead>
+            <thead><tr><th>Parameter</th><th>Description</th><th>Manifest</th><th>Media</th><th>Time source</th></tr></thead>
             <tbody>
-            <tr><td>acodec=(mp4a|ec-3)</td><td>Select audio codec (AAC or E-AC3)</td>
+            <tr><td>404=&lt;num&gt;,&lt;num&gt;,...<br/>410=&lt;num&gt;,&lt;num&gt;,...</td>
+            <td>Cause a 404 or 410 error to be generated
+                when requesting the given segment number.</td>
+                <td>&cross;</td><td>&check;</td><td>&cross;</td>
+            </tr>
+            <tr><td>503=&lt;num&gt;,&lt;num&gt;,...<br/>504=&lt;num&gt;,&lt;num&gt;,...</td>
+            <td>Cause a 503 or 504 error to be generated
+                when requesting the given segment number.  Retries for the same
+                segment will succeed, unless the segment has fallen outside of
+                the timeshift buffer depth.</td>
+                <td>&cross;</td><td>&check;</td><td>&cross;</td>
+            </tr>
+            <tr><td>a404=&lt;time&gt;,&lt;time&gt;,...<br/>a410=&lt;time&gt;,&lt;time&gt;,...</td>
+            <td>Cause a 404 or 410 error to be generated
+                when requesting an audio segment at the given time. Time must be
+                in the form HH:MM:SSZ</td>
+                <td>&check;</td><td>&cross;</td><td>&cross;</td>
+            </tr>
+            <tr><td>a503=&lt;time&gt;,&lt;time&gt;,...<br/>a504=&lt;time&gt;,&lt;time&gt;,...</td>
+            <td>Cause a 503 or 504 error to be generated
+                on the first request for the audio segment at the given time.
+                Time must be  in the form HH:MM:SSZ. Retries for the same
+                segment will succeed, unless the segment has fallen outside of
+                the timeshift buffer depth.</td>
+                <td>&check;</td><td>&cross;</td><td>&cross;</td>
+            </tr>
+            <tr><td>acodec=(mp4a|ec-3)</td><td>Filter audio adaptation sets by audio codec (AAC or E-AC3)</td>
                 <td>&check;</td><td>&cross;</td><td>&cross;</td>
             </tr>
             <tr><td>base=(true|false)</td><td>Include a BaseURL element?</td>
@@ -93,7 +119,23 @@
             <tr><td>repr=&lt;string&gt;</td><td>Select a video representation by ID</td>
                 <td>&check;</td><td>&cross;</td><td>&cross;</td>
             </tr>
-            <tr><td>time=(xsd|iso|ntp|head)</td><td>Select UTCTiming element method</td>
+            <tr><td>time=(xsd|iso|ntp|head)</td><td>Select UTCTiming element HTTP method.</td>
+                <td>&check;</td><td>&cross;</td><td>&cross;</td>
+            </tr>
+            <tr><td>v404=&lt;time&gt;,&lt;time&gt;,...<br/>
+                v410=&lt;time&gt;,&lt;time&gt;,...
+            </td><td>Cause a 404 or 410 error to be generated
+                when requesting video segment at the given time. Time must be
+                in the form HH:MM:SSZ</td>
+                <td>&check;</td><td>&cross;</td><td>&cross;</td>
+            </tr>
+            <tr><td>v503=&lt;time&gt;,&lt;time&gt;,...<br/>
+                v504=&lt;time&gt;,&lt;time&gt;,...
+            </td><td>Cause a 503 or 504 error to be generated
+                on the first request for the video segment at the given time.
+                Time must be  in the form HH:MM:SSZ. Retries for the same
+                segment will succeed, unless the segment has fallen outside of
+                the timeshift buffer depth.</td>
                 <td>&check;</td><td>&cross;</td><td>&cross;</td>
             </tr>
             </tbody>
