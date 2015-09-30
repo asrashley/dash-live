@@ -54,6 +54,35 @@ def toIsoDuration(secs):
         rv.append('%fS'%secs)
     return ''.join(rv)
 
+def from_isodatetime(date_time):
+    """
+    Convert an ISO formated date string to a datetime.datetime object
+    """
+    if not date_time:
+        return None
+    if date_time[:2]=='PT':
+        if 'M' in date_time:
+            dt = datetime.datetime.strptime(date_time, "PT%HH%MM%SS")
+        else:
+            dt = datetime.datetime.strptime(date_time, "PT%H:%M:%S")
+        secs = (dt.hour*60+dt.minute)*60 + dt.second
+        return datetime.timedelta(seconds=secs)
+    if 'T' in date_time:
+        try:
+            return datetime.datetime.strptime(date_time, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=UTC())
+        except ValueError:
+            pass
+        try:
+            return datetime.datetime.strptime(date_time, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC())
+        except ValueError:
+            return datetime.datetime.strptime(date_time, "%Y-%m-%dT%H:%MZ").replace(tzinfo=UTC())
+    if not 'Z' in date_time:
+        try:
+            return datetime.datetime.strptime(date_time, "%Y-%m-%d")
+        except ValueError:
+            return datetime.datetime.strptime(date_time, "%d/%m/%Y")
+    return datetime.datetime.strptime(date_time, "%H:%M:%SZ").replace(tzinfo=UTC()).time()
+
 def toHtmlString(item, className=None):
     """Converts an object in to a form suitable for rendering in an HTML page.
     """
