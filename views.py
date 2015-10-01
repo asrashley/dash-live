@@ -227,6 +227,7 @@ class RequestHandler(webapp2.RequestHandler):
                 shortest_representation = rep
                 media_duration = dur
         del dur
+        del rep
         maxSegmentDuration = max(video['maxSegmentDuration'],audio['maxSegmentDuration'])
         try:
             timeSource = { 'format':self.request.params['time'] }
