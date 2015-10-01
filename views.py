@@ -426,12 +426,12 @@ class MainPage(RequestHandler):
                             'details':['AAC audio'], 'buttons':[
                                                                                {
                                                                                 'key':1,
-                                                                                'url':self.uri_for('dash-mpd', manifest='vod_manifest_a.mpd')+'?repr=V3',
+                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_a.mpd')+'?repr=V3',
                                                                                 'abr':False, 'BaseURL':True, 'static':False, 'encrypted':False, 'mup':True
                                                                                 },
                                                                                {
                                                                                 'key':2,
-                                                                                'url':self.uri_for('dash-mpd', manifest='vod_manifest_a.mpd'),
+                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_a.mpd'),
                                                                                 'abr':True, 'BaseURL':True, 'static':False, 'encrypted':False, 'mup':True
                                                                                 }
                                                                                ]
