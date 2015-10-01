@@ -546,7 +546,12 @@ class LiveManifest(RequestHandler):
         context['routes'] = routes
         self.response.content_type='application/dash+xml'
         context['title'] = 'Big Buck Bunny DASH test stream'
-        dash = self.calculate_dash_params()
+        try:
+            dash = self.calculate_dash_params()
+        except ValueError, e:
+            self.response.write('Invalid CGI parameters: %s'%(str(e)))
+            self.response.set_status(400)
+            return
         context.update(dash)
         context['repr'] = self.request.params.get('repr')
         #context['availabilityStartTime'] = datetime.datetime.utcfromtimestamp(dash['availabilityStartTime'])
