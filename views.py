@@ -560,6 +560,26 @@ class LiveManifest(RequestHandler):
             context['minimumUpdatePeriod'] = 2.0*context['video']['maxSegmentDuration']
         if context['minimumUpdatePeriod']<=0:
             del context['minimumUpdatePeriod']
+        for code in self.INJECTED_ERROR_CODES:
+            if self.request.params.get('m%03d'%code) is not None:
+                try:
+                    num_failures = int(self.request.params.get('failures','1'),10)
+                    for d in self.request.params.get('m%03d'%code).split(','):
+                        tm = utils.from_isodatetime(d)
+                        tm = dash['availabilityStartTime'].replace(hour=tm.hour, minute=tm.minute, second=tm.second)
+                        try:
+                            tm2 = tm + datetime.timedelta(seconds=context['minimumUpdatePeriod'])
+                        except KeyError:
+                            tm2 = tm + datetime.timedelta(seconds=context['minimumUpdatePeriod'])
+                        if dash['now']>=tm and dash['now']<=tm2:
+                            if code<500 or self.increment_memcache_counter(0,code)<=num_failures:
+                                self.response.write('Synthetic %d for manifest'%(code))
+                                self.response.set_status(code)
+                                return
+                except ValueError,e:
+                    self.response.write('Invalid CGI parameters: %s'%(str(e)))
+                    self.response.set_status(400)
+                    return
         template = templates.get_template(manifest)
         self.add_allowed_origins()
         self.response.write(template.render(context))

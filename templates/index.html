@@ -112,6 +112,21 @@
                 parameters (e.g. v503, m503).</td>
                 <td>&check;</td><td>&check;</td><td>&cross;</td>
             </tr>
+            <tr><td>m404=&lt;time&gt;,&lt;time&gt;,...<br/>m410=&lt;time&gt;,&lt;time&gt;,...</td>
+            <td>Cause a 404 or 410 error to be generated
+                when requesting a manifest at the given time. Time must be
+                in the form HH:MM:SSZ. An HTTP error will be generated if a
+                manifest request ocurs between &lt;time&gt; and &lt;time&gt;+&lt;minimumUpdatePeriod&gt; </td>
+                <td>&check;</td><td>&cross;</td><td>&cross;</td>
+            </tr>
+            <tr><td>m503=&lt;time&gt;,&lt;time&gt;,...<br/>m504=&lt;time&gt;,&lt;time&gt;,...</td>
+            <td>Cause a 503 or 504 error to be generated
+                on the first request for the manifest at the given time.
+                Time must be  in the form HH:MM:SSZ. Retries for the same
+                manifest will succeed.  An HTTP error will be generated if a
+                manifest request ocurs between &lt;time&gt; and &lt;time&gt;+&lt;minimumUpdatePeriod&gt;</td>
+                <td>&check;</td><td>&cross;</td><td>&cross;</td>
+            </tr>
             <tr><td>main_audio=(mp4a|ec-3)</td><td>Select audio AdaptationSet that will
             be given the &quot;main&quot; role (AAC or E-AC3)</td>
                 <td>&check;</td><td>&cross;</td><td>&cross;</td>
