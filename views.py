@@ -589,15 +589,11 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
             for code in self.INJECTED_ERROR_CODES:
                 if self.request.params.get('%03d'%code) is not None:
                     try:
+                        num_failures = int(self.request.params.get('failures','1'),10)
                         for d in self.request.params.get('%03d'%code).split(','):
                             if int(d,10)==segment:
-                                if code>=500:
-                                    # We don't want to constantly fail 500 errors
-                                    if self.increment_memcache_counter(segment,code)<=1:
-                                        self.response.write('Synthetic %d for segment %d'%(code,segment))
-                                        self.response.set_status(code)
-                                        return
-                                else:
+                                # Only fail 5xx errors "num_failures" times
+                                if code<500 or self.increment_memcache_counter(segment,code)<=num_failures:
                                     self.response.write('Synthetic %d for segment %d'%(code,segment))
                                     self.response.set_status(code)
                                     return

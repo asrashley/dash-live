@@ -107,6 +107,11 @@
             <tr><td>enc=(true|false)</td><td>Encrypted or clear</td>
                 <td>&check;</td><td>&cross;</td><td>&cross;</td>
             </tr>
+            <tr><td>failures=&lt;number&gt;</td><td>Number of times to respond with a 5xx error before
+                accepting the request. Only relevant in combination with one of the error injection
+                parameters (e.g. v503, m503).</td>
+                <td>&check;</td><td>&check;</td><td>&cross;</td>
+            </tr>
             <tr><td>main_audio=(mp4a|ec-3)</td><td>Select audio AdaptationSet that will
             be given the &quot;main&quot; role (AAC or E-AC3)</td>
                 <td>&check;</td><td>&cross;</td><td>&cross;</td>
