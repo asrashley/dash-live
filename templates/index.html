@@ -80,13 +80,13 @@
             </tr>
             <tr><td>a404=&lt;time&gt;,&lt;time&gt;,...<br/>a410=&lt;time&gt;,&lt;time&gt;,...</td>
             <td>Cause a 404 or 410 error to be generated
-                when requesting an audio segment at the given time. Time must be
-                in the form HH:MM:SSZ</td>
+                when requesting the audio segment that corresponds to the specified time.
+                Time must be in the form HH:MM:SSZ</td>
                 <td>&check;</td><td>&cross;</td><td>&cross;</td>
             </tr>
             <tr><td>a503=&lt;time&gt;,&lt;time&gt;,...<br/>a504=&lt;time&gt;,&lt;time&gt;,...</td>
             <td>Cause a 503 or 504 error to be generated
-                on the first request for the audio segment at the given time.
+                on the first request for the audio segment that corresponds to the specified time.
                 Time must be  in the form HH:MM:SSZ. Retries for the same
                 segment will succeed, unless the segment has fallen outside of
                 the timeshift buffer depth.</td>
@@ -146,14 +146,14 @@
             <tr><td>v404=&lt;time&gt;,&lt;time&gt;,...<br/>
                 v410=&lt;time&gt;,&lt;time&gt;,...
             </td><td>Cause a 404 or 410 error to be generated
-                when requesting video segment at the given time. Time must be
-                in the form HH:MM:SSZ</td>
+                when requesting the video segment that corresponds to the specified time.
+                Time must be in the form HH:MM:SSZ</td>
                 <td>&check;</td><td>&cross;</td><td>&cross;</td>
             </tr>
             <tr><td>v503=&lt;time&gt;,&lt;time&gt;,...<br/>
                 v504=&lt;time&gt;,&lt;time&gt;,...
             </td><td>Cause a 503 or 504 error to be generated
-                on the first request for the video segment at the given time.
+                on the first request for the video segment that corresponds to the specified time.
                 Time must be  in the form HH:MM:SSZ. Retries for the same
                 segment will succeed, unless the segment has fallen outside of
                 the timeshift buffer depth.</td>
