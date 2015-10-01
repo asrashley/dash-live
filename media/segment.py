@@ -27,7 +27,7 @@ class Segment(object):
         try:
             return b[key]
         except KeyError:
-            raise  AttributeError(key) 
+            raise  AttributeError(key)
     def __repr__(self):
         rv= []
         seg = self.boxes['seg']
@@ -52,7 +52,7 @@ class Representation(object):
             if isinstance(item,dict):
                 item = Segment(**item)
             return item
-        
+
         self.id = id
         self.segments=[]
         self.startWithSAP = 1

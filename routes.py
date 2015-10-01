@@ -18,9 +18,8 @@ routes = {
 }
 
 for name,r in routes.iteritems():
-    r.name = name 
-    
+    r.name = name
+
 webapp_routes = []
 for name,route in routes.iteritems():
     webapp_routes.append(webapp2.Route(template=route.template, handler=route.handler, name=name))
-    

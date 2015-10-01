@@ -16,15 +16,16 @@ class UTC(datetime.tzinfo):
         return self.ZERO
 
 def dateTimeToUnixEpoch(dt):
-    """ Convert a dateTime to number of seconds since the Unix epoch
+    """ Convert a dateTime to number of seconds since the Unix epoch.
     """
     epoch = datetime.datetime(year=1970, month=1, day=1, tzinfo=UTC())
     return (dt - epoch).total_seconds()
 
 def toIsoDateTime(value):
     """ Convert a datetime to an ISO8601 formatted dateTime string.
-    @param {datetime} value the dateTime to convert
-    @returns {string} an ISO8601 formatted version of the dateTime
+
+    :param value: the dateTime to convert
+    :returns: an ISO8601 formatted string version of the dateTime
     """
     rv = value.isoformat()
     if value.tzinfo is None:
@@ -36,9 +37,10 @@ def toIsoDateTime(value):
 
 def toIsoDuration(secs):
     """ Convert a time (in seconds) to an ISO8601 formatted duration string.
-     @param {number} secs the duration to convert, in seconds
-     @returns {string} an ISO8601 formatted version of the duration
-     """
+
+     :param secs: the duration to convert, in seconds
+     :returns: an ISO8601 formatted string version of the duration
+    """
     if isinstance(secs,str):
         secs = float(secs)
     hrs = math.floor(secs/3600)
@@ -116,6 +118,7 @@ def toHtmlString(item, className=None):
         else:
             rv = str(rv)
     return rv
+
 
 def xmlSafe(value):
     """Convert the given string to a format that is safe for inclusion in an XML document.
