@@ -33,7 +33,6 @@ import copy
 import sys
 import re
 import binascii
-import mmap
 import os
 import struct
 import operator
@@ -375,6 +374,7 @@ class MmapByteArray(object):
     __slots__ = ('filemap', 'filelength', 'source', 'byteoffset', 'bytelength')
 
     def __init__(self, source, bytelength=None, byteoffset=None):
+        import mmap
         self.source = source
         source.seek(0, os.SEEK_END)
         self.filelength = source.tell()
