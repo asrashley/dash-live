@@ -114,6 +114,7 @@ def create_representation(filename, args):
                                                          avc.avcC.AVCProfileIndication,
                                                          avc.avcC.profile_compatibility,
                                                          avc.avcC.AVCLevelIndication)
+                        repr.nalLengthFieldFength = avc.avcC.lengthSizeMinusOne + 1
                 elif atom.trak.mdia.hdlr.handler_type=='soun':
                     repr.contentType="audio"
                     try:

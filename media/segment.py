@@ -44,7 +44,7 @@ class Segment(object):
 
 class Representation(object):
     FIELDS = ['bitrate', 'codecs', 'contentType', 'duration', 'encrypted', 'filename',
-              'frameRate', 'height', 'lang', 'numChannels', 'sampleRate',
+              'frameRate', 'height', 'lang', 'nalLengthFieldFength', 'numChannels', 'sampleRate',
               'sar', 'scanType', 'segments',
               'startWithSAP', 'timescale', 'width']
     def __init__(self, id,  **kwargs):
