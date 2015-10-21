@@ -98,6 +98,13 @@
             <tr><td>base=(true|false)</td><td>Include a BaseURL element?</td>
                 <td>&check;</td><td>&cross;</td><td>&cross;</td>
             </tr>
+            <tr><td>corrupt=&lt;number&gt;,&lt;number&gt;,...</td>
+            <td>Cause video corruption to be generated when requesting a fragment at the given time.
+                Invalid data is placed inside NAL packets of video frames. &lt;number&gt;
+                is the segment number of the segment to corrupt.
+            </td>
+                <td>&cross;</td><td>&check;</td><td>&cross;</td>
+            </tr>
             <tr><td>depth=&lt;number&gt;</td><td>Number of seconds of timeshiftBufferDepth</td>
                 <td>&check;</td><td>&check;</td><td>&cross;</td>
             </tr>
@@ -110,6 +117,10 @@
             <tr><td>failures=&lt;number&gt;</td><td>Number of times to respond with a 5xx error before
                 accepting the request. Only relevant in combination with one of the error injection
                 parameters (e.g. v503, m503).</td>
+                <td>&check;</td><td>&check;</td><td>&cross;</td>
+            </tr>
+            <tr><td>frames=&lt;number&gt;</td><td>Number of frames to corrupt per segment.
+            Only relevant when the corrupt CGI parameter is present.  </td>
                 <td>&check;</td><td>&check;</td><td>&cross;</td>
             </tr>
             <tr><td>m404=&lt;time&gt;,&lt;time&gt;,...<br/>m410=&lt;time&gt;,&lt;time&gt;,...</td>
@@ -157,6 +168,12 @@
                 Time must be  in the form HH:MM:SSZ. Retries for the same
                 segment will succeed, unless the segment has fallen outside of
                 the timeshift buffer depth.</td>
+                <td>&check;</td><td>&cross;</td><td>&cross;</td>
+            </tr>
+            <tr><td>vcorrupt=&lt;time&gt;,&lt;time&gt;,...</td>
+            <td>Cause video corruption to be generated when requesting a fragment at the given time.
+                Invalid data is placed inside NAL packets of video frames.
+                Each time must be in the form HH:MM:SSZ.</td>
                 <td>&check;</td><td>&cross;</td><td>&cross;</td>
             </tr>
             </tbody>

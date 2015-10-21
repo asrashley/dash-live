@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 #
 import binascii, copy, datetime, decimal, hashlib, hmac, logging, math, time, os, re, struct, sys, urllib, urlparse
+try:
+    import cStringIO as StringIO
+except ImportError:
+    import StringIO
 
 import webapp2, jinja2
 from google.appengine.api import users, memcache
@@ -11,7 +15,7 @@ from webapp2_extras import security
 from webapp2_extras.appengine.users import login_required, admin_required
 
 from routes import routes
-import media, utils, models, settings
+import media, mp4, utils, models, settings
 from webob import exc
 
 templates = jinja2.Environment(
@@ -263,6 +267,8 @@ class RequestHandler(webapp2.RequestHandler):
                 v_cgi_params.append('%03d=%s'%(code,self.calculate_injected_error_segments(self.request.params.get('v%03d'%code), availabilityStartTime, video['representations'][0])))
             if self.request.params.get('a%03d'%code) is not None:
                 a_cgi_params.append('%03d=%s'%(code,self.calculate_injected_error_segments(self.request.params.get('a%03d'%code), availabilityStartTime, audio['representations'][0])))
+        if self.request.params.get('vcorrupt') is not None:
+            v_cgi_params.append('corrupt=%s'%(self.calculate_injected_error_segments(self.request.params.get('vcorrupt'), availabilityStartTime, video['representations'][0])))
         if v_cgi_params:
             video['mediaURL'] += '?' + '&'.join(v_cgi_params)
         del v_cgi_params
@@ -716,6 +722,64 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
             except AttributeError:
                 pass
         self.add_allowed_origins()
+        if self.request.params.get('corrupt') is not None:
+            try:
+                corrupt_frames = int(self.request.params.get('frames','4'),10)
+            except ValueError:
+                corrupt_frames = 4
+            try:
+                for d in self.request.params.get('corrupt').split(','):
+                    if int(d,10)==segment:
+                        #filling = struct.pack('>I', 8)+'skip'
+                        # put junk data in the last 2% of the segment
+                        #junk_count = frag.seg.size//(50*len(filling))
+                        #junk_size = junk_count*len(filling)
+                        src = StringIO.StringIO(data)
+                        seg = mp4.Mp4Atom(src, 'fake', position=0, size=frag.seg.size, parent=None)
+                        seg.payload = 0
+                        parser = mp4.IsoParser()
+                        parser.walk_atoms(src, atom=seg)
+                        seg.moof.traf.trun.parse_samples(src, repr.nalLengthFieldFength)
+                        #hdr = mp4.Mp4Atom.parse_atom_header(src)
+                        #while hdr and hdr['type']!='mdat':
+                        #    src.seek(hdr['position']+hdr['size'])
+                        #    hdr = mp4.Mp4Atom.parse_atom_header(src)
+                        del src
+                        for sample in seg.moof.traf.trun.samples:
+                            if corrupt_frames<=0:
+                                break
+                            for nal in sample.nals:
+                                if nal.is_ref_frame and not nal.is_idr_frame:
+                                    junk = 'junk'
+                                    # put junk data in the last 20% of the NAL
+                                    junk_count = nal.size // (5*len(junk))
+                                    if junk_count:
+                                        junk_size = len(junk)*junk_count
+                                        offset =  nal.position + nal.size - junk_size
+                                        data = ''.join([data[:offset], junk_count*junk, data[offset+junk_size:]])
+                                        corrupt_frames -= 1
+                                        if corrupt_frames<=0:
+                                            break
+                        #offset = None
+                        #if hdr and hdr['type']=='mdat':
+                        #    offset = hdr['position'] + hdr['size'] - junk_size
+                        #else:
+                        #    try:
+                        #        if (frag.sidx.pos+frag.sidx.size)==frag.seg.size:
+                        #            # segment has a sidx box at the end
+                        #            # assume mdat is before the sidx box
+                        #            offset = frag.sidx.pos - junk_size
+                        #            #data = ''.join([data[:offset], junk_count*filling, data[offset+junk_size:]])
+                        #    except AttributeError:
+                        #        pass
+                        #if offset is None:
+                        #    # assume mdat is the last box in the segment
+                        #    offset = frag.seg.size - junk_size
+                        #data = ''.join([data[:offset], junk_count*filling, data[offset+junk_size:]])
+            except ValueError, e:
+                self.response.write('Invalid CGI parameter %s: %s'%(self.request.params.get('corrupt'),str(e)))
+                self.response.set_status(400)
+                return
         self.response.write(data)
 
 class VideoPlayer(RequestHandler):
