@@ -220,7 +220,66 @@ page4_test_cases = [
                      },
                     ]
 
-test_cases = [ page1_test_cases, page2_test_cases, page3_test_cases, page4_test_cases ]
+page5_test_cases = [
+                    {
+                     'id':'vod_404_1',
+                     'manifest': 'manifest_vod.mpd',
+                     'params':{ 'repr':'V3', 'acodec':'mp4a' },
+                     'v404':True,
+                     'details':['AAC audio', '404 errors'],
+                     },
+                    {
+                     'id':'vod_404_2',
+                     'manifest': 'manifest_vod.mpd',
+                     'params':{ 'acodec':'mp4a' },
+                     'v404':True,
+                     'details':['AAC audio', '404 errors'],
+                     },
+                    {
+                     'id':'live_404_1',
+                     'manifest': 'manifest_e.mpd',
+                     'params':{ 'repr':'V3', 'acodec':'mp4a' },
+                     'v404':True,
+                     'details':['AAC audio', '404 errors'],
+                     },
+                    {
+                     'id':'live_404_2',
+                     'manifest': 'manifest_e.mpd',
+                     'params':{ 'acodec':'mp4a' },
+                     'v404':True,
+                     'details':['AAC audio', '404 errors'],
+                     },
+                    {
+                     'id':'vod_503_1',
+                     'manifest': 'manifest_vod.mpd',
+                     'params':{ 'repr':'V3', 'acodec':'mp4a' },
+                     'v503':True,
+                     'details':['AAC audio', '503 errors'],
+                     },
+                    {
+                     'id':'vod_503_2',
+                     'manifest': 'manifest_vod.mpd',
+                     'params':{ 'acodec':'mp4a' },
+                     'v503':True,
+                     'details':['AAC audio', '503 errors'],
+                     },
+                    {
+                     'id':'live_503_1',
+                     'manifest': 'manifest_e.mpd',
+                     'params':{ 'repr':'V3', 'acodec':'mp4a' },
+                     'v503':True,
+                     'details':['AAC audio', '503 errors'],
+                     },
+                    {
+                     'id':'live_503_2',
+                     'manifest': 'manifest_e.mpd',
+                     'params':{ 'acodec':'mp4a' },
+                     'v503':True,
+                     'details':['AAC audio', '503 errors'],
+                     },
+                    ]
+
+test_cases = [ page1_test_cases, page2_test_cases, page3_test_cases, page4_test_cases, page5_test_cases ]
 
 testcase_map = {}
 for page in test_cases:

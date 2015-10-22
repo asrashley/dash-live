@@ -677,6 +677,14 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
 class VideoPlayer(RequestHandler):
     """Responds with an HTML page that contains a video element to play the specified MPD"""
     def get(self, testcase, **kwargs):
+        def gen_errors(cgiparam):
+            err_time = context['now'].replace(microsecond=0) + datetime.timedelta(seconds=20)
+            times=[]
+            for i in range(12):
+                err_time += datetime.timedelta(seconds=10)
+                times.append(err_time.time().isoformat()+'Z')
+            params.append('%s=%s'%(cgiparam,urllib.quote_plus(','.join(times))))
+
         try:
             testcase = testcases.testcase_map[testcase]
             manifest = testcases.manifests[testcase['manifest']]
@@ -704,12 +712,14 @@ class VideoPlayer(RequestHandler):
         except KeyError:
             pass
         if testcase.get('corruption',False)==True:
-            err_time = context['now'].replace(microsecond=0) + datetime.timedelta(seconds=20)
-            times=[]
-            for i in range(10):
-                err_time += datetime.timedelta(seconds=10)
-                times.append(err_time.time().isoformat()+'Z')
-            params.append('vcorrupt=%s'%(urllib.quote_plus(','.join(times))))
+            gen_errors('vcorrupt')
+        for code in self.INJECTED_ERROR_CODES:
+            p = 'v%03d'%code
+            if testcase.get(p,False)==True:
+                gen_errors(p)
+            p = 'a%03d'%code
+            if testcase.get(p,False)==True:
+                gen_errors(p)
         if params:
             mpd_url += '?' + '&'.join(params)
         context['source'] = urlparse.urljoin(self.request.host_url,mpd_url)
