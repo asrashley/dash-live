@@ -30,7 +30,7 @@ $(document).ready(function(){
     }
   });
   $('.btn-grid a').on('click', function(ev){
-    if(ev.target.classList.hasClass('prev') || ev.target.classList.hasClass('prev')){
+    if(ev.target.classList.contains('prev') || ev.target.classList.contains('prev')){
       /* follow the link for prev/next page links */
       return(true);
     }
