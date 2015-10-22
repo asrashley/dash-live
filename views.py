@@ -15,7 +15,7 @@ from webapp2_extras import security
 from webapp2_extras.appengine.users import login_required, admin_required
 
 from routes import routes
-import media, mp4, utils, models, settings
+import media, mp4, utils, models, settings, testcases
 from webob import exc
 
 templates = jinja2.Environment(
@@ -355,193 +355,65 @@ class MainPage(RequestHandler):
             context['page'] = int(self.request.params.get('page','1'),10)
         except ValueError:
             context['page'] = 1
-        context['num_pages']=3
+        context['num_pages']=len(testcases.test_cases)
         context["headers"]=[]
         context['routes'] = routes
         context['video_fields'] = [ 'id', 'codecs', 'bitrate', 'height', 'width', 'encrypted' ]
         context['video_representations'] = [ r for r in media.representations.values() if r.contentType=="video"]
-        # [ media.representations['V1'], media.representations['V2'], media.representations['V3'] ]
-        context['audio_fields'] = [ 'id', 'codecs', 'bitrate', 'sampleRate', 'numChannels', 'language', 'encrypted' ]
+        context['audio_fields'] = [ 'id', 'codecs', 'bitrate', 'sampleRate', 'numChannels', 'language' ]
         context['audio_representations'] = [ r for r in media.representations.values() if r.contentType=="audio"]
-        #[ media.representations['A1'] ]
-        context['rows'] = [
-                           { 'title':'Hand-made on demand profile',
-                            'details':['AAC audio'],
-                            'buttons':[
-                                                                               {
-                                                                                'key':0,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd')+'?repr=V3&acodec=mp4a',
-                                                                                'abr':False, 'BaseURL':True, 'static':True, 'encrypted':False
-                                                                                },
-                                                                               {
-                                                                                'key':1,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd')+'?repr=V3&base=0&acodec=mp4a',
-                                                                                'abr':False, 'BaseURL':False, 'static':True, 'encrypted':False
-                                                                                },
-                                                                               {
-                                                                                'key':2,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd')+'?acodec=mp4a',
-                                                                                'abr':True, 'BaseURL':True, 'static':True, 'encrypted':False
-                                                                                }
-                                                                               ]
-                            },
-                           { 'title':'Hand-made on demand profile',
-                            'details':['E-AC3 audio'],
-                            'buttons':[
-                                                                               {
-                                                                                'key':3,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd')+'?repr=V3&acodec=ec-3',
-                                                                                'abr':False, 'BaseURL':True, 'static':True, 'encrypted':False
-                                                                                },
-                                                                               {
-                                                                                'key':4,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd')+'?repr=V3&base=0&acodec=ec-3',
-                                                                                'abr':False, 'BaseURL':False, 'static':True, 'encrypted':False
-                                                                                },
-                                                                               {
-                                                                                'key':5,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd')+'?acodec=ec-3',
-                                                                                'abr':True, 'BaseURL':True, 'static':True, 'encrypted':False
-                                                                                }
-                                                                               ]
-                            },
-                           { 'title':'Hand-made on demand profile',
-                            'details':['AAC and E-AC3 audio'],
-                            'buttons':[
-                                                                               {
-                                                                                'key':6,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd')+'?repr=V3',
-                                                                                'abr':False, 'BaseURL':True, 'static':True, 'encrypted':False
-                                                                                },
-                                                                               {
-                                                                                'key':7,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd')+'?repr=V3&base=0',
-                                                                                'abr':False, 'BaseURL':False, 'static':True, 'encrypted':False
-                                                                                },
-                                                                               {
-                                                                                'key':8,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_vod.mpd'),
-                                                                                'abr':True, 'BaseURL':True, 'static':True, 'encrypted':False
-                                                                                }
-                                                                               ]
-                            }
-                           ]
-        if context['page']==2:
-            context['rows'] = [
-                           { 'title':'Vendor A live profile',
-                            'details':['AAC audio'], 'buttons':[
-                                                                               {
-                                                                                'key':1,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_a.mpd')+'?repr=V3',
-                                                                                'abr':False, 'BaseURL':True, 'static':False, 'encrypted':False, 'mup':True
-                                                                                },
-                                                                               {
-                                                                                'key':2,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_a.mpd'),
-                                                                                'abr':True, 'BaseURL':True, 'static':False, 'encrypted':False, 'mup':True
-                                                                                }
-                                                                               ]
-                            },
-                           { 'title':'Vendor B live profile',
-                            'details':['type="static"','AAC audio'], 'buttons':[
-                                                                               {
-                                                                                'key':3,
-                                                                                'url':self.uri_for('dash-mpd', manifest='vod_manifest_b.mpd')+'?repr=V3',
-                                                                                'abr':False, 'BaseURL':True, 'static':True, 'encrypted':False
-                                                                                },
-                                                                               {
-                                                                                'key':4,
-                                                                                'url':self.uri_for('dash-mpd', manifest='vod_manifest_b.mpd'),
-                                                                                'abr':True, 'BaseURL':True, 'static':True, 'encrypted':False
-                                                                                }
-                                                                               ]
-                            },
-                           { 'title':'Vendor E live profile', 'buttons':[
-                                                                               {
-                                                                                'key':5,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_e.mpd')+'?repr=V3&mup=-1',
-                                                                                'abr':False, 'BaseURL':True, 'static':False, 'mup':False, 'encrypted':False
-                                                                                },
-                                                                               {
-                                                                                'key':6,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_e.mpd')+'?repr=V3',
-                                                                                'abr':False, 'BaseURL':True, 'static':False, 'mup':True, 'encrypted':False
-                                                                                },
-                                                                               {
-                                                                                'key':7,
-                                                                                'url':self.uri_for('dash-mpd', manifest='manifest_e.mpd'),
-                                                                                'abr':True, 'BaseURL':True, 'static':False, 'mup':True, 'encrypted':False
-                                                                                }
-                                                                               ]
-                            }
-                               ]
-        if context['page']==3:
-            context['rows'] = [
-                               { 'title':'Vendor H live profile',
-                                'details':['utc:ntp UTCTiming element'],
-                                 'buttons':[
-                                                                                   {
-                                                                                    'key':1,
-                                                                                    'url':self.uri_for('dash-mpd', manifest='manifest_h.mpd')+'?repr=V3&mup=-1',
-                                                                                    'abr':False, 'BaseURL':True, 'static':False, 'mup':False, 'encrypted':False
-                                                                                    },
-                                                                                   {
-                                                                                    'key':2,
-                                                                                    'url':self.uri_for('dash-mpd', manifest='manifest_h.mpd')+'?repr=V3',
-                                                                                    'abr':False, 'BaseURL':True, 'static':False, 'mup':True, 'encrypted':False
-                                                                                    },
-                                                                                   {
-                                                                                    'key':3,
-                                                                                    'url':self.uri_for('dash-mpd', manifest='manifest_h.mpd'),
-                                                                                    'abr':True, 'BaseURL':True, 'static':False, 'mup':True, 'encrypted':False
-                                                                                    }
-                                                                                   ]
-                                },
-                               { 'title':'Vendor I live profile',
-                                'details':['utc:direct UTCTiming element'],
-                                 'buttons':[
-                                                                                   {
-                                                                                    'key':4,
-                                                                                    'url':self.uri_for('dash-mpd', manifest='manifest_i.mpd')+'?repr=V3&mup=-1',
-                                                                                    'abr':False, 'BaseURL':True, 'static':False, 'mup':False, 'encrypted':False
-                                                                                    },
-                                                                                   {
-                                                                                    'key':5,
-                                                                                    'url':self.uri_for('dash-mpd', manifest='manifest_i.mpd')+'?repr=V3',
-                                                                                    'abr':False, 'BaseURL':True, 'static':False, 'mup':True, 'encrypted':False
-                                                                                    },
-                                                                                   {
-                                                                                    'key':6,
-                                                                                    'url':self.uri_for('dash-mpd', manifest='manifest_i.mpd'),
-                                                                                    'abr':True, 'BaseURL':True, 'static':False, 'mup':True, 'encrypted':False
-                                                                                    }
-                                                                                   ]
-                                },
-                                { 'title':'CENC VOD profile',
-                                 'details':['DASH on demand profile',
-                                            'kid=00000000000000000000000000000000',
-                                            'key=0123456789ABCDEF0123456789ABCDEF'],
-                                 'buttons':[
-                                            {
-                                             'key':7,
-                                             'url':self.uri_for('dash-mpd', manifest='enc.mpd'),
-                                             'abr':False, 'BaseURL':True, 'static':True, 'mup':False, 'encrypted':True
-                                             }
-                                            ]
-                                },
-                                { 'title':'CENC live profile',
-                                 'details':['DASH live profile',
-                                            'kid=00000000000000000000000000000000',
-                                            'key=0123456789ABCDEF0123456789ABCDEF'],
-                                 'buttons':[
-                                            {
-                                             'key':8,
-                                             'url':self.uri_for('dash-mpd', manifest='enc.mpd')+'?mode=live',
-                                             'abr':False, 'BaseURL':True, 'static':False, 'mup':True, 'encrypted':True
-                                             }
-                                            ]
-                                }
-                               ]
+        context['rows'] = []
+        key_number=1
+        manifest=None
+        prev_item=None
+        row={ 'buttons':[] }
+        for tst in testcases.test_cases[context['page']-1]:
+            tst_manifest = testcases.manifests[tst['manifest']]
+            new_row = tst_manifest!=manifest or len(row['buttons'])==3
+            for field in ['title', 'details', 'static']:
+                try:
+                    new_row = new_row or (prev_item and prev_item[field]!=tst[field])
+                except KeyError:
+                    pass
+            if new_row:
+                if row['buttons']:
+                    context['rows'].append(row)
+                row={ 'buttons':[] }
+                manifest = tst_manifest
+                row.update(manifest)
+            item = { 'key':key_number, 'encrypted':False }
+            item.update(manifest)
+            item.update(tst)
+            for field in ['title', 'details']:
+                try:
+                    row[field] = item[field]
+                except KeyError:
+                    pass
+            item['url'] = self.uri_for('dash-mpd', manifest=tst['manifest'])
+            params=[]
+            try:
+                for k,v in tst['params'].iteritems():
+                    if isinstance(v,(int,long)):
+                        params.append('%s=%d'%(k,v))
+                    else:
+                        params.append('%s=%s'%(k,urllib.quote_plus(v)))
+                item['url'] += '?' + '&'.join(params)
+            except KeyError:
+                pass
+            item['abr'] = not tst['params'].has_key('repr')
+            try:
+                item['BaseURL'] = tst['params']['base']!=0
+            except KeyError:
+                item['BaseURL'] = True
+            try:
+                item['mup'] = tst['params']['mup']<0
+            except KeyError:
+                item['mup'] = True
+            row['buttons'].append(item)
+            key_number += 1
+            prev_item = item
+        if row['buttons']:
+            context['rows'].append(row)
         template = templates.get_template('index.html')
         self.response.write(template.render(context))
 

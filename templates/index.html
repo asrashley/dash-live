@@ -14,11 +14,11 @@
       {% for row in rows %}
         <tr><th class="title"><p class="title">{{row.title}}</p>{% for sub in row.details %}<p class="subtitle">{{sub|escape}}</p>{% endfor %}</th>
           {% for btn in row.buttons %}
-        <td class="btn" id="btn{{btn.key}}"><a href="{{btn.url}}"><span class="key">{{btn.key}}:</span>
+        <td class="btn" id="btn{{btn.key}}"><a href="{{btn.url}}" data-testcase="{{btn.id}}"><span class="key">{{btn.key}}:</span>
           <p class="tooltip" title="Adaptive bitrate enabled?">ABR {{btn.abr|toHtmlString}}</p>
           <p class="tooltip" title="BaseURL element present?">BaseURL {{btn.BaseURL|toHtmlString}}</p>
           {% if not btn.static %}
-          <p class="tooltip" title="minimumUpdatePeriod attribute present?">Update {% if btn.mup %}&check;{% else %}&cross;{% endif %}</p>
+          <p class="tooltip" title="minimumUpdatePeriod attribute present?">Update {{btn.mup|toHtmlString}}</p>
           {% endif %}
           <p class="tooltip" title="Stream is encrypted?">Encrypted {{btn.encrypted|toHtmlString}}</p>
           </a>
