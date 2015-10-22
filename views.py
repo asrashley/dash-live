@@ -263,11 +263,29 @@ class RequestHandler(webapp2.RequestHandler):
             a_cgi_params.append('depth=%d'%timeShiftBufferDepth)
         for code in self.INJECTED_ERROR_CODES:
             if self.request.params.get('v%03d'%code) is not None:
-                v_cgi_params.append('%03d=%s'%(code,self.calculate_injected_error_segments(self.request.params.get('v%03d'%code), availabilityStartTime, video['representations'][0])))
+                times = self.calculate_injected_error_segments(self.request.params.get('v%03d'%code), \
+                                                               now, availabilityStartTime, \
+                                                               timeShiftBufferDepth, \
+                                                               video['representations'][0])
+                if times:
+                    v_cgi_params.append('%03d=%s'%(code,times))
+                del times
             if self.request.params.get('a%03d'%code) is not None:
-                a_cgi_params.append('%03d=%s'%(code,self.calculate_injected_error_segments(self.request.params.get('a%03d'%code), availabilityStartTime, audio['representations'][0])))
+                times = self.calculate_injected_error_segments(self.request.params.get('a%03d'%code), \
+                                                               now, availabilityStartTime, \
+                                                               timeShiftBufferDepth, \
+                                                               audio['representations'][0])
+                if times:
+                    a_cgi_params.append('%03d=%s'%(code,times))
+                del times
         if self.request.params.get('vcorrupt') is not None:
-            v_cgi_params.append('corrupt=%s'%(self.calculate_injected_error_segments(self.request.params.get('vcorrupt'), availabilityStartTime, video['representations'][0])))
+            segs = self.calculate_injected_error_segments(self.request.params.get('vcorrupt'), \
+                                                          now, availabilityStartTime, \
+                                                          timeShiftBufferDepth, \
+                                                          video['representations'][0])
+            if segs:
+                v_cgi_params.append('corrupt=%s'%(segs))
+            del segs
         if v_cgi_params:
             video['mediaURL'] += '?' + '&'.join(v_cgi_params)
         del v_cgi_params
@@ -311,7 +329,7 @@ class RequestHandler(webapp2.RequestHandler):
         seg_start_time = origin_time * repr.timescale + (segment_num-1) * repr.segment_duration
         return locals()
 
-    def calculate_injected_error_segments(self, times, availabilityStartTime, representation):
+    def calculate_injected_error_segments(self, times, now, availabilityStartTime, timeshiftBufferDepth, representation):
         """Calculate a list of segment numbers for injecting errors
 
         :param times: a string of comma separated ISO8601 times
@@ -319,10 +337,13 @@ class RequestHandler(webapp2.RequestHandler):
         :param representation: the Representation to use when calculating segment numbering
         """
         drops=[]
+        if not times:
+            raise ValueError('Time must be a comma separated list of ISO times')
+        earliest_available = now - datetime.timedelta(seconds=timeshiftBufferDepth)
         for d in times.split(','):
             tm = utils.from_isodatetime(d)
             tm = availabilityStartTime.replace(hour=tm.hour, minute=tm.minute, second=tm.second)
-            if tm < availabilityStartTime:
+            if tm < earliest_available:
                 continue
             drop_delta = tm - availabilityStartTime
             drop_seg = long(utils.scale_timedelta(drop_delta, representation.timescale, representation.segment_duration))
