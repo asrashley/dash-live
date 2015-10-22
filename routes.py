@@ -10,7 +10,7 @@ class Route(object):
 routes = {
     "dash-mpd":Route(r'/dash/<manifest:[\w\-_]+\.mpd>', handler='views.LiveManifest', title='DASH test stream'),
     "dash-media":Route(r'/dash/<mode:(live|vod)>/<filename:(A[1-2]|V[1-3]|V3ENC)>/<segment:(\d+|init)>.<ext:(mp4|m4v|m4a|m4s)>', handler='views.LiveMedia', title="DASH fragment"),
-    "video":Route(r'/video', handler='views.VideoPlayer', title='DASH test stream player'),
+    "video":Route(r'/video/<testcase:[\w\-_]+>', handler='views.VideoPlayer', title='DASH test stream player'),
     "home":Route(r'/', handler='views.MainPage', title='DASH test streams'),
     "time":Route(r'/time/<format:(xsd|iso|ntp)>', handler='views.UTCTimeHandler', title='Current time of day'),
     "uploadBlob":Route(r'/blob', handler='views.UploadHandler', title='Upload blob'),

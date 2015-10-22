@@ -5,7 +5,6 @@ try:
     import cStringIO as StringIO
 except ImportError:
     import StringIO
-
 import webapp2, jinja2
 from google.appengine.api import users, memcache
 from google.appengine.ext import blobstore
@@ -656,15 +655,42 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
 
 class VideoPlayer(RequestHandler):
     """Responds with an HTML page that contains a video element to play the specified MPD"""
-    def get(self, **kwargs):
+    def get(self, testcase, **kwargs):
         try:
-            mpd_url = self.request.params['url']
+            testcase = testcases.testcase_map[testcase]
+            manifest = testcases.manifests[testcase['manifest']]
         except KeyError:
-            self.response.write('URL not specified')
+            self.response.write('Unknown test case')
             self.response.set_status(404)
             return
         context = self.create_context(**kwargs)
-        context.update(self.calculate_dash_params(mpd_url=mpd_url))
+        mpd_url = self.uri_for('dash-mpd', manifest=testcase['manifest'])
+        try:
+            mode = testcase['mode']
+        except KeyError:
+            try:
+                mode = manifest['mode']
+            except KeyError:
+                mode = None
+        context.update(self.calculate_dash_params(mpd_url=mpd_url, mode=mode))
+        params=[]
+        try:
+            for k,v in testcase['params'].iteritems():
+                if isinstance(v,(int,long)):
+                    params.append('%s=%d'%(k,v))
+                else:
+                    params.append('%s=%s'%(k,urllib.quote_plus(v)))
+        except KeyError:
+            pass
+        if testcase.get('corruption',False)==True:
+            err_time = context['now'].replace(microsecond=0) + datetime.timedelta(seconds=20)
+            times=[]
+            for i in range(10):
+                err_time += datetime.timedelta(seconds=10)
+                times.append(err_time.time().isoformat()+'Z')
+            params.append('vcorrupt=%s'%(urllib.quote_plus(','.join(times))))
+        if params:
+            mpd_url += '?' + '&'.join(params)
         context['source'] = urlparse.urljoin(self.request.host_url,mpd_url)
         if context['encrypted']:
             try:
@@ -672,8 +698,10 @@ class VideoPlayer(RequestHandler):
             except AttributeError:
                 pass
         context['mimeType'] = 'application/dash+xml'
-        if self.request.params.has_key('title'):
-            context['title'] = self.request.params['title']
+        try:
+            context['title'] = testcase['title']
+        except KeyError:
+            context['title'] = manifest['title']
         template = templates.get_template('video.html')
         self.response.write(template.render(context))
 
