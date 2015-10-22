@@ -57,7 +57,7 @@ $('body').on('keydown', function(ev){
 $(window).load(function(){
   'use strict'
   var player, src, vid, context, estimator, evname;
-  var k, wk = Object.keys(window);
+  var k;
   var statusEvents=['stalled','loadedmetadata', 'error', 'canplay', 'canplaythrough',
   'playing', 'ended', 'pause', 'resize', 'loadstart'];
 
@@ -72,11 +72,6 @@ $(window).load(function(){
     };
   }
 
-  for(k in wk){
-    if(! (k in windowKeys)){
-      console.log('new key '+k);
-    }
-  }
   vid = document.createElement('video');
   if(vid.canPlayType('{{mimeType}}')){
     src = document.createElement('source');
@@ -102,9 +97,6 @@ $(window).load(function(){
     });
     estimator = new shaka.util.EWMABandwidthEstimator();
     $(vid).on('canplay',function(){ this.play(); });
-/*    player.addEventListener('canplay',function(){
-        this.play();
-    });*/
     player.load(new shaka.player.DashVideoSource('{{source}}', null, estimator));
   }
   for(k=0; k<statusEvents.length; ++k){
