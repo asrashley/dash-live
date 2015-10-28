@@ -37,18 +37,29 @@
 $('body').on('keydown', function(ev){
   'use strict';
   switch(ev.which){
-    case 48: /* 0 key */
-     $('video').each(function(){
-       this.pause();
-       this.src='';
-       delete this.src;
-       this.load();
-       $(this).remove();
-     });
     break;
   case 49: /* 1 key */
     window.open('','_self');
     window.close();
+    break;
+  case 27: /* ESC key */
+  case 413: /* stop RCU key */
+     $('#vid-window').addClass('stopped');
+     $('video').each(function(){
+        this.pause();
+        if(this.shakaPlayer){
+            this.shakaPlayer.destroy();
+            delete this.shakaPlayer;
+        }
+        this.src='';
+        try{
+            delete this.src;
+        }
+        catch(e){
+        }
+        this.load();
+        $(this).remove();
+     });
     break;
   case 415: /* 'play' RCU key */
     $('#vid-window').removeClass('paused');
@@ -115,6 +126,7 @@ $(window).load(function(){
     $('#vid-window').append(vid);
     shaka.polyfill.installAll();
     player = new shaka.player.Player(vid);
+    vid.shakaPlayer = player;
     player.addEventListener('error', function(ev){
       console.error('playback failed');
       console.dir(ev);
