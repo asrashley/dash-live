@@ -37,6 +37,14 @@
 $('body').on('keydown', function(ev){
   'use strict';
   switch(ev.which){
+  case 32: /* space */
+    $('#vid-window').toggleClass('paused');
+    $('video').each(function(){
+        if(this.paused)
+            this.play();
+        else
+            this.pause();
+    });
     break;
   case 49: /* 1 key */
     window.open('','_self');
