@@ -14,9 +14,18 @@
 <div id="status" ></div>
 <div id="vid-window">
   <span class="fa fa-4x fa-pause icon"></span>
+  <span class="fa fa-4x fa-step-forward icon"></span>
+  <span class="fa fa-4x fa-step-backward icon"></span>
+  <span class="fa fa-4x fa-stop icon"></span>
+  <div class="timecode">00:00:00</div>
 </div>
 {% else %}
-<div id="vid"><span class="fa fa-4x fa-pause icon"></span></div>
+<div id="vid">
+    <span class="fa fa-4x fa-pause icon"></span>
+    <span class="fa fa-4x fa-step-forward icon"></span>
+    <span class="fa fa-4x fa-step-backward icon"></span>
+    <span class="fa fa-4x fa-stop icon"></span>
+</div>
 <div id="status" ><span class="timecode">00:00:00</span></div>
 {% endif %}
 {% endblock %}
@@ -45,12 +54,30 @@ $('body').on('keydown', function(ev){
     window.close();
     break;
   case 415: /* 'play' RCU key */
-    $('#vid').removeClass('paused');
-    vid.play();
+    $('#vid-window').removeClass('paused');
+    $('video').each(function(){
+        this.play();
+    });
     break;
   case 19: /* 'pause' RCU key */
-    $('#vid').addClass('paused');
-    vid.pause();
+    $('#vid-window').addClass('paused');
+    $('video').each(function(){
+        this.pause();
+    });
+    break;
+  case 37: /* left cursor key */
+  case 424: /* prev RCU key */
+    $('#vid-window').addClass('skip-backward');
+    $('video').each(function(){
+        this.currentTime = Math.max(0, this.currentTime-30);
+    });
+    break;
+  case 39: /* right cursor key */
+  case 425: /* next RCU key */
+    $('#vid-window').addClass('skip-forward');
+    $('video').each(function(){
+        this.currentTime += 30;
+    });
     break;
   }
 });
@@ -59,7 +86,7 @@ $(window).load(function(){
   var player, src, vid, context, estimator, evname;
   var k;
   var statusEvents=['stalled','loadedmetadata', 'error', 'canplay', 'canplaythrough',
-  'playing', 'ended', 'pause', 'resize', 'loadstart'];
+  'playing', 'ended', 'pause', 'resize', 'loadstart', 'seeking', 'seeked'];
 
   function genStatusFn(evName){
     return function(ev){
@@ -103,6 +130,9 @@ $(window).load(function(){
       evname = statusEvents[k];
       $(vid).on(evname, genStatusFn(evname));
   }
+  $(vid).on('seeked', function(){
+    $('#vid-window').removeClass('skip-forward skip-backward');
+  });
 });
 </script>
 {% endblock %}

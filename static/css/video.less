@@ -28,11 +28,16 @@ header {
     color: #eee;
     display: none;
 }
-#vid-window.paused .fa-pause {
+
+#vid-window.paused .fa-pause,
+#vid-window.skip-forward .fa-step-forward,
+#vid-window.skip-backward .fa-step-backward,
+#vid-window.stopped .fa-stop
+{
     display: block;
 }
 
-#status, .textbox, .source {
+#status, .textbox, .source, .timecode {
     position: absolute;
     height: 1em;
     left: 2em;
@@ -43,6 +48,13 @@ header {
     text-align: center;
     background-color: rgba(63,63,63,0.4);
     z-index: 2;
+}
+
+#vid-window .timecode {
+    left: auto;
+    right: 2em;
+    width: 5em;
+    top: 4em;
 }
 
 .source {
