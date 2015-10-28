@@ -107,6 +107,26 @@ $(window).load(function(){
     };
   }
 
+  function formatTimecode(secs, asString){
+        var rv, hrs, mins;
+        if(typeof(secs)==='object'){
+            hrs = secs.hours;
+            mins = secs.minutes;
+            secs = secs.seconds;
+        }
+        else{
+            hrs = Math.floor(secs/3600);
+            mins = Math.floor(secs/60) % 60;
+            secs = Math.floor(secs) % 60;
+        }
+        if(asString===false){
+            return {hours:hrs, minutes:mins, seconds:secs};
+        }
+        rv = (('00'+mins).slice(-2))+':'+(('00'+secs).slice(-2));
+        rv = (('00'+hrs).slice(-2))+':'+rv;
+        return rv;
+  }
+
   vid = document.createElement('video');
   if(vid.canPlayType('{{mimeType}}')){
     src = document.createElement('source');
@@ -141,6 +161,9 @@ $(window).load(function(){
   }
   $(vid).on('seeked', function(){
     $('#vid-window').removeClass('skip-forward skip-backward');
+  });
+  $(vid).on('timeupdate', function(){
+    $('#vid-window .timecode').text(formatTimecode(this.currentTime, true));
   });
 });
 </script>
