@@ -1,8 +1,11 @@
 $(document).ready(function(){
   'use strict';
   function changePage(anchor){
-    var $a = $(anchor);
-    document.location.assign('/video/'+$a.data('testcase'));
+    var tc, $a = $(anchor);
+    tc = $a.data('testcase');
+    if(tc!==undefined){
+        document.location.assign('/video/'+tc);
+    }
   }
 
   $('body').on('keydown', function(ev){
@@ -30,11 +33,15 @@ $(document).ready(function(){
     }
   });
   $('.btn-grid a').on('click', function(ev){
-    if(ev.target.classList.contains('prev') || ev.target.classList.contains('prev')){
+    var anchor = ev.target;
+    while(anchor.tagName!='A' && anchor.tagName!='TR'){
+        anchor = anchor.parentNode;
+    }
+    if(anchor.classList.contains('prev') || anchor.classList.contains('next')){
       /* follow the link for prev/next page links */
       return(true);
     }
-    changePage(ev.target);
+    changePage(anchor);
     ev.preventDefault();
     return(false);
   });

@@ -9,7 +9,7 @@
   <table class="btn-grid table">
     <tbody>
   {% if page>1 %}
-      <tr class="prev-next"><td colspan="4" id="btn0" class="prev"><a href="{{uri_for("home")}}?page={{page-1}}"><span class="key">0:</span>Previous page</a></td></tr>
+      <tr class="prev-next"><td colspan="4" id="btn0" class="prev"><a href="{{uri_for("home")}}?page={{page-1}}" class="prev"><span class="key">0:</span>Previous page</a></td></tr>
   {% endif %}
       {% for row in rows %}
         <tr><th class="title"><p class="title">{{row.title}}</p>{% for sub in row.details %}<p class="subtitle">{{sub|escape}}</p>{% endfor %}</th>
@@ -27,7 +27,7 @@
         </tr>
       {% endfor %}
   {% if page<num_pages %}
-      <tr class="prev-next"><td colspan="4" id="btn9" class="next"><a href="{{uri_for("home")}}?page={{page+1}}"><span class="key">9:</span>Next page</a></td></tr>
+      <tr class="prev-next"><td colspan="4" id="btn9" class="next"><a class="next" href="{{uri_for("home")}}?page={{page+1}}"><span class="key">9:</span>Next page</a></td></tr>
   {% endif %}
     </tbody>
   </table>
