@@ -189,6 +189,15 @@ class RequestHandler(webapp2.RequestHandler):
                 availabilityStartTime = now.replace(hour=5, minute=0, second=0, microsecond=0)
             else:
                 availabilityStartTime = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            startParam = self.request.params.get('start')
+            if startParam:
+                if startParam == 'now':
+                    availabilityStartTime = publishTime - datetime.timedelta(seconds=self.DEFAULT_TIMESHIFT_BUFFER_DEPTH)
+                else:
+                    try:
+                        availabilityStartTime = utils.from_isodatetime(startParam)
+                    except ValueError:
+                        availabilityStartTime = now.replace(hour=0, minute=0, second=0, microsecond=0)
             elapsedTime = now - availabilityStartTime
             if elapsedTime.seconds<timeShiftBufferDepth:
                 timeShiftBufferDepth = elapsedTime.seconds
@@ -254,6 +263,9 @@ class RequestHandler(webapp2.RequestHandler):
             timeSource['url']= urlparse.urljoin(self.request.host_url, self.uri_for('time',format=timeSource['format']))
         v_cgi_params = []
         a_cgi_params = []
+        if self.request.params.get('start'):
+            v_cgi_params.append('start=%s'%utils.toIsoDateTime(availabilityStartTime))
+            a_cgi_params.append('start=%s'%utils.toIsoDateTime(availabilityStartTime))
         if clockDrift:
             timeSource['url'] += '?drift=%d'%clockDrift
             v_cgi_params.append('drift=%d'%clockDrift)
