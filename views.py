@@ -684,6 +684,18 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
                 self.response.write('Invalid CGI parameter %s: %s'%(self.request.params.get('corrupt'),str(e)))
                 self.response.set_status(400)
                 return
+        try:
+            range = self.request.headers['range'].lower().strip()
+            if range.startswith('bytes='):
+                start,end = range[6:].split('-')
+                start = int(start,10)
+                end = int(end,10)
+                self.response.set_status(206)
+                self.response.headers.add_header('Content-Range',' bytes {start}-{end}/{length}'.format(start=start, end=end, length=frag.seg.size))
+                data = data[start:end]
+        except (KeyError, ValueError):
+            pass
+
         self.response.write(data)
 
 class VideoPlayer(RequestHandler):
