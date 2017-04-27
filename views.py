@@ -811,25 +811,20 @@ class UTCTimeHandler(RequestHandler):
             self.response.content_type='application/octet-stream'
         self.response.write(rv)
 
-class UploadFormHandler(RequestHandler):
-    @admin_required
-    def get(self, **kwargs):
-        context = self.create_context(**kwargs)
-        context['upload_url'] = blobstore.create_upload_url(self.uri_for('uploadBlob'))
-        context['representations'] = media.representations
-        self.generate_csrf(context)
-        template = templates.get_template('upload.html')
-        self.response.write(template.render(context))
-
 class UploadHandler(RequestHandler):
     class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
         def post(self, *args, **kwargs):
             upload_files = self.get_uploads('file')
             logging.debug("uploaded file count: %d"%len(upload_files))
+            if not users.is_current_user_admin():
+                self.response.write('User is not an administrator')
+                self.response.set_status(401)
+                return
             if len(upload_files)==0:
                 self.outer.get()
                 return
             blob_info = upload_files[0]
+            media_id = 'Unknown media ID'
             try:
                 self.outer.check_csrf()
                 media_id = self.request.get('media')
@@ -860,8 +855,12 @@ class UploadHandler(RequestHandler):
         self.upload_handler.initialize(request, response)
         self.upload_handler.outer = self
         self.post = self.upload_handler.post
-    @admin_required
+
     def get(self, **kwargs):
+        if not users.is_current_user_admin():
+            self.response.write('User is not an administrator')
+            self.response.set_status(401)
+            return
         context = self.create_context(**kwargs)
         context['upload_url'] = blobstore.create_upload_url(self.uri_for('uploadBlob'))
         context['representations'] = media.representations
