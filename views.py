@@ -498,6 +498,7 @@ class LiveManifest(RequestHandler):
                     return
         template = templates.get_template(manifest)
         self.add_allowed_origins()
+        self.response.headers.add_header('Accept-Ranges','none')
         self.response.write(template.render(context))
 
 class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
@@ -687,15 +688,30 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
         try:
             range = self.request.headers['range'].lower().strip()
             if range.startswith('bytes='):
+                if ',' in range:
+                    raise ValueError('Multiple ranges not supported')
                 start,end = range[6:].split('-')
-                start = int(start,10)
-                end = int(end,10)
+                if start=='':
+                    amount = int(end,10)
+                    start = frag.seg.size - amount
+                    end = frag.seg.size - 1
+                elif end=='':
+                    end = frag.seg.size - 1
+                if isinstance(start,(str,unicode)):
+                    start = int(start,10)
+                if isinstance(end,(str,unicode)):
+                    end = int(end,10)
+                if end>=frag.seg.size or end<start:
+                    self.response.set_status(416)
+                    self.response.headers.add_header('Content-Range','bytes */{length}'.format(length=frag.seg.size))
+                    self.response.write('Invalid content range')
+                    return
                 self.response.set_status(206)
-                self.response.headers.add_header('Content-Range',' bytes {start}-{end}/{length}'.format(start=start, end=end, length=frag.seg.size))
-                data = data[start:end]
+                self.response.headers.add_header('Content-Range','bytes {start}-{end}/{length}'.format(start=start, end=end, length=frag.seg.size))
+                data = data[start:end+1]
         except (KeyError, ValueError):
             pass
-
+        self.response.headers.add_header('Accept-Ranges','bytes')
         self.response.write(data)
 
 class VideoPlayer(RequestHandler):
