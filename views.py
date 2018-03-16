@@ -152,6 +152,31 @@ class RequestHandler(webapp2.RequestHandler):
             rv.append('</SegmentTimeline></SegmentTemplate>')
             return '\n'.join(rv)
 
+        def generateSegmentList(repr):
+            #TODO: support live profile
+            rv = ['<SegmentList timescale="%d" duration="%d">'%(repr.timescale,repr.media_duration)]
+            first=True
+            for seg in repr.segments:
+                if first:
+                    rv.append('<Initialization range="{start:d}-{end:d}"/>'.format(start=seg.seg.pos, end=seg.seg.pos+seg.seg.size-1))
+                    first=False
+                else:
+                    rv.append('<SegmentURL mediaRange="{start:d}-{end:d}"/>'.format(start=seg.seg.pos,end=seg.seg.pos+seg.seg.size-1))
+            rv.append('</SegmentList>')
+            return '\n'.join(rv)
+
+        def generateSegmentDurations(repr):
+            #TODO: support live profile
+            rv = ['<SegmentDurations timescale="%d">'%(repr.timescale)]
+            for seg in repr.segments:
+                try:
+                    rv.append('<S d="%d"/>'%(seg.seg.duration))
+                except AttributeError:
+                    # init segment does not have a duration
+                    pass
+            rv.append('</SegmentDurations>')
+            return '\n'.join(rv)
+
         if mpd_url is None:
             mpd_url = self.request.uri
         try:
@@ -263,6 +288,7 @@ class RequestHandler(webapp2.RequestHandler):
             timeSource['url']= urlparse.urljoin(self.request.host_url, self.uri_for('time',format=timeSource['format']))
         v_cgi_params = []
         a_cgi_params = []
+        m_cgi_params = copy.deepcopy(dict(self.request.params))
         if self.request.params.get('start'):
             v_cgi_params.append('start=%s'%utils.toIsoDateTime(availabilityStartTime))
             a_cgi_params.append('start=%s'%utils.toIsoDateTime(availabilityStartTime))
@@ -298,12 +324,27 @@ class RequestHandler(webapp2.RequestHandler):
             if segs:
                 v_cgi_params.append('corrupt=%s'%(segs))
             del segs
+        try:
+            updateCount = int(self.request.params.get('update','0'),10)
+            m_cgi_params['update']=str(updateCount+1)
+        except ValueError:
+            pass
         if v_cgi_params:
             video['mediaURL'] += '?' + '&'.join(v_cgi_params)
         del v_cgi_params
         if a_cgi_params:
             audio['mediaURL'] += '?' + '&'.join(a_cgi_params)
         del a_cgi_params
+        if m_cgi_params:
+            lst = []
+            for k,v in m_cgi_params.iteritems():
+                lst.append('%s=%s'%(k,v))
+            locationURL = self.request.uri
+            if '?' in locationURL:
+                locationURL = locationURL[:self.request.uri.index('?')]
+            locationURL = locationURL + '?' + '&'.join(lst)
+            del lst
+        del m_cgi_params
         return locals()
 
     def add_allowed_origins(self):
@@ -378,6 +419,34 @@ class RequestHandler(webapp2.RequestHandler):
                 return counter+1
             timeout -= 1
         return -1
+
+    def get_http_range(self, content_length):
+        try:
+            http_range = self.request.headers['range'].lower().strip()
+        except KeyError:
+            return (None, None)
+        if not http_range.startswith('bytes='):
+            raise ValueError('Only byte based ranges are supported')
+        if ',' in http_range:
+            raise ValueError('Multiple ranges not supported')
+        start,end = http_range[6:].split('-')
+        if start=='':
+            amount = int(end,10)
+            start = content_length - amount
+            end = content_length - 1
+        elif end=='':
+            end = content_length - 1
+        if isinstance(start,(str,unicode)):
+            start = int(start,10)
+        if isinstance(end,(str,unicode)):
+            end = int(end,10)
+        if end>=content_length or end<start:
+            self.response.set_status(416)
+            self.response.headers.add_header('Content-Range','bytes */{length}'.format(length=content_length))
+            raise ValueError('Invalid content range')
+        self.response.set_status(206)
+        self.response.headers.add_header('Content-Range','bytes {start}-{end}/{length}'.format(start=start, end=end, length=content_length))
+        return (start,end)
 
 class MainPage(RequestHandler):
     """handler for main index page"""
@@ -500,6 +569,43 @@ class LiveManifest(RequestHandler):
         self.add_allowed_origins()
         self.response.headers.add_header('Accept-Ranges','none')
         self.response.write(template.render(context))
+
+class OnDemandMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
+    """Handler that returns media fragments for the on-demand profile"""
+    def get(self, filename, ext):
+        try:
+            repr = media.representations[filename.upper()]
+        except KeyError,e:
+            self.response.write('%s not found: %s'%(filename,str(e)))
+            self.response.set_status(404)
+            return
+        try:
+            dash = self.calculate_dash_params('vod')
+        except ValueError, e:
+            self.response.write('Invalid CGI parameters: %s'%(str(e)))
+            self.response.set_status(400)
+            return
+        mf = models.MediaFile.query(models.MediaFile.name==repr.filename).get()
+        if ext=='m4a':
+            self.response.content_type='audio/mp4'
+        elif ext=='m4v':
+            self.response.content_type='video/mp4'
+        else:
+            self.response.content_type='application/mp4'
+        blob_info = blobstore.BlobInfo.get(mf.blob)
+        try:
+            start,end = self.get_http_range(blob_info.size)
+        except ValueError, ve:
+            self.response.write(str(ve))
+            return
+        if start is None:
+            self.response.write('HTTP range must be specified')
+            self.response.set_status(400)
+            return
+        blob_reader = blobstore.BlobReader(mf.blob, position=start, buffer_size=1+end-start)
+        data = blob_reader.read(1+end-start)
+        self.response.headers.add_header('Accept-Ranges','bytes')
+        self.response.write(data)
 
 class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
     """Handler that returns media fragments"""
@@ -686,31 +792,12 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
                 self.response.set_status(400)
                 return
         try:
-            range = self.request.headers['range'].lower().strip()
-            if range.startswith('bytes='):
-                if ',' in range:
-                    raise ValueError('Multiple ranges not supported')
-                start,end = range[6:].split('-')
-                if start=='':
-                    amount = int(end,10)
-                    start = frag.seg.size - amount
-                    end = frag.seg.size - 1
-                elif end=='':
-                    end = frag.seg.size - 1
-                if isinstance(start,(str,unicode)):
-                    start = int(start,10)
-                if isinstance(end,(str,unicode)):
-                    end = int(end,10)
-                if end>=frag.seg.size or end<start:
-                    self.response.set_status(416)
-                    self.response.headers.add_header('Content-Range','bytes */{length}'.format(length=frag.seg.size))
-                    self.response.write('Invalid content range')
-                    return
-                self.response.set_status(206)
-                self.response.headers.add_header('Content-Range','bytes {start}-{end}/{length}'.format(start=start, end=end, length=frag.seg.size))
+            start,end = self.get_http_range(frag.seg.size)
+            if start is not None:
                 data = data[start:end+1]
-        except (KeyError, ValueError):
-            pass
+        except ValueError, ve:
+            self.response.write(str(ve))
+            return
         self.response.headers.add_header('Accept-Ranges','bytes')
         self.response.write(data)
 
