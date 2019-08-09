@@ -1,4 +1,4 @@
-import datetime, io, struct
+import datetime, io, struct, sys
 
 from bitstring import ConstBitStream
 from nal import Nal
@@ -576,6 +576,24 @@ class TrackFragmentRunBox(FullBox):
                 pos += nal.size + nal_length_field_length
                 sample.nals.append(nal)
 MP4_BOXES['trun']=TrackFragmentRunBox
+
+class ContentProtectionSpecificBox(FullBox):
+    def __init__(self, src, *args,**kwargs):
+        super(ContentProtectionSpecificBox, self).__init__(src, *args,**kwargs)
+        self.system_id = src.read(16).encode('hex')
+        if self.version > 0:
+            kid_count = struct.unpack('>I', src.read(4))[0]
+            self.key_ids = []
+            for i in range(kid_count):
+                kid = src.read(16)
+                self.key_ids.append(kid)
+        data_size = struct.unpack('>I', src.read(4))[0]
+        if data_size > 0:
+            self.data = src.read(data_size)
+        else:
+            self.data = None
+
+MP4_BOXES['pssh'] = ContentProtectionSpecificBox
 
 #
 # The following class is based on code from http://www.bok.net/trac/bento4/browser/trunk/Source/Python/utils/mp4-dash.py
