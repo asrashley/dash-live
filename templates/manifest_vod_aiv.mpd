@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" mediaPresentationDuration="{{media_duration|isoDuration}}" minBufferTime="PT10S" profiles="urn:mpeg:dash:profile:isoff-on-demand:2011" type="static" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd">
+  <Period start="PT0S" duration="{{media_duration|isoDuration}}">
+    <AdaptationSet contentType="audio" group="1" lang="en" mimeType="audio/mp4" segmentAlignment="true" subsegmentAlignment="true" subsegmentStartsWithSAP="1">
+     {% for repr in audio.representations %}
+      <Representation audioSamplingRate="{{repr.sampleRate}}" bandwidth="{{repr.bitrate}}" codecs="{{repr.codecs}}" id="audio_eng={{repr.bitrate}}">
+        <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
+        <BaseURL>{{baseURL|xmlSafe}}{{repr.id|xmlSafe}}.m4a</BaseURL>
+        {{generateSegmentList(repr)}}
+      </Representation>
+      {% if loop.last %}
+      {{generateSegmentDurations(repr)}}
+      {% endif %}
+   {% endfor %}
+    </AdaptationSet>
+    <AdaptationSet contentType="video" group="2" lang="en" mimeType="video/mp4" par="16:9" segmentAlignment="true" startWithSAP="1" subsegmentAlignment="true" subsegmentStartsWithSAP="1">
+     {% for repr in video.representations %}
+      <Representation bandwidth="{{repr.bitrate}}" codecs="{{repr.codecs}}" frameRate="{{repr.frameRate}}" height="{{repr.height}}" id="video_eng={{repr.bitrate}}" scanType="progressive" width="{{repr.width}}">
+        <BaseURL>{{baseURL|xmlSafe}}{{repr.id|xmlSafe}}.m4v</BaseURL>
+        {{generateSegmentList(repr)}}
+      </Representation>
+      {% if loop.last %}
+      {{generateSegmentDurations(repr)}}
+      {% endif %}
+   {% endfor %}
+    </AdaptationSet>
+  </Period>
+</MPD>

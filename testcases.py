@@ -4,6 +4,11 @@ manifests = {
                                   'mode':'vod',
                                   'static':True
                                   },
+             'manifest_vod_aiv.mpd': { 'title':'AIV on demand profile',
+                                  'details':['AAC and E-AC3 audio'],
+                                  'mode':'vod',
+                                  'static':True
+                                  },
              'manifest_a.mpd': { 'title':'Vendor A live profile',
                                 'details':['AAC audio'],
                                 },
@@ -278,8 +283,33 @@ page5_test_cases = [
                      'details':['AAC audio', '503 errors'],
                      },
                     ]
-
-test_cases = [ page1_test_cases, page2_test_cases, page3_test_cases, page4_test_cases, page5_test_cases ]
+page6_test_cases = [
+                    {
+                     'id':'aiv_1',
+                     'manifest': 'manifest_vod_aiv.mpd',
+                     'params':{ 'repr':'V3', 'acodec':'mp4a' },
+                     'details':['AAC audio'],
+                     },
+                    {
+                     'id':'aiv_2',
+                     'manifest': 'manifest_vod_aiv.mpd',
+                     'params':{ 'acodec':'mp4a' },
+                     'details':['AAC audio'],
+                     },
+                    {
+                     'id':'aiv_3',
+                     'manifest': 'manifest_vod_aiv.mpd',
+                     'params':{ 'repr':'V3' },
+                     'details':['E-AC3 and AAC audio'],
+                     },
+                    {
+                     'id':'aiv_4',
+                     'manifest': 'manifest_vod_aiv.mpd',
+                     'params':{ },
+                     'details':['E-AC3 and AAC audio'],
+                     }
+]
+test_cases = [ page1_test_cases, page2_test_cases, page3_test_cases, page4_test_cases, page5_test_cases, page6_test_cases ]
 
 testcase_map = {}
 for page in test_cases:
