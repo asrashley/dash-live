@@ -642,3 +642,8 @@ class IsoParser(object):
             return atom
         return atoms
 
+if __name__ == "__main__":
+    parser = IsoParser()
+    atoms = parser.walk_atoms(sys.argv[1])
+    for atom in atoms:
+        print(atom)
