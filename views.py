@@ -149,8 +149,15 @@ class RequestHandler(webapp2.RequestHandler):
         av['maxBitrate'] = max([ a.bitrate for a in av['representations']])
         av['maxSegmentDuration'] = max([ a.segment_duration for a in av['representations']]) / av['timescale']
 
+    def generate_clearkey_license_url(self):
+        laurl = urlparse.urljoin(self.request.host_url, self.uri_for('clearkey'))
+        if self.is_https_request():
+            laurl = laurl.replace('http://','https://')
+        return laurl
+
     def generate_drm_dict(self):
         mspr = drm.PlayReady(templates)
+        ck = drm.ClearKey(templates)
         rv = {
             'playready': {
                 'pro': mspr.generate_pro,
@@ -160,6 +167,11 @@ class RequestHandler(webapp2.RequestHandler):
             'marlin': {
                 "MarlinContentIds": True
             },
+            'clearkey': {
+                'laurl': self.generate_clearkey_license_url,
+                'cenc': ck.generate_pssh,
+                'moov': ck.generate_pssh,
+            }
         }
         drms = self.request.params.get('drm')
         if drms is None:
@@ -1099,21 +1111,62 @@ class KeyHandler(RequestHandler):
             self.response.write('KID missing')
             self.response.set_status(400)
             return
-        print('delete',kid)
         result= { "error": "unknown error" }
         try:
             kid = models.KeyMaterial(hex=kid)
             keypair = models.Key.query(models.Key.hkid==kid.hex).get()
             if not keypair:
-                self.response.write('%s not found: %s'%(filename,str(e)))
+                self.response.write('KID {:s} not found'.format(kid))
                 self.response.set_status(404)
                 return
             keypair.key.delete()
             result = {"deleted":kid.hex}
-        except (ValueError) as err:
+        except (TypeError, ValueError) as err:
             result= { "error": str(err) }
         finally:
             self.response.content_type='application/json'
             self.response.write(json.dumps(result))
             
 
+class ClearkeyHandler(RequestHandler):
+    def post(self):
+        result= { "error": "unknown error" }
+        try:
+            req = json.loads(self.request.body)
+            kids = req["kids"]
+            kids = map(self.base64url_decode, kids)
+            kids = map(lambda k: k.encode('hex'), kids)
+            keys = []
+            for kid, key in models.Key.get_kids(kids).iteritems():
+                item = {
+                    "kty": "oct",
+                    "kid": self.base64url_encode(key.KID.raw),
+                    "k": self.base64url_encode(key.KEY.raw)
+                }
+                keys.append(item)
+            result = {
+                "keys": keys,
+                "type": req["type"]
+            }
+        except (ValueError, KeyError) as err:
+            result= { "error": str(err) }
+        finally:
+            self.add_allowed_origins()
+            self.response.content_type = 'application/json'
+            self.response.write(json.dumps(result))
+
+    def base64url_encode(self, b):
+        b = base64.b64encode(b)
+        b = b.replace('+', '-')
+        b = b.replace('/', '_')
+        return b.replace('=', '')
+
+    def base64url_decode(self, b):
+        b = b.replace('-', '+')
+        b = b.replace('_', '/')
+        padding = len(b) % 4
+        if padding == 2:
+            b += '=='
+        elif padding == 3:
+            b += '='
+        return base64.b64decode(b)

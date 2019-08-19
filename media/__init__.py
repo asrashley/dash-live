@@ -1,6 +1,7 @@
 #
 
 import V1, V2, V3, A1, A2, V3ENC
+
 import os
 from segment import Representation, Segment
 

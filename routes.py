@@ -10,6 +10,7 @@ class Route(object):
 routes = {
     "del-key":Route(r'/key/<kid:\w+>', handler='views.KeyHandler', title='delete key pairs'),
     "key":Route(r'/key', handler='views.KeyHandler', title='Add key pairs'),
+    "clearkey":Route(r'/clearkey', handler='views.ClearkeyHandler', title='W3C clearkey support'),
     "dash-mpd":Route(r'/dash/<manifest:[\w\-_]+\.mpd>', handler='views.LiveManifest', title='DASH test stream'),
     "dash-media":Route(r'/dash/<mode:(live|vod)>/<filename:(A[1-2]|V[1-3]|V3ENC)>/<segment_num:(\d+|init)>.<ext:(mp4|m4v|m4a|m4s)>', handler='views.LiveMedia', title="DASH fragment"),
     "dash-od-media":Route(r'/dash/vod/<filename:(A[1-2]|V[1-3]|V3ENC)>.<ext:(mp4|m4v|m4a|m4s)>', handler='views.OnDemandMedia', title="DASH media file"),
