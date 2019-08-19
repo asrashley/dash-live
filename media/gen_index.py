@@ -13,10 +13,10 @@ def create_representation(filename, args):
     repr = Representation(id=os.path.splitext(filename.upper())[0],
                           filename=filename.replace('\\','/'))
     base_media_decode_time=None
-    default_sample_duration=None
+    default_sample_duration=0
     moov = None
     for atom in atoms:
-        if atom.type=='ftyp':
+        if atom.atom_type=='ftyp':
             if args.debug:
                 print('Init seg',atom)
             else:
@@ -24,7 +24,7 @@ def create_representation(filename, args):
                 sys.stdout.flush()
             seg = Segment(seg=atom)
             repr.segments.append(seg)
-        elif atom.type=='moof':
+        elif atom.atom_type=='moof':
             if args.debug:
                 print 'Fragment %d '%(len(repr.segments)+1)
             else:
@@ -33,14 +33,18 @@ def create_representation(filename, args):
             seg = Segment(seg=atom, tfdt=atom.traf.tfdt, mfhd=atom.mfhd)
             dur=0
             for sample in atom.traf.trun.samples:
-                if sample.duration is None:
+                if not sample.duration:
                     sample.duration=moov.mvex.trex.default_sample_duration
                 dur += sample.duration
             seg.seg.duration = dur
+            try:
+                for key in atom.pssh.key_ids:
+                    repr.kids.add(key.encode('hex'))
+            except AttributeError:
+                pass
             base_media_decode_time = atom.traf.tfdt.base_media_decode_time
             repr.segments.append(seg)
-            if default_sample_duration is None:
-                default_sample_duration = 0
+            if default_sample_duration == 0:
                 for sample in atom.traf.trun.samples:
                     default_sample_duration += sample.duration
                 default_sample_duration = default_sample_duration // len(atom.traf.trun.samples)
@@ -58,12 +62,12 @@ def create_representation(filename, args):
                             print(nal)
                 finally:
                     src.close()
-        elif atom.type in ['sidx','moov','mdat','free'] and repr.segments:
+        elif atom.atom_type in ['sidx','moov','mdat','free'] and repr.segments:
             if args.debug:
-                print('Extend fragment %d with %s'%(len(repr.segments), atom.type))
+                print('Extend fragment %d with %s'%(len(repr.segments), atom.atom_type))
             seg = repr.segments[-1]
             seg.seg.size = atom.position - seg.seg.pos + atom.size
-            if atom.type=='moov':
+            if atom.atom_type=='moov':
                 if not args.debug:
                     sys.stdout.write('M')
                     sys.stdout.flush()
@@ -74,10 +78,24 @@ def create_representation(filename, args):
                     default_sample_duration = atom.mvex.trex.default_sample_duration
                 except AttributeError:
                     print('Warning: Unable to find default_sample_duration')
-                    default_sample_duration = None
+                    default_sample_duration = 0
+                avc=None
+                avc_type=None
+                for box in ['avc1', 'avc3', 'mp4a', 'ec_3', 'encv', 'enca']:
+                    try:
+                        avc = getattr(atom.trak.mdia.minf.stbl.stsd, box)
+                        avc_type = avc.atom_type
+                        break
+                    except AttributeError:
+                        pass
+                if avc_type=='enca' or avc_type=='encv':
+                    avc_type = avc.sinf.frma.data_format
+                    repr.encrypted=True
+                    repr.default_kid = avc.sinf.schi.tenc.default_kid.encode('hex')
+                    repr.kids=set([repr.default_kid])
                 if atom.trak.mdia.hdlr.handler_type=='vide':
                     repr.contentType="video"
-                    if default_sample_duration is not None:
+                    if default_sample_duration > 0:
                         repr.frameRate = repr.timescale / default_sample_duration
                     repr.width = int(atom.trak.tkhd.width)
                     repr.height = int(atom.trak.tkhd.height)
@@ -106,10 +124,12 @@ def create_representation(filename, args):
                         except AttributeError:
                             pass
                     if avc is not None:
-                        avc_type = avc.type
+                        avc_type = avc.atom_type
                         if avc_type=='encv' or avc_type=='enca':
                             avc_type = avc.sinf.frma.data_format
                             repr.encrypted=True
+                            repr.default_kid = avc.sinf.schi.tenc.default_kid.encode('hex')
+                            repr.kids=set([repr.default_kid])
                         repr.codecs = '%s.%02x%02x%02x'%(avc_type,
                                                          avc.avcC.AVCProfileIndication,
                                                          avc.avcC.profile_compatibility,
@@ -122,7 +142,7 @@ def create_representation(filename, args):
                         dsi = avc.esds.DecoderSpecificInfo
                         repr.sampleRate = dsi.sampling_frequency
                         repr.numChannels = dsi.channel_configuration
-                        repr.codecs = "%s.%02x.%02x"%(avc.type, avc.esds.DecoderSpecificInfo.object_type, dsi.audio_object_type)
+                        repr.codecs = "%s.%02x.%x"%(avc.atom_type, avc.esds.DecoderSpecificInfo.object_type, dsi.audio_object_type)
                         if repr.numChannels==7:
                             # 7 is a special case that means 7.1
                             repr.numChannels=8
@@ -136,13 +156,15 @@ def create_representation(filename, args):
                                 repr.numChannels += s.channel_count
                                 if s.lfeon:
                                     repr.numChannels += 1
-                        repr.codecs = avc.type
+                        repr.codecs = avc.atom_type
                 try:
                     seg.add(mehd=atom.mvex.mehd)
                 except AttributeError:
                     pass
-            elif atom.type=='sidx':
+            elif atom.atom_type=='sidx':
                 seg.add(sidx=atom)
+    if repr.encrypted:
+        repr.kids = list(repr.kids)
     sys.stdout.write('\r\n')
     if len(repr.segments)>2:
         seg_dur = base_media_decode_time/(len(repr.segments)-2)
