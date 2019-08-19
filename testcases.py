@@ -172,7 +172,7 @@ page4_test_cases = [
                     {
                      'id':'vod_enc_1',
                      'manifest':'enc.mpd',
-                     'params': { 'repr':'V3' },
+                     'params': { 'repr':'V3ENC' },
                      },
                     {
                      'id':'vod_enc_2',
@@ -182,7 +182,7 @@ page4_test_cases = [
                     {
                      'id':'live_enc_1',
                      'manifest':'enc.mpd',
-                     'params': { 'repr':'V3', 'mode':'live' },
+                     'params': { 'repr':'V3ENC', 'mode':'live' },
                      'static':False,
                      'title':'CENC live profile'
                      },
