@@ -43,10 +43,6 @@ class Segment(object):
         return '{'+rv+'}'
 
 class Representation(object):
-    FIELDS = ['bitrate', 'codecs', 'contentType', 'duration', 'encrypted', 'filename',
-              'frameRate', 'height', 'lang', 'nalLengthFieldFength', 'numChannels', 'sampleRate',
-              'sar', 'scanType', 'segments',
-              'startWithSAP', 'timescale', 'width']
     def __init__(self, id,  **kwargs):
         def convert_dict(item):
             if isinstance(item,dict):

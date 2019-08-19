@@ -30,7 +30,7 @@ def create_representation(filename, args):
             else:
                 sys.stdout.write('f')
                 sys.stdout.flush()
-            seg = Segment(seg=atom, tfdt=atom.traf.tfdt, mfhd=atom.mfhd)
+            seg = Segment(seg=atom)
             dur=0
             for sample in atom.traf.trun.samples:
                 if not sample.duration:
@@ -54,14 +54,11 @@ def create_representation(filename, args):
             if args.debug:
                 trun = atom.traf.trun
                 print trun
-                src = open(filename,'rb')
-                try:
+                with open(filename,'rb') as src:
                     trun.parse_samples(src,4)
                     for sample in atom.traf.trun.samples:
                         for nal in sample.nals:
                             print(nal)
-                finally:
-                    src.close()
         elif atom.atom_type in ['sidx','moov','mdat','free'] and repr.segments:
             if args.debug:
                 print('Extend fragment %d with %s'%(len(repr.segments), atom.atom_type))
