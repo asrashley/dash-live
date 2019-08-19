@@ -1,0 +1,4 @@
+<ContentProtection xmlns:mspr="urn:microsoft:playready" schemeIdUri="urn:uuid:9A04F079-9840-4286-AB92-E65BE0885F95" value="2.0" cenc:default_KID="{{repr.default_kid|uuid}}">
+{% if DRM.playready.cenc %}<cenc:pssh>{{DRM.playready.cenc(repr, keys).encode()|base64}}</cenc:pssh>{% endif %}
+{% if DRM.playready.pro %}<mspr:pro>{{DRM.playready.pro(repr, keys)|base64}}</mspr:pro>{% endif %}
+</ContentProtection>

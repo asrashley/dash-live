@@ -25,7 +25,16 @@
         <!--[if lt IE 7]>
             <p class="chromeframe">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">activate Google Chrome Frame</a> to improve your experience.</p>
         <![endif]-->
-        <header><div id="logo"><a href="/">DASH test streams</a></div>
+        <header>
+            <ul class="user">
+            {% if user %}
+            <li><a class="upload" href="/media">Media</a></li>
+            <li><a class="logout" href="{{logout}}">Log Out</a></li>
+            {% else %}
+            <li><a class="login" href="{{login}}">Log In</a></li>
+            {% endif %}
+            </ul>
+            <div id="logo"><a href="/">DASH test streams</a></div>
         <div class="info">
         	<nav class="breadcrumbs">
         	{% if breadcrumbs %}

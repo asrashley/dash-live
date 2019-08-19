@@ -12,7 +12,12 @@
       <tr class="prev-next"><td colspan="4" id="btn0" class="prev"><a href="{{uri_for("home")}}?page={{page-1}}" class="prev"><span class="key">0:</span>Previous page</a></td></tr>
   {% endif %}
       {% for row in rows %}
-        <tr><th class="title"><p class="title">{{row.title}}</p>{% for sub in row.details %}<p class="subtitle">{{sub|escape}}</p>{% endfor %}</th>
+      <tr><th class="title"><p class="title">{{row.title}}</p>
+      {% for sub in row.details %}<p class="subtitle">{{sub|escape}}</p>{% endfor %}
+            {% for kid in row.kids %}
+            <p class="keypair">{{kid}}::{{keys[kid].KEY.hex}}</p>
+            {% endfor %}
+          </th>
           {% for btn in row.buttons %}
         <td class="btn" id="btn{{btn.key}}"><a href="{{btn.url}}" data-testcase="{{btn.id}}"><span class="key">{{btn.key}}:</span>
           <p class="tooltip" title="Adaptive bitrate enabled?">ABR {{btn.abr|toHtmlString}}</p>
@@ -111,6 +116,27 @@
             <tr><td>drift=&lt;number&gt;</td><td>Number of seconds of delay to add to wall clock time</td>
                 <td>&check;</td><td>&check;</td><td>&check;</td>
             </tr>
+            <tr><td>drm=&lt;drmlist&gt;</td>
+              <td><p>A comma separated list of DRMs:</p>
+                <ul>
+                    <li>all - All supported DRMs</li>
+                    <li>clearkey - W3C ClearKey</li>
+                    <li>marlin - Intertrust Marlin</li>
+                    <li>playready - Microsoft PlayReady</li>
+                </ul>
+                <p>For example: <span class="pre">drm=playready,marlin</span></p>
+                <p style="margin-top: 0.5em">Optionally with a hyphen separated list of locations for the DRM
+                  data:</p>
+                  <ul>
+                    <li>pro - An mspr:pro element in the MPD (only
+                    applicable to PlayReady)</li>
+                    <li>cenc - A cenc:pssh element in the MPD</li>
+                    <li>moov - A PSSH box in the init segment</li>
+                  </ul>
+                <p>For example: <span class="pre">drm=playready-pro-cenc,clearkey-moov</span></p>
+              </td>
+                <td>&check;</td><td>&check;</td><td>&cross;</td>
+            </tr>
             <tr><td>enc=(true|false)</td><td>Encrypted or clear</td>
                 <td>&check;</td><td>&cross;</td><td>&cross;</td>
             </tr>
@@ -186,7 +212,7 @@
 {% endblock %}
 
 {% block scripts %}
-  {{import_script("jquery-1.11.1")}}
+  {{import_script("jquery-3.4.1")}}
   {{import_script("jquery.tooltipster")}}
   <script src="/js/main.js" type="text/javascript"></script>
 {% endblock %}

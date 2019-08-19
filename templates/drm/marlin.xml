@@ -1,0 +1,7 @@
+   <ContentProtection xmlns:mas="urn:marlin:mas:1-0:services:schemas:mpd" schemeIdUri="urn:uuid:5e629af5-38da-4063-8977-97ffbd9902d4">
+    <mas:MarlinContentIds>
+    {% for kid in repr.kids -%}
+    <mas:MarlinContentId>urn:marlin:kid:{{kid}}</mas:MarlinContentId>
+    {%- endfor %}
+    </mas:MarlinContentIds>
+   </ContentProtection>

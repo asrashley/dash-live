@@ -25,8 +25,6 @@ manifests = {
                                 'details':['utc:direct UTCTiming element'],
                                 },
              'enc.mpd': { 'title':'CENC VOD profile',
-                         'details':['kid=00000000000000000000000000000000',
-                                    'key=0123456789ABCDEF0123456789ABCDEF'],
                          'static':True,
                          'mode':'vod',
                          'encrypted':True

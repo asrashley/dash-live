@@ -25,6 +25,23 @@ header {
 	font-size: 1.25em;
 	font-size: 1.25rem;
 	position: relative;
+	.user {
+	  display:block;
+	  position: absolute;
+	  right: 1em;
+	  z-index: 10;
+	  border: 1px solid #777;
+	  background-color: #ddd;
+    padding: 0.2em 0.5em;
+    box-shadow: 0 1px 0 0 rgba(255,255,255,0.4), 0 0 4px 0 #377ad0;
+    > li {
+      display: inline-block;
+      margin-left: 1em;
+      a:hover {
+        background-color:#335363; 
+      }
+    }
+	}
 	#logo {
 		width: 50%;
 		height: 100%;
@@ -100,17 +117,25 @@ a {
 	font-size: 1.5em;
 }
 
-#buttons .button {
-  @width: 16em;
-	width:@width;
-	position: relative;
-	left: 50%;
-	margin-left: -(@width/2);
-}
-#buttons .subtitle {
-  font-size: 0.75em;
-  font-style: italic;
-  color: #444;
+#buttons {
+  .button {
+    @width: 16em;
+    width:@width;
+    position: relative;
+    left: 50%;
+    margin-left: -(@width/2);
+  }
+  .subtitle, .keypair {
+    font-size: 0.75em;
+    color: #444;
+  }
+  .subtitle {
+    font-style: italic;
+  }
+  .keypair {
+    font-size: 0.5em;
+    font-stretch: extra-condensed;
+  }
 }
 .button:hover,
 .button.hover {
@@ -420,7 +445,34 @@ div.representations {
   }
 }
 
+#upload-form {
+  width: 35em;
+  margin: 2em 0;
+}
 
+#media-management {
+  .placeholder {
+       display: none;
+  }
+  #keys input {
+    width: 23em;
+  }
+  #keys .computed {
+    width: 6em;
+    text-align: center;
+  }
+}
+
+.cgi-params {
+ li {
+   list-style-type: disc;
+   margin-left: 2em;
+ }
+ .pre {
+    font-family: fixed;
+ }
+ 
+}
 @media only screen and (min-width: 40em) {
 	#chat,
 	#nickname,

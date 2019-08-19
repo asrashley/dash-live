@@ -1,0 +1,12 @@
+<WRMHEADER xmlns="http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader" version="4.0.0.0">
+  <DATA>
+    <PROTECTINFO>
+      <KEYLEN>16</KEYLEN>
+      <ALGID>AESCTR</ALGID>
+    </PROTECTINFO>
+    <KID>{{kid|base64}}</KID>
+    {% if checksum %}<CHECKSUM>{{checksum|base64}}</CHECKSUM>{% endif %}
+    <LA_URL>{{la_url}}</LA_URL>
+    <CUSTOMATTRIBUTES><IIS_DRM_VERSION>8.0.1907.32</IIS_DRM_VERSION></CUSTOMATTRIBUTES>
+  </DATA>
+</WRMHEADER>

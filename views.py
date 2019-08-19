@@ -1,6 +1,22 @@
 #!/usr/bin/env python
 #
-import binascii, copy, datetime, decimal, hashlib, hmac, logging, math, time, os, re, struct, sys, urllib, urlparse
+import base64
+import binascii
+import copy
+import datetime
+import decimal
+import hashlib
+import hmac
+import logging
+import json
+import math
+import os
+import re
+import struct
+import sys
+import time
+import urllib
+import urlparse
 try:
     import cStringIO as StringIO
 except ImportError:
@@ -9,24 +25,29 @@ import webapp2, jinja2
 from google.appengine.api import users, memcache
 from google.appengine.ext import blobstore
 from google.appengine.ext.webapp import blobstore_handlers
+from google.appengine.ext.ndb.model import Key
+#from google.appengine.api.datastore_types import BlobKey
 from webapp2_extras import securecookie
 from webapp2_extras import security
 from webapp2_extras.appengine.users import login_required, admin_required
 
 from routes import routes
-import media, mp4, utils, models, settings, testcases
+import drm, media, mp4, utils, models, settings, testcases
 from webob import exc
 
 templates = jinja2.Environment(
-                               loader=jinja2.FileSystemLoader(
-                                                              os.path.join(os.path.dirname(__file__),'templates')
-                                                              ),
-                               extensions=['jinja2.ext.autoescape'])
-
+    loader=jinja2.FileSystemLoader(
+        os.path.join(os.path.dirname(__file__),'templates')
+    ),
+    extensions=['jinja2.ext.autoescape'],
+    trim_blocks=False,
+)
 templates.filters['isoDuration'] = utils.toIsoDuration
 templates.filters['isoDateTime'] = utils.toIsoDateTime
 templates.filters['toHtmlString'] = utils.toHtmlString
 templates.filters['xmlSafe'] = utils.xmlSafe
+templates.filters['base64'] = utils.toBase64
+templates.filters['uuid'] = utils.toUuid
 
 SCRIPT_TEMPLATE=r'<script src="/js/{mode}/{filename}{min}.js" type="text/javascript"></script>'
 def import_script(filename):
@@ -72,6 +93,8 @@ class RequestHandler(webapp2.RequestHandler):
             context['login'] = users.create_login_url(self.uri_for('home'))
         context['remote_addr'] = self.request.remote_addr
         context['request_uri'] = self.request.uri
+        if self.is_https_request():
+            context['request_uri'] = context['request_uri'].replace('http://','https://')
         return context
 
     def generate_csrf(self,context):
@@ -125,6 +148,36 @@ class RequestHandler(webapp2.RequestHandler):
         av['minBitrate'] = min([ a.bitrate for a in av['representations']])
         av['maxBitrate'] = max([ a.bitrate for a in av['representations']])
         av['maxSegmentDuration'] = max([ a.segment_duration for a in av['representations']]) / av['timescale']
+
+    def generate_drm_dict(self):
+        mspr = drm.PlayReady(templates)
+        rv = {
+            'playready': {
+                'pro': mspr.generate_pro,
+                'cenc': mspr.generate_pssh,
+                'moov': mspr.generate_pssh,
+            },
+            'marlin': {
+                "MarlinContentIds": True
+            },
+        }
+        drms = self.request.params.get('drm')
+        if drms is None:
+            return rv
+        d = {}
+        for name in drms.split(','):
+            try:
+                if '-' in name:
+                    parts = name.split('-')
+                    name = parts[0]
+                    d[name] = {}
+                    for p in parts[1:]:
+                        d[name][p] = rv[name][p]
+                else:
+                    d[name] = rv[name]
+            except KeyError:
+                pass
+        return d
 
     def calculate_dash_params(self, mode=None, mpd_url=None):
         def generateSegmentTimeline(repr):
@@ -228,11 +281,15 @@ class RequestHandler(webapp2.RequestHandler):
                 timeShiftBufferDepth = elapsedTime.seconds
         else:
             availabilityStartTime = now
-        request_uri=self.request.uri
         baseURL = urlparse.urljoin(self.request.host_url,'/dash/'+mode)+'/'
-        video = { 'representations' : [ r for r in media.representations.values() if r.contentType=="video" and r.encrypted==encrypted],
+        if self.is_https_request():
+            baseURL = baseURL.replace('http://','https://')
+        video = { 
+                 'representations' : [ r for r in media.representations.values() if r.contentType=="video" and r.encrypted==encrypted],
                  'mediaURL':'$RepresentationID$/$Number$.m4v'
         }
+        if self.request.params.get('drm'):
+            video["mediaURL"] += '?drm={}'.format(self.request.params.get('drm'))
         if mode=='vod':
             elapsedTime = datetime.timedelta(seconds = video['representations'][0].media_duration / video['representations'][0].timescale)
             timeShiftBufferDepth = elapsedTime.seconds
@@ -258,14 +315,24 @@ class RequestHandler(webapp2.RequestHandler):
         self.compute_av_values(audio, startNumber)
         shortest_representation=None
         media_duration = 0
+        kids = set()
         for rep in video['representations']+audio['representations']:
             dur = rep.media_duration / rep.timescale
             if shortest_representation is None or dur<media_duration:
                 shortest_representation = rep
                 media_duration = dur
+            if rep.encrypted:
+                kids.update(rep.kids)
         del dur
         del rep
         maxSegmentDuration = max(video['maxSegmentDuration'],audio['maxSegmentDuration'])
+        if encrypted:
+            DRM = self.generate_drm_dict()
+            if not kids:
+                keys = models.Key.all_as_dict()
+            else:
+                keys = models.Key.get_kids(kids)
+        del kids
         try:
             timeSource = { 'format':self.request.params['time'] }
             if timeSource['format']=='xsd':
@@ -351,7 +418,7 @@ class RequestHandler(webapp2.RequestHandler):
         try:
             if self.ALLOWED_DOMAINS.search(self.request.headers['Origin']):
                 self.response.headers.add_header("Access-Control-Allow-Origin", self.request.headers['Origin'])
-                self.response.headers.add_header("Access-Control-Allow-Methods", "GET")
+                self.response.headers.add_header("Access-Control-Allow-Methods", "HEAD, GET, POST")
         except KeyError:
             pass
 
@@ -447,6 +514,13 @@ class RequestHandler(webapp2.RequestHandler):
         self.response.set_status(206)
         self.response.headers.add_header('Content-Range','bytes {start}-{end}/{length}'.format(start=start, end=end, length=content_length))
         return (start,end)
+    
+    def is_https_request(self):
+        if self.request.scheme == 'https':
+            return True
+        if self.request.environ.get('HTTPS', 'off')=='on':
+            return True
+        return self.request.headers.get('X-HTTP-Scheme', 'http') == 'https'
 
 class MainPage(RequestHandler):
     """handler for main index page"""
@@ -463,11 +537,12 @@ class MainPage(RequestHandler):
         context['video_representations'] = [ r for r in media.representations.values() if r.contentType=="video"]
         context['audio_fields'] = [ 'id', 'codecs', 'bitrate', 'sampleRate', 'numChannels', 'language' ]
         context['audio_representations'] = [ r for r in media.representations.values() if r.contentType=="audio"]
+        context['keys'] = models.Key.all_as_dict()
         context['rows'] = []
         key_number=1
         manifest=None
         prev_item=None
-        row={ 'buttons':[] }
+        row={ 'buttons':[], "kids":[] }
         for tst in testcases.test_cases[context['page']-1]:
             tst_manifest = testcases.manifests[tst['manifest']]
             new_row = tst_manifest!=manifest or len(row['buttons'])==3
@@ -479,7 +554,7 @@ class MainPage(RequestHandler):
             if new_row:
                 if row['buttons']:
                     context['rows'].append(row)
-                row={ 'buttons':[] }
+                row={ 'buttons':[], "kids":[] }
                 manifest = tst_manifest
                 row.update(manifest)
             item = { 'key':key_number, 'encrypted':False }
@@ -510,6 +585,12 @@ class MainPage(RequestHandler):
                 item['mup'] = tst['params']['mup']<0
             except KeyError:
                 item['mup'] = True
+            if item["encrypted"]:
+                kids = set()
+                for rep in context['video_representations']+context['audio_representations']:
+                    if rep.encrypted:
+                        kids.update(rep.kids)
+                row["kids"] = list(kids)
             row['buttons'].append(item)
             key_number += 1
             prev_item = item
@@ -520,6 +601,9 @@ class MainPage(RequestHandler):
 
 class LiveManifest(RequestHandler):
     """handler for generating MPD files"""
+    def head(self, manifest, **kwargs):
+        self.get(manifest, **kwargs)
+
     def get(self, manifest, **kwargs):
         context = self.create_context(**kwargs)
         context["headers"]=[]
@@ -609,7 +693,7 @@ class OnDemandMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandle
 
 class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
     """Handler that returns media fragments"""
-    def get(self,mode,filename,segment,ext):
+    def get(self,mode,filename,segment_num,ext):
         try:
             repr = media.representations[filename.upper()]
         except KeyError,e:
@@ -622,22 +706,22 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
             self.response.write('Invalid CGI parameters: %s'%(str(e)))
             self.response.set_status(400)
             return
-        if segment=='init':
-            mod_segment = segment = 0
+        if segment_num=='init':
+            mod_segment = segment_num = 0
         else:
             try:
-                segment = int(segment,10)
+                segment_num = int(segment_num,10)
             except ValueError:
-                segment=-1
+                segment_num=-1
             for code in self.INJECTED_ERROR_CODES:
                 if self.request.params.get('%03d'%code) is not None:
                     try:
                         num_failures = int(self.request.params.get('failures','1'),10)
                         for d in self.request.params.get('%03d'%code).split(','):
-                            if int(d,10)==segment:
+                            if int(d,10)==segment_num:
                                 # Only fail 5xx errors "num_failures" times
-                                if code<500 or self.increment_memcache_counter(segment,code)<=num_failures:
-                                    self.response.write('Synthetic %d for segment %d'%(code,segment))
+                                if code<500 or self.increment_memcache_counter(segment_num,code)<=num_failures:
+                                    self.response.write('Synthetic %d for segment %d'%(code,segment_num))
                                     self.response.set_status(code)
                                     return
                     except ValueError, e:
@@ -663,21 +747,24 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
             else:
                 firstFragment = dash['startNumber']
                 lastFragment = firstFragment + repr.num_segments
-            if segment<firstFragment or segment>lastFragment:
-                #raise IOError("Incorrect fragment request %s %d %d->%d\n"%(filename, segment, firstFragment,lastFragment))
+            if segment_num<firstFragment or segment_num>lastFragment:
                 self.response.write('Segment not found (valid range= %d->%d)'%(firstFragment,lastFragment))
                 self.response.set_status(404)
                 return
             if dash['mode']=='live':
                 # elapsed_time is the time (in seconds) since availabilityStartTime
                 # for the requested fragment
-                elapsed_time = (segment - dash['startNumber']) * repr.segment_duration / float(repr.timescale)
+                elapsed_time = (segment_num - dash['startNumber']) * repr.segment_duration / float(repr.timescale)
                 segpos = self.calculate_segment_from_timecode(elapsed_time, repr, dash['shortest_representation'])
                 mod_segment = segpos['segment_num']
                 origin_time = segpos['origin_time']
             else:
-                mod_segment = segment
+                mod_segment = segment_num
         mf = models.MediaFile.query(models.MediaFile.name==repr.filename).get()
+        if mf is None:
+            self.response.write('%s not found'%(repr.filename))
+            self.response.set_status(404)
+            return
         #blob_info = blobstore.BlobInfo.get(mf.blob)
         if ext=='m4a':
             self.response.content_type='audio/mp4'
@@ -688,109 +775,53 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
         assert mod_segment>=0 and mod_segment<=repr.num_segments
         frag = repr.segments[mod_segment]
         blob_reader = blobstore.BlobReader(mf.blob, position=frag.seg.pos, buffer_size=frag.seg.size)
-        data = blob_reader.read(frag.seg.size)
-        #arr = bytearray(data)
+        data = StringIO.StringIO(blob_reader.read(frag.seg.size))
+        atom = mp4.Mp4Atom(atom_type='wrap', position=0, size = frag.seg.size, parent=None,
+                       children=mp4.Mp4Atom.create(data))
+        #atom = mp4.Mp4Atom(atom_type='wrap', position=0, size = frag.seg.size, parent=None,
+        #               children=mp4.Mp4Atom.create(blob_reader))
+        if segment_num==0 and repr.encrypted:
+            keys = models.Key.get_kids(repr.kids)
+            drms = self.generate_drm_dict()
+            for drm in drms.values():
+                try:
+                    pssh = drm["moov"](repr, keys)
+                    # insert the PSSH before the trak box
+                    atom.moov.insert_child(atom.moov.index('trak'), pssh)
+                except KeyError:
+                    pass
         if dash['mode']=='live':
-            if segment==0:
+            if segment_num==0:
                 try:
                     # remove the mehd box as this stream is not supposed to have a fixed duration
-                    offset = frag.mehd.pos + 4 # keep the length field of the old mehd box
-                    #arr[offset:offset+4] = b'skip'
-                    data = ''.join([data[:offset], 'skip', data[offset+4:]]) # convert it to a skip box
+                    del atom.moov.mehd
                 except AttributeError:
                     pass
             else:
                 # Update the baseMediaDecodeTime to take account of the number of times the
                 # stream would have looped since availabilityStartTime
-                dec_time_sz = frag.tfdt.size-12
-                if dec_time_sz==8:
-                    fmt='>Q'
-                else:
-                    fmt='>I'
-                offset = frag.tfdt.pos + 12 #dec_time_pos - frag_pos
-                base_media_decode_time = struct.unpack(fmt, data[offset:offset+dec_time_sz])[0]
                 delta = long(origin_time*repr.timescale)
                 if delta < 0L:
-                    raise IOError("Failure in calculating delta %s %d %d %d"%(str(delta),segment,mod_segment,dash['startNumber']))
-                base_media_decode_time += delta
-                if base_media_decode_time > (1<<(8*dec_time_sz)):
-                    raise IOError("base_media_time overflow: %s does not fit in %d bytes"%(str(base_media_decode_time),dec_time_sz))
-                try:
-                    base_media_decode_time = struct.pack(fmt,base_media_decode_time)
-                except:
-                    raise IOError("struct.pack failure %s"%str(base_media_decode_time))
-                data = ''.join([data[:offset], base_media_decode_time, data[offset+dec_time_sz:]])
-                #arr[offset:offset+dec_time_sz] = base_media_decode_time
+                    raise IOError("Failure in calculating delta %s %d %d %d"%(str(delta),segment_num,mod_segment,dash['startNumber']))
+                atom.moof.traf.tfdt.base_media_decode_time += delta
+
                 # Update the sequenceNumber field in the MovieFragmentHeader box
-                offset = frag.mfhd.pos + 12
-                #arr[offset:offset+4] = struct.pack('>I',segment)
-                data = ''.join([data[:offset], struct.pack('>I',segment), data[offset+4:]])
+                atom.moof.mfhd.sequence_number = segment_num
             try:
                 # remove any sidx box as it has a baseMediaDecodeTime and it's an optional index
-                offset = frag.sidx.pos + 4 # keep the length field of the old sidx box
-                data = ''.join([data[:offset], 'skip', data[offset+4:]]) # convert it to a skip box
-                #arr[offset:offset+4] = b'skip'
+                del data.sidx
             except AttributeError:
                 pass
         self.add_allowed_origins()
+        data = atom.encode()
         if self.request.params.get('corrupt') is not None:
             try:
-                corrupt_frames = int(self.request.params.get('frames','4'),10)
-            except ValueError:
-                corrupt_frames = 4
-            try:
-                for d in self.request.params.get('corrupt').split(','):
-                    if int(d,10)==segment:
-                        #filling = struct.pack('>I', 8)+'skip'
-                        # put junk data in the last 2% of the segment
-                        #junk_count = frag.seg.size//(50*len(filling))
-                        #junk_size = junk_count*len(filling)
-                        src = StringIO.StringIO(data)
-                        seg = mp4.Mp4Atom(src, 'fake', position=0, size=frag.seg.size, parent=None)
-                        seg.payload = 0
-                        parser = mp4.IsoParser()
-                        parser.walk_atoms(src, atom=seg)
-                        seg.moof.traf.trun.parse_samples(src, repr.nalLengthFieldFength)
-                        #hdr = mp4.Mp4Atom.parse_atom_header(src)
-                        #while hdr and hdr['type']!='mdat':
-                        #    src.seek(hdr['position']+hdr['size'])
-                        #    hdr = mp4.Mp4Atom.parse_atom_header(src)
-                        del src
-                        for sample in seg.moof.traf.trun.samples:
-                            if corrupt_frames<=0:
-                                break
-                            for nal in sample.nals:
-                                if nal.is_ref_frame and not nal.is_idr_frame:
-                                    junk = 'junk'
-                                    # put junk data in the last 20% of the NAL
-                                    junk_count = nal.size // (5*len(junk))
-                                    if junk_count:
-                                        junk_size = len(junk)*junk_count
-                                        offset =  nal.position + nal.size - junk_size
-                                        data = ''.join([data[:offset], junk_count*junk, data[offset+junk_size:]])
-                                        corrupt_frames -= 1
-                                        if corrupt_frames<=0:
-                                            break
-                        #offset = None
-                        #if hdr and hdr['type']=='mdat':
-                        #    offset = hdr['position'] + hdr['size'] - junk_size
-                        #else:
-                        #    try:
-                        #        if (frag.sidx.pos+frag.sidx.size)==frag.seg.size:
-                        #            # segment has a sidx box at the end
-                        #            # assume mdat is before the sidx box
-                        #            offset = frag.sidx.pos - junk_size
-                        #            #data = ''.join([data[:offset], junk_count*filling, data[offset+junk_size:]])
-                        #    except AttributeError:
-                        #        pass
-                        #if offset is None:
-                        #    # assume mdat is the last box in the segment
-                        #    offset = frag.seg.size - junk_size
-                        #data = ''.join([data[:offset], junk_count*filling, data[offset+junk_size:]])
+                self.apply_corruption(repr, segment_num, atom, data)
             except ValueError, e:
                 self.response.write('Invalid CGI parameter %s: %s'%(self.request.params.get('corrupt'),str(e)))
                 self.response.set_status(400)
                 return
+        data = data[8:] # [8:] is to skip the fake "wrap" box
         try:
             start,end = self.get_http_range(frag.seg.size)
             if start is not None:
@@ -800,6 +831,42 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
             return
         self.response.headers.add_header('Accept-Ranges','bytes')
         self.response.write(data)
+
+    def apply_corruption(self, repr, segment_num, atom, data):
+        mem = memoryview(data)
+        try:
+            corrupt_frames = int(self.request.params.get('frames','4'),10)
+        except ValueError:
+            corrupt_frames = 4
+        for d in self.request.params.get('corrupt').split(','):
+            if int(d,10) != segment_num:
+                continue
+            # put junk data in the last 2% of the segment
+            #junk_count = frag.seg.size//(50*len(filling))
+            #junk_size = junk_count*len(filling)
+            atom.moof.traf.trun.parse_samples(data, repr.nalLengthFieldFength)
+            #hdr = mp4.Mp4Atom.parse_atom_header(src)
+            #while hdr and hdr['type']!='mdat':
+            #    src.seek(hdr['position']+hdr['size'])
+            #    hdr = mp4.Mp4Atom.parse_atom_header(src)
+            #del src
+            for sample in seg.moof.traf.trun.samples:
+                if corrupt_frames<=0:
+                    break
+                for nal in sample.nals:
+                    if nal.is_ref_frame and not nal.is_idr_frame:
+                        junk = 'junk'
+                        # put junk data in the last 20% of the NAL
+                        junk_count = nal.size // (5*len(junk))
+                        if junk_count:
+                            junk_size = len(junk)*junk_count
+                            offset =  nal.position + nal.size - junk_size
+                            mem[offset:offset+junk_size] = junk_count*junk
+                            #data = ''.join([data[:offset], junk_count*junk, data[offset+junk_size:]])
+                            corrupt_frames -= 1
+                            if corrupt_frames<=0:
+                                break
+
 
 class VideoPlayer(RequestHandler):
     """Responds with an HTML page that contains a video element to play the specified MPD"""
@@ -850,9 +917,12 @@ class VideoPlayer(RequestHandler):
         if params:
             mpd_url += '?' + '&'.join(params)
         context['source'] = urlparse.urljoin(self.request.host_url,mpd_url)
-        if context['encrypted']:
+        if self.is_https_request():
+            context['source'] = context['source'].replace('http://','https://')
+        else:
             try:
-                context['source'] = '#'.join([settings.sas_url,urllib.quote(context['source'])])
+                if encrypted:
+                    context['source'] = '#'.join([settings.sas_url,urllib.quote(context['source'])])
             except AttributeError:
                 pass
         context['mimeType'] = 'application/dash+xml'
@@ -898,7 +968,7 @@ class UTCTimeHandler(RequestHandler):
             self.response.content_type='application/octet-stream'
         self.response.write(rv)
 
-class UploadHandler(RequestHandler):
+class MediaHandler(RequestHandler):
     class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
         def post(self, *args, **kwargs):
             upload_files = self.get_uploads('file')
@@ -919,7 +989,7 @@ class UploadHandler(RequestHandler):
                 context = self.outer.create_context(title='File %s uploaded'%(media_id), blob=blob_info.key())
                 mf = models.MediaFile.query(models.MediaFile.name==repr.filename).get()
                 if mf:
-                    mf.key.delete()
+                    mf.delete()
                 mf = models.MediaFile(name=repr.filename, blob=blob_info.key())
                 mf.put()
                 template = templates.get_template('upload-done.html')
@@ -949,8 +1019,101 @@ class UploadHandler(RequestHandler):
             self.response.set_status(401)
             return
         context = self.create_context(**kwargs)
+        context['media_ids'] = media.representations.keys()
+        context['media_ids'].sort()
         context['upload_url'] = blobstore.create_upload_url(self.uri_for('uploadBlob'))
-        context['representations'] = media.representations
+        if self.is_https_request():
+            context['upload_url'] = context['upload_url'].replace('http://','https://')
+        context['media'] = models.MediaFile.all()
+        context['media'].sort(key=lambda i: i['name'])
+        context['keys'] = models.Key.all()
+        context['keys'].sort(key=lambda i: i.hkid)
         self.generate_csrf(context)
         template = templates.get_template('upload.html')
         self.response.write(template.render(context))
+
+    """handler for deleting a media blob"""
+    def delete(self, mfid, **kwargs):
+        if not users.is_current_user_admin():
+            self.response.write('User is not an administrator')
+            self.response.set_status(401)
+            return
+        if not mfid:
+            self.response.write('MediaFile ID missing')
+            self.response.set_status(400)
+            return
+        print('delete', mfid)
+        result= { "error": "unknown error" }
+        try:
+            mf = models.MediaFile.query(models.Key.key==Key(urlsafe=mfid)).get()
+            if not mf:
+                self.response.write('{} not found'.format(blob))
+                self.response.set_status(404)
+                return
+            mf.delete()
+            result = {"deleted":mfid}
+        except (ValueError) as err:
+            result= { "error": str(err) }
+        finally:
+            self.response.content_type='application/json'
+            self.response.write(json.dumps(result))
+
+class KeyHandler(RequestHandler):
+    """handler for adding a key pair"""
+    def put(self, **kwargs):
+        if not users.is_current_user_admin():
+            self.response.write('User is not an administrator')
+            self.response.set_status(401)
+            return
+        kid = self.request.get('kid')
+        key = self.request.get('key')
+        print(kid,key)
+        result= { "error": "unknown error" }
+        try:
+            kid = models.KeyMaterial(kid)
+            computed = False
+            if key:
+                key = models.KeyMaterial(key)
+            else:
+                key = models.KeyMaterial(raw=drm.PlayReady.generate_content_key(kid.raw))
+                computed = True
+            keypair = models.Key.query(models.Key.hkid==kid.hex).get()
+            if keypair:
+                raise ValueError("Duplicate KID {}".format(kid.hex))
+            keypair = models.Key(hkid = kid.hex, hkey=key.hex, computed=computed)
+            keypair.put()
+            result = {"key":key.hex, "kid": kid.hex, "computed": computed}
+        except (ValueError) as err:
+            result= { "error": str(err) }
+        finally:
+            self.response.content_type='application/json'
+            self.response.write(json.dumps(result))
+
+    """handler for deleting a key pair"""
+    def delete(self, kid, **kwargs):
+        if not users.is_current_user_admin():
+            self.response.write('User is not an administrator')
+            self.response.set_status(401)
+            return
+        if not kid:
+            self.response.write('KID missing')
+            self.response.set_status(400)
+            return
+        print('delete',kid)
+        result= { "error": "unknown error" }
+        try:
+            kid = models.KeyMaterial(hex=kid)
+            keypair = models.Key.query(models.Key.hkid==kid.hex).get()
+            if not keypair:
+                self.response.write('%s not found: %s'%(filename,str(e)))
+                self.response.set_status(404)
+                return
+            keypair.key.delete()
+            result = {"deleted":kid.hex}
+        except (ValueError) as err:
+            result= { "error": str(err) }
+        finally:
+            self.response.content_type='application/json'
+            self.response.write(json.dumps(result))
+            
+

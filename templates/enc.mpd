@@ -1,38 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<MPD
-{% if mode=='vod' %}type="static" xmlns="urn:mpeg:DASH:schema:MPD:2011" profiles="urn:mpeg:dash:profile:isoff-on-demand:2011"
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011"  xmlns:cenc="urn:mpeg:cenc:2013"
+{% if mode=='vod' %}type="static" profiles="urn:mpeg:dash:profile:isoff-on-demand:2011"
     mediaPresentationDuration="{{media_duration|isoDuration}}"
-{% else %}type="dynamic" profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014"
-{% endif %}
-    minBufferTime="PT1.5S"
+{% else %}
+type="dynamic" profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014"
     {% if minimumUpdatePeriod %}minimumUpdatePeriod="{{minimumUpdatePeriod|isoDuration}}"{% endif %}
     {% if suggestedPresentationDelay %}suggestedPresentationDelay="{{suggestedPresentationDelay|isoDuration}}"{%endif%}
     {% if availabilityStartTime %}availabilityStartTime="{{availabilityStartTime|isoDateTime}}"{% endif %}
     {% if timeShiftBufferDepth %}timeShiftBufferDepth="{{timeShiftBufferDepth|isoDuration}}"{% endif %}
+{% endif %}
+    minBufferTime="PT1.5S"
    >
  <ProgramInformation>
   <Title>{{title}}</Title>
  </ProgramInformation>
+ <Location>{{request_uri|xmlSafe}}</Location>
  {% if mode=='live' %}<UTCTiming schemeIdUri="{{timeSource.method}}" value="{{timeSource.url}}"/>{% endif %}
- <Period start="PT0S" {% if mode=='vod' %}duration="{{media_duration|isoDuration}}"{% endif %}>
+ <Period start="PT0S" id="p0" {% if mode=='vod' %}duration="{{media_duration|isoDuration}}"{% endif %}>
  {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
- <!-- {{request_uri}} -->
-  <AdaptationSet>
+  <AdaptationSet mimeType="video/mp4" contentType="video" segmentAlignment="true" startWithSAP="1" maxWidth="{{video.maxWidth}}" maxHeight="{{video.maxHeight}}" maxFrameRate="{{video.maxFrameRate}}" par="16:9">
    <ContentComponent id="1" contentType="video"/>
-   <ContentProtection schemeIdUri="urn:mpeg:dash:mp4protection:2011" value="cenc"/>
-   <ContentProtection xmlns:mas="urn:marlin:mas:1-0:services:schemas:mpd" schemeIdUri="urn:uuid:5e629af5-38da-4063-8977-97ffbd9902d4">
-    <mas:MarlinContentIds>
-    <mas:MarlinContentId>urn:marlin:kid:00000000000000000000000000000000</mas:MarlinContentId>
-    </mas:MarlinContentIds>
-   </ContentProtection>
    {% for repr in video.representations %}
-   <Representation id="{{repr.id}}" mimeType="video/mp4" codecs="{{repr.codecs}}" width="{{repr.width}}" height="{{repr.height}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
+   {% if repr.encrypted and loop.first %}
+   <ContentProtection schemeIdUri="urn:mpeg:dash:mp4protection:2011" value="cenc" cenc:default_KID="{{repr.default_kid|uuid}}"/>
+   {% if DRM.marlin %}{% include "drm/marlin.xml" %}{% endif %}
+   {% if DRM.playready %}{% include  "drm/playready.xml" %}{% endif %}
+   {% endif %}
+   {% if loop.first %}
       <SegmentTemplate startNumber="{{startNumber}}" timescale="{{video.timescale}}" duration="{{repr.segment_duration}}" initialization="{{repr.id}}/init.mp4" media="{{video.mediaURL|xmlSafe}}"/>
+   {% endif %}
+   <Representation id="{{repr.id}}" mimeType="video/mp4" codecs="{{repr.codecs}}" width="{{repr.width}}" height="{{repr.height}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
    </Representation>
    {% endfor %}
   </AdaptationSet>
   {% for repr in audio.representations %}{% if repr.role=="main" %}
-  <AdaptationSet>
+  <AdaptationSet  mimeType="audio/mp4" contentType="audio" lang="{{repr.language}}" segmentAlignment="true" startWithSAP="{{repr.startWithSAP}}">
      <ContentComponent id="1" contentType="audio" lang="{{audio.representations[0].language}}"/>
      <Representation id="{{repr.id}}" mimeType="audio/mp4" codecs="{{repr.codecs}}" sampleRate="{{repr.sampleRate}}" numChannels="{{repr.numChannels}}" lang="{{repr.lang}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
         <SegmentTemplate startNumber="{{startNumber}}" timescale="{{audio.timescale}}" duration="{{repr.segment_duration}}" initialization="{{repr.id}}/init.mp4" media="{{audio.mediaURL|xmlSafe}}"/>

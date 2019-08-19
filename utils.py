@@ -1,4 +1,4 @@
-import datetime, math, os, re
+import base64, datetime, math, os, re
 
 
 # A UTC class, see https://docs.python.org/2.7/library/datetime.html#datetime.tzinfo
@@ -132,6 +132,15 @@ def scale_timedelta(delta, num, denom):
     secs += msecs / 1000000.0
     return secs / denom
 
+def toBase64(value):
+    return base64.b64encode(value)
+    
+def toUuid(value):
+    if not isinstance(value, basestring):
+        value = value.encode('hex')
+    value = value.upper()
+    return '-'.join([value[:8], value[8:12], value[12:16], value[16:20], value[20:] ])
+    
 #
 # The following code is from djangoappengine/utils.py
 #
