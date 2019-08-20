@@ -1,4 +1,4 @@
-import base64, datetime, math, os, re
+import base64, datetime, json, math, os, re
 
 
 # A UTC class, see https://docs.python.org/2.7/library/datetime.html#datetime.tzinfo
@@ -119,6 +119,13 @@ def toHtmlString(item, className=None):
             rv = str(rv)
     return rv
 
+def toJson(value):
+    if not value:
+        return value
+    try:
+        return json.dumps(value)
+    except ValueError:
+        return value
 
 def xmlSafe(value):
     """Convert the given string to a format that is safe for inclusion in an XML document.

@@ -32,7 +32,7 @@ from webapp2_extras import security
 from webapp2_extras.appengine.users import login_required, admin_required
 
 from routes import routes
-import drm, media, mp4, utils, models, settings, testcases
+import drm, media, mp4, utils, models, settings, manifests, options
 from webob import exc
 
 templates = jinja2.Environment(
@@ -45,9 +45,15 @@ templates = jinja2.Environment(
 templates.filters['isoDuration'] = utils.toIsoDuration
 templates.filters['isoDateTime'] = utils.toIsoDateTime
 templates.filters['toHtmlString'] = utils.toHtmlString
+templates.filters['toJson'] = utils.toJson
 templates.filters['xmlSafe'] = utils.xmlSafe
 templates.filters['base64'] = utils.toBase64
 templates.filters['uuid'] = utils.toUuid
+
+legacy_manifest_names = {
+    'enc.mpd': 'hand_made.mpd',
+    'manifest_vod.mpd': 'hand_made.mpd',
+}
 
 SCRIPT_TEMPLATE=r'<script src="/js/{mode}/{filename}{min}.js" type="text/javascript"></script>'
 def import_script(filename):
@@ -191,65 +197,94 @@ class RequestHandler(webapp2.RequestHandler):
                 pass
         return d
 
+    def generateSegmentList(self, repr):
+        #TODO: support live profile
+        rv = ['<SegmentList timescale="%d" duration="%d">'%(repr.timescale,repr.media_duration)]
+        first=True
+        for seg in repr.segments:
+            if first:
+                rv.append('<Initialization range="{start:d}-{end:d}"/>'.format(start=seg.seg.pos, end=seg.seg.pos+seg.seg.size-1))
+                first=False
+            else:
+                rv.append('<SegmentURL mediaRange="{start:d}-{end:d}"/>'.format(start=seg.seg.pos,end=seg.seg.pos+seg.seg.size-1))
+        rv.append('</SegmentList>')
+        return '\n'.join(rv)
+
+    def generateSegmentDurations(self, repr):
+        #TODO: support live profile
+        def output_s_node(sn):
+            if sn["duration"] is None:
+                return
+            c = ' r="{:d}"'.format(sn["count"]-1) if sn["count"]>1 else ''
+            rv.append('<S {} d="{:d}"/>'.format(c, sn["duration"]))
+        rv = ['<SegmentDurations timescale="%d">'%(repr.timescale)]
+        s_node = {
+            "duration": None,
+            "count": 0,
+        }
+        for seg in repr.segments:
+            try:
+                if seg.seg.duration != s_node["duration"]:
+                    output_s_node(s_node)
+                    s_node["count"] = 0
+                s_node["duration"] = seg.seg.duration
+                s_node["count"] += 1
+            except AttributeError:
+                # init segment does not have a duration
+                pass
+        output_s_node(s_node)
+        rv.append('</SegmentDurations>')
+        return '\n'.join(rv)
+
+    def generateSegmentTimeline(self, context, repr):
+        def output_s_node(sn):
+            if sn["duration"] is None:
+                return
+            c = ' r="{:d}"'.format(sn["count"]-1) if sn["count"]>1 else ''
+            t = ' t="{:d}"'.format(sn["start"]) if sn["start"] is not None else ''
+            rv.append('<S {} {} d="{:d}"/>'.format(t, c, sn["duration"]))
+        
+        rv = ['<SegmentTemplate timescale="%d" '%repr.timescale,
+              'initialization="$RepresentationID$/init.mp4" ',
+              'media="$RepresentationID$/$Number$.mp4" ' ]
+        timeline_start = context["elapsedTime"] - datetime.timedelta(seconds=context["timeShiftBufferDepth"])
+        first=True
+        first_seg = self.calculate_segment_from_timecode(utils.scale_timedelta(timeline_start,1,1), repr, context["shortest_representation"])
+        dur=0
+        s_node = {
+            'duration': None,
+            'count': 0,
+            'start': None,
+        }
+        while dur <= (context["timeShiftBufferDepth"]*repr.timescale):
+            seg = repr.segments[first_seg['segment_num']]
+            if first:
+                rv.append('startNumber="%d">'%(context["startNumber"]+long(first_seg['seg_start_time']/repr.segment_duration)))
+                rv.append('<SegmentTimeline>')
+                s_node['start'] = first_seg['seg_start_time']
+                first=False
+            elif seg.seg.duration != s_node["duration"]:
+                output_s_node(s_node)
+                s_node["start"] = None
+                s_node["count"] = 0
+            s_node["duration"] = seg.seg.duration
+            s_node["count"] += 1
+            dur += seg.seg.duration
+            first_seg['segment_num'] += 1
+            if first_seg['segment_num']>repr.num_segments:
+                first_seg['segment_num']=1
+        output_s_node(s_node)
+        rv.append('</SegmentTimeline></SegmentTemplate>')
+        return '\n'.join(rv)
+
     def calculate_dash_params(self, mode=None, mpd_url=None):
-        def generateSegmentTimeline(repr):
-            rv = ['<SegmentTemplate timescale="%d" '%repr.timescale,
-                  'initialization="$RepresentationID$/init.mp4" ',
-                  'media="$RepresentationID$/$Number$.mp4" ' ]
-            timeline_start = elapsedTime - datetime.timedelta(seconds=timeShiftBufferDepth)
-            first=True
-            first_seg = self.calculate_segment_from_timecode(utils.scale_timedelta(timeline_start,1,1), repr, shortest_representation)
-            dur=0
-            while dur<=(timeShiftBufferDepth*repr.timescale):
-                seg = repr.segments[first_seg['segment_num']]
-                if first:
-                    rv.append('startNumber="%d">'%(startNumber+long(first_seg['seg_start_time']/repr.segment_duration)))
-                    rv.append('<SegmentTimeline>')
-                    t = 't="%d" '%first_seg['seg_start_time']
-                    first=False
-                else:
-                    t=''
-                rv.append('<S %sd="%d"/>'%(t,seg.seg.duration))
-                dur += seg.seg.duration
-                first_seg['segment_num'] += 1
-                if first_seg['segment_num']>repr.num_segments:
-                    first_seg['segment_num']=1
-            rv.append('</SegmentTimeline></SegmentTemplate>')
-            return '\n'.join(rv)
-
-        def generateSegmentList(repr):
-            #TODO: support live profile
-            rv = ['<SegmentList timescale="%d" duration="%d">'%(repr.timescale,repr.media_duration)]
-            first=True
-            for seg in repr.segments:
-                if first:
-                    rv.append('<Initialization range="{start:d}-{end:d}"/>'.format(start=seg.seg.pos, end=seg.seg.pos+seg.seg.size-1))
-                    first=False
-                else:
-                    rv.append('<SegmentURL mediaRange="{start:d}-{end:d}"/>'.format(start=seg.seg.pos,end=seg.seg.pos+seg.seg.size-1))
-            rv.append('</SegmentList>')
-            return '\n'.join(rv)
-
-        def generateSegmentDurations(repr):
-            #TODO: support live profile
-            rv = ['<SegmentDurations timescale="%d">'%(repr.timescale)]
-            for seg in repr.segments:
-                try:
-                    rv.append('<S d="%d"/>'%(seg.seg.duration))
-                except AttributeError:
-                    # init segment does not have a duration
-                    pass
-            rv.append('</SegmentDurations>')
-            return '\n'.join(rv)
-
         if mpd_url is None:
             mpd_url = self.request.uri
-        try:
-            encrypted = int(self.request.params.get('enc',''),10)
-            encrypted = encrypted>0
-        except ValueError:
-            encrypted = re.search('enc.mpd',mpd_url) is not None
-            encrypted = re.search('true',self.request.params.get('enc',str(encrypted)),re.I) is not None
+            for k, v in legacy_manifest_names.iteritems():
+                if v in mpd_url:
+                    mpd_url = mpd_url.replace(k,v)
+                    break
+        encrypted = self.request.params.get('drm','none').lower() != 'none'
         if mode is None:
             mode = self.request.params.get('mode',None)
         if mode is None:
@@ -257,13 +292,7 @@ class RequestHandler(webapp2.RequestHandler):
                 mode='vod'
             else:
                 mode='live'
-        if mode=='live':
-            try:
-                timeShiftBufferDepth = int(self.request.params.get('depth',str(self.DEFAULT_TIMESHIFT_BUFFER_DEPTH)),10)
-            except ValueError:
-                timeShiftBufferDepth = self.DEFAULT_TIMESHIFT_BUFFER_DEPTH # in seconds
         #media_duration = 9*60 + 32.52 #"PT0H9M32.52S"
-        startNumber = 1
         now = datetime.datetime.now(tz=utils.UTC())
         clockDrift=0
         try:
@@ -272,8 +301,27 @@ class RequestHandler(webapp2.RequestHandler):
                 now -= datetime.timedelta(seconds=clockDrift)
         except ValueError:
             pass
-        publishTime = now.replace(microsecond=0)
-        suggestedPresentationDelay = 30
+        timeShiftBufferDepth=0
+        if mode=='live':
+            try:
+                timeShiftBufferDepth = int(self.request.params.get('depth',str(self.DEFAULT_TIMESHIFT_BUFFER_DEPTH)),10)
+            except ValueError:
+                timeShiftBufferDepth = self.DEFAULT_TIMESHIFT_BUFFER_DEPTH # in seconds
+        rv = {
+            "clockDrift": clockDrift,
+            "encrypted": encrypted,
+            "generateSegmentList": self.generateSegmentList,
+            "generateSegmentDurations": self.generateSegmentDurations,
+            "generateSegmentTimeline": lambda r: self.generateSegmentTimeline(rv, r),
+            "mode": mode,
+            "mpd_url": mpd_url,
+            "now": now,
+            "publishTime": now.replace(microsecond=0),
+            "startNumber": 1,
+            "suggestedPresentationDelay": 30,
+            "timeShiftBufferDepth": timeShiftBufferDepth,
+        }
+        elapsedTime = 0
         if mode=='live':
             if now.hour>=5:
                 availabilityStartTime = now.replace(hour=5, minute=0, second=0, microsecond=0)
@@ -289,28 +337,35 @@ class RequestHandler(webapp2.RequestHandler):
                     except ValueError:
                         availabilityStartTime = now.replace(hour=0, minute=0, second=0, microsecond=0)
             elapsedTime = now - availabilityStartTime
-            if elapsedTime.seconds<timeShiftBufferDepth:
-                timeShiftBufferDepth = elapsedTime.seconds
+            if elapsedTime.seconds < rv["timeShiftBufferDepth"]:
+                timeShiftBufferDepth = rv["timeShiftBufferDepth"] = elapsedTime.seconds
         else:
             availabilityStartTime = now
-        baseURL = urlparse.urljoin(self.request.host_url,'/dash/'+mode)+'/'
+        rv["availabilityStartTime"] = availabilityStartTime
+        rv["elapsedTime"] = elapsedTime
+        if mode=='odvod':
+            rv["baseURL"] = urlparse.urljoin(self.request.host_url, '/dash/vod')+'/'
+        else:
+            rv["baseURL"] = urlparse.urljoin(self.request.host_url,'/dash/'+mode)+'/'
         if self.is_https_request():
-            baseURL = baseURL.replace('http://','https://')
+            rv["baseURL"] = rv["baseURL"].replace('http://','https://')
         video = { 
-                 'representations' : [ r for r in media.representations.values() if r.contentType=="video" and r.encrypted==encrypted],
-                 'mediaURL':'$RepresentationID$/$Number$.m4v'
+            'representations' : [ r for r in media.representations.values() if r.contentType=="video" and r.encrypted==encrypted],
+            'mediaURL':'$RepresentationID$/$Number$.m4v'
         }
         if self.request.params.get('drm'):
             video["mediaURL"] += '?drm={}'.format(self.request.params.get('drm'))
-        if mode=='vod':
+        if mode=='vod' or mode=='odvod':
             elapsedTime = datetime.timedelta(seconds = video['representations'][0].media_duration / video['representations'][0].timescale)
             timeShiftBufferDepth = elapsedTime.seconds
-        self.compute_av_values(video, startNumber)
+        self.compute_av_values(video, rv["startNumber"])
         video['minWidth'] = min([ a.width for a in video['representations']])
         video['minHeight'] = min([ a.height for a in video['representations']])
         video['maxWidth'] = max([ a.width for a in video['representations']])
         video['maxHeight'] = max([ a.height for a in video['representations']])
         video['maxFrameRate'] = max([ a.frameRate for a in video['representations']])
+        rv["video"] = video
+
         audio = {'representations':[ r for r in media.representations.values() if r.contentType=="audio"],
                  'mediaURL':'$RepresentationID$/$Number$.m4a'
         }
@@ -324,7 +379,9 @@ class RequestHandler(webapp2.RequestHandler):
                     rep.role='main'
                 else:
                     rep.role='alternate'
-        self.compute_av_values(audio, startNumber)
+        self.compute_av_values(audio, rv["startNumber"])
+        rv["audio"] = audio
+
         shortest_representation=None
         media_duration = 0
         kids = set()
@@ -335,16 +392,16 @@ class RequestHandler(webapp2.RequestHandler):
                 media_duration = dur
             if rep.encrypted:
                 kids.update(rep.kids)
-        del dur
-        del rep
-        maxSegmentDuration = max(video['maxSegmentDuration'],audio['maxSegmentDuration'])
+        rv["kids"] = kids
+        rv["media_duration"] = media_duration
+        rv["shortest_representation"] = shortest_representation
+        rv["maxSegmentDuration"] = max(video['maxSegmentDuration'],audio['maxSegmentDuration'])
         if encrypted:
-            DRM = self.generate_drm_dict()
+            rv["DRM"] = self.generate_drm_dict()
             if not kids:
-                keys = models.Key.all_as_dict()
+                rv["keys"] = models.Key.all_as_dict()
             else:
-                keys = models.Key.get_kids(kids)
-        del kids
+                rv["keys"] = models.Key.get_kids(kids)
         try:
             timeSource = { 'format':self.request.params['time'] }
             if timeSource['format']=='xsd':
@@ -364,7 +421,9 @@ class RequestHandler(webapp2.RequestHandler):
                           'format':'xsd'
             }
         if not timeSource.has_key('url'):
-            timeSource['url']= urlparse.urljoin(self.request.host_url, self.uri_for('time',format=timeSource['format']))
+            timeSource['url']= urlparse.urljoin(self.request.host_url,
+                                                self.uri_for('time',format=timeSource['format']))
+        rv["timeSource"] = timeSource
         v_cgi_params = []
         a_cgi_params = []
         m_cgi_params = copy.deepcopy(dict(self.request.params))
@@ -372,7 +431,7 @@ class RequestHandler(webapp2.RequestHandler):
             v_cgi_params.append('start=%s'%utils.toIsoDateTime(availabilityStartTime))
             a_cgi_params.append('start=%s'%utils.toIsoDateTime(availabilityStartTime))
         if clockDrift:
-            timeSource['url'] += '?drift=%d'%clockDrift
+            rv["timeSource"]['url'] += '?drift=%d'%clockDrift
             v_cgi_params.append('drift=%d'%clockDrift)
             a_cgi_params.append('drift=%d'%clockDrift)
         if mode=='live' and timeShiftBufferDepth != self.DEFAULT_TIMESHIFT_BUFFER_DEPTH:
@@ -386,7 +445,6 @@ class RequestHandler(webapp2.RequestHandler):
                                                                video['representations'][0])
                 if times:
                     v_cgi_params.append('%03d=%s'%(code,times))
-                del times
             if self.request.params.get('a%03d'%code) is not None:
                 times = self.calculate_injected_error_segments(self.request.params.get('a%03d'%code), \
                                                                now, availabilityStartTime, \
@@ -394,7 +452,6 @@ class RequestHandler(webapp2.RequestHandler):
                                                                audio['representations'][0])
                 if times:
                     a_cgi_params.append('%03d=%s'%(code,times))
-                del times
         if self.request.params.get('vcorrupt') is not None:
             segs = self.calculate_injected_error_segments(self.request.params.get('vcorrupt'), \
                                                           now, availabilityStartTime, \
@@ -402,18 +459,15 @@ class RequestHandler(webapp2.RequestHandler):
                                                           video['representations'][0])
             if segs:
                 v_cgi_params.append('corrupt=%s'%(segs))
-            del segs
         try:
             updateCount = int(self.request.params.get('update','0'),10)
             m_cgi_params['update']=str(updateCount+1)
         except ValueError:
             pass
         if v_cgi_params:
-            video['mediaURL'] += '?' + '&'.join(v_cgi_params)
-        del v_cgi_params
+            rv["video"]['mediaURL'] += '?' + '&'.join(v_cgi_params)
         if a_cgi_params:
-            audio['mediaURL'] += '?' + '&'.join(a_cgi_params)
-        del a_cgi_params
+            rv["audio"]['mediaURL'] += '?' + '&'.join(a_cgi_params)
         if m_cgi_params:
             lst = []
             for k,v in m_cgi_params.iteritems():
@@ -422,9 +476,8 @@ class RequestHandler(webapp2.RequestHandler):
             if '?' in locationURL:
                 locationURL = locationURL[:self.request.uri.index('?')]
             locationURL = locationURL + '?' + '&'.join(lst)
-            del lst
-        del m_cgi_params
-        return locals()
+            rv["locationURL"] = locationURL
+        return rv
 
     def add_allowed_origins(self):
         try:
@@ -458,7 +511,7 @@ class RequestHandler(webapp2.RequestHandler):
         assert segment_num>0 and segment_num<=repr.num_segments
         # seg_start_time is the time (in repr timescale units) when this
         # segment started, relative to availabilityStartTime
-        seg_start_time = origin_time * repr.timescale + (segment_num-1) * repr.segment_duration
+        seg_start_time = long(origin_time * repr.timescale + (segment_num-1) * repr.segment_duration)
         return locals()
 
     def calculate_injected_error_segments(self, times, now, availabilityStartTime, timeshiftBufferDepth, representation):
@@ -542,7 +595,6 @@ class MainPage(RequestHandler):
             context['page'] = int(self.request.params.get('page','1'),10)
         except ValueError:
             context['page'] = 1
-        context['num_pages']=len(testcases.test_cases)
         context["headers"]=[]
         context['routes'] = routes
         context['video_fields'] = [ 'id', 'codecs', 'bitrate', 'height', 'width', 'encrypted' ]
@@ -551,63 +603,24 @@ class MainPage(RequestHandler):
         context['audio_representations'] = [ r for r in media.representations.values() if r.contentType=="audio"]
         context['keys'] = models.Key.all_as_dict()
         context['rows'] = []
-        key_number=1
-        manifest=None
-        prev_item=None
-        row={ 'buttons':[], "kids":[] }
-        for tst in testcases.test_cases[context['page']-1]:
-            tst_manifest = testcases.manifests[tst['manifest']]
-            new_row = tst_manifest!=manifest or len(row['buttons'])==3
-            for field in ['title', 'details', 'static']:
-                try:
-                    new_row = new_row or (prev_item and prev_item[field]!=tst[field])
-                except KeyError:
-                    pass
-            if new_row:
-                if row['buttons']:
-                    context['rows'].append(row)
-                row={ 'buttons':[], "kids":[] }
-                manifest = tst_manifest
-                row.update(manifest)
-            item = { 'key':key_number, 'encrypted':False }
-            item.update(manifest)
-            item.update(tst)
-            for field in ['title', 'details']:
-                try:
-                    row[field] = item[field]
-                except KeyError:
-                    pass
-            item['url'] = self.uri_for('dash-mpd', manifest=tst['manifest'])
-            params=[]
+        filenames = manifests.manifest.keys()
+        filenames.sort(key=lambda name: manifests.manifest[name]['title'])
+        for name in filenames:
+            context['rows'].append({
+                'filename': name,
+                'url': self.uri_for('dash-mpd', manifest=name),
+                'manifest': manifests.manifest[name],
+                'option': [],
+            })
+        for idx, opt in enumerate(options.options):
             try:
-                for k,v in tst['params'].iteritems():
-                    if isinstance(v,(int,long)):
-                        params.append('%s=%d'%(k,v))
-                    else:
-                        params.append('%s=%s'%(k,urllib.quote_plus(v)))
-                item['url'] += '?' + '&'.join(params)
-            except KeyError:
-                pass
-            item['abr'] = not tst['params'].has_key('repr')
-            try:
-                item['BaseURL'] = tst['params']['base']!=0
-            except KeyError:
-                item['BaseURL'] = True
-            try:
-                item['mup'] = tst['params']['mup']<0
-            except KeyError:
-                item['mup'] = True
-            if item["encrypted"]:
-                kids = set()
-                for rep in context['video_representations']+context['audio_representations']:
-                    if rep.encrypted:
-                        kids.update(rep.kids)
-                row["kids"] = list(kids)
-            row['buttons'].append(item)
-            key_number += 1
-            prev_item = item
-        if row['buttons']:
-            context['rows'].append(row)
+                row = context['rows'][idx]
+                row['option'] = opt
+            except IndexError:
+                row = {
+                    'option': opt
+                }
+                context['rows'].append(row)
         template = templates.get_template('index.html')
         self.response.write(template.render(context))
 
@@ -617,6 +630,12 @@ class LiveManifest(RequestHandler):
         self.get(manifest, **kwargs)
 
     def get(self, manifest, **kwargs):
+        if manifest in legacy_manifest_names:
+            manifest = legacy_manifest_names[manifest]
+        if not manifests.manifest.has_key(manifest):
+            self.response.write('%s not found'%(manifest))
+            self.response.set_status(404)
+            return
         context = self.create_context(**kwargs)
         context["headers"]=[]
         context['routes'] = routes
@@ -882,7 +901,7 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
 
 class VideoPlayer(RequestHandler):
     """Responds with an HTML page that contains a video element to play the specified MPD"""
-    def get(self, testcase, **kwargs):
+    def get(self, **kwargs):
         def gen_errors(cgiparam):
             err_time = context['now'].replace(microsecond=0) + datetime.timedelta(seconds=20)
             times=[]
@@ -890,58 +909,36 @@ class VideoPlayer(RequestHandler):
                 err_time += datetime.timedelta(seconds=10)
                 times.append(err_time.time().isoformat()+'Z')
             params.append('%s=%s'%(cgiparam,urllib.quote_plus(','.join(times))))
-
-        try:
-            testcase = testcases.testcase_map[testcase]
-            manifest = testcases.manifests[testcase['manifest']]
-        except KeyError:
-            self.response.write('Unknown test case')
-            self.response.set_status(404)
-            return
         context = self.create_context(**kwargs)
-        mpd_url = self.uri_for('dash-mpd', manifest=testcase['manifest'])
-        try:
-            mode = testcase['mode']
-        except KeyError:
-            try:
-                mode = manifest['mode']
-            except KeyError:
-                mode = None
-        context.update(self.calculate_dash_params(mpd_url=mpd_url, mode=mode))
+        filename = self.request.params["mpd"]
+        mode = self.request.params.get("mode", "live")
+        context.update(self.calculate_dash_params(mpd_url=filename, mode=mode))
         params=[]
-        try:
-            for k,v in testcase['params'].iteritems():
-                if isinstance(v,(int,long)):
-                    params.append('%s=%d'%(k,v))
-                else:
-                    params.append('%s=%s'%(k,urllib.quote_plus(v)))
-        except KeyError:
-            pass
-        if testcase.get('corruption',False)==True:
+        for k,v in self.request.params.iteritems():
+            if isinstance(v,(int,long)):
+                params.append('%s=%d'%(k,v))
+            else:
+                params.append('%s=%s'%(k,urllib.quote_plus(v)))
+        if self.request.params.get('corruption',False)==True:
             gen_errors('vcorrupt')
         for code in self.INJECTED_ERROR_CODES:
             p = 'v%03d'%code
-            if testcase.get(p,False)==True:
+            if self.request.params.get(p,False)==True:
                 gen_errors(p)
             p = 'a%03d'%code
-            if testcase.get(p,False)==True:
+            if self.request.params.get(p,False)==True:
                 gen_errors(p)
+        mpd_url = self.uri_for('dash-mpd', manifest=filename)
         if params:
             mpd_url += '?' + '&'.join(params)
-        context['source'] = urlparse.urljoin(self.request.host_url,mpd_url)
+        context['source'] = urlparse.urljoin(self.request.host_url, mpd_url)
         if self.is_https_request():
             context['source'] = context['source'].replace('http://','https://')
         else:
-            try:
-                if encrypted:
-                    context['source'] = '#'.join([settings.sas_url,urllib.quote(context['source'])])
-            except AttributeError:
-                pass
+            if "marlin" in self.request.params.get(drm,""):
+                context['source'] = '#'.join([settings.sas_url,urllib.quote(context['source'])])
         context['mimeType'] = 'application/dash+xml'
-        try:
-            context['title'] = testcase['title']
-        except KeyError:
-            context['title'] = manifest['title']
+        context['title'] = manifests.manifest[filename]['title']
         template = templates.get_template('video.html')
         self.response.write(template.render(context))
 

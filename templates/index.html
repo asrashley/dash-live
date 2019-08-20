@@ -5,35 +5,35 @@
 {% endblock %}
 
 {% block content %}
+<div><a id="dashurl" href=""></a></div>
 <div id="buttons" data-page="{{page}}">
-  <table class="btn-grid table">
+  <table class="btn-grid table table-striped">
+    <thead>
+      <tr><th class="key">Key</th><th class="active manifest">Manifest</th><th class="option">Options</th></tr>
+      </thead>
     <tbody>
-  {% if page>1 %}
-      <tr class="prev-next"><td colspan="4" id="btn0" class="prev"><a href="{{uri_for("home")}}?page={{page-1}}" class="prev"><span class="key">0:</span>Previous page</a></td></tr>
-  {% endif %}
       {% for row in rows %}
-      <tr><th class="title"><p class="title">{{row.title}}</p>
-      {% for sub in row.details %}<p class="subtitle">{{sub|escape}}</p>{% endfor %}
-            {% for kid in row.kids %}
-            <p class="keypair">{{kid}}::{{keys[kid].KEY.hex}}</p>
-            {% endfor %}
-          </th>
-          {% for btn in row.buttons %}
-        <td class="btn" id="btn{{btn.key}}"><a href="{{btn.url}}" data-testcase="{{btn.id}}"><span class="key">{{btn.key}}:</span>
-          <p class="tooltip" title="Adaptive bitrate enabled?">ABR {{btn.abr|toHtmlString}}</p>
-          <p class="tooltip" title="BaseURL element present?">BaseURL {{btn.BaseURL|toHtmlString}}</p>
-          {% if not btn.static %}
-          <p class="tooltip" title="minimumUpdatePeriod attribute present?">Update {{btn.mup|toHtmlString}}</p>
+      <tr id="row{{loop.index0}}">
+        <th class="key" id="btn{{loop.index0}}">{{loop.index0}}</th>
+        <td class="manifest active" data-uri="{{row.url}}"
+            data-filename="{{row.filename}}" data-params="{{row.manifest.params|toJson|escape}}">
+          {% if row.manifest.title %}
+          <a class="manifest-title" href="{{row.url}}">{{row.manifest.title}}</a>
+          <span class="bool-yes">&check;</span>
           {% endif %}
-          <p class="tooltip" title="Stream is encrypted?">Encrypted {{btn.encrypted|toHtmlString}}</p>
-          </a>
         </td>
-          {% endfor %}
+        <td class="option">
+          <span class="option-title">{{row.option.title}}</span>
+          {% if row.option.name %}
+          <select name="{{row.option.name}}">
+            {% for opt in row.option.options %}
+            <option value="{{opt[1]}}">{{opt[0]}}</option>
+            {% endfor %}
+          </select>
+          {% endif %}
+        </td>
         </tr>
       {% endfor %}
-  {% if page<num_pages %}
-      <tr class="prev-next"><td colspan="4" id="btn9" class="next"><a class="next" href="{{uri_for("home")}}?page={{page+1}}"><span class="key">9:</span>Next page</a></td></tr>
-  {% endif %}
     </tbody>
   </table>
 </div>
@@ -122,6 +122,7 @@
                     <li>all - All supported DRMs</li>
                     <li>clearkey - W3C ClearKey</li>
                     <li>marlin - Intertrust Marlin</li>
+                    <li>none - No DRM</li>
                     <li>playready - Microsoft PlayReady</li>
                 </ul>
                 <p>For example: <span class="pre">drm=playready,marlin</span></p>
@@ -136,9 +137,6 @@
                 <p>For example: <span class="pre">drm=playready-pro-cenc,clearkey-moov</span></p>
               </td>
                 <td>&check;</td><td>&check;</td><td>&cross;</td>
-            </tr>
-            <tr><td>enc=(true|false)</td><td>Encrypted or clear</td>
-                <td>&check;</td><td>&cross;</td><td>&cross;</td>
             </tr>
             <tr><td>failures=&lt;number&gt;</td><td>Number of times to respond with a 5xx error before
                 accepting the request. Only relevant in combination with one of the error injection

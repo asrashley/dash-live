@@ -6,7 +6,12 @@
 @darkGrey: #777;
 @lightGrey: #eee;
 @mediumGrey: #ddd;
+@darkBlue: #aaaacc;
+@mediumBlue: #ccccee;
+@lightBlue: #ddddff;
+
 @tableHeadingBack: #999;
+@tableHeadingBackDark: #777;
 
 
 body {
@@ -63,16 +68,11 @@ header {
 	   bottom: 0.2em;
 	}
 	.breadcrumb {
-		/*position: relative;
-		top: -1em;*/
 		color: white;
 		font-size: 0.9em;
 	}
 	.title {
-		/*display: inline-block;*/
 		color: @blue;
-		/*position: relative;
-		top: 0.25em;*/
 		padding: 0;
 		text-align: left;
 		border-radius: 0.2em;
@@ -106,9 +106,7 @@ a {
   display: block;
   text-decoration: none;
   background: #43a1f7;
-  /*background: linear-gradient(top, #43a1f7 0%, #377ad0 100%);*/
   .gradientV(#333, #ddd);
-  /*border: 1px solid #2e70c4;*/
   .border-radius(0.2em);
   font-weight: bold;
   color: #eee;
@@ -136,16 +134,27 @@ a {
     font-size: 0.5em;
     font-stretch: extra-condensed;
   }
+  .manifest > .bool-yes {
+    visibility: hidden;
+    position: absolute;
+    top: 0;
+    right: 0.2em;
+    font-size: 1.5em;
+  }
+  .manifest.selected {
+    border: 2px solid #333;
+    font-weight: bold;
+    background-color: @darkBlue;
+  }
+  .manifest.selected > .bool-yes {
+    visibility: visible;
+  }
 }
 .button:hover,
 .button.hover {
-  /*background: darker;*/
-  /*background: linear-gradient(top, #43a1f7 0%, #2e70c4 100%);*/
-  /*color: @mediumGrey;*/ /* #43a1f7; */
   .gradientV(darken(@blue,20%), #ddd);
   border: 1px solid #2e70c4;
   cursor: pointer;
-  /*text-shadow: 0 -1px 1px #2c6bbb;*/
 }
 .button:active,
 .button.active {
@@ -219,14 +228,12 @@ a {
         vertical-align: middle;
         text-align: center;
         font-weight: bold;
-        /*border: 1px solid black; */
     }
     .failures {
         color: red;
     }
     td {
         padding: 0 0.5em;
-        /*border: 1px solid black; */
     }
     .totals{
         background-color: @tableHeadingBack;
@@ -234,17 +241,6 @@ a {
         }
 }
 
-.table thead > tr > th,
-.table tbody > tr > th,
-.table tfoot > tr > th,
-.table thead > tr > td,
-.table tbody > tr > td,
-.table tfoot > tr > td {
-  padding: 8px;
-  line-height: 1.428571429;
-  vertical-align: top;
-  border-top: 1px solid #dddddd;
-}
 .table thead > tr > th {
   vertical-align: bottom;
 }
@@ -309,9 +305,17 @@ a {
   border-top: 1px solid @mediumGrey;
 }
 
-.table-striped > tbody > tr:nth-child(even) > td,
-.table-striped > tbody > tr:nth-child(even) > th {
+.table-striped > tbody > tr:nth-child(even) > td {
   background-color: #f5f5f5;
+}
+
+.table-striped > tbody > tr:nth-child(even) > th,
+.table-striped > thead .active {
+      background-color: @tableHeadingBackDark;
+}
+
+.table-striped > tbody > tr:nth-child(even) > .active {
+    background-color: @mediumBlue;
 }
 
 #editobject {
@@ -385,38 +389,38 @@ a {
 .btn-grid {
   font-size: 1.5rem;
   border-collapse: collapse;
-  tr {
-    height: 3em;
-  }
   th, td {
-    padding: 0.5em;
+    padding: 0.25em 0.5em;
     border: 1px solid #aaa;
     vertical-align: middle;
   }
-  th {
-    width: 15em;
-    text-align: left;
-  }
-  td {
-    width: 6em; 
-    position: relative;
-    text-align: right;    
-  }
   .key {
-    position: absolute;
-    font-weight: bold;
-    left: 0.5em;
-  }
-  .prev, .next {
+    width: 1em;
     text-align: center;
-    vertical-align: middle;
   }
-  .prev-next {
-    height: 2em;
-    .key {
-      position: relative;
-      padding-right: 1em;
+  .active {
+    background-color: @lightBlue;
+    border: 2px solid #aaaaff;
+  }
+  .manifest {
+    width: 15em; 
+    position: relative;
+    text-align: left;    
+  }
+  .option {
+    .option-title {
+      font-size: 1.2rem;
     }
+    width: 30rem; 
+    position: relative;
+    text-align: right;
+    > select {
+        width: 16rem;
+        font-size: 1.2rem;
+    }
+  }
+  th.manifest, th.option {
+    text-align: center;
   }
 }
 
@@ -473,6 +477,15 @@ div.representations {
  }
  
 }
+
+#dashurl {
+  width: 100%;
+  font-stretch: condensed;
+  margin: 0.25em 1.5em 0 0.5em;
+  font-weight: bold;
+  font-size: 1.25em;
+}
+
 @media only screen and (min-width: 40em) {
 	#chat,
 	#nickname,

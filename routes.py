@@ -18,7 +18,7 @@ routes = {
     "media":Route(r'/media', handler='views.MediaHandler', title='Media file management'),
     "time":Route(r'/time/<format:(xsd|iso|ntp)>', handler='views.UTCTimeHandler', title='Current time of day'),
     "uploadBlob":Route(r'/blob', handler='views.MediaHandler', title='Upload blob'),
-    "video":Route(r'/video/<testcase:[\w\-_]+>', handler='views.VideoPlayer', title='DASH test stream player'),
+    "video":Route(r'/video', handler='views.VideoPlayer', title='DASH test stream player'),
     "home":Route(r'/', handler='views.MainPage', title='DASH test streams'),
 }
 

@@ -1,22 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <MPD xmlns="urn:mpeg:dash:schema:mpd:2011"  xmlns:cenc="urn:mpeg:cenc:2013"
-{% if mode=='vod' %}type="static" profiles="urn:mpeg:dash:profile:isoff-on-demand:2011"
-    mediaPresentationDuration="{{media_duration|isoDuration}}"
-{% else %}
-type="dynamic" profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014"
+  {% if mode=='live' %}
+    type="dynamic"
     {% if minimumUpdatePeriod %}minimumUpdatePeriod="{{minimumUpdatePeriod|isoDuration}}"{% endif %}
     {% if suggestedPresentationDelay %}suggestedPresentationDelay="{{suggestedPresentationDelay|isoDuration}}"{%endif%}
     {% if availabilityStartTime %}availabilityStartTime="{{availabilityStartTime|isoDateTime}}"{% endif %}
     {% if timeShiftBufferDepth %}timeShiftBufferDepth="{{timeShiftBufferDepth|isoDuration}}"{% endif %}
-{% endif %}
-    minBufferTime="PT1.5S"
-   >
+  {% else %}
+    type="static"
+  {% endif %}
+  {% if mode=='odvod' %}
+    profiles="urn:mpeg:dash:profile:isoff-on-demand:2011"
+  {% else %}
+    profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014"
+  {% endif %}
+  {% if mode!='live' %}
+    mediaPresentationDuration="{{media_duration|isoDuration}}"
+  {% endif %}
+  minBufferTime="PT1.5S"
+>
  <ProgramInformation>
   <Title>{{title}}</Title>
  </ProgramInformation>
  <Location>{{request_uri|xmlSafe}}</Location>
  {% if mode=='live' %}<UTCTiming schemeIdUri="{{timeSource.method}}" value="{{timeSource.url}}"/>{% endif %}
- <Period start="PT0S" id="p0" {% if mode=='vod' %}duration="{{media_duration|isoDuration}}"{% endif %}>
+ <Period start="PT0S" id="p0" {% if mode!='live' %}duration="{{media_duration|isoDuration}}"{% endif %}>
  {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
   <AdaptationSet mimeType="video/mp4" contentType="video" segmentAlignment="true" startWithSAP="1" maxWidth="{{video.maxWidth}}" maxHeight="{{video.maxHeight}}" maxFrameRate="{{video.maxFrameRate}}" par="16:9">
    <ContentComponent id="1" contentType="video"/>
@@ -28,7 +36,7 @@ type="dynamic" profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:prof
    {% if DRM.clearkey %}{% include  "drm/clearkey.xml" %}{% endif %}
    {% endif %}
    {% if loop.first %}
-      <SegmentTemplate startNumber="{{startNumber}}" timescale="{{video.timescale}}" duration="{{repr.segment_duration}}" initialization="{{repr.id}}/init.mp4" media="{{video.mediaURL|xmlSafe}}"/>
+      <SegmentTemplate startNumber="{{startNumber}}" timescale="{{video.timescale}}" duration="{{repr.segment_duration}}" initialization="$RepresentationID$/init.mp4" media="{{video.mediaURL|xmlSafe}}"/>
    {% endif %}
    <Representation id="{{repr.id}}" mimeType="video/mp4" codecs="{{repr.codecs}}" width="{{repr.width}}" height="{{repr.height}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
    </Representation>
@@ -37,8 +45,10 @@ type="dynamic" profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:prof
   {% for repr in audio.representations %}{% if repr.role=="main" %}
   <AdaptationSet  mimeType="audio/mp4" contentType="audio" lang="{{repr.language}}" segmentAlignment="true" startWithSAP="{{repr.startWithSAP}}">
      <ContentComponent id="1" contentType="audio" lang="{{audio.representations[0].language}}"/>
+     {% if loop.first %}
+        <SegmentTemplate startNumber="{{startNumber}}" timescale="{{audio.timescale}}" duration="{{repr.segment_duration}}" initialization="$RepresentationID$/init.mp4" media="{{audio.mediaURL|xmlSafe}}"/>
+     {% endif %}
      <Representation id="{{repr.id}}" mimeType="audio/mp4" codecs="{{repr.codecs}}" sampleRate="{{repr.sampleRate}}" numChannels="{{repr.numChannels}}" lang="{{repr.lang}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
-        <SegmentTemplate startNumber="{{startNumber}}" timescale="{{audio.timescale}}" duration="{{repr.segment_duration}}" initialization="{{repr.id}}/init.mp4" media="{{audio.mediaURL|xmlSafe}}"/>
      </Representation>
   </AdaptationSet>
   {% endif %}
