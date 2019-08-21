@@ -479,7 +479,6 @@ class AVCSampleEntry(VisualSampleEntry):
 MP4_BOXES['avc1'] = AVCSampleEntry
 MP4_BOXES['avc3'] = AVCSampleEntry
 MP4_BOXES['encv'] = AVCSampleEntry
-MP4_BOXES['enca'] = AVCSampleEntry
 
 class EC3SampleEntry(SampleEntry):
     parse_children = True
@@ -553,6 +552,8 @@ class MP4A(Mp4Atom):
         src.read(2) # (16) reserved
         return kwargs
 MP4_BOXES['mp4a'] = MP4A
+MP4_BOXES['enca'] = MP4A
+
 
 class ESDescriptorBox(FullBox):
     #def __init__(self, *args, **kwargs):
@@ -632,13 +633,13 @@ class TrackHeaderBox(FullBox):
         if kwargs["version"]==1:
             kwargs["creation_time"] = struct.unpack('>Q', src.read(8))[0]
             kwargs["modification_time"] = struct.unpack('>Q', src.read(8))[0]
-            kwargs["track_ID"] = struct.unpack('>I', src.read(4))[0]
+            kwargs["track_id"] = struct.unpack('>I', src.read(4))[0]
             src.read(4) # reserved
             kwargs["duration"] = struct.unpack('>Q', src.read(8))[0]
         else:
             kwargs["creation_time"] = struct.unpack('>I', src.read(4))[0]
             kwargs["modification_time"] = struct.unpack('>I', src.read(4))[0]
-            kwargs["track_ID"] = struct.unpack('>I', src.read(4))[0]
+            kwargs["track_id"] = struct.unpack('>I', src.read(4))[0]
             src.read(4) # reserved
             kwargs["duration"] = struct.unpack('>I', src.read(4))[0]
         src.read(8) # 2 x 32 bits reserved
@@ -684,7 +685,7 @@ class TrackExtendsBox(FullBox):
     @classmethod
     def parse(clz, src, parent):
         kwargs = FullBox.parse(src, parent)
-        kwargs["track_ID"]  = struct.unpack('>I', src.read(4))[0]
+        kwargs["track_id"]  = struct.unpack('>I', src.read(4))[0]
         kwargs["default_sample_description_index"]  = struct.unpack('>I', src.read(4))[0]
         kwargs["default_sample_duration"]  = struct.unpack('>I', src.read(4))[0]
         kwargs["default_sample_size"]  = struct.unpack('>I', src.read(4))[0]

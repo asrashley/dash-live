@@ -66,10 +66,21 @@ $(document).ready(function(){
 
     $('#buttons .active').removeClass('active');
     if ($(cur).hasClass("manifest")) {
-      $('#buttons .option').addClass('active');
+      $('#buttons .option, #buttons .option-key').addClass('active');
     } else {
-      $('#buttons .manifest').addClass('active');
+      $('#buttons .manifest, #buttons .manifest-key').addClass('active');
     }
+  }
+
+  function playVideo() {
+    var params;
+
+    if (!$('#dashurl').attr("href")) {
+      return;
+    }
+    params = buildCGI();
+    params.mpd = 'mpd=' + $('#buttons tbody .manifest.selected').data("filename");
+    document.location = '/video?'+Object.values(params).join('&');
   }
 
   $('body').on('keydown', function(ev){
@@ -100,13 +111,7 @@ $(document).ready(function(){
     }
     if (ev.keyCode==13) {
       /* enter */
-      if (!$('#dashurl').attr("href")) {
-        return;
-      }
-      params = buildCGI();
-      params.mpd = 'mpd=' + $('#buttons tbody .manifest.selected').data("filename");
-      console.dir(params);
-      document.location = '/video?'+Object.values(params).join('&');
+      playVideo();
       return;
     }
     if (ev.keyCode==37 || ev.keyCode==39) {
@@ -119,7 +124,6 @@ $(document).ready(function(){
 
   function init() {
     var params, i, p;
-    $('.tooltip').tooltipster();
     $('a.manifest-title').on('click', function(ev) {
       var cell = ev.target;
       ev.preventDefault();
@@ -131,9 +135,16 @@ $(document).ready(function(){
       buildManifestURL();
       return false;
     });
+    $('th.manifest, th.option').on('click', function(ev) {
+      if ($(ev.target).hasClass('active')) {
+        return;
+      }
+      toggleActiveRow();
+    });
     $('#buttons tbody .option select').on('change', function(ev) {
       buildManifestURL();
     });
+    $('#play-button').on('click', playVideo);
     if (/#/.test(document.location.href)) {
       params = document.location.href.split('#')[1];
       params = params.split('&');

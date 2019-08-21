@@ -597,9 +597,9 @@ class MainPage(RequestHandler):
             context['page'] = 1
         context["headers"]=[]
         context['routes'] = routes
-        context['video_fields'] = [ 'id', 'codecs', 'bitrate', 'height', 'width', 'encrypted' ]
+        context['video_fields'] = [ 'id', 'codecs', 'bitrate', 'width', 'height', 'encrypted' ]
         context['video_representations'] = [ r for r in media.representations.values() if r.contentType=="video"]
-        context['audio_fields'] = [ 'id', 'codecs', 'bitrate', 'sampleRate', 'numChannels', 'language' ]
+        context['audio_fields'] = [ 'id', 'codecs', 'bitrate', 'sampleRate', 'numChannels', 'language', 'encrypted' ]
         context['audio_representations'] = [ r for r in media.representations.values() if r.contentType=="audio"]
         context['keys'] = models.Key.all_as_dict()
         context['rows'] = []

@@ -1,28 +1,35 @@
 {% extends 'layout.html' %}
 
 {% block extraheaders %}
-<link rel="stylesheet" href="/css/tooltipster.css" />
+<link rel="stylesheet" href="/css/font-awesome.css" />
 {% endblock %}
 
 {% block content %}
 <div><a id="dashurl" href=""></a></div>
+<div id="play-button" class="button">
+  <span class="fa fa-4x fa-play icon"></span>
+  <a class="play-text">Play Video</a>
+</div>
 <div id="buttons" data-page="{{page}}">
   <table class="btn-grid table table-striped">
     <thead>
-      <tr><th class="key">Key</th><th class="active manifest">Manifest</th><th class="option">Options</th></tr>
+      <tr>
+        <th class="active manifest">Manifest</th>
+        <th class="option">Options</th></tr>
       </thead>
     <tbody>
       {% for row in rows %}
       <tr id="row{{loop.index0}}">
-        <th class="key" id="btn{{loop.index0}}">{{loop.index0}}</th>
         <td class="manifest active" data-uri="{{row.url}}"
             data-filename="{{row.filename}}" data-params="{{row.manifest.params|toJson|escape}}">
+        <span class="key manifest-key active">{{loop.index0}}</span>
           {% if row.manifest.title %}
           <a class="manifest-title" href="{{row.url}}">{{row.manifest.title}}</a>
           <span class="bool-yes">&check;</span>
           {% endif %}
         </td>
         <td class="option">
+          <span class="key option-key">{{loop.index0}}</span>
           <span class="option-title">{{row.option.title}}</span>
           {% if row.option.name %}
           <select name="{{row.option.name}}">
@@ -55,11 +62,18 @@
     </table>
     <table class="representations table table-striped">
       <caption>Audio Representations</caption>
-      <thead><tr>{% for f in audio_fields %}<th class="{{f}}">{{f}}</th>{% endfor %}</tr></thead>
+      <thead><tr>
+          {% for f in audio_fields %}
+          <th class="{{f}}">{% if f=="numChannels" %}channels{% else
+          %}{{f}}{% endif %}</th>
+          {% endfor %}
+      </tr></thead>
       <tbody>
         {% for repr in audio_representations %}
         <tr>
-          {% for f in audio_fields %}<td class="{{f}}">{{repr[f]|toHtmlString}}</td>{% endfor %}
+          {% for f in audio_fields %}
+          <td class="{{f}}">{{repr[f]|toHtmlString}}</td>
+          {% endfor %}
         </tr>
         {% endfor %}
       </tbody>
@@ -211,6 +225,5 @@
 
 {% block scripts %}
   {{import_script("jquery-3.4.1")}}
-  {{import_script("jquery.tooltipster")}}
   <script src="/js/main.js" type="text/javascript"></script>
 {% endblock %}

@@ -71,6 +71,7 @@ def create_representation(filename, args):
                 moov = atom
                 repr.timescale = atom.trak.mdia.mdhd.timescale
                 repr.language =  atom.trak.mdia.mdhd.language
+                repr.track_id = atom.trak.tkhd.track_id
                 try:
                     default_sample_duration = atom.mvex.trex.default_sample_duration
                 except AttributeError:
@@ -100,33 +101,7 @@ def create_representation(filename, args):
                     repr.scanType="progressive"
                     #TODO: work out sample aspect ratio
                     repr.sar="1:1"
-                    avc=None
-                    try:
-                        avc = atom.trak.mdia.minf.stbl.stsd.avc3
-                    except AttributeError:
-                        pass
-                    if avc is None:
-                        try:
-                            avc = atom.trak.mdia.minf.stbl.stsd.avc1
-                        except AttributeError:
-                            pass
-                    if avc is None:
-                        try:
-                            avc = atom.trak.mdia.minf.stbl.stsd.encv
-                        except AttributeError:
-                            pass
-                    if avc is None:
-                        try:
-                            avc = atom.trak.mdia.minf.stbl.stsd.enca
-                        except AttributeError:
-                            pass
-                    if avc is not None:
-                        avc_type = avc.atom_type
-                        if avc_type=='encv' or avc_type=='enca':
-                            avc_type = avc.sinf.frma.data_format
-                            repr.encrypted=True
-                            repr.default_kid = avc.sinf.schi.tenc.default_kid.encode('hex')
-                            repr.kids=set([repr.default_kid])
+                    if avc_type is not None:
                         repr.codecs = '%s.%02x%02x%02x'%(avc_type,
                                                          avc.avcC.AVCProfileIndication,
                                                          avc.avcC.profile_compatibility,
@@ -134,17 +109,15 @@ def create_representation(filename, args):
                         repr.nalLengthFieldFength = avc.avcC.lengthSizeMinusOne + 1
                 elif atom.trak.mdia.hdlr.handler_type=='soun':
                     repr.contentType="audio"
-                    try:
-                        avc = atom.trak.mdia.minf.stbl.stsd.mp4a
+                    if avc_type=="mp4a":
                         dsi = avc.esds.DecoderSpecificInfo
                         repr.sampleRate = dsi.sampling_frequency
                         repr.numChannels = dsi.channel_configuration
-                        repr.codecs = "%s.%02x.%x"%(avc.atom_type, avc.esds.DecoderSpecificInfo.object_type, dsi.audio_object_type)
+                        repr.codecs = "%s.%02x.%x"%(avc_type, avc.esds.DecoderSpecificInfo.object_type, dsi.audio_object_type)
                         if repr.numChannels==7:
                             # 7 is a special case that means 7.1
                             repr.numChannels=8
-                    except AttributeError:
-                        avc = atom.trak.mdia.minf.stbl.stsd.ec_3
+                    elif avc_type=="ec_3":
                         repr.sampleRate = avc.sampling_frequency
                         repr.numChannels = avc.channel_count
                         if avc.dec3.substreams:
@@ -153,7 +126,7 @@ def create_representation(filename, args):
                                 repr.numChannels += s.channel_count
                                 if s.lfeon:
                                     repr.numChannels += 1
-                        repr.codecs = avc.atom_type
+                        repr.codecs = avc_type
                 try:
                     seg.add(mehd=atom.mvex.mehd)
                 except AttributeError:
@@ -248,22 +221,26 @@ def create_index_file(filename, args):
         dest.write('\r\n')
         dest.close()
 
-parser = argparse.ArgumentParser(description='MP4 parser and index generation')
-parser.add_argument('-d', '--debug', action="store_true")
-parser.add_argument('-c', '--codec', help='MP4 file that contains codec information', nargs=1, metavar=('mp4file'))
-parser.add_argument('-i', '--index', help='Generate a python index file', action="store_true")
-parser.add_argument('-m', '--manifest', help='Generate a manifest file', nargs=1, metavar=('mpdfile'))
-parser.add_argument('-s', '--split', help='Split MP4 file into fragments', nargs=1, metavar=('mp4file'))
-parser.add_argument('mp4file', help='Filename of MP4 file', nargs='+', default=None)
-args = parser.parse_args()
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='MP4 parser and index generation')
+    parser.add_argument('-d', '--debug', action="store_true")
+    parser.add_argument('-c', '--codec', help='MP4 file that contains codec information', nargs=1,
+                        metavar=('mp4file'))
+    parser.add_argument('-i', '--index', help='Generate a python index file', action="store_true")
+    parser.add_argument('-m', '--manifest', help='Generate a manifest file', nargs=1,
+                        metavar=('mpdfile'))
+    parser.add_argument('-s', '--split', help='Split MP4 file into fragments', nargs=1,
+                        metavar=('mp4file'))
+    parser.add_argument('mp4file', help='Filename of MP4 file', nargs='+', default=None)
+    args = parser.parse_args()
 
-for fname in args.mp4file:
-    if '*' in fname or '?' in fname:
-        directory = os.path.dirname(fname)
-        if directory=='':
-            directory='.'
-        files = os.listdir(directory)
-        for filename in fnmatch.filter(files, fname):
-            create_index_file(filename, args)
-    else:
-        create_index_file(fname, args)
+    for fname in args.mp4file:
+        if '*' in fname or '?' in fname:
+            directory = os.path.dirname(fname)
+            if directory=='':
+                directory='.'
+            files = os.listdir(directory)
+            for filename in fnmatch.filter(files, fname):
+                create_index_file(filename, args)
+        else:
+            create_index_file(fname, args)

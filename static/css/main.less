@@ -393,14 +393,38 @@ a {
     padding: 0.25em 0.5em;
     border: 1px solid #aaa;
     vertical-align: middle;
+    opacity: 0.75;
   }
   .key {
-    width: 1em;
+    display: block;
+    width: 2em;
+    padding: 0;
+    margin: 0;
     text-align: center;
+    position: absolute;
+    top: 0.3rem;
+    visibility: hidden;
+  }
+  .manifest {
+    padding-left: 2.5em;
+  }
+  .option {
+    padding-right: 2.5em;
+  }
+  .manifest-key {
+    left: 0;
+  }
+  .option-key {
+    right: 0;
   }
   .active {
     background-color: @lightBlue;
     border: 2px solid #aaaaff;
+    opacity: 1;
+  }
+  .key.active {
+    background: @darkGrey;
+    visibility: visible;
   }
   .manifest {
     width: 15em; 
@@ -411,11 +435,11 @@ a {
     .option-title {
       font-size: 1.2rem;
     }
-    width: 30rem; 
+    width: 32rem; 
     position: relative;
     text-align: right;
     > select {
-        width: 16rem;
+        width: 18rem;
         font-size: 1.2rem;
     }
   }
@@ -431,21 +455,25 @@ a {
 
 div.representations {
   .table {
-    max-width: 45%;
     display: inline-block;
     vertical-align: top;
   }
-  .bandwidth, .sampleRate, .numChannels, .height, .width, .frameRate {
+  td, th {
+    padding: 0.2em 0.5em;
+  }
+  .bitrate, .sampleRate, .numChannels, .height, .width, .frameRate {
     text-align: right;
   }
   thead {
     font-size: 85%;
   }
   .encrypted, .frameRate {
-    max-width: 3em;
+    max-width: 4em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    font-stretch: extra-condensed;
+    text-align: center;
   }
 }
 
@@ -484,6 +512,26 @@ div.representations {
   margin: 0.25em 1.5em 0 0.5em;
   font-weight: bold;
   font-size: 1.25em;
+}
+
+#play-button {
+  position: absolute;
+  left: 38em;
+  top: 1em;
+  z-index: 9;
+  font-size: 1.4rem;
+  margin: 0;
+  .fa-play {
+    color: @mediumBlue;
+  }
+  .play-text {
+    position: absolute;
+    top: 0.75rem;
+    left: 0.25rem;
+    font-size: 1.75rem;
+    color: black;
+    z-index: 10;
+  }
 }
 
 @media only screen and (min-width: 40em) {
