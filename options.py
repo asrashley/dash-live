@@ -61,6 +61,16 @@ options = [
         ]
     },
     {
+        'name': 'mup',
+        'title': 'Manifest update rate',
+        'options': [
+            ('Every 2 fragments', ''),
+            ('Never', 'mup=-1'),
+            ('Every fragment', 'mup=4'),
+            ('Every 30 seconds', 'mup=30'),
+        ]
+    },
+    {
         'name': 'base',
         'title': 'BaseURL element',
         'options': [
