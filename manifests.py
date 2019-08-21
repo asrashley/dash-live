@@ -44,4 +44,12 @@ manifest = {
             'drm': 'none',
         },
     },
+    'manifest_ef.mpd':  {
+        'title':'Vendor EF live profile',
+        'params': {
+            'mode':'live',
+            'drm': 'none',
+            'acodec': 'mp4a',
+        },
+    },
 }
