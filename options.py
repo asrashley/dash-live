@@ -44,6 +44,9 @@ options = [
             ('mspr:pro element in MPD', 'drmloc=pro'),
             ('dash:cenc element in MPD', 'drmloc=cenc'),
             ('PSSH in init segment', 'drmloc=moov'),
+            ('mspr:pro + dash:cenc in MPD', 'drmloc=pro-cenc'),
+            ('mspr:pro MPD + PSSH init', 'drmloc=pro-moov'),
+            ('dash:cenc MPD + PSSH init', 'drmloc=cenc-moov'),
         ]
     },
     {
