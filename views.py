@@ -909,11 +909,18 @@ class VideoPlayer(RequestHandler):
                 times.append(err_time.time().isoformat()+'Z')
             params.append('%s=%s'%(cgiparam,urllib.quote_plus(','.join(times))))
         context = self.create_context(**kwargs)
-        filename = self.request.params["mpd"]
+        try:
+            filename = self.request.params["mpd"]
+        except KeyError:
+            self.response.write('Missing CGI parameter: mpd')
+            self.response.set_status(400)
+            return
         mode = self.request.params.get("mode", "live")
         context.update(self.calculate_dash_params(mpd_url=filename, mode=mode))
         params=[]
         for k,v in self.request.params.iteritems():
+            if k == 'mpd':
+                continue
             if isinstance(v,(int,long)):
                 params.append('%s=%d'%(k,v))
             else:
