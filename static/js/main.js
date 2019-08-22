@@ -245,6 +245,7 @@ $(document).ready(function(){
       buildManifestURL();
     }
     moveCursor('');
+    document.body.className += ' '+navigator.platform.toLowerCase();
   }
   init();
 });
