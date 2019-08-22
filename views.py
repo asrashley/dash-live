@@ -366,9 +366,12 @@ class RequestHandler(webapp2.RequestHandler):
         video['maxFrameRate'] = max([ a.frameRate for a in video['representations']])
         rv["video"] = video
 
-        audio = {'representations':[ r for r in media.representations.values() if r.contentType=="audio"],
-                 'mediaURL':'$RepresentationID$/$Number$.m4a'
+        audio = {
+            'representations':[ r for r in media.representations.values() if r.contentType=="audio" and r.encrypted==encrypted],
+            'mediaURL':'$RepresentationID$/$Number$.m4a'
         }
+        if not audio['representations']:
+            audio['representations'] = [ r for r in media.representations.values() if r.contentType=="audio" and r.encrypted==False]
         if self.request.params.get('acodec'):
             audio['representations'] = [r for r in audio['representations'] if r.codecs.startswith(self.request.params.get('acodec'))]
         if len(audio['representations'])==1:
