@@ -13,7 +13,7 @@ routes = {
     "clearkey":Route(r'/clearkey', handler='views.ClearkeyHandler', title='W3C clearkey support'),
     "dash-mpd":Route(r'/dash/<manifest:[\w\-_]+\.mpd>', handler='views.LiveManifest', title='DASH test stream'),
     "dash-media":Route(r'/dash/<mode:(live|vod)>/<filename:\w+>/<segment_num:(\d+|init)>.<ext:(mp4|m4v|m4a|m4s)>', handler='views.LiveMedia', title="DASH fragment"),
-    "dash-od-media":Route(r'/dash/vod/<filename:(A[1-2]|V[1-3]|V3ENC)>.<ext:(mp4|m4v|m4a|m4s)>', handler='views.OnDemandMedia', title="DASH media file"),
+    "dash-od-media":Route(r'/dash/vod/<filename:\w+>.<ext:(mp4|m4v|m4a|m4s)>', handler='views.OnDemandMedia', title="DASH media file"),
     "del-media":Route(r'/media/<mfid:[\w_+=-]+>', handler='views.MediaHandler', title='Delete media'),
     "media":Route(r'/media', handler='views.MediaHandler', title='Media file management'),
     "time":Route(r'/time/<format:(xsd|iso|ntp)>', handler='views.UTCTimeHandler', title='Current time of day'),
