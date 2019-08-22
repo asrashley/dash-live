@@ -594,10 +594,6 @@ class MainPage(RequestHandler):
     """handler for main index page"""
     def get(self, **kwargs):
         context = self.create_context(**kwargs)
-        try:
-            context['page'] = int(self.request.params.get('page','1'),10)
-        except ValueError:
-            context['page'] = 1
         context["headers"]=[]
         context['routes'] = routes
         context['video_fields'] = [ 'id', 'codecs', 'bitrate', 'width', 'height', 'encrypted' ]

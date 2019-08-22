@@ -6,10 +6,6 @@
 
 {% block content %}
 <div><a id="dashurl" href=""></a></div>
-<div id="play-button" class="button">
-  <span class="fa fa-4x fa-play icon"></span>
-  <a class="play-text">Play Video</a>
-</div>
 <div id="buttons" data-page="{{page}}">
   <table class="btn-grid table table-striped">
     <thead>
@@ -25,7 +21,7 @@
         <span class="key manifest-key active">{{loop.index0}}</span>
           {% if row.manifest.title %}
           <a class="manifest-title" href="{{row.url}}">{{row.manifest.title}}</a>
-          <span class="bool-yes">&check;</span>
+          <img class="bool-yes" src="/img/tick-icon.png" />
           {% endif %}
         </td>
         <td class="option">
@@ -41,6 +37,12 @@
         </td>
         </tr>
       {% endfor %}
+      <tr><td colspan="2" id="play-row">
+          <div id="play-button" >
+            <div class="button"><span class="fa fa-play icon"></span></div>
+            <a class="play-text">Play Video</a>
+          </div>
+      </td></tr>
     </tbody>
   </table>
 </div>

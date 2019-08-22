@@ -116,13 +116,6 @@ a {
 }
 
 #buttons {
-  .button {
-    @width: 16em;
-    width:@width;
-    position: relative;
-    left: 50%;
-    margin-left: -(@width/2);
-  }
   .subtitle, .keypair {
     font-size: 0.75em;
     color: #444;
@@ -134,19 +127,20 @@ a {
     font-size: 0.5em;
     font-stretch: extra-condensed;
   }
-  .manifest > .bool-yes {
+  .bool-yes {
     visibility: hidden;
     position: absolute;
     top: 0;
     right: 0.2em;
     font-size: 1.5em;
+    height: 100%;
   }
-  .manifest.selected {
+  .cursor {
     border: 2px solid #333;
     font-weight: bold;
     background-color: @darkBlue;
   }
-  .manifest.selected > .bool-yes {
+  .selected > .bool-yes {
     visibility: visible;
   }
 }
@@ -306,7 +300,7 @@ a {
 }
 
 .table-striped > tbody > tr:nth-child(even) > td {
-  background-color: #f5f5f5;
+  background-color: @lightGrey; /* #f5f5f5; */
 }
 
 .table-striped > tbody > tr:nth-child(even) > th,
@@ -422,7 +416,7 @@ a {
     border: 2px solid #aaaaff;
     opacity: 1;
   }
-  .key.active {
+  .active > .key {
     background: @darkGrey;
     visibility: visible;
   }
@@ -514,23 +508,29 @@ div.representations {
   font-size: 1.25em;
 }
 
+#play-row {
+  padding-top: 0;
+  height: 2.5rem;
+}
+
 #play-button {
-  position: absolute;
-  left: 38em;
-  top: 1em;
-  z-index: 9;
-  font-size: 1.4rem;
-  margin: 0;
+  position: relative;
+  margin: 0 auto;
+  width: 15rem;
+  > .button {
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-size: 1.4rem;
+    margin: 0;
+  }
   .fa-play {
     color: @mediumBlue;
   }
   .play-text {
-    position: absolute;
-    top: 0.75rem;
-    left: 0.25rem;
+    margin-left: 3.5rem;
     font-size: 1.75rem;
     color: black;
-    z-index: 10;
   }
 }
 
