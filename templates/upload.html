@@ -12,14 +12,14 @@
     <tr><td>{{med.name}}</td>
       <td class="filesize">
         {% if med.blob %}
-        {{med.blob.size}}
+        {{med.blob.size|sizeFormat}}
         {% else %}
         <span class="bool-no ">&cross;</span>
         {% endif %}
       </td>
       <td class="created">
         {% if med.blob %}
-        {{med.blob.creation}}
+        {{med.blob.creation|dateTimeFormat("%H:%M:%S %d/%m/%Y")}}
         {% else %}
         <span class="bool-no ">&cross;</span>
         {% endif %}

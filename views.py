@@ -62,13 +62,15 @@ templates = jinja2.Environment(
     extensions=['jinja2.ext.autoescape'],
     trim_blocks=False,
 )
+templates.filters['base64'] = utils.toBase64
+templates.filters['dateTimeFormat'] = utils.dateTimeFormat
 templates.filters['isoDuration'] = utils.toIsoDuration
 templates.filters['isoDateTime'] = utils.toIsoDateTime
+templates.filters['sizeFormat'] = utils.sizeFormat
 templates.filters['toHtmlString'] = utils.toHtmlString
 templates.filters['toJson'] = utils.toJson
-templates.filters['xmlSafe'] = utils.xmlSafe
-templates.filters['base64'] = utils.toBase64
 templates.filters['uuid'] = utils.toUuid
+templates.filters['xmlSafe'] = utils.xmlSafe
 
 legacy_manifest_names = {
     'enc.mpd': 'hand_made.mpd',

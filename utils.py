@@ -63,7 +63,7 @@ def toIsoDuration(secs):
      :param secs: the duration to convert, in seconds
      :returns: an ISO8601 formatted string version of the duration
     """
-    if isinstance(secs,str):
+    if isinstance(secs,basestring):
         secs = float(secs)
     hrs = math.floor(secs/3600)
     rv=['PT']
@@ -75,8 +75,60 @@ def toIsoDuration(secs):
     if hrs or mins:
         rv.append('%dM'%mins)
     if secs:
-        rv.append('%fS'%secs)
+        rv.append('%0.2fS'%secs)
     return ''.join(rv)
+
+date_hacks = [
+    (re.compile('Apri[^l]'),'Apr '), (re.compile('Sept[^e]'),'Sep '),
+    (re.compile(r'(\w{3} \d{1,2},? \d{4})\s*-\s*(.*$)'), r'\1 \2' ),
+    (re.compile(r'(\w{3} \d{1,2}), (\d{4}\s*\d{1,2}:\d{2})'), r'\1 \2' ),
+    (re.compile(r'(\w{3})-(\d{2})$'), r'\1 \2' ),
+    (re.compile(r'(.+) ([PCE][SD]?T)$'),r'\1')
+]
+
+def parse_date(date, format=None):
+    """Try to create a datetime from the given string"""
+    formats = ["%Y-%m-%d",  "%m/%d/%y", "%m/%d/%Y", "%b %Y", "%b %y", "%m/xx/%y",
+               "%a %b %d %Y", "%B %d %Y %H:%M", "%b %d %Y %H:%M",
+               "%B %d %Y", "%b %d %Y",'%a %b %d, %Y']
+    if format is not None:
+        formats.insert(0,format)
+    if not isinstance(date, basestring):
+        date = str(date)
+    d = date
+    tz = datetime.timedelta(0)
+    if re.match('.+\s+ES?T$',date):
+        tz = datetime.timedelta(hours=5)
+    elif re.match('.+\s+EDT$',date):
+        tz = datetime.timedelta(hours=4)
+    elif re.match('.+\s+PS?T$',date):
+        tz = datetime.timedelta(hours=8)
+    elif re.match('.+\s+PDT$',date):
+        tz = datetime.timedelta(hours=7)
+    for regex,sub in date_hacks:
+        d = regex.sub(sub,d)
+    for f in formats:
+        try:
+            rv = datetime.datetime.strptime(d, f)
+            rv += tz;
+            return rv
+        except ValueError:
+            pass
+    try:
+        return time.strptime(date)
+    except ValueError:
+        pass
+    return None
+
+def dateTimeFormat(value, fmt):
+    """ Format a date using the given format"""
+    if not value:
+        return value
+    if isinstance(value, basestring):
+        value = parse_date(value)
+    if value is None:
+        return value
+    return value.strftime(fmt)
 
 def from_isodatetime(date_time):
     """
@@ -169,7 +221,16 @@ def toUuid(value):
         value = value.encode('hex')
     value = value.upper()
     return '-'.join([value[:8], value[8:12], value[12:16], value[16:20], value[20:] ])
-    
+
+def sizeFormat(value, binary=True):
+    units = ['G', 'M', 'K', '']
+    mult = 1024 if binary else 1000
+    while value > mult and units:
+        units.pop()
+        value = value // mult
+    if not units:
+        units = 'T'
+    return '{:d}{}B'.format(value, units[-1])
 #
 # The following code is from djangoappengine/utils.py
 #
