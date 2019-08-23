@@ -1,28 +1,50 @@
-#!/usr/bin/python
-import logging, os, sys
+#!/usr/bin/env python
+
+#############################################################################
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
+#############################################################################
+#
+#  Project Name        :    Simulated MPEG DASH service
+#
+#  Author              :    Alex Ashley
+#
+#############################################################################
+
+import logging
+import os
+import subprocess
+import sys
 import unittest
 
-SDK_PATH = os.environ['LOCALAPPDATA']
-#try:
-#    SDK_PATH = os.environ['ProgramFiles(x86)']
-#except KeyError:
-#    SDK_PATH = os.environ['ProgramFiles']
-SDK_PATH = os.path.join(SDK_PATH,'Google','Cloud SDK','google-cloud-sdk','platform','google_appengine')
+if not os.path.exists("runner.py"):
+    rv = subprocess.call([
+        'wget', 'https://raw.githubusercontent.com/GoogleCloudPlatform/python-docs-samples/6f5f3bcb81779679a24e0964a6c57c0c7deabfac/appengine/standard/localtesting/runner.py'
+    ])
+    if rv:
+        print 'Failed to download runner.py'
+        sys.exit(1)
 
-def main(sdk_path, test_path):
-    sys.path.insert(0, sdk_path)
-    # path to webtest.py
-    sys.path.insert(1, os.path.join(sdk_path,'lib','cherrypy'))
-    import dev_appserver
-    dev_appserver.fix_sys_path()
-    FORMAT = "%(filename)s:%(lineno)d %(message)s"
-    logging.basicConfig(format=FORMAT)
-    logging.getLogger().setLevel(logging.DEBUG)
-    suite = unittest.loader.TestLoader().discover(test_path)
-    unittest.TextTestRunner(verbosity=2).run(suite)
+import runner
 
-#nosetests -v --with-gae --gae-lib-root="c:\Program Files (x86)\Google\google_appengine"
+try:
+    # On Windows, assume GAE SDK is installed in user's local app data directory
+    appdata = os.environ['LOCALAPPDATA']
+    gae_sdk = os.path.join(appdata,'Google','Cloud SDK','google-cloud-sdk','platform','google_appengine')
+except KeyError:
+    # On Unix, assume dev_appserver.py is in the PATH
+    dev_appserver = os.path.abspath(subprocess.check_output(["which", "dev_appserver.py"]))
+    gae_sdk = os.path.dirname(dev_appserver)
 
-if __name__ == '__main__':
-    TEST_PATH = '.'
-    main(SDK_PATH, TEST_PATH)
+runner.main(gae_sdk, ".", "*_test.py")
