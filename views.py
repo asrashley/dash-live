@@ -125,18 +125,15 @@ class RequestHandler(webapp2.RequestHandler):
 
     def generate_csrf(self,context):
         """generate a CSRF token as a hidden form field and a secure cookie"""
+        logging.debug('generate_csrf URI: {}'.format(self.request.uri))
+        logging.debug('generate_csrf User-Agent: {}'.format(self.request.headers['User-Agent']))
         csrf = security.generate_random_string(length=32)
         sig = hmac.new(settings.csrf_secret,csrf,hashlib.sha1)
-        #logging.debug('X-AppEngine-country = %s'%self.request.headers['X-AppEngine-country'])
-        logging.debug('User-Agent = %s'%self.request.headers['User-Agent'])
-        #logging.debug('remote_addr = %s'%self.request.remote_addr)
         cur_url = urlparse.urlparse(self.request.uri, 'http')
         origin = '%s://%s'%(cur_url.scheme, cur_url.netloc)
-        logging.debug('origin = %s'%origin)
-        #sig.update(self.request.headers['X-AppEngine-country'])
+        logging.debug('generate_csrf origin: {}'.format(origin))
         sig.update(origin)
         sig.update(self.request.uri)
-        #sig.update(self.request.remote_addr)
         sig.update(self.request.headers['User-Agent'])
         sig = sig.digest()
         context['csrf_token'] ='<input type="hidden" name="csrf_token" value="%s" />'%urllib.quote(binascii.b2a_base64(sig))
@@ -147,20 +144,30 @@ class RequestHandler(webapp2.RequestHandler):
     def check_csrf(self):
         """check that the CSRF token from the cookie and the submitted form match"""
         sc = securecookie.SecureCookieSerializer(settings.cookie_secret)
-        csrf = sc.deserialize(self.CSRF_COOKIE_NAME, self.request.cookies[self.CSRF_COOKIE_NAME])
+        try:
+            cookie = self.request.cookies[self.CSRF_COOKIE_NAME]
+        except KeyError:
+            logging.debug("csrf cookie not present")
+            logging.debug(str(self.request.cookies))
+            raise CsrfFailureException("{} cookie not present".format(self.CSRF_COOKIE_NAME))
+        csrf = sc.deserialize(self.CSRF_COOKIE_NAME, cookie)
         self.response.delete_cookie(self.CSRF_COOKIE_NAME)
         if not csrf:
-            logging.debug("csrf cookie not present")
-            raise CsrfFailureException("csrf cookie not present")
+            logging.debug("csrf deserialize failed")
+            raise CsrfFailureException("csrf cookie not valid")
         token = urllib.unquote(self.request.params['csrf_token'])
         sig = hmac.new(settings.csrf_secret,csrf,hashlib.sha1)
         try:
             origin = self.request.headers['Origin']
         except KeyError:
+            logging.debug("No origin in request, using: {}".format(self.request.uri))
             cur_url = urlparse.urlparse(self.request.uri, 'http')
             origin = '%s://%s'%(cur_url.scheme, cur_url.netloc)
+        logging.debug("check_csrf origin: {}".format(origin))
         sig.update(origin)
+        logging.debug("check_csrf Referer: {}".format(self.request.headers['Referer']))
         sig.update(self.request.headers['Referer'])
+        logging.debug("check_csrf User-Agent: {}".format(self.request.headers['User-Agent']))
         sig.update(self.request.headers['User-Agent'])
         sig_hex = sig.hexdigest()
         tk_hex = binascii.b2a_hex(binascii.a2b_base64(token))
@@ -341,7 +348,7 @@ class RequestHandler(webapp2.RequestHandler):
             "suggestedPresentationDelay": 30,
             "timeShiftBufferDepth": timeShiftBufferDepth,
         }
-        elapsedTime = 0
+        elapsedTime = datetime.timedelta(seconds=0)
         if mode=='live':
             if now.hour>=5:
                 availabilityStartTime = now.replace(hour=5, minute=0, second=0, microsecond=0)
@@ -392,8 +399,12 @@ class RequestHandler(webapp2.RequestHandler):
         }
         if not audio['representations']:
             audio['representations'] = [ r for r in media.representations.values() if r.contentType=="audio" and r.encrypted==False]
+        assert len(audio['representations']) > 0
         if self.request.params.get('acodec'):
             audio['representations'] = [r for r in audio['representations'] if r.codecs.startswith(self.request.params.get('acodec'))]
+            if not audio['representations']:
+                audio['representations'] = [r for r in media.representations.values() if r.codecs.startswith(self.request.params.get('acodec'))]
+            assert len(audio['representations']) > 0
         if len(audio['representations'])==1:
             audio['representations'][0].role='main'
         else:
@@ -1030,22 +1041,23 @@ class MediaHandler(RequestHandler):
                 mf.put()
                 template = templates.get_template('upload-done.html')
                 self.response.write(template.render(context))
-            except CsrfFailureException,cfe:
+            except (CsrfFailureException) as cfe:
                 logging.debug("csrf check failed")
                 logging.debug(cfe)
-                self.response.write('CSRF check failed')
-                self.response.write(cfe)
+                self.response.write('CSRF check failed: {:s}'.format(cfe))
                 self.response.set_status(401)
                 blob_info.delete()
-            except KeyError,e:
-                self.response.write('%s not found: %s'%(media_id,str(e)))
+            except (KeyError) as e:
+                self.response.write('{:s} not found: {:s}'.format(media_id,e))
                 self.response.set_status(404)
                 blob_info.delete()
 
-    def __init__(self, request, response):
-        self.initialize(request, response)
+    #def __init__(self, request, response):
+    def __init__(self, *args, **kwargs):
+        super(MediaHandler, self).__init__(*args, **kwargs)
+        #self.initialize(request, response)
         self.upload_handler = self.UploadHandler()
-        self.upload_handler.initialize(request, response)
+        self.upload_handler.initialize(self.request, self.response)
         self.upload_handler.outer = self
         self.post = self.upload_handler.post
 
@@ -1103,7 +1115,6 @@ class KeyHandler(RequestHandler):
             return
         kid = self.request.get('kid')
         key = self.request.get('key')
-        print(kid,key)
         result= { "error": "unknown error" }
         try:
             kid = models.KeyMaterial(kid)
@@ -1172,7 +1183,7 @@ class ClearkeyHandler(RequestHandler):
                 "keys": keys,
                 "type": req["type"]
             }
-        except (ValueError, KeyError) as err:
+        except (TypeError, ValueError, KeyError) as err:
             result= { "error": str(err) }
         finally:
             self.add_allowed_origins()

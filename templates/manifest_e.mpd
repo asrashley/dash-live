@@ -1,17 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011"
-  xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd" type="dynamic"
+     xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd"
+  {% if mode=='live' %}
+type="dynamic"
   {% if minimumUpdatePeriod %}minimumUpdatePeriod="{{minimumUpdatePeriod|isoDuration}}"{% endif %}
   {% if suggestedPresentationDelay %}suggestedPresentationDelay="{{suggestedPresentationDelay|isoDuration}}"{%endif%}
+  availabilityStartTime="{{availabilityStartTime|isoDateTime}}"
+  timeShiftBufferDepth="{{timeShiftBufferDepth|isoDuration}}"
+  {% else %}
+    type="static"
+  {% endif %}
   minBufferTime="PT5.000S" maxSegmentDuration="{{maxSegmentDuration|isoDuration}}"
   publishTime="{{publishTime|isoDateTime}}"
-  availabilityStartTime="{{availabilityStartTime|isoDateTime}}" timeShiftBufferDepth="{{timeShiftBufferDepth|isoDuration}}"
   profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014">
  {% if baseURL %}<BaseURL>{{baseURL|xmlSafe}}</BaseURL>{% endif %}
  {% if locationURL %}<Location>{{locationURL|xmlSafe}}</Location>{% endif %}
  <Location>{{request_uri|xmlSafe}}</Location>
     <UTCTiming schemeIdUri="{{timeSource.method}}" value="{{timeSource.url}}"/>
-  <Period id="0" start="PT0S">
+    <Period id="0" start="PT0S"
+  {% if mode!='live' %}
+  duration="{{media_duration|isoDuration}}"
+  {% endif %}
+>
     <AdaptationSet mimeType="video/mp4" contentType="video" segmentAlignment="true" startWithSAP="1" maxWidth="{{video.maxWidth}}" maxHeight="{{video.maxHeight}}" maxFrameRate="{{video.maxFrameRate}}" par="16:9">
       {% for repr in video.representations %}
         {% if loop.first %}

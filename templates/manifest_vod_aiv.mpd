@@ -5,7 +5,9 @@
      {% for repr in audio.representations %}
       <Representation audioSamplingRate="{{repr.sampleRate}}" bandwidth="{{repr.bitrate}}" codecs="{{repr.codecs}}" id="audio_eng={{repr.bitrate}}">
         <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
+        {% if baseURL %}
         <BaseURL>{{baseURL|xmlSafe}}{{repr.id|xmlSafe}}.m4a</BaseURL>
+        {% endif %}
         {{generateSegmentList(repr)}}
       </Representation>
       {% if loop.last %}
@@ -16,8 +18,10 @@
     <AdaptationSet contentType="video" group="2" lang="en" mimeType="video/mp4" par="16:9" segmentAlignment="true" startWithSAP="1" subsegmentAlignment="true" subsegmentStartsWithSAP="1">
      {% for repr in video.representations %}
       <Representation bandwidth="{{repr.bitrate}}" codecs="{{repr.codecs}}" frameRate="{{repr.frameRate}}" height="{{repr.height}}" id="video_eng={{repr.bitrate}}" scanType="progressive" width="{{repr.width}}">
+        {% if baseURL %}
         <BaseURL>{{baseURL|xmlSafe}}{{repr.id|xmlSafe}}.m4v</BaseURL>
         {{generateSegmentList(repr)}}
+        {% endif %}
       </Representation>
       {% if loop.last %}
       {{generateSegmentDurations(repr)}}

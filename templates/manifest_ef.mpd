@@ -19,8 +19,9 @@
          start="PT0.000S">
       {% for repr in video.representations %}
       {% if loop.first %}
-    <AdaptationSet mimeType="video/mp4" codecs="{{repr.codecs}}" startWithSAP="1" segmentAlignment="true">
-     {% endif %}
+    <AdaptationSet mimeType="video/mp4" codecs="{{repr.codecs}}"
+                   startWithSAP="1" segmentAlignment="true">
+      {% endif %}
       <Representation bandwidth="{{repr.bitrate}}" id="{{repr.id}}" frameRate="{{repr.frameRate}}" width="{{repr.width}}" sar="{{repr.sar}}" height="{{repr.height}}" scanType="{{repr.scanType}}">
         <SegmentTemplate startNumber="{{startNumber}}" duration="{{repr.segment_duration}}" initialization="$RepresentationID$/init.m4v" media="{{video.mediaURL|xmlSafe}}" timescale="{{video.timescale}}"/>
       </Representation>
