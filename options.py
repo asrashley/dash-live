@@ -31,11 +31,11 @@ options = [
         ]
     },
     {
-        'name': 'rep',
+        'name': 'abr',
         'title': 'Adaptive bitrate',
         'options': [
-            ('no', 'rep=V3'),
             ('yes', ''),
+            ('no', 'abr=0'),
         ]
     },
     {

@@ -667,12 +667,13 @@ class LiveManifest(RequestHandler):
             self.response.set_status(400)
             return
         context.update(dash)
-        context['repr'] = self.request.params.get('repr')
+        context['abr'] = self.request.params.get('abr', "True")
+        context['abr'] = re.search(r'(True|0)', context['abr'], re.I)
         #context['availabilityStartTime'] = datetime.datetime.utcfromtimestamp(dash['availabilityStartTime'])
         if re.search(r'(True|0)',self.request.params.get('base','False'),re.I) is not None:
             del context['baseURL']
-        if context['repr'] is not None:
-            context['video']['representations'] = [r for r in context['video']['representations'] if r.id==context['repr']]
+        if context['abr'] is False:
+            context['video']['representations'] = context['video']['representations'][-1:]
         try:
             context['minimumUpdatePeriod'] = float(self.request.params.get('mup',2.0*context['video']['maxSegmentDuration']))
         except ValueError:
