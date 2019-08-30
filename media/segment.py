@@ -42,6 +42,24 @@ class Segment(object):
         rv = ','.join(rv)
         return '{'+rv+'}'
 
+    def toJSON(self):
+        rv= {}
+        seg = self.boxes['seg']
+        for k,v in self.boxes.iteritems():
+            if k!='seg' and v.pos>seg.pos:
+                rv[k] = { 'pos':v.pos-seg.pos, 'size':v.size }
+            else:
+                rv[k] = {
+                    'pos': v.pos,
+                    'size': v.size,
+                }
+                try:
+                    rv[k]['duration'] = v.duration
+                except AttributeError:
+                    pass
+        return rv
+
+
 class Representation(object):
     def __init__(self, id,  **kwargs):
         def convert_dict(item):
@@ -71,3 +89,14 @@ class Representation(object):
             args.append('%s=%s'%(key,value))
         args = ','.join(args)
         return 'Representation('+args+')'
+
+    def toJSON(self):
+        rv = {}
+        for key,value in self.__dict__.iteritems():
+            if key=='num_segments':
+                continue
+            elif key=='segments':
+                rv[key] = map(lambda s: s.toJSON(), self.segments)
+            else:
+                rv[key] = value
+        return rv

@@ -203,13 +203,13 @@ class RequestHandler(webapp2.RequestHandler):
                 "MarlinContentIds": True
             },
             'clearkey': {
-                'laurl': self.generate_clearkey_license_url,
+                'laurl': self.generate_clearkey_license_url(),
                 'cenc': ck.generate_pssh,
                 'moov': ck.generate_pssh,
             }
         }
         drms = self.request.params.get('drm')
-        if drms is None:
+        if drms is None or drms == 'all':
             return rv
         d = {}
         for name in drms.split(','):
@@ -306,7 +306,8 @@ class RequestHandler(webapp2.RequestHandler):
         rv.append('</SegmentTimeline></SegmentTemplate>')
         return '\n'.join(rv)
 
-    def calculate_dash_params(self, mode=None, mpd_url=None):
+    def calculate_dash_params(self, **kwargs):
+        mpd_url = kwargs.get("mpd_url")
         if mpd_url is None:
             mpd_url = self.request.uri
             for k, v in legacy_manifest_names.iteritems():
@@ -314,8 +315,7 @@ class RequestHandler(webapp2.RequestHandler):
                     mpd_url = mpd_url.replace(k,v)
                     break
         encrypted = self.request.params.get('drm','none').lower() != 'none'
-        if mode is None:
-            mode = self.request.params.get('mode',None)
+        mode = kwargs.get("mode", self.request.params.get('mode', None))
         if mode is None:
             if re.search('vod',mpd_url) or encrypted:
                 mode='vod'
@@ -650,6 +650,7 @@ class MainPage(RequestHandler):
                 row['option'] = opt
             except IndexError:
                 row = {
+                    'manifest': { 'title':None },
                     'option': opt
                 }
                 context['rows'].append(row)
@@ -674,7 +675,7 @@ class LiveManifest(RequestHandler):
         self.response.content_type='application/dash+xml'
         context['title'] = 'Big Buck Bunny DASH test stream'
         try:
-            dash = self.calculate_dash_params()
+            dash = self.calculate_dash_params(mpd_url=manifest, **kwargs)
         except ValueError, e:
             self.response.write('Invalid CGI parameters: %s'%(str(e)))
             self.response.set_status(400)
@@ -765,7 +766,7 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
             self.response.set_status(404)
             return
         try:
-            dash = self.calculate_dash_params(mode)
+            dash = self.calculate_dash_params(mode=mode)
         except ValueError, e:
             self.response.write('Invalid CGI parameters: %s'%(str(e)))
             self.response.set_status(400)
@@ -950,7 +951,21 @@ class VideoPlayer(RequestHandler):
             self.response.set_status(400)
             return
         mode = self.request.params.get("mode", "live")
-        context.update(self.calculate_dash_params(mpd_url=filename, mode=mode))
+        context['dash'] = self.calculate_dash_params(mpd_url=filename, mode=mode, prefix=prefix)
+        for idx in range(len(context['dash']['video']['representations'])):
+            context['dash']['video']['representations'][idx] = context['dash']['video']['representations'][idx].toJSON()
+            del context['dash']['video']['representations'][idx]["segments"]
+        for idx in range(len(context['dash']['audio']['representations'])):
+            context['dash']['audio']['representations'][idx] = context['dash']['audio']['representations'][idx].toJSON()
+            del context['dash']['audio']['representations'][idx]["segments"]
+        del context['dash']['shortest_representation']
+        if context['dash']['encrypted']:
+            keys = context['dash']['keys']
+            for kid in keys.keys():
+                item = keys[kid].toJSON()
+                item['guidKid'] = drm.PlayReady.hex_to_le_guid(keys[kid].hkid, raw=False)
+                item['b64Key'] = keys[kid].KEY.b64
+                keys[kid] = item
         params=[]
         for k,v in self.request.params.iteritems():
             if k == 'mpd':
@@ -972,10 +987,11 @@ class VideoPlayer(RequestHandler):
         if params:
             mpd_url += '?' + '&'.join(params)
         context['source'] = urlparse.urljoin(self.request.host_url, mpd_url)
+        context['drm'] = self.request.get("drm", "none")
         if self.is_https_request():
             context['source'] = context['source'].replace('http://','https://')
         else:
-            if "marlin" in self.request.params.get(drm,""):
+            if "marlin" in context["drm"]:
                 context['source'] = '#'.join([settings.sas_url,urllib.quote(context['source'])])
         context['mimeType'] = 'application/dash+xml'
         context['title'] = manifests.manifest[filename]['title']

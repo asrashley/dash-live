@@ -90,6 +90,9 @@ class GAETestCase(unittest.TestCase):
             'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
             'cenc': 'urn:mpeg:cenc:2013',
         }
+        # the MSE option is exluded from the list as it does not change
+        # anything in the manifest responses
+        self.cgi_options = filter(lambda o: o['name'] != 'mse', options.options)
         
     def tearDown(self):
         self.logoutCurrentUser()
@@ -293,12 +296,12 @@ class TestHandlers(GAETestCase):
         # do the exhaustive check of every option with every manifest
         total_tests = len(manifests.manifest)
         count = 0
-        for param in options.options:
+        for param in self.cgi_options:
             total_tests = total_tests * len(param['options'])
         sys.stdout.write('\n')
         for filename, manifest in manifests.manifest.iteritems():
             tested = set([url])
-            indexes = [0] * len(options.options)
+            indexes = [0] * len(self.cgi_options)
             done = False
             while not done:
                 #sys.stdout.write('{:s}\r'.format(indexes))
@@ -306,13 +309,13 @@ class TestHandlers(GAETestCase):
                 count += 1
                 self.check_manifest(filename, indexes, tested)
                 idx = 0
-                while idx < len(options.options):
+                while idx < len(self.cgi_options):
                     indexes[idx] += 1
-                    if indexes[idx] < len(options.options[idx]['options']):
+                    if indexes[idx] < len(self.cgi_options[idx]['options']):
                         break
                     indexes[idx] = 0
                     idx += 1
-                if idx==len(options.options):
+                if idx==len(self.cgi_options):
                     done=True
         sys.stdout.write('\n')
 

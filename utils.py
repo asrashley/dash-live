@@ -20,8 +20,10 @@
 #
 #############################################################################
 
-import base64, datetime, json, math, os, re
-
+import base64
+import datetime
+import json, math, os, re
+import decimal
 
 # A UTC class, see https://docs.python.org/2.7/library/datetime.html#datetime.tzinfo
 class UTC(datetime.tzinfo):
@@ -65,6 +67,8 @@ def toIsoDuration(secs):
     """
     if isinstance(secs,basestring):
         secs = float(secs)
+    elif isinstance(secs, datetime.timedelta):
+        secs = secs.total_seconds()
     hrs = math.floor(secs/3600)
     rv=['PT']
     secs %= 3600
@@ -74,8 +78,7 @@ def toIsoDuration(secs):
         rv.append('%dH'%hrs)
     if hrs or mins:
         rv.append('%dM'%mins)
-    if secs:
-        rv.append('%0.2fS'%secs)
+    rv.append('%0.2fS'%secs)
     return ''.join(rv)
 
 date_hacks = [
@@ -193,11 +196,54 @@ def toHtmlString(item, className=None):
             rv = str(rv)
     return rv
 
-def toJson(value):
+def flatten(items, convert_numbers=False):
+    """Converts an object in to a form suitable for storage.
+    flatten will take a dictionary, list or tuple and inspect each item in the object looking for
+    items such as datetime.datetime objects that need to be converted to a canonical form before
+    they can be processed for storage.
+    """
+    if isinstance(items,dict):
+        rv={}
+    else:
+        rv = []
+    for item in items:
+        key = None
+        if isinstance(items,dict):
+            key = item
+            item = items[key]
+        if hasattr(item, 'toJSON'):
+            item = item.toJSON()
+        elif isinstance(item,(datetime.date, datetime.datetime,datetime.time)):
+            item = toIsoDateTime(item)
+        elif isinstance(item,(datetime.timedelta)):
+            item = toIsoDuration(item)
+        elif convert_numbers and isinstance(item,long):
+            item = '%d'%item
+        elif isinstance(item,decimal.Decimal):
+            item = float(item)
+        elif isinstance(item, basestring):
+            item = str(item).replace("'","\'")
+        elif isinstance(item, (list, set, tuple)):
+            item = flatten(list(item))
+        elif isinstance(item, dict):
+            item = flatten(item)
+        if callable(item):
+            continue
+        if key:
+            rv[key]=item
+        else:
+            rv.append(item)
+    if items.__class__ == tuple:
+        return tuple(rv)
+    return rv
+
+def toJson(value, indent=0):
     if not value:
         return value
     try:
-        return json.dumps(value)
+        if isinstance(value, (dict, list)):
+            value = flatten(value)
+        return json.dumps(value, indent=indent)
     except ValueError:
         return value
 

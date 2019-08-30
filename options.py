@@ -100,4 +100,13 @@ options = [
             ('No', 'base=0'),
         ]
     },
+    {
+        'name': 'mse',
+        'title': 'Native playback',
+        'options': [
+            ('Yes', ''),
+            ('Use EME/MSE', 'mse=1'),
+            ('Use EME/MSE (no DRM)', 'mse=2'),
+        ]
+    },
 ]

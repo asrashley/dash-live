@@ -85,3 +85,10 @@ class Key(ndb.Model):
         for k in ndb.get_multi(list_of_keys):
             rv[k.hkid.lower()] = k
         return rv
+
+    def toJSON(self):
+        return {
+            'kid': self.hkid,
+            'key': self.hkey,
+            'computed': self.computed,
+        }

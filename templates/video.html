@@ -6,6 +6,9 @@
 {% block extraheaders %}
 <link rel="stylesheet" href="/css/font-awesome.css" />
 <link rel="stylesheet" href="/css/video.css" />
+<script type="text/javascript">
+  var dashParameters = {{dash|toJson(indent=2)}};
+</script>
 {% endblock %}
 
 {% block header %}

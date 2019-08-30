@@ -83,7 +83,8 @@ class PlayReady(object):
         self.la_url = la_url
         self.security_level = security_level
 
-    def hex_to_le_guid(self, guid, raw):
+    @classmethod
+    def hex_to_le_guid(clz, guid, raw):
         if raw==True:
             if len(guid)!=16:
                 raise ValueError("GUID should be 16 bytes")
@@ -122,7 +123,7 @@ class PlayReady(object):
             keySeed = PlayReady.Test_Key_Seed
         if len(keyId) != 16:
             raise ValueError("KID should be a raw 16 byte value")
-        keyId = self.hex_to_le_guid(keyId, raw=True)
+        keyId = PlayReady.hex_to_le_guid(keyId, raw=True)
         if len(keySeed) < 30:
             raise ValueError("Key seed must be at least 30 bytes")
         # Truncate the key seed to 30 bytes, key seed must be at least 30 bytes long.
@@ -168,7 +169,7 @@ class PlayReady(object):
             return ','.join(rv)
         default_keypair = keys[representation.default_kid.lower()]
         raw_key = default_keypair.KEY.raw
-        raw_kid = self.hex_to_le_guid(default_keypair.KID.raw, raw=True)
+        raw_kid = PlayReady.hex_to_le_guid(default_keypair.KID.raw, raw=True)
         la_url = self.la_url
         cfg = {
             'kid':  base64.b64encode(raw_kid),
