@@ -38,6 +38,8 @@ class DrmTest(unittest.TestCase):
             self.segment = f.read()
         with open("fixtures/moov.mp4", "rb") as f:
             self.moov = f.read()
+        with open("fixtures/enc-moov.mp4", "rb") as f:
+            self.enc_moov = f.read()
         self.timescale = 240
         self.media_duration = 141941
 
@@ -68,6 +70,19 @@ class DrmTest(unittest.TestCase):
         moov = atoms[2]
         #moov.dump()
         self.assertEqual(len(moov.children), 3)
+
+    def test_parse_encrypted_moov(self):
+        inp = StringIO.StringIO(self.enc_moov)
+        atoms = mp4.Mp4Atom.create(inp)
+        self.assertEqual(len(atoms), 6)
+        self.assertEqual(atoms[0].atom_type, 'ftyp')
+        self.assertEqual(atoms[1].atom_type, 'mfra')
+        self.assertEqual(atoms[2].atom_type, 'free')
+        self.assertEqual(atoms[3].atom_type, 'moov')
+        self.assertEqual(atoms[4].atom_type, 'styp')
+        self.assertEqual(atoms[5].atom_type, 'sidx')
+        moov = atoms[3]
+        self.assertEqual(len(moov.children), 5)
 
     def test_add_pssh_box_to_moov(self):
         inp = StringIO.StringIO(self.moov)
