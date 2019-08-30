@@ -141,7 +141,8 @@ class PlayreadyTests(unittest.TestCase):
         expected_len +=  16 + 4 + 16*len(self.keys) + 4 + len(pro) # PSSH
         self.assertEqual(len(pssh), expected_len)
         parser = mp4.IsoParser()
-        atoms = parser.walk_atoms(StringIO.StringIO(pssh))
+        src = utils.BufferedReader(None, data=pssh)
+        atoms = parser.walk_atoms(src)
         self.assertEqual(len(atoms), 1)
         self.assertEqual(atoms[0].atom_type, 'pssh')
         self.assertTrue(isinstance(atoms[0], mp4.ContentProtectionSpecificBox))

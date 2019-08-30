@@ -143,7 +143,8 @@ class Mp4Atom(object):
         self._invalidate()
         
     @classmethod
-    def create(cls, src, parent=None):
+    def create(cls, src, parent=None, readwrite=False):
+        assert src is not None
         if parent is not None:
             cursor = parent.payload_start
             end = parent.position + parent.size
@@ -153,11 +154,13 @@ class Mp4Atom(object):
             cursor = 0
         rv = parent.children
         while end is None or cursor<end:
-            src.seek(cursor)
-            hdr = Mp4Atom.parse(src, parent)
+            assert cursor is not None
+            if src.tell() != cursor:
+                src.seek(cursor)
+            hdr = Mp4Atom.peek(src, parent)
             if hdr is None:
                 break
-            src.seek(hdr["position"])
+            #src.seek(hdr["position"])
             try:
                 Box = MP4_BOXES[hdr['atom_type']]
             except KeyError,k:
@@ -168,9 +171,10 @@ class Mp4Atom(object):
             atom.payload_start = src.tell()
             rv.append(atom)
             if atom.parse_children:
-                Mp4Atom.create(src, atom)
-            src.seek(hdr["position"])
-            atom._encoded = src.read(atom.size)
+                Mp4Atom.create(src, atom, readwrite)
+            if readwrite:
+                src.seek(hdr["position"])
+                atom._encoded = src.read(atom.size)
             cursor += atom.size
         return rv
         
@@ -200,6 +204,42 @@ class Mp4Atom(object):
             "position": position,
             "size": size,
             "parent": parent,
+        }
+
+    @classmethod
+    def peek(cls, src, parent):
+        position = src.tell()
+        header_size = 8
+        data = src.peek(header_size)
+        if not data or len(data) < header_size:
+            return None
+        size = struct.unpack('>I', data[:4])[0]
+        atom_type = data[4:8]
+        if not atom_type:
+            return None
+        if size == 0:
+            pos = src.tell()
+            src.seek(0,2) # seek to end
+            size = src.tell() - pos
+            src.seek(pos)
+        elif size == 1:
+            if len(data) < (header_size+8):
+                data = src.peek(header_size+8)
+            size = struct.unpack('>Q', data[header_size:header_size+8])[0]
+            if not size:
+                return None
+            header_size += 8
+        if atom_type=='uuid':
+            if len(data) < (header_size+16):
+                data = src.peek(header_size+16)
+            atom_type = data[header_size:header_size+16]
+            header_size += 16
+        return {
+            "atom_type": atom_type,
+            "position": position,
+            "size": size,
+            "parent": parent,
+            "header_size": header_size,
         }
 
     @classmethod
@@ -1135,8 +1175,8 @@ class IsoParser(object):
         atoms = None
         src = None
         try:
-            if isinstance(filename,(str,unicode)):
-                src = io.FileIO(filename, "rb")
+            if isinstance(filename, basestring):
+                src = io.open(filename, mode="rb", buffering=16384)
             else:
                 src = filename
             atoms = Mp4Atom.create(src)

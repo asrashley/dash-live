@@ -15,7 +15,7 @@
     profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014"
   {% endif %}
   {% if mode!='live' %}
-    mediaPresentationDuration="{{media_duration|isoDuration}}"
+    mediaPresentationDuration="{{mediaDuration|isoDuration}}"
   {% endif %}
   minBufferTime="PT1.5S"
 >
@@ -24,7 +24,7 @@
  </ProgramInformation>
  <Location>{{request_uri|xmlSafe}}</Location>
  {% if mode=='live' %}<UTCTiming schemeIdUri="{{timeSource.method}}" value="{{timeSource.url}}"/>{% endif %}
- <Period start="PT0S" id="p0" {% if mode!='live' %}duration="{{media_duration|isoDuration}}"{% endif %}>
+ <Period start="PT0S" id="p0" {% if mode!='live' %}duration="{{mediaDuration|isoDuration}}"{% endif %}>
  {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
   <AdaptationSet mimeType="video/mp4" contentType="video" segmentAlignment="true" startWithSAP="1" maxWidth="{{video.maxWidth}}" maxHeight="{{video.maxHeight}}" maxFrameRate="{{video.maxFrameRate}}" par="16:9">
    <ContentComponent id="1" contentType="video"/>
@@ -36,7 +36,7 @@
    {% if DRM.clearkey %}{% include  "drm/clearkey.xml" %}{% endif %}
    {% endif %}
    {% if loop.first %}
-      <SegmentTemplate startNumber="{{startNumber}}" timescale="{{video.timescale}}" duration="{{repr.segment_duration}}" initialization="$RepresentationID$/init.mp4" media="{{video.mediaURL|xmlSafe}}"/>
+      <SegmentTemplate startNumber="{{startNumber}}" timescale="{{video.timescale}}" duration="{{repr.segment_duration}}" initialization="{{video.initURL|xmlSafe}}" media="{{video.mediaURL|xmlSafe}}"/>
    {% endif %}
    <Representation id="{{repr.id}}" mimeType="video/mp4" codecs="{{repr.codecs}}" width="{{repr.width}}" height="{{repr.height}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
    </Representation>
@@ -52,7 +52,7 @@
    {% if DRM.playready %}{% include  "drm/playready.xml" %}{% endif %}
    {% if DRM.clearkey %}{% include  "drm/clearkey.xml" %}{% endif %}
    {% endif %}
-        <SegmentTemplate startNumber="{{startNumber}}" timescale="{{audio.timescale}}" duration="{{repr.segment_duration}}" initialization="$RepresentationID$/init.mp4" media="{{audio.mediaURL|xmlSafe}}"/>
+        <SegmentTemplate startNumber="{{startNumber}}" timescale="{{audio.timescale}}" duration="{{repr.segment_duration}}" initialization="{{audio.initURL|xmlSafe}}" media="{{audio.mediaURL|xmlSafe}}"/>
      {% endif %}
      <Representation id="{{repr.id}}" mimeType="audio/mp4" codecs="{{repr.codecs}}" sampleRate="{{repr.sampleRate}}" numChannels="{{repr.numChannels}}" lang="{{repr.lang}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
      </Representation>

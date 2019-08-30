@@ -11,7 +11,7 @@
      timeShiftBufferDepth="{{timeShiftBufferDepth|isoDuration}}"
   {% else %}
      type="static"
-     mediaPresentationDuration="{{media_duration|isoDuration}}"
+     mediaPresentationDuration="{{mediaDuration|isoDuration}}"
   {% endif %}
      minBufferTime="PT1S"  >
      {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}

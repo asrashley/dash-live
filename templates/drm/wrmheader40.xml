@@ -4,9 +4,9 @@
       <KEYLEN>16</KEYLEN>
       <ALGID>AESCTR</ALGID>
     </PROTECTINFO>
-    <KID>{{kid|base64}}</KID>
+    <KID>{{default_kid|base64}}</KID>
     {% if checksum %}<CHECKSUM>{{checksum|base64}}</CHECKSUM>{% endif %}
-    <LA_URL>{{la_url}}</LA_URL>
+    <LA_URL>{{la_url|xmlSafe}}</LA_URL>
     <CUSTOMATTRIBUTES><IIS_DRM_VERSION>8.0.1907.32</IIS_DRM_VERSION></CUSTOMATTRIBUTES>
   </DATA>
 </WRMHEADER>

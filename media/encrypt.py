@@ -7,11 +7,18 @@ import subprocess
 import tempfile
 import sys
 
-from gen_index import create_index_file, create_representation
+from gen_index import create_representation
 
-KID='c001de8e567b5fcfbc22c565ed5bda24'
-KEY='533a583a843436a536fbe2a5821c4b6c'
-IV='c2b4b2f6ce549280'
+#KID='c001de8e567b5fcfbc22c565ed5bda24'
+KID='1ab45440532c439994dc5c5ad9584bac'
+
+
+#KEY='533a583a843436a536fbe2a5821c4b6c'
+KEY='d6d39cedee9024c88b64eb1bdd617a47'
+
+
+#IV='c2b4b2f6ce549280'
+IV='1927bd83df40bc4d'
 
 XML_TEMPLATE="""<?xml version="1.0" encoding="UTF-8"?>
 <GPACDRM type="CENC AES-CTR">
@@ -82,7 +89,7 @@ def encrypt_file(source, kid, key, iv):
             print 'Failed to split encrypted MOOV file into fragments: {:d}'.format(rv)
             return rv
         #subprocess.call(["ls", tmpdir])
-        dest_filename = basename+"ENC"+ext
+        dest_filename = basename+"_enc"+ext
         with open(dest_filename, "wb") as dest:
             sys.stdout.write('I')
             sys.stdout.flush()
@@ -99,7 +106,6 @@ def encrypt_file(source, kid, key, iv):
                 moof = "{}{:d}.m4s".format(prefix, segment)
         sys.stdout.write('\n')
         sys.stdout.flush()
-        create_index_file(dest_filename, IndexArgs(dest_filename))
     finally:
         try:
             shutil.rmtree(tmpdir)
@@ -108,10 +114,10 @@ def encrypt_file(source, kid, key, iv):
  
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='MP4 encryption')
-    parser.add_argument('--kid', help='Key ID', nargs=1, default=KID)
-    parser.add_argument('--key', help='Encryption Key', nargs=1, default=KEY)
-    parser.add_argument('--iv', help='Initial Initialisation Vector', nargs=1, default=IV)
+    parser.add_argument('--kid', help='Key ID', nargs=1, default=[KID])
+    parser.add_argument('--key', help='Encryption Key', nargs=1, default=[KEY])
+    parser.add_argument('--iv', help='Initial Initialisation Vector', nargs=1, default=[IV])
     parser.add_argument('mp4file', help='Filename of MP4 file', nargs='+', default=None)
     args = parser.parse_args()
     for fname in args.mp4file:
-        encrypt_file(fname, args.kid, args.key, args.iv)
+        encrypt_file(fname, args.kid[0], args.key[0], args.iv[0])

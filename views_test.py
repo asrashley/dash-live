@@ -27,7 +27,6 @@ import webapp2
 import webtest # if this import fails, "pip install WebTest"
 
 import drm
-import media
 import models
 import views
 import utils
@@ -90,9 +89,29 @@ class GAETestCase(unittest.TestCase):
             'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
             'cenc': 'urn:mpeg:cenc:2013',
         }
-        # the MSE option is exluded from the list as it does not change
-        # anything in the manifest responses
-        self.cgi_options = filter(lambda o: o['name'] != 'mse', options.options)
+        self.cgi_options = []
+        drmloc = []
+        for opt in options.options:
+            if opt['name']=='drmloc':
+                for loc in opt['options']:
+                    if loc[1]:
+                        drmloc.append(loc[1].split('=')[1])
+        for opt in options.options:
+            # the MSE option is exluded from the list as it does not change
+            # anything in the manifest responses
+            if opt['name'] in ['mse', 'drmloc']:
+                continue
+            opts = map(lambda o: o[1], opt['options'])
+            if opt['name'] == 'drm':
+                for drm in opt['options']:
+                    if drm[1]=='drm=none':
+                        continue
+                    for loc in drmloc:
+                        if "pro" in loc and drm[1]!='drm=playready' and drm[1]!='drm=all':
+                            continue
+                        opts.append(drm[1]+'-'+loc)
+            self.cgi_options.append((opt["name"],opts))
+        #print(self.cgi_options)
         
     def tearDown(self):
         self.logoutCurrentUser()
@@ -154,6 +173,7 @@ class GAETestCase(unittest.TestCase):
         }
         upload_files = [(field, filename, message, "message/external-body; blob-key=\"encoded_gs_file:blablabla\"; access-type=\"X-AppEngine-BlobKey\"")]
         #upload_files = [(field, filename, message, 'fooooo')]
+        logging.debug(message)
         return self.app.post(upload_url, params=form, headers=headers, upload_files=upload_files)
 
 
@@ -165,14 +185,15 @@ class TestHandlers(GAETestCase):
         self.logoutCurrentUser()
         response = self.app.get(url)
         self.assertEqual(response.status_int,200)
-        response.mustcontain('Log In', no='href="{}"'.format(self.from_uri('media')))
+        response.mustcontain('Log In', no='href="{}"'.format(self.from_uri('media-index')))
         for filename, manifest in manifests.manifest.iteritems():
-            mpd_url = self.from_uri('dash-mpd', manifest=filename)
+            mpd_url = self.from_uri('dash-mpd-v2', manifest=filename, prefix='placeholder')
+            mpd_url = mpd_url.replace('placeholder', '{directory}')
             response.mustcontain(mpd_url)
         self.setCurrentUser(is_admin=True)
         response = self.app.get(url)
         self.assertEqual(response.status_int,200)
-        response.mustcontain('href="{}"'.format(self.from_uri('media')), no="Log In")
+        response.mustcontain('href="{}"'.format(self.from_uri('media-index')), no="Log In")
         response.mustcontain('Log Out')
 
         #self.setCurrentUser(is_admin=False)
@@ -183,7 +204,7 @@ class TestHandlers(GAETestCase):
         page = views.MediaHandler()
         self.assertIsNotNone(getattr(page,'get',None))
         self.assertIsNotNone(getattr(page,'post',None))
-        url = self.from_uri('media', absolute=True)
+        url = self.from_uri('media-index', absolute=True)
 
         # user must be logged in to use media page
         self.logoutCurrentUser()
@@ -241,19 +262,13 @@ class TestHandlers(GAETestCase):
     def check_manifest(self, filename, indexes, tested):
         params = {}
         for idx, option in enumerate(self.cgi_options):
-            value = option['options'][indexes[idx]][1]
+            name, values = option
+            value = values[indexes[idx]]
             if value:
-                params[option["name"]] = value
+                params[name] = value
         # remove pointless combinations of options
         if params.get("mode", "mode=live") == "mode=live" and "vod_" in filename:
             return
-        if params.has_key("drmloc"):
-            drm = params.get("drm", "drm=none")
-            if drm != "drm=none":
-                drmloc = params["drmloc"].split('=')[1]
-                if drmloc == 'pro' and ('playready' in drm or 'all' in drm):
-                    params["drm"] += '-' + drmloc
-            del params["drmloc"]
         if params.get("mode", "mode=live") != "mode=live":
             if params.has_key("mup"):
                 del params["mup"]
@@ -278,7 +293,11 @@ class TestHandlers(GAETestCase):
         This test is _very_ slow, expect it to take several minutes!"""
         self.logoutCurrentUser()
         pr = drm.PlayReady(self.templates)
-        for r in media.representations.values():
+        media_files = models.MediaFile.all()
+        for mf in media_files:
+            r = mf["representation"]
+            if r is None:
+                continue
             if r.encrypted:
                 for kid in r.kids:
                     key = binascii.b2a_hex(pr.generate_content_key(kid.decode('hex')))
@@ -297,7 +316,7 @@ class TestHandlers(GAETestCase):
         total_tests = len(manifests.manifest)
         count = 0
         for param in self.cgi_options:
-            total_tests = total_tests * len(param['options'])
+            total_tests = total_tests * len(param[1])
         sys.stdout.write('\n')
         for filename, manifest in manifests.manifest.iteritems():
             tested = set([url])
@@ -311,7 +330,7 @@ class TestHandlers(GAETestCase):
                 idx = 0
                 while idx < len(self.cgi_options):
                     indexes[idx] += 1
-                    if indexes[idx] < len(self.cgi_options[idx]['options']):
+                    if indexes[idx] < len(self.cgi_options[idx][1]):
                         break
                     indexes[idx] = 0
                     idx += 1
@@ -358,7 +377,7 @@ class TestHandlers(GAETestCase):
         self.assertEqual(keys[0].hkey, expected_result['key'])
         self.assertEqual(keys[0].computed, False)
 
-        url = self.from_uri('media', absolute=True)
+        url = self.from_uri('media-index', absolute=True)
         response = self.app.get(url)
         self.assertEqual(response.status_int, 200)
         response.mustcontain(expected_result['kid'], expected_result['key'])        
@@ -562,7 +581,7 @@ class BlobstoreTestHandlers(GAETestCase):
         routes.routes['uploadBlob_ah'] = routes.routes['uploadBlob']
         
     def test_upload_media_file(self):
-        url = self.from_uri('media', absolute=True)
+        url = self.from_uri('media-index', absolute=True)
         blobURL = self.from_uri('uploadBlob', absolute=True)
         self.assertIsNotNone(blobURL)
         
@@ -582,8 +601,8 @@ class BlobstoreTestHandlers(GAETestCase):
         self.assertEqual(response.status_int,200)
 
         form = response.forms['upload-form']
-        form['file'] = webtest.Upload('V1.mp4', b'data', 'video/mp4')
-        form['media'] = 'V1'
+        form['file'] = webtest.Upload('bbb_v1.mp4', b'data', 'video/mp4')
+        #form['media'] = 'V1'
         self.assertEqual(form.method, 'POST')
         self.logoutCurrentUser()
         # a POST from a non-logged in user should fail
@@ -596,15 +615,14 @@ class BlobstoreTestHandlers(GAETestCase):
         form = {
             "csrf_token": upload_form["csrf_token"].value,
             "submit": "submit",
-            "media": "V1",
         }
         response = self.upload_blobstore_file(url, response.forms['upload-form'].action, form,
-                                              'file', 'V1.mp4', b'data', 'video/mp4')
+                                              'file', 'bbb_v1.mp4', b'data', 'video/mp4')
         response.mustcontain('<h2>Upload complete</h2>')
         
         response = self.app.get(url)
         self.assertEqual(response.status_int,200)
-        response.mustcontain('<td>V1.mp4</td>')
+        response.mustcontain('bbb_v1.mp4')
         
 if __name__ == '__main__':
     unittest.main()        

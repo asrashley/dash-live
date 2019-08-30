@@ -27,6 +27,7 @@ import datetime
 import decimal
 import hashlib
 import hmac
+import io
 import logging
 import json
 import math
@@ -52,7 +53,8 @@ from webapp2_extras import security
 from webapp2_extras.appengine.users import login_required, admin_required
 
 from routes import routes
-import drm, media, mp4, utils, models, settings, manifests, options
+import drm, mp4, utils, models, settings, manifests, options
+from media import segment
 from webob import exc
 
 templates = jinja2.Environment(
@@ -226,37 +228,37 @@ class RequestHandler(webapp2.RequestHandler):
                 pass
         return d
 
-    def generateSegmentList(self, repr):
+    def generateSegmentList(self, representation):
         #TODO: support live profile
-        rv = ['<SegmentList timescale="%d" duration="%d">'%(repr.timescale,repr.media_duration)]
+        rv = ['<SegmentList timescale="%d" duration="%d">'%(representation.timescale,representation.mediaDuration)]
         first=True
-        for seg in repr.segments:
+        for seg in representation.segments:
             if first:
-                rv.append('<Initialization range="{start:d}-{end:d}"/>'.format(start=seg.seg.pos, end=seg.seg.pos+seg.seg.size-1))
+                rv.append('<Initialization range="{start:d}-{end:d}"/>'.format(start=seg.pos, end=seg.pos+seg.size-1))
                 first=False
             else:
-                rv.append('<SegmentURL mediaRange="{start:d}-{end:d}"/>'.format(start=seg.seg.pos,end=seg.seg.pos+seg.seg.size-1))
+                rv.append('<SegmentURL mediaRange="{start:d}-{end:d}"/>'.format(start=seg.pos,end=seg.pos+seg.size-1))
         rv.append('</SegmentList>')
         return '\n'.join(rv)
 
-    def generateSegmentDurations(self, repr):
+    def generateSegmentDurations(self, representation):
         #TODO: support live profile
         def output_s_node(sn):
             if sn["duration"] is None:
                 return
             c = ' r="{:d}"'.format(sn["count"]-1) if sn["count"]>1 else ''
             rv.append('<S {} d="{:d}"/>'.format(c, sn["duration"]))
-        rv = ['<SegmentDurations timescale="%d">'%(repr.timescale)]
+        rv = ['<SegmentDurations timescale="%d">'%(representation.timescale)]
         s_node = {
             "duration": None,
             "count": 0,
         }
-        for seg in repr.segments:
+        for seg in representation.segments:
             try:
-                if seg.seg.duration != s_node["duration"]:
+                if seg.duration != s_node["duration"]:
                     output_s_node(s_node)
                     s_node["count"] = 0
-                s_node["duration"] = seg.seg.duration
+                s_node["duration"] = seg.duration
                 s_node["count"] += 1
             except AttributeError:
                 # init segment does not have a duration
@@ -265,7 +267,7 @@ class RequestHandler(webapp2.RequestHandler):
         rv.append('</SegmentDurations>')
         return '\n'.join(rv)
 
-    def generateSegmentTimeline(self, context, repr):
+    def generateSegmentTimeline(self, context, representation):
         def output_s_node(sn):
             if sn["duration"] is None:
                 return
@@ -273,34 +275,34 @@ class RequestHandler(webapp2.RequestHandler):
             t = ' t="{:d}"'.format(sn["start"]) if sn["start"] is not None else ''
             rv.append('<S {} {} d="{:d}"/>'.format(t, c, sn["duration"]))
         
-        rv = ['<SegmentTemplate timescale="%d" '%repr.timescale,
+        rv = ['<SegmentTemplate timescale="%d" '%representation.timescale,
               'initialization="$RepresentationID$/init.mp4" ',
               'media="$RepresentationID$/$Number$.mp4" ' ]
         timeline_start = context["elapsedTime"] - datetime.timedelta(seconds=context["timeShiftBufferDepth"])
         first=True
-        first_seg = self.calculate_segment_from_timecode(utils.scale_timedelta(timeline_start,1,1), repr, context["shortest_representation"])
+        first_seg = self.calculate_segment_from_timecode(utils.scale_timedelta(timeline_start,1,1), representation, context["shortest_representation"])
         dur=0
         s_node = {
             'duration': None,
             'count': 0,
             'start': None,
         }
-        while dur <= (context["timeShiftBufferDepth"]*repr.timescale):
-            seg = repr.segments[first_seg['segment_num']]
+        while dur <= (context["timeShiftBufferDepth"]*representation.timescale):
+            seg = representation.segments[first_seg['segment_num']]
             if first:
-                rv.append('startNumber="%d">'%(context["startNumber"]+long(first_seg['seg_start_time']/repr.segment_duration)))
+                rv.append('startNumber="%d">'%(context["startNumber"]+long(first_seg['seg_start_time']/representation.segment_duration)))
                 rv.append('<SegmentTimeline>')
                 s_node['start'] = first_seg['seg_start_time']
                 first=False
-            elif seg.seg.duration != s_node["duration"]:
+            elif seg.duration != s_node["duration"]:
                 output_s_node(s_node)
                 s_node["start"] = None
                 s_node["count"] = 0
-            s_node["duration"] = seg.seg.duration
+            s_node["duration"] = seg.duration
             s_node["count"] += 1
-            dur += seg.seg.duration
+            dur += seg.duration
             first_seg['segment_num'] += 1
-            if first_seg['segment_num']>repr.num_segments:
+            if first_seg['segment_num']>representation.num_segments:
                 first_seg['segment_num']=1
         output_s_node(s_node)
         rv.append('</SegmentTimeline></SegmentTemplate>')
@@ -321,7 +323,7 @@ class RequestHandler(webapp2.RequestHandler):
                 mode='vod'
             else:
                 mode='live'
-        #media_duration = 9*60 + 32.52 #"PT0H9M32.52S"
+        #mediaDuration = 9*60 + 32.52 #"PT0H9M32.52S"
         now = datetime.datetime.now(tz=utils.UTC())
         clockDrift=0
         try:
@@ -337,6 +339,7 @@ class RequestHandler(webapp2.RequestHandler):
             except ValueError:
                 timeShiftBufferDepth = self.DEFAULT_TIMESHIFT_BUFFER_DEPTH # in seconds
         rv = {
+            "DRM": {},
             "clockDrift": clockDrift,
             "encrypted": encrypted,
             "generateSegmentList": self.generateSegmentList,
@@ -379,34 +382,56 @@ class RequestHandler(webapp2.RequestHandler):
         if self.is_https_request():
             rv["baseURL"] = rv["baseURL"].replace('http://','https://')
         video = { 
-            'representations' : [ r for r in media.representations.values() if r.contentType=="video" and r.encrypted==encrypted],
-            'mediaURL':'$RepresentationID$/$Number$.m4v'
+            'representations' : [],
+            'initURL': '$RepresentationID$/init.m4v',
+            'mediaURL':'$RepresentationID$/$Number$.m4v',
         }
-        if self.request.params.get('drm'):
-            video["mediaURL"] += '?drm={}'.format(self.request.params.get('drm'))
-        if mode=='vod' or mode=='odvod':
-            elapsedTime = datetime.timedelta(seconds = video['representations'][0].media_duration / video['representations'][0].timescale)
-            timeShiftBufferDepth = elapsedTime.seconds
-        self.compute_av_values(video, rv["startNumber"])
-        video['minWidth'] = min([ a.width for a in video['representations']])
-        video['minHeight'] = min([ a.height for a in video['representations']])
-        video['maxWidth'] = max([ a.width for a in video['representations']])
-        video['maxHeight'] = max([ a.height for a in video['representations']])
-        video['maxFrameRate'] = max([ a.frameRate for a in video['representations']])
-        rv["video"] = video
-
         audio = {
-            'representations':[ r for r in media.representations.values() if r.contentType=="audio" and r.encrypted==encrypted],
+            'representations': [],
+            'initURL': '$RepresentationID$/init.m4a',
             'mediaURL':'$RepresentationID$/$Number$.m4a'
         }
-        if not audio['representations']:
-            audio['representations'] = [ r for r in media.representations.values() if r.contentType=="audio" and r.encrypted==False]
-        assert len(audio['representations']) > 0
-        if self.request.params.get('acodec'):
-            audio['representations'] = [r for r in audio['representations'] if r.codecs.startswith(self.request.params.get('acodec'))]
-            if not audio['representations']:
-                audio['representations'] = [r for r in media.representations.values() if r.codecs.startswith(self.request.params.get('acodec'))]
-            assert len(audio['representations']) > 0
+        if self.request.params.get('drm'):
+            video["initURL"] += '?drm={}'.format(self.request.params.get('drm'))
+            video["mediaURL"] += '?drm={}'.format(self.request.params.get('drm'))
+            audio["initURL"] += '?drm={}'.format(self.request.params.get('drm'))
+            audio["mediaURL"] += '?drm={}'.format(self.request.params.get('drm'))
+        prefix = kwargs.get('prefix','bbb').lower()
+        acodec = self.request.params.get('acodec')
+        media_files = models.MediaFile.all()
+        for mf in media_files:
+            r = mf["representation"]
+            if r is None:
+                continue
+            if r.contentType=="video" and r.encrypted==encrypted and r.filename.startswith(prefix+'_v'):
+                video['representations'].append(r)
+            elif r.contentType=="audio" and r.encrypted==encrypted and r.filename.startswith(prefix+'_a'):
+                if acodec is None or r.codecs.startswith(acodec):
+                    audio['representations'].append(r)
+        # if stream is encrypted but there is encrypted version of the audio track, fall back
+        # to a clear version
+        if not audio['representations'] and acodec:
+            for mf in media_files:
+                r = mf["representation"]
+                if r is None:
+                    continue
+                if r.contentType=="audio" and r.filename.startswith(prefix+'_a') and r.codecs.startswith(acodec):
+                    audio['representations'].append(copy.deepcopy(r))
+        if mode=='vod' or mode=='odvod':
+            if video['representations']:
+                elapsedTime = datetime.timedelta(seconds = video['representations'][0].mediaDuration / video['representations'][0].timescale)
+            elif audio['representations']:
+                elapsedTime = datetime.timedelta(seconds = audio['representations'][0].mediaDuration / audio['representations'][0].timescale)
+            timeShiftBufferDepth = elapsedTime.seconds
+        if video['representations']:
+            self.compute_av_values(video, rv["startNumber"])
+            video['minWidth'] = min([ a.width for a in video['representations']])
+            video['minHeight'] = min([ a.height for a in video['representations']])
+            video['maxWidth'] = max([ a.width for a in video['representations']])
+            video['maxHeight'] = max([ a.height for a in video['representations']])
+            video['maxFrameRate'] = max([ a.frameRate for a in video['representations']])
+        rv["video"] = video
+
         if len(audio['representations'])==1:
             audio['representations'][0].role='main'
         else:
@@ -415,23 +440,25 @@ class RequestHandler(webapp2.RequestHandler):
                     rep.role='main'
                 else:
                     rep.role='alternate'
-        self.compute_av_values(audio, rv["startNumber"])
+        if audio['representations']:
+            self.compute_av_values(audio, rv["startNumber"])
         rv["audio"] = audio
 
         shortest_representation=None
-        media_duration = 0
+        mediaDuration = 0
         kids = set()
         for rep in video['representations']+audio['representations']:
-            dur = rep.media_duration / rep.timescale
-            if shortest_representation is None or dur<media_duration:
+            dur = rep.mediaDuration / rep.timescale
+            if shortest_representation is None or dur<mediaDuration:
                 shortest_representation = rep
-                media_duration = dur
+                mediaDuration = dur
             if rep.encrypted:
                 kids.update(rep.kids)
         rv["kids"] = kids
-        rv["media_duration"] = media_duration
+        rv["mediaDuration"] = mediaDuration
         rv["shortest_representation"] = shortest_representation
-        rv["maxSegmentDuration"] = max(video['maxSegmentDuration'],audio['maxSegmentDuration'])
+        rv["maxSegmentDuration"] = max(video.get('maxSegmentDuration', 0),
+                                       audio.get('maxSegmentDuration', 0))
         if encrypted:
             rv["DRM"] = self.generate_drm_dict()
             if not kids:
@@ -523,12 +550,12 @@ class RequestHandler(webapp2.RequestHandler):
         except KeyError:
             pass
 
-    def calculate_segment_from_timecode(self, timecode, repr, shortest_representation):
+    def calculate_segment_from_timecode(self, timecode, representation, shortest_representation):
         """find the correct segment for the given timecode.
 
         :param timecode: the time (in seconds) since availabilityStartTime
             for the requested fragment.
-        :param repr: the Representation to use
+        :param representation: the Representation to use
         :param shortest_representation: the Representation with the shortest total duration
         """
         # nominal_duration is the duration (in seconds) of the shortest representation.
@@ -543,11 +570,11 @@ class RequestHandler(webapp2.RequestHandler):
         assert timecode >= origin_time
         # the difference between timecode and origin_time now needs
         # to be mapped to the segment index of this representation
-        segment_num = 1 + long((timecode - origin_time) * repr.timescale / repr.segment_duration)
-        assert segment_num>0 and segment_num<=repr.num_segments
-        # seg_start_time is the time (in repr timescale units) when this
+        segment_num = 1 + long((timecode - origin_time) * representation.timescale / representation.segment_duration)
+        assert segment_num>0 and segment_num<=representation.num_segments
+        # seg_start_time is the time (in representation timescale units) when this
         # segment started, relative to availabilityStartTime
-        seg_start_time = long(origin_time * repr.timescale + (segment_num-1) * repr.segment_duration)
+        seg_start_time = long(origin_time * representation.timescale + (segment_num-1) * representation.segment_duration)
         return locals()
 
     def calculate_injected_error_segments(self, times, now, availabilityStartTime, timeshiftBufferDepth, representation):
@@ -630,9 +657,20 @@ class MainPage(RequestHandler):
         context["headers"]=[]
         context['routes'] = routes
         context['video_fields'] = [ 'id', 'codecs', 'bitrate', 'width', 'height', 'encrypted' ]
-        context['video_representations'] = [ r for r in media.representations.values() if r.contentType=="video"]
+        context['video_representations'] = []
+        context['audio_representations'] = []
+        for mf in models.MediaFile.all():
+            r = mf["representation"]
+            if r is None:
+                continue
+            if r.contentType=="video":
+                context['video_representations'].append(r)
+            elif r.contentType=="audio":
+                context['audio_representations'].append(r)
+        context['video_representations'].sort(key=lambda r: r.filename)
+        context['audio_representations'].sort(key=lambda r: r.filename)
         context['audio_fields'] = [ 'id', 'codecs', 'bitrate', 'sampleRate', 'numChannels', 'language', 'encrypted' ]
-        context['audio_representations'] = [ r for r in media.representations.values() if r.contentType=="audio"]
+        context['streams'] = models.Stream.all()
         context['keys'] = models.Key.all_as_dict()
         context['rows'] = []
         filenames = manifests.manifest.keys()
@@ -640,7 +678,7 @@ class MainPage(RequestHandler):
         for name in filenames:
             context['rows'].append({
                 'filename': name,
-                'url': self.uri_for('dash-mpd', manifest=name),
+                'url': self.uri_for('dash-mpd-v2', manifest=name, prefix='placeholder').replace('placeholder','{directory}'),
                 'manifest': manifests.manifest[name],
                 'option': [],
             })
@@ -688,12 +726,13 @@ class LiveManifest(RequestHandler):
             del context['baseURL']
         if context['abr'] is False:
             context['video']['representations'] = context['video']['representations'][-1:]
-        try:
-            context['minimumUpdatePeriod'] = float(self.request.params.get('mup',2.0*context['video']['maxSegmentDuration']))
-        except ValueError:
-            context['minimumUpdatePeriod'] = 2.0*context['video']['maxSegmentDuration']
-        if context['minimumUpdatePeriod']<=0:
-            del context['minimumUpdatePeriod']
+        if context['mode'] == 'live':
+            try:
+                context['minimumUpdatePeriod'] = float(self.request.params.get('mup', 2.0 * context['video'].get('maxSegmentDuration', 1)))
+            except ValueError:
+                context['minimumUpdatePeriod'] = 2.0* context['video'].get('maxSegmentDuration', 1)
+            if context['minimumUpdatePeriod'] <= 0:
+                del context['minimumUpdatePeriod']
         for code in self.INJECTED_ERROR_CODES:
             if self.request.params.get('m%03d'%code) is not None:
                 try:
@@ -722,19 +761,19 @@ class LiveManifest(RequestHandler):
 class OnDemandMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
     """Handler that returns media fragments for the on-demand profile"""
     def get(self, filename, ext):
-        try:
-            repr = media.representations[filename.upper()]
-        except KeyError,e:
-            self.response.write('%s not found: %s'%(filename,str(e)))
+        name = filename+'.mp4'
+        name = name.lower()
+        mf = models.MediaFile.query(models.MediaFile.name==name).get()
+        if mf is None:
+            self.response.write('%s not found'%(name))
             self.response.set_status(404)
             return
         try:
-            dash = self.calculate_dash_params('vod')
+            dash = self.calculate_dash_params(mode='vod')
         except ValueError, e:
             self.response.write('Invalid CGI parameters: %s'%(str(e)))
             self.response.set_status(400)
             return
-        mf = models.MediaFile.query(models.MediaFile.name==repr.filename).get()
         if ext=='m4a':
             self.response.content_type='audio/mp4'
         elif ext=='m4v':
@@ -759,10 +798,10 @@ class OnDemandMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandle
 class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
     """Handler that returns media fragments"""
     def get(self,mode,filename,segment_num,ext):
-        try:
-            repr = media.representations[filename.upper()]
-        except KeyError,e:
-            self.response.write('%s not found: %s'%(filename,str(e)))
+        name = filename.lower()+'.mp4'
+        mf = models.MediaFile.query(models.MediaFile.name==name).get()
+        if mf is None:
+            self.response.write('%s not found'%(representation.filename))
             self.response.set_status(404)
             return
         try:
@@ -771,6 +810,7 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
             self.response.write('Invalid CGI parameters: %s'%(str(e)))
             self.response.set_status(400)
             return
+        representation = mf.representation
         if segment_num=='init':
             mod_segment = segment_num = 0
         else:
@@ -807,11 +847,11 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
                 # the Segment availability start time, the MPD duration of the
                 # Media Segment and the value of the attribute @timeShiftBufferDepth
                 # for this Representation
-                lastFragment = dash['startNumber'] + int(utils.scale_timedelta(dash['elapsedTime'], repr.timescale, repr.segment_duration))
-                firstFragment = lastFragment - int(repr.timescale*dash['timeShiftBufferDepth'] / repr.segment_duration) - 1
+                lastFragment = dash['startNumber'] + int(utils.scale_timedelta(dash['elapsedTime'], representation.timescale, representation.segment_duration))
+                firstFragment = lastFragment - int(representation.timescale*dash['timeShiftBufferDepth'] / representation.segment_duration) - 1
             else:
                 firstFragment = dash['startNumber']
-                lastFragment = firstFragment + repr.num_segments
+                lastFragment = firstFragment + representation.num_segments
             if segment_num<firstFragment or segment_num>lastFragment:
                 self.response.write('Segment not found (valid range= %d->%d)'%(firstFragment,lastFragment))
                 self.response.set_status(404)
@@ -819,17 +859,12 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
             if dash['mode']=='live':
                 # elapsed_time is the time (in seconds) since availabilityStartTime
                 # for the requested fragment
-                elapsed_time = (segment_num - dash['startNumber']) * repr.segment_duration / float(repr.timescale)
-                segpos = self.calculate_segment_from_timecode(elapsed_time, repr, dash['shortest_representation'])
+                elapsed_time = (segment_num - dash['startNumber']) * representation.segment_duration / float(representation.timescale)
+                segpos = self.calculate_segment_from_timecode(elapsed_time, representation, dash['shortest_representation'])
                 mod_segment = segpos['segment_num']
                 origin_time = segpos['origin_time']
             else:
                 mod_segment = segment_num
-        mf = models.MediaFile.query(models.MediaFile.name==repr.filename).get()
-        if mf is None:
-            self.response.write('%s not found'%(repr.filename))
-            self.response.set_status(404)
-            return
         #blob_info = blobstore.BlobInfo.get(mf.blob)
         if ext=='m4a':
             self.response.content_type='audio/mp4'
@@ -837,20 +872,20 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
             self.response.content_type='video/mp4'
         else:
             self.response.content_type='application/mp4'
-        assert mod_segment>=0 and mod_segment<=repr.num_segments
-        frag = repr.segments[mod_segment]
-        blob_reader = blobstore.BlobReader(mf.blob, position=frag.seg.pos, buffer_size=frag.seg.size)
-        data = StringIO.StringIO(blob_reader.read(frag.seg.size))
-        atom = mp4.Mp4Atom(atom_type='wrap', position=0, size = frag.seg.size, parent=None,
-                       children=mp4.Mp4Atom.create(data))
-        #atom = mp4.Mp4Atom(atom_type='wrap', position=0, size = frag.seg.size, parent=None,
+        assert mod_segment>=0 and mod_segment<=representation.num_segments
+        frag = representation.segments[mod_segment]
+        blob_reader = blobstore.BlobReader(mf.blob, position=frag.pos, buffer_size=frag.size)
+        data = utils.BufferedReader(None, data=blob_reader.read(frag.size))
+        atom = mp4.Mp4Atom(atom_type='wrap', position=0, size = frag.size, parent=None,
+                           children=mp4.Mp4Atom.create(data, readwrite=True))
+        #atom = mp4.Mp4Atom(atom_type='wrap', position=0, size = frag.size, parent=None,
         #               children=mp4.Mp4Atom.create(blob_reader))
-        if segment_num==0 and repr.encrypted:
-            keys = models.Key.get_kids(repr.kids)
+        if segment_num==0 and representation.encrypted:
+            keys = models.Key.get_kids(representation.kids)
             drms = self.generate_drm_dict()
             for drm in drms.values():
                 try:
-                    pssh = drm["moov"](repr, keys)
+                    pssh = drm["moov"](representation, keys)
                     # insert the PSSH before the trak box
                     atom.moov.insert_child(atom.moov.index('trak'), pssh)
                 except KeyError:
@@ -865,7 +900,7 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
             else:
                 # Update the baseMediaDecodeTime to take account of the number of times the
                 # stream would have looped since availabilityStartTime
-                delta = long(origin_time*repr.timescale)
+                delta = long(origin_time*representation.timescale)
                 if delta < 0L:
                     raise IOError("Failure in calculating delta %s %d %d %d"%(str(delta),segment_num,mod_segment,dash['startNumber']))
                 atom.moof.traf.tfdt.base_media_decode_time += delta
@@ -881,14 +916,14 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
         data = atom.encode()
         if self.request.params.get('corrupt') is not None:
             try:
-                self.apply_corruption(repr, segment_num, atom, data)
+                self.apply_corruption(representation, segment_num, atom, data)
             except ValueError, e:
                 self.response.write('Invalid CGI parameter %s: %s'%(self.request.params.get('corrupt'),str(e)))
                 self.response.set_status(400)
                 return
         data = data[8:] # [8:] is to skip the fake "wrap" box
         try:
-            start,end = self.get_http_range(frag.seg.size)
+            start,end = self.get_http_range(frag.size)
             if start is not None:
                 data = data[start:end+1]
         except ValueError, ve:
@@ -897,7 +932,7 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
         self.response.headers.add_header('Accept-Ranges','bytes')
         self.response.write(data)
 
-    def apply_corruption(self, repr, segment_num, atom, data):
+    def apply_corruption(self, representation, segment_num, atom, data):
         mem = memoryview(data)
         try:
             corrupt_frames = int(self.request.params.get('frames','4'),10)
@@ -907,15 +942,15 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
             if int(d,10) != segment_num:
                 continue
             # put junk data in the last 2% of the segment
-            #junk_count = frag.seg.size//(50*len(filling))
+            #junk_count = frag.size//(50*len(filling))
             #junk_size = junk_count*len(filling)
-            atom.moof.traf.trun.parse_samples(data, repr.nalLengthFieldFength)
+            atom.moof.traf.trun.parse_samples(data, representation.nalLengthFieldFength)
             #hdr = mp4.Mp4Atom.parse_atom_header(src)
             #while hdr and hdr['type']!='mdat':
             #    src.seek(hdr['position']+hdr['size'])
             #    hdr = mp4.Mp4Atom.parse_atom_header(src)
             #del src
-            for sample in seg.moof.traf.trun.samples:
+            for sample in atom.moof.traf.trun.samples:
                 if corrupt_frames<=0:
                     break
                 for nal in sample.nals:
@@ -950,6 +985,10 @@ class VideoPlayer(RequestHandler):
             self.response.write('Missing CGI parameter: mpd')
             self.response.set_status(400)
             return
+        prefix=''
+        if '/' in filename:
+            prefix, filename = filename.split('/')
+            prefix = prefix.lower()
         mode = self.request.params.get("mode", "live")
         context['dash'] = self.calculate_dash_params(mpd_url=filename, mode=mode, prefix=prefix)
         for idx in range(len(context['dash']['video']['representations'])):
@@ -968,7 +1007,7 @@ class VideoPlayer(RequestHandler):
                 keys[kid] = item
         params=[]
         for k,v in self.request.params.iteritems():
-            if k == 'mpd':
+            if k in ['mpd', 'mse']:
                 continue
             if isinstance(v,(int,long)):
                 params.append('%s=%d'%(k,v))
@@ -983,7 +1022,10 @@ class VideoPlayer(RequestHandler):
             p = 'a%03d'%code
             if self.request.params.get(p,False)==True:
                 gen_errors(p)
-        mpd_url = self.uri_for('dash-mpd', manifest=filename)
+        if prefix:
+            mpd_url = self.uri_for('dash-mpd-v2', prefix=prefix, manifest=filename)
+        else:
+            mpd_url = self.uri_for('dash-mpd', manifest=filename)
         if params:
             mpd_url += '?' + '&'.join(params)
         context['source'] = urlparse.urljoin(self.request.host_url, mpd_url)
@@ -1036,7 +1078,7 @@ class UTCTimeHandler(RequestHandler):
 class MediaHandler(RequestHandler):
     class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
         def post(self, *args, **kwargs):
-            upload_files = self.get_uploads('file')
+            upload_files = self.get_uploads()
             logging.debug("uploaded file count: %d"%len(upload_files))
             if not users.is_current_user_admin():
                 self.response.write('User is not an administrator')
@@ -1046,19 +1088,23 @@ class MediaHandler(RequestHandler):
                 self.outer.get()
                 return
             blob_info = upload_files[0]
-            media_id = 'Unknown media ID'
+            #infos = self.get_file_infos()[0]
+            logging.debug("Filename: "+blob_info.filename)
+            media_id, ext = os.path.splitext(blob_info.filename)
             try:
                 self.outer.check_csrf()
-                media_id = self.request.get('media')
-                repr = media.representations[media_id.upper()]
-                context = self.outer.create_context(title='File %s uploaded'%(media_id), blob=blob_info.key())
-                mf = models.MediaFile.query(models.MediaFile.name==repr.filename).get()
+                context = self.outer.create_context(title='File %s uploaded'%(blob_info.filename),
+                                                    blob=blob_info.key())
+                mf = models.MediaFile.query(models.MediaFile.name==blob_info.filename).get()
                 if mf:
                     mf.delete()
-                mf = models.MediaFile(name=repr.filename, blob=blob_info.key())
+                mf = models.MediaFile(name=blob_info.filename, blob=blob_info.key())
                 mf.put()
+                context["mfid"] = mf.key.urlsafe()
+                logging.debug("upload done "+context["mfid"])
                 template = templates.get_template('upload-done.html')
                 self.response.write(template.render(context))
+                return
             except (CsrfFailureException) as cfe:
                 logging.debug("csrf check failed")
                 logging.debug(cfe)
@@ -1085,8 +1131,8 @@ class MediaHandler(RequestHandler):
             self.response.set_status(401)
             return
         context = self.create_context(**kwargs)
-        context['media_ids'] = media.representations.keys()
-        context['media_ids'].sort()
+        if kwargs.has_key("mfid"):
+            return self.media_info(**kwargs)
         context['upload_url'] = blobstore.create_upload_url(self.uri_for('uploadBlob'))
         if self.is_https_request():
             context['upload_url'] = context['upload_url'].replace('http://','https://')
@@ -1094,10 +1140,45 @@ class MediaHandler(RequestHandler):
         context['media'].sort(key=lambda i: i['name'])
         context['keys'] = models.Key.all()
         context['keys'].sort(key=lambda i: i.hkid)
+        context['streams'] = models.Stream.all()
         self.generate_csrf(context)
-        template = templates.get_template('upload.html')
+        template = templates.get_template('media.html')
         self.response.write(template.render(context))
 
+    def media_info(self, mfid, **kwargs):
+        result= { "error": "unknown error" }
+        try:
+            mf = models.MediaFile.query(models.Key.key==Key(urlsafe=mfid)).get()
+            if not mf:
+                self.response.write('{} not found'.format(mfid))
+                self.response.set_status(404)
+                return
+            bi = blobstore.BlobInfo.get(mf.blob)
+            info = {
+                'size': bi.size,
+                'creation': utils.dateTimeFormat(bi.creation, "%H:%M:%S %d/%m/%Y"),
+                'md5': bi.md5_hash,
+            }
+            result = {
+                "representation": mf.rep,
+                "name": mf.name,
+                "key": mf.key.urlsafe(),
+                "blob": info,
+            }
+            if self.request.params.get('index'):
+                blob_reader = utils.BufferedReader(blobstore.BlobReader(mf.blob))
+                atom = mp4.Mp4Atom(atom_type='wrap', position=0, size = mf.info.size, parent=None,
+                                   children=mp4.Mp4Atom.create(blob_reader))
+                rep = segment.Representation.create(filename=mf.name, atoms=atom.children)
+                mf.representation = rep
+                mf.put()
+                result = { "indexed":mfid, "representation": mf.rep}
+        except (ValueError) as err:
+            result= { "error": str(err) }
+        finally:
+            self.response.content_type='application/json'
+            self.response.write(json.dumps(result))
+        
     """handler for deleting a media blob"""
     def delete(self, mfid, **kwargs):
         if not users.is_current_user_admin():
@@ -1113,7 +1194,7 @@ class MediaHandler(RequestHandler):
         try:
             mf = models.MediaFile.query(models.Key.key==Key(urlsafe=mfid)).get()
             if not mf:
-                self.response.write('{} not found'.format(blob))
+                self.response.write('{} not found'.format(mfid))
                 self.response.set_status(404)
                 return
             mf.delete()
@@ -1174,6 +1255,55 @@ class KeyHandler(RequestHandler):
                 return
             keypair.key.delete()
             result = {"deleted":kid.hex}
+        except (TypeError, ValueError) as err:
+            result= { "error": str(err) }
+        finally:
+            self.response.content_type='application/json'
+            self.response.write(json.dumps(result))
+
+class StreamHandler(RequestHandler):
+    """handler for adding or removing a stream"""
+    def put(self, **kwargs):
+        if not users.is_current_user_admin():
+            self.response.write('User is not an administrator')
+            self.response.set_status(401)
+            return
+        title = self.request.get('title')
+        prefix = self.request.get('prefix')
+        result= { "error": "unknown error" }
+        try:
+            st = models.Stream.query(models.Stream.prefix==prefix).get()
+            if st:
+                raise ValueError("Duplicate prefix {}".format(prefix))
+            st = models.Stream(title=title, prefix=prefix)
+            st.put()
+            result = {"title":title, "prefix": prefix, "id": st.key.urlsafe()}
+        except (ValueError) as err:
+            result= { "error": str(err) }
+        finally:
+            self.response.content_type='application/json'
+            self.response.write(json.dumps(result))
+
+    """handler for deleting a stream"""
+    def delete(self, id, **kwargs):
+        if not users.is_current_user_admin():
+            self.response.write('User is not an administrator')
+            self.response.set_status(401)
+            return
+        if not id:
+            self.response.write('Stream ID missing')
+            self.response.set_status(400)
+            return
+        result= { "error": "unknown error" }
+        try:
+            key = Key(urlsafe=id)
+            st = key.get()
+            if not st:
+                self.response.write('Stream {:s} not found'.format(id))
+                self.response.set_status(404)
+                return
+            key.delete()
+            result = {"deleted":id, "title":st.title, "prefix":st.prefix}
         except (TypeError, ValueError) as err:
             result= { "error": str(err) }
         finally:

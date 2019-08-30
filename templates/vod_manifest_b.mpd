@@ -1,9 +1,9 @@
 <MPD type="static" xmlns="urn:mpeg:dash:schema:mpd:2011" profiles="urn:mpeg:dash:profile:isoff-live:2011" minBufferTime="PT1.5S"
-  mediaPresentationDuration="{{media_duration|isoDuration}}">
+  mediaPresentationDuration="{{mediaDuration|isoDuration}}">
  <ProgramInformation>
   <Title>{{title}}</Title>
  </ProgramInformation>
- <Period start="PT0S" duration="{{media_duration|isoDuration}}">
+ <Period start="PT0S" duration="{{mediaDuration|isoDuration}}">
  {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
   <AdaptationSet>
    <ContentComponent id="1" contentType="video"/>

@@ -37,21 +37,27 @@
         </td>
         </tr>
       {% endfor %}
-      <tr><td colspan="2" id="play-row">
+      <tr class="play-row"><td colspan="2" id="play-cell">
           <div id="play-button" >
-            <div class="button"><span class="fa fa-play icon"></span></div>
-            <a class="play-text">Play Video</a>
+            <a class="button play-icon"><span class="fa fa-play icon"></span></a>
+			<select name="stream" class="play-select">
+			{% for stream in streams %}
+			<option value="{{stream.prefix}}">Play {{stream.title}}</option>
+			{% endfor %}
+			</select>
           </div>
       </td></tr>
     </tbody>
   </table>
 </div>
-  <p class="info">These test streams use <a href="http://www.bigbuckbunny.org/">the Big Buck Bunny movie</a> from the
-    <a href="http://www.blender.org/foundation/">Blender Foundation</a> as the media. The MPD files for live streams are dynamically
+  <p class="info">
+    The MPD files for live streams are dynamically
     generated so that they appear to be live sources, using static media files.
-    </p>
-    <div class="representations">
-    <table class="representations table table-striped">
+  </p>
+  <div class="container">
+  <div class="representations row">
+    <div clsss="video-representations col">
+    <table class="table table-striped">
       <caption>Video Representations</caption>
       <thead><tr>{% for f in video_fields %}<th class="{{f}}">{{f}}</th>{% endfor %}</tr></thead>
       <tbody>
@@ -62,7 +68,9 @@
         {% endfor %}
       </tbody>
     </table>
-    <table class="representations table table-striped">
+    </div>
+    <div class="audio-representations col">
+    <table class="table table-striped">
       <caption>Audio Representations</caption>
       <thead><tr>
           {% for f in audio_fields %}
@@ -81,6 +89,8 @@
       </tbody>
     </table>
     </div>
+  </div>
+  </div>
     <div class="cgi-parameters">
     <p class="info">There are a number of CGI parameters that can be used to modify
     manifests, media segments and time sources.</p>

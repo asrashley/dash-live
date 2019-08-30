@@ -1,70 +1,34 @@
+import os
+import sys
+
 class Box(object):
     def __init__(self, pos, size, duration=None):
         self.pos = pos
         self.size = size
-        if duration is not None:
-            self.duration = duration
-
-class Segment(object):
-    def __init__(self, **kwargs):
-        self.boxes={}
-        self.add(**kwargs)
-    def add(self,**kwargs):
-        for k,v in kwargs.iteritems():
-            try:
-                self.boxes[k]=Box(v.position,v.size)
-                if hasattr(v, 'duration'):
-                    self.boxes[k].duration = v.duration
-            except AttributeError:
-                try:
-                    self.boxes[k]=Box(v[0],v[1],v[2])
-                except IndexError:
-                    self.boxes[k]=Box(v[0],v[1])
-    def __getattr__(self, key):
-        if key=='boxes':
-            return object.__getattribute__(self, 'boxes')
-        b = object.__getattribute__(self, 'boxes')
-        try:
-            return b[key]
-        except KeyError:
-            raise  AttributeError(key)
-    def __repr__(self):
-        rv= []
-        seg = self.boxes['seg']
-        for k,v in self.boxes.iteritems():
-            if k!='seg' and v.pos>seg.pos:
-                rv.append('"%s":(%d,%d)'%(k,v.pos-seg.pos,v.size))
-            else:
-                try:
-                    rv.append('"%s":(%d,%d,%d)'%(k,v.pos,v.size,v.duration))
-                except AttributeError:
-                    rv.append('"%s":(%d,%d)'%(k,v.pos,v.size))
-        rv = ','.join(rv)
-        return '{'+rv+'}'
+        self.duration = duration
 
     def toJSON(self):
-        rv= {}
-        seg = self.boxes['seg']
-        for k,v in self.boxes.iteritems():
-            if k!='seg' and v.pos>seg.pos:
-                rv[k] = { 'pos':v.pos-seg.pos, 'size':v.size }
-            else:
-                rv[k] = {
-                    'pos': v.pos,
-                    'size': v.size,
-                }
-                try:
-                    rv[k]['duration'] = v.duration
-                except AttributeError:
-                    pass
+        rv= {
+            "pos": self.pos,
+            "size": self.size,
+        }
+        if self.duration:
+            rv["duration"] = self.duration
         return rv
+
+    def __repr__(self):
+        if self.duration:
+            return '({:d},{:d},{:d})'.format(self.pos, self.size, self.duration)
+        return '({:d},{:d})'.format(self.pos, self.size)
 
 
 class Representation(object):
     def __init__(self, id,  **kwargs):
         def convert_dict(item):
-            if isinstance(item,dict):
-                item = Segment(**item)
+            if isinstance(item, dict):
+                item = Box(**item)
+            elif isinstance(item, tuple):
+                item = Box(*item)
             return item
 
         self.id = id
@@ -100,3 +64,136 @@ class Representation(object):
             else:
                 rv[key] = value
         return rv
+
+    @classmethod
+    def create(clz,filename, atoms, verbose=0):
+        base_media_decode_time=None
+        default_sample_duration=0
+        moov = None
+        rv = Representation(id=os.path.splitext(filename.lower())[0], filename=filename)
+        for atom in atoms:
+            seg = Box(pos=atom.position, size=atom.size)
+            if atom.atom_type=='ftyp':
+                if verbose>1:
+                    print('Init seg',atom)
+                elif verbose>0:
+                    sys.stdout.write('I')
+                    sys.stdout.flush()
+                #seg = Segment(seg=atom)
+                rv.segments.append(seg)
+            elif atom.atom_type=='moof':
+                if verbose>1:
+                    print 'Fragment %d '%(len(rv.segments)+1)
+                elif verbose>0:
+                    sys.stdout.write('f')
+                    sys.stdout.flush()
+                #seg = Segment(seg=atom)
+                dur=0
+                for sample in atom.traf.trun.samples:
+                    if not sample.duration:
+                        sample.duration=moov.mvex.trex.default_sample_duration
+                    dur += sample.duration
+                seg.duration = dur
+                try:
+                    for key in atom.pssh.key_ids:
+                        rv.kids.add(key.encode('hex'))
+                except AttributeError:
+                    pass
+                base_media_decode_time = atom.traf.tfdt.base_media_decode_time
+                rv.segments.append(seg)
+                if default_sample_duration == 0:
+                    for sample in atom.traf.trun.samples:
+                        default_sample_duration += sample.duration
+                    default_sample_duration = default_sample_duration // len(atom.traf.trun.samples)
+                    if verbose>1:
+                        print('Average sample duration %d'%default_sample_duration)
+                    if rv.contentType=="video" and default_sample_duration:
+                        rv.frameRate = rv.timescale / default_sample_duration
+            elif atom.atom_type in ['sidx','moov','mdat','free'] and rv.segments:
+                if verbose>1:
+                    print('Extend fragment %d with %s'%(len(rv.segments), atom.atom_type))
+                seg = rv.segments[-1]
+                seg.size = atom.position - seg.pos + atom.size
+                if atom.atom_type=='moov':
+                    if verbose==1:
+                        sys.stdout.write('M')
+                        sys.stdout.flush()
+                    moov = atom
+                    rv.timescale = atom.trak.mdia.mdhd.timescale
+                    rv.language =  atom.trak.mdia.mdhd.language
+                    rv.track_id = atom.trak.tkhd.track_id
+                    try:
+                        default_sample_duration = atom.mvex.trex.default_sample_duration
+                    except AttributeError:
+                        print('Warning: Unable to find default_sample_duration')
+                        default_sample_duration = 0
+                    avc=None
+                    avc_type=None
+                    for box in ['avc1', 'avc3', 'mp4a', 'ec_3', 'encv', 'enca']:
+                        try:
+                            avc = getattr(atom.trak.mdia.minf.stbl.stsd, box)
+                            avc_type = avc.atom_type
+                            break
+                        except AttributeError:
+                            pass
+                    if avc_type=='enca' or avc_type=='encv':
+                        avc_type = avc.sinf.frma.data_format
+                        rv.encrypted=True
+                        rv.default_kid = avc.sinf.schi.tenc.default_kid.encode('hex')
+                        rv.kids=set([rv.default_kid])
+                    if atom.trak.mdia.hdlr.handler_type=='vide':
+                        rv.contentType="video"
+                        if default_sample_duration > 0:
+                            rv.frameRate = rv.timescale / default_sample_duration
+                        rv.width = int(atom.trak.tkhd.width)
+                        rv.height = int(atom.trak.tkhd.height)
+                        #TODO: work out scan type
+                        rv.scanType="progressive"
+                        #TODO: work out sample aspect ratio
+                        rv.sar="1:1"
+                        if avc_type is not None:
+                            rv.codecs = '%s.%02x%02x%02x'%(avc_type,
+                                                           avc.avcC.AVCProfileIndication,
+                                                           avc.avcC.profile_compatibility,
+                                                           avc.avcC.AVCLevelIndication)
+                            rv.nalLengthFieldFength = avc.avcC.lengthSizeMinusOne + 1
+                    elif atom.trak.mdia.hdlr.handler_type=='soun':
+                        rv.contentType="audio"
+                        rv.codecs = avc_type
+                        if avc_type=="mp4a":
+                            dsi = avc.esds.DecoderSpecificInfo
+                            rv.sampleRate = dsi.sampling_frequency
+                            rv.numChannels = dsi.channel_configuration
+                            rv.codecs = "%s.%02x.%x"%(avc_type, avc.esds.DecoderSpecificInfo.object_type, dsi.audio_object_type)
+                            if rv.numChannels==7:
+                                # 7 is a special case that means 7.1
+                                rv.numChannels=8
+                        elif avc_type=="ec-3":
+                            print(avc)
+                            print(avc.dec3)
+                            try:
+                                rv.sampleRate = avc.sampling_frequency
+                                rv.numChannels = avc.channel_count
+                            except AttributeError:
+                                pass
+                            if avc.dec3.substreams:
+                                rv.numChannels = 0
+                                for s in avc.dec3.substreams:
+                                    rv.numChannels += s.channel_count
+                                    if s.lfeon:
+                                        rv.numChannels += 1
+        if rv.encrypted:
+            rv.kids = list(rv.kids)
+        if verbose==1:
+            sys.stdout.write('\r\n')
+        if len(rv.segments)>2:
+            seg_dur = base_media_decode_time/(len(rv.segments)-2)
+            rv.mediaDuration = 0
+            for seg in rv.segments[1:]:
+                rv.mediaDuration += seg.duration
+            rv.max_bitrate = 8 * rv.timescale * max([seg.size for seg in rv.segments]) / seg_dur
+            rv.segment_duration = seg_dur
+            file_size = rv.segments[-1].pos + rv.segments[-1].size - rv.segments[0].pos
+            rv.bitrate = int(8 * rv.timescale * file_size/rv.mediaDuration + 0.5)
+        return rv
+

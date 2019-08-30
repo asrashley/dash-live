@@ -1,3 +1,9 @@
+
+try:
+    import cStringIO as StringIO
+except ImportError:
+    import StringIO
+
 import unittest
 
 import utils
@@ -21,5 +27,29 @@ class DateTimeTests(unittest.TestCase):
         # Don't check for the 'Z' because Python doesn't put the timezone in the isoformat string
         self.assertTrue(date_val.isoformat().startswith(date_str[:-1]))
 
+class BufferedReaderTests(unittest.TestCase):
+    def test_buffer_reader(self):
+        r = bytearray('t'*65536)
+        #mem = memoryview(r)
+        for i in range(len(r)):
+            r[i] = i & 0xFF
+        br = utils.BufferedReader(StringIO.StringIO(r), buffersize=1024)
+        p = br.peek(8)
+        self.assertTrue(len(p) >= 8)
+        for i in range(8):
+            self.assertEqual(ord(p[i]), i)
+        self.assertEqual(br.tell(), 0)
+        p = br.read(8)
+        self.assertEqual(br.tell(), 8)
+        self.assertEqual(len(p), 8)
+        for i in range(8):
+            self.assertEqual(ord(p[i]), i)
+        p = br.read(8)
+        self.assertEqual(br.tell(), 16)
+        self.assertEqual(len(p), 8)
+        for i in range(8):
+            self.assertEqual(ord(p[i]), i+8)
+
+        
 if __name__ == "__main__":
     unittest.main()

@@ -31,6 +31,7 @@ except ImportError:
     import StringIO
 
 import mp4
+import utils
 
 class DrmTest(unittest.TestCase):
     def setUp(self):
@@ -41,7 +42,7 @@ class DrmTest(unittest.TestCase):
         with open("fixtures/enc-moov.mp4", "rb") as f:
             self.enc_moov = f.read()
         self.timescale = 240
-        self.media_duration = 141941
+        self.mediaDuration = 141941
 
     def _assert_true(self, result, a, b, msg, template):
         if not result:
@@ -59,8 +60,8 @@ class DrmTest(unittest.TestCase):
         self._assert_true(a>=b, a, b, msg, r'{} < {}')
 
     def test_parse_moov(self):
-        inp = StringIO.StringIO(self.moov)
-        atoms = mp4.Mp4Atom.create(inp)
+        src = utils.BufferedReader(None, data=self.moov)
+        atoms = mp4.Mp4Atom.create(src)
         self.assertEqual(len(atoms), 5)
         self.assertEqual(atoms[0].atom_type, 'ftyp')
         self.assertEqual(atoms[1].atom_type, 'free')
@@ -72,8 +73,8 @@ class DrmTest(unittest.TestCase):
         self.assertEqual(len(moov.children), 3)
 
     def test_parse_encrypted_moov(self):
-        inp = StringIO.StringIO(self.enc_moov)
-        atoms = mp4.Mp4Atom.create(inp)
+        src = utils.BufferedReader(None, data=self.enc_moov)
+        atoms = mp4.Mp4Atom.create(src)
         self.assertEqual(len(atoms), 6)
         self.assertEqual(atoms[0].atom_type, 'ftyp')
         self.assertEqual(atoms[1].atom_type, 'mfra')
@@ -85,8 +86,8 @@ class DrmTest(unittest.TestCase):
         self.assertEqual(len(moov.children), 5)
 
     def test_add_pssh_box_to_moov(self):
-        inp = StringIO.StringIO(self.moov)
-        atoms = mp4.Mp4Atom.create(inp)
+        src = utils.BufferedReader(None, data=self.moov)
+        atoms = mp4.Mp4Atom.create(src, readwrite=True)
         self.assertEqual(len(atoms), 5)
         self.assertEqual(atoms[2].atom_type, 'moov')
         moov = atoms[2]
@@ -103,7 +104,8 @@ class DrmTest(unittest.TestCase):
         moov.insert_child(0, pssh)
         new_moov_data = moov.encode()
         self.assertEqual(len(new_moov_data), moov_size + len(enc_pssh))
-        new_moov = mp4.Mp4Atom.create(StringIO.StringIO(new_moov_data))
+        src = utils.BufferedReader(None, data=new_moov_data)
+        new_moov = mp4.Mp4Atom.create(src)
         self.assertEqual(len(new_moov), 1)
         new_moov = new_moov[0]
         self.assertEqual(new_moov.atom_type, 'moov')
@@ -111,8 +113,8 @@ class DrmTest(unittest.TestCase):
         #new_moov.dump()
         
     def test_remove_box_from_moov(self):
-        inp = StringIO.StringIO(self.moov)
-        atoms = mp4.Mp4Atom.create(inp)
+        src = utils.BufferedReader(None, data=self.moov)
+        atoms = mp4.Mp4Atom.create(src, readwrite=True)
         self.assertEqual(len(atoms), 5)
         self.assertEqual(atoms[2].atom_type, 'moov')
         moov = atoms[2]
@@ -122,12 +124,14 @@ class DrmTest(unittest.TestCase):
         #moov.dump()
         new_moov_data = moov.encode()
         self.assertEqual(len(new_moov_data), moov_size - mvex.size)
-        new_moov = mp4.Mp4Atom.create(StringIO.StringIO(new_moov_data))
+        src = utils.BufferedReader(None, data=new_moov_data)
+        new_moov = mp4.Mp4Atom.create(src)
         self.assertEqual(len(new_moov), 1)
         #new_moov[0].dump()
 
     def test_update_base_media_decode_time(self):
-        frag = mp4.Mp4Atom.create(StringIO.StringIO(self.segment))
+        src = utils.BufferedReader(None, data=self.segment)
+        frag = mp4.Mp4Atom.create(src, readwrite=True)
         self.assertEqual(len(frag), 4)
         self.assertEqual(frag[0].atom_type, 'moof')
         moof = frag[0]
@@ -140,7 +144,7 @@ class DrmTest(unittest.TestCase):
         offset = moof.traf.tfdt.position + 12 #dec_time_pos - frag_pos
         base_media_decode_time = struct.unpack(fmt, self.segment[offset:offset+dec_time_sz])[0]
         for loop in range(3):
-            origin_time = loop * self.media_duration
+            origin_time = loop * self.mediaDuration
             delta = long(origin_time*self.timescale)
             self.assertGreaterOrEqual(delta, 0L)
             base_media_decode_time += delta
@@ -151,13 +155,15 @@ class DrmTest(unittest.TestCase):
             expected_data = expected_data[moof.position:moof.position+moof.size]
             moof.traf.tfdt.base_media_decode_time = base_media_decode_time
             data = moof.encode()
-            new_moof = mp4.Mp4Atom.create(StringIO.StringIO(data))[0]
+            src = utils.BufferedReader(None, data=data)
+            new_moof = mp4.Mp4Atom.create(src)[0]
             #new_moof.dump()
             #print(moof.traf.tfdt)
             self.assertBuffersEqual(expected_data, data)
 
     def test_update_mfhd_sequence_number(self):
-        frag = mp4.Mp4Atom.create(StringIO.StringIO(self.segment))
+        src = utils.BufferedReader(None, data=self.segment)
+        frag = mp4.Mp4Atom.create(src, readwrite=True)
         self.assertEqual(len(frag), 4)
         self.assertEqual(frag[0].atom_type, 'moof')
         moof = frag[0]
@@ -168,12 +174,13 @@ class DrmTest(unittest.TestCase):
                                  self.segment[offset+4:moof.position+moof.size]])
         moof.mfhd.sequence_number = segment_num
         data = moof.encode()
-        new_moof = mp4.Mp4Atom.create(StringIO.StringIO(data))[0]
+        src = utils.BufferedReader(None, data=data)
+        new_moof = mp4.Mp4Atom.create(src)[0]
         self.assertBuffersEqual(expected_data, data)
         
     def test_wrap_boxes(self):
-        inp = StringIO.StringIO(self.moov)
-        atoms = mp4.Mp4Atom.create(inp)
+        src = utils.BufferedReader(None, data=self.moov)
+        atoms = mp4.Mp4Atom.create(src, readwrite=True)
         self.assertEqual(len(atoms), 5)
         wrap = mp4.Mp4Atom(atom_type='wrap', position=0, size = len(self.moov), parent=None,
                            children=atoms)

@@ -5,11 +5,36 @@ from google.appengine.api import search
 from google.appengine.ext.blobstore import blobstore
 
 from drm import KeyMaterial
+from media.segment import Representation
+
+class Stream(ndb.Model):
+    title = ndb.StringProperty(required=True, indexed=True)
+    prefix = ndb.StringProperty(required=True, verbose_name='File name prefix', indexed=True,
+                                repeated=False)
+
+    @classmethod
+    def all(clz):
+        return clz.query().order(clz.prefix).fetch()
+
 
 class MediaFile(ndb.Model):
     """representation of one MP4 file"""
     name = ndb.StringProperty(required=True, indexed=True, verbose_name='Name')
     blob = ndb.BlobKeyProperty(indexed=False)
+    rep = ndb.JsonProperty(indexed=False, required=False, default={})
+
+    @property
+    def info(self):
+        return blobstore.BlobInfo.get(self.blob)
+
+    def get_representation(self):
+        rep = Representation(**self.rep) if self.rep else None
+        return rep
+
+    def set_representation(self, rep):
+        self.rep = rep.toJSON()
+
+    representation = property(get_representation, set_representation)
 
     @classmethod
     def all(clz):
@@ -29,6 +54,7 @@ class MediaFile(ndb.Model):
             result.append({
                 "name": f.name,
                 "key": f.key.urlsafe(),
+                "representation": f.representation,
                 "blob": b
             })
         return result

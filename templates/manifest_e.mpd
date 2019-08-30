@@ -19,7 +19,7 @@ type="dynamic"
     <UTCTiming schemeIdUri="{{timeSource.method}}" value="{{timeSource.url}}"/>
     <Period id="0" start="PT0S"
   {% if mode!='live' %}
-  duration="{{media_duration|isoDuration}}"
+  duration="{{mediaDuration|isoDuration}}"
   {% endif %}
 >
     <AdaptationSet mimeType="video/mp4" contentType="video" segmentAlignment="true" startWithSAP="1" maxWidth="{{video.maxWidth}}" maxHeight="{{video.maxHeight}}" maxFrameRate="{{video.maxFrameRate}}" par="16:9">

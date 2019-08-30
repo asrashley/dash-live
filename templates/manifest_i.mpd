@@ -9,7 +9,7 @@
     {% if minimumUpdatePeriod %}minimumUpdatePeriod="{{minimumUpdatePeriod|isoDuration}}"{% endif %}
   {% else %}
     type="static"
-    mediaPresentationDuration="{{media_duration|isoDuration}}"
+    mediaPresentationDuration="{{mediaDuration|isoDuration}}"
   {% endif %}
 
 >

@@ -10,7 +10,7 @@
   timeShiftBufferDepth="{{timeShiftBufferDepth|isoDuration}}"
   {% else %}
   type="static"
-  mediaPresentationDuration="{{media_duration|isoDuration}}"
+  mediaPresentationDuration="{{mediaDuration|isoDuration}}"
   {% endif %}  
   publishTime="{{publishTime|isoDateTime}}"
   maxSegmentDuration="{{maxSegmentDuration|isoDuration}}"

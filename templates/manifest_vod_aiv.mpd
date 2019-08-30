@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" mediaPresentationDuration="{{media_duration|isoDuration}}" minBufferTime="PT10S" profiles="urn:mpeg:dash:profile:isoff-on-demand:2011" type="static" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd">
-  <Period start="PT0S" duration="{{media_duration|isoDuration}}">
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" mediaPresentationDuration="{{mediaDuration|isoDuration}}" minBufferTime="PT10S" profiles="urn:mpeg:dash:profile:isoff-on-demand:2011" type="static" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd">
+  <Period start="PT0S" duration="{{mediaDuration|isoDuration}}">
     <AdaptationSet contentType="audio" group="1" lang="en" mimeType="audio/mp4" segmentAlignment="true" subsegmentAlignment="true" subsegmentStartsWithSAP="1">
      {% for repr in audio.representations %}
       <Representation audioSamplingRate="{{repr.sampleRate}}" bandwidth="{{repr.bitrate}}" codecs="{{repr.codecs}}" id="audio_eng={{repr.bitrate}}">

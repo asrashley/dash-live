@@ -3,148 +3,14 @@ import argparse, datetime, fnmatch, io, re, os, struct, sys
 sys.path.append(os.path.join(os.path.dirname(__file__),'..'))
 
 import mp4, nal, utils
-from segment import Representation, Segment
+from segment import Representation
 
 def create_representation(filename, args):
     print filename
-    stats = os.stat(filename)
     parser = mp4.IsoParser()
     atoms = parser.walk_atoms(filename)
-    repr = Representation(id=os.path.splitext(filename.upper())[0],
-                          filename=filename.replace('\\','/'))
-    base_media_decode_time=None
-    default_sample_duration=0
-    moov = None
-    for atom in atoms:
-        if atom.atom_type=='ftyp':
-            if args.debug:
-                print('Init seg',atom)
-            else:
-                sys.stdout.write('I')
-                sys.stdout.flush()
-            seg = Segment(seg=atom)
-            repr.segments.append(seg)
-        elif atom.atom_type=='moof':
-            if args.debug:
-                print 'Fragment %d '%(len(repr.segments)+1)
-            else:
-                sys.stdout.write('f')
-                sys.stdout.flush()
-            seg = Segment(seg=atom)
-            dur=0
-            for sample in atom.traf.trun.samples:
-                if not sample.duration:
-                    sample.duration=moov.mvex.trex.default_sample_duration
-                dur += sample.duration
-            seg.seg.duration = dur
-            try:
-                for key in atom.pssh.key_ids:
-                    repr.kids.add(key.encode('hex'))
-            except AttributeError:
-                pass
-            base_media_decode_time = atom.traf.tfdt.base_media_decode_time
-            repr.segments.append(seg)
-            if default_sample_duration == 0:
-                for sample in atom.traf.trun.samples:
-                    default_sample_duration += sample.duration
-                default_sample_duration = default_sample_duration // len(atom.traf.trun.samples)
-                print('Average sample duration %d'%default_sample_duration)
-                if repr.contentType=="video" and default_sample_duration:
-                    repr.frameRate = repr.timescale / default_sample_duration
-            if args.debug:
-                trun = atom.traf.trun
-                print trun
-                with open(filename,'rb') as src:
-                    trun.parse_samples(src,4)
-                    for sample in atom.traf.trun.samples:
-                        for nal in sample.nals:
-                            print(nal)
-        elif atom.atom_type in ['sidx','moov','mdat','free'] and repr.segments:
-            if args.debug:
-                print('Extend fragment %d with %s'%(len(repr.segments), atom.atom_type))
-            seg = repr.segments[-1]
-            seg.seg.size = atom.position - seg.seg.pos + atom.size
-            if atom.atom_type=='moov':
-                if not args.debug:
-                    sys.stdout.write('M')
-                    sys.stdout.flush()
-                moov = atom
-                repr.timescale = atom.trak.mdia.mdhd.timescale
-                repr.language =  atom.trak.mdia.mdhd.language
-                repr.track_id = atom.trak.tkhd.track_id
-                try:
-                    default_sample_duration = atom.mvex.trex.default_sample_duration
-                except AttributeError:
-                    print('Warning: Unable to find default_sample_duration')
-                    default_sample_duration = 0
-                avc=None
-                avc_type=None
-                for box in ['avc1', 'avc3', 'mp4a', 'ec_3', 'encv', 'enca']:
-                    try:
-                        avc = getattr(atom.trak.mdia.minf.stbl.stsd, box)
-                        avc_type = avc.atom_type
-                        break
-                    except AttributeError:
-                        pass
-                if avc_type=='enca' or avc_type=='encv':
-                    avc_type = avc.sinf.frma.data_format
-                    repr.encrypted=True
-                    repr.default_kid = avc.sinf.schi.tenc.default_kid.encode('hex')
-                    repr.kids=set([repr.default_kid])
-                if atom.trak.mdia.hdlr.handler_type=='vide':
-                    repr.contentType="video"
-                    if default_sample_duration > 0:
-                        repr.frameRate = repr.timescale / default_sample_duration
-                    repr.width = int(atom.trak.tkhd.width)
-                    repr.height = int(atom.trak.tkhd.height)
-                    #TODO: work out scan type
-                    repr.scanType="progressive"
-                    #TODO: work out sample aspect ratio
-                    repr.sar="1:1"
-                    if avc_type is not None:
-                        repr.codecs = '%s.%02x%02x%02x'%(avc_type,
-                                                         avc.avcC.AVCProfileIndication,
-                                                         avc.avcC.profile_compatibility,
-                                                         avc.avcC.AVCLevelIndication)
-                        repr.nalLengthFieldFength = avc.avcC.lengthSizeMinusOne + 1
-                elif atom.trak.mdia.hdlr.handler_type=='soun':
-                    repr.contentType="audio"
-                    if avc_type=="mp4a":
-                        dsi = avc.esds.DecoderSpecificInfo
-                        repr.sampleRate = dsi.sampling_frequency
-                        repr.numChannels = dsi.channel_configuration
-                        repr.codecs = "%s.%02x.%x"%(avc_type, avc.esds.DecoderSpecificInfo.object_type, dsi.audio_object_type)
-                        if repr.numChannels==7:
-                            # 7 is a special case that means 7.1
-                            repr.numChannels=8
-                    elif avc_type=="ec_3":
-                        repr.sampleRate = avc.sampling_frequency
-                        repr.numChannels = avc.channel_count
-                        if avc.dec3.substreams:
-                            repr.numChannels = 0
-                            for s in avc.dec3.substreams:
-                                repr.numChannels += s.channel_count
-                                if s.lfeon:
-                                    repr.numChannels += 1
-                        repr.codecs = avc_type
-                try:
-                    seg.add(mehd=atom.mvex.mehd)
-                except AttributeError:
-                    pass
-            elif atom.atom_type=='sidx':
-                seg.add(sidx=atom)
-    if repr.encrypted:
-        repr.kids = list(repr.kids)
-    sys.stdout.write('\r\n')
-    if len(repr.segments)>2:
-        seg_dur = base_media_decode_time/(len(repr.segments)-2)
-        repr.media_duration = 0
-        for seg in repr.segments[1:]:
-            repr.media_duration += seg.seg.duration
-        repr.max_bitrate = 8 * repr.timescale * max([seg.seg.size for seg in repr.segments]) / seg_dur
-        repr.segment_duration = seg_dur
-        repr.bitrate = int(8 * repr.timescale * stats.st_size/repr.media_duration + 0.5)
-    return repr
+    verbose = 2 if args.debug else 1
+    return Representation.create(filename=filename.replace('\\','/'), atoms=atoms, verbose=verbose)
 
 def create_index_file(filename, args):
     repr = create_representation(filename, args)
@@ -166,10 +32,10 @@ def create_index_file(filename, args):
         dest = open(args.manifest[0], 'wb')
         dest.write('<?xml version="1.0" encoding="UTF-8"?>\n')
         dest.write('<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ')
-        dest.write('mediaPresentationDuration="%s" minBufferTime="PT10S" '%utils.toIsoDuration(repr.media_duration/repr.timescale))
+        dest.write('mediaPresentationDuration="%s" minBufferTime="PT10S" '%utils.toIsoDuration(repr.mediaDuration/repr.timescale))
         dest.write('profiles="urn:mpeg:dash:profile:isoff-on-demand:2011" type="static" ')
         dest.write('xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd">\n')
-        dest.write(' <Period start="PT0S" duration="%s">\n'%utils.toIsoDuration(repr.media_duration/repr.timescale))
+        dest.write(' <Period start="PT0S" duration="%s">\n'%utils.toIsoDuration(repr.mediaDuration/repr.timescale))
         if repr.contentType=='audio':
             ext = 'm4a'
             mimeType='audio/mp4'
@@ -188,9 +54,9 @@ def create_index_file(filename, args):
         else:
             dest.write('     <BaseURL>%s</BaseURL>\n'%filename)
             dest.write('     <SegmentList duration="%d" timescale="%d">\n'%(repr.segment_duration, repr.timescale))
-            dest.write('       <Initialization range="%d-%d"/>\n'%(repr.segments[0].seg.pos,repr.segments[0].seg.pos+repr.segments[0].seg.size-1))
+            dest.write('       <Initialization range="%d-%d"/>\n'%(repr.segments[0].pos,repr.segments[0].pos+repr.segments[0].size-1))
             for seg in repr.segments[1:]:
-                dest.write('       <SegmentURL d="%d" mediaRange="%d-%d"/>\n'%(seg.seg.duration, seg.seg.pos, seg.seg.pos+seg.seg.size-1))
+                dest.write('       <SegmentURL d="%d" mediaRange="%d-%d"/>\n'%(seg.duration, seg.pos, seg.pos+seg.size-1))
             dest.write('     </SegmentList>\n')
         dest.write('   </Representation>\n')
         dest.write('  </AdaptationSet>\n')
@@ -207,8 +73,8 @@ def create_index_file(filename, args):
                 dst_filename = os.path.join(args.split[0], '%05d.%s'%(idx,ext))
             print dst_filename
             dst_file = io.FileIO(dst_filename,'wb')
-            src_file.seek(seg.seg.pos)
-            data = src_file.read(seg.seg.size)
+            src_file.seek(seg.pos)
+            data = src_file.read(seg.size)
             dst_file.write(data)
             dst_file.close()
         src_file.close()
