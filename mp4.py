@@ -756,6 +756,232 @@ class MovieExtendsHeaderBox(FullBox):
         return kwargs
 MP4_BOXES['mehd'] = MovieExtendsHeaderBox
 
+
+class SampleAuxiliaryInformationSizesBox(FullBox):
+    @classmethod
+    def parse(clz, src, parent):
+        kwargs = FullBox.parse(src, parent)
+        if kwargs["flags"] & 1:
+            kwargs["aux_info_type"] = clz.check_info_type(struct.unpack('>I',
+                                                                        src.read(4))[0])
+            kwargs["aux_info_type_parameter"] = struct.unpack('>I', src.read(4))[0]
+        kwargs["default_sample_info_size"] = struct.unpack('B', src.read(1))[0]
+        kwargs["sample_info_sizes"] = []
+        sample_count = struct.unpack('>I', src.read(4))[0]
+        if kwargs["default_sample_info_size"] == 0:
+            for i in range(sample_count):
+                kwargs["sample_info_sizes"].append(struct.unpack('B', src.read(1))[0])
+        return kwargs
+
+    @classmethod
+    def check_info_type(clz, info_type):
+        a = (info_type >> 24) & 0xFF
+        b = (info_type >> 16) & 0xFF
+        c = (info_type >> 8) & 0xFF
+        d = (info_type) & 0xFF
+        s = chr(a)+chr(b)+chr(c)+chr(d)
+        if s.isalpha():
+            return s
+        return info_type
+
+    def encode_fields(self, dest):
+        payload = StringIO.StringIO()
+        if self.flags & 1:
+            if isinstance(self.aux_info_type, basestring):
+                payload.write(self.aux_info_type)
+            else:
+                payload.write(struct.pack('>I', self.aux_info_type))
+            payload.write(struct.pack('>I', self.aux_info_type_parameter))
+        payload.write(struct.pack('B', self.default_sample_info_size))
+        payload.write(struct.pack('>I', len(self.sample_info_sizes)))
+        if self.default_sample_info_size == 0:
+            for sz in self.sample_info_sizes:
+                payload.write(struct.pack('B', sz))
+        super(SampleAuxiliaryInformationSizesBox, self).encode_fields(dest=dest,
+                                                                      payload=payload)
+
+    def _field_repr(self, **args):
+        if not args.has_key('exclude'):
+            args['exclude'] = []
+        args['exclude'].append('aux_info_type')
+        fields = super(FullBox,self)._field_repr(**args)
+        if self._fields.has_key("aux_info_type"):
+            if isinstance(self.aux_info_type, basestring):
+                fields.append('aux_info_type="%s"'%self.aux_info_type)
+            else:
+                fields.append('aux_info_type=0x%x'%self.aux_info_type)
+        return fields
+
+MP4_BOXES['saiz'] = SampleAuxiliaryInformationSizesBox
+
+
+class CencSampleAuxiliaryData(object):
+    def __init__(self, **kwargs):
+        for key,value in kwargs.iteritems():
+            assert "src" != key
+            setattr(self, key, value)
+
+    @classmethod
+    def parse(clz, src, size, iv_size, flags, parent):
+        rv = {}
+        rv["initialization_vector"] = src.read(iv_size)
+        if (flags & 0x02) == 0x02 and size >= iv_size+2:
+            rv["subsamples"] = []
+            subsample_count = struct.unpack('>H', src.read(2))[0]
+            if size < subsample_count*6:
+                print 'Invalid subsample_count %d'%subsample_count
+                return rv
+            for i in range(subsample_count):
+                s = {
+                    'clear': struct.unpack('>H', src.read(2))[0],
+                    'encrypted': struct.unpack('>I', src.read(4))[0],
+                }
+                rv["subsamples"].append(s)
+        return rv
+
+    def encode_fields(self, dest):
+        dest.write(self.initialization_vector)
+        if hasattr(self, "subsamples"):
+            for s in self.subsamples:
+                dest.write(struct.pack('>H', s['clear']))
+                dest.write(struct.pack('>I', s['encrypted']))
+
+    def _field_repr(self):
+        rv = []
+        rv.append('initialization_vector=0x%s'%self.initialization_vector.encode('hex'))
+        if hasattr(self, "subsamples"):
+            subsamples = []
+            for s in self.subsamples:
+                subsamples.append('{"clear":%d, "encrypted":%d}'%(s["clear"], s["encrypted"]))
+            rv.append('subsamples=[%s]'%(','.join(subsamples)))
+        return rv
+
+    def __repr__(self):
+        fields = self._field_repr()
+        fields = ','.join(fields)
+        return ''.join([ self.__class__.__name__, '(',fields,')'])
+
+
+class CencSampleEncryptionBox(FullBox):
+    def __init__(self, **kwargs):
+        super(CencSampleEncryptionBox, self).__init__(**kwargs)
+        if self._fields.has_key("samples"):
+            self._fields["samples"] = map(lambda s: CencSampleAuxiliaryData(**s), self._fields["samples"])
+
+    @classmethod
+    def parse(clz, src, parent):
+        kwargs = FullBox.parse(src, parent)
+        if kwargs["flags"] & 0x01:
+            f = '\000'+src.read(3)
+            kwargs["algorithm_id"] = struct.unpack('>I',f)[0]
+            kwargs["iv_size"] = struct.unpack('B', src.read(1))[0]
+            if kwargs["iv_size"] == 0:
+                kwargs["iv_size"] = 8
+            kwargs["kid"] = src.read(16)
+        else:
+            try:
+                moov = parent.find_parent("moov")
+            except AttributeError:
+                p = parent
+                while p.parent:
+                    p = p.parent
+                try:
+                    moov = p.moov
+                except AttributeError:
+                    return kwargs
+            tenc = moov.find_child("tenc")
+            if tenc is None:
+                return kwargs
+            kwargs["iv_size"] = tenc.iv_size
+        num_entries = struct.unpack('>I', src.read(4))[0]
+        kwargs["subsample_count"] = num_entries
+        kwargs["samples"] = []
+        saiz = parent.saiz
+        for i in range(num_entries):
+            size = saiz.sample_info_sizes[i] if saiz.sample_info_sizes else saiz.default_sample_info_size
+            if size:
+                s = CencSampleAuxiliaryData.parse(src, size, kwargs["iv_size"], kwargs["flags"], parent)
+                kwargs["samples"].append(s)
+        return kwargs
+
+    def encode_fields(self, dest):
+        payload = StringIO.StringIO()
+        if self.flags & 0x01:
+            payload.write(struct.pack('>I', self.algorithm_id))
+            payload.write(struct.pack('B', self.iv_size))
+            payload.write(self.kid)
+        payload.write(struct.pack('>I', len(self.samples)))
+        for s in self.samples:
+            s.encode_fields(payload)
+        return super(CencSampleEncryptionBox, self).encode_fields(dest=dest, payload=payload.getvalue())
+
+    def _field_repr(self, **args):
+        if not args.has_key('exclude'):
+            args['exclude'] = []
+        args['exclude'] += ['kid', 'samples']
+        fields = super(CencSampleEncryptionBox,self)._field_repr(**args)
+        try:
+            fields.append("kid=0x%s"%self.kid.encode('hex'))
+        except AttributeError:
+            pass
+        if self._fields.has_key("samples"):
+            samples = map(lambda s: repr(s), self.samples)
+            fields.append("samples=[%s]"%(','.join(samples)))
+        return fields
+
+MP4_BOXES["senc"] = CencSampleEncryptionBox
+
+class SampleAuxiliaryInformationOffsetsBox(FullBox):
+    @classmethod
+    def parse(clz, src, parent):
+        kwargs = FullBox.parse(src, parent)
+        if kwargs["flags"] & 0x01:
+            kwargs["aux_info_type"] = clz.check_info_type(struct.unpack('>I',
+                                                                        src.read(4))[0])
+            kwargs["aux_info_type_parameter"] = struct.unpack('>I', src.read(4))[0]
+        entry_count = struct.unpack('>I', src.read(4))[0]
+        kwargs["offsets"] = []
+        for i in range(entry_count):
+            if kwargs["version"] == 0:
+                o = struct.unpack('>I', src.read(4))[0]
+            else:
+                o = struct.unpack('>Q', src.read(8))[0]
+            kwargs["offsets"].append(o)
+        return kwargs
+
+    def encode_fields(self, dest):
+        payload = StringIO.StringIO()
+        if self.flags & 0x01:
+            if isinstance(self.aux_info_type, basestring):
+                payload.write(self.aux_info_type)
+            else:
+                payload.write(struct.pack('>I', self.aux_info_type))
+            payload.write(struct.pack('>I', self.aux_info_type_parameter))
+        payload.write(struct.pack('>I', len(self.offsets)))
+        for off in self.offsets:
+            if self.version == 0:
+                payload.write(struct.pack('>I', off))
+            else:
+                payload.write(struct.pack('>Q', off))
+        super(SampleAuxiliaryInformationOffsetsBox, self).encode_fields(dest=dest,
+                                                                        payload=payload)
+
+    def _field_repr(self, **args):
+        if not args.has_key('exclude'):
+            args['exclude'] = []
+        args['exclude'].append('aux_info_type')
+        fields = super(FullBox,self)._field_repr(**args)
+        if self._fields.has_key("aux_info_type"):
+            if isinstance(self.aux_info_type, basestring):
+                fields.append('aux_info_type="%s"'%self.aux_info_type)
+            else:
+                fields.append('aux_info_type=0x%x'%self.aux_info_type)
+        return fields
+SampleAuxiliaryInformationOffsetsBox.check_info_type = SampleAuxiliaryInformationSizesBox.check_info_type
+
+MP4_BOXES['saio'] = SampleAuxiliaryInformationOffsetsBox
+
+
 class TrackSample(object):
     def __init__(self,index, offset):
         self.index = index
