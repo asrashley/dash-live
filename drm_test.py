@@ -40,6 +40,7 @@ class KeyStub(object):
     def __init__(self, kid, key):
         self.KID = KeyMaterial(hex=kid)
         self.KEY = KeyMaterial(hex=key)
+        self.computed = False
 
 class PlayreadyTests(unittest.TestCase):
     def setUp(self):
@@ -51,6 +52,7 @@ class PlayreadyTests(unittest.TestCase):
             trim_blocks=False,
         )
         self.templates.filters['base64'] = utils.toBase64
+        self.templates.filters['xmlSafe'] = utils.xmlSafe
         self.keys = {}
         for kid, key in [
                 ("1AB45440532C439994DC5C5AD9584BAC", "ccc0f2b3b279926496a7f5d25da692f6")]:

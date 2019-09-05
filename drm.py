@@ -162,29 +162,34 @@ class PlayReady(object):
 
     def generate_wrmheader(self, representation, keys):
         """Generate WRMHEADER XML document"""
-        def as_string(d):
-            rv = []
-            for k,v in d.iteritems():
-                rv.append(k+':'+v)
-            return ','.join(rv)
-        default_keypair = keys[representation.default_kid.lower()]
-        raw_key = default_keypair.KEY.raw
-        raw_kid = PlayReady.hex_to_le_guid(default_keypair.KID.raw, raw=True)
         la_url = self.la_url
-        cfg = {
-            'kid':  base64.b64encode(raw_kid),
-            'persist': 'false',
-            'sl': str(self.security_level),
-        }
-        if not default_keypair.computed:
-            cfg['contentkey'] = base64.b64encode(raw_key)
+        cfgs = []
+        kids = []
+        for keypair in keys.values():
+            guid_kid = PlayReady.hex_to_le_guid(keypair.KID.raw, raw=True)
+            kids.append(guid_kid.encode('hex'))
+            rkey = keypair.KEY.raw
+            cfg = [
+                'kid:' + base64.b64encode(guid_kid),
+                'persist:false',
+                'sl:'+str(self.security_level),
+            ]
+            if not keypair.computed:
+                cfg.append('contentkey:' + base64.b64encode(rkey))
+            cfgs.append('(' + ','.join(cfg) + ')')
+        cfgs = ','.join(cfgs)
         if la_url is None:
-            la_url = "https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg=({cfg})"
+            la_url = "https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg={cfgs}"
+            #la_url = "https://test.playready.microsoft.com/service/rightsmanager.asmx?PlayRight=1&UseSimpleNonPersistentLicense=1"
+        default_keypair = keys[representation.default_kid.lower()]
+        default_key = default_keypair.KEY.raw
+        default_kid = PlayReady.hex_to_le_guid(default_keypair.KID.raw, raw=True)
         context = {
-            "kid": raw_kid,
-            "la_url": la_url.format(cfg=as_string(cfg), **cfg)
+            "default_kid": default_kid,
+            "kids": kids,
+            "la_url": la_url.format(cfgs=cfgs, kids=kids, default_kid=default_keypair.KID.hex)
         }
-        context["checksum"] = self.generate_checksum(raw_kid, raw_key)
+        context["checksum"] = self.generate_checksum(default_kid, default_key)
         if self.version==4.1:
             template = self.templates.get_template('drm/wrmheader41.xml')
         else:
