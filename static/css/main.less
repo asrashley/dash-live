@@ -484,15 +484,44 @@ div.representations, div.cgi-parameters {
   .placeholder {
        display: none;
   }
+  #media-files {
+    table-layout: fixed;
+    font-size: 1rem;
+    .filename {
+      width: 8em;
+      font-stretch: condensed;
+    }
+    .filesize {
+      text-align: right;
+      width: 6em;
+    }
+    .created {
+      text-align: center;
+      width: 6em;
+    }
+    .md5-hash {
+      font-stretch: condensed;
+      width: 16em;
+    }
+    .codec {
+      width: 7em;
+    }
+    .kid {
+      text-align: center;
+      font-stretch: condensed;
+      width: 16em;
+    }
+    .index, .delete {
+      padding: 0;
+      width: 5em;
+    }
+  }
   #keys input {
     width: 23em;
   }
   #keys .computed {
     width: 6em;
     text-align: center;
-  }
-  td.filesize {
-    text-align: right;
   }
 }
 

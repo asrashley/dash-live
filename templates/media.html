@@ -11,11 +11,11 @@
     <tr>
       <td class="title">{{stream.title}}</td>
       <td class="prefix">{{stream.prefix}}</td>
-      <td><button class="btn btn-danger delete-stream" data-id="{{stream.key.urlsafe()}}">Delete</button></td>
+      <td><button class="btn btn-danger btn-sm delete-stream" data-id="{{stream.key.urlsafe()}}">Delete</button></td>
     </tr>
     {% endfor %}
-    <tr class="placeholder"><td class="title"></td><td class="prefix"></td><td><button class="btn
-    btn-danger delete-stream">Delete</button></td></tr>
+    <tr class="placeholder"><td class="title"></td><td class="prefix"></td>
+    <td><button class="btn btn-sm btn-danger delete-stream">Delete</button></td></tr>
   </tbody>
   <tfoot>
     <tr>
@@ -31,13 +31,14 @@
     <caption>Media Files</caption>
   <thead>
     <tr>
-      <th>Name</th>
-      <th>Size</th>
-      <th>Created</th>
-      <th>Codec</th>
-      <th>Encrypted</th>
-      <th>KID</th>
-      <th></th><th></th>
+      <th class="filename">Name</th>
+      <th class="filesize">Size</th>
+      <th class="created">Created</th>
+      <th class="md5-hash">MD5</th>
+      <th class="codec">Codec</th>
+      <th class="kid">KID</th>
+      <th class="index"></th>
+	  <th class="delete"></th>
     </tr>
   </thead>
   <tbody>
@@ -58,41 +59,35 @@
         <span class="bool-no ">&cross;</span>
         {% endif %}
       </td>
+      <td class="md5-hash">
+        {% if med.blob %}{{med.blob.md5_hash}}{% endif %}
+      </td>
       <td class="codec">
         {% if med.representation %}
         {{med.representation.codecs}}
         {% endif %}
       </td>
-      <td class="encrypted">
-        {% if med.representation %}
-          {% if med.representation.encrypted %}
-            <span class="bool-yes ">&check;</span>
-          {% else %}
-            <span class="bool-no ">&cross;</span>
-          {% endif %}
-        {% else %}
-          <span class="bool-unknown ">?</span>
-        {% endif %}
-      </td>
       <td class="kid">
         {% if med.representation %}
-        {% if med.representation.encrypted %}
-        {% for kid in med.representation.kids %}<p>{{kid}}</p>{% endfor %}
+          {% if med.representation.encrypted %}
+            {% for kid in med.representation.kids %}<p>{{kid}}</p>{% endfor %}
+		  {% else %}
+            <span class="bool-no ">&cross;</span>
           {% endif %}
         {% endif %}
       </td>
       <td class="index">
         {% if med.representation %}
-        <button class="btn btn-info btn-index" data-toggle="modal" data-target="#dialog-box"
+        <button class="btn btn-sm btn-info btn-index" data-toggle="modal" data-target="#dialog-box"
                 data-key="{{med.key}}">Re-index</button>
         {% else %}
-        <button class="btn btn-warning btn-index" data-toggle="modal" data-target="#dialog-box"
+        <button class="btn btn-sm btn-warning btn-index" data-toggle="modal" data-target="#dialog-box"
                 data-key="{{med.key}}">Index</button>
         {% endif %}
       </td>
       <td class="delete">
         {% if med.blob %}
-        <button class="btn btn-danger delete-file" data-key="{{med.key}}">Delete</button>
+        <button class="btn btn-danger btn-sm delete-file" data-key="{{med.key}}">Delete</button>
         {% endif %}
       </td>
     </tr>
