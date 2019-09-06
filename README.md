@@ -28,6 +28,24 @@ The CSS files need to be compiled:
 	sudo apt install node-less
     (cd static/css/ && make)
 
+There is a dockerfile to create a Docker image that contains GAE and
+all the other required packages.
+
+	sudo apt install node-less
+    (cd static/css/ && make)
+    docker build -t dashlive -f sdk-dockerfile .
+    mkdir gaedata
+
+The docker container can then be used by:
+
+    docker run -i -t -p 9080:80/tcp -p 9081:8080/tcp \
+    -v gaedata:/home/dash/.gaedata dashlive
+
+Note that this docker container runs the DEVELOPMENT ENVIRONMENT
+and is NOT for use in a production environment! The above example
+will use port 80 and 8080 on the Docker host to provide access to
+the application (port 80) and the GAE admin server (port 8080).
+
 Media Files
 -----------
 The application expects there to be 4 video MP4 files:

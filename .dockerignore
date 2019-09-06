@@ -1,0 +1,7 @@
+.git
+.gaedata
+fixtures
+**/*.mp4
+**/*.pyc
+settings.py
+settings.pyc

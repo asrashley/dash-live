@@ -1,0 +1,40 @@
+FROM ubuntu:18.04
+EXPOSE 9080 9081
+RUN apt-get update && \
+    apt-get -y -q --force-yes install \
+    python2.7 \
+    curl \
+    python-pip \
+    apt-transport-https \
+    ca-certificates \
+    gnupg2
+RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+ADD https://packages.cloud.google.com/apt/doc/apt-key.gpg /tmp/apt-key.gpg
+RUN apt-key --keyring /usr/share/keyrings/cloud.google.gpg add /tmp/apt-key.gpg && rm /tmp/apt-key.gpg
+RUN apt-get update && \
+    apt-get -y -q --force-yes install \
+    google-cloud-sdk \
+    google-cloud-sdk-app-engine-python \
+    google-cloud-sdk-app-engine-python-extras \
+    google-cloud-sdk-datastore-emulator
+COPY requirements.txt /tmp
+RUN pip install -r /tmp/requirements.txt && rm /tmp/requirements.txt
+ENV HOME=/home/dash
+ENV GAEDATA=/home/dash/.gaedata
+COPY *.sh $HOME/dash-live/
+COPY *.py $HOME/dash-live/
+COPY *.yaml $HOME/dash-live/
+COPY media/*.py $HOME/dash-live/media/
+COPY templates/* $HOME/dash-live/templates/
+COPY templates/drm/* $HOME/dash-live/templates/drm/
+COPY static/favicon.ico $HOME/dash-live/static/
+COPY static/css/* $HOME/dash-live/static/css/
+COPY static/fonts/* $HOME/dash-live/static/fonts/
+COPY static/img/* $HOME/dash-live/static/img/
+COPY static/js/*.js $HOME/dash-live/static/js/
+COPY static/js/prod/* $HOME/dash-live/static/js/prod/
+COPY static/js/dev/* $HOME/dash-live/static/js/dev/
+WORKDIR /home/dash/dash-live
+RUN python ./gen-settings.py
+RUN mkdir $GAEDATA
+ENTRYPOINT ["/home/dash/dash-live/runserver.sh"]
