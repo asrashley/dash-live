@@ -144,13 +144,18 @@ $(document).ready(function(){
             dataType: 'json',
         }).done(function(result) {
             if(result.error) {
-                dialog.find('.modal-body .error').text(result.error);
+              var i;
+              dialog.find('.modal-body .error').text(result.error);
             } else {
                 dialog.find(".modal-body").html('<p>Indexing ' + filename + ' complete</p>');
                 if (result.representation) {
                     $row.find('td.codec').text(result.representation.codecs);
                     if(result.representation.encrypted) {
                         $row.find('td.encrypted').html('<span class="bool-yes ">&check;</span>');
+                        $row.find('td.kid').html("");
+                        for(i=0; i < result.representation.kids.length; ++i) {
+                          $row.find('td.kid').append('<p>'+result.representation.kids[i]+'</p>');
+                        }
                     } else {
                         $row.find('td.encrypted').html('<span class="bool-no ">&cross;</span>');
                     }
@@ -167,9 +172,11 @@ $(document).ready(function(){
         
         dialog = $('#dialog-box')
         dialog.removeClass("dialog-active");
+        dialog.css("display", "");
+		$(document.body).removeClass("modal-open");
     }
 
-    function deleteMedia(ev) {
+    function deleteFile(ev) {
         var blobId;
         var $row = $(ev.target).parents('tr');
         var $btn = $(ev.target);
@@ -193,11 +200,52 @@ $(document).ready(function(){
             $('#media .error').text(status);
         });
     }
+	function uploadFile(ev) {
+		var form, data, dialog, filename;
+		ev.preventDefault();
+		form = $("#upload-form");
+		filename = form.find('input[name="file"]').val();
+		console.log("Filename: "+filename);
+		if (filename === "") {
+			alert("No file selected");
+			return;
+		}
+		data = new FormData(form[0]);
+		$("#upload-form .submit").prop("disabled", true);
+        dialog = $('#dialog-box')
+        dialog.addClass("dialog-active show");
+        dialog.css({display: "block"});
+        dialog.find(".modal-body").html('<p>Uploading ' + filename + '</p><div class="error"></div>');
+		$(document.body).addClass("modal-open");
+		$.ajax({
+			url: form.attr("action"),
+			data: data,
+			type: "POST",
+			enctype: 'multipart/form-data',
+			processData: false,
+			contentType: false,
+			timeout: 600000,
+			cache: false
+		}).done(function (data) {
+			dialog.find(".modal-body").html('<p>Finished uploading ' + filename+ '<span class="bool-yes ">&check;</span>');
+			$("#btnSubmit").prop("disabled", false);
+			document.location.reload();
+		}).fail(function (e) {
+            dialog.find('.modal-body .error').text(e);
+			console.error(e);
+        }).always(function() {
+            /*dialog.removeAttr("dialog-active"); */
+			$("#upload-form .submit").prop("disabled", false);
+        });
+		return false;
+	}
      
     $('#keys .add-key').click(addKey); 
-    $('#keys .btn-delete').click(deleteKey);
+    $('#keys .delete-key').click(deleteKey);
     $('#streams .add-stream').click(addStream);
     $('#streams .delete-stream').click(deleteStream);
-    $('#media-files .btn-delete').click(deleteMedia);
+    $('#media-files .delete-file').click(deleteFile);
     $('#media-files .btn-index').click(indexFile);
+	$("#upload-form .submit").click(uploadFile);
+	$('#dialog-box .btn-close').click(closeDialog);
 });

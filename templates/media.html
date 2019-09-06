@@ -92,7 +92,7 @@
       </td>
       <td class="delete">
         {% if med.blob %}
-        <button class="btn btn-danger btn-delete" data-key="{{med.key}}">Delete</button>
+        <button class="btn btn-danger delete-file" data-key="{{med.key}}">Delete</button>
         {% endif %}
       </td>
     </tr>
@@ -135,7 +135,8 @@
               enctype="multipart/form-data" id="upload-form">
 		{{csrf_token}}
     	Upload File: <input type="file" name="file" accept="video/mp4,audio/mp4,.mp4"><br />
-    	<input type="submit" name="submit" value="Submit" class="btn btn-primary">
+<!--		<button data-toggle="modal" data-target="#dialog-box" class="btn btn-primary submit">Submit</button> -->
+    	<input type="submit" name="submit" value="Submit" class="btn btn-primary submit">
         </form>
 </div>
 <div class="modal" tabIndex="-1" role="dialog" id="dialog-box">
@@ -143,16 +144,15 @@
   <div class="modal-content">
     <div class="modal-header">
       <h5 class="modal-title"></h5>
-      <button type="button" class="close"
-              data-dismiss="modal" aria-label="Close"
-              onClick="closeDialog()">
+      <button type="button" class="close btn-close"
+              data-dismiss="modal" aria-label="Close">
         <span aria-hidden="true">&times;</span>
       </button>
     </div>
     <div class="modal-body">
     </div>
     <div class="modal-footer">
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      <button type="button" class="btn btn-secondary btn-close" data-dismiss="modal">Close</button>
     </div>
   </div>
 </div>
