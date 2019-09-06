@@ -160,6 +160,7 @@ $(document).ready(function(){
                         $row.find('td.encrypted').html('<span class="bool-no ">&cross;</span>');
                     }
                     $row.find('.btn-index').addClass('btn-info').removeClass('btn-warning').text('Re-index');
+                    window.setTimeout(closeDialog, 500);
                 }
             }
         }).fail(function(jqXhr, status) {
@@ -171,9 +172,10 @@ $(document).ready(function(){
         var dialog;
         
         dialog = $('#dialog-box')
-        dialog.removeClass("dialog-active");
+        dialog.removeClass("dialog-active").removeClass("show");
         dialog.css("display", "");
 		$(document.body).removeClass("modal-open");
+        $('.modal-backdrop').remove();
     }
 
     function deleteFile(ev) {
