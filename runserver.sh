@@ -1,6 +1,8 @@
 #!/bin/sh
-if [ ! -d .gaedata ]; then
-  mkdir .gaedata
+if [ -z "${GAEDATA}" ]; then
+    export GAEDATA="${HOME}/.gaedata"
 fi
-#dev_appserver.py --port=9080 --host=0.0.0.0 --storage_path=.gaedata --dev_appserver_log_level=debug app.yaml 
-exec dev_appserver.py --port=9080 --host=0.0.0.0  --admin_host=0.0.0.0 --admin_port=9081 --storage_path=.gaedata --dev_appserver_log_level=info app.yaml 
+if [ ! -d ${GAEDATA} ]; then
+  mkdir ${GAEDATA}
+fi
+exec dev_appserver.py --port=9080 --host=0.0.0.0  --admin_host=0.0.0.0 --admin_port=9081 --storage_path=${GAEDATA} --dev_appserver_log_level=info app.yaml 

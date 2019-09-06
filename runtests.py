@@ -44,7 +44,14 @@ try:
     gae_sdk = os.path.join(appdata,'Google','Cloud SDK','google-cloud-sdk','platform','google_appengine')
 except KeyError:
     # On Unix, assume dev_appserver.py is in the PATH
-    dev_appserver = os.path.abspath(subprocess.check_output(["which", "dev_appserver.py"]))
+    dev_appserver = subprocess.check_output(["which", "dev_appserver.py"]).split('\n')[0]
+    dev_appserver = os.path.abspath(os.path.realpath(dev_appserver))
     gae_sdk = os.path.dirname(dev_appserver)
-
-runner.main(gae_sdk, ".", "*_test.py")
+    # in some installations, dev_appserver.py is in the root of the GAE SDK folder
+    # in others, it is in a "bin" sub-directory
+    if gae_sdk.endswith("bin"):
+        gae_sdk = os.path.dirname(gae_sdk)
+if len(sys.argv)>1:
+    runner.main(gae_sdk, ".", sys.argv[1])
+else:
+    runner.main(gae_sdk, ".", "*_test.py")
