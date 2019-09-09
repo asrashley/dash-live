@@ -4,17 +4,18 @@
 # Encode a video file in to a DASH stream at multiple bitrates
 #
 set +x
-VIDDIR=/media/sf_dev/video/
+VIDDIR=${HOME}/Downloads
+
 #
 # The source video file - this can be any format that FFMPEG supports
-SRCFILE=big_buck_bunny_1080p_h264.mov
+SRCFILE=BigBuckBunny.mp4
 #
 # The prefix to use for destination files
 DESTFILE=bbb
 
 #
 # The directory to place the encoded files
-DESTDIR=/media/sf_aashley/GoogleWebApp/dash-live/dash-live/media/bbb
+DESTDIR=${HOME}/src/GoogleWebApps/dash-live/media/${DESTFILE}
 
 #
 # Duration of each segment (in seconds)
@@ -121,7 +122,7 @@ package () {
     # Add E-AC3 audio track
     FILES="${FILES} ${DESTDIR}/${1}/${DESTFILE}.mp4#trackID=3:role=alternate"
     echo $FILES
-    (cd ${DESTDIR} && MP4Box -dash `expr ${SEGMENT_DURATION} '*' 1000` -rap -frag-rap -single-file -profile dashavc264:live -profile-ext "urn:dvb:dash:profile:dvbdash:2014" -bs-switching inband -segment-ext m4s -segment-name 'dash_$RepresentationID$_$number%03d$' -out dash/manifest $FILES)
+    (cd ${DESTDIR} && MP4Box -dash `expr ${SEGMENT_DURATION} '*' 1000` -frag `expr ${SEGMENT_DURATION} '*' 1000` -rap -frag-rap -single-file -profile dashavc264:live -profile-ext "urn:dvb:dash:profile:dvbdash:2014" -bs-switching inband -segment-ext m4s -segment-name 'dash_$RepresentationID$_$number%03d$' -out dash/manifest $FILES)
     rm ${DESTDIR}/${DESTFILE}_[1-9].mp4
     for repr in 1 2 3 4 5 6 7 8 9; do
         if [ -f ${DESTDIR}/dash/dash_${repr}_.mp4 ]; then
@@ -134,9 +135,21 @@ package () {
     done
 }
 
+if [ ! -d ${DESTDIR} ] ; then
+    mkdir ${DESTDIR}
+fi
+if [ ! -f ${VIDDIR}/${SRCFILE} ]; then
+    curl -o ${VIDDIR}/${SRCFILE} "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+fi
+
 #  352x288 700kbps
+encode 384 216 230
 encode 512 288 450
 encode 640 360 690
-encode 896 504 1380
+encode 768 432 800
+encode 1024 576 1250
+encode 1280 720 2204
+encode 1920 1080 3600
 
-package 450 690 1380
+package 230 450 690 800 1250 2204 3600
+
