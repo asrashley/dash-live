@@ -48,35 +48,54 @@ the application (port 80) and the GAE admin server (port 8080).
 
 Media Files
 -----------
-The application expects there to be 4 video MP4 files:
+The application expects there to be at least one video and one audio
+MP4 files for each available stream. Each file belonging to a stream
+must have the same filename prefix followed by an underscore. When the
+stream is parsed by the server it will auto-detect if the stream is
+encrypted. It is recommended however to choose a naming convention
+that makes it easier to tell which streams are encrypted and which
+ones are in the clear. For example:
 
-* V1.mp4
-* V2.mp4
-* V3.mp4
-* V3enc.mp4
-
-and two audio MP4 files:
-
-* A1.mp4
-* A2.mp4
+* bbb_a1.mp4
+* bbb_a1_enc.mp4
+* bbb_a2.mp4
+* bbb_a2_enc.mp4
+* bbb_v1.mp4
+* bbb_v1_enc.mp4 
+* bbb_v2.mp4
+* bbb_v2_enc.mp4
+* bbb_v3.mp4
+* bbb_v3_enc.mp4
+* bbb_v4.mp4
+* bbb_v4_enc.mp4
+* bbb_v5.mp4
+* bbb_v5_enc.mp4
+* bbb_v6.mp4
+* bbb_v6_enc.mp4
+* bbb_v7.mp4
+* bbb_v7_enc.mp4
 
 These files need to have been encoded for DASH, with a MOOV and MOOF boxes
-and each MOOF of a fixed duration.
-
-The application needs an index for each media file, which it stores as a
-Python file.
-
-    cd media
-    python gen_index.py -i V1.mp4
-    python gen_index.py -i V2.mp4
-    python gen_index.py -i V3.mp4
-    python gen_index.py -i V3enc.mp4
-    python gen_index.py -i A1.mp4
-    python gen_index.py -i A2.mp4
-    cd ..
+and each MOOF of a fixed duration. In the media directory there is an
+encode.sh shell script which gives an example of how to encode and
+package the media files.
 
 The media files need to be uploaded once the dash server is running. Go to
-http://localhost:9080/upload to upload the media files, one at a time.
+http://localhost:9080/media to upload the media files, one at a time.
+After uploading, each media file needs to be indexed, using the
+"index" button beside each media item.
+
+Once this has been done, you can add the stream to the list of
+available streams http://localhost:9080/media using the "add" button
+in the "Streams" table. The prefix must be the filename prefix used 
+when creating the media. In the above example, the prefix would be
+"bbb".
+
+If there are encrypted streams, the key IDs (KID) and encryption key
+need to be added. It is possible to omit the encryption key and just
+provide the KID. In this case, the server will auto-generate the
+encryption key using the key generation algorithm provided by
+MicroSoft PlayReady using the test key seed.
 
 Local development
 -----------------
@@ -90,15 +109,12 @@ A settings.py needs to be created that contains
     sas_url=''
  
 The cookie_secret and csrf_secret variables need to contain a randomly
-generated block of ascii characters.
+generated block of ascii characters. There is a gen_settings.py script
+that can be used to auto-generate settings.py
 
 The CSS used by the application is compiled using lessc.
 
-    cd static
-    cd css
-    compile
-    cd ..
-    cd ..
+    (cd static/css && make)
 
 Use runserver.bat or runserver.sh depending upon whether you are developing
 on Windows or Linux.
