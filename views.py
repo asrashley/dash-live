@@ -886,8 +886,7 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
             for drm in drms.values():
                 try:
                     pssh = drm["moov"](representation, keys)
-                    # insert the PSSH before the trak box
-                    atom.moov.insert_child(atom.moov.index('trak'), pssh)
+                    atom.moov.append_child(pssh)
                 except KeyError:
                     pass
         if dash['mode']=='live':
@@ -926,8 +925,9 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
             start,end = self.get_http_range(frag.size)
             if start is not None:
                 data = data[start:end+1]
-        except ValueError, ve:
+        except (ValueError) as ve:
             self.response.write(str(ve))
+            self.response.set_status(400)
             return
         self.response.headers.add_header('Accept-Ranges','bytes')
         self.response.write(data)

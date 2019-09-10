@@ -39,8 +39,8 @@ class Representation(object):
         for key,value in kwargs.iteritems():
             object.__setattr__(self, key, value)
         self.segments = [convert_dict(s) for s in self.segments]
-        if self.segments:
-            self.num_segments = len(self.segments)-1
+        self.num_segments = len(self.segments)-1
+
     def __repr__(self):
         args=[]
         for key,value in self.__dict__.iteritems():
@@ -66,7 +66,7 @@ class Representation(object):
         return rv
 
     @classmethod
-    def create(clz,filename, atoms, verbose=0):
+    def create(clz, filename, atoms, verbose=0):
         base_media_decode_time=None
         default_sample_duration=0
         moov = None

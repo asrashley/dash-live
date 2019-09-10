@@ -129,6 +129,12 @@ class Mp4Atom(object):
                 return idx
         raise ValueError(atom_type)
 
+    def append_child(self, child):
+        self.children.append(child)
+        if child.size:
+            self.size += child.size
+        self._invalidate()
+
     def insert_child(self, index, child):
         self.children.insert(index, child)
         if child.size:
