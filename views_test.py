@@ -6,6 +6,7 @@ import copy
 import datetime
 import hashlib
 import hmac
+import io
 import json
 import re
 import logging
@@ -16,10 +17,8 @@ import uuid
 import sys
 
 #from google.appengine.api import memcache
-from google.appengine.ext import ndb
-from google.appengine.ext import testbed
-from google.appengine.api import users
-from google.appengine.api import datastore
+from google.appengine.ext import ndb, testbed
+from google.appengine.api import datastore, files, users
 from google.appengine.api.files import file_service_stub
 from google.appengine.api.blobstore import blobstore_stub, file_blob_storage
 import jinja2
@@ -28,11 +27,13 @@ import webtest # if this import fails, "pip install WebTest"
 
 import drm
 import models
+import mp4
 import views
 import utils
 import manifests
 import options
 import routes
+from media.segment import Representation
 
 # convert App Engine's template syntax in to the Python string format syntax
 for name,r in routes.routes.iteritems():
@@ -103,15 +104,46 @@ class GAETestCase(unittest.TestCase):
                 continue
             opts = map(lambda o: o[1], opt['options'])
             if opt['name'] == 'drm':
-                for drm in opt['options']:
-                    if drm[1]=='drm=none':
+                for d in opt['options']:
+                    if d[1]=='drm=none':
                         continue
                     for loc in drmloc:
-                        if "pro" in loc and drm[1]!='drm=playready' and drm[1]!='drm=all':
+                        if "pro" in loc and d[1]!='drm=playready' and d[1]!='drm=all':
                             continue
-                        opts.append(drm[1]+'-'+loc)
+                        opts.append(d[1]+'-'+loc)
             self.cgi_options.append((opt["name"],opts))
         #print(self.cgi_options)
+
+    def setup_media(self):
+        for idx, rid in enumerate(["bbb_v6","bbb_v6_enc","bbb_v7","bbb_v7_enc",
+                                   "bbb_a1", "bbb_a1_enc"]):
+            filename = rid + ".mp4"
+            src_filename = os.path.join(os.path.dirname(__file__), "fixtures", filename)
+            src = io.open(src_filename, mode="rb", buffering=16384)
+            atoms = mp4.Mp4Atom.create(src)
+            src.seek(0)
+            data = src.read()
+            src.close()
+            blob_filename = files.blobstore.create(mime_type='video/mp4')
+            with files.open(blob_filename, 'ab') as dest:
+                dest.write(data)
+            files.finalize(blob_filename)
+            blob_key = files.blobstore.get_blob_key(blob_filename)
+            rep = Representation.create(filename, atoms)
+            mf = models.MediaFile(name=filename, rep=rep.toJSON(), blob=blob_key)
+            mf.put()
+        media_files = models.MediaFile.all()
+        self.assertGreater(len(media_files), 0)
+        for mf in media_files:
+            r = mf["representation"]
+            if r is None:
+                continue
+            if r.encrypted:
+                mspr = drm.PlayReady(self.templates)
+                for kid in r.kids:
+                    key = binascii.b2a_hex(mspr.generate_content_key(kid.decode('hex')))
+                    keypair = models.Key(hkid=kid, hkey=key, computed=True)
+                    keypair.put()
         
     def tearDown(self):
         self.logoutCurrentUser()
@@ -179,6 +211,7 @@ class GAETestCase(unittest.TestCase):
 
 class TestHandlers(GAETestCase):
     def test_index_page(self):
+        self.setup_media()
         page = views.MainPage()
         self.assertIsNotNone(getattr(page,'get',None))
         url = self.from_uri('home', absolute=True)
@@ -201,6 +234,7 @@ class TestHandlers(GAETestCase):
         #response.mustcontain('<a href="',mpd_url, no=routes.routes['upload'].title)
         
     def test_media_page(self):
+        self.setup_media()
         page = views.MediaHandler()
         self.assertIsNotNone(getattr(page,'get',None))
         self.assertIsNotNone(getattr(page,'post',None))
@@ -291,18 +325,11 @@ class TestHandlers(GAETestCase):
     def test_get_manifest(self):
         """Exhaustive test of every manifest with every combination of options.
         This test is _very_ slow, expect it to take several minutes!"""
+        self.setup_media()
         self.logoutCurrentUser()
         pr = drm.PlayReady(self.templates)
         media_files = models.MediaFile.all()
-        for mf in media_files:
-            r = mf["representation"]
-            if r is None:
-                continue
-            if r.encrypted:
-                for kid in r.kids:
-                    key = binascii.b2a_hex(pr.generate_content_key(kid.decode('hex')))
-                    keypair = models.Key(hkid=kid, hkey=key, computed=True)
-                    keypair.put()
+        self.assertGreater(len(media_files), 0)
         # do a first pass check of every manifest with no CGI options
         for filename, manifest in manifests.manifest.iteritems():
             url = self.from_uri('dash-mpd', manifest=filename)
