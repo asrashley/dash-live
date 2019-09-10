@@ -23,7 +23,12 @@
 import base64
 import binascii
 import re
+try:
+    import cStringIO as StringIO
+except ImportError:
+    import StringIO
 import struct
+from xml.etree import ElementTree
 from Crypto.Cipher import AES
 from Crypto.Hash import SHA256
 
@@ -77,7 +82,7 @@ class PlayReady(object):
     Test_Key_Seed = base64.b64decode("XVBovsmzhP9gRIZxWfFta3VVRPzVEWmJsazEJ46I")
     DRM_AES_KEYSIZE_128 = 16
 
-    def __init__(self, templates, la_url=None, version=4.0, security_level=150):
+    def __init__(self, templates, la_url=None, version=None, security_level=150):
         self.templates = templates
         self.version = version
         self.la_url = la_url
@@ -105,14 +110,13 @@ class PlayReady(object):
         #raise ValueError(guid, result)
         return result
 
-    def generate_checksum(self, kid, key):
-        if len(kid) != 16:
+    def generate_checksum(self, keypair):
+        guid_kid = PlayReady.hex_to_le_guid(keypair.KID.raw, raw=True)
+        if len(guid_kid) != 16:
             raise ValueError("KID should be a raw 16 byte key")
-        if len(key) != 16:
-            raise ValueError("Key should be a raw 16 byte key")
         # checksum = first 8 bytes of AES ECB of kid using key
-        cipher = AES.new(key, AES.MODE_ECB)
-        msg = cipher.encrypt(kid)
+        cipher = AES.new(keypair.KEY.raw, AES.MODE_ECB)
+        msg = cipher.encrypt(guid_kid)
         return msg[:8]
 
     #https://docs.microsoft.com/en-us/playready/specifications/playready-key-seed
@@ -167,12 +171,15 @@ class PlayReady(object):
         kids = []
         for keypair in keys.values():
             guid_kid = PlayReady.hex_to_le_guid(keypair.KID.raw, raw=True)
-            kids.append(guid_kid.encode('hex'))
             rkey = keypair.KEY.raw
+            kids.append({
+                'kid': guid_kid,
+                'checksum': self.generate_checksum(keypair),
+            })
             cfg = [
                 'kid:' + base64.b64encode(guid_kid),
                 'persist:false',
-                'sl:'+str(self.security_level),
+                'sl:'+str(self.security_level)
             ]
             if not keypair.computed:
                 cfg.append('contentkey:' + base64.b64encode(rkey))
@@ -187,12 +194,23 @@ class PlayReady(object):
         context = {
             "default_kid": default_kid,
             "kids": kids,
-            "la_url": la_url.format(cfgs=cfgs, kids=kids, default_kid=default_keypair.KID.hex)
+            "la_url": la_url.format(cfgs=cfgs, default_kid=default_keypair.KID.hex)
         }
-        context["checksum"] = self.generate_checksum(default_kid, default_key)
-        if self.version==4.1:
+        #print(context["la_url"])
+        context["checksum"] = self.generate_checksum(default_keypair)
+        version = self.version
+        if version is None:
+            if len(keys)==1:
+                version = 4.1
+            else:
+                version = 4.2
+        if version==4.2:
+            template = self.templates.get_template('drm/wrmheader42.xml')
+        elif version==4.1:
             template = self.templates.get_template('drm/wrmheader41.xml')
         else:
+            if version != 4.0:
+                raise ValueError("PlayReady header version {} has not been implemented".format(version))
             template = self.templates.get_template('drm/wrmheader40.xml')
         xml = template.render(context)
         xml = re.sub(r'[\r\n]', '', xml)
@@ -211,14 +229,43 @@ class PlayReady(object):
         pro = struct.pack('<IH', len(record)+6, 1) + record
         return pro
 
+    @classmethod
+    def parse_pro(clz, src):
+        """Parse a PlayReady Object (PRO)"""
+        data = src.read(6)
+        if len(data) != 6:
+            raise IOError("PlayReady Object too small")
+        length, object_count = struct.unpack("<IH", data)
+        objects = []
+        for idx in range(object_count):
+            data = src.read(4)
+            if len(data) != 4:
+                raise IOError("PlayReady Object too small")
+            record_type, record_length = struct.unpack("<HH", data)
+            record = {
+                'type': record_type,
+                'length': record_length,
+            }
+            if record_type == 1:
+                prh = src.read(record_length)
+                if len(prh) != record_length:
+                    raise IOError("PlayReady Object too small")
+                record['PlayReadyHeader'] = prh.decode('utf-16')
+                record['xml'] = ElementTree.parse(StringIO.StringIO(record['PlayReadyHeader']))
+            objects.append(record)
+        return record
+
     def generate_pssh(self, representation, keys):
         """Generate a PlayReady Object (PRO) inside a PSSH box"""
         pro = self.generate_pro(representation, keys)
-        return mp4.ContentProtectionSpecificBox(atom_type='pssh', version=1, flags=0,
+        pssh_version = 0 if len(keys)==1 else 1
+        return mp4.ContentProtectionSpecificBox(atom_type='pssh',
+                                                version=pssh_version,
+                                                flags=0,
                                                 system_id=PlayReady.SYSTEM_ID,
                                                 key_ids=keys.keys(),
-                                                data=pro
-        )
+                                                data=pro)
+
 
 class ClearKey(object):
     MPD_SYSTEM_ID = "e2719d58-a985-b3c9-781a-b030af78d30e"
@@ -237,3 +284,25 @@ class ClearKey(object):
                                                 key_ids=keys,
                                                 data=None
         )
+
+if __name__ == "__main__":
+    import sys
+    import utils
+
+    PR_ID = PlayReady.SYSTEM_ID.replace('-','').lower()
+
+    def show_pssh(atom):
+        if atom.atom_type=='pssh':
+            print(atom)
+            if atom.system_id == PR_ID:
+                pro = PlayReady.parse_pro(utils.BufferedReader(None, data=atom.data))
+                print(pro)
+        else:
+            for child in atom.children:
+                show_pssh(child)
+
+    for filename in sys.argv[1:]:
+        parser = mp4.IsoParser()
+        atoms = parser.walk_atoms(filename)
+        for atom in atoms:
+            show_pssh(atom)
