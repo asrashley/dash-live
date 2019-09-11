@@ -13,8 +13,10 @@ import logging
 import md5
 import os
 import unittest
+import urlparse
 import uuid
 import sys
+from xml.etree import ElementTree
 
 #from google.appengine.api import memcache
 from google.appengine.ext import ndb, testbed
@@ -208,6 +210,14 @@ class GAETestCase(unittest.TestCase):
         logging.debug(message)
         return self.app.post(upload_url, params=form, headers=headers, upload_files=upload_files)
 
+    def progress(self, pos, total):
+        if pos == 0:
+            sys.stdout.write('\n')
+        sys.stdout.write('\r {:05.2f}%'.format(100.0 * float(pos) / float(total)))
+        if pos == total:
+            sys.stdout.write('\n')
+        sys.stdout.flush()
+
 
 class TestHandlers(GAETestCase):
     def test_index_page(self):
@@ -344,14 +354,12 @@ class TestHandlers(GAETestCase):
         count = 0
         for param in self.cgi_options:
             total_tests = total_tests * len(param[1])
-        sys.stdout.write('\n')
         for filename, manifest in manifests.manifest.iteritems():
             tested = set([url])
             indexes = [0] * len(self.cgi_options)
             done = False
             while not done:
-                #sys.stdout.write('{:s}\r'.format(indexes))
-                sys.stdout.write('\r {:05.2f}%'.format(100.0 * float(count) / float(total_tests)))
+                self.progress(count, total_tests)
                 count += 1
                 self.check_manifest(filename, indexes, tested)
                 idx = 0
@@ -363,7 +371,238 @@ class TestHandlers(GAETestCase):
                     idx += 1
                 if idx==len(self.cgi_options):
                     done=True
-        sys.stdout.write('\n')
+        self.progress(total_tests, total_tests)
+
+    def test_get_vod_media_using_live_profile(self):
+        """Get VoD segments for each DRM type (live profile)"""
+        self.setup_media()
+        self.logoutCurrentUser()
+        drm_options = None
+        for o in self.cgi_options:
+            if o[0] == 'drm':
+                drm_options = o[1]
+                break
+        self.assertIsNotNone(drm_options)
+        pr = drm.PlayReady(self.templates)
+        media_files = models.MediaFile.all()
+        self.assertGreater(len(media_files), 0)
+        total_tests = len(drm_options)
+        test_count = 0
+        filename = 'hand_made.mpd'
+        manifest = manifests.manifest[filename]
+        for drm_opt in drm_options:
+            self.progress(test_count, total_tests)
+            test_count += 1
+            baseurl = self.from_uri('dash-mpd-v2', manifest=filename, prefix='bbb')
+            baseurl += '?mode=vod&' + drm_opt
+            response = self.app.get(baseurl)
+            self.assertEqual(response.status_int, 200)
+            mpd = '{{{}}}mpd'.format(self.xmlNamespaces['dash'])
+            self.assertEqual(mpd, response.xml.tag.lower())
+            self.validate_manifest(baseurl, {"mode":"mode=vod", "drm":drm_opt}, response.xml)
+            baseurl = [baseurl]
+            mpd_base = response.xml.findall('./dash:BaseURL', self.xmlNamespaces)
+            if mpd_base:
+                baseurl.append(mpd_base[0].text)
+            for period in response.xml.findall('./dash:Period', self.xmlNamespaces):
+                self.check_period("vod", baseurl, period)
+        self.progress(total_tests, total_tests)
+
+    def test_get_vod_media_using_on_demand_profile(self):
+        """Get VoD segments (on-demand profile)"""
+        self.logoutCurrentUser()
+        self.setup_media()
+        media_files = models.MediaFile.all()
+        self.assertGreater(len(media_files), 0)
+        chosen = None
+        for filename, manifest in manifests.manifest.iteritems():
+            baseurl = self.from_uri('dash-mpd-v2', manifest=filename, prefix='bbb')
+            baseurl += '?mode=odvod'
+            response = self.app.get(baseurl)
+            if "urn:mpeg:dash:profile:isoff-on-demand:2011" in response.xml.get('profiles'):
+                chosen = (baseurl, manifest, response)
+                break
+        self.assertIsNotNone(chosen)
+        baseurl, manifest, response = chosen
+        self.validate_manifest(baseurl, {"mode":"mode=odvod"}, response.xml)
+        baseurl = [baseurl]
+        mpd_base = response.xml.findall('./dash:BaseURL', self.xmlNamespaces)
+        if mpd_base:
+            baseurl.append(mpd_base[0].text)
+        for period in response.xml.findall('./dash:Period', self.xmlNamespaces):
+            self.check_period("odvod", baseurl, period)
+
+    def check_period(self, mode, baseurl, period):
+        period_base = period.findall('./dash:BaseURL', self.xmlNamespaces)
+        if period_base:
+            baseurl.append(period_base[0].text)
+        for adap_set in period.findall('./dash:AdaptationSet', self.xmlNamespaces):
+            if mode=="odvod":
+                self.check_on_demand_adaptation_set(baseurl, adap_set)
+            else:
+                self.check_live_adaptation_set(baseurl, adap_set)
+        if period_base:
+            baseurl.pop(-1)
+
+    def check_live_adaptation_set(self, baseurl, adap_set):
+        adap_base = adap_set.findall('./dash:BaseURL', self.xmlNamespaces)
+        if adap_base:
+            baseurl.append(adap_base[0].text)
+        adap_template = adap_set.findall('./dash:SegmentTemplate', self.xmlNamespaces)
+        if not adap_template:
+            adap_template = None
+        else:
+            adap_template = adap_template[0]
+        prot = adap_set.findall('./dash:ContentProtection', self.xmlNamespaces)
+        default_KID = None
+        for p in prot:
+            d = p.get("{{{}}}default_KID".format(self.xmlNamespaces['cenc']))
+            if d:
+                default_KID = d
+                break
+        if prot:
+            self.assertIsNotNone(default_KID,
+                                 'default_KID cannot be missing for protected stream: {}'.format(baseurl[0]))
+        reps = adap_set.findall('./dash:Representation', self.xmlNamespaces)
+        self.assertGreater(len(reps), 0)
+        for rep in reps:
+            rep_template = rep.findall('./dash:SegmentTemplate', self.xmlNamespaces)
+            if rep_template:
+                rep_template = rep_template[0]
+            else:
+                rep_template = adap_template
+            self.assertIsNotNone(rep_template)
+            init_url = rep_template.get("initialization")
+            init_url = urlparse.urljoin(baseurl[-1], init_url)
+            self.check_init_segment(init_url, rep, default_KID)
+            media_url = rep_template.get("media")
+            media_url = urlparse.urljoin(baseurl[-1], media_url)
+            num_segments = 5
+            decode_time = None
+            name = rep.get('id', '').lower() + '.mp4'
+            mf = models.MediaFile.query(models.MediaFile.name==name).get()
+            if mf:
+                num_segments = mf.representation.num_segments - 1
+                decode_time = 0
+            for idx in range(num_segments):
+                self.check_media_segment(media_url, rep, default_KID, idx+1,
+                                         decode_time)
+                if decode_time is not None:
+                    decode_time += mf.representation.segments[idx+1].duration
+        if adap_base:
+            baseurl.pop(-1)
+
+    def check_on_demand_adaptation_set(self, baseurl, adap_set):
+        adap_base = adap_set.findall('./dash:BaseURL', self.xmlNamespaces)
+        if adap_base:
+            baseurl.append(adap_base[0].text)
+        prot = adap_set.findall('./dash:ContentProtection', self.xmlNamespaces)
+        default_KID = None
+        for p in prot:
+            d = p.get("{{{}}}default_KID".format(self.xmlNamespaces['cenc']))
+            if d:
+                default_KID = d
+                break
+        if prot:
+            self.assertIsNotNone(default_KID,
+                                 'default_KID cannot be missing for protected stream: {}'.format(baseurl[0]))
+        reps = adap_set.findall('./dash:Representation', self.xmlNamespaces)
+        self.assertGreater(len(reps), 0)
+        for rep in reps:
+            rep_base = rep.findall('./dash:BaseURL', self.xmlNamespaces)
+            if rep_base:
+                rep_base = rep_base[0].text
+            else:
+                rep_base = baseurl[-1]
+            parts = urlparse.urlparse(rep_base)
+            filename = os.path.basename(parts.path)
+            name, ext = os.path.splitext(filename)
+            name += '.mp4'
+            mf = models.MediaFile.query(models.MediaFile.name==name).get()
+            self.assertIsNotNone(mf)
+            seg_list = rep.findall('./dash:SegmentList', self.xmlNamespaces)
+            self.assertEqual(len(seg_list), 1)
+            decode_time = 0
+            for seg_num, item in enumerate(list(seg_list[0])):
+                if seg_num==0:
+                    self.assertTrue(item.tag.endswith('Initialization'))
+                    seg_range = item.get("range")
+                    self.assertIsNotNone(seg_range)
+                    self.check_init_segment(rep_base, rep, default_KID, seg_range)
+                else:
+                    self.assertTrue(item.tag.endswith("SegmentURL"))
+                    seg_range = item.get("mediaRange")
+                    self.assertIsNotNone(seg_range)
+                    self.check_media_segment(rep_base, rep, default_KID, seg_num,
+                                             decode_time, seg_range)
+                    decode_time += mf.representation.segments[seg_num].duration
+        if adap_base:
+            baseurl.pop(-1)
+
+    def format_url_template(self, url, rep, seg_num=0):
+        url = url.replace('$RepresentationID$', rep.get("id"))
+        url = url.replace('$Bandwidth$', rep.get("bandwidth"))
+        url = url.replace('$Number$', str(seg_num))
+        url = url.replace('$$', '$')
+        #TODO: add $Time$
+        return url
+
+    pr_system_id = drm.PlayReady.SYSTEM_ID.replace('-','').lower()
+
+    def check_init_segment(self, init_url, rep, default_KID, seg_range=None):
+        init_url = self.format_url_template(init_url, rep)
+        if default_KID:
+            self.assertIn('_enc', init_url)
+        headers = None
+        if seg_range is not None:
+            headers = {"Range": "bytes={}".format(seg_range)}
+        response = self.app.get(init_url, headers=headers)
+        src = utils.BufferedReader(None, data=response.body)
+        atoms = mp4.Mp4Atom.create(src)
+        self.assertGreater(len(atoms), 1)
+        self.assertEqual(atoms[0].atom_type, 'ftyp')
+        moov = None
+        for atom in atoms:
+            if atom.atom_type=='moov':
+                moov = atom
+                break
+        self.assertIsNotNone(moov)
+        if not '_enc' in init_url:
+            return
+        try:
+            pssh = moov.pssh
+            #print pssh
+            if pssh.system_id == self.pr_system_id:
+                pro = drm.PlayReady.parse_pro(utils.BufferedReader(None, data=pssh.data))
+                #print pro
+                version = pro['xml'].getroot().get("version")
+                self.assertIn(version, ["4.0.0.0", "4.1.0.0", "4.2.0.0"])
+        except (AttributeError) as ae:
+            if 'moov' in init_url:
+                if 'playready' in init_url or 'clearkey' in init_url:
+                    self.assertTrue('moov' not in init_url,
+                                    'PSSH box should be present in {}\n{:s}'.format(
+                                        init_url, ae))
+
+    def check_media_segment(self, media_url, rep, default_KID, seg_num, decode_time, seg_range=None):
+        media_url = self.format_url_template(media_url, rep, seg_num)
+        if default_KID:
+            self.assertIn('_enc', media_url)
+        headers = None
+        if seg_range is not None:
+            headers = {"Range": "bytes={}".format(seg_range)}
+        response = self.app.get(media_url, headers=headers)
+        src = utils.BufferedReader(None, data=response.body)
+        atoms = mp4.Mp4Atom.create(src)
+        self.assertGreater(len(atoms), 1)
+        self.assertEqual(atoms[0].atom_type, 'moof')
+        moof = atoms[0]
+        self.assertEqual(moof.mfhd.sequence_number, seg_num)
+        if decode_time is not None:
+            seg_dt = moof.traf.tfdt.base_media_decode_time
+            self.assertEqual(decode_time, seg_dt,
+                             'Decode time {:d} should be {:d} for segment {:d} in {}'.format(
+                                 seg_dt, decode_time, seg_num, media_url))
 
     def test_add_full_key_pair(self):
         self.assertEqual(len(models.Key.all()), 0)
