@@ -53,8 +53,7 @@ from webapp2_extras import security
 from webapp2_extras.appengine.users import login_required, admin_required
 
 from routes import routes
-import drm, mp4, utils, models, settings, manifests, options
-from media import segment
+import drm, mp4, utils, models, settings, manifests, options, segment
 from webob import exc
 
 templates = jinja2.Environment(

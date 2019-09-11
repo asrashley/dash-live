@@ -42,6 +42,8 @@ skip_files:
 - ^console.py
 - ^bulkloader-.*
 - ^backups
+- ^fixtures
+- ^media
 - ^\.git.*
 - ^\.gaedata
 - ^.*\.txt

@@ -31,7 +31,7 @@ except ImportError:
     import StringIO
 
 import jinja2
-from media.segment import Representation
+from segment import Representation
 
 import mp4
 import utils

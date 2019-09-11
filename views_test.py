@@ -35,7 +35,7 @@ import utils
 import manifests
 import options
 import routes
-from media.segment import Representation
+from segment import Representation
 
 # convert App Engine's template syntax in to the Python string format syntax
 for name,r in routes.routes.iteritems():

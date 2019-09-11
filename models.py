@@ -5,7 +5,7 @@ from google.appengine.api import search
 from google.appengine.ext.blobstore import blobstore
 
 from drm import KeyMaterial
-from media.segment import Representation
+from segment import Representation
 
 class Stream(ndb.Model):
     title = ndb.StringProperty(required=True, indexed=True)

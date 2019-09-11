@@ -1,5 +1,7 @@
 FROM ubuntu:18.04
 EXPOSE 9080 9081
+ENV HOME=/home/dash
+ENV GAEDATA=/home/dash/.gaedata
 RUN apt-get update && \
     apt-get -y -q --force-yes install \
     python2.7 \
@@ -19,22 +21,21 @@ RUN apt-get update && \
     google-cloud-sdk-datastore-emulator
 COPY requirements.txt /tmp
 RUN pip install -r /tmp/requirements.txt && rm /tmp/requirements.txt
-ENV HOME=/home/dash
-ENV GAEDATA=/home/dash/.gaedata
-COPY *.sh $HOME/dash-live/
-COPY *.py $HOME/dash-live/
-COPY *.yaml $HOME/dash-live/
-COPY media/*.py $HOME/dash-live/media/
-COPY templates/* $HOME/dash-live/templates/
-COPY templates/drm/* $HOME/dash-live/templates/drm/
+RUN mkdir $GAEDATA
 COPY static/favicon.ico $HOME/dash-live/static/
-COPY static/css/* $HOME/dash-live/static/css/
 COPY static/fonts/* $HOME/dash-live/static/fonts/
 COPY static/img/* $HOME/dash-live/static/img/
-COPY static/js/*.js $HOME/dash-live/static/js/
 COPY static/js/prod/* $HOME/dash-live/static/js/prod/
 COPY static/js/dev/* $HOME/dash-live/static/js/dev/
+COPY static/js/*.js $HOME/dash-live/static/js/
+COPY lib/*.py $HOME/dash-live/lib/
+COPY *.py $HOME/dash-live/
+COPY *.yaml $HOME/dash-live/
+COPY templates/* $HOME/dash-live/templates/
+COPY templates/drm/* $HOME/dash-live/templates/drm/
+COPY static/css/* $HOME/dash-live/static/css/
+COPY runserver.sh $HOME/dash-live/
+COPY src/*.py $HOME/dash-live/src/
 WORKDIR /home/dash/dash-live
 RUN python ./gen-settings.py
-RUN mkdir $GAEDATA
 ENTRYPOINT ["/home/dash/dash-live/runserver.sh"]

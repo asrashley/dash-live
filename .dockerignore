@@ -1,6 +1,7 @@
 .git
 .gaedata
 fixtures
+media
 **/*.mp4
 **/*.pyc
 settings.py
