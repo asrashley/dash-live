@@ -11,6 +11,20 @@ as the test file.
 
 Installation
 ------------
+A settings.py needs to be created that contains
+
+    from utils import on_production_server
+
+    cookie_secret='arandomstring'
+    csrf_secret = 'arandomstring'
+    DEBUG=not on_production_server
+    sas_url=''
+
+The cookie_secret and csrf_secret variables need to contain a randomly
+generated block of ascii characters. There is a gen_settings.py script
+that can be used to auto-generate settings.py
+
+### Running development server directly on the host machine
 Install the Python 2 Google App Engine (GAE)
  
 https://cloud.google.com/appengine/docs/standard/python/download
@@ -23,13 +37,26 @@ On Ubuntu, the following should install the Python GAE SDK:
 	sudo apt-get update && sudo apt-get install google-cloud-sdk
     sudo apt-get install google-cloud-sdk-app-engine-python google-cloud-sdk-app-engine-python-extras google-cloud-sdk-datastore-emulator
 
+Create a Python virtual environment and install the dependencies:
+
+    virtualenv virtenv
+    . ./virtenv/bin/activate
+    pip install -r requirements.txt
+
 The CSS files need to be compiled:
 
 	sudo apt install node-less
     (cd static/css/ && make)
 
+
+Use runserver.bat or runserver.sh depending upon whether you are developing
+on Windows or Linux.
+
+It will start an HTTP server on port 9080
+
+### Running development server using a Docker image
 There is a dockerfile to create a Docker image that contains GAE and
-all the other required packages.
+all the other required packages to run the development server.
 
 	sudo apt install node-less
     (cd static/css/ && make)
@@ -99,30 +126,6 @@ need to be added. It is possible to omit the encryption key and just
 provide the KID. In this case, the server will auto-generate the
 encryption key using the key generation algorithm provided by
 MicroSoft PlayReady using the test key seed.
-
-Local development
------------------
-A settings.py needs to be created that contains 
-
-    from utils import on_production_server
-
-    cookie_secret='arandomstring'
-    csrf_secret = 'arandomstring'
-    DEBUG=not on_production_server
-    sas_url=''
- 
-The cookie_secret and csrf_secret variables need to contain a randomly
-generated block of ascii characters. There is a gen_settings.py script
-that can be used to auto-generate settings.py
-
-The CSS used by the application is compiled using lessc.
-
-    (cd static/css && make)
-
-Use runserver.bat or runserver.sh depending upon whether you are developing
-on Windows or Linux.
-
-It will start an HTTP server on port 9080
 
 License
 =======
