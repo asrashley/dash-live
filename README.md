@@ -49,7 +49,7 @@ the application (port 80) and the GAE admin server (port 8080).
 Media Files
 -----------
 The application expects there to be at least one video and one audio
-MP4 files for each available stream. Each file belonging to a stream
+MP4 file for each available stream. Each file belonging to a stream
 must have the same filename prefix followed by an underscore. When the
 stream is parsed by the server it will auto-detect if the stream is
 encrypted. It is recommended however to choose a naming convention
@@ -75,10 +75,13 @@ ones are in the clear. For example:
 * bbb_v7.mp4
 * bbb_v7_enc.mp4
 
-These files need to have been encoded for DASH, with a MOOV and MOOF boxes
-and each MOOF of a fixed duration. In the media directory there is an
-encode.sh shell script which gives an example of how to encode and
+These file needs to have been encoded for DASH, with a MOOV and MOOF boxes
+and each MOOF of a fixed duration. In the media directory there is a
+create_media.py Python script which gives an example of how to encode and
 package the media files.
+
+    test -e "BigBuckBunny.mp4" || curl -o "BigBuckBunny.mp4" "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+    python create_media.py -i "BigBuckBunny.mp4" -p bbb --kid '1ab45440532c439994dc5c5ad9584bac' -o bbb
 
 The media files need to be uploaded once the dash server is running. Go to
 http://localhost:9080/media to upload the media files, one at a time.
