@@ -851,7 +851,7 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
                 firstFragment = lastFragment - int(representation.timescale*dash['timeShiftBufferDepth'] / representation.segment_duration) - 1
             else:
                 firstFragment = dash['startNumber']
-                lastFragment = firstFragment + representation.num_segments
+                lastFragment = firstFragment + representation.num_segments - 1
             if segment_num<firstFragment or segment_num>lastFragment:
                 self.response.write('Segment not found (valid range= %d->%d)'%(firstFragment,lastFragment))
                 self.response.set_status(404)
@@ -864,7 +864,7 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
                 mod_segment = segpos['segment_num']
                 origin_time = segpos['origin_time']
             else:
-                mod_segment = segment_num
+                mod_segment = 1 + segment_num - dash['startNumber']
         #blob_info = blobstore.BlobInfo.get(mf.blob)
         if ext=='m4a':
             self.response.content_type='audio/mp4'
