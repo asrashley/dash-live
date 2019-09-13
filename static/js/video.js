@@ -174,6 +174,9 @@ $(window).load(function(){
         vid.shakaPlayer = player;
         player.addEventListener('error', genStatusFn('error'));
         player.load(source).then(genStatusFn("loaded")).catch(genStatusFn('error'));
+        $(vid).on('canplay',function(){
+            vid.play();
+        });
     }
 
     function initPlayer() {

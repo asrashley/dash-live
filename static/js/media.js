@@ -131,13 +131,8 @@ $(document).ready(function(){
         }
         console.log('index blob',blobId);
         dialog = $('#dialog-box')
-        dialog.addClass("dialog-active");
-        /*iframe = document.createElement("iframe");
-        iframe.setAttribute("id", "media-index");
-        dialog.append(iframe);
-        iframe.setAttribute("src", '/media/'+blobId+'?index=1');
-        return;*/
         dialog.find(".modal-body").html('<p>Indexing ' + filename + '</p><div class="error"></div>');
+        showDialog();
         $.ajax({
             url: '/media/'+blobId+'?index=1',
             method: 'GET',
@@ -168,14 +163,24 @@ $(document).ready(function(){
         });
     }
 
+    function showDialog() {
+        var dialog = $('#dialog-box');
+        dialog.addClass("dialog-active show");
+        dialog.css({display: "block"});
+        $('.modal-backdrop').addClass('show');
+        $('.modal-backdrop').removeClass('hidden');
+        $('body').addClass('modal-open');
+    }
+
     function closeDialog() {
         var dialog;
         
         dialog = $('#dialog-box')
         dialog.removeClass("dialog-active").removeClass("show");
         dialog.css("display", "");
-		$(document.body).removeClass("modal-open");
-        $('.modal-backdrop').remove();
+        $(document.body).removeClass("modal-open");
+        $('.modal-backdrop').addClass('hidden');
+        $('.modal-backdrop').removeClass("show");
     }
 
     function deleteFile(ev) {
@@ -202,45 +207,74 @@ $(document).ready(function(){
             $('#media .error').text(status);
         });
     }
-	function uploadFile(ev) {
-		var form, data, dialog, filename;
-		ev.preventDefault();
-		form = $("#upload-form");
-		filename = form.find('input[name="file"]').val();
-		console.log("Filename: "+filename);
-		if (filename === "") {
-			alert("No file selected");
-			return;
-		}
-		data = new FormData(form[0]);
-		$("#upload-form .submit").prop("disabled", true);
+    function uploadFile(ev) {
+        var form, data, dialog, filename;
+        ev.preventDefault();
+        form = $("#upload-form");
+        filename = form.find('input[name="file"]').val();
+        console.log("Filename: "+filename);
+        if (filename === "") {
+            alert("No file selected");
+            return;
+        }
+        form.find('input[name="ajax"]').val("1");
+        data = new FormData(form[0]);
+        $("#upload-form .submit").prop("disabled", true);
         dialog = $('#dialog-box')
-        dialog.addClass("dialog-active show");
-        dialog.css({display: "block"});
         dialog.find(".modal-body").html('<p>Uploading ' + filename + '</p><div class="error"></div>');
-		$(document.body).addClass("modal-open");
-		$.ajax({
-			url: form.attr("action"),
-			data: data,
-			type: "POST",
-			enctype: 'multipart/form-data',
-			processData: false,
-			contentType: false,
-			timeout: 600000,
-			cache: false
-		}).done(function (data) {
-			dialog.find(".modal-body").html('<p>Finished uploading ' + filename+ '<span class="bool-yes ">&check;</span>');
-			$("#btnSubmit").prop("disabled", false);
-			document.location.reload();
-		}).fail(function (e) {
-            dialog.find('.modal-body .error').text(e);
-			console.error(e);
+        showDialog();
+        $.ajax({
+            url: form.attr("action"),
+            data: data,
+            type: "POST",
+            enctype: 'multipart/form-data',
+            processData: false,
+            contentType: false,
+            timeout: 600000,
+            cache: false
+        }).done(function (data) {
+            var err, htm;
+
+            $("#btnSubmit").prop("disabled", false);
+            console.dir(data);
+            if(data.error) {
+                err = dialog.find('.modal-body .error');
+                err.text(data.error);
+                return;
+            }
+            dialog.find(".modal-body").html('<p>Finished uploading ' + filename+ '<span class="bool-yes ">&check;</span>');
+            if(data.form_html) {
+                $('#upload-form').remove();
+                htm = $(data.form_html);
+                $('.form-container').append(htm);
+                $("#upload-form .submit").click(uploadFile);
+            }
+            if(data.file_html){
+                htm = $(data.file_html);
+                htm.insertBefore('#media-files .error-row');
+                htm = $('#'+data.name);
+                htm.find('.delete-file').click(deleteFile);
+                htm.find('.btn-index').click(indexFile);
+                window.setTimeout(closeDialog, 500);
+            }
+        }).fail(function (e) {
+            var err = dialog.find('.modal-body .error');
+            if (e.responseJSON) {
+                err.text(e.responseJSON.error);
+            }
+            else if (e.statusText) {
+                err.text(e.status + ' ' + e.statusText);
+            } else if (e.responseText) {
+                err.text(e.responseText);
+            } else {
+                err.text(JSON.stringify(e));
+            }
+            console.error(e);
         }).always(function() {
-            /*dialog.removeAttr("dialog-active"); */
-			$("#upload-form .submit").prop("disabled", false);
+            $("#upload-form .submit").prop("disabled", false);
         });
-		return false;
-	}
+        return false;
+    }
      
     $('#keys .add-key').click(addKey); 
     $('#keys .delete-key').click(deleteKey);
@@ -248,6 +282,6 @@ $(document).ready(function(){
     $('#streams .delete-stream').click(deleteStream);
     $('#media-files .delete-file').click(deleteFile);
     $('#media-files .btn-index').click(indexFile);
-	$("#upload-form .submit").click(uploadFile);
-	$('#dialog-box .btn-close').click(closeDialog);
+    $("#upload-form .submit").click(uploadFile);
+    $('#dialog-box .btn-close').click(closeDialog);
 });

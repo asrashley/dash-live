@@ -6,6 +6,7 @@ from google.appengine.ext.blobstore import blobstore
 
 from drm import KeyMaterial
 from segment import Representation
+import utils
 
 class Stream(ndb.Model):
     title = ndb.StringProperty(required=True, indexed=True)
@@ -67,6 +68,22 @@ class MediaFile(ndb.Model):
     def empty_database(clz):
         list_of_keys = MediaFile.query().fetch(keys_only=True)
         ndb.delete_multi(list_of_keys)
+
+    def toJSON(self, convert_date=True):
+        i = self.info
+        blob  = {}
+        if i is not None:
+            for k in ["creation", "size", "md5_hash", "content_type", "filename"]:
+                blob[k] = getattr(i, k)
+            if convert_date:
+                blob["creation"] = utils.toIsoDateTime(blob["creation"])
+        return {
+            "name": self.name,
+            "key": self.key.urlsafe(),
+            "blob": blob,
+            "representation": self.representation,
+        }
+
 
 def kid_validator(prop, value):
     if not re.match(r'^[0-9a-f-]+$', value, re.IGNORECASE):

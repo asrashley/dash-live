@@ -144,7 +144,7 @@ class RequestHandler(webapp2.RequestHandler):
         cookie = sc.serialize(self.CSRF_COOKIE_NAME, csrf)
         self.response.set_cookie(self.CSRF_COOKIE_NAME, cookie, httponly=True, max_age=7200)
 
-    def check_csrf(self):
+    def check_csrf(self, delete_cookie=True):
         """check that the CSRF token from the cookie and the submitted form match"""
         sc = securecookie.SecureCookieSerializer(settings.cookie_secret)
         try:
@@ -154,7 +154,8 @@ class RequestHandler(webapp2.RequestHandler):
             logging.debug(str(self.request.cookies))
             raise CsrfFailureException("{} cookie not present".format(self.CSRF_COOKIE_NAME))
         csrf = sc.deserialize(self.CSRF_COOKIE_NAME, cookie)
-        self.response.delete_cookie(self.CSRF_COOKIE_NAME)
+        if delete_cookie:
+            self.response.delete_cookie(self.CSRF_COOKIE_NAME)
         if not csrf:
             logging.debug("csrf deserialize failed")
             raise CsrfFailureException("csrf cookie not valid")
@@ -1077,21 +1078,40 @@ class UTCTimeHandler(RequestHandler):
 class MediaHandler(RequestHandler):
     class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
         def post(self, *args, **kwargs):
+            is_ajax = self.request.get("ajax", "0") == "1"
             upload_files = self.get_uploads()
             logging.debug("uploaded file count: %d"%len(upload_files))
             if not users.is_current_user_admin():
                 self.response.write('User is not an administrator')
                 self.response.set_status(401)
                 return
+            result = {"error":"Unknown"}
+            if is_ajax:
+                self.response.content_type='application/json'
             if len(upload_files)==0:
+                if is_ajax:
+                    result["error"] = "No files uploaded"
+                    self.response.write(json.dumps(result))
+                    return 
                 self.outer.get()
                 return
             blob_info = upload_files[0]
             #infos = self.get_file_infos()[0]
             logging.debug("Filename: "+blob_info.filename)
+            result["filename"] = blob_info.filename
             media_id, ext = os.path.splitext(blob_info.filename)
             try:
-                self.outer.check_csrf()
+                self.outer.check_csrf(delete_cookie=not is_ajax)
+            except (CsrfFailureException) as cfe:
+                logging.debug("csrf check failed")
+                logging.debug(cfe)
+                if is_ajax:
+                    result["error"] = 'CSRF check failed: {:s}'.format(cfe)
+                    self.response.write(json.dumps(result))
+                self.response.set_status(401)
+                blob_info.delete()
+                return
+            try:
                 context = self.outer.create_context(title='File %s uploaded'%(blob_info.filename),
                                                     blob=blob_info.key())
                 mf = models.MediaFile.query(models.MediaFile.name==blob_info.filename).get()
@@ -1100,18 +1120,27 @@ class MediaHandler(RequestHandler):
                 mf = models.MediaFile(name=blob_info.filename, blob=blob_info.key())
                 mf.put()
                 context["mfid"] = mf.key.urlsafe()
+                result = mf.toJSON()
                 logging.debug("upload done "+context["mfid"])
-                template = templates.get_template('upload-done.html')
-                self.response.write(template.render(context))
+                if is_ajax:
+                    self.outer.generate_csrf(context)
+                    context['upload_url'] = blobstore.create_upload_url(self.uri_for('uploadBlob'))
+                    template = templates.get_template('upload_form.html')
+                    result["form_html"] = template.render(context)
+                    template = templates.get_template('media_row.html')
+                    context["media"] = mf.toJSON(convert_date=False)
+                    result["file_html"] = template.render(context)
+                    self.response.write(json.dumps(result))
+                else:
+                    template = templates.get_template('upload-done.html')
+                    self.response.write(template.render(context))
                 return
-            except (CsrfFailureException) as cfe:
-                logging.debug("csrf check failed")
-                logging.debug(cfe)
-                self.response.write('CSRF check failed: {:s}'.format(cfe))
-                self.response.set_status(401)
-                blob_info.delete()
             except (KeyError) as e:
-                self.response.write('{:s} not found: {:s}'.format(media_id,e))
+                if is_ajax:
+                    result["error"] = '{:s} not found: {:s}'.format(media_id,e)
+                    self.response.write(json.dumps(result))
+                else:
+                    self.response.write('{:s} not found: {:s}'.format(media_id,e))
                 self.response.set_status(404)
                 blob_info.delete()
 
@@ -1135,8 +1164,8 @@ class MediaHandler(RequestHandler):
         context['upload_url'] = blobstore.create_upload_url(self.uri_for('uploadBlob'))
         if self.is_https_request():
             context['upload_url'] = context['upload_url'].replace('http://','https://')
-        context['media'] = models.MediaFile.all()
-        context['media'].sort(key=lambda i: i['name'])
+        context['files'] = models.MediaFile.all()
+        context['files'].sort(key=lambda i: i['name'])
         context['keys'] = models.Key.all()
         context['keys'].sort(key=lambda i: i.hkid)
         context['streams'] = models.Stream.all()

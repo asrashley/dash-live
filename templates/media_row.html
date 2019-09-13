@@ -1,0 +1,48 @@
+    <tr id="{{media.name}}">
+      <td class="filename"><a href="{{uri_for("media-info", mfid=media.key)}}">{{media.name}}</a></td>
+      <td class="filesize">
+        {% if media.blob %}
+        {{media.blob.size|sizeFormat}}
+        {% else %}
+        <span class="bool-no ">&cross;</span>
+        {% endif %}
+      </td>
+      <td class="created">
+        {% if media.blob %}
+        {{media.blob.creation|dateTimeFormat("%H:%M:%S %d/%m/%Y")}}
+        {% else %}
+        <span class="bool-no ">&cross;</span>
+        {% endif %}
+      </td>
+      <td class="md5-hash">
+        {% if media.blob %}{{media.blob.md5_hash}}{% endif %}
+      </td>
+      <td class="codec">
+        {% if media.representation %}
+        {{media.representation.codecs}}
+        {% endif %}
+      </td>
+      <td class="kid">
+        {% if media.representation %}
+          {% if media.representation.encrypted %}
+            {% for kid in media.representation.kids %}<p>{{kid}}</p>{% endfor %}
+		  {% else %}
+            <span class="bool-no ">&cross;</span>
+          {% endif %}
+        {% endif %}
+      </td>
+      <td class="index">
+        {% if media.representation %}
+        <button class="btn btn-sm btn-info btn-index" data-toggle="modal" data-target="#dialog-box"
+                data-key="{{media.key}}">Re-index</button>
+        {% else %}
+        <button class="btn btn-sm btn-warning btn-index" data-toggle="modal" data-target="#dialog-box"
+                data-key="{{media.key}}">Index</button>
+        {% endif %}
+      </td>
+      <td class="delete">
+        {% if media.blob %}
+        <button class="btn btn-danger btn-sm delete-file" data-key="{{media.key}}">Delete</button>
+        {% endif %}
+      </td>
+    </tr>
