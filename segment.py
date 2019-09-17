@@ -147,6 +147,11 @@ class Representation(object):
                             rv.frameRate = rv.timescale / default_sample_duration
                         rv.width = int(atom.trak.tkhd.width)
                         rv.height = int(atom.trak.tkhd.height)
+                        try:
+                            rv.width = avc.width
+                            rv.height = avc.height
+                        except AttributeError:
+                            pass
                         #TODO: work out scan type
                         rv.scanType="progressive"
                         #TODO: work out sample aspect ratio
