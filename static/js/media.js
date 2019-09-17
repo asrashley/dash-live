@@ -1,17 +1,22 @@
 $(document).ready(function(){
     'use strict';
     function addKey(ev) {
-        var kid, key;
+        var kid, key, csrf;
         var $row = $(ev.target).parents('tr');
         kid = $row.find('input[name="kid"]').val();
         key = $row.find('input[name="key"]').val();
-        console.log('add key',kid,key);
+        csrf = $('#keys').data('csrf');
+        console.log('add key', kid, key, csrf);
         $row.find('.btn').attr("disabled", true);
         $('#keys .error').text('');
         $.ajax({
             url: '/key',
             method: 'PUT',
-            data: { "kid":kid, "key": key },
+            data: {
+                "kid":kid,
+                "key": key,
+                "csrf_token": csrf
+            },
             dataType: 'json',
         }).done(function(result) {
             var newRow;
@@ -34,22 +39,26 @@ $(document).ready(function(){
             newRow.find('.btn-index').click(indexFile);
             $row.find('input[name="kid"]').val('');
             $row.find('input[name="key"]').val('');
+            if (result.csrf) {
+                $('#keys').data('csrf', result.csrf);
+            }
         }).always(function() {
             $row.find('.btn').removeAttr("disabled");
         });
     }
     
     function deleteKey(ev) {
-        var kid, key;
+        var kid, key, csrf;
         var $row = $(ev.target).parents('tr');
         kid = $row.find('.kid').text();
-        console.log('delete key',kid);
+        csrf = $('#keys').data('csrf');
+        console.log('delete key',kid, csrf);
         if (!kid) {
             return;
         }
         $('#keys .error').text('');
         $.ajax({
-            url: '/key/'+kid,
+            url: '/key/'+kid+"?csrf_token="+csrf,
             method: 'DELETE',
             dataType: 'json',
         }).done(function(result) {
@@ -58,24 +67,32 @@ $(document).ready(function(){
             } else {
                 $row.remove();
             }
+            if (result.csrf) {
+                $('#keys').data('csrf', result.csrf);
+            }
         }).fail(function(jqXhr, status) {
             $('#keys .error').text(status);
         });
     }
 
     function addStream(ev) {
-        var title, prefix;
+        var title, prefix, csrf;
         var $row = $(ev.target).parents('tr');
         title = $row.find('input[name="title"]').val();
         prefix = $row.find('input[name="prefix"]').val();
+        csrf = $('#streams').data('csrf');
         console.log('add stream',title,prefix)
         $row.find('.btn').attr("disabled", true);
         $('#streams .error').text('');
         $.ajax({
             url: '/stream',
             method: 'PUT',
-            data: { "title":title, "prefix": prefix },
-            dataType: 'json',
+            data: {
+                "title":title,
+                "prefix": prefix,
+                "csrf_token": csrf
+            },
+            dataType: 'json'
         }).done(function(result) {
             var newRow;
             if(result.error) {
@@ -91,22 +108,26 @@ $(document).ready(function(){
             newRow.find('.delete-stream').click(deleteStream);
             $row.find('input[name="title"]').val('');
             $row.find('input[name="prefix"]').val('');
+            if (result.csrf) {
+                $('#streams').data('csrf', result.csrf);
+            }
         }).always(function() {
             $row.find('.btn').removeAttr("disabled");
         });
     }
     
     function deleteStream(ev) {
-        var id;
+        var id, csrf;
         var $row = $(ev.target).parents('tr');
         id = $(ev.target).data("id");
-        console.log('delete stream',id);
+        csrf = $('#streams').data('csrf');
+        console.log('delete stream',id,csrf);
         if (!id) {
             return;
         }
         $('#streams .error').text('');
         $.ajax({
-            url: '/stream/'+id,
+            url: '/stream/'+id+'?csrf_token='+csrf,
             method: 'DELETE',
             dataType: 'json',
         }).done(function(result) {
@@ -115,26 +136,30 @@ $(document).ready(function(){
             } else {
                 $row.remove();
             }
+            if (result.csrf) {
+                $('#streams').data('csrf', result.csrf);
+            }
         }).fail(function(jqXhr, status) {
             $('#streams .error').text(status);
         });
     }
 
     function indexFile(ev) {
+        var dialog, blobId, filename, csrf;
         var $row = $(ev.target).parents('tr');
         var $btn = $(ev.target);
-        var dialog, blobId, filename;
         blobId = $btn.data('key');
         filename = $row.find('.filename').text()
         if (!blobId) {
             return;
         }
-        console.log('index blob',blobId);
+        csrf = $('#media-files').data('csrf');
+        console.log('index blob',blobId, csrf);
         dialog = $('#dialog-box')
         dialog.find(".modal-body").html('<p>Indexing ' + filename + '</p><div class="error"></div>');
         showDialog();
         $.ajax({
-            url: '/media/'+blobId+'?index=1',
+            url: '/media/'+blobId+'?index=1&csrf_token='+csrf,
             method: 'GET',
             dataType: 'json',
         }).done(function(result) {
@@ -158,43 +183,27 @@ $(document).ready(function(){
                     window.setTimeout(closeDialog, 500);
                 }
             }
+            if (result.csrf) {
+                $('#media-files').data('csrf', result.csrf);
+            }
         }).fail(function(jqXhr, status) {
             dialog.find('.modal-body .error').text(result.error);
         });
     }
 
-    function showDialog() {
-        var dialog = $('#dialog-box');
-        dialog.addClass("dialog-active show");
-        dialog.css({display: "block"});
-        $('.modal-backdrop').addClass('show');
-        $('.modal-backdrop').removeClass('hidden');
-        $('body').addClass('modal-open');
-    }
-
-    function closeDialog() {
-        var dialog;
-        
-        dialog = $('#dialog-box')
-        dialog.removeClass("dialog-active").removeClass("show");
-        dialog.css("display", "");
-        $(document.body).removeClass("modal-open");
-        $('.modal-backdrop').addClass('hidden');
-        $('.modal-backdrop').removeClass("show");
-    }
-
     function deleteFile(ev) {
-        var blobId;
+        var blobId, csrf;
         var $row = $(ev.target).parents('tr');
         var $btn = $(ev.target);
         blobId = $btn.data('key');
+        csrf = $('#media-files').data('csrf');
         if (!blobId) {
             return;
         }
         console.log('delete blob',blobId);
         $('#media .error').text('');
         $.ajax({
-            url: '/media/'+blobId,
+            url: '/media/'+blobId+'?csrf_token='+csrf,
             method: 'DELETE',
             dataType: 'json',
         }).done(function(result) {
@@ -202,6 +211,9 @@ $(document).ready(function(){
                 $('#media .error').text(result.error);
             } else {
                 $row.remove();
+            }
+            if (result.csrf) {
+                $('#media-files').data('csrf', result.csrf);
             }
         }).fail(function(jqXhr, status) {
             $('#media .error').text(status);
@@ -236,23 +248,22 @@ $(document).ready(function(){
             var err, htm;
 
             $("#btnSubmit").prop("disabled", false);
-            console.dir(data);
             if(data.error) {
                 err = dialog.find('.modal-body .error');
                 err.text(data.error);
                 return;
             }
             dialog.find(".modal-body").html('<p>Finished uploading ' + filename+ '<span class="bool-yes ">&check;</span>');
-            if(data.form_html) {
-                $('#upload-form').remove();
-                htm = $(data.form_html);
-                $('.form-container').append(htm);
-                $("#upload-form .submit").click(uploadFile);
+            if(data.upload_url) {
+                $('#upload-form').attr('action', data.upload_url);
+            }
+            if(data.csrf_token) {
+                $('#upload-form input[name="csrf_token"]').val(data.csrf_token);
             }
             if(data.file_html){
+                $('#'+data.name).remove();
                 htm = $(data.file_html);
                 htm.insertBefore('#media-files .error-row');
-                htm = $('#'+data.name);
                 htm.find('.delete-file').click(deleteFile);
                 htm.find('.btn-index').click(indexFile);
                 window.setTimeout(closeDialog, 500);
@@ -276,6 +287,24 @@ $(document).ready(function(){
         return false;
     }
      
+    function showDialog() {
+        var dialog = $('#dialog-box');
+        dialog.addClass("dialog-active show");
+        dialog.css({display: "block"});
+        $('.modal-backdrop').addClass('show');
+        $('.modal-backdrop').removeClass('hidden');
+        $('body').addClass('modal-open');
+    }
+
+    function closeDialog() {
+        var dialog = $('#dialog-box')
+        dialog.removeClass("dialog-active").removeClass("show");
+        dialog.css("display", "");
+        $(document.body).removeClass("modal-open");
+        $('.modal-backdrop').addClass('hidden');
+        $('.modal-backdrop').removeClass("show");
+    }
+
     $('#keys .add-key').click(addKey); 
     $('#keys .delete-key').click(deleteKey);
     $('#streams .add-stream').click(addStream);

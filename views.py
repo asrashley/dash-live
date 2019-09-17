@@ -90,6 +90,9 @@ class CsrfFailureException(Exception):
 class RequestHandler(webapp2.RequestHandler):
     CLIENT_COOKIE_NAME='dash'
     CSRF_COOKIE_NAME='csrf'
+    CSRF_EXPIRY=1200
+    CSRF_KEY_LENGTH=32
+    CSRF_SALT_LENGTH=8
     ALLOWED_DOMAINS = re.compile(r'^http://(dashif\.org)|(shaka-player-demo\.appspot\.com)|(mediapm\.edgesuite\.net)')
     DEFAULT_TIMESHIFT_BUFFER_DEPTH=60
     INJECTED_ERROR_CODES=[404, 410, 503, 504]
@@ -126,25 +129,40 @@ class RequestHandler(webapp2.RequestHandler):
             context['request_uri'] = context['request_uri'].replace('http://','https://')
         return context
 
-    def generate_csrf(self,context):
+    def generate_csrf_cookie(self):
+        """generate a secure cookie if not already present"""
+        sc = securecookie.SecureCookieSerializer(settings.cookie_secret)
+        try:
+            cookie = self.request.cookies[self.CSRF_COOKIE_NAME]
+            csrf_key = sc.deserialize(self.CSRF_COOKIE_NAME, cookie)
+        except KeyError:
+            csrf_key = security.generate_random_string(length=self.CSRF_KEY_LENGTH)
+            cookie = sc.serialize(self.CSRF_COOKIE_NAME, csrf_key)
+            self.response.set_cookie(self.CSRF_COOKIE_NAME, cookie, httponly=True,
+                                     max_age=self.CSRF_EXPIRY)
+        return csrf_key
+
+    def generate_csrf_token(self, service, csrf_key):
         """generate a CSRF token as a hidden form field and a secure cookie"""
         logging.debug('generate_csrf URI: {}'.format(self.request.uri))
         logging.debug('generate_csrf User-Agent: {}'.format(self.request.headers['User-Agent']))
-        csrf = security.generate_random_string(length=32)
-        sig = hmac.new(settings.csrf_secret,csrf,hashlib.sha1)
+        sig = hmac.new(settings.csrf_secret, csrf_key, hashlib.sha1)
         cur_url = urlparse.urlparse(self.request.uri, 'http')
+        salt = security.generate_random_string(length=self.CSRF_SALT_LENGTH)
         origin = '%s://%s'%(cur_url.scheme, cur_url.netloc)
         logging.debug('generate_csrf origin: {}'.format(origin))
+        #print('generate', service, csrf_key, origin, self.request.headers['User-Agent'], salt)
+        sig.update(service)
         sig.update(origin)
-        sig.update(self.request.uri)
+        #sig.update(self.request.uri)
         sig.update(self.request.headers['User-Agent'])
+        sig.update(salt)
         sig = sig.digest()
-        context['csrf_token'] ='<input type="hidden" name="csrf_token" value="%s" />'%urllib.quote(binascii.b2a_base64(sig))
-        sc = securecookie.SecureCookieSerializer(settings.cookie_secret)
-        cookie = sc.serialize(self.CSRF_COOKIE_NAME, csrf)
-        self.response.set_cookie(self.CSRF_COOKIE_NAME, cookie, httponly=True, max_age=7200)
+        rv =  urllib.quote(salt + base64.b64encode(sig))
+        #print('csrf', service, rv)
+        return rv
 
-    def check_csrf(self, delete_cookie=True):
+    def check_csrf(self, service):
         """check that the CSRF token from the cookie and the submitted form match"""
         sc = securecookie.SecureCookieSerializer(settings.cookie_secret)
         try:
@@ -153,14 +171,14 @@ class RequestHandler(webapp2.RequestHandler):
             logging.debug("csrf cookie not present")
             logging.debug(str(self.request.cookies))
             raise CsrfFailureException("{} cookie not present".format(self.CSRF_COOKIE_NAME))
-        csrf = sc.deserialize(self.CSRF_COOKIE_NAME, cookie)
-        if delete_cookie:
-            self.response.delete_cookie(self.CSRF_COOKIE_NAME)
-        if not csrf:
+        csrf_key = sc.deserialize(self.CSRF_COOKIE_NAME, cookie)
+        if not csrf_key:
             logging.debug("csrf deserialize failed")
             raise CsrfFailureException("csrf cookie not valid")
-        token = urllib.unquote(self.request.params['csrf_token'])
-        sig = hmac.new(settings.csrf_secret,csrf,hashlib.sha1)
+        try:
+            token = str(urllib.unquote(self.request.params['csrf_token']))
+        except KeyError:
+            raise CsrfFailureException("csrf_token not present")
         try:
             origin = self.request.headers['Origin']
         except KeyError:
@@ -168,13 +186,22 @@ class RequestHandler(webapp2.RequestHandler):
             cur_url = urlparse.urlparse(self.request.uri, 'http')
             origin = '%s://%s'%(cur_url.scheme, cur_url.netloc)
         logging.debug("check_csrf origin: {}".format(origin))
+        #print("check_csrf origin: {}".format(origin))
+        if not memcache.add(key=token, value=origin, time=self.CSRF_EXPIRY, namespace=service):
+            raise CsrfFailureException("Re-use of csrf_token")
+        salt = token[:self.CSRF_SALT_LENGTH]
+        token = token[self.CSRF_SALT_LENGTH:]
+        #print('check', service, csrf_key, origin, self.request.headers['User-Agent'], salt, token)
+        sig = hmac.new(settings.csrf_secret, csrf_key, hashlib.sha1)
+        sig.update(service)
         sig.update(origin)
-        logging.debug("check_csrf Referer: {}".format(self.request.headers['Referer']))
-        sig.update(self.request.headers['Referer'])
-        logging.debug("check_csrf User-Agent: {}".format(self.request.headers['User-Agent']))
+        #logging.debug("check_csrf Referer: {}".format(self.request.headers['Referer']))
+        #sig.update(self.request.headers['Referer'])
         sig.update(self.request.headers['User-Agent'])
+        sig.update(salt)
         sig_hex = sig.hexdigest()
-        tk_hex = binascii.b2a_hex(binascii.a2b_base64(token))
+        tk_hex = binascii.b2a_hex(base64.b64decode(token))
+        #print(sig_hex, tk_hex)
         if sig_hex!=tk_hex:
             raise CsrfFailureException("signatures do not match")
         return True
@@ -1101,12 +1128,12 @@ class MediaHandler(RequestHandler):
             result["filename"] = blob_info.filename
             media_id, ext = os.path.splitext(blob_info.filename)
             try:
-                self.outer.check_csrf(delete_cookie=not is_ajax)
+                self.outer.check_csrf('upload')
             except (CsrfFailureException) as cfe:
                 logging.debug("csrf check failed")
                 logging.debug(cfe)
                 if is_ajax:
-                    result["error"] = 'CSRF check failed: {:s}'.format(cfe)
+                    result["error"] = '{}: {:s}'.format(err.__class__.__name__, cfe)
                     self.response.write(json.dumps(result))
                 self.response.set_status(401)
                 blob_info.delete()
@@ -1123,10 +1150,9 @@ class MediaHandler(RequestHandler):
                 result = mf.toJSON()
                 logging.debug("upload done "+context["mfid"])
                 if is_ajax:
-                    self.outer.generate_csrf(context)
-                    context['upload_url'] = blobstore.create_upload_url(self.uri_for('uploadBlob'))
-                    template = templates.get_template('upload_form.html')
-                    result["form_html"] = template.render(context)
+                    csrf_key = self.outer.generate_csrf_cookie(self)
+                    result['upload_url'] = blobstore.create_upload_url(self.uri_for('uploadBlob'))
+                    result['csrf_token'] = self.outer.generate_csrf_token("upload", csrf_key)
                     template = templates.get_template('media_row.html')
                     context["media"] = mf.toJSON(convert_date=False)
                     result["file_html"] = template.render(context)
@@ -1169,7 +1195,13 @@ class MediaHandler(RequestHandler):
         context['keys'] = models.Key.all()
         context['keys'].sort(key=lambda i: i.hkid)
         context['streams'] = models.Stream.all()
-        self.generate_csrf(context)
+        csrf_key = self.generate_csrf_cookie()
+        context['csrf_tokens'] = {
+            'files': self.generate_csrf_token('files', csrf_key),
+            'kids': self.generate_csrf_token('keys', csrf_key),
+            'streams': self.generate_csrf_token('streams', csrf_key),
+            'upload': self.generate_csrf_token('upload', csrf_key),
+        }
         template = templates.get_template('media.html')
         self.response.write(template.render(context))
 
@@ -1194,16 +1226,22 @@ class MediaHandler(RequestHandler):
                 "blob": info,
             }
             if self.request.params.get('index'):
+                self.check_csrf('files')
                 blob_reader = utils.BufferedReader(blobstore.BlobReader(mf.blob))
                 atom = mp4.Mp4Atom(atom_type='wrap', position=0, size = mf.info.size, parent=None,
                                    children=mp4.Mp4Atom.create(blob_reader))
                 rep = segment.Representation.create(filename=mf.name, atoms=atom.children)
                 mf.representation = rep
                 mf.put()
-                result = { "indexed":mfid, "representation": mf.rep}
-        except (ValueError) as err:
+                result = {
+                    "indexed":mfid,
+                    "representation": mf.rep,
+                }
+        except (ValueError, CsrfFailureException) as err:
             result= { "error": str(err) }
         finally:
+            csrf_key = self.generate_csrf_cookie()
+            result["csrf"] = self.generate_csrf_token('files', csrf_key)
             self.response.content_type='application/json'
             self.response.write(json.dumps(result))
         
@@ -1217,9 +1255,9 @@ class MediaHandler(RequestHandler):
             self.response.write('MediaFile ID missing')
             self.response.set_status(400)
             return
-        print('delete', mfid)
         result= { "error": "unknown error" }
         try:
+            self.check_csrf('files')
             mf = models.MediaFile.query(models.Key.key==Key(urlsafe=mfid)).get()
             if not mf:
                 self.response.write('{} not found'.format(mfid))
@@ -1227,9 +1265,11 @@ class MediaHandler(RequestHandler):
                 return
             mf.delete()
             result = {"deleted":mfid}
-        except (ValueError) as err:
+        except (ValueError, CsrfFailureException) as err:
             result= { "error": str(err) }
         finally:
+            csrf_key = self.generate_csrf_cookie()
+            result["csrf"] = self.generate_csrf_token('files', csrf_key)
             self.response.content_type='application/json'
             self.response.write(json.dumps(result))
 
@@ -1240,10 +1280,12 @@ class KeyHandler(RequestHandler):
             self.response.write('User is not an administrator')
             self.response.set_status(401)
             return
+
         kid = self.request.get('kid')
         key = self.request.get('key')
         result= { "error": "unknown error" }
         try:
+            self.check_csrf('keys')
             kid = models.KeyMaterial(kid)
             computed = False
             if key:
@@ -1256,10 +1298,18 @@ class KeyHandler(RequestHandler):
                 raise ValueError("Duplicate KID {}".format(kid.hex))
             keypair = models.Key(hkid = kid.hex, hkey=key.hex, computed=computed)
             keypair.put()
-            result = {"key":key.hex, "kid": kid.hex, "computed": computed}
-        except (ValueError) as err:
-            result= { "error": str(err) }
+            result = {
+                "key": key.hex,
+                "kid": kid.hex,
+                "computed": computed
+            }
+        except (ValueError, CsrfFailureException) as err:
+            result= {
+                "error": '{}: {:s}'.format(err.__class__.__name__, err)
+            }
         finally:
+            csrf_key = self.generate_csrf_cookie()
+            result["csrf"] = self.generate_csrf_token('keys', csrf_key)
             self.response.content_type='application/json'
             self.response.write(json.dumps(result))
 
@@ -1275,17 +1325,23 @@ class KeyHandler(RequestHandler):
             return
         result= { "error": "unknown error" }
         try:
+            self.check_csrf('keys')
             kid = models.KeyMaterial(hex=kid)
             keypair = models.Key.query(models.Key.hkid==kid.hex).get()
-            if not keypair:
-                self.response.write('KID {:s} not found'.format(kid))
-                self.response.set_status(404)
-                return
-            keypair.key.delete()
-            result = {"deleted":kid.hex}
-        except (TypeError, ValueError) as err:
-            result= { "error": str(err) }
+            if keypair:
+                keypair.key.delete()
+                result = {
+                    "deleted": kid.hex,
+                }
+            else:
+                result["error"] = 'KID {:s} not found'.format(kid)
+        except (TypeError, ValueError, CsrfFailureException) as err:
+            result= {
+                "error": '{}: {:s}'.format(err.__class__.__name__, err)
+            }
         finally:
+            csrf_key = self.generate_csrf_cookie()
+            result["csrf"] = self.generate_csrf_token('keys', csrf_key)
             self.response.content_type='application/json'
             self.response.write(json.dumps(result))
 
@@ -1300,15 +1356,24 @@ class StreamHandler(RequestHandler):
         prefix = self.request.get('prefix')
         result= { "error": "unknown error" }
         try:
+            self.check_csrf('streams')
             st = models.Stream.query(models.Stream.prefix==prefix).get()
             if st:
                 raise ValueError("Duplicate prefix {}".format(prefix))
             st = models.Stream(title=title, prefix=prefix)
             st.put()
-            result = {"title":title, "prefix": prefix, "id": st.key.urlsafe()}
-        except (ValueError) as err:
-            result= { "error": str(err) }
+            result = {
+                "title":title,
+                "prefix": prefix,
+                "id": st.key.urlsafe()
+            }
+        except (ValueError, CsrfFailureException) as err:
+            result= {
+                "error": '{}: {:s}'.format(err.__class__.__name__, err)
+            }
         finally:
+            csrf_key = self.generate_csrf_cookie()
+            result["csrf"] = self.generate_csrf_token('streams', csrf_key)
             self.response.content_type='application/json'
             self.response.write(json.dumps(result))
 
@@ -1324,6 +1389,7 @@ class StreamHandler(RequestHandler):
             return
         result= { "error": "unknown error" }
         try:
+            self.check_csrf('streams')
             key = Key(urlsafe=id)
             st = key.get()
             if not st:
@@ -1331,10 +1397,18 @@ class StreamHandler(RequestHandler):
                 self.response.set_status(404)
                 return
             key.delete()
-            result = {"deleted":id, "title":st.title, "prefix":st.prefix}
-        except (TypeError, ValueError) as err:
-            result= { "error": str(err) }
+            result = {
+                "deleted":id,
+                "title":st.title,
+                "prefix":st.prefix
+            }
+        except (TypeError, ValueError, CsrfFailureException) as err:
+            result= {
+                "error": '{}: {:s}'.format(err.__class__.__name__, err)
+            }
         finally:
+            csrf_key = self.generate_csrf_cookie()
+            result["csrf"] = self.generate_csrf_token('streams', csrf_key)
             self.response.content_type='application/json'
             self.response.write(json.dumps(result))
             
@@ -1360,7 +1434,9 @@ class ClearkeyHandler(RequestHandler):
                 "type": req["type"]
             }
         except (TypeError, ValueError, KeyError) as err:
-            result= { "error": str(err) }
+            result= {
+                "error": '{}: {:s}'.format(err.__class__.__name__, err)
+            }
         finally:
             self.add_allowed_origins()
             self.response.content_type = 'application/json'
@@ -1381,3 +1457,4 @@ class ClearkeyHandler(RequestHandler):
         elif padding == 3:
             b += '='
         return base64.b64decode(b)
+

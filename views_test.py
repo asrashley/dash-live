@@ -627,13 +627,22 @@ class TestHandlers(GAETestCase):
         
         # user must be logged in as admin to use keys API
         self.setCurrentUser(is_admin=True)
-        response = self.app.put(url)
-        self.assertEqual(response.status_int, 200)
 
+        # request should fail due to lack of CSRF token
+        response = self.app.put(url)
+        self.assertTrue(response.json.has_key("error"))
+        self.assertIn("CsrfFailureException", response.json["error"])
+
+        media_url = self.from_uri('media-index', absolute=True)
+        media = self.app.get(media_url)
+        keys_table = media.html.find(id="keys")
+        url += '&csrf_token=' + keys_table.get('data-csrf')
+        response = self.app.put(url)
         expected_result = {
             'kid': request['kid'].lower(),
             'key': request['key'].lower(),
-            'computed': False
+            'computed': False,
+            'csrf': response.json["csrf"],
         }
         self.assertEqual(expected_result, response.json)
 
@@ -654,11 +663,20 @@ class TestHandlers(GAETestCase):
         url = '{}?kid={}'.format(self.from_uri('key', absolute=True), kid)
         self.setCurrentUser(is_admin=True)
         response = self.app.put(url)
-        self.assertEqual(response.status_int, 200)
+        # request without CSRF token should fail
+        self.assertTrue(response.json.has_key("error"))
+        self.assertIn("CsrfFailureException", response.json["error"])
+
+        media_url = self.from_uri('media-index', absolute=True)
+        media = self.app.get(media_url)
+        keys_table = media.html.find(id="keys")
+        url += '&csrf_token=' + keys_table.get('data-csrf')
+        response = self.app.put(url)
         expected_result = {
             'kid': kid,
             'key': base64.b64decode('GUf166PQbx+sgBADjyBMvw==').encode('hex'),
-            'computed': True
+            'computed': True,
+            'csrf': response.json["csrf"],
         }
         self.assertEqual(expected_result, response.json)
         keys = models.Key.all()
@@ -695,28 +713,49 @@ class TestHandlers(GAETestCase):
         response = self.app.delete(url, status=401)
         self.assertEqual(response.status_int,401)
         self.assertEqual(len(models.Key.all()), 2)
-        
+
         # user must be logged in as admin to use keys API
         self.setCurrentUser(is_admin=True)
+
+        # request without CSRF token should fail
         response = self.app.delete(url)
+        self.assertTrue(response.json.has_key("error"))
+        self.assertIn("CsrfFailureException", response.json["error"])
+        
+        media_url = self.from_uri('media-index', absolute=True)
+        media = self.app.get(media_url)
+        keys_table = media.html.find(id="keys")
+        csrf_url = url + '?csrf_token=' + keys_table.get('data-csrf')
+
+        response = self.app.delete(csrf_url)
         self.assertEqual(response.status_int, 200)
         keys = models.Key.all()
         self.assertEqual(len(keys), 1)
         self.assertEqual(keys[0].hkid, keypair.hkid)
         self.assertEqual(keys[0].hkey, keypair.hkey)
         self.assertEqual(keys[0].computed, keypair.computed)
+        next_csrf_token = response.json["csrf"]
+
+        # try to re-use a CSRF token
+        response = self.app.delete(csrf_url)
+        self.assertTrue(response.json.has_key("error"))
+        self.assertIn("CsrfFailureException", response.json["error"])
 
         # try to delete a key that does not exist
-        response = self.app.delete(url, status=404)
+        response = self.app.delete(url+'?csrf_token='+next_csrf_token)
+        self.assertTrue(response.json.has_key("error"))
+        self.assertIn("not found", response.json["error"])
+        next_csrf_token = response.json["csrf"]
 
         url = self.from_uri('del-key', kid='invalid', absolute=True)
         try:
             binascii.unhexlify('invalid')
         except (TypeError) as err:
             expected_result = {
-                'error': str(err)
+                'error': '{}: {:s}'.format(err.__class__.__name__, err)
             }
-        response = self.app.delete(url)
+        response = self.app.delete(url + '?csrf_token=' + next_csrf_token)
+        expected_result["csrf"] = response.json["csrf"]
         self.assertEqual(expected_result, response.json)
         
     def test_clearkey(self):
@@ -808,7 +847,7 @@ class TestHandlers(GAETestCase):
         # check request without the kids parameter
         response = self.app.post_json(url, request)
         expected_result = {
-            'error': "'kids'",
+            'error': "KeyError: 'kids'",
         }
         self.assertEqual(expected_result, response.json)
 
@@ -825,7 +864,7 @@ class TestHandlers(GAETestCase):
             base64.b64decode('*invalid base64*')
         except (TypeError) as err:
             expected_result = {
-                'error': str(err)
+                "error": '{}: {:s}'.format(err.__class__.__name__, err)
             }
         self.assertEqual(expected_result, response.json)
 
@@ -889,6 +928,9 @@ class BlobstoreTestHandlers(GAETestCase):
         response = self.app.get(url)
         self.assertEqual(response.status_int,200)
         response.mustcontain('bbb_v1.mp4')
-        
+
+#def load_tests(loader, tests, pattern):
+#    return unittest.loader.TestLoader().loadTestsFromName('test_add_full_key_pair', TestHandlers)
+
 if __name__ == '__main__':
     unittest.main()        

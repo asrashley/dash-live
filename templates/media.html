@@ -3,7 +3,7 @@
 
 {% block content %}
 <div id="media-management" class="container">
-  <table class="table table-striped" id="streams">
+  <table class="table table-striped" id="streams" data-csrf="{{csrf_tokens.streams}}">
     <caption>Streams</caption>
   <thead><tr><th>Title</th><th>Prefix</th><th /></tr></thead>
   <tbody>
@@ -27,7 +27,7 @@
     </tfoot>
 </table>
 
-  <table class="table table-striped" id="media-files">
+  <table class="table table-striped" id="media-files" data-csrf="{{csrf_tokens.files}}">
     <caption>Media Files</caption>
   <thead>
     <tr>
@@ -38,7 +38,7 @@
       <th class="codec">Codec</th>
       <th class="kid">KID</th>
       <th class="index"></th>
-	  <th class="delete"></th>
+      <th class="delete"></th>
     </tr>
   </thead>
   <tbody>
@@ -49,7 +49,7 @@
   </tbody>
 </table>
 
-  <table class="table table-striped" id="keys">
+  <table class="table table-striped" id="keys" data-csrf="{{csrf_tokens.kids}}">
     <caption>Keys</caption>
   <thead><tr><th>KID</th><th>Key</th><th>Auto generated</th><th /></tr></thead>
   <tbody>
