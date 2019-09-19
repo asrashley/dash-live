@@ -3,19 +3,18 @@ import argparse
 import base64
 import datetime
 import io
+import os
 import struct
 import sys
 
-from bitstring import ConstBitStream
-from nal import Nal
 try:
-    import cStringIO as StringIO
+    import bitstring
 except ImportError:
-    import StringIO
-import utils
+    sys.path.append(os.path.join(os.path.dirname(__file__), "lib"))
+    import bitstring
 
-class ParseException(Exception):
-    pass
+from nal import Nal
+import utils
 
 # time values are in seconds since midnight, Jan. 1, 1904, in UTC time
 ISO_EPOCH = datetime.datetime(year=1904, month=1, day=1, tzinfo=utils.UTC())
