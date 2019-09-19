@@ -901,12 +901,12 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
             self.response.content_type='application/mp4'
         assert mod_segment>=0 and mod_segment<=representation.num_segments
         frag = representation.segments[mod_segment]
-        blob_reader = blobstore.BlobReader(mf.blob, position=frag.pos, buffer_size=frag.size)
-        data = utils.BufferedReader(None, data=blob_reader.read(frag.size))
-        atom = mp4.Mp4Atom(atom_type='wrap', position=0, size = frag.size, parent=None,
-                           children=mp4.Mp4Atom.create(data, readwrite=True))
-        #atom = mp4.Mp4Atom(atom_type='wrap', position=0, size = frag.size, parent=None,
-        #               children=mp4.Mp4Atom.create(blob_reader))
+        blob_reader = blobstore.BlobReader(mf.blob, position=frag.pos, buffer_size=16384)
+        src = utils.BufferedReader(blob_reader, offset=frag.pos, size=frag.size, buffersize=16384)
+        atom = mp4.Mp4Atom(atom_type='wrap', parent=None,
+                           children=mp4.Mp4Atom.create(src, readwrite=True))
+        if self.request.params.get('corrupt') is not None:
+            atom.moof.traf.trun.parse_samples(src, representation.nalLengthFieldFength)
         if segment_num==0 and representation.encrypted:
             keys = models.Key.get_kids(representation.kids)
             drms = self.generate_drm_dict()
@@ -939,7 +939,8 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
             except AttributeError:
                 pass
         self.add_allowed_origins()
-        data = atom.encode()
+        data = io.BytesIO()
+        atom.encode(data)
         if self.request.params.get('corrupt') is not None:
             try:
                 self.apply_corruption(representation, segment_num, atom, data)
@@ -947,7 +948,7 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
                 self.response.write('Invalid CGI parameter %s: %s'%(self.request.params.get('corrupt'),str(e)))
                 self.response.set_status(400)
                 return
-        data = data[8:] # [8:] is to skip the fake "wrap" box
+        data = data.getvalue()[8:] # [8:] is to skip the fake "wrap" box
         try:
             start,end = self.get_http_range(frag.size)
             if start is not None:
@@ -957,26 +958,20 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
             self.response.set_status(400)
             return
         self.response.headers.add_header('Accept-Ranges','bytes')
-        self.response.write(data)
+        self.response.out.write(data)
 
-    def apply_corruption(self, representation, segment_num, atom, data):
-        mem = memoryview(data)
+    def apply_corruption(self, representation, segment_num, atom, dest):
         try:
             corrupt_frames = int(self.request.params.get('frames','4'),10)
         except ValueError:
             corrupt_frames = 4
         for d in self.request.params.get('corrupt').split(','):
-            if int(d,10) != segment_num:
+            try:
+                d = int(d, 10)
+            except ValueError:
                 continue
-            # put junk data in the last 2% of the segment
-            #junk_count = frag.size//(50*len(filling))
-            #junk_size = junk_count*len(filling)
-            atom.moof.traf.trun.parse_samples(data, representation.nalLengthFieldFength)
-            #hdr = mp4.Mp4Atom.parse_atom_header(src)
-            #while hdr and hdr['type']!='mdat':
-            #    src.seek(hdr['position']+hdr['size'])
-            #    hdr = mp4.Mp4Atom.parse_atom_header(src)
-            #del src
+            if d != segment_num:
+                continue
             for sample in atom.moof.traf.trun.samples:
                 if corrupt_frames<=0:
                     break
@@ -988,8 +983,8 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
                         if junk_count:
                             junk_size = len(junk)*junk_count
                             offset =  nal.position + nal.size - junk_size
-                            mem[offset:offset+junk_size] = junk_count*junk
-                            #data = ''.join([data[:offset], junk_count*junk, data[offset+junk_size:]])
+                            dest.seek(offset)
+                            dest.write(junk_count*junk)
                             corrupt_frames -= 1
                             if corrupt_frames<=0:
                                 break

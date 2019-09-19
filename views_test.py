@@ -604,6 +604,43 @@ class TestHandlers(GAETestCase):
                              'Decode time {:d} should be {:d} for segment {:d} in {}'.format(
                                  seg_dt, decode_time, seg_num, media_url))
 
+    def test_request_unknown_media(self):
+        url = self.from_uri("dash-media", mode="vod", filename="notfound", segment_num=1, ext="mp4")
+        response = self.app.get(url, status=404)
+
+    def test_injected_http_error_codes(self):
+        self.setup_media()
+        self.logoutCurrentUser()
+        media_files = models.MediaFile.all()
+        self.assertGreater(len(media_files), 0)
+        for seg in range(1,5):
+            url = self.from_uri("dash-media", mode="vod",
+                                filename=media_files[0].representation.id,
+                                segment_num=seg, ext="mp4", absolute=True)
+            response = self.app.get(url)
+            for code in [404, 410, 503, 504]:
+                if seg in [1,3]:
+                    status=code
+                else:
+                    status=200
+                response = self.app.get(url, {str(code): '1,3'}, status=status)
+
+    def test_video_corruption(self):
+        self.setup_media()
+        self.logoutCurrentUser()
+        media_files = models.MediaFile.all()
+        self.assertGreater(len(media_files), 0)
+        for seg in range(1,5):
+            url = self.from_uri("dash-media", mode="vod",
+                                filename=media_files[0].representation.id,
+                                segment_num=seg, ext="mp4", absolute=True)
+            clean = self.app.get(url)
+            corrupt = self.app.get(url, {'corrupt': '1,2'})
+            if seg < 3:
+                self.assertNotEqual(clean.body, corrupt.body)
+            else:
+                self.assertEqual(clean.body, corrupt.body)
+
     def test_add_full_key_pair(self):
         self.assertEqual(len(models.Key.all()), 0)
         
