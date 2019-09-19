@@ -1,4 +1,4 @@
-
+from abc import ABCMeta, abstractmethod
 import argparse
 import base64
 import datetime
@@ -22,14 +22,53 @@ ISO_EPOCH = datetime.datetime(year=1904, month=1, day=1, tzinfo=utils.UTC())
 MP4_BOXES = {}
 MP4_DESCRIPTORS = {}
 
-class Mp4Atom(object):
+def from_iso_epoch(delta):
+    rv = ISO_EPOCH + datetime.timedelta(seconds=delta)
+    return rv
+
+def to_iso_epoch(dt):
+    delta = dt - ISO_EPOCH
+    return long(delta.total_seconds())
+
+class NamedObject(object):
+    __metaclass__ = ABCMeta
+
+    @property
+    def classname(self):
+        clz = type(self)
+        if clz.__module__.startswith('__'):
+            return clz.__name__
+        return clz.__module__ + '.' + clz.__name__
+
+    def __repr__(self):
+        fields = self._field_repr()
+        fields = ','.join(fields)
+        return ''.join([self.classname, '(', fields, ')'])
+
+    @abstractmethod
+    def _field_repr(self, exclude=[]):
+        return []
+
+
+class Mp4Atom(NamedObject):
     #MEMBERS = [ "position", "size", "parent", "children", "descriptors" ]
     parse_children=False
+    include_atom_type=False
 
     def __init__(self, **kwargs):
-        self._fields = { "atom_type": kwargs["atom_type"] }
+        try:
+            atom_type = { "atom_type": kwargs["atom_type"] }
+        except KeyError:
+            atom_type = None
+            for k,v in MP4_BOXES.iteritems():
+                if v == type(self):
+                    atom_type =  k
+                    break
+            if atom_type is None:
+                raise KeyError("atom_type")
+        self._fields = { "atom_type": atom_type }
         self.position = kwargs.get("position")
-        self.size = kwargs.get("size")
+        self.size = kwargs.get("size", 0)
         self.parent = kwargs.get("parent")
         self.children = kwargs.get("children", [])
         self.descriptors = kwargs.get("descriptors", [])
@@ -52,8 +91,11 @@ class Mp4Atom(object):
             elif c.atom_type==name:
                 return c
         for d in self.descriptors:
-            if d.__class__.__name__==name:
+            if type(d).__name__ == name:
                 return d
+            v = getattr(d, name)
+            if v is not None:
+                return v
         raise AttributeError(name)
 
     def _invalidate(self):
@@ -77,7 +119,7 @@ class Mp4Atom(object):
                 self.remove_child(idx)
                 return
         for idx, d in enumerate(self.descriptors):
-            if d.__class__.__name__==name:
+            if type(d).__name__==name:
                 del self.descriptors[idx]
                 if d.size:
                     self.size -= d.size
@@ -87,24 +129,28 @@ class Mp4Atom(object):
         
     def _field_repr(self, exclude=[]):
         fields = []
-        exclude = exclude + ['atom_type']
+        if not self.include_atom_type:
+            exclude = exclude + ['atom_type']
         for k,v in self._fields.iteritems():
             if k[0] != '_' and not k in exclude:
-                if isinstance(v, (list,dict)):
-                    if not v:
-                        continue
-                fields.append('%s=%s'%(k,str(v)))
+                if isinstance(v, (datetime.date, datetime.datetime,datetime.time)):
+                    v = 'utils.from_isodatetime("%s")'%(utils.toIsoDateTime(v))
+                elif isinstance(v, (datetime.timedelta)):
+                    v = 'utils.from_isodatetime("%s")'%(utils.toIsoDuration(v))
+                else:
+                    v = repr(v)
+                fields.append('%s=%s'%(k, v))
+        if self.children:
+            ch = map(repr, self.children)
+            fields.append('children=[%s]'%(','.join(ch)))
+        if self.descriptors:
+            fields.append('descriptors=[%s]'%(map(repr, self.descriptors)))
         return fields
 
     def _int_field_repr(self, fields, names):
         for name in names:
             fields.append('%s=%d'%(name,self.__getattribute__(name)))
         return fields
-
-    def __repr__(self):
-        fields = self._field_repr()
-        fields = ','.join(fields)
-        return ''.join([self.atom_type,'(',fields,')'])
 
     def find_parent(self,atom_type):
         if self.parent:
@@ -169,15 +215,15 @@ class Mp4Atom(object):
             try:
                 Box = MP4_BOXES[hdr['atom_type']]
             except KeyError,k:
-                Box = Mp4Atom
-            #print('create',hdr['atom_type'], Box.__class__.__name__)
+                Box = UnknownBox
+            #print('create', hdr['atom_type'], Box.__name__, hdr['position'], hdr['size'])
             kwargs = Box.parse(src, parent)
             atom = Box(**kwargs)
             atom.payload_start = src.tell()
             rv.append(atom)
             if atom.parse_children:
                 Mp4Atom.create(src, atom, readwrite)
-            if readwrite:
+            if readwrite and not atom.children:
                 src.seek(hdr["position"])
                 atom._encoded = src.read(atom.size)
             cursor += atom.size
@@ -253,20 +299,16 @@ class Mp4Atom(object):
         end = kwargs["position"]+kwargs["size"]
         while src.tell()<end:
             d = Descriptor.create(src, parent)
-            assert isinstance(d, Descriptor)
             descriptors.append(d)
-            dc = d
-            while src.tell() < (d.position+d.size):
-                dc = Descriptor.create(src, dc)
-                descriptors.append(dc)
             src.seek(d.position + d.size + d.header_size)
         return descriptors
 
     def encode(self, dest=None):
         out = dest
         if out is None:
-            out = StringIO.StringIO()
-        #print('encode',self.atom_type, self.size, out.tell())
+            out = io.BytesIO()
+        self.position = out.tell()
+        #print('encode',self.atom_type, self.position, self.size)
         if self._encoded is not None:
             #print('  _encoded=',len(self._encoded))
             out.write(self._encoded)
@@ -279,7 +321,6 @@ class Mp4Atom(object):
         else:
             assert len(self.atom_type)==4
             t = self.atom_type
-        self.position = out.tell()
         out.write(struct.pack('>I', 4+len(t)))
         out.write(t)
         self.encode_fields(dest=out)
@@ -290,7 +331,7 @@ class Mp4Atom(object):
         # replace the length field
         out.write(struct.pack('>I', self.size))
         out.seek(0,2) # seek to end
-        #print('  produced',self.size)
+        #print(self.atom_type,'produced',self.size)
         if dest is None:
             return out.getvalue()
         return dest
@@ -304,25 +345,83 @@ class Mp4Atom(object):
         for c in self.children:
             c.dump(indent+'  ')
 
-class Descriptor(object):
+class UnknownBox(Mp4Atom):
+    include_atom_type = True
+
+    @classmethod
+    def parse(clz, src, parent):
+        kwargs = Mp4Atom.parse(src, parent)
+        hdr_sz = src.tell() - kwargs["position"]
+        size = kwargs["size"] - hdr_sz
+        kwargs["data"] = src.read(size)
+        return kwargs
+
+    def _field_repr(self, **args):
+        if not args.has_key('exclude'):
+            args['exclude'] = []
+        args['exclude'].append('data')
+        fields = super(UnknownBox, self)._field_repr(**args)
+        fields.append('data=base64.b64decode("%s")'%base64.b64encode(self.data))
+        return fields
+
+    def encode_fields(self, dest):
+        dest.write(self.data)
+
+class Descriptor(NamedObject):
     def __init__(self, tag, parent, **kwargs):
         self.tag = tag
         self.parent = parent
+        self.children = []
+        self._encoded = None
         for key, value in kwargs.iteritems():
             setattr(self, key, value)
 
     @classmethod
+    def peek(cls, src, parent):
+        position = src.tell()
+        header_size=1
+        data = src.peek(header_size)
+        if not data:
+            return None
+        tag = struct.unpack('B', data[0])[0]
+        more_bytes = True
+        size = 0
+        while more_bytes:
+            header_size += 1
+            data = src.peek(header_size)
+            if len(data) < header_size:
+                data = src.peek(header_size)
+                if len(data) < header_size:
+                    return None
+            b = struct.unpack('B', data[header_size-1])[0]
+            more_bytes = b & 0x80
+            size = (size<<7) + (b&0x7f)
+        return {
+            "position": position,
+            "tag": tag,
+            "header_size": header_size,
+            "size": size,
+        }
+
+    @classmethod
     def create(clz, src, parent, **kwargs):
-        pos = src.tell()
-        tag = struct.unpack('B', src.read(1))[0]
+        d = Descriptor.peek(src, parent)
         try:
-            Desc = MP4_DESCRIPTORS[tag]
+            Desc = MP4_DESCRIPTORS[d["tag"]]
         except KeyError:
-            Desc = Descriptor
-        src.seek(pos)
+            Desc = UnknownDescriptor
+        total_size = d["size"] + d["header_size"]
+        #print('create descriptor', d["tag"], Desc.__name__, d["position"], total_size)
+        encoded = src.peek(total_size)[:total_size]
         kw = Desc.parse(src, parent)
         del kw["tag"]
-        return Desc(tag, parent, **kw)
+        rv = Desc(tag=d["tag"], parent=parent, **kw)
+        rv._encoded = encoded
+        while src.tell() < (rv.position+rv.size):
+            dc = Descriptor.create(src, rv)
+            rv.children.append(dc)
+            src.seek(dc.position + dc.size + dc.header_size)
+        return rv
 
     @classmethod
     def parse(clz, src, parent):
@@ -343,17 +442,72 @@ class Descriptor(object):
             "size": size,
         }
 
-    def _field_repr(self):
+    def encode(self, dest, payload=None):
+        if self._encoded is not None:
+            dest.write(self._encoded)
+            return
+        dest.write(struct.pack('B', self.tag))
+        if payload is not None:
+            self.size = len(payload)
+        sizes=[]
+        sz = self.size
+        while sz > 0x7f:
+            sizes.append(size & 0x7f)
+            size = size >> 7
+        sizes.append(size & 0x7f)
+        while sizes:
+            a = sizes.pop(0)
+            flag = 0x80 if sizes else 0x00
+            dest.write(struct.pack('B', a + flag))
+        if payload is not None:
+            dest.write(payload)
+        else:
+            self.encode_fields(dest)
+            for ch in self.children:
+                ch.encode(dest)
+
+    def encode_fields(self, dest):
+        pass
+
+    def __getattr__(self, name):
+        for d in self.children:
+            if type(d).__name__ == name:
+                return d
+            v = getattr(d, name)
+            if v is not None:
+                return v
+        raise AttributeError(name)
+
+    def _field_repr(self, exclude=[]):
         rv = []
+        exclude += ['parent', 'children']
         for k,v in self.__dict__.iteritems():
-            if k!='parent':
+            if k[0]!='_' and k not in exclude:
                 rv.append('%s=%s'%(k,str(v)))
+        if self.children:
+            ch = map(repr, self.children)
+            rv.append('children=[%s]'%(', '.join(ch)))
         return rv
-        #return ['tag=0x%x'%self.tag, 'size=%d'%self.size,'position=%d'%self.position]
-    def __repr__(self):
-        fields = self._field_repr()
-        fields = ','.join(fields)
-        return ''.join([ self.__class__.__name__, '(',fields,')'])
+
+class UnknownDescriptor(Descriptor):
+    include_atom_type = True
+
+    @classmethod
+    def parse(clz, src, parent):
+        kwargs = Descriptor.parse(src, parent)
+        kwargs["data"] = src.read(kwargs["size"])
+        return kwargs
+
+    def _field_repr(self, **args):
+        if not args.has_key('exclude'):
+            args['exclude'] = []
+        args['exclude'].append('data')
+        fields = super(UnknownDescriptor, self)._field_repr(**args)
+        fields.append('data=base64.b64decode("%s")'%base64.b64encode(self.data))
+        return fields
+
+    def encode_fields(self, dest):
+        dest.write(self.data)
 
 class ESDescriptor(Descriptor):
     @classmethod
@@ -403,7 +557,7 @@ class DecoderSpecificInfo(Descriptor):
         rv = Descriptor.parse(src, parent)
         rv["object_type"] = parent.object_type
         data = src.read(rv["size"])
-        bs = ConstBitStream(bytes=data)
+        bs = bitstring.ConstBitStream(bytes=data)
         if rv["object_type"]==0x40: # Audio ISO/IEC 14496-3 subpart 1
             rv["audio_object_type"] = bs.read('uint:5')
             rv["sampling_frequency_index"] = bs.read('uint:4')
@@ -460,8 +614,19 @@ class FullBox(Mp4Atom):
 
 class BoxWithChildren(Mp4Atom):
     parse_children = True
+    include_atom_type = True
 
-for box in ['mdia', 'minf', 'mvex', 'moof', 'moov', 'schi', 'sinf', 'stbl', 'traf', 'trak']:
+class MovieBox(BoxWithChildren):
+    include_atom_type = False
+    pass
+MP4_BOXES['moov'] = MovieBox
+
+class TrackBox(BoxWithChildren):
+    include_atom_type = False
+    pass
+MP4_BOXES['trak'] = TrackBox
+
+for box in ['mdia', 'minf', 'mvex', 'moof', 'schi', 'sinf', 'stbl', 'traf']:
     MP4_BOXES[box] = BoxWithChildren
 
 class SampleEntry(Mp4Atom):
@@ -473,24 +638,60 @@ class SampleEntry(Mp4Atom):
         kwargs["data_reference_index"] = struct.unpack('>H', src.read(2))[0]
         return kwargs
 
+    def encode_fields(self, dest):
+        dest.write('\0' * 6) # reserved
+        dest.write(struct.pack('>H', self.data_reference_index))
+
 class VisualSampleEntry(SampleEntry):
     parse_children = True
     @classmethod
     def parse(self, src, parent):
         kwargs = SampleEntry.parse(src, parent)
-        kwargs["pre_defined"] = struct.unpack('>H', src.read(2))[0]
-        src.read(2) # reserved
-        src.read(12) # unsigned int(32)[3] pre_defined = 0;
+        kwargs["version"] = struct.unpack('>H', src.read(2))[0]
+        kwargs["revision"] = struct.unpack('>H', src.read(2))[0]
+        kwargs["vendor"] = struct.unpack('>I', src.read(4))[0]
+        kwargs["temporal_quality"] = struct.unpack('>I', src.read(4))[0]
+        kwargs["spatial_quality"] = struct.unpack('>I', src.read(4))[0]
         kwargs["width"] = struct.unpack('>H', src.read(2))[0]
         kwargs["height"] = struct.unpack('>H', src.read(2))[0]
         kwargs["horizresolution"] = struct.unpack('>I', src.read(4))[0] / 65536.0
         kwargs["vertresolution"] = struct.unpack('>I', src.read(4))[0] / 65536.0
-        src.read(4) # reserved
+        kwargs["entry_data_size"] = struct.unpack('>I', src.read(4))[0]
         kwargs["frame_count"] = struct.unpack('>H', src.read(2))[0]
         kwargs["compressorname"] = src.read(32)
-        kwargs["depth"] = struct.unpack('>H', src.read(2))[0]
-        src.read(2) # int(16) pre_defined = -1;
+        kwargs["bit_depth"] = struct.unpack('>H', src.read(2))[0]
+        kwargs["colour_table"] = struct.unpack('>H', src.read(2))[0]
         return kwargs
+
+    def encode_fields(self, dest):
+        super(VisualSampleEntry, self).encode_fields(dest)
+        dest.write(struct.pack('>H', self.version))
+        dest.write(struct.pack('>H', self.revision))
+        dest.write(struct.pack('>I', self.vendor))
+        dest.write(struct.pack('>I', self.temporal_quality))
+        dest.write(struct.pack('>I', self.spatial_quality))
+        dest.write(struct.pack('>H', self.width))
+        dest.write(struct.pack('>H', self.height))
+        dest.write(struct.pack('>I', long(self.horizresolution * 65536.0)))
+        dest.write(struct.pack('>I', long(self.vertresolution * 65536.0)))
+        dest.write(struct.pack('>I', self.entry_data_size))
+        dest.write(struct.pack('>H', self.frame_count))
+        c = self.compressorname + '\0'*32
+        dest.write(c[:32])
+        dest.write(struct.pack('>H', self.bit_depth))
+        dest.write(struct.pack('>H', self.colour_table))
+
+class AVC1SampleEntry(VisualSampleEntry):
+    pass
+MP4_BOXES['avc1'] = AVC1SampleEntry
+
+class AVC3SampleEntry(VisualSampleEntry):
+    pass
+MP4_BOXES['avc3'] = AVC3SampleEntry
+
+class EncryptedSampleEntry(VisualSampleEntry):
+    pass
+MP4_BOXES['encv'] = EncryptedSampleEntry
 
 class AVCConfigurationBox(Mp4Atom):
     #class AVCDecoderConfigurationRecord(object):
@@ -517,13 +718,23 @@ class AVCConfigurationBox(Mp4Atom):
             pictureParameterSetNALUnit = src.read(pictureParameterSetLength)
             kwargs["pps"].append(pictureParameterSetNALUnit)
         return kwargs
-MP4_BOXES['avcC'] = AVCConfigurationBox
 
-class AVCSampleEntry(VisualSampleEntry):
-    pass
-MP4_BOXES['avc1'] = AVCSampleEntry
-MP4_BOXES['avc3'] = AVCSampleEntry
-MP4_BOXES['encv'] = AVCSampleEntry
+    def encode_fields(self, dest):
+        dest.write(struct.pack('B', self.configurationVersion))
+        dest.write(struct.pack('B', self.AVCProfileIndication))
+        dest.write(struct.pack('B', self.profile_compatibility))
+        dest.write(struct.pack('B', self.AVCLevelIndication))
+        dest.write(struct.pack('B', 0xFC + (self.lengthSizeMinusOne &0x03)))
+        dest.write(struct.pack('B', 0xE0 + (len(self.sps) & 0x1F)))
+        for sps in self.sps:
+            dest.write(struct.pack('>H', len(sps)))
+            dest.write(sps)
+        dest.write(struct.pack('B', len(self.pps) & 0x1F))
+        for pps in self.pps:
+            dest.write(struct.pack('>H', len(pps)))
+            dest.write(pps)
+
+MP4_BOXES['avcC'] = AVCConfigurationBox
 
 class EC3SampleEntry(SampleEntry):
     parse_children = True
@@ -537,44 +748,85 @@ class EC3SampleEntry(SampleEntry):
         kwargs["sampling_frequency"] = struct.unpack('>H', src.read(2))[0]
         src.read(2) # reserved
         return kwargs
+
+    def encode_fields(self, dest):
+        super(EC3SampleEntry, self).encode_fields(dest)
+        dest.write('\0' * 8) # reserved
+        dest.write(struct.pack('>H', self.channel_count))
+        dest.write(struct.pack('>H', self.sample_size))
+        dest.write('\0' * 4) # reserved
+        dest.write(struct.pack('>H', self.sampling_frequency))
+        dest.write('\0' * 2) # reserved
+
 MP4_BOXES['ec-3'] = EC3SampleEntry
+
+class EC3SubStream(NamedObject):
+    def __init__(self, **kwargs):
+        for key,value in kwargs.iteritems():
+            assert "src" != key
+            if not self.__dict__.has_key(key):
+                setattr(self, key, value)
+
+    @classmethod
+    def parse(clz, bs):
+        fscod = bs.read('uint:2')
+        bsid = bs.read('uint:5')
+        bsmod = bs.read('uint:5')
+        acmod = bs.read('uint:3')
+        channel_count = EC3SpecificBox.ACMOD_NUM_CHANS[acmod]
+        lfeon = bs.read('bool')
+        bs.read('uint:3') #reserved
+        num_dep_sub  = bs.read('uint:4')
+        if num_dep_sub>0:
+            chan_loc = bs.read('uint:9')
+        else:
+            bs.read('uint:1') #reserved
+        del bs
+        del clz
+        return locals()
+
+    def _field_repr(self):
+        fields = []
+        for k,v in self.__dict__.iteritems():
+            if k!='parent':
+                fields.append('%s=%s'%(k,str(v)))
+        return fields
+
+    def encode(self, dest):
+        #Note: dest is a bitstring.BitArray object
+        dest.append(bitstring.pack('uint:2, uint:5, uint:5, uint:3, bool',
+                                   self.fscod, self.bsid, self.bsmod, self.acmod,
+                                   self.lfeon))
+        dest.append(bitstring.Bits(uint=0, length=3)) # reserved
+        dest.append(bitstring.Bits(uint=self.num_dep_sub, length=4))
+        if self.num_dep_sub>0:
+            dest.append(bitstring.Bits(uint=self.chan_loc, length=9))
+        else:
+            dest.append(bitstring.Bits(uint=0, length=1)) # reserved
 
 class EC3SpecificBox(Mp4Atom):
     ACMOD_NUM_CHANS = [2,1,2,3,3,4,4,5]
-
-    class SubStream(object):
-        def __init__(self, bs):
-            self.fscod = bs.read('uint:2')
-            self.bsid = bs.read('uint:5')
-            self.bsmod = bs.read('uint:5')
-            self.acmod = bs.read('uint:3')
-            self.channel_count = EC3SpecificBox.ACMOD_NUM_CHANS[self.acmod]
-            self.lfeon = bs.read('bool')
-            bs.read('uint:3') #reserved
-            self.num_dep_sub  = bs.read('uint:4')
-            if self.num_dep_sub>0:
-                self.chan_loc = bs.read('uint:9')
-            else:
-                bs.read('uint:1') #reserved
-        def __repr__(self):
-            fields = []
-            for k,v in self.__dict__.iteritems():
-                if k!='parent':
-                    fields.append('%s=%s'%(k,str(v)))
-            fields = ','.join(fields)
-            return ''.join([ self.__class__.__name__, '(',fields,')'])
 
     @classmethod
     def parse(clz, src, parent):
         kwargs = Mp4Atom.parse(src, parent)
         data = src.read(kwargs["size"])
-        bs = ConstBitStream(bytes=data)
+        bs = bitstring.ConstBitStream(bytes=data)
         kwargs["data_rate"] = bs.read('uint:13')
         num_ind_sub = 1+bs.read('uint:3')
         kwargs["substreams"] = []
         for i in range(num_ind_sub):
-            kwargs["substreams"].append(EC3SpecificBox.SubStream(bs))
+            sub = EC3SubStream.parse(bs)
+            kwargs["substreams"].append(EC3SubStream(**sub))
         return kwargs
+
+    def encode_fields(self, dest):
+        ba = bitstring.BitArray()
+        ba.append(bitstring.pack('uint:13, uint:3', self.data_rate, len(self.substreams)-1))
+        for sub in self.substreams:
+            sub.encode(ba)
+        dest.write(ba.bytes)
+
 MP4_BOXES['dec3'] = EC3SpecificBox
 
 class OriginalFormatBox(Mp4Atom):
@@ -583,6 +835,9 @@ class OriginalFormatBox(Mp4Atom):
         kwargs = Mp4Atom.parse(src, parent)
         kwargs["data_format"] = src.read(4)
         return kwargs
+
+    def encode_fields(self, dest):
+        dest.write(self.data_format)
 MP4_BOXES['frma'] = OriginalFormatBox
 
 class MP4A(Mp4Atom):
@@ -596,29 +851,48 @@ class MP4A(Mp4Atom):
         kwargs["timescale"] = struct.unpack('>H', src.read(2))[0]
         src.read(2) # (16) reserved
         return kwargs
+
+    def encode_fields(self, dest):
+        dest.write('\0' * 6) # reserved
+        dest.write(struct.pack('>H', self.data_reference_index))
+        dest.write('\0' * (8+4+4)) # (32)[2], (16)[2], (32) reserved
+        dest.write(struct.pack('>H', self.timescale))
+        dest.write('\0' * 2) # reserved
+
+class EncryptedMP4A(MP4A):
+    pass
+
 MP4_BOXES['mp4a'] = MP4A
-MP4_BOXES['enca'] = MP4A
+MP4_BOXES['enca'] = EncryptedMP4A
 
 
 class ESDescriptorBox(FullBox):
-    #def __init__(self, *args, **kwargs):
-    #    super(ESDescriptorBox, self).__init__(*args, **kwargs)
-    #    self.descriptors = map(lambda d: Descriptor.from_kwargs(**d), self.descriptors)
-    
     @classmethod
     def parse(clz, src, parent):
         kwargs = FullBox.parse(src, parent)
-        kwargs["descriptors"] = FullBox.create_descriptors(src, **kwargs)
+        kwargs["descriptors"] = Mp4Atom.create_descriptors(src, **kwargs)
         return kwargs
+
+    def encode_fields(self, dest):
+        super(ESDescriptorBox, self).encode_fields(dest)
+        for d in self.descriptors:
+            d.encode(dest)
+
 MP4_BOXES['esds'] = ESDescriptorBox
 
 class SampleDescriptionBox(FullBox):
     parse_children = True
+
     @classmethod
     def parse(clz, src, parent):
         kwargs = FullBox.parse(src, parent)
         kwargs["entry_count"] = struct.unpack('>I', src.read(4))[0]
         return kwargs
+
+    def encode_fields(self, dest):
+        super(SampleDescriptionBox, self).encode_fields(dest)
+        dest.write(struct.pack('>I', self.entry_count))
+
 MP4_BOXES['stsd'] = SampleDescriptionBox
 
 class TrackFragmentHeaderBox(FullBox):
@@ -628,6 +902,7 @@ class TrackFragmentHeaderBox(FullBox):
     default_sample_size_present = 0x000010
     default_sample_flags_present = 0x000020
     duration_is_empty = 0x010000
+    default_base_is_moof = 0x020000
 
     def __init__(self, *args, **kwargs):
         super(TrackFragmentHeaderBox, self).__init__(*args, **kwargs)
@@ -638,7 +913,7 @@ class TrackFragmentHeaderBox(FullBox):
     @classmethod
     def parse(clz, src, parent):
         kwargs = FullBox.parse(src, parent)
-        kwargs["base_data_offset"] = 0
+        kwargs["base_data_offset"] = None
         kwargs["sample_description_index"] = 0
         kwargs["default_sample_duration"] = 0
         kwargs["default_sample_size"] = 0
@@ -646,8 +921,8 @@ class TrackFragmentHeaderBox(FullBox):
         kwargs["track_id"] = struct.unpack('>I', src.read(4))[0]
         if kwargs["flags"] & clz.base_data_offset_present:
             kwargs["base_data_offset"] = struct.unpack('>Q', src.read(8))[0]
-        else:
-            kwargs["base_data_offset"] = None
+        elif kwargs["flags"] & clz.default_base_is_moof:
+            kwargs["base_data_offset"] = parent.find_parent('moof').position
         if kwargs["flags"] & clz.sample_description_index_present:
             kwargs["sample_description_index"] = struct.unpack('>I', src.read(4))[0]
         if kwargs["flags"] & clz.default_sample_duration_present:
@@ -663,6 +938,7 @@ class TrackFragmentHeaderBox(FullBox):
         fields.append('default_sample_flags=0x%08x'%self.default_sample_flags)
         return fields
 MP4_BOXES['tfhd'] = TrackFragmentHeaderBox
+
 
 class TrackHeaderBox(FullBox):
     Track_enabled    = 0x000001
@@ -687,6 +963,8 @@ class TrackHeaderBox(FullBox):
             kwargs["track_id"] = struct.unpack('>I', src.read(4))[0]
             src.read(4) # reserved
             kwargs["duration"] = struct.unpack('>I', src.read(4))[0]
+        kwargs["creation_time"] = from_iso_epoch(kwargs["creation_time"])
+        kwargs["modification_time"] = from_iso_epoch(kwargs["modification_time"])
         src.read(8) # 2 x 32 bits reserved
         kwargs["layer"] = struct.unpack('>H', src.read(2))[0]
         kwargs["alternate_group"] = struct.unpack('>H', src.read(2))[0]
@@ -697,9 +975,35 @@ class TrackHeaderBox(FullBox):
             kwargs["matrix"].append( struct.unpack('>I', src.read(4))[0] )
         kwargs["width"] = struct.unpack('>I', src.read(4))[0] / 65536.0 # value is fixed point 16.16
         kwargs["height"] = struct.unpack('>I', src.read(4))[0] / 65536.0 # value is fixed point 16.16
-        kwargs["creation_time"] = ISO_EPOCH + datetime.timedelta(seconds=kwargs["creation_time"])
-        kwargs["modification_time"] = ISO_EPOCH + datetime.timedelta(seconds=kwargs["modification_time"])
         return kwargs
+
+    def encode_fields(self, dest):
+        self.flags = 0
+        if self.is_enabled:
+            self.flags |= self.Track_enabled
+        if self.in_movie:
+            self.flags |= self.Track_in_movie
+        if self.in_preview:
+            self.flags |= self.Track_in_preview
+        super(TrackHeaderBox, self).encode_fields(dest)
+        if self.version == 1:
+            sz = '>Q'
+        else:
+            sz = '>I'
+        dest.write(struct.pack(sz, to_iso_epoch(self.creation_time)))
+        dest.write(struct.pack(sz, to_iso_epoch(self.modification_time)))
+        dest.write(struct.pack('>I', self.track_id))
+        dest.write('\0' * 4) # reserved
+        dest.write(struct.pack(sz, self.duration))
+        dest.write('\0' * 8) # reserved
+        dest.write(struct.pack('>H', self.layer))
+        dest.write(struct.pack('>H', self.alternate_group))
+        dest.write(struct.pack('>H', int(self.volume * 256.0)))
+        dest.write('\0' * 2) # reserved
+        for m in self.matrix:
+            dest.write(struct.pack('>I', m))
+        dest.write(struct.pack('>I', long(self.width * 65536.0)))
+        dest.write(struct.pack('>I', long(self.height * 65536.0)))
 MP4_BOXES['tkhd'] = TrackHeaderBox
 
 class TrackFragmentDecodeTimeBox(FullBox):
@@ -713,7 +1017,7 @@ class TrackFragmentDecodeTimeBox(FullBox):
         return kwargs
 
     def encode_fields(self, dest):
-        payload = StringIO.StringIO()
+        payload = io.BytesIO()
         if self.base_media_decode_time > long(1<<32):
             self.version = 1
         else:
@@ -736,7 +1040,17 @@ class TrackExtendsBox(FullBox):
         kwargs["default_sample_size"]  = struct.unpack('>I', src.read(4))[0]
         kwargs["default_sample_flags"] = struct.unpack('>I', src.read(4))[0]
         return kwargs
+
+    def encode_fields(self, dest):
+        super(TrackExtendsBox, self).encode_fields(dest)
+        dest.write(struct.pack('>I', self.track_id))
+        dest.write(struct.pack('>I', self.default_sample_description_index))
+        dest.write(struct.pack('>I', self.default_sample_duration))
+        dest.write(struct.pack('>I', self.default_sample_size))
+        dest.write(struct.pack('>I', self.default_sample_flags))
+
 MP4_BOXES['trex'] = TrackExtendsBox
+
 
 class MediaHeaderBox(FullBox):
     @classmethod
@@ -752,17 +1066,28 @@ class MediaHeaderBox(FullBox):
             kwargs["modification_time"] = struct.unpack('>I', src.read(4))[0]
             kwargs["timescale"] = struct.unpack('>I', src.read(4))[0]
             kwargs["duration"] = struct.unpack('>I', src.read(4))[0]
-        kwargs["creation_time"] = ISO_EPOCH + datetime.timedelta(seconds=kwargs["creation_time"])
-        kwargs["modification_time"] = ISO_EPOCH + datetime.timedelta(seconds=kwargs["modification_time"])
+        kwargs["creation_time"] = from_iso_epoch(kwargs["creation_time"])
+        kwargs["modification_time"] = from_iso_epoch(kwargs["modification_time"])
         tmp = struct.unpack('>H', src.read(2))[0]
         kwargs["language"] = chr(0x60+((tmp>>10)&0x1F)) + chr(0x60+((tmp>>5)&0x1F)) + chr(0x60+(tmp&0x1F))
+        src.read(2) # unsigned int(16) pre_defined = 0
         return kwargs
 
-    def _field_repr(self):
-        fields = super(MediaHeaderBox,self)._field_repr(exclude=['creation_time','modification_time'])
-        fields.append('creation_time=%s'%utils.toIsoDateTime(self.creation_time))
-        fields.append('modification_time=%s'%utils.toIsoDateTime(self.modification_time))
-        return fields
+    def encode_fields(self, dest):
+        super(MediaHeaderBox, self).encode_fields(dest)
+        if self.version == 1:
+            sz = '>Q'
+        else:
+            sz = '>I'
+        dest.write(struct.pack(sz, to_iso_epoch(self.creation_time)))
+        dest.write(struct.pack(sz, to_iso_epoch(self.modification_time)))
+        dest.write(struct.pack('>I', self.timescale))
+        dest.write(struct.pack(sz, self.duration))
+        chars = map(lambda c: ord(c) - 0x60, list(self.language))
+        lang = (chars[0] << 10) + (chars[1] << 5) + chars[2]
+        dest.write(struct.pack('>H', lang))
+        dest.write(struct.pack('>H', 0)) # pre_defined
+
 MP4_BOXES['mdhd'] = MediaHeaderBox
 
 class MovieFragmentHeaderBox(FullBox):
@@ -788,6 +1113,14 @@ class HandlerBox(FullBox):
         name_len = kwargs["position"] + kwargs["size"] - src.tell()
         kwargs["name"] = src.read(name_len)
         return kwargs
+
+    def encode_fields(self, dest):
+        super(HandlerBox, self).encode_fields(dest)
+        dest.write('\0' * 4) # pre_defined = 0
+        dest.write(self.handler_type)
+        dest.write('\0' * 12) # reserved = 0
+        dest.write(self.name)
+
 MP4_BOXES['hdlr'] = HandlerBox
 
 class MovieExtendsHeaderBox(FullBox):
@@ -799,6 +1132,13 @@ class MovieExtendsHeaderBox(FullBox):
         else:
             kwargs["fragment_duration"] = struct.unpack('>I', src.read(4))[0]
         return kwargs
+
+    def encode_fields(self, dest):
+        super(MovieExtendsHeaderBox, self).encode_fields(dest)
+        if self.version == 1:
+            dest.write(struct.pack('>Q', self.fragment_duration))
+        else:
+            dest.write(struct.pack('>I', self.fragment_duration))
 MP4_BOXES['mehd'] = MovieExtendsHeaderBox
 
 
@@ -830,7 +1170,7 @@ class SampleAuxiliaryInformationSizesBox(FullBox):
         return info_type
 
     def encode_fields(self, dest):
-        payload = StringIO.StringIO()
+        payload = io.BytesIO()
         if self.flags & 1:
             if isinstance(self.aux_info_type, basestring):
                 payload.write(self.aux_info_type)
@@ -860,7 +1200,7 @@ class SampleAuxiliaryInformationSizesBox(FullBox):
 MP4_BOXES['saiz'] = SampleAuxiliaryInformationSizesBox
 
 
-class CencSampleAuxiliaryData(object):
+class CencSampleAuxiliaryData(NamedObject):
     def __init__(self, **kwargs):
         for key,value in kwargs.iteritems():
             assert "src" != key
@@ -900,11 +1240,6 @@ class CencSampleAuxiliaryData(object):
                 subsamples.append('{"clear":%d, "encrypted":%d}'%(s["clear"], s["encrypted"]))
             rv.append('subsamples=[%s]'%(','.join(subsamples)))
         return rv
-
-    def __repr__(self):
-        fields = self._field_repr()
-        fields = ','.join(fields)
-        return ''.join([ self.__class__.__name__, '(',fields,')'])
 
 
 class CencSampleEncryptionBox(FullBox):
@@ -950,7 +1285,7 @@ class CencSampleEncryptionBox(FullBox):
         return kwargs
 
     def encode_fields(self, dest):
-        payload = StringIO.StringIO()
+        payload = io.BytesIO()
         if self.flags & 0x01:
             payload.write(struct.pack('>I', self.algorithm_id))
             payload.write(struct.pack('B', self.iv_size))
@@ -995,7 +1330,7 @@ class SampleAuxiliaryInformationOffsetsBox(FullBox):
         return kwargs
 
     def encode_fields(self, dest):
-        payload = StringIO.StringIO()
+        payload = io.BytesIO()
         if self.flags & 0x01:
             if isinstance(self.aux_info_type, basestring):
                 payload.write(self.aux_info_type)
@@ -1027,7 +1362,7 @@ SampleAuxiliaryInformationOffsetsBox.check_info_type = SampleAuxiliaryInformatio
 MP4_BOXES['saio'] = SampleAuxiliaryInformationOffsetsBox
 
 
-class TrackSample(object):
+class TrackSample(NamedObject):
     def __init__(self,index, offset):
         self.index = index
         self.offset = offset
@@ -1036,8 +1371,8 @@ class TrackSample(object):
         self.flags = None
         self.composition_time_offset = None
 
-    def __repr__(self, *args, **kwargs):
-        rv = [str(self.index),str(self.offset)]
+    def _field_repr(self):
+        rv = ['index='+str(self.index), 'offset='+str(self.offset)]
         if self.duration is not None:
             rv.append('duration=%d'%self.duration)
         if self.size is not None:
@@ -1046,7 +1381,8 @@ class TrackSample(object):
             rv.append('flags=0x%x'%self.flags)
         if self.composition_time_offset is not None:
             rv.append('composition_time_offset=%d'%self.composition_time_offset)
-        return ''.join(['TrackSample(', ','.join(rv), ')'])
+        return rv
+
 
 class TrackFragmentRunBox(FullBox):
     data_offset_present = 0x000001
@@ -1066,7 +1402,6 @@ class TrackFragmentRunBox(FullBox):
             kwargs["data_offset"] = struct.unpack('>i', src.read(4))[0]
         else:
             kwargs["data_offset"] = 0
-        kwargs["data_offset"] += tfhd.base_data_offset
         if kwargs["flags"] & clz.first_sample_flags_present:
             kwargs["first_sample_flags"] = struct.unpack('>I', src.read(4))[0]
         else:
@@ -1098,11 +1433,13 @@ class TrackFragmentRunBox(FullBox):
         return kwargs
 
     def parse_samples(self, src, nal_length_field_length):
+        tfhd = self.parent.tfhd
         for sample in self.samples:
-            pos = 0
+            pos = sample.offset + tfhd.base_data_offset
+            end = pos + sample.size
             sample.nals = []
-            while pos<sample.size:
-                src.seek(sample.offset+pos)
+            while pos < end:
+                src.seek(pos)
                 nal = Nal(src,nal_length_field_length)
                 pos += nal.size + nal_length_field_length
                 sample.nals.append(nal)
@@ -1149,18 +1486,17 @@ class ContentProtectionSpecificBox(FullBox):
         return kwargs
 
     def encode_fields(self, dest):
-        payload = StringIO.StringIO()
-        payload.write(self.system_id.decode('hex'))
+        super(ContentProtectionSpecificBox, self).encode_fields(dest)
+        dest.write(self.system_id.decode('hex'))
         if self.version > 0:
-            payload.write(struct.pack('>I', len(self.key_ids)))
+            dest.write(struct.pack('>I', len(self.key_ids)))
             for kid in self.key_ids:
-                payload.write(kid.decode('hex'))
+                dest.write(kid.decode('hex'))
         if self.data is None:
-            payload.write(struct.pack('>I',0))
+            dest.write(struct.pack('>I',0))
         else:
-            payload.write(struct.pack('>I',len(self.data)))
-            payload.write(self.data)
-        return super(ContentProtectionSpecificBox, self).encode_fields(dest=dest, payload=payload.getvalue())
+            dest.write(struct.pack('>I',len(self.data)))
+            dest.write(self.data)
 
     def _field_repr(self, **args):
         if not args.has_key('exclude'):
@@ -1211,5 +1547,4 @@ if __name__ == "__main__":
             if args.tree:
                 atom.dump()
             if args.show:
-                #print('show_atom', args.show[0], atom)
                 show_atom(args.show, atom)

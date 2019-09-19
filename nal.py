@@ -1,5 +1,8 @@
 import struct
 
+class ParseException(Exception):
+    pass
+
 class Nal(object):
     SLICE_NON_IDR=1
     SLICE_A=2
@@ -17,6 +20,8 @@ class Nal(object):
     def __init__(self, src, nal_length_field_length):
         self.position = src.tell()
         l = src.read(nal_length_field_length)
+        if len(l) != nal_length_field_length:
+            raise ParseException("Failed to read NAL length field: expected {:d} read {:d}".format(nal_length_field_length, len(l)))
         if nal_length_field_length<4:
             l = '\000'*(4-nal_length_field_length) + l
         self.size = struct.unpack('>I', l)[0]

@@ -174,8 +174,6 @@ class Representation(object):
                                 # 7 is a special case that means 7.1
                                 rv.numChannels=8
                         elif avc_type=="ec-3":
-                            print(avc)
-                            print(avc.dec3)
                             try:
                                 rv.sampleRate = avc.sampling_frequency
                                 rv.numChannels = avc.channel_count

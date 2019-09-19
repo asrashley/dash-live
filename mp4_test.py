@@ -22,13 +22,10 @@
 
 import base64
 import binascii
+import io
 import os
 import struct
 import unittest
-try:
-    import cStringIO as StringIO
-except ImportError:
-    import StringIO
 
 import mp4
 import utils
@@ -50,11 +47,16 @@ class DrmTest(unittest.TestCase):
                 raise AssertionError(msg)
             raise AssertionError(template.format(a,b))
                                                                 
-    def assertBuffersEqual(self, a, b):
-        self.assertEqual(len(a), len(b))
+    def assertBuffersEqual(self, a, b, name=None):
+        lmsg = 'Expected length {expected:d} does not match {actual:d}'
+        dmsg = 'Expected 0x{expected:02x} got 0x{actual:02x} at position {position:d}'
+        if name is not None:
+            lmsg = ': '.join([name, lmsg])
+            dmsg = ': '.join([name, dmsg])
+        self.assertEqual(len(a), len(b), lmsg.format(expected=len(a), actual=len(b)))
         for idx in range(len(a)):
             self.assertEqual(ord(a[idx]), ord(b[idx]),
-                'Expected 0x{:02x} got 0x{:02x} at position {}'.format(ord(a[idx]), ord(b[idx]), idx))
+                             dmsg.format(expected=ord(a[idx]), actual=ord(b[idx]), position=idx))
             
     def assertGreaterOrEqual(self, a, b, msg=None):
         self._assert_true(a>=b, a, b, msg, r'{} < {}')
@@ -69,7 +71,6 @@ class DrmTest(unittest.TestCase):
         self.assertEqual(atoms[3].atom_type, 'styp')
         self.assertEqual(atoms[4].atom_type, 'sidx')
         moov = atoms[2]
-        #moov.dump()
         self.assertEqual(len(moov.children), 3)
 
     def test_parse_encrypted_moov(self):
@@ -103,14 +104,13 @@ class DrmTest(unittest.TestCase):
         moov_size = moov.size
         moov.insert_child(0, pssh)
         new_moov_data = moov.encode()
-        self.assertEqual(len(new_moov_data), moov_size + len(enc_pssh))
         src = utils.BufferedReader(None, data=new_moov_data)
         new_moov = mp4.Mp4Atom.create(src)
+        self.assertEqual(len(new_moov_data), moov_size + len(enc_pssh))
         self.assertEqual(len(new_moov), 1)
         new_moov = new_moov[0]
         self.assertEqual(new_moov.atom_type, 'moov')
         self.assertEqual(len(new_moov.children), 4)
-        #new_moov.dump()
         
     def test_remove_box_from_moov(self):
         src = utils.BufferedReader(None, data=self.moov)
@@ -121,13 +121,11 @@ class DrmTest(unittest.TestCase):
         mvex = moov.mvex
         moov_size = moov.size
         del moov.mvex
-        #moov.dump()
         new_moov_data = moov.encode()
         self.assertEqual(len(new_moov_data), moov_size - mvex.size)
         src = utils.BufferedReader(None, data=new_moov_data)
         new_moov = mp4.Mp4Atom.create(src)
         self.assertEqual(len(new_moov), 1)
-        #new_moov[0].dump()
 
     def test_update_base_media_decode_time(self):
         src = utils.BufferedReader(None, data=self.segment)
@@ -157,8 +155,6 @@ class DrmTest(unittest.TestCase):
             data = moof.encode()
             src = utils.BufferedReader(None, data=data)
             new_moof = mp4.Mp4Atom.create(src)[0]
-            #new_moof.dump()
-            #print(moof.traf.tfdt)
             self.assertBuffersEqual(expected_data, data)
 
     def test_update_mfhd_sequence_number(self):
@@ -187,7 +183,108 @@ class DrmTest(unittest.TestCase):
         data = wrap.encode()
         self.assertEqual(len(data), len(self.moov)+8)
         self.assertBuffersEqual(data[8:], self.moov)
+
+    def test_create_all_boxes_in_moov(self):
+        src = utils.BufferedReader(None, data=self.moov)
+        wrap = mp4.Mp4Atom(atom_type='wrap', position=0, size = len(self.moov), parent=None,
+                           children=mp4.Mp4Atom.create(src))
+        moov = wrap.moov
+        for child in moov.children:
+            self.check_create_atom(child)
+
+        moov_data = self.moov[moov.position:moov.position+moov.size]
+        r = repr(moov)
+        moov = eval(r)
+        dest = io.BytesIO()
+        moov.encode(dest)
+        new_moov_data = dest.getvalue()
+        self.assertBuffersEqual(moov_data, new_moov_data)
+
+    def check_create_atom(self, child):
+        if child.children:
+            for ch in child.children:
+                self.check_create_atom(ch)
+        orig_data = self.moov[child.position:child.position+child.size]
+        r = repr(child)
+        ch2 = eval(r)
+        dest = io.BytesIO()
+        ch2.encode(dest)
+        new_child_data = dest.getvalue()
+        name = 'Encoding %s (%s)'%(child.classname, child.atom_type)
+        self.assertBuffersEqual(orig_data, new_child_data, name)            
+
+    def test_avc3_encoding_from_original(self):
+        src = utils.BufferedReader(None, data=self.moov)
+        atoms = mp4.Mp4Atom.create(src, readwrite=True)
+        self.assertEqual(len(atoms), 5)
+        self.assertEqual(atoms[2].atom_type, 'moov')
+        moov = atoms[2]
+        avc3 = moov.trak.mdia.minf.stbl.stsd.avc3
+        avc3_data = self.moov[avc3.position:avc3.position+avc3.size]
+        dest = io.BytesIO()
+        avc3.encode(dest)
+        new_avc3_data = dest.getvalue()
+        self.assertBuffersEqual(avc3_data, new_avc3_data)
+
+    def test_avc3_encoding_all_boxes(self):
+        src = utils.BufferedReader(None, data=self.moov)
+        atoms = mp4.Mp4Atom.create(src)
+        self.assertEqual(len(atoms), 5)
+        self.assertEqual(atoms[2].atom_type, 'moov')
+        moov = atoms[2]
+        avc3 = moov.trak.mdia.minf.stbl.stsd.avc3
+        avc3_data = self.moov[avc3.position:avc3.position+avc3.size]
+        dest = io.BytesIO()
+        avc3.encode(dest)
+        new_avc3_data = dest.getvalue()
+        self.assertBuffersEqual(avc3_data, new_avc3_data)
+
+        avcc = mp4.AVCConfigurationBox(AVCLevelIndication=31, AVCProfileIndication=77,
+                                       profile_compatibility=64, lengthSizeMinusOne=3,
+                                       configurationVersion=1, sps=[], pps=[])
+        avc3 = mp4.AVC3SampleEntry(atom_type="avc3", temporal_quality=0, compressorname="", vendor=0,
+                                  spatial_quality=0, frame_count=1, vertresolution=72.0,
+                                  height=504, width=896, bit_depth=24, data_reference_index=1,
+                                  colour_table=65535, version=0, horizresolution=72.0,
+                                  revision=0, entry_data_size=0,children=[avcc])
+        dest = io.BytesIO()
+        avc3.encode(dest)
+        new_avc3_data = dest.getvalue()
+        self.assertBuffersEqual(avc3_data, new_avc3_data)
+
+        avc3 = eval(repr(avc3))
+        dest = io.BytesIO()
+        avc3.encode(dest)
+        new_avc3_data = dest.getvalue()
+        self.assertBuffersEqual(avc3_data, new_avc3_data)
+
+    def test_eac3_specific_box(self):
+        with open("fixtures/eac3-moov.mp4", "rb") as f:
+            src_data = f.read()
+        src = utils.BufferedReader(None, data=src_data)
+        atoms = mp4.Mp4Atom.create(src)
+        self.assertEqual(len(atoms), 6)
+        self.assertEqual(atoms[3].atom_type, 'moov')
+        moov = atoms[3]
+        ec3 = moov.trak.mdia.minf.stbl.stsd.ec_3
+        orig_ec3_data = src_data[ec3.position:ec3.position+ec3.size]
+        dest = io.BytesIO()
+        ec3.encode(dest)
+        new_ec3_data = dest.getvalue()
+        self.assertBuffersEqual(orig_ec3_data, new_ec3_data)
+
+        # create a new EC3SampleEntry object from the fields in the current object
+        ec3 = eval(repr(ec3))
+        dest = io.BytesIO()
+        ec3.encode(dest)
+        new_ec3_data = dest.getvalue()
+        self.assertBuffersEqual(orig_ec3_data, new_ec3_data)
         
+#def load_tests(loader, tests, pattern):
+#    return unittest.loader.TestLoader().loadTestsFromNames(
+#        ['test_create_moov', ],
+#        DrmTest)
+
 if __name__ == "__main__":
     unittest.main()
 
