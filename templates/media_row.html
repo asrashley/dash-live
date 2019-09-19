@@ -1,21 +1,21 @@
     <tr id="{{media.name}}">
-      <td class="filename"><a href="{{uri_for("media-info", mfid=media.key)}}">{{media.name}}</a></td>
+      <td class="filename"><a href="{{uri_for('media-info', mfid=media.key.urlsafe())}}">{{media.name}}</a></td>
       <td class="filesize">
-        {% if media.blob %}
-        {{media.blob.size|sizeFormat}}
+        {% if media.info %}
+        {{media.info.size|sizeFormat}}
         {% else %}
         <span class="bool-no ">&cross;</span>
         {% endif %}
       </td>
       <td class="created">
-        {% if media.blob %}
-        {{media.blob.creation|dateTimeFormat("%H:%M:%S %d/%m/%Y")}}
+        {% if media.info %}
+        {{media.info.creation|dateTimeFormat("%H:%M:%S %d/%m/%Y")}}
         {% else %}
         <span class="bool-no ">&cross;</span>
         {% endif %}
       </td>
       <td class="md5-hash">
-        {% if media.blob %}{{media.blob.md5_hash}}{% endif %}
+        {% if media.info %}{{media.info.md5_hash}}{% endif %}
       </td>
       <td class="codec">
         {% if media.representation %}
@@ -41,7 +41,7 @@
         {% endif %}
       </td>
       <td class="delete">
-        {% if media.blob %}
+        {% if media.info %}
         <button class="btn btn-danger btn-sm delete-file" data-key="{{media.key}}">Delete</button>
         {% endif %}
       </td>

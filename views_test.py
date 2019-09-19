@@ -137,7 +137,7 @@ class GAETestCase(unittest.TestCase):
         media_files = models.MediaFile.all()
         self.assertGreater(len(media_files), 0)
         for mf in media_files:
-            r = mf["representation"]
+            r = mf.representation
             if r is None:
                 continue
             if r.encrypted:

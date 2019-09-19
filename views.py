@@ -427,7 +427,7 @@ class RequestHandler(webapp2.RequestHandler):
         acodec = self.request.params.get('acodec')
         media_files = models.MediaFile.all()
         for mf in media_files:
-            r = mf["representation"]
+            r = mf.representation
             if r is None:
                 continue
             if r.contentType=="video" and r.encrypted==encrypted and r.filename.startswith(prefix+'_v'):
@@ -439,7 +439,7 @@ class RequestHandler(webapp2.RequestHandler):
         # to a clear version
         if not audio['representations'] and acodec:
             for mf in media_files:
-                r = mf["representation"]
+                r = mf.representation
                 if r is None:
                     continue
                 if r.contentType=="audio" and r.filename.startswith(prefix+'_a') and r.codecs.startswith(acodec):
@@ -687,7 +687,7 @@ class MainPage(RequestHandler):
         context['video_representations'] = []
         context['audio_representations'] = []
         for mf in models.MediaFile.all():
-            r = mf["representation"]
+            r = mf.representation
             if r is None:
                 continue
             if r.contentType=="video":
@@ -1191,7 +1191,7 @@ class MediaHandler(RequestHandler):
         if self.is_https_request():
             context['upload_url'] = context['upload_url'].replace('http://','https://')
         context['files'] = models.MediaFile.all()
-        context['files'].sort(key=lambda i: i['name'])
+        context['files'].sort(key=lambda i: i.name)
         context['keys'] = models.Key.all()
         context['keys'].sort(key=lambda i: i.hkid)
         context['streams'] = models.Stream.all()

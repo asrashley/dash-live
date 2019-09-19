@@ -24,16 +24,25 @@ class MediaFile(ndb.Model):
     blob = ndb.BlobKeyProperty(indexed=False)
     rep = ndb.JsonProperty(indexed=False, required=False, default={})
 
+    def __init__(self, *args, **kwargs):
+        super(MediaFile, self).__init__(*args, **kwargs)
+        self._info = None
+        self._representation = None
+
     @property
     def info(self):
-        return blobstore.BlobInfo.get(self.blob)
+        if self._info is None:
+            self._info = blobstore.BlobInfo.get(self.blob)
+        return self._info
 
     def get_representation(self):
-        rep = Representation(**self.rep) if self.rep else None
-        return rep
+        if self._representation is None and self.rep is not None:
+            self._representation = Representation(**self.rep)
+        return self._representation
 
     def set_representation(self, rep):
         self.rep = rep.toJSON()
+        self._representation = rep
 
     representation = property(get_representation, set_representation)
 
@@ -49,16 +58,10 @@ class MediaFile(ndb.Model):
         result = []
         for f in files:
             try:
-                b = blobs[f.blob]
+                f._info = blobs[f.blob]
             except KeyError:
-                b = None
-            result.append({
-                "name": f.name,
-                "key": f.key.urlsafe(),
-                "representation": f.representation,
-                "blob": b
-            })
-        return result
+                pass
+        return files
 
     def delete(self):
         blobstore.delete(self.blob)
