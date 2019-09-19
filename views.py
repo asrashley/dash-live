@@ -828,7 +828,7 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
         name = filename.lower()+'.mp4'
         mf = models.MediaFile.query(models.MediaFile.name==name).get()
         if mf is None:
-            self.response.write('%s not found'%(representation.filename))
+            self.response.write('%s not found'%filename)
             self.response.set_status(404)
             return
         try:
