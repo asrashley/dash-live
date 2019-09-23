@@ -26,7 +26,12 @@ import io
 import logging
 import os
 import struct
+import sys
 import unittest
+
+_src = os.path.join(os.path.dirname(__file__),"..", "src")
+if not _src in sys.path:
+    sys.path.append(_src)
 
 import mp4
 import utils
@@ -44,24 +49,21 @@ class Mp4Tests(unittest.TestCase):
 
     @property
     def segment(self):
-        if self._segment is None:
-            with open("fixtures/seg1.mp4", "rb") as f:
-                self._segment = f.read()
-        return self._segment
+        return self._get_media('_segment', "seg1.mp4")
 
     @property
     def moov(self):
-        if self._moov is None:
-            with open("fixtures/moov.mp4", "rb") as f:
-                self._moov = f.read()
-        return self._moov
+        return self._get_media('_moov', "moov.mp4")
 
     @property
     def enc_moov(self):
-        if self._enc_moov is None:
-            with open("fixtures/enc-moov.mp4", "rb") as f:
-                self._enc_moov = f.read()
-        return self._enc_moov
+        return self._get_media('_enc_moov', "enc-moov.mp4")
+
+    def _get_media(self, name, filename):
+        if getattr(self, name) is None:
+            with open(os.path.join(self.fixtures, filename), "rb") as f:
+                setattr(self, name, f.read())
+        return getattr(self, name)
 
     def _assert_true(self, result, a, b, msg, template):
         if not result:
@@ -318,7 +320,7 @@ class Mp4Tests(unittest.TestCase):
         self.assertBuffersEqual(avc3_data, new_avc3_data)
 
     def test_eac3_specific_box(self):
-        with open("fixtures/eac3-moov.mp4", "rb") as f:
+        with open(os.path.join(self.fixtures, "eac3-moov.mp4"), "rb") as f:
             src_data = f.read()
         src = utils.BufferedReader(None, data=src_data)
         atoms = mp4.Mp4Atom.create(src)

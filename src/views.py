@@ -58,7 +58,7 @@ from webob import exc
 
 templates = jinja2.Environment(
     loader=jinja2.FileSystemLoader(
-        os.path.join(os.path.dirname(__file__),'templates')
+        os.path.join(os.path.dirname(__file__), '..', 'templates')
     ),
     extensions=['jinja2.ext.autoescape'],
     trim_blocks=False,

@@ -52,6 +52,6 @@ except KeyError:
     if gae_sdk.endswith("bin"):
         gae_sdk = os.path.dirname(gae_sdk)
 if len(sys.argv)>1:
-    runner.main(gae_sdk, ".", sys.argv[1])
+    runner.main(gae_sdk, "tests", sys.argv[1])
 else:
-    runner.main(gae_sdk, ".", "*_test.py")
+    runner.main(gae_sdk, "tests", "*_test.py")

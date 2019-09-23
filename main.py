@@ -1,9 +1,13 @@
 #!/usr/bin/env python
 #
-import logging
+import os
+import sys
+
 import webapp2
 
-import views
+sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "lib"))
+
 from routes import webapp_routes
 from settings import DEBUG
     

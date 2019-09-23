@@ -25,17 +25,18 @@ import binascii
 import os
 import unittest
 from xml.etree import ElementTree
-try:
-    import cStringIO as StringIO
-except ImportError:
-    import StringIO
+import sys
 
 import jinja2
-from segment import Representation
 
-import mp4
-import utils
+_src = os.path.join(os.path.dirname(__file__),"..", "src")
+if not _src in sys.path:
+    sys.path.append(_src)
+
 from drm import KeyMaterial, PlayReady, ClearKey
+import mp4
+from segment import Representation
+import utils
 
 class KeyStub(object):
     def __init__(self, kid, key):
@@ -47,7 +48,7 @@ class PlayreadyTests(unittest.TestCase):
     def setUp(self):
         self.templates = jinja2.Environment(
             loader=jinja2.FileSystemLoader(
-                os.path.join(os.path.dirname(__file__),'templates')
+                os.path.join(os.path.dirname(__file__), '..', 'templates')
             ),
             extensions=['jinja2.ext.autoescape'],
             trim_blocks=False,
