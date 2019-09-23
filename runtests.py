@@ -51,7 +51,10 @@ except KeyError:
     # in others, it is in a "bin" sub-directory
     if gae_sdk.endswith("bin"):
         gae_sdk = os.path.dirname(gae_sdk)
-if len(sys.argv)>1:
+if len(sys.argv)>2:
+    os.environ["TESTS"] = ','.join(sys.argv[2:])
+    runner.main(gae_sdk, "tests", sys.argv[1])
+elif len(sys.argv)>1:
     runner.main(gae_sdk, "tests", sys.argv[1])
 else:
     runner.main(gae_sdk, "tests", "*_test.py")

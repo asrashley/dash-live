@@ -304,6 +304,15 @@ class ClearkeyTests(unittest.TestCase):
         pssh = ck.generate_pssh(representation, keys).encode()
         self.assertBuffersEqual(expected_pssh, pssh)
 
+if os.environ.get("TESTS"):
+    def load_tests(loader, tests, pattern):
+        tests = os.environ["TESTS"].split(',')
+        for idx, t in enumerate(tests):
+            if not t.startswith('drm_test.'):
+                tests[idx] = 'drm_test.' + tests[idx]
+        return unittest.loader.TestLoader().loadTestsFromNames(tests)
+
 if __name__ == "__main__":
     unittest.main()
+
 

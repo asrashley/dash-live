@@ -341,6 +341,12 @@ class Mp4Tests(unittest.TestCase):
         new_ec3_data = dest.getvalue()
         self.assertBuffersEqual(orig_ec3_data, new_ec3_data)
         
+if os.environ.get("TESTS"):
+    def load_tests(loader, tests, pattern):
+        return unittest.loader.TestLoader().loadTestsFromNames(
+            os.environ["TESTS"].split(','),
+            Mp4Tests)
+
 if __name__ == "__main__":
     unittest.main()
 
