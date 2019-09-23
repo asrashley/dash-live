@@ -474,7 +474,9 @@ class TestHandlers(GAETestCase):
             self.assertIsNotNone(rep_template)
             init_url = rep_template.get("initialization")
             init_url = urlparse.urljoin(baseurl[-1], init_url)
-            self.check_init_segment(init_url, rep, default_KID)
+            init_url = self.format_url_template(init_url, rep)
+            mf = self.get_mediafile(init_url)
+            self.check_init_segment(init_url, rep, mf, default_KID)
             media_url = rep_template.get("media")
             media_url = urlparse.urljoin(baseurl[-1], media_url)
             num_segments = 5
@@ -485,7 +487,7 @@ class TestHandlers(GAETestCase):
                 num_segments = mf.representation.num_segments - 1
                 decode_time = 0
             for idx in range(num_segments):
-                self.check_media_segment(media_url, rep, default_KID, idx+1,
+                self.check_media_segment(media_url, rep, mf, default_KID, idx+1,
                                          decode_time)
                 if decode_time is not None:
                     decode_time += mf.representation.segments[idx+1].duration
@@ -514,12 +516,7 @@ class TestHandlers(GAETestCase):
                 rep_base = rep_base[0].text
             else:
                 rep_base = baseurl[-1]
-            parts = urlparse.urlparse(rep_base)
-            filename = os.path.basename(parts.path)
-            name, ext = os.path.splitext(filename)
-            name += '.mp4'
-            mf = models.MediaFile.query(models.MediaFile.name==name).get()
-            self.assertIsNotNone(mf)
+            mf = self.get_mediafile(rep_base)
             seg_list = rep.findall('./dash:SegmentList', self.xmlNamespaces)
             self.assertEqual(len(seg_list), 1)
             decode_time = 0
@@ -528,12 +525,12 @@ class TestHandlers(GAETestCase):
                     self.assertTrue(item.tag.endswith('Initialization'))
                     seg_range = item.get("range")
                     self.assertIsNotNone(seg_range)
-                    self.check_init_segment(rep_base, rep, default_KID, seg_range)
+                    self.check_init_segment(rep_base, rep, mf, default_KID, seg_range)
                 else:
                     self.assertTrue(item.tag.endswith("SegmentURL"))
                     seg_range = item.get("mediaRange")
                     self.assertIsNotNone(seg_range)
-                    self.check_media_segment(rep_base, rep, default_KID, seg_num,
+                    self.check_media_segment(rep_base, rep, mf, default_KID, seg_num,
                                              decode_time, seg_range)
                     decode_time += mf.representation.segments[seg_num].duration
         if adap_base:
@@ -547,10 +544,22 @@ class TestHandlers(GAETestCase):
         #TODO: add $Time$
         return url
 
+    def get_mediafile(self, url):
+        parts = urlparse.urlparse(url)
+        filename = os.path.basename(parts.path)
+        name, ext = os.path.splitext(filename)
+        name += '.mp4'
+        mf = models.MediaFile.query(models.MediaFile.name==name).get()
+        if mf is None:
+            filename = os.path.dirname(parts.path).split('/')[-1]
+            name = filename + '.mp4'
+            mf = models.MediaFile.query(models.MediaFile.name==name).get()
+        self.assertIsNotNone(mf)
+        return mf
+
     pr_system_id = drm.PlayReady.SYSTEM_ID.replace('-','').lower()
 
-    def check_init_segment(self, init_url, rep, default_KID, seg_range=None):
-        init_url = self.format_url_template(init_url, rep)
+    def check_init_segment(self, init_url, rep, mediafile, default_KID, seg_range=None):
         if default_KID:
             self.assertIn('_enc', init_url)
         headers = None
@@ -584,7 +593,7 @@ class TestHandlers(GAETestCase):
                                     'PSSH box should be present in {}\n{:s}'.format(
                                         init_url, ae))
 
-    def check_media_segment(self, media_url, rep, default_KID, seg_num, decode_time, seg_range=None):
+    def check_media_segment(self, media_url, rep, mediafile, default_KID, seg_num, decode_time, seg_range=None):
         media_url = self.format_url_template(media_url, rep, seg_num)
         if default_KID:
             self.assertIn('_enc', media_url)
@@ -593,7 +602,10 @@ class TestHandlers(GAETestCase):
             headers = {"Range": "bytes={}".format(seg_range)}
         response = self.app.get(media_url, headers=headers)
         src = utils.BufferedReader(None, data=response.body)
-        atoms = mp4.Mp4Atom.create(src)
+        options={}
+        if mediafile.representation.encrypted:
+            options["iv_size"] = mediafile.representation.iv_size
+        atoms = mp4.Mp4Atom.create(src, options=options)
         self.assertGreater(len(atoms), 1)
         self.assertEqual(atoms[0].atom_type, 'moof')
         moof = atoms[0]
@@ -967,7 +979,9 @@ class BlobstoreTestHandlers(GAETestCase):
         response.mustcontain('bbb_v1.mp4')
 
 #def load_tests(loader, tests, pattern):
-#    return unittest.loader.TestLoader().loadTestsFromName('test_add_full_key_pair', TestHandlers)
+#    return unittest.loader.TestLoader().loadTestsFromNames(
+#        ['test_get_vod_media_using_live_profile', 'test_video_corruption'],
+#        TestHandlers)
 
 if __name__ == '__main__':
     unittest.main()        
