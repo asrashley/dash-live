@@ -186,8 +186,15 @@ $(document).ready(function(){
             if (result.csrf) {
                 $('#media-files').data('csrf', result.csrf);
             }
-        }).fail(function(jqXhr, status) {
-            dialog.find('.modal-body .error').text(result.error);
+        }).fail(function(e) {
+            var err = dialog.find('.modal-body .error');
+            if (e.statusText) {
+                err.text(e.status + ' ' + e.statusText);
+            } else if (e.responseText) {
+                err.text(e.responseText);
+            } else {
+                err.text(JSON.stringify(e));
+            }
         });
     }
 
