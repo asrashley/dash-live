@@ -1,6 +1,6 @@
 .git
 .gaedata
-fixtures
+tests
 media
 **/*.mp4
 **/*.pyc
