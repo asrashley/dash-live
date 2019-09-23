@@ -23,6 +23,7 @@
 import base64
 import binascii
 import io
+import logging
 import os
 import struct
 import unittest
@@ -30,16 +31,37 @@ import unittest
 import mp4
 import utils
 
-class DrmTest(unittest.TestCase):
+class Mp4Tests(unittest.TestCase):
     def setUp(self):
-        with open("fixtures/seg1.mp4", "rb") as f:
-            self.segment = f.read()
-        with open("fixtures/moov.mp4", "rb") as f:
-            self.moov = f.read()
-        with open("fixtures/enc-moov.mp4", "rb") as f:
-            self.enc_moov = f.read()
+        self.fixtures = os.path.join(os.path.dirname(__file__), "fixtures")
         self.timescale = 240
         self.mediaDuration = 141941
+        self._segment = None
+        self._moov = None
+        self._enc_moov = None
+        self._segment = None
+        logging.basicConfig(level=logging.WARNING)
+
+    @property
+    def segment(self):
+        if self._segment is None:
+            with open("fixtures/seg1.mp4", "rb") as f:
+                self._segment = f.read()
+        return self._segment
+
+    @property
+    def moov(self):
+        if self._moov is None:
+            with open("fixtures/moov.mp4", "rb") as f:
+                self._moov = f.read()
+        return self._moov
+
+    @property
+    def enc_moov(self):
+        if self._enc_moov is None:
+            with open("fixtures/enc-moov.mp4", "rb") as f:
+                self._enc_moov = f.read()
+        return self._enc_moov
 
     def _assert_true(self, result, a, b, msg, template):
         if not result:
@@ -88,7 +110,7 @@ class DrmTest(unittest.TestCase):
 
     def test_add_pssh_box_to_moov(self):
         src = utils.BufferedReader(None, data=self.moov)
-        atoms = mp4.Mp4Atom.create(src, readwrite=True)
+        atoms = mp4.Mp4Atom.create(src, options={'cache_encoded':True})
         self.assertEqual(len(atoms), 5)
         self.assertEqual(atoms[2].atom_type, 'moov')
         moov = atoms[2]
@@ -114,7 +136,7 @@ class DrmTest(unittest.TestCase):
         
     def test_remove_box_from_moov(self):
         src = utils.BufferedReader(None, data=self.moov)
-        atoms = mp4.Mp4Atom.create(src, readwrite=True)
+        atoms = mp4.Mp4Atom.create(src, options={'cache_encoded':True})
         self.assertEqual(len(atoms), 5)
         self.assertEqual(atoms[2].atom_type, 'moov')
         moov = atoms[2]
@@ -129,7 +151,7 @@ class DrmTest(unittest.TestCase):
 
     def test_update_base_media_decode_time(self):
         src = utils.BufferedReader(None, data=self.segment)
-        frag = mp4.Mp4Atom.create(src, readwrite=True)
+        frag = mp4.Mp4Atom.create(src, options={'cache_encoded':True})
         self.assertEqual(len(frag), 4)
         self.assertEqual(frag[0].atom_type, 'moof')
         moof = frag[0]
@@ -159,7 +181,7 @@ class DrmTest(unittest.TestCase):
 
     def test_update_mfhd_sequence_number(self):
         src = utils.BufferedReader(None, data=self.segment)
-        frag = mp4.Mp4Atom.create(src, readwrite=True)
+        frag = mp4.Mp4Atom.create(src, options={'cache_encoded':True})
         self.assertEqual(len(frag), 4)
         self.assertEqual(frag[0].atom_type, 'moof')
         moof = frag[0]
@@ -176,9 +198,9 @@ class DrmTest(unittest.TestCase):
         
     def test_wrap_boxes(self):
         src = utils.BufferedReader(None, data=self.moov)
-        atoms = mp4.Mp4Atom.create(src, readwrite=True)
+        atoms = mp4.Mp4Atom.create(src, options={'cache_encoded':True})
         self.assertEqual(len(atoms), 5)
-        wrap = mp4.Mp4Atom(atom_type='wrap', position=0, size = len(self.moov), parent=None,
+        wrap = mp4.Wrapper(atom_type='wrap', position=0, size = len(self.moov), parent=None,
                            children=atoms)
         data = wrap.encode()
         self.assertEqual(len(data), len(self.moov)+8)
@@ -186,36 +208,73 @@ class DrmTest(unittest.TestCase):
 
     def test_create_all_boxes_in_moov(self):
         src = utils.BufferedReader(None, data=self.moov)
-        wrap = mp4.Mp4Atom(atom_type='wrap', position=0, size = len(self.moov), parent=None,
+        wrap = mp4.Wrapper(atom_type='wrap', position=0, size = len(self.moov), parent=None,
                            children=mp4.Mp4Atom.create(src))
         moov = wrap.moov
         for child in moov.children:
-            self.check_create_atom(child)
+            self.check_create_atom(child, self.moov)
+        self.check_create_atom(moov, self.moov)
 
-        moov_data = self.moov[moov.position:moov.position+moov.size]
-        r = repr(moov)
-        moov = eval(r)
+    def test_create_all_boxes_in_encrypted_moov(self):
+        src = utils.BufferedReader(None, data=self.enc_moov)
+        wrap = mp4.Wrapper(atom_type='wrap', position=0, size = len(self.enc_moov), parent=None,
+                           children=mp4.Mp4Atom.create(src))
+        moov = wrap.moov
+        for child in moov.children:
+            self.check_create_atom(child, self.enc_moov)
+        self.check_create_atom(moov, self.enc_moov)
+
+    def test_create_all_boxes_in_moof(self):
+        src = utils.BufferedReader(None, data=self.segment)
+        wrap = mp4.Wrapper(atom_type='wrap', position=0, size=len(self.segment), parent=None,
+                           children=mp4.Mp4Atom.create(src))
+        moof = wrap.moof
+        for child in moof.children:
+            self.check_create_atom(child, self.segment)
+
+        moof_data = self.segment[moof.position:moof.position+moof.size]
+        r = repr(moof)
+        moof = eval(r)
         dest = io.BytesIO()
-        moov.encode(dest)
-        new_moov_data = dest.getvalue()
-        self.assertBuffersEqual(moov_data, new_moov_data)
+        moof.encode(dest)
+        new_moof_data = dest.getvalue()
+        self.assertBuffersEqual(moof_data, new_moof_data)
 
-    def check_create_atom(self, child):
+    def test_create_all_segments_in_video_file(self):
+        self.check_create_all_segments_in_file("bbb_v7.mp4")
+
+    def test_create_all_segments_in_audio_file(self):
+        self.check_create_all_segments_in_file("bbb_a1.mp4")
+
+    def check_create_all_segments_in_file(self, name):
+        filename = os.path.join(self.fixtures, name)
+        src = utils.BufferedReader(io.FileIO(filename, 'rb'))
+        segments = mp4.Mp4Atom.create(src)
+        for segment in segments:
+            src.seek(segment.position)
+            data = src.read(segment.size)
+            self.check_create_atom(segment, data, offset=segment.position)
+
+    def check_create_atom(self, child, orig_data, offset=0):
         if child.children:
             for ch in child.children:
-                self.check_create_atom(ch)
-        orig_data = self.moov[child.position:child.position+child.size]
+                self.check_create_atom(ch, orig_data, offset)
+        orig_data = orig_data[child.position-offset : child.position+child.size-offset]
         r = repr(child)
-        ch2 = eval(r)
+        try:
+            ch2 = eval(r)
+        except (TypeError, AttributeError, SyntaxError):
+            print r
+            raise
+        name = 'Encoding %s (%s)'%(child.classname, child.atom_type)
         dest = io.BytesIO()
         ch2.encode(dest)
         new_child_data = dest.getvalue()
-        name = 'Encoding %s (%s)'%(child.classname, child.atom_type)
-        self.assertBuffersEqual(orig_data, new_child_data, name)            
+        self.assertBuffersEqual(orig_data, new_child_data, name)
 
     def test_avc3_encoding_from_original(self):
         src = utils.BufferedReader(None, data=self.moov)
-        atoms = mp4.Mp4Atom.create(src, readwrite=True)
+        atoms = mp4.Mp4Atom.create(src, options={'cache_encoded':True})
         self.assertEqual(len(atoms), 5)
         self.assertEqual(atoms[2].atom_type, 'moov')
         moov = atoms[2]
@@ -280,11 +339,6 @@ class DrmTest(unittest.TestCase):
         new_ec3_data = dest.getvalue()
         self.assertBuffersEqual(orig_ec3_data, new_ec3_data)
         
-#def load_tests(loader, tests, pattern):
-#    return unittest.loader.TestLoader().loadTestsFromNames(
-#        ['test_create_moov', ],
-#        DrmTest)
-
 if __name__ == "__main__":
     unittest.main()
 
