@@ -79,6 +79,7 @@ class KeyMaterial(object):
 
 class PlayReady(object):
     SYSTEM_ID = "9a04f079-9840-4286-ab92-e65be0885f95"
+    RAW_SYSTEM_ID = "9a04f07998404286ab92e65be0885f95".decode("hex")
     Test_Key_Seed = base64.b64decode("XVBovsmzhP9gRIZxWfFta3VVRPzVEWmJsazEJ46I")
     DRM_AES_KEYSIZE_128 = 16
 
@@ -259,11 +260,13 @@ class PlayReady(object):
         """Generate a PlayReady Object (PRO) inside a PSSH box"""
         pro = self.generate_pro(representation, keys)
         pssh_version = 0 if len(keys)==1 else 1
-        return mp4.ContentProtectionSpecificBox(atom_type='pssh',
-                                                version=pssh_version,
+        if isinstance(keys, dict):
+            keys = keys.keys()
+        keys = map(lambda k: KeyMaterial(k).raw, keys)
+        return mp4.ContentProtectionSpecificBox(version=pssh_version,
                                                 flags=0,
                                                 system_id=PlayReady.SYSTEM_ID,
-                                                key_ids=keys.keys(),
+                                                key_ids=keys,
                                                 data=pro)
 
 
@@ -279,7 +282,8 @@ class ClearKey(object):
         # see https://www.w3.org/TR/eme-initdata-cenc/
         if isinstance(keys, dict):
             keys = keys.keys()
-        return mp4.ContentProtectionSpecificBox(atom_type='pssh', version=1, flags=0,
+        keys = map(lambda k: KeyMaterial(k).raw, keys)
+        return mp4.ContentProtectionSpecificBox(version=1, flags=0,
                                                 system_id=self.PSSH_SYSTEM_ID,
                                                 key_ids=keys,
                                                 data=None

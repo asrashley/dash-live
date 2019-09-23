@@ -34,15 +34,15 @@
       <td class="index">
         {% if media.representation %}
         <button class="btn btn-sm btn-info btn-index" data-toggle="modal" data-target="#dialog-box"
-                data-key="{{media.key}}">Re-index</button>
+                data-key="{{media.key.urlsafe()}}">Re-index</button>
         {% else %}
         <button class="btn btn-sm btn-warning btn-index" data-toggle="modal" data-target="#dialog-box"
-                data-key="{{media.key}}">Index</button>
+                data-key="{{media.key.urlsafe()}}">Index</button>
         {% endif %}
       </td>
       <td class="delete">
         {% if media.info %}
-        <button class="btn btn-danger btn-sm delete-file" data-key="{{media.key}}">Delete</button>
+        <button class="btn btn-danger btn-sm delete-file" data-key="{{media.key.urlsafe()}}">Delete</button>
         {% endif %}
       </td>
     </tr>

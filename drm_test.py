@@ -176,7 +176,7 @@ class PlayreadyTests(unittest.TestCase):
         self.assertTrue(isinstance(atoms[0], mp4.ContentProtectionSpecificBox))
         with self.assertRaises(AttributeError):
             print atoms[0].key_ids
-        self.assertEqual(atoms[0].system_id, PlayReady.SYSTEM_ID.replace('-',''))
+        self.assertEqual(atoms[0].system_id, PlayReady.RAW_SYSTEM_ID)
         self.assertEqual(atoms[0].data.encode('hex'), expected_pro.encode('hex'))
         actual_pro = mspr.parse_pro(utils.BufferedReader(None, data=atoms[0].data))
         self.assertEqual(actual_pro['xml'].getroot().get("version"),
@@ -209,7 +209,7 @@ class PlayreadyTests(unittest.TestCase):
         self.assertTrue(isinstance(atoms[0], mp4.ContentProtectionSpecificBox))
         with self.assertRaises(AttributeError):
             print atoms[0].key_ids
-        self.assertEqual(atoms[0].system_id, PlayReady.SYSTEM_ID.replace('-',''))
+        self.assertEqual(atoms[0].system_id, PlayReady.RAW_SYSTEM_ID)
         actual_pro = mspr.parse_pro(utils.BufferedReader(None, data=atoms[0].data))
         self.assertEqual(actual_pro['xml'].getroot().get("version"),
                          '{:02.1f}.0.0'.format(mspr.version))
@@ -238,7 +238,7 @@ class PlayreadyTests(unittest.TestCase):
         self.assertEqual(atoms[0].atom_type, 'pssh')
         self.assertTrue(isinstance(atoms[0], mp4.ContentProtectionSpecificBox))
         self.assertEqual(len(atoms[0].key_ids), len(keys))
-        self.assertEqual(atoms[0].system_id, PlayReady.SYSTEM_ID.replace('-',''))
+        self.assertEqual(atoms[0].system_id, PlayReady.RAW_SYSTEM_ID)
         actual_pro = mspr.parse_pro(utils.BufferedReader(None, data=atoms[0].data))
         self.assertEqual(actual_pro['xml'].getroot().get("version"),
                          '{:02.1f}.0.0'.format(mspr.version))
