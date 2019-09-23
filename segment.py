@@ -23,6 +23,7 @@ class Box(object):
 
 
 class Representation(object):
+    VERSION=2
     def __init__(self, id,  **kwargs):
         def convert_dict(item):
             if isinstance(item, dict):
@@ -31,6 +32,7 @@ class Representation(object):
                 item = Box(*item)
             return item
 
+        self.version = 0
         self.id = id
         self.segments=[]
         self.startWithSAP = 1
@@ -70,7 +72,9 @@ class Representation(object):
         base_media_decode_time=None
         default_sample_duration=0
         moov = None
-        rv = Representation(id=os.path.splitext(filename.lower())[0], filename=filename)
+        rv = Representation(id=os.path.splitext(filename.lower())[0],
+                            filename=filename,
+                            version=Representation.VERSION)
         for atom in atoms:
             seg = Box(pos=atom.position, size=atom.size)
             if atom.atom_type=='ftyp':
@@ -140,6 +144,7 @@ class Representation(object):
                         avc_type = avc.sinf.frma.data_format
                         rv.encrypted=True
                         rv.default_kid = avc.sinf.schi.tenc.default_kid.encode('hex')
+                        rv.iv_size = avc.sinf.schi.tenc.iv_size
                         rv.kids=set([rv.default_kid])
                     if atom.trak.mdia.hdlr.handler_type=='vide':
                         rv.contentType="video"
@@ -166,10 +171,11 @@ class Representation(object):
                         rv.contentType="audio"
                         rv.codecs = avc_type
                         if avc_type=="mp4a":
-                            dsi = avc.esds.DecoderSpecificInfo
+                            dsi = avc.esds.descriptor("DecoderSpecificInfo")
                             rv.sampleRate = dsi.sampling_frequency
                             rv.numChannels = dsi.channel_configuration
-                            rv.codecs = "%s.%02x.%x"%(avc_type, avc.esds.DecoderSpecificInfo.object_type, dsi.audio_object_type)
+                            rv.codecs = "%s.%02x.%x"%(avc_type, dsi.object_type,
+                                                      dsi.audio_object_type)
                             if rv.numChannels==7:
                                 # 7 is a special case that means 7.1
                                 rv.numChannels=8

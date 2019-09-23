@@ -36,8 +36,13 @@ class MediaFile(ndb.Model):
         return self._info
 
     def get_representation(self):
-        if self._representation is None and self.rep is not None:
+        if self._representation is None and self.rep:
             self._representation = Representation(**self.rep)
+            try:
+                if self._representation.version < Representation.VERSION:
+                    self._representation = None
+            except AttributeError:
+                self._representation = None
         return self._representation
 
     def set_representation(self, rep):
