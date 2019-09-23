@@ -903,8 +903,10 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
         frag = representation.segments[mod_segment]
         blob_reader = blobstore.BlobReader(mf.blob, position=frag.pos, buffer_size=16384)
         src = utils.BufferedReader(blob_reader, offset=frag.pos, size=frag.size, buffersize=16384)
-        atom = mp4.Mp4Atom(atom_type='wrap', parent=None,
-                           children=mp4.Mp4Atom.create(src, readwrite=True))
+        options = mp4.Options(cache_encoded=True)
+        if representation.encrypted:
+            options.iv_size = representation.iv_size
+        atom = mp4.Wrapper(atom_type='wrap', children=mp4.Mp4Atom.create(src, options=options))
         if self.request.params.get('corrupt') is not None:
             atom.moof.traf.trun.parse_samples(src, representation.nalLengthFieldFength)
         if segment_num==0 and representation.encrypted:
@@ -1223,7 +1225,7 @@ class MediaHandler(RequestHandler):
             if self.request.params.get('index'):
                 self.check_csrf('files')
                 blob_reader = utils.BufferedReader(blobstore.BlobReader(mf.blob))
-                atom = mp4.Mp4Atom(atom_type='wrap', position=0, size = mf.info.size, parent=None,
+                atom = mp4.Wrapper(atom_type='wrap', position=0, size = mf.info.size, parent=None,
                                    children=mp4.Mp4Atom.create(blob_reader))
                 rep = segment.Representation.create(filename=mf.name, atoms=atom.children)
                 mf.representation = rep
