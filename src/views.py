@@ -1130,7 +1130,7 @@ class MediaHandler(RequestHandler):
                 logging.debug("csrf check failed")
                 logging.debug(cfe)
                 if is_ajax:
-                    result["error"] = '{}: {:s}'.format(err.__class__.__name__, cfe)
+                    result["error"] = '{}: {:s}'.format(cfe.__class__.__name__, cfe)
                     self.response.write(json.dumps(result))
                 self.response.set_status(401)
                 blob_info.delete()
@@ -1147,11 +1147,11 @@ class MediaHandler(RequestHandler):
                 result = mf.toJSON()
                 logging.debug("upload done "+context["mfid"])
                 if is_ajax:
-                    csrf_key = self.outer.generate_csrf_cookie(self)
-                    result['upload_url'] = blobstore.create_upload_url(self.uri_for('uploadBlob'))
+                    csrf_key = self.outer.generate_csrf_cookie()
+                    result['upload_url'] = blobstore.create_upload_url(self.outer.uri_for('uploadBlob'))
                     result['csrf_token'] = self.outer.generate_csrf_token("upload", csrf_key)
                     template = templates.get_template('media_row.html')
-                    context["media"] = mf.toJSON(convert_date=False)
+                    context["media"] = mf
                     result["file_html"] = template.render(context)
                     self.response.write(json.dumps(result))
                 else:
