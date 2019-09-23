@@ -27,6 +27,10 @@ import jinja2
 import webapp2
 import webtest # if this import fails, "pip install WebTest"
 
+_src = os.path.join(os.path.dirname(__file__),"..", "src")
+if not _src in sys.path:
+    sys.path.append(_src)
+
 import drm
 import models
 import mp4
@@ -77,6 +81,8 @@ class GAETestCase(unittest.TestCase):
             'HTTP_X_APPENGINE_COUNTRY':'zz',
             'HTTP_USER_AGENT':'Mozilla/5.0 (GAE Unit test) Gecko/20100101 WebTest/2.0',
         })
+        self.wsgi.router.add(webapp2.Route(template=r'/_ah/upload/<blob_id:[\w\-_\.]+>', handler=views.MediaHandler, name="uploadBlob_ah"))
+        routes.routes['uploadBlob_ah'] = routes.routes['uploadBlob']
         self.auth = None
         self.uid="4d9cf5f4-4574-4381-9df3-1d6e7ca295ff"
         self.templates = jinja2.Environment(
@@ -926,15 +932,14 @@ class TestHandlers(GAETestCase):
         s = s.replace('+', '-')     # 62nd char of encoding
         s = s.replace('/', '_')     # 63rd char of encoding
         return s
-
-
-class BlobstoreTestHandlers(GAETestCase):
-    def setUp(self):
-        super(BlobstoreTestHandlers,self).setUp()
-        self.wsgi.router.add(webapp2.Route(template=r'/_ah/upload/<blob_id:[\w\-_\.]+>', handler=views.MediaHandler, name="uploadBlob_ah"))
-        routes.routes['uploadBlob_ah'] = routes.routes['uploadBlob']
         
     def test_upload_media_file(self):
+        self.upload_media_file(0)
+
+    def test_upload_media_file_using_ajax(self):
+        self.upload_media_file(1)
+
+    def upload_media_file(self, ajax):
         url = self.from_uri('media-index', absolute=True)
         blobURL = self.from_uri('uploadBlob', absolute=True)
         self.assertIsNotNone(blobURL)
@@ -968,20 +973,35 @@ class BlobstoreTestHandlers(GAETestCase):
         upload_form = response.forms['upload-form']
         form = {
             "csrf_token": upload_form["csrf_token"].value,
+            "ajax": ajax,
             "submit": "submit",
         }
-        response = self.upload_blobstore_file(url, response.forms['upload-form'].action, form,
-                                              'file', 'bbb_v1.mp4', b'data', 'video/mp4')
-        response.mustcontain('<h2>Upload complete</h2>')
+        response = self.upload_blobstore_file(url, response.forms['upload-form'].action,
+                                              form, 'file', 'bbb_v1.mp4', b'data',
+                                              'video/mp4')
+        if ajax:
+            expected_result = {
+                'csrf_token':0,
+                'name': 'bbb_v1.mp4',
+            }
+            for item in ['csrf_token', 'upload_url', 'file_html', 'key', 'blob',
+                         'representation']:
+                self.assertTrue(response.json.has_key(item))
+                expected_result[item] = response.json[item]
+            self.assertNotEqual(response.json['csrf_token'], form['csrf_token'])
+            self.assertEqual(response.json, expected_result)
+        else:
+            response.mustcontain('<h2>Upload complete</h2>')
         
         response = self.app.get(url)
         self.assertEqual(response.status_int,200)
         response.mustcontain('bbb_v1.mp4')
 
-#def load_tests(loader, tests, pattern):
-#    return unittest.loader.TestLoader().loadTestsFromNames(
-#        ['test_get_vod_media_using_live_profile', 'test_video_corruption'],
-#        TestHandlers)
+if os.environ.get("TESTS"):
+    def load_tests(loader, tests, pattern):
+        return unittest.loader.TestLoader().loadTestsFromNames(
+            os.environ["TESTS"].split(','),
+            TestHandlers)
 
 if __name__ == '__main__':
     unittest.main()        
