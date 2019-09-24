@@ -1579,7 +1579,7 @@ class CencSampleAuxiliaryData(NamedObject):
     def _field_repr(self, exclude):
         rv = []
         rv.append('initialization_vector=0x%s'%self.initialization_vector.encode('hex'))
-        if haskey(self._fields, "subsamples"):
+        if self._fields.has_key("subsamples"):
             subsamples = []
             for s in self._fields["subsamples"]:
                 subsamples.append('{"clear":%d, "encrypted":%d}'%(s["clear"], s["encrypted"]))
