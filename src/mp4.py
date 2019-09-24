@@ -12,7 +12,7 @@ import sys
 try:
     import bitstring
 except ImportError:
-    sys.path.append(os.path.join(os.path.dirname(__file__), "lib"))
+    sys.path.append(os.path.join(os.path.dirname(__file__), "..", "lib"))
     import bitstring
 
 from nal import Nal
