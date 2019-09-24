@@ -245,8 +245,11 @@ class Mp4Tests(unittest.TestCase):
     def test_create_all_segments_in_video_file(self):
         self.check_create_all_segments_in_file("bbb_v7.mp4")
 
-    def test_create_all_segments_in_audio_file(self):
+    def test_create_all_segments_in_aac_audio_file(self):
         self.check_create_all_segments_in_file("bbb_a1.mp4")
+
+    def test_create_all_segments_in_eac3_audio_file(self):
+        self.check_create_all_segments_in_file("bbb_a2.mp4")
 
     def check_create_all_segments_in_file(self, name):
         filename = os.path.join(self.fixtures, name)
