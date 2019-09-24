@@ -182,15 +182,13 @@ class Representation(object):
                         elif avc_type=="ec-3":
                             try:
                                 rv.sampleRate = avc.sampling_frequency
-                                rv.numChannels = avc.channel_count
-                            except AttributeError:
-                                pass
-                            if avc.dec3.substreams:
                                 rv.numChannels = 0
                                 for s in avc.dec3.substreams:
                                     rv.numChannels += s.channel_count
                                     if s.lfeon:
                                         rv.numChannels += 1
+                            except AttributeError:
+                                pass
         if rv.encrypted:
             rv.kids = list(rv.kids)
         if verbose==1:

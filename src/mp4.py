@@ -95,17 +95,25 @@ class FieldReader(object):
         return value
 
 class BitsFieldReader(object):
-    def __init__(self, clz, src, kwargs, size=None):
+    def __init__(self, clz, src, kwargs, size=None, data=None):
         self.clz = clz
         if size is None:
             size = kwargs["size"] - kwargs["header_size"]
-        self.data = src.read(size)
-        self.src = bitstring.ConstBitStream(bytes=self.data)
+        if data is None:
+            self.data = src.read(size)
+            self.src = bitstring.ConstBitStream(bytes=self.data)
+        else:
+            self.data = data
+            self.src = src
         self.kwargs = kwargs
+        self.size = 8 * size
         if getattr(self.clz, 'debug', False):
             self.log = logging.getLogger('mp4')
         else:
             self.log = None
+
+    def duplicate(self, kwargs):
+        return BitsFieldReader(self.clz, self.src, kwargs, size=len(self.data), data=self.data)
 
     def read(self, size, field):
         self.kwargs[field] = self.get(size, field)
@@ -1037,33 +1045,29 @@ class EC3SampleEntry(AudioSampleEntry):
 
 MP4_BOXES['ec-3'] = EC3SampleEntry
 
-class EC3SpecificBox(Mp4Atom):
-    ACMOD_NUM_CHANS = [2,1,2,3,3,4,4,5]
+class EC3SubStream(NamedObject):
+    def __init__(self, **kwargs):
+        for key,value in kwargs.iteritems():
+            assert "src" != key
+            if not self.__dict__.has_key(key):
+                setattr(self, key, value)
 
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = Mp4Atom.parse(src, parent, options)
-        r = BitsFieldReader(clz, src, kwargs)
-        r.read(13, "data_rate")
-        r.read(3, "num_ind_sub")
-        kwargs["num_ind_sub"] += 1
+    def parse(clz, r):
         r.read(2, 'fscod')
         r.read(5, 'bsid')
         r.read(5, 'bsmod')
         r.read(3, 'acmod')
-        kwargs['channel_count'] = EC3SpecificBox.ACMOD_NUM_CHANS[kwargs['acmod']]
+        r.kwargs['channel_count'] = EC3SpecificBox.ACMOD_NUM_CHANS[r.kwargs['acmod']]
         r.read(1, 'lfeon')
         r.get(3, 'reserved')
         r.read(4, 'num_dep_sub')
-        if kwargs["num_dep_sub"]>0:
+        if r.kwargs["num_dep_sub"]>0:
             r.read(9, 'chan_loc')
         else:
             r.get(1, 'reserved')
-        return kwargs
 
-    def encode_fields(self, dest):
-        ba = bitstring.BitArray()
-        ba.append(bitstring.pack('uint:13, uint:3', self.data_rate, self.num_ind_sub-1))
+    def encode_fields(self, ba):
         ba.append(bitstring.pack('uint:2, uint:5, uint:5, uint:3, bool',
                                  self.fscod, self.bsid, self.bsmod, self.acmod,
                                  self.lfeon))
@@ -1073,6 +1077,45 @@ class EC3SpecificBox(Mp4Atom):
             ba.append(bitstring.Bits(uint=self.chan_loc, length=9))
         else:
             ba.append(bitstring.Bits(uint=0, length=1)) # reserved
+
+    def _field_repr(self, exclude):
+        fields = []
+        exclude.append('parent')
+        for k,v in self.__dict__.iteritems():
+            if k not in exclude:
+                fields.append('%s=%s'%(k,str(v)))
+        return fields
+
+# See section C.3.1 of ETSI TS 103 420 V1.2.1
+class EC3SpecificBox(Mp4Atom):
+    ACMOD_NUM_CHANS = [2,1,2,3,3,4,4,5]
+
+    @classmethod
+    def parse(clz, src, parent, options):
+        kwargs = Mp4Atom.parse(src, parent, options)
+        r = BitsFieldReader(clz, src, kwargs)
+        r.read(13, "data_rate")
+        num_ind_sub = r.get(3, "num_ind_sub") + 1
+        kwargs["substreams"] = []
+        for i in range(num_ind_sub):
+            r2 = r.duplicate({})
+            EC3SubStream.parse(r2)
+            kwargs["substreams"].append(EC3SubStream(**r2.kwargs))
+        if r.pos()+16 <= r.size:
+            r.get(7, 'reserved')
+            r.read(1, 'flag_ec3_extension_type_a')
+            r.read(8, 'complexity_index_type_a')
+        return kwargs
+
+    def encode_fields(self, dest):
+        ba = bitstring.BitArray()
+        num_ind_sub = len(self.substreams)
+        ba.append(bitstring.pack('uint:13, uint:3', self.data_rate, num_ind_sub-1))
+        for s in self.substreams:
+            s.encode_fields(ba)
+        if self._fields.has_key('flag_ec3_extension_type_a'):
+            ba.append(bitstring.pack('uint:7, bool, uint:8', 0, self.flag_ec3_extension_type_a,
+                                     self.complexity_index_type_a))
         dest.write(ba.bytes)
 
 MP4_BOXES['dec3'] = EC3SpecificBox
