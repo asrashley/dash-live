@@ -104,6 +104,7 @@ $(document).ready(function(){
     if (manifest.length == 0) {
       dest.text('');
       dest.attr('href','');
+      $('#play-button').addClass('disabled');
       return;
     }
     url = manifest.data("uri").replace('{directory}', pageState.streams[cursor.stream].directory);
@@ -111,6 +112,7 @@ $(document).ready(function(){
     url += '?' + Object.values(params).join('&');
     dest.text(url);
     dest.attr('href',document.location.origin+url);
+    $('#play-button').removeClass('disabled');
     if(window.history && typeof(history.pushState)==="function") {
       params.mpd = 'mpd=' + $('#buttons tbody .manifest.selected').data("filename");
       history.replaceState(pageState, $('#buttons tbody .manifest.selected').text(),
