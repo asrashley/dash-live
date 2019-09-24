@@ -136,6 +136,8 @@ class RequestHandler(webapp2.RequestHandler):
             cookie = self.request.cookies[self.CSRF_COOKIE_NAME]
             csrf_key = sc.deserialize(self.CSRF_COOKIE_NAME, cookie)
         except KeyError:
+            csrf_key = None
+        if csrf_key is None:
             csrf_key = security.generate_random_string(length=self.CSRF_KEY_LENGTH)
             cookie = sc.serialize(self.CSRF_COOKIE_NAME, csrf_key)
             self.response.set_cookie(self.CSRF_COOKIE_NAME, cookie, httponly=True,
@@ -143,7 +145,7 @@ class RequestHandler(webapp2.RequestHandler):
         return csrf_key
 
     def generate_csrf_token(self, service, csrf_key):
-        """generate a CSRF token as a hidden form field and a secure cookie"""
+        """generate a CSRF token that can be used as a hidden form field"""
         logging.debug('generate_csrf URI: {}'.format(self.request.uri))
         logging.debug('generate_csrf User-Agent: {}'.format(self.request.headers['User-Agent']))
         sig = hmac.new(settings.csrf_secret, csrf_key, hashlib.sha1)
@@ -174,6 +176,7 @@ class RequestHandler(webapp2.RequestHandler):
         csrf_key = sc.deserialize(self.CSRF_COOKIE_NAME, cookie)
         if not csrf_key:
             logging.debug("csrf deserialize failed")
+            response.delete_cookie(self.CSRF_COOKIE_NAME)
             raise CsrfFailureException("csrf cookie not valid")
         try:
             token = str(urllib.unquote(self.request.params['csrf_token']))
