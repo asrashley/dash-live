@@ -4,7 +4,13 @@ try:
 except ImportError:
     import StringIO
 
+import os
+import sys
 import unittest
+
+_src = os.path.join(os.path.dirname(__file__),"..", "src")
+if not _src in sys.path:
+    sys.path.append(_src)
 
 import utils
 
