@@ -10,6 +10,7 @@ import io
 import json
 import re
 import logging
+import math
 import md5
 import os
 import unittest
@@ -45,7 +46,54 @@ from segment import Representation
 for name,r in routes.routes.iteritems():
     r.template = re.sub(r':[^>]*>','}',r.template.replace('<','{'))
 
-class GAETestCase(unittest.TestCase):
+class TestCaseMixin(object):
+    def _assert_true(self, result, a, b, msg, template):
+        if not result:
+            if msg is not None:
+                raise AssertionError(msg)
+            raise AssertionError(template.format(a,b))
+
+    def assertTrue(self, result, msg=None):
+        self._assert_true(result, result, None, msg, r'{} not True')
+
+    def assertFalse(self, result, msg=None):
+        self._assert_true(not result, result, None, msg, r'{} not False')
+
+    def assertEqual(self, a, b, msg=None):
+        self._assert_true(a==b, a, b, msg, r'{} != {}')
+
+    def assertGreaterThan(self, a, b, msg=None):
+        self._assert_true(a>b, a, b, msg, r'{} <= {}')
+
+    def assertGreaterThanOrEqual(self, a, b, msg=None):
+        self._assert_true(a>=b, a, b, msg, r'{} < {}')
+
+    def assertLessThan(self, a, b, msg=None):
+        self._assert_true(a<b, a, b, msg, r'{} >= {}')
+
+    def assertLessThanOrEqual(self, a, b, msg=None):
+        self._assert_true(a<=b, a, b, msg, r'{} > {}')
+
+    def assertIn(self, a, b, msg=None):
+        self._assert_true(a in b, a, b, msg, r'{} not in {}')
+
+    def assertNotIn(self, a, b, msg=None):
+        self._assert_true(a not in b, a, b, msg, r'{} in {}')
+
+    def assertIsNone(self, a, msg=None):
+        self._assert_true(a is None, a, None, msg, r'{} is not None')
+
+    def assertIsNotNone(self, a, msg=None):
+        self._assert_true(a is not None, a, None, msg, r'{} is None')
+
+    def assertEndsWith(self, a, b, msg=None):
+        self._assert_true(a.endswith(b), a, b, msg, r'{} does not end with {}')
+
+    def assertIsInstance(self, a, types, msg=None):
+        self._assert_true(isinstance(a, types), a, types, msg, r'{} is not instance of {}')
+
+
+class GAETestCase(TestCaseMixin, unittest.TestCase):
     def _init_blobstore_stub(self):
         blob_storage = file_blob_storage.FileBlobStorage('tmp', testbed.DEFAULT_APP_ID)
         blob_stub = blobstore_stub.BlobstoreServiceStub(blob_storage)
@@ -93,11 +141,6 @@ class GAETestCase(unittest.TestCase):
             trim_blocks=False,
         )
         self.templates.filters['base64'] = utils.toBase64
-        self.xmlNamespaces = {
-            'dash': 'urn:mpeg:dash:schema:mpd:2011',
-            'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
-            'cenc': 'urn:mpeg:cenc:2013',
-        }
         self.cgi_options = []
         drmloc = []
         for opt in options.options:
@@ -225,6 +268,110 @@ class GAETestCase(unittest.TestCase):
         sys.stdout.flush()
 
 
+class DashElement(TestCaseMixin):
+    xmlNamespaces = {
+        'dash': 'urn:mpeg:dash:schema:mpd:2011',
+        'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+        'cenc': 'urn:mpeg:cenc:2013',
+    }
+
+    def __init__(self, elt, parent):
+        self.element = elt
+        self.parent = parent
+        if parent:
+            self.mode = parent.mode
+        base = elt.findall('./dash:BaseURL', self.xmlNamespaces)
+        if base:
+            self.baseurl = base[0].text
+        elif parent:
+            self.baseurl = parent.baseurl
+        else:
+            self.baseurl = None
+        self.id = elt.get('id')
+
+    @property
+    def mpd(self):
+        if self.parent:
+            return self.parent.mpd
+        return self
+
+
+class DashManifest(DashElement):
+    def __init__(self, mode, mpd, url):
+        super(DashManifest, self).__init__(mpd, None)
+        self.url = url
+        self.mode = mode
+        if self.baseurl is None:
+            self.baseurl = url
+            assert isinstance(url, basestring)
+        if mode=='live':
+            self.availabilityStartTime = utils.from_isodatetime(mpd.get("availabilityStartTime"))
+            self.timeShiftBufferDepth = utils.from_isodatetime(mpd.get("timeShiftBufferDepth"))
+        self.periods = map(lambda p: DashPeriod(p, self),
+                           self.element.findall('./dash:Period', self.xmlNamespaces))
+        
+class DashPeriod(DashElement):
+    def __init__(self, period, parent):
+        super(DashPeriod, self).__init__(period, parent)
+        a = self.element.findall('./dash:AdaptationSet', self.xmlNamespaces)
+        self.adaptation_sets = map(lambda a: DashAdaptationSet(a, self), a)
+                                   
+
+class DashAdaptationSet(DashElement):
+    def __init__(self, adap_set, parent):
+        super(DashAdaptationSet, self).__init__(adap_set, parent)
+        self.template = None
+        self.startNumber = 1
+        templates = adap_set.findall('./dash:SegmentTemplate', self.xmlNamespaces)
+        if len(templates):
+            self.template = templates[0]
+            self.startNumber = int(self.template.get('startNumber','1'))
+        reps = adap_set.findall('./dash:Representation', self.xmlNamespaces)
+        self.representations = map(lambda r: DashRepresentation(r, self), reps)
+        prot = adap_set.findall('./dash:ContentProtection', self.xmlNamespaces)
+        self.default_KID = None
+        for p in prot:
+            d = p.get("{{{}}}default_KID".format(self.xmlNamespaces['cenc']))
+            if d:
+                self.default_KID = d
+                break
+        if len(prot):
+            self.assertIsNotNone(self.default_KID,
+                'default_KID cannot be missing for protected stream: {}'.format(self.baseurl))
+
+
+class DashRepresentation(DashElement):
+    def __init__(self, rep, parent):
+        super(DashRepresentation, self).__init__(rep, parent)
+        self.assertIsNotNone(self.baseurl)
+        st = rep.findall('./dash:SegmentTemplate', self.xmlNamespaces)
+        if len(st)>0:
+            self.template = st[0]
+        else:
+            self.template = parent.template
+        segment_list = rep.findall('./dash:SegmentList', self.xmlNamespaces)
+        if segment_list:
+            self.segments = list(segment_list[0])
+        if self.mode != "odvod":
+            self.assertIsNotNone(self.template)
+            self.init_url = self.template.get("initialization")
+            self.init_url = urlparse.urljoin(self.baseurl, self.init_url)
+            self.init_url = self.format_url_template(self.init_url, rep)
+            self.media_url = self.template.get("media")
+            self.media_url = urlparse.urljoin(self.baseurl, self.media_url)
+        else:
+            self.init_url = self.baseurl
+            self.media_url = self.baseurl
+
+    def format_url_template(self, url, seg_num=0):
+        url = url.replace('$RepresentationID$', self.element.get("id"))
+        url = url.replace('$Bandwidth$', self.element.get("bandwidth"))
+        url = url.replace('$Number$', str(seg_num))
+        url = url.replace('$$', '$')
+        #TODO: add $Time$
+        return url
+
+    
 class TestHandlers(GAETestCase):
     def test_index_page(self):
         self.setup_media()
@@ -273,7 +420,7 @@ class TestHandlers(GAETestCase):
 
     def validate_manifest(self, mpd_url, params, xml):
         mpd_type = xml.get("type", "static")
-        period = xml.find('dash:Period', self.xmlNamespaces)
+        period = xml.find('dash:Period', DashElement.xmlNamespaces)
         self.assertIsNotNone(period, "Manifest does not have a Period element: "+mpd_url)
         mode = params.get("mode")
         if mode is None:
@@ -332,11 +479,7 @@ class TestHandlers(GAETestCase):
         #print(mpd_url)
         tested.add(mpd_url)
         response = self.app.get(mpd_url)
-        self.assertEqual(response.status_int, 200)
-        mpd = '{{{}}}mpd'.format(self.xmlNamespaces['dash'])
-        xml = response.xml
-        self.assertEqual(mpd, xml.tag.lower())
-        self.validate_manifest(mpd_url, params, xml)
+        self.validate_manifest(mpd_url, params, response.xml)
 
     def test_get_manifest(self):
         """Exhaustive test of every manifest with every combination of options.
@@ -350,9 +493,6 @@ class TestHandlers(GAETestCase):
         for filename, manifest in manifests.manifest.iteritems():
             url = self.from_uri('dash-mpd', manifest=filename)
             response = self.app.get(url)
-            self.assertEqual(response.status_int, 200)
-            mpd = '{{{}}}mpd'.format(self.xmlNamespaces['dash'])
-            self.assertEqual(mpd, response.xml.tag.lower())
             self.validate_manifest(url, {}, response.xml)
 
         # do the exhaustive check of every option with every manifest
@@ -402,16 +542,46 @@ class TestHandlers(GAETestCase):
             baseurl = self.from_uri('dash-mpd-v2', manifest=filename, prefix='bbb')
             baseurl += '?mode=vod&' + drm_opt
             response = self.app.get(baseurl)
+            self.validate_manifest(baseurl, {"mode":"mode=vod", "drm":drm_opt},
+                                   response.xml)
+            mpd = DashManifest('vod', response.xml, baseurl)
+            for period in mpd.periods:
+                self.check_period(period)
+        self.progress(total_tests, total_tests)
+
+    def test_get_live_media_using_live_profile(self):
+        """Get segments from a live stream for each DRM type (live profile)"""
+        self.setup_media()
+        self.logoutCurrentUser()
+        drm_options = None
+        for o in self.cgi_options:
+            if o[0] == 'drm':
+                drm_options = o[1]
+                break
+        self.assertIsNotNone(drm_options)
+        pr = drm.PlayReady(self.templates)
+        media_files = models.MediaFile.all()
+        self.assertGreater(len(media_files), 0)
+        total_tests = len(drm_options)
+        test_count = 0
+        filename = 'hand_made.mpd'
+        manifest = manifests.manifest[filename]
+        for drm_opt in drm_options:
+            self.progress(test_count, total_tests)
+            test_count += 1
+            now = datetime.datetime.now(tz=utils.UTC())
+            availabilityStartTime = now - datetime.timedelta(minutes=test_count)
+            availabilityStartTime = utils.toIsoDateTime(availabilityStartTime)
+            baseurl = self.from_uri('dash-mpd-v2', manifest=filename, prefix='bbb')
+            baseurl += '?mode=live&' + drm_opt + '&start='+availabilityStartTime
+            response = self.app.get(baseurl)
             self.assertEqual(response.status_int, 200)
-            mpd = '{{{}}}mpd'.format(self.xmlNamespaces['dash'])
+            mpd = '{{{}}}mpd'.format(DashElement.xmlNamespaces['dash'])
             self.assertEqual(mpd, response.xml.tag.lower())
-            self.validate_manifest(baseurl, {"mode":"mode=vod", "drm":drm_opt}, response.xml)
-            baseurl = [baseurl]
-            mpd_base = response.xml.findall('./dash:BaseURL', self.xmlNamespaces)
-            if mpd_base:
-                baseurl.append(mpd_base[0].text)
-            for period in response.xml.findall('./dash:Period', self.xmlNamespaces):
-                self.check_period("vod", baseurl, period)
+            self.validate_manifest(baseurl, {"mode":"mode=live", "drm":drm_opt}, response.xml)
+            mpd = DashManifest("live", response.xml, baseurl)
+            for period in mpd.periods:
+                self.check_period(period)
         self.progress(total_tests, total_tests)
 
     def test_get_vod_media_using_on_demand_profile(self):
@@ -431,124 +601,74 @@ class TestHandlers(GAETestCase):
         self.assertIsNotNone(chosen)
         baseurl, manifest, response = chosen
         self.validate_manifest(baseurl, {"mode":"mode=odvod"}, response.xml)
-        baseurl = [baseurl]
-        mpd_base = response.xml.findall('./dash:BaseURL', self.xmlNamespaces)
-        if mpd_base:
-            baseurl.append(mpd_base[0].text)
-        for period in response.xml.findall('./dash:Period', self.xmlNamespaces):
-            self.check_period("odvod", baseurl, period)
+        mpd = DashManifest("odvod", response.xml, baseurl)
+        for period in mpd.periods:
+            self.check_period(period)
 
-    def check_period(self, mode, baseurl, period):
-        period_base = period.findall('./dash:BaseURL', self.xmlNamespaces)
-        if period_base:
-            baseurl.append(period_base[0].text)
-        for adap_set in period.findall('./dash:AdaptationSet', self.xmlNamespaces):
-            if mode=="odvod":
-                self.check_on_demand_adaptation_set(baseurl, adap_set)
+    def check_period(self, period):
+        for adap_set in period.adaptation_sets:
+            if period.mode=="odvod":
+                self.check_on_demand_adaptation_set(adap_set)
             else:
-                self.check_live_adaptation_set(baseurl, adap_set)
-        if period_base:
-            baseurl.pop(-1)
+                self.check_live_adaptation_set(adap_set)
 
-    def check_live_adaptation_set(self, baseurl, adap_set):
-        adap_base = adap_set.findall('./dash:BaseURL', self.xmlNamespaces)
-        if adap_base:
-            baseurl.append(adap_base[0].text)
-        adap_template = adap_set.findall('./dash:SegmentTemplate', self.xmlNamespaces)
-        if not adap_template:
-            adap_template = None
-        else:
-            adap_template = adap_template[0]
-        prot = adap_set.findall('./dash:ContentProtection', self.xmlNamespaces)
-        default_KID = None
-        for p in prot:
-            d = p.get("{{{}}}default_KID".format(self.xmlNamespaces['cenc']))
-            if d:
-                default_KID = d
-                break
-        if prot:
-            self.assertIsNotNone(default_KID,
-                                 'default_KID cannot be missing for protected stream: {}'.format(baseurl[0]))
-        reps = adap_set.findall('./dash:Representation', self.xmlNamespaces)
-        self.assertGreater(len(reps), 0)
-        for rep in reps:
-            rep_template = rep.findall('./dash:SegmentTemplate', self.xmlNamespaces)
-            if rep_template:
-                rep_template = rep_template[0]
-            else:
-                rep_template = adap_template
-            self.assertIsNotNone(rep_template)
-            init_url = rep_template.get("initialization")
-            init_url = urlparse.urljoin(baseurl[-1], init_url)
-            init_url = self.format_url_template(init_url, rep)
+    def check_live_adaptation_set(self, adap_set):
+        for rep in adap_set.representations:
+            self.assertIsNotNone(rep.template)
+            init_url = rep.format_url_template(rep.init_url)
             mf = self.get_mediafile(init_url)
-            self.check_init_segment(init_url, rep, mf, default_KID)
-            media_url = rep_template.get("media")
-            media_url = urlparse.urljoin(baseurl[-1], media_url)
+            moov = self.check_init_segment(init_url, rep, mf)
             num_segments = 5
             decode_time = None
-            name = rep.get('id', '').lower() + '.mp4'
+            name = rep.id.lower() + '.mp4'
             mf = models.MediaFile.query(models.MediaFile.name==name).get()
-            if mf:
+            if mf and adap_set.mode=='vod':
                 num_segments = mf.representation.num_segments - 1
                 decode_time = 0
+            start_number = 1
+            if adap_set.mode=='live':
+                now = datetime.datetime.now(tz=utils.UTC())
+                delta = now - adap_set.mpd.availabilityStartTime
+                duration = int(adap_set.template.get('duration'))
+                timescale = int(adap_set.template.get('timescale'))
+                start_number = long(delta.total_seconds() * timescale / duration)
+                num_segments = math.floor(adap_set.mpd.timeShiftBufferDepth.total_seconds() * timescale / duration)
+                num_segments = int(num_segments)
+                start_number -= num_segments
+                if start_number < adap_set.startNumber:
+                    num_segments -= adap_set.startNumber - start_number
+                    start_number = adap_set.startNumber
+                decode_time = (start_number - adap_set.startNumber) * duration
+            first=True
             for idx in range(num_segments):
-                self.check_media_segment(media_url, rep, mf, default_KID, idx+1,
-                                         decode_time)
+                moof = self.check_media_segment(rep, mf, idx + start_number,
+                                                decode_time=decode_time, first=first)
+                first=False
                 if decode_time is not None:
-                    decode_time += mf.representation.segments[idx+1].duration
-        if adap_base:
-            baseurl.pop(-1)
+                    decode_time = moof.traf.tfdt.base_media_decode_time
+                    for sample in moof.traf.trun.samples:
+                        if sample.duration:
+                            decode_time += sample.duration
+                        else:
+                            decode_time += moov.mvex.trex.default_sample_duration
 
-    def check_on_demand_adaptation_set(self, baseurl, adap_set):
-        adap_base = adap_set.findall('./dash:BaseURL', self.xmlNamespaces)
-        if adap_base:
-            baseurl.append(adap_base[0].text)
-        prot = adap_set.findall('./dash:ContentProtection', self.xmlNamespaces)
-        default_KID = None
-        for p in prot:
-            d = p.get("{{{}}}default_KID".format(self.xmlNamespaces['cenc']))
-            if d:
-                default_KID = d
-                break
-        if prot:
-            self.assertIsNotNone(default_KID,
-                                 'default_KID cannot be missing for protected stream: {}'.format(baseurl[0]))
-        reps = adap_set.findall('./dash:Representation', self.xmlNamespaces)
-        self.assertGreater(len(reps), 0)
-        for rep in reps:
-            rep_base = rep.findall('./dash:BaseURL', self.xmlNamespaces)
-            if rep_base:
-                rep_base = rep_base[0].text
-            else:
-                rep_base = baseurl[-1]
-            mf = self.get_mediafile(rep_base)
-            seg_list = rep.findall('./dash:SegmentList', self.xmlNamespaces)
-            self.assertEqual(len(seg_list), 1)
+    def check_on_demand_adaptation_set(self, adap_set):
+        for rep in adap_set.representations:
+            mf = self.get_mediafile(rep.baseurl)
             decode_time = 0
-            for seg_num, item in enumerate(list(seg_list[0])):
+            for seg_num, item in enumerate(rep.segments):
                 if seg_num==0:
                     self.assertTrue(item.tag.endswith('Initialization'))
                     seg_range = item.get("range")
                     self.assertIsNotNone(seg_range)
-                    self.check_init_segment(rep_base, rep, mf, default_KID, seg_range)
+                    self.check_init_segment(rep.baseurl, rep, mf, seg_range)
                 else:
                     self.assertTrue(item.tag.endswith("SegmentURL"))
                     seg_range = item.get("mediaRange")
                     self.assertIsNotNone(seg_range)
-                    self.check_media_segment(rep_base, rep, mf, default_KID, seg_num,
-                                             decode_time, seg_range)
+                    self.check_media_segment(rep, mf, seg_num,
+                                             decode_time=decode_time, seg_range=seg_range)
                     decode_time += mf.representation.segments[seg_num].duration
-        if adap_base:
-            baseurl.pop(-1)
-
-    def format_url_template(self, url, rep, seg_num=0):
-        url = url.replace('$RepresentationID$', rep.get("id"))
-        url = url.replace('$Bandwidth$', rep.get("bandwidth"))
-        url = url.replace('$Number$', str(seg_num))
-        url = url.replace('$$', '$')
-        #TODO: add $Time$
-        return url
 
     def get_mediafile(self, url):
         parts = urlparse.urlparse(url)
@@ -565,8 +685,8 @@ class TestHandlers(GAETestCase):
 
     pr_system_id = drm.PlayReady.SYSTEM_ID.replace('-','').lower()
 
-    def check_init_segment(self, init_url, rep, mediafile, default_KID, seg_range=None):
-        if default_KID:
+    def check_init_segment(self, init_url, rep, mediafile, seg_range=None):
+        if rep.parent.default_KID:
             self.assertIn('_enc', init_url)
         headers = None
         if seg_range is not None:
@@ -598,12 +718,17 @@ class TestHandlers(GAETestCase):
                     self.assertTrue('moov' not in init_url,
                                     'PSSH box should be present in {}\n{:s}'.format(
                                         init_url, ae))
+        return moov
 
-    def check_media_segment(self, media_url, rep, mediafile, default_KID, seg_num, decode_time, seg_range=None):
-        media_url = self.format_url_template(media_url, rep, seg_num)
-        if default_KID:
+    def check_media_segment(self, rep, mediafile, seg_num, decode_time, seg_range=None, first=False):
+        if rep.mode=='odvod':
+            media_url = rep.format_url_template(rep.baseurl, seg_num)
+        else:
+            media_url = rep.format_url_template(rep.media_url, seg_num)
+        if rep.parent.default_KID:
             self.assertIn('_enc', media_url)
         headers = None
+        #print(media_url,decode_time)
         if seg_range is not None:
             headers = {"Range": "bytes={}".format(seg_range)}
         response = self.app.get(media_url, headers=headers)
@@ -618,9 +743,11 @@ class TestHandlers(GAETestCase):
         self.assertEqual(moof.mfhd.sequence_number, seg_num)
         if decode_time is not None:
             seg_dt = moof.traf.tfdt.base_media_decode_time
-            self.assertEqual(decode_time, seg_dt,
-                             'Decode time {:d} should be {:d} for segment {:d} in {}'.format(
-                                 seg_dt, decode_time, seg_num, media_url))
+            delta = abs(decode_time - seg_dt)
+            tolerance = mediafile.representation.timescale if first else mediafile.representation.timescale/10
+            if delta > tolerance:
+                raise AssertionError('Decode time {seg_dt:d} should be {dt:d} (delta {delta:d} for segment {num:d} in {url:s}'.format(seg_dt=seg_dt, dt=decode_time, delta=delta, num=seg_num, url=media_url))
+        return moof
 
     def test_request_unknown_media(self):
         url = self.from_uri("dash-media", mode="vod", filename="notfound", segment_num=1, ext="mp4")
