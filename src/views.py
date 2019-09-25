@@ -427,11 +427,6 @@ class RequestHandler(webapp2.RequestHandler):
             'initURL': '$RepresentationID$/init.m4a',
             'mediaURL':'$RepresentationID$/$Number$.m4a'
         }
-        if self.request.params.get('drm'):
-            video["initURL"] += '?drm={}'.format(self.request.params.get('drm'))
-            video["mediaURL"] += '?drm={}'.format(self.request.params.get('drm'))
-            audio["initURL"] += '?drm={}'.format(self.request.params.get('drm'))
-            audio["mediaURL"] += '?drm={}'.format(self.request.params.get('drm'))
         prefix = kwargs.get('prefix','bbb').lower()
         acodec = self.request.params.get('acodec')
         media_files = models.MediaFile.all()
@@ -525,6 +520,9 @@ class RequestHandler(webapp2.RequestHandler):
         v_cgi_params = []
         a_cgi_params = []
         m_cgi_params = copy.deepcopy(dict(self.request.params))
+        if self.request.params.get('drm', 'none') != 'none':
+            v_cgi_params.append('drm={}'.format(self.request.params.get('drm')))
+            a_cgi_params.append('drm={}'.format(self.request.params.get('drm')))
         if self.request.params.get('start'):
             v_cgi_params.append('start=%s'%utils.toIsoDateTime(availabilityStartTime))
             a_cgi_params.append('start=%s'%utils.toIsoDateTime(availabilityStartTime))
@@ -564,7 +562,9 @@ class RequestHandler(webapp2.RequestHandler):
             pass
         if v_cgi_params:
             rv["video"]['mediaURL'] += '?' + '&'.join(v_cgi_params)
+            rv["video"]['initURL'] += '?' + '&'.join(v_cgi_params)
         if a_cgi_params:
+            rv["audio"]['initURL'] += '?' + '&'.join(a_cgi_params)
             rv["audio"]['mediaURL'] += '?' + '&'.join(a_cgi_params)
         if m_cgi_params:
             lst = []
