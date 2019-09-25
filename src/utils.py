@@ -261,6 +261,8 @@ def dateTimeFormat(value, fmt):
         return value
     return value.strftime(fmt)
 
+duration_re = re.compile(r'^PT((?P<hours>\d+)[H:])?((?P<minutes>\d+)[M:])?((?P<seconds>[\d.]+)S?)?$')
+
 def from_isodatetime(date_time):
     """
     Convert an ISO formated date string to a datetime.datetime object
@@ -268,11 +270,17 @@ def from_isodatetime(date_time):
     if not date_time:
         return None
     if date_time[:2]=='PT':
-        if 'M' in date_time:
-            dt = datetime.datetime.strptime(date_time, "PT%HH%MM%SS")
-        else:
-            dt = datetime.datetime.strptime(date_time, "PT%H:%M:%S")
-        secs = (dt.hour*60+dt.minute)*60 + dt.second
+        match = duration_re.match(date_time)
+        if not match:
+            raise ValueError(date_time)
+        hours, minutes, seconds = match.group('hours'), match.group('minutes'), match.group('seconds')
+        secs = 0
+        if hours is not None:
+            secs += int(match.group('hours'))*3600
+        if minutes is not None:
+            secs += int(match.group('minutes'))*60
+        if seconds is not None:
+            secs += float(match.group('seconds'))
         return datetime.timedelta(seconds=secs)
     if 'T' in date_time:
         try:
