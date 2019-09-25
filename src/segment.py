@@ -204,3 +204,12 @@ class Representation(object):
             rv.bitrate = int(8 * rv.timescale * file_size/rv.mediaDuration + 0.5)
         return rv
 
+if __name__ == '__main__':
+    import io
+    import mp4, utils
+
+    src = utils.BufferedReader(io.FileIO(sys.argv[1], 'rb'))
+    wrap = mp4.Wrapper(atom_type='wrap', parent=None,
+                       children=mp4.Mp4Atom.create(src))
+    rep = Representation.create(filename=sys.argv[1], atoms=wrap.children)
+    print repr(rep)
