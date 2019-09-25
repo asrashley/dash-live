@@ -310,7 +310,13 @@ class RequestHandler(webapp2.RequestHandler):
               'media="$RepresentationID$/$Number$.mp4" ' ]
         timeline_start = context["elapsedTime"] - datetime.timedelta(seconds=context["timeShiftBufferDepth"])
         first=True
-        first_seg = self.calculate_segment_from_timecode(utils.scale_timedelta(timeline_start,1,1), representation, context["shortest_representation"])
+        segment_num, origin_time = self.calculate_segment_from_timecode(utils.scale_timedelta(timeline_start,1,1), representation, context["ref_representation"])
+        assert representation.num_segments == (len(representation.segments)-1)
+        assert segment_num < len(representation.segments)
+        # seg_start_time is the time (in representation timescale units) when the segment_num
+        # segment started, relative to availabilityStartTime
+        seg_start_time = long(origin_time * representation.timescale + (segment_num-1) * representation.segment_duration)
+        startNumber = context["startNumber"] + (seg_start_time/representation.segment_duration)
         dur=0
         s_node = {
             'duration': None,
@@ -318,11 +324,11 @@ class RequestHandler(webapp2.RequestHandler):
             'start': None,
         }
         while dur <= (context["timeShiftBufferDepth"]*representation.timescale):
-            seg = representation.segments[first_seg['segment_num']]
+            seg = representation.segments[segment_num]
             if first:
-                rv.append('startNumber="%d">'%(context["startNumber"]+long(first_seg['seg_start_time']/representation.segment_duration)))
+                rv.append('startNumber="%d">'%startNumber)
                 rv.append('<SegmentTimeline>')
-                s_node['start'] = first_seg['seg_start_time']
+                s_node['start'] = seg_start_time
                 first=False
             elif seg.duration != s_node["duration"]:
                 output_s_node(s_node)
@@ -331,9 +337,9 @@ class RequestHandler(webapp2.RequestHandler):
             s_node["duration"] = seg.duration
             s_node["count"] += 1
             dur += seg.duration
-            first_seg['segment_num'] += 1
-            if first_seg['segment_num']>representation.num_segments:
-                first_seg['segment_num']=1
+            segment_num += 1
+            if segment_num > representation.num_segments:
+                segment_num = 1
         output_s_node(s_node)
         rv.append('</SegmentTimeline></SegmentTemplate>')
         return '\n'.join(rv)
@@ -474,19 +480,18 @@ class RequestHandler(webapp2.RequestHandler):
             self.compute_av_values(audio, rv["startNumber"])
         rv["audio"] = audio
 
-        shortest_representation=None
+        ref_representation=None
         mediaDuration = 0
         kids = set()
         for rep in video['representations']+audio['representations']:
-            dur = rep.mediaDuration / rep.timescale
-            if shortest_representation is None or dur<mediaDuration:
-                shortest_representation = rep
-                mediaDuration = dur
             if rep.encrypted:
                 kids.update(rep.kids)
         rv["kids"] = kids
         rv["mediaDuration"] = mediaDuration
-        rv["shortest_representation"] = shortest_representation
+        if video['representations']:
+            rv["ref_representation"] = video['representations'][0]
+        else:
+            rv["ref_representation"] = audio['representations'][0]
         rv["maxSegmentDuration"] = max(video.get('maxSegmentDuration', 0),
                                        audio.get('maxSegmentDuration', 0))
         if encrypted:
@@ -580,32 +585,46 @@ class RequestHandler(webapp2.RequestHandler):
         except KeyError:
             pass
 
-    def calculate_segment_from_timecode(self, timecode, representation, shortest_representation):
+    def calculate_segment_from_timecode(self, timecode, representation, ref_representation):
         """find the correct segment for the given timecode.
 
         :param timecode: the time (in seconds) since availabilityStartTime
             for the requested fragment.
         :param representation: the Representation to use
-        :param shortest_representation: the Representation with the shortest total duration
+        :param ref_representation: the Representation that is used as a stream's reference
+        returns the segment number and the time when the stream last looped
         """
-        # nominal_duration is the duration (in seconds) of the shortest representation.
-        # This is used to decide how many times the stream has looped since
-        # availabilityStartTime.
-        nominal_duration = shortest_representation.segment_duration * shortest_representation.num_segments / float(shortest_representation.timescale)
-        num_loops = long(timecode / nominal_duration)
-        # origin time is the time (in seconds) that maps to segment 1 for
-        # all adaptation sets. It represents the time of day when the
+        if timecode < 0:
+            raise ValueError("Invalid timecode: %d"%timecode)
+        # nominal_duration is the duration (in timescale units) of the reference
+        # representation. This is used to decide how many times the stream has looped
+        # since availabilityStartTime.
+        nominal_duration = ref_representation.segment_duration * \
+                           ref_representation.num_segments
+        tc_scaled = long(timecode * ref_representation.timescale)
+        num_loops = tc_scaled / nominal_duration
+
+        # origin time is the time (in timescale units) that maps to segment 1 for
+        # all adaptation sets. It represents the most recent time of day when the
         # content started from the beginning, relative to availabilityStartTime
         origin_time = num_loops * nominal_duration
-        assert timecode >= origin_time
+
         # the difference between timecode and origin_time now needs
         # to be mapped to the segment index of this representation
-        segment_num = 1 + long((timecode - origin_time) * representation.timescale / representation.segment_duration)
-        assert segment_num>0 and segment_num<=representation.num_segments
-        # seg_start_time is the time (in representation timescale units) when this
-        # segment started, relative to availabilityStartTime
-        seg_start_time = long(origin_time * representation.timescale + (segment_num-1) * representation.segment_duration)
-        return locals()
+        segment_num = (tc_scaled - origin_time) * representation.timescale
+        segment_num /= ref_representation.timescale
+        segment_num /= representation.segment_duration
+        segment_num += 1
+        # the difference between the segment durations of the reference
+        # representation and this representation can mean that this representation
+        # has already looped
+        if segment_num > representation.num_segments:
+            segment_num = 1
+            origin_time += nominal_duration
+        origin_time /= ref_representation.timescale
+        if segment_num<1 or segment_num>representation.num_segments:
+            raise ValueError('Invalid segment number %d'%(segment_num))
+        return (segment_num, origin_time)
 
     def calculate_injected_error_segments(self, times, now, availabilityStartTime, timeshiftBufferDepth, representation):
         """Calculate a list of segment numbers for injecting errors
@@ -879,20 +898,29 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
                 # for this Representation
                 lastFragment = dash['startNumber'] + int(utils.scale_timedelta(dash['elapsedTime'], representation.timescale, representation.segment_duration))
                 firstFragment = lastFragment - int(representation.timescale*dash['timeShiftBufferDepth'] / representation.segment_duration) - 1
+                firstFragment = max(dash['startNumber'], firstFragment)
             else:
                 firstFragment = dash['startNumber']
                 lastFragment = firstFragment + representation.num_segments - 1
             if segment_num<firstFragment or segment_num>lastFragment:
-                self.response.write('Segment not found (valid range= %d->%d)'%(firstFragment,lastFragment))
+                self.response.write('Segment %d not found (valid range= %d->%d)'%(segment_num,firstFragment,lastFragment))
                 self.response.set_status(404)
                 return
             if dash['mode']=='live':
                 # elapsed_time is the time (in seconds) since availabilityStartTime
                 # for the requested fragment
-                elapsed_time = (segment_num - dash['startNumber']) * representation.segment_duration / float(representation.timescale)
-                segpos = self.calculate_segment_from_timecode(elapsed_time, representation, dash['shortest_representation'])
-                mod_segment = segpos['segment_num']
-                origin_time = segpos['origin_time']
+                ref = dash["ref_representation"]
+                #elapsed_time = (segment_num - dash['startNumber']) * representation.segment_duration / float(representation.timescale)
+                elapsed_time = (segment_num - dash['startNumber']) * ref.segment_duration / float(ref.timescale)
+                try:
+                    mod_segment, origin_time = self.calculate_segment_from_timecode(elapsed_time,
+                                                                  representation,
+                                                                  dash['ref_representation'])
+                except ValueError:
+                    raise
+                    self.response.write('Segment %d not found (valid range= %d->%d)'%(segment_num,firstFragment,lastFragment))
+                    self.response.set_status(404)
+                    return
             else:
                 mod_segment = 1 + segment_num - dash['startNumber']
         #blob_info = blobstore.BlobInfo.get(mf.blob)
@@ -940,7 +968,7 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
                 atom.moof.mfhd.sequence_number = segment_num
             try:
                 # remove any sidx box as it has a baseMediaDecodeTime and it's an optional index
-                del data.sidx
+                del atom.sidx
             except AttributeError:
                 pass
         self.add_allowed_origins()
@@ -1024,7 +1052,7 @@ class VideoPlayer(RequestHandler):
         for idx in range(len(context['dash']['audio']['representations'])):
             context['dash']['audio']['representations'][idx] = context['dash']['audio']['representations'][idx].toJSON()
             del context['dash']['audio']['representations'][idx]["segments"]
-        del context['dash']['shortest_representation']
+        del context['dash']['ref_representation']
         if context['dash']['encrypted']:
             keys = context['dash']['keys']
             for kid in keys.keys():
