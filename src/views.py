@@ -471,17 +471,16 @@ class RequestHandler(webapp2.RequestHandler):
         rv["audio"] = audio
 
         ref_representation=None
-        mediaDuration = 0
         kids = set()
         for rep in video['representations']+audio['representations']:
             if rep.encrypted:
                 kids.update(rep.kids)
         rv["kids"] = kids
-        rv["mediaDuration"] = mediaDuration
         if video['representations']:
             rv["ref_representation"] = video['representations'][0]
         else:
             rv["ref_representation"] = audio['representations'][0]
+        rv["mediaDuration"] = rv["ref_representation"].mediaDuration
         rv["maxSegmentDuration"] = max(video.get('maxSegmentDuration', 0),
                                        audio.get('maxSegmentDuration', 0))
         if encrypted:

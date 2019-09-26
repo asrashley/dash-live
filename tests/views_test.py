@@ -307,15 +307,53 @@ class DashManifest(DashElement):
         if mode=='live':
             self.availabilityStartTime = utils.from_isodatetime(mpd.get("availabilityStartTime"))
             self.timeShiftBufferDepth = utils.from_isodatetime(mpd.get("timeShiftBufferDepth"))
+        else:
+            self.mediaPresentationDuration = utils.from_isodatetime(mpd.get("mediaPresentationDuration"))
+            if "urn:mpeg:dash:profile:isoff-on-demand:2011" in mpd.get('profiles'):
+                self.mode = 'odvod'
         self.publishTime = mpd.get("publishTime")
         if self.publishTime is not None:
             self.publishTime = utils.from_isodatetime(self.publishTime)
         self.periods = map(lambda p: DashPeriod(p, self),
                            self.element.findall('./dash:Period', self.xmlNamespaces))
+
+    def validate(self):
+        root = self.element
+        mpd_type = root.get("type", "static")
+        period = root.find('dash:Period', self.xmlNamespaces)
+        self.assertIsNotNone(period, "Manifest does not have a Period element: %s"%self.url)
+        if self.mode=="live":
+            self.assertEqual(mpd_type, "dynamic",
+                             "MPD@type must be dynamic for live manifest: %s"%self.url)
+            self.assertIsNotNone(root.get("availabilityStartTime"),
+                                 "MPD@availabilityStartTime must be present for live manifest: %s"%self.url)
+            self.assertIsNone(root.get("mediaPresentationDuration"),
+                              "MPD@mediaPresentationDuration must not be present for live manifest: %s"%self.url)
+        else:
+            self.assertEqual(mpd_type, "static",
+                             "MPD@type must be static for VOD manifest: %s"%self.url)
+            duration = root.get('mediaPresentationDuration')
+            if self.mediaPresentationDuration is not None:
+                self.assertGreaterThan(self.mediaPresentationDuration,
+                                       datetime.timedelta(seconds=0),
+                                'Invalid MPD@mediaPresentationDuration "{}": {}'.format(duration, self.url))
+            else:
+                msg = 'If MPD@mediaPresentationDuration is not present, Period@duration must be present: %s'%self.url
+                self.assertGreaterThan(len(self.periods), 0, msg)
+                for p in self.periods:
+                    self.assertIsNotNone(p.duration, msg)
+
+            self.assertIsNone(root.get("minimumUpdatePeriod"),
+                              "MPD@minimumUpdatePeriod must not be present for VOD manifest: %s"%self.url)
+            self.assertIsNone(root.get("availabilityStartTime"),
+                              "MPD@availabilityStartTime must not be present for VOD manifest: %s"%self.url)
         
 class DashPeriod(DashElement):
     def __init__(self, period, parent):
         super(DashPeriod, self).__init__(period, parent)
+        self.duration = period.get("duration")
+        if self.duration is not None:
+            self.duration = utils.from_isodatetime(self.duration)
         a = self.element.findall('./dash:AdaptationSet', self.xmlNamespaces)
         self.adaptation_sets = map(lambda a: DashAdaptationSet(a, self), a)
                                    
@@ -420,44 +458,6 @@ class TestHandlers(GAETestCase):
         self.setCurrentUser(is_admin=True)
         response = self.app.get(url)
         self.assertEqual(response.status_int, 200)
-
-    def validate_manifest(self, mpd_url, params, xml):
-        mpd_type = xml.get("type", "static")
-        period = xml.find('dash:Period', DashElement.xmlNamespaces)
-        self.assertIsNotNone(period, "Manifest does not have a Period element: "+mpd_url)
-        mode = params.get("mode")
-        if mode is None:
-            if "vod_" in mpd_url:
-                mode="vod"
-            else:
-                mode="live"
-        else:
-            mode = mode.split('=')[1]
-        if mode=="live":
-            self.assertEqual(mpd_type, "dynamic",
-                             "MPD@type must be dynamic for live manifest: "+mpd_url)
-            self.assertIsNotNone(xml.get("availabilityStartTime"),
-                                 "MPD@availabilityStartTime must be present for live manifest: "+mpd_url)
-            
-            self.assertIsNone(xml.get("mediaPresentationDuration"),
-                              "MPD@mediaPresentationDuration must not be present for live manifest: "+mpd_url)
-        else:
-            self.assertEqual(mpd_type, "static",
-                             "MPD@type must be static for VOD manifest: "+mpd_url)
-            duration = xml.get('mediaPresentationDuration')
-            if duration is not None:
-                self.assertTrue(duration.startswith('PT'),
-                                'Invalid MPD@mediaPresentationDuration "{}": {}'.format(duration, mpd_url))
-            else:
-                self.assertIsNotNone(period.get("duration"),
-                                     'If MPD@mediaPresentationDuration is not present, Period@duration must be present: '+mpd_url)
-                duration = period.get("duration")
-                self.assertTrue(duration.startswith('PT'),
-                                'Invalid MPD@mediaPresentationDuration "{}": {}'.format(duration, mpd_url))
-            self.assertIsNone(xml.get("minimumUpdatePeriod"),
-                              "MPD@minimumUpdatePeriod must not be present for VOD manifest: "+mpd_url)
-            self.assertIsNone(xml.get("availabilityStartTime"),
-                              "MPD@availabilityStartTime must not be present for VOD manifest: "+mpd_url)
         
     def check_manifest(self, filename, indexes, tested):
         params = {}
@@ -467,9 +467,10 @@ class TestHandlers(GAETestCase):
             if value:
                 params[name] = value
         # remove pointless combinations of options
-        if params.get("mode", "mode=live") == "mode=live" and "vod_" in filename:
+        mode = params.get("mode", "mode=live").split('=')[1]
+        if mode == "live" and "vod_" in filename:
             return
-        if params.get("mode", "mode=live") != "mode=live":
+        if mode != "live":
             if params.has_key("mup"):
                 del params["mup"]
             if params.has_key("time"):
@@ -482,7 +483,8 @@ class TestHandlers(GAETestCase):
         #print(mpd_url)
         tested.add(mpd_url)
         response = self.app.get(mpd_url)
-        self.validate_manifest(mpd_url, params, response.xml)
+        mpd = DashManifest(mode, response.xml, mpd_url)
+        mpd.validate()
 
     def test_get_manifest(self):
         """Exhaustive test of every manifest with every combination of options.
@@ -496,7 +498,9 @@ class TestHandlers(GAETestCase):
         for filename, manifest in manifests.manifest.iteritems():
             url = self.from_uri('dash-mpd', manifest=filename)
             response = self.app.get(url)
-            self.validate_manifest(url, {}, response.xml)
+            mode = 'vod' if 'vod_' in filename else 'live'
+            mpd = DashManifest(mode, response.xml, url)
+            mpd.validate()
 
         # do the exhaustive check of every option with every manifest
         total_tests = len(manifests.manifest)
@@ -553,8 +557,8 @@ class TestHandlers(GAETestCase):
             if option:
                 baseurl += '?mode=live&start=' + option
             response = self.app.get(baseurl)
-            self.validate_manifest(baseurl, {"mode":"mode=live"}, response.xml)
             mpd = DashManifest('live', response.xml, baseurl)
+            mpd.validate()
             if option=='now':
                 start_time = mpd.publishTime - mpd.timeShiftBufferDepth
             self.assertEqual(mpd.availabilityStartTime, start_time)
@@ -582,9 +586,8 @@ class TestHandlers(GAETestCase):
             baseurl = self.from_uri('dash-mpd-v2', manifest=filename, stream='bbb')
             baseurl += '?mode=vod&' + drm_opt
             response = self.app.get(baseurl)
-            self.validate_manifest(baseurl, {"mode":"mode=vod", "drm":drm_opt},
-                                   response.xml)
             mpd = DashManifest('vod', response.xml, baseurl)
+            mpd.validate()
             for period in mpd.periods:
                 self.check_period(period)
         self.progress(total_tests, total_tests)
@@ -618,8 +621,8 @@ class TestHandlers(GAETestCase):
             self.assertEqual(response.status_int, 200)
             mpd = '{{{}}}mpd'.format(DashElement.xmlNamespaces['dash'])
             self.assertEqual(mpd, response.xml.tag.lower())
-            self.validate_manifest(baseurl, {"mode":"mode=live", "drm":drm_opt}, response.xml)
             mpd = DashManifest("live", response.xml, baseurl)
+            mpd.validate()
             for period in mpd.periods:
                 self.check_period(period)
         self.progress(total_tests, total_tests)
@@ -640,8 +643,8 @@ class TestHandlers(GAETestCase):
                 break
         self.assertIsNotNone(chosen)
         baseurl, manifest, response = chosen
-        self.validate_manifest(baseurl, {"mode":"mode=odvod"}, response.xml)
         mpd = DashManifest("odvod", response.xml, baseurl)
+        mpd.validate()
         for period in mpd.periods:
             self.check_period(period)
 
