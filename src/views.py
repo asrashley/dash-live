@@ -344,7 +344,7 @@ class RequestHandler(webapp2.RequestHandler):
         rv.append('</SegmentTimeline></SegmentTemplate>')
         return '\n'.join(rv)
 
-    def calculate_dash_params(self, **kwargs):
+    def calculate_dash_params(self, stream, mode, **kwargs):
         mpd_url = kwargs.get("mpd_url")
         if mpd_url is None:
             mpd_url = self.request.uri
@@ -353,12 +353,6 @@ class RequestHandler(webapp2.RequestHandler):
                     mpd_url = mpd_url.replace(k,v)
                     break
         encrypted = self.request.params.get('drm','none').lower() != 'none'
-        mode = kwargs.get("mode", self.request.params.get('mode', None))
-        if mode is None:
-            if re.search('vod',mpd_url) or encrypted:
-                mode='vod'
-            else:
-                mode='live'
         #mediaDuration = 9*60 + 32.52 #"PT0H9M32.52S"
         now = datetime.datetime.now(tz=utils.UTC())
         clockDrift=0
@@ -391,19 +385,21 @@ class RequestHandler(webapp2.RequestHandler):
         }
         elapsedTime = datetime.timedelta(seconds=0)
         if mode=='live':
-            if now.hour>=5:
-                availabilityStartTime = now.replace(hour=5, minute=0, second=0, microsecond=0)
-            else:
+            startParam = self.request.params.get('start', 'today')
+            if startParam == 'today':
                 availabilityStartTime = now.replace(hour=0, minute=0, second=0, microsecond=0)
-            startParam = self.request.params.get('start')
-            if startParam:
-                if startParam == 'now':
-                    availabilityStartTime = publishTime - datetime.timedelta(seconds=self.DEFAULT_TIMESHIFT_BUFFER_DEPTH)
-                else:
-                    try:
-                        availabilityStartTime = utils.from_isodatetime(startParam)
-                    except ValueError:
-                        availabilityStartTime = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                if now.hour == 0 and now.minutes == 0:
+                    availabilityStartTime -= datetime.timedelta(days=1)
+            elif startParam == 'now':
+                availabilityStartTime = rv["publishTime"] - \
+                    datetime.timedelta(seconds=self.DEFAULT_TIMESHIFT_BUFFER_DEPTH)
+            elif startParam == 'epoch':
+                availabilityStartTime = datetime.datetime(1970, 1, 1, 0, 0, tzinfo=utils.UTC())
+            else:
+                try:
+                    availabilityStartTime = utils.from_isodatetime(startParam)
+                except ValueError:
+                    availabilityStartTime = now.replace(hour=0, minute=0, second=0, microsecond=0)
             elapsedTime = now - availabilityStartTime
             if elapsedTime.seconds < rv["timeShiftBufferDepth"]:
                 timeShiftBufferDepth = rv["timeShiftBufferDepth"] = elapsedTime.seconds
@@ -427,16 +423,15 @@ class RequestHandler(webapp2.RequestHandler):
             'initURL': '$RepresentationID$/init.m4a',
             'mediaURL':'$RepresentationID$/$Number$.m4a'
         }
-        prefix = kwargs.get('prefix','bbb').lower()
         acodec = self.request.params.get('acodec')
         media_files = models.MediaFile.all()
         for mf in media_files:
             r = mf.representation
             if r is None:
                 continue
-            if r.contentType=="video" and r.encrypted==encrypted and r.filename.startswith(prefix+'_v'):
+            if r.contentType=="video" and r.encrypted==encrypted and r.filename.startswith(stream+'_v'):
                 video['representations'].append(r)
-            elif r.contentType=="audio" and r.encrypted==encrypted and r.filename.startswith(prefix+'_a'):
+            elif r.contentType=="audio" and r.encrypted==encrypted and r.filename.startswith(stream+'_a'):
                 if acodec is None or r.codecs.startswith(acodec):
                     audio['representations'].append(r)
         # if stream is encrypted but there is encrypted version of the audio track, fall back
@@ -446,7 +441,7 @@ class RequestHandler(webapp2.RequestHandler):
                 r = mf.representation
                 if r is None:
                     continue
-                if r.contentType=="audio" and r.filename.startswith(prefix+'_a') and r.codecs.startswith(acodec):
+                if r.contentType=="audio" and r.filename.startswith(stream+'_a') and r.codecs.startswith(acodec):
                     audio['representations'].append(copy.deepcopy(r))
         if mode=='vod' or mode=='odvod':
             if video['representations']:
@@ -526,6 +521,7 @@ class RequestHandler(webapp2.RequestHandler):
         if self.request.params.get('start'):
             v_cgi_params.append('start=%s'%utils.toIsoDateTime(availabilityStartTime))
             a_cgi_params.append('start=%s'%utils.toIsoDateTime(availabilityStartTime))
+            m_cgi_params['start'] = utils.toIsoDateTime(availabilityStartTime)
         if clockDrift:
             rv["timeSource"]['url'] += '?drift=%d'%clockDrift
             v_cgi_params.append('drift=%d'%clockDrift)
@@ -727,7 +723,7 @@ class MainPage(RequestHandler):
         for name in filenames:
             context['rows'].append({
                 'filename': name,
-                'url': self.uri_for('dash-mpd-v2', manifest=name, prefix='placeholder').replace('placeholder','{directory}'),
+                'url': self.uri_for('dash-mpd-v2', manifest=name, stream='placeholder').replace('placeholder','{directory}'),
                 'manifest': manifests.manifest[name],
                 'option': [],
             })
@@ -746,10 +742,10 @@ class MainPage(RequestHandler):
 
 class LiveManifest(RequestHandler):
     """handler for generating MPD files"""
-    def head(self, manifest, **kwargs):
-        self.get(manifest, **kwargs)
+    def head(self, stream, manifest, **kwargs):
+        self.get(stream, manifest, **kwargs)
 
-    def get(self, manifest, **kwargs):
+    def get(self, stream, manifest, **kwargs):
         if manifest in legacy_manifest_names:
             manifest = legacy_manifest_names[manifest]
         if not manifests.manifest.has_key(manifest):
@@ -761,8 +757,9 @@ class LiveManifest(RequestHandler):
         context['routes'] = routes
         self.response.content_type='application/dash+xml'
         context['title'] = 'Big Buck Bunny DASH test stream'
+        mode = self.request.params.get('mode', 'live')
         try:
-            dash = self.calculate_dash_params(mpd_url=manifest, **kwargs)
+            dash = self.calculate_dash_params(mpd_url=manifest, stream=stream, mode=mode, **kwargs)
         except ValueError, e:
             self.response.write('Invalid CGI parameters: %s'%(str(e)))
             self.response.set_status(400)
@@ -807,6 +804,15 @@ class LiveManifest(RequestHandler):
         self.response.headers.add_header('Accept-Ranges','none')
         self.response.write(template.render(context))
 
+
+class LegacyManifestUrl(LiveManifest):
+    def head(self, manifest, **kwargs):
+        return super(LegacyManifestUrl, self).head("bbb", manifest, **kwargs)
+
+    def get(self, manifest, **kwargs):
+        return super(LegacyManifestUrl, self).get("bbb", manifest, **kwargs)
+
+
 class OnDemandMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
     """Handler that returns media fragments for the on-demand profile"""
     def get(self, filename, ext):
@@ -817,8 +823,9 @@ class OnDemandMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandle
             self.response.write('%s not found'%(name))
             self.response.set_status(404)
             return
+        stream = filename.split('_')[0]
         try:
-            dash = self.calculate_dash_params(mode='vod')
+            dash = self.calculate_dash_params(mode='odvod', stream=stream)
         except ValueError, e:
             self.response.write('Invalid CGI parameters: %s'%(str(e)))
             self.response.set_status(400)
@@ -853,8 +860,9 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
             self.response.write('%s not found'%filename)
             self.response.set_status(404)
             return
+        stream = filename.split('_')[0]
         try:
-            dash = self.calculate_dash_params(mode=mode)
+            dash = self.calculate_dash_params(mode=mode, stream=stream)
         except ValueError, e:
             self.response.write('Invalid CGI parameters: %s'%(str(e)))
             self.response.set_status(400)
@@ -1040,12 +1048,12 @@ class VideoPlayer(RequestHandler):
             self.response.write('Missing CGI parameter: mpd')
             self.response.set_status(400)
             return
-        prefix=''
+        stream=''
         if '/' in filename:
-            prefix, filename = filename.split('/')
-            prefix = prefix.lower()
+            stream, filename = filename.split('/')
+            stream = stream.lower()
         mode = self.request.params.get("mode", "live")
-        context['dash'] = self.calculate_dash_params(mpd_url=filename, mode=mode, prefix=prefix)
+        context['dash'] = self.calculate_dash_params(mpd_url=filename, mode=mode, stream=stream)
         for idx in range(len(context['dash']['video']['representations'])):
             context['dash']['video']['representations'][idx] = context['dash']['video']['representations'][idx].toJSON()
             del context['dash']['video']['representations'][idx]["segments"]
@@ -1077,10 +1085,10 @@ class VideoPlayer(RequestHandler):
             p = 'a%03d'%code
             if self.request.params.get(p,False)==True:
                 gen_errors(p)
-        if prefix:
-            mpd_url = self.uri_for('dash-mpd-v2', prefix=prefix, manifest=filename)
+        if stream:
+            mpd_url = self.uri_for('dash-mpd-v2', stream=stream, manifest=filename)
         else:
-            mpd_url = self.uri_for('dash-mpd', manifest=filename)
+            mpd_url = self.uri_for('dash-mpd-v2', stream="bbb", manifest=filename)
         if params:
             mpd_url += '?' + '&'.join(params)
         context['source'] = urlparse.urljoin(self.request.host_url, mpd_url)

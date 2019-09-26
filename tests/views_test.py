@@ -307,6 +307,9 @@ class DashManifest(DashElement):
         if mode=='live':
             self.availabilityStartTime = utils.from_isodatetime(mpd.get("availabilityStartTime"))
             self.timeShiftBufferDepth = utils.from_isodatetime(mpd.get("timeShiftBufferDepth"))
+        self.publishTime = mpd.get("publishTime")
+        if self.publishTime is not None:
+            self.publishTime = utils.from_isodatetime(self.publishTime)
         self.periods = map(lambda p: DashPeriod(p, self),
                            self.element.findall('./dash:Period', self.xmlNamespaces))
         
@@ -383,7 +386,7 @@ class TestHandlers(GAETestCase):
         self.assertEqual(response.status_int,200)
         response.mustcontain('Log In', no='href="{}"'.format(self.from_uri('media-index')))
         for filename, manifest in manifests.manifest.iteritems():
-            mpd_url = self.from_uri('dash-mpd-v2', manifest=filename, prefix='placeholder')
+            mpd_url = self.from_uri('dash-mpd-v2', manifest=filename, stream='placeholder')
             mpd_url = mpd_url.replace('placeholder', '{directory}')
             response.mustcontain(mpd_url)
         self.setCurrentUser(is_admin=True)
@@ -519,6 +522,43 @@ class TestHandlers(GAETestCase):
                     done=True
         self.progress(total_tests, total_tests)
 
+    def test_timeshift_buffer_depth(self):
+        """Control of MPD@timeShiftBufferDepth using the start parameter"""
+        self.setup_media()
+        self.logoutCurrentUser()
+        drm_options = None
+        for o in self.cgi_options:
+            if o[0] == 'drm':
+                drm_options = o[1]
+                break
+        self.assertIsNotNone(drm_options)
+        pr = drm.PlayReady(self.templates)
+        media_files = models.MediaFile.all()
+        self.assertGreater(len(media_files), 0)
+        filename = 'hand_made.mpd'
+        manifest = manifests.manifest[filename]
+        now = datetime.datetime.now(tz=utils.UTC())
+        today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        testcases = [
+            ('', today),
+            ('today', today),
+            ('2019-09-invalid-iso-datetime', today),
+            ('now', now),
+            ('epoch', datetime.datetime(1970, 1, 1, 0, 0, tzinfo=utils.UTC())),
+            ('2009-02-27T10:00:00Z', datetime.datetime(2009,2,27,10,0,0, tzinfo=utils.UTC()) ),
+            ('2013-07-25T09:57:31Z', datetime.datetime(2013,7,25,9,57,31, tzinfo=utils.UTC()) ),
+        ]
+        for option, start_time in testcases:
+            baseurl = self.from_uri('dash-mpd-v2', manifest=filename, stream='bbb')
+            if option:
+                baseurl += '?mode=live&start=' + option
+            response = self.app.get(baseurl)
+            self.validate_manifest(baseurl, {"mode":"mode=live"}, response.xml)
+            mpd = DashManifest('live', response.xml, baseurl)
+            if option=='now':
+                start_time = mpd.publishTime - mpd.timeShiftBufferDepth
+            self.assertEqual(mpd.availabilityStartTime, start_time)
+
     def test_get_vod_media_using_live_profile(self):
         """Get VoD segments for each DRM type (live profile)"""
         self.setup_media()
@@ -539,7 +579,7 @@ class TestHandlers(GAETestCase):
         for drm_opt in drm_options:
             self.progress(test_count, total_tests)
             test_count += 1
-            baseurl = self.from_uri('dash-mpd-v2', manifest=filename, prefix='bbb')
+            baseurl = self.from_uri('dash-mpd-v2', manifest=filename, stream='bbb')
             baseurl += '?mode=vod&' + drm_opt
             response = self.app.get(baseurl)
             self.validate_manifest(baseurl, {"mode":"mode=vod", "drm":drm_opt},
@@ -572,7 +612,7 @@ class TestHandlers(GAETestCase):
             now = datetime.datetime.now(tz=utils.UTC())
             availabilityStartTime = now - datetime.timedelta(minutes=test_count)
             availabilityStartTime = utils.toIsoDateTime(availabilityStartTime)
-            baseurl = self.from_uri('dash-mpd-v2', manifest=filename, prefix='bbb')
+            baseurl = self.from_uri('dash-mpd-v2', manifest=filename, stream='bbb')
             baseurl += '?mode=live&' + drm_opt + '&start='+availabilityStartTime
             response = self.app.get(baseurl)
             self.assertEqual(response.status_int, 200)
@@ -592,7 +632,7 @@ class TestHandlers(GAETestCase):
         self.assertGreater(len(media_files), 0)
         chosen = None
         for filename, manifest in manifests.manifest.iteritems():
-            baseurl = self.from_uri('dash-mpd-v2', manifest=filename, prefix='bbb')
+            baseurl = self.from_uri('dash-mpd-v2', manifest=filename, stream='bbb')
             baseurl += '?mode=odvod'
             response = self.app.get(baseurl)
             if "urn:mpeg:dash:profile:isoff-on-demand:2011" in response.xml.get('profiles'):

@@ -203,8 +203,12 @@
             <tr><td>mup=&lt;number&gt;</td><td>Specify minimumUpdatePeriod (in seconds) or -1 to disable updates</td>
                 <td>&check;</td><td>&cross;</td><td>&cross;</td>
             </tr>
-            <tr><td>start=(now|iso-datetime)</td><td>Specify
-                availabilityStartTime as "now" or an ISO datetime (YYYY-MM-DDTHH:MM:SSZ)
+            <tr><td>start=(today|epoch|now|iso-datetime)</td><td>Specify
+                availabilityStartTime as "today", "now", "epoch" or an
+                ISO datetime (YYYY-MM-DDTHH:MM:SSZ). "today" will
+                select midnight UTC today, "now" will select
+                publishTime - timeShiftBufferDepth, and "epoch" will
+                select the Unix epoch (Jan 1 1970).
               </td>
               <td>&check;</td><td>&check;</td><td>&cross;</td>
             </tr>
