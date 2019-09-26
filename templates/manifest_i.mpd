@@ -24,8 +24,8 @@
          <SegmentTemplate
             timescale="{{video.timescale}}"
             duration="{{repr.segment_duration}}"
-            initialization="$RepresentationID$/init.mp4"
-            media="{{video.mediaURL}}"
+            initialization="{{video.initURL|xmlSafe}}"
+            media="{{video.mediaURL|xmlSafe}}"
             startNumber="{{startNumber}}" >
         </SegmentTemplate>
         {% endif %}
@@ -39,8 +39,8 @@
       <SegmentTemplate
           timescale="{{audio.timescale}}"
           duration="{{repr.segment_duration}}"
-          initialization="$RepresentationID$/init.m4a"
-          media="{{audio.mediaURL}}"
+          initialization="{{audio.initURL|xmlSafe}}"
+          media="{{audio.mediaURL|xmlSafe}}"
           startNumber="{{startNumber}}" />
           {% endif %}
       {% if repr.role=="main" %}
