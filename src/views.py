@@ -1187,7 +1187,7 @@ class MediaHandler(RequestHandler):
                 if is_ajax:
                     csrf_key = self.outer.generate_csrf_cookie()
                     result['upload_url'] = blobstore.create_upload_url(self.outer.uri_for('uploadBlob'))
-                    result['csrf_token'] = self.outer.generate_csrf_token("upload", csrf_key)
+                    result['csrf'] = self.outer.generate_csrf_token("upload", csrf_key)
                     template = templates.get_template('media_row.html')
                     context["media"] = mf
                     result["file_html"] = template.render(context)
@@ -1237,8 +1237,17 @@ class MediaHandler(RequestHandler):
             'streams': self.generate_csrf_token('streams', csrf_key),
             'upload': self.generate_csrf_token('upload', csrf_key),
         }
-        template = templates.get_template('media.html')
-        self.response.write(template.render(context))
+        is_ajax = self.request.get("ajax", "0") == "1"
+        if is_ajax:
+            result = {}
+            for item in ['csrf_tokens', 'files', 'streams', 'keys', 'upload_url']:
+                result[item] = context[item]
+            result = utils.flatten(result)
+            self.response.content_type='application/json'
+            self.response.write(json.dumps(result))
+        else:
+            template = templates.get_template('media.html')
+            self.response.write(template.render(context))
 
     def media_info(self, mfid, **kwargs):
         result= { "error": "unknown error" }

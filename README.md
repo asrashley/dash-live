@@ -115,6 +115,44 @@ http://localhost:9080/media to upload the media files, one at a time.
 After uploading, each media file needs to be indexed, using the
 "index" button beside each media item.
 
+When running in development mode, the populate-db.py script can be used to
+automate the creation of streams, files and keys
+
+    python populate-db.py http://localhost:9080/ bbb.json
+
+Where bbb.json is a JSON file that looks like this:
+
+    {
+        "keys": [
+            {
+                "computed": false,
+                "key": "533a583a843436a536fbe2a5821c4b6c",
+                "kid": "c001de8e567b5fcfbc22c565ed5bda24"
+            },
+            {
+                "computed": true,
+                "kid": "1ab45440532c439994dc5c5ad9584bac"
+            }
+        ],
+        "streams": [
+            {
+                "prefix": "bbb",
+                "title": "Big Buck Bunny"
+            }
+        ],
+        "files": [
+            "bbb_a1.mp4", "bbb_a1_enc.mp4", "bbb_a2.mp4", "bbb_a2_enc.mp4",
+            "bbb_v1.mp4", "bbb_v1_enc.mp4", "bbb_v2.mp4", "bbb_v2_enc.mp4",
+            "bbb_v3.mp4", "bbb_v3_enc.mp4", "bbb_v4.mp4", "bbb_v4_enc.mp4",
+            "bbb_v5.mp4", "bbb_v5_enc.mp4", "bbb_v6.mp4", "bbb_v6_enc.mp4",
+            "bbb_v7.mp4", "bbb_v7_enc.mp4"
+        ]
+    }
+
+The populate-db.py script will upload all of the keys, streams and
+files listed in the JSON file that don't already exist on the
+server.
+
 Once this has been done, you can add the stream to the list of
 available streams http://localhost:9080/media using the "add" button
 in the "Streams" table. The prefix must be the filename prefix used 

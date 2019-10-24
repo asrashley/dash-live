@@ -1151,14 +1151,14 @@ class TestHandlers(GAETestCase):
                                               'video/mp4')
         if ajax:
             expected_result = {
-                'csrf_token':0,
+                'csrf':0,
                 'name': 'bbb_v1.mp4',
             }
-            for item in ['csrf_token', 'upload_url', 'file_html', 'key', 'blob',
+            for item in ['csrf', 'upload_url', 'file_html', 'key', 'blob',
                          'representation']:
                 self.assertTrue(response.json.has_key(item))
                 expected_result[item] = response.json[item]
-            self.assertNotEqual(response.json['csrf_token'], form['csrf_token'])
+            self.assertNotEqual(response.json['csrf'], form['csrf_token'])
             self.assertEqual(response.json, expected_result)
         else:
             response.mustcontain('<h2>Upload complete</h2>')

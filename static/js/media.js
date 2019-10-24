@@ -265,7 +265,7 @@ $(document).ready(function(){
                 $('#upload-form').attr('action', data.upload_url);
             }
             if(data.csrf_token) {
-                $('#upload-form input[name="csrf_token"]').val(data.csrf_token);
+                $('#upload-form input[name="csrf_token"]').val(data.csrf);
             }
             if(data.file_html){
                 $('#'+data.name).remove();
