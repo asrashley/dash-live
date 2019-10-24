@@ -187,6 +187,11 @@ class Options(object):
         self.iv_size = kwargs.get("iv_size")
         self.log = logging.getLogger('mp4')
 
+    def __repr__(self):
+        return '{name}(cache_encoded={cache_encoded}, iv_size={iv_size:d})'.format(
+            name=type(self).__name__, **self.__dict__
+            )
+
 class Mp4Atom(NamedObject):
     __metaclass__ = ABCMeta
     parse_children=False
@@ -1553,6 +1558,11 @@ class CencSampleAuxiliaryData(NamedObject):
 
     @classmethod
     def parse(clz, src, size, iv_size, flags, parent):
+        if iv_size is None:
+            if (flags & 0x02) == 0x00:
+                iv_size = size
+            else:
+                raise ValueError("Unable to determine IV size")
         rv = {}
         rv["initialization_vector"] = src.read(iv_size)
         if (flags & 0x02) == 0x02 and size >= iv_size+2:
@@ -1903,7 +1913,7 @@ class ContentProtectionSpecificBox(FullBox):
 MP4_BOXES['pssh'] = ContentProtectionSpecificBox
 
 class IsoParser(object):
-    def walk_atoms(self, filename, atom=None):
+    def walk_atoms(self, filename, atom=None, options=None):
         atoms = None
         src = None
         try:
@@ -1911,7 +1921,7 @@ class IsoParser(object):
                 src = io.open(filename, mode="rb", buffering=16384)
             else:
                 src = filename
-            atoms = Mp4Atom.create(src)
+            atoms = Mp4Atom.create(src, options=options)
         finally:
             if src and isinstance(filename,(str,unicode)):
                 src.close()
@@ -1930,11 +1940,18 @@ if __name__ == "__main__":
     ap.add_argument('-d', '--debug', action="store_true")
     ap.add_argument('-s', '--show', help='Show contents of specified atom')
     ap.add_argument('-t', '--tree', action="store_true", help='Show atom tree')
+    ap.add_argument('--ivsize', type=int, help='IV size')
     ap.add_argument('mp4file', help='Filename of MP4 file', nargs='+', default=None)
     args = ap.parse_args()
+    if args.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
+    options = Options()
+    if args.ivsize:
+        options.iv_size = args.ivsize
+    print options
     for filename in args.mp4file:
         parser = IsoParser()
-        atoms = parser.walk_atoms(filename)
+        atoms = parser.walk_atoms(filename, options=options)
         for atom in atoms:
             if args.tree:
                 atom.dump()
