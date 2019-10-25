@@ -72,8 +72,8 @@ class MediaManagement(object):
         self.log.info('GET %s', self.routes.login)
         result = self.session.get(self.routes.login)
         if result.status_code != 200:
-            print('HTTP status {}'.format(result.status_code))
-            print(result.headers)
+            self.log.warning('HTTP status {}'.format(result.status_code))
+            self.log.debug('HTTP headers %s', json.dumps(result.headers))
             return False
         fp = FormParser()
         fp.feed(result.text)
@@ -96,8 +96,8 @@ class MediaManagement(object):
         self.log.info('GET %s', self.routes.media)
         result = self.session.get(self.routes.media, params={'ajax':1})
         if result.status_code != 200:
-            print('HTTP status {}'.format(result.status_code))
-            print(result.headers)
+            self.log.warning('HTTP status {}'.format(result.status_code))
+            self.log.debug('HTTP headers %s', json.dumps(result.headers))
             return False
         js = result.json()
         self.csrf_tokens.update(js['csrf_tokens'])
@@ -129,10 +129,10 @@ class MediaManagement(object):
         if 'csrf' in js:
             self.csrf_tokens['kids'] = js['csrf']
         if result.status_code != 200 or 'error' in js:
-            print('HTTP status {}'.format(result.status_code))
-            print(result.headers)
+            self.log.warning('HTTP status {}'.format(result.status_code))
+            self.log.debug('HTTP headers %s', json.dumps(result.headers))
             if 'error' in js:
-                print(js['error'])
+                self.log.error(js['error'])
             return False
         js = result.json()
         self.keys[js['kid']] = {
@@ -142,12 +142,14 @@ class MediaManagement(object):
         }
         return True
         
-    def add_stream(self, prefix, title):
+    def add_stream(self, prefix, title, marlin_la_url='', playready_la_url=''):
         if prefix in self.streams:
             return True
         params = {
             'title': title,
             'prefix': prefix,
+            'marlin_la_url': marlin_la_url,
+            'playready_la_url': playready_la_url,
             'csrf_token': self.csrf_tokens['streams']
         }
         self.log.info('PUT %s', self.routes.stream)
@@ -159,10 +161,10 @@ class MediaManagement(object):
         if 'csrf' in js:
             self.csrf_tokens['streams'] = js['csrf']
         if result.status_code != 200 or 'error' in js:
-            print('HTTP status {}'.format(result.status_code))
-            print(result.headers)
+            self.log.warning('HTTP status {}'.format(result.status_code))
+            self.log.debug('HTTP headers %s', json.dumps(result.headers))
             if 'error' in js:
-                print(js['error'])
+                self.log.error(js['error'])
             return False
         self.streams[js['prefix']] = {
             'title': js['title'],
@@ -193,8 +195,8 @@ class MediaManagement(object):
         if 'upload_url' in js:
             self.upload_url = js['upload_url']
         if result.status_code != 200 or 'error' in js:
-            print('HTTP status {}'.format(result.status_code))
-            print(result.headers)
+            self.log.warning('HTTP status {}'.format(result.status_code))
+            self.log.debug('HTTP headers %s', json.dumps(result.headers))
             return False
         self.files[name] = {
             'blob': js['blob'],
@@ -224,10 +226,10 @@ class MediaManagement(object):
         if 'csrf' in js:
             self.csrf_tokens['files'] = js['csrf']
         if result.status_code != 200 or 'error' in js:
-            print('HTTP status {}'.format(result.status_code))
-            print(result.headers)
+            self.log.warning('HTTP status {}'.format(result.status_code))
+            self.log.debug('HTTP headers %s', json.dumps(result.headers))
             if 'error' in js:
-                print(js['error'])
+                self.log.error(js['error'])
             return False
         self.files[name]['representation'] = js['representation']
         return True
@@ -265,13 +267,13 @@ if __name__ == "__main__":
             time.sleep(2) # allow time for DB to sync
         if mm.files[name]['representation'] is None:
             print('Index file {}'.format(name))
-            timeout = 3
+            timeout = 5
             done = False
             while timeout > 0 and not done:
                 done = mm.index_file(name)
                 if not done:
                     timeout -= 1
-                    time.sleep(1.5)
+                    time.sleep(2)
             if not done:
                 print('Failed to index file {}'.format(name))
                 

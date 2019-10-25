@@ -12,6 +12,8 @@ class Stream(ndb.Model):
     title = ndb.StringProperty(required=True, indexed=True)
     prefix = ndb.StringProperty(required=True, verbose_name='File name prefix', indexed=True,
                                 repeated=False)
+    marlin_la_url = ndb.StringProperty(required=False, indexed=False, default=None)
+    playready_la_url = ndb.StringProperty(required=False, indexed=False, default=None)
 
     @classmethod
     def all(clz):
@@ -20,7 +22,9 @@ class Stream(ndb.Model):
     def toJSON(self):
         return {
             'title': self.title,
-            'prefix': self.prefix
+            'prefix': self.prefix,
+            'marlin_la_url': self.marlin_la_url,
+            'playready_la_url': self.playready_la_url,
         }
 
 class MediaFile(ndb.Model):

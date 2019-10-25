@@ -388,6 +388,11 @@ def xmlSafe(value):
     """
     return value.replace('&','&amp;')
 
+def default(value, default_value):
+    if value:
+        return value
+    return default_value
+
 def scale_timedelta(delta, num, denom):
     """Scale the given timedelta, avoiding overflows"""
     secs = num * delta.seconds

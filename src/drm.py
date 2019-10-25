@@ -80,7 +80,8 @@ class KeyMaterial(object):
 class PlayReady(object):
     SYSTEM_ID = "9a04f079-9840-4286-ab92-e65be0885f95"
     RAW_SYSTEM_ID = "9a04f07998404286ab92e65be0885f95".decode("hex")
-    Test_Key_Seed = base64.b64decode("XVBovsmzhP9gRIZxWfFta3VVRPzVEWmJsazEJ46I")
+    TEST_KEY_SEED = base64.b64decode("XVBovsmzhP9gRIZxWfFta3VVRPzVEWmJsazEJ46I")
+    TEST_LA_URL = "https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg={cfgs}"
     DRM_AES_KEYSIZE_128 = 16
 
     def __init__(self, templates, la_url=None, version=None, security_level=150):
@@ -125,7 +126,7 @@ class PlayReady(object):
     def generate_content_key(clz, keyId, keySeed=None):
         """Generate a content key from the key ID"""
         if keySeed is None:
-            keySeed = PlayReady.Test_Key_Seed
+            keySeed = PlayReady.TEST_KEY_SEED
         if len(keyId) != 16:
             raise ValueError("KID should be a raw 16 byte value")
         keyId = PlayReady.hex_to_le_guid(keyId, raw=True)
@@ -187,8 +188,7 @@ class PlayReady(object):
             cfgs.append('(' + ','.join(cfg) + ')')
         cfgs = ','.join(cfgs)
         if la_url is None:
-            la_url = "https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg={cfgs}"
-            #la_url = "https://test.playready.microsoft.com/service/rightsmanager.asmx?PlayRight=1&UseSimpleNonPersistentLicense=1"
+            la_url = self.TEST_LA_URL
         default_keypair = keys[representation.default_kid.lower()]
         default_key = default_keypair.KEY.raw
         default_kid = PlayReady.hex_to_le_guid(default_keypair.KID.raw, raw=True)

@@ -523,6 +523,21 @@ div.representations, div.cgi-parameters {
     width: 6em;
     text-align: center;
   }
+  #streams {
+      .title, .title > input {
+          width: 18em;
+      }
+      .prefix, .prefix > input {
+          width: 6em;
+      }
+      .playready_la_url, .marlin_la_url {
+          font-stretch: extra-condensed;
+          width: 18em;
+          & > input {
+              width: 18em;
+          }
+      }
+  }
 }
 
 .cgi-params {

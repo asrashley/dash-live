@@ -5,22 +5,37 @@
 <div id="media-management" class="container">
   <table class="table table-striped" id="streams" data-csrf="{{csrf_tokens.streams}}">
     <caption>Streams</caption>
-  <thead><tr><th>Title</th><th>Prefix</th><th /></tr></thead>
+    <thead><tr>
+        <th class="title">Title</th>
+        <th class="prefix">Prefix</th>
+        <th class="marlin_la_url">Marlin SAS URL</th>
+        <th class="playready_la_url">PlayReady LA_URL</th>
+        <th />
+    </tr></thead>
   <tbody>
     {% for stream in streams %}
     <tr>
       <td class="title">{{stream.title}}</td>
       <td class="prefix">{{stream.prefix}}</td>
+      <td class="marlin_la_url">{{stream.marlin_la_url|default(drm.marlin.laurl)}}</td>
+      <td class="playready_la_url">{{stream.playready_la_url|default(drm.playready.laurl)}}</td>
       <td><button class="btn btn-danger btn-sm delete-stream" data-id="{{stream.key.urlsafe()}}">Delete</button></td>
     </tr>
     {% endfor %}
-    <tr class="placeholder"><td class="title"></td><td class="prefix"></td>
-    <td><button class="btn btn-sm btn-danger delete-stream">Delete</button></td></tr>
+    <tr class="placeholder">
+      <td class="title"></td>
+      <td class="prefix">
+      <td class="marlin_la_url"></td>
+      <td class="playready_la_url"></td>
+      <td><button class="btn btn-sm btn-danger delete-stream">Delete</button></td>
+    </tr>
   </tbody>
   <tfoot>
     <tr>
-      <td><input type="text" name="title" placeholder="(stream title)"/></td>
-      <td><input type="text" name="prefix" placeholder="(filename prefix)"/></td>
+      <td class="title"><input type="text" name="title" placeholder="(stream title)"/></td>
+      <td class="prefix"><input type="text" name="prefix" placeholder="(file prefix)"/></td>
+      <td class="marlin_la_url"><input type="text" name="marlin_la_url" placeholder="(SAS URL)"/></td>
+      <td class="playready_la_url"><input type="text" name="playready_la_url" placeholder="(LA_URL)"/></td>
       <td><button class="btn btn-success add-stream">Add</button></td>
     </tr>
     <tr><td class="error" colspan="3"></td></tr>

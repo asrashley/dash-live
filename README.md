@@ -18,7 +18,6 @@ A settings.py needs to be created that contains
     cookie_secret='arandomstring'
     csrf_secret = 'arandomstring'
     DEBUG=not on_production_server
-    sas_url=''
 
 The cookie_secret and csrf_secret variables need to contain a randomly
 generated block of ascii characters. There is a gen_settings.py script
@@ -39,7 +38,7 @@ On Ubuntu, the following should install the Python GAE SDK:
 
 Create a Python virtual environment and install the dependencies:
 
-    virtualenv virtenv
+    virtualenv -p python2 virtenv
     . ./virtenv/bin/activate
     pip install -r requirements.txt
 
@@ -47,7 +46,6 @@ The CSS files need to be compiled:
 
 	sudo apt install node-less
     (cd static/css/ && make)
-
 
 Use runserver.bat or runserver.sh depending upon whether you are developing
 on Windows or Linux.
@@ -71,7 +69,7 @@ The docker container can then be used by:
 Note that this docker container runs the DEVELOPMENT ENVIRONMENT
 and is NOT for use in a production environment! The above example
 will use port 80 and 8080 on the Docker host to provide access to
-the application (port 80) and the GAE admin server (port 8080).
+the application (on port 80) and the GAE admin server (port 8080).
 
 Media Files
 -----------
@@ -116,7 +114,7 @@ After uploading, each media file needs to be indexed, using the
 "index" button beside each media item.
 
 When running in development mode, the populate-db.py script can be used to
-automate the creation of streams, files and keys
+automate the installation of streams, files and keys
 
     python populate-db.py http://localhost:9080/ bbb.json
 
@@ -137,7 +135,9 @@ Where bbb.json is a JSON file that looks like this:
         "streams": [
             {
                 "prefix": "bbb",
-                "title": "Big Buck Bunny"
+                "title": "Big Buck Bunny",
+                "marlin_la_url": "ms3://ms3.test.expressplay.com:8443/hms/ms3/rights/?b=...",
+                "playready_la_url": "https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg={cfgs}"
             }
         ],
         "files": [
