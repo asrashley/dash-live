@@ -116,7 +116,7 @@ After uploading, each media file needs to be indexed, using the
 When running in development mode, the populate-db.py script can be used to
 automate the installation of streams, files and keys
 
-    python populate-db.py http://localhost:9080/ bbb.json
+    python populate-db.py --host http://localhost:9080/ bbb.json
 
 Where bbb.json is a JSON file that looks like this:
 
