@@ -38,4 +38,5 @@ COPY runserver.sh $HOME/dash-live/
 COPY src/*.py $HOME/dash-live/src/
 WORKDIR /home/dash/dash-live
 RUN python ./gen-settings.py
+RUN python -m lesscpy static/css -o static/css/
 ENTRYPOINT ["/home/dash/dash-live/runserver.sh"]

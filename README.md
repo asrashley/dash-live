@@ -44,7 +44,6 @@ Create a Python virtual environment and install the dependencies:
 
 The CSS files need to be compiled:
 
-	sudo apt install node-less
     (cd static/css/ && make)
 
 Use runserver.bat or runserver.sh depending upon whether you are developing
@@ -56,8 +55,6 @@ It will start an HTTP server on port 9080
 There is a dockerfile to create a Docker image that contains GAE and
 all the other required packages to run the development server.
 
-	sudo apt install node-less
-    (cd static/css/ && make)
     docker build -t dashlive -f sdk-dockerfile .
     mkdir gaedata
 
