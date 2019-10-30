@@ -8,7 +8,6 @@ import sys
 import time
 import urllib
 
-import certifi
 import requests
 
 class FormParser(HTMLParser):
