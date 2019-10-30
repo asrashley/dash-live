@@ -76,22 +76,21 @@ $(document).ready(function(){
     }
 
     function addStream(ev) {
-        var title, prefix, csrf;
+        var data;
         var $row = $(ev.target).parents('tr');
-        title = $row.find('input[name="title"]').val();
-        prefix = $row.find('input[name="prefix"]').val();
-        csrf = $('#streams').data('csrf');
-        console.log('add stream',title,prefix)
+        data = {
+            'title': $row.find('input[name="title"]').val(),
+            'prefix': $row.find('input[name="prefix"]').val(),
+            'marlin_la_url': $row.find('input[name="marlin_la_url"]').val(),
+            'playready_la_url': $row.find('input[name="playready_la_url"]').val(),
+            'csrf_token': $('#streams').data('csrf')
+        };
         $row.find('.btn').attr("disabled", true);
         $('#streams .error').text('');
         $.ajax({
             url: '/stream',
             method: 'PUT',
-            data: {
-                "title":title,
-                "prefix": prefix,
-                "csrf_token": csrf
-            },
+            data: data,
             dataType: 'json'
         }).done(function(result) {
             var newRow;
@@ -103,6 +102,8 @@ $(document).ready(function(){
             newRow.removeClass('placeholder');
             newRow.find('.title').text(result.title);
             newRow.find('.prefix').text(result.prefix);
+            newRow.find('.marlin_la_url').text(result.marlin_la_url);
+            newRow.find('.playready_la_url').text(result.playready_la_url);
             newRow.find('.delete-stream').data("id", result.id);
             $('#streams tbody').append(newRow);
             newRow.find('.delete-stream').click(deleteStream);
@@ -265,7 +266,7 @@ $(document).ready(function(){
                 $('#upload-form').attr('action', data.upload_url);
             }
             if(data.csrf_token) {
-                $('#upload-form input[name="csrf_token"]').val(data.csrf_token);
+                $('#upload-form input[name="csrf_token"]').val(data.csrf);
             }
             if(data.file_html){
                 $('#'+data.name).remove();

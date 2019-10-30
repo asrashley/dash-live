@@ -15,6 +15,7 @@ import md5
 import os
 import unittest
 import urlparse
+import urllib
 import uuid
 import sys
 from xml.etree import ElementTree
@@ -166,6 +167,8 @@ class GAETestCase(TestCaseMixin, unittest.TestCase):
         #print(self.cgi_options)
 
     def setup_media(self):
+        bbb = models.Stream(title='Big Buck Bunny', prefix='bbb')
+        bbb.put()
         for idx, rid in enumerate(["bbb_v6","bbb_v6_enc","bbb_v7","bbb_v7_enc",
                                    "bbb_a1", "bbb_a1_enc"]):
             filename = rid + ".mp4"
@@ -829,6 +832,113 @@ class TestHandlers(GAETestCase):
             else:
                 self.assertEqual(clean.body, corrupt.body)
 
+    def test_add_stream(self):
+        self.assertEqual(len(models.Stream.all()), 0)
+        request = {
+            'title': 'Big Buck Bunny',
+            'prefix': 'bbb',
+            'marlin_la_url': 'ms3://unit.test/bbb.sas',
+            'playready_la_url':''
+        }
+        params = []
+        for k, v in request.iteritems():
+            params.append('{0}={1}'.format(k, urllib.quote(v)))
+        url = self.from_uri('stream', absolute=True)
+        url = '{0}?{1}'.format(url, '&'.join(params))
+
+        # user must be logged in to use stream API
+        self.logoutCurrentUser()
+        response = self.app.put(url, status=401)
+
+        # user must be logged in as admin to use stream API
+        self.setCurrentUser(is_admin=False)
+        response = self.app.put(url, status=401)
+
+        # user must be logged in as admin to use stream API
+        self.setCurrentUser(is_admin=True)
+
+        # request should fail due to lack of CSRF token
+        response = self.app.put(url)
+        self.assertTrue(response.json.has_key("error"))
+        self.assertIn("CsrfFailureException", response.json["error"])
+
+        media_url = self.from_uri('media-index', absolute=True)
+        media = self.app.get(media_url)
+        streams_table = media.html.find(id="streams")
+        request['csrf_token'] = streams_table.get('data-csrf')
+        url += '&csrf_token=' + request['csrf_token']
+        response = self.app.put(url)
+        expected_result = copy.deepcopy(request)
+        expected_result['playready_la_url'] = None
+        del expected_result['csrf_token']
+        expected_result['csrf'] = response.json["csrf"]
+        expected_result['id'] = response.json["id"]
+        self.assertEqual(expected_result, response.json)
+
+        streams = models.Stream.all()
+        self.assertEqual(len(streams), 1)
+        for k, v in request.iteritems():
+            if k == 'csrf_token':
+                continue
+            self.assertEqual(getattr(streams[0], k), expected_result[k],
+                             'Field {0}: expected "{1}" got "{2}"'.format(k, getattr(streams[0], k),
+                                                                          expected_result[k]))
+
+        url = self.from_uri('media-index', absolute=True)
+        response = self.app.get(url)
+        response.mustcontain(expected_result['title'], expected_result['prefix'])
+
+    def test_delete_stream(self):
+        self.assertEqual(len(models.Stream.all()), 0)
+
+        bbb = models.Stream(title='Big Buck Bunny', prefix='bbb')
+        bbb.put()
+        tears = models.Stream(title='Tears of Steel', prefix='tears')
+        tears.put()
+        self.assertEqual(len(models.Stream.all()), 2)
+
+        url = self.from_uri('del-stream', id=bbb.key.urlsafe(), absolute=True)
+
+        # user must be logged in to use stream API
+        self.logoutCurrentUser()
+        response = self.app.delete(url, status=401)
+        self.assertEqual(len(models.Stream.all()), 2)
+
+        # user must be logged in as admin to use stream API
+        self.setCurrentUser(is_admin=False)
+        response = self.app.delete(url, status=401)
+        self.assertEqual(response.status_int,401)
+        self.assertEqual(len(models.Stream.all()), 2)
+
+        # user must be logged in as admin to use stream API
+        self.setCurrentUser(is_admin=True)
+
+        # request without CSRF token should fail
+        response = self.app.delete(url)
+        self.assertTrue(response.json.has_key("error"))
+        self.assertIn("CsrfFailureException", response.json["error"])
+        self.assertEqual(len(models.Stream.all()), 2)
+
+        media_url = self.from_uri('media-index', absolute=True)
+        media = self.app.get(media_url)
+        streams_table = media.html.find(id="streams")
+        csrf_url = url + '?csrf_token=' + streams_table.get('data-csrf')
+
+        response = self.app.delete(csrf_url)
+        streams = models.Stream.all()
+        self.assertEqual(len(streams), 1)
+        next_csrf_token = response.json["csrf"]
+
+        # try to re-use a CSRF token
+        reuse_url = self.from_uri('del-stream', id=tears.key.urlsafe(), absolute=True)
+        reuse_url += '?csrf_token=' + streams_table.get('data-csrf')
+        response = self.app.delete(reuse_url)
+        self.assertTrue(response.json.has_key("error"))
+        self.assertIn("CsrfFailureException", response.json["error"])
+
+        # try to delete a stream that does not exist
+        response = self.app.delete(url+'?csrf_token='+next_csrf_token, status=404)
+
     def test_add_full_key_pair(self):
         self.assertEqual(len(models.Key.all()), 0)
         
@@ -1151,14 +1261,14 @@ class TestHandlers(GAETestCase):
                                               'video/mp4')
         if ajax:
             expected_result = {
-                'csrf_token':0,
+                'csrf':0,
                 'name': 'bbb_v1.mp4',
             }
-            for item in ['csrf_token', 'upload_url', 'file_html', 'key', 'blob',
+            for item in ['csrf', 'upload_url', 'file_html', 'key', 'blob',
                          'representation']:
                 self.assertTrue(response.json.has_key(item))
                 expected_result[item] = response.json[item]
-            self.assertNotEqual(response.json['csrf_token'], form['csrf_token'])
+            self.assertNotEqual(response.json['csrf'], form['csrf_token'])
             self.assertEqual(response.json, expected_result)
         else:
             response.mustcontain('<h2>Upload complete</h2>')

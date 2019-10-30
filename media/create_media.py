@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 #
 # This script will encode the given input stream at multiple bitrates and create a DASH
 # compatible fragmented file. Optionally it can also create encrypted versions of these
@@ -36,6 +36,7 @@
 import argparse
 import collections
 import json
+import logging
 import os
 import math
 import random
@@ -44,7 +45,7 @@ import subprocess
 import sys
 import tempfile
 
-sys.path.append(os.path.join(os.path.dirname(__file__),'..'))
+sys.path.append(os.path.join(os.path.dirname(__file__),'..', 'src'))
 
 import drm
 import mp4
@@ -84,6 +85,17 @@ class DashMediaCreator(object):
         
         # The MP4 timescale to use for video
         self.timescale = self.options.framerate * 10
+
+        self.media_info = {
+            "keys": [],
+            "streams": [
+                {
+                    "prefix": self.options.prefix,
+                    "title":""
+                }
+            ],
+            "files": []
+        }
 
     def encode_all(self, srcfile):
         first = True
@@ -296,6 +308,7 @@ class DashMediaCreator(object):
             prefix = os.path.join(tmpdir, 'dash_{:d}_'.format(idx+1))
             source, contentType, num = source
             dest_file = self.destination_filename(contentType, num, False)
+            self.media_info['files'].append(dest_file)
             dest_file = os.path.join(destdir, dest_file)
             moov = os.path.join(tmpdir, 'manifest_set1_init.mp4')
             if os.path.exists(prefix+'init.mp4'):
@@ -331,6 +344,14 @@ class DashMediaCreator(object):
             for k,v in kids.iteritems():
                 keys[k] = drm.KeyMaterial(raw=drm.PlayReady.generate_content_key(v.raw))
                 print 'Using key {} for kid {}'.format(keys[k].hex, v.hex)
+        for k in kids.keys():
+            item = {
+                "kid": kids[k].hex,
+                "computed": not self.options.key
+            }
+            if not item['computed']:
+                item["key"] = keys[k].hex
+            self.media_info["keys"].append(item)
         files = []
         for idx in range(len(self.BITRATE_LADDER)):
             files.append(('v', idx+1))
@@ -340,6 +361,7 @@ class DashMediaCreator(object):
             src_file = self.destination_filename(contentType, index, False)
             src_file = os.path.join(destdir, src_file)
             dest_file = self.destination_filename(contentType, index, True)
+            self.media_info['files'].append(dest_file)
             dest_file = os.path.join(destdir, dest_file)
             iv = InitialisationVector(hex='{:016x}'.format(random.getrandbits(64)))
             self.encrypt_representation(src_file, dest_file, kids[contentType],
@@ -401,9 +423,13 @@ class DashMediaCreator(object):
 
     def parse_representation(self, filename):
         parser = mp4.IsoParser()
+        print('Parse %s' % filename)
         atoms = parser.walk_atoms(filename)
+        verbose = 2 if self.options.verbose else 0
+        if verbose:
+            print('Parse {0}'.format(filename))
         return segment.Representation.create(filename=filename.replace('\\','/'),
-                                             atoms=atoms, verbose=0)
+                                             atoms=atoms, verbose=verbose)
 
 def gcd(x,y):
     while y:
@@ -423,8 +449,9 @@ if __name__ == "__main__":
     ap.add_argument('--input', '-i', help='Input audio/video file', required=True, dest='source')
     ap.add_argument('--kid', help='Key ID', nargs="*")
     ap.add_argument('--key', help='Encryption Key', nargs="*")
-    ap.add_argument('--prefix', '-p', help='Prefix for output files', required=True)
+    ap.add_argument('-v', '--verbose', help='Verbose mode', action="store_true")
     ap.add_argument('--output', '-o', help='Output directory', dest='destdir', required=True)
+    ap.add_argument('--prefix', '-p', help='Prefix for output files', required=True)
     args = ap.parse_args()
 
     info = subprocess.check_output([
@@ -472,6 +499,14 @@ if __name__ == "__main__":
             except KeyError:
                 pass
 
+    #logging.basicConfig()
+    mp4_log = logging.getLogger('mp4')
+    ch = logging.StreamHandler()
+    ch.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s: %(message)s'))
+    mp4_log.addHandler(ch)
+    if args.verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+        mp4_log.setLevel(logging.DEBUG)
     if not os.path.exists(args.destdir):
         os.makedirs(args.destdir)
 
@@ -480,4 +515,7 @@ if __name__ == "__main__":
     dmc.package_all()
     if args.kid:
         dmc.encrypt_all()
+    mi = os.path.join(args.destdir, args.prefix+".json")
+    with open(mi, 'w') as f:
+        json.dump(dmc.media_info, f)
 

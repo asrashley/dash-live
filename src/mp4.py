@@ -187,6 +187,11 @@ class Options(object):
         self.iv_size = kwargs.get("iv_size")
         self.log = logging.getLogger('mp4')
 
+    def __repr__(self):
+        return '{name}(cache_encoded={cache_encoded}, iv_size={iv_size:d})'.format(
+            name=type(self).__name__, **self.__dict__
+            )
+
 class Mp4Atom(NamedObject):
     __metaclass__ = ABCMeta
     parse_children=False
@@ -339,14 +344,18 @@ class Mp4Atom(NamedObject):
             end=None
             cursor = 0
         rv = parent.children
+        if end is None:
+            options.log.debug('Create start=%d end=None', cursor)
+        else:
+            options.log.debug('Create start=%d end=%d (%d)', cursor, end, end-cursor)
         while end is None or cursor<end:
             assert cursor is not None
             if src.tell() != cursor:
+                #options.log.debug('Move cursor from %d to %d', src.tell(), cursor)
                 src.seek(cursor)
-            hdr = Mp4Atom.peek(src, parent)
+            hdr = Mp4Atom.parse(src, parent, options=options)
             if hdr is None:
                 break
-            #src.seek(hdr["position"])
             try:
                 Box = MP4_BOXES[hdr['atom_type']]
             except KeyError,k:
@@ -356,31 +365,52 @@ class Mp4Atom(NamedObject):
                               hdr['position'], hdr['size'])
             encoded = None
             if options.cache_encoded and not Box.parse_children:
-                encoded = src.peek(hdr["size"])[:hdr["size"]]
-            kwargs = Box.parse(src, parent, options)
+                sz = hdr["size"] - hdr["header_size"]
+                if sz==0:
+                    encoded=''
+                else:
+                    encoded = src.peek(sz)[:sz]
+                    if len(encoded) < sz:
+                        p = src.tell()
+                        encoded = src.read(sz)
+                        src.seek(p)
+            kwargs = Box.parse(src, parent, options=options, initial_data=hdr)
+            kwargs['parent'] = parent
+            kwargs['options'] = options
             atom = Box(**kwargs)
             atom.payload_start = src.tell()
-            atom.options = options
             rv.append(atom)
             if atom.parse_children:
+                #options.log.debug('Parse %s children', hdr['atom_type'])
                 Mp4Atom.create(src, atom, options)
             if encoded:
                 atom._encoded = encoded
             if (src.tell() - atom.position) != atom.size:
-                options.log.warning('expected {atom_type:s} to contain {expected:d} bytes but parsed {actual:d} bytes'.format(
-                    atom_type=atom.atom_type, expected=atom.size, actual=src.tell()-atom.position))
+                options.log.warning('expected %s to contain %d bytes but parsed %d bytes',
+                                    atom.atom_type, atom.size, src.tell()-atom.position)
             cursor += atom.size
         return rv
         
     @classmethod
-    def parse(cls, src, parent, options):
+    def parse(cls, src, parent, options=None, **kwargs):
+        try:
+            return kwargs['initial_data']
+        except KeyError:
+            pass
         position = src.tell()
         size = src.read(4)
         if not size or len(size)!=4:
+            if options:
+                if len(size)==0:
+                    options.log.debug("EOS at %d", position)
+                else:
+                    options.log.debug('Failed to read box length. pos=%d', position)
             return None
         size = struct.unpack('>I', size)[0]
         atom_type = src.read(4)
-        if not atom_type:
+        if not atom_type or len(atom_type) != 4:
+            if options:
+                options.log.debug('Failed to read atom type. pos=%d', position)
             return None
         if size == 0:
             pos = src.tell()
@@ -390,6 +420,8 @@ class Mp4Atom(NamedObject):
         elif size == 1:
             size = struct.unpack('>Q', src.read(8))[0]
             if not size:
+                if options:
+                    options.log.debug('Failed to read atom size. pos=%d', position)
                 return None
         if atom_type=='uuid':
             atom_type = src.read(16)
@@ -398,43 +430,6 @@ class Mp4Atom(NamedObject):
             "position": position,
             "size": size,
             "header_size": src.tell() - position,
-            "parent": parent,
-        }
-
-    @classmethod
-    def peek(cls, src, parent):
-        position = src.tell()
-        header_size = 8
-        data = src.peek(header_size)
-        if not data or len(data) < header_size:
-            return None
-        size = struct.unpack('>I', data[:4])[0]
-        atom_type = data[4:8]
-        if not atom_type:
-            return None
-        if size == 0:
-            pos = src.tell()
-            src.seek(0,2) # seek to end
-            size = src.tell() - pos
-            src.seek(pos)
-        elif size == 1:
-            if len(data) < (header_size+8):
-                data = src.peek(header_size+8)
-            size = struct.unpack('>Q', data[header_size:header_size+8])[0]
-            if not size:
-                return None
-            header_size += 8
-        if atom_type=='uuid':
-            if len(data) < (header_size+16):
-                data = src.peek(header_size+16)
-            atom_type = data[header_size:header_size+16]
-            header_size += 16
-        return {
-            "atom_type": atom_type,
-            "position": position,
-            "size": size,
-            "parent": parent,
-            "header_size": header_size,
         }
 
     def encode(self, dest=None):
@@ -443,29 +438,34 @@ class Mp4Atom(NamedObject):
             out = io.BytesIO()
         self.position = out.tell()
         self.options.log.debug('encode %s %d %d',self.atom_type, self.position, self.size)
-        if self._encoded is not None:
-            #print('  _encoded=',len(self._encoded))
-            out.write(self._encoded)
-            if dest is None:
-                return out.getvalue()
-            return dest
         if len(self.atom_type)>4:
             assert len(self.atom_type)==16
             t = 'uuid' + self.atom_type
         else:
             assert len(self.atom_type)==4
             t = self.atom_type
-        out.write(struct.pack('>I', 4+len(t)))
+        if self._encoded is not None:
+            self.options.log.debug('  _encoded=%d', len(self._encoded))
+            if self.size != (4 + len(t) + len(self._encoded)):
+                self.options. log.warning("Expected size %d, actual size %d", self.size,
+                                          4 + len(t) + len(self._encoded))
+            out.write(struct.pack('>I', self.size))
+            out.write(t)
+            out.write(self._encoded)
+            if dest is None:
+                return out.getvalue()
+            return dest
+        out.write(struct.pack('>I', 0))
         out.write(t)
         self.encode_fields(dest=out)
         for child in self.children:
             child.encode(dest=out)
         self.size = out.tell() - self.position
-        out.seek(self.position)
         # replace the length field
+        out.seek(self.position)
         out.write(struct.pack('>I', self.size))
         out.seek(0,2) # seek to end
-        #print(self.atom_type,'produced',self.size)
+        self.options.log.debug('%s produced %d', self.atom_type, self.size)
         if dest is None:
             return out.getvalue()
         return dest
@@ -494,15 +494,14 @@ class UnknownBox(Mp4Atom):
     include_atom_type = True
 
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = Mp4Atom.parse(src, parent, options)
-        hdr_sz = src.tell() - kwargs["position"]
-        size = kwargs["size"] - hdr_sz
+    def parse(clz, src, *args, **kwargs):
+        rv = Mp4Atom.parse(src, *args, **kwargs)
+        size = rv["size"] - rv["header_size"]
         if size > 0:
-            kwargs["data"] = src.read(size)
+            rv["data"] = src.read(size)
         else:
-            kwargs["data"] = None
-        return kwargs
+            rv["data"] = None
+        return rv
 
     def _field_repr(self, exclude):
         exclude.append('data')
@@ -528,49 +527,29 @@ class Descriptor(NamedObject):
             setattr(self, key, value)
 
     @classmethod
-    def peek(cls, src, parent):
-        position = src.tell()
-        header_size=1
-        data = src.peek(header_size)
-        if not data:
-            return None
-        tag = struct.unpack('B', data[0])[0]
-        more_bytes = True
-        size = 0
-        while more_bytes:
-            header_size += 1
-            data = src.peek(header_size)
-            if len(data) < header_size:
-                data = src.peek(header_size)
-                if len(data) < header_size:
-                    return None
-            b = struct.unpack('B', data[header_size-1])[0]
-            more_bytes = b & 0x80
-            size = (size<<7) + (b&0x7f)
-        return {
-            "position": position,
-            "tag": tag,
-            "header_size": header_size,
-            "size": size,
-        }
-
-    @classmethod
-    def create(clz, src, parent, options):
-        d = Descriptor.peek(src, parent)
+    def create(clz, src, parent, options=None, **kwargs):
+        if options is None:
+            options=Options()
+        d = Descriptor.parse(src, parent)
         try:
             Desc = MP4_DESCRIPTORS[d["tag"]]
         except KeyError:
             Desc = UnknownDescriptor
         total_size = d["size"] + d["header_size"]
-        #print('create descriptor', d["tag"], Desc.__name__, d["position"], total_size)
+        options.log.debug('create descriptor', d["tag"], Desc.__name__, d["position"], total_size)
         encoded = src.peek(total_size)[:total_size]
-        kw = Desc.parse(src, parent, options)
+        if len(encoded) < total_size:
+            p = src.tell()
+            encoded = src.read(total_size)
+            src.seek(p)
+        kw = Desc.parse(src, parent, options=kwargs.get("options"), initial_data=d)
+        tag = kw["tag"]
         del kw["tag"]
-        rv = Desc(tag=d["tag"], parent=parent, **kw)
+        rv = Desc(tag, parent=parent, **kw)
         rv._encoded = encoded
         end = rv.position + rv.size + rv.header_size
         while src.tell() < end:
-            dc = Descriptor.create(src, rv, options)
+            dc = Descriptor.create(src, rv, options=kwargs.get("options"))
             rv.children.append(dc)
             if (src.tell() - dc.position) != (dc.size + dc.header_size):
                 options.log.warning('expected tag %d to contain %d bytes but parsed %d bytes',
@@ -579,7 +558,11 @@ class Descriptor(NamedObject):
         return rv
 
     @classmethod
-    def parse(clz, src, parent, options):
+    def parse(clz, src, parent, **kwargs):
+        try:
+            return kwargs["initial_data"]
+        except KeyError:
+            pass
         position = src.tell()
         tag = struct.unpack('B', src.read(1))[0]
         header_size=1
@@ -595,7 +578,7 @@ class Descriptor(NamedObject):
             "tag": tag,
             "header_size": header_size,
             "size": size,
-            "options": options,
+            "options": kwargs.get("options"),
         }
 
     def encode(self, dest):
@@ -673,13 +656,13 @@ class UnknownDescriptor(Descriptor):
     include_atom_type = True
 
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = Descriptor.parse(src, parent, options)
-        if kwargs["size"] > 0:
-            kwargs["data"] = src.read(kwargs["size"])
+    def parse(clz, src, parent, **kwargs):
+        rv = Descriptor.parse(src, parent, **kwargs)
+        if rv["size"] > 0:
+            rv["data"] = src.read(rv["size"])
         else:
-            kwargs["data"] = None
-        return kwargs
+            rv["data"] = None
+        return rv
 
     def encode_fields(self, dest):
         if self.data is not None:
@@ -687,8 +670,8 @@ class UnknownDescriptor(Descriptor):
 
 class ESDescriptor(Descriptor):
     @classmethod
-    def parse(clz, src, parent, options):
-        rv = Descriptor.parse(src, parent, options)
+    def parse(clz, src, parent, **kwargs):
+        rv = Descriptor.parse(src, parent, **kwargs)
         r = FieldReader(clz, src, rv)
         r.read('H', 'es_id')
         b = r.get('B', 'flags')
@@ -732,8 +715,8 @@ MP4_DESCRIPTORS[0x03]=ESDescriptor
 
 class DecoderConfigDescriptor(Descriptor):
     @classmethod
-    def parse(clz, src, parent, options):
-        rv = Descriptor.parse(src, parent, options)
+    def parse(clz, src, parent, **kwargs):
+        rv = Descriptor.parse(src, parent, **kwargs)
         r = FieldReader(clz, src, rv)
         r.read('B', "object_type")
         b = r.get('B', "stream_type")
@@ -763,8 +746,8 @@ MP4_DESCRIPTORS[0x04] = DecoderConfigDescriptor
 class DecoderSpecificInfo(Descriptor):
     SAMPLE_RATES=[ 96000, 88200, 64000, 48000, 44100, 32000, 24000, 22050, 16000, 12000, 11025, 8000, 7350 ]
     @classmethod
-    def parse(clz, src, parent, options):
-        rv = Descriptor.parse(src, parent, options)
+    def parse(clz, src, parent, **kwargs):
+        rv = Descriptor.parse(src, parent, **kwargs)
         rv["object_type"] = parent.object_type
         r = BitsFieldReader(clz, src, rv, rv["size"])
         if rv["object_type"]==0x40: # Audio ISO/IEC 14496-3 subpart 1
@@ -831,13 +814,12 @@ MP4_DESCRIPTORS[0x05] = DecoderSpecificInfo
 
 class FullBox(Mp4Atom):
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = Mp4Atom.parse(src, parent, options)
-        #print 'parse FullBox'
-        kwargs["version"] = struct.unpack('B', src.read(1))[0]
+    def parse(clz, src, parent, **kwargs):
+        rv = Mp4Atom.parse(src, parent, **kwargs)
+        rv["version"] = struct.unpack('B', src.read(1))[0]
         f = '\000'+src.read(3)
-        kwargs["flags"] = struct.unpack('>I', f)[0]
-        return kwargs
+        rv["flags"] = struct.unpack('>I', f)[0]
+        return rv
 
     def _field_repr(self, exclude):
         exclude.append('flags')
@@ -873,12 +855,12 @@ for box in ['mdia', 'minf', 'mvex', 'moof', 'schi', 'sinf', 'stbl', 'traf']:
 
 class SampleEntry(Mp4Atom):
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = Mp4Atom.parse(src, parent, options)
+    def parse(clz, src, parent, **kwargs):
+        rv = Mp4Atom.parse(src, parent, **kwargs)
         #unsigned int(32) format
         src.read(6) # reserved
-        kwargs["data_reference_index"] = struct.unpack('>H', src.read(2))[0]
-        return kwargs
+        rv["data_reference_index"] = struct.unpack('>H', src.read(2))[0]
+        return rv
 
     def encode_fields(self, dest):
         dest.write('\0' * 6) # reserved
@@ -888,9 +870,9 @@ class VisualSampleEntry(SampleEntry):
     parse_children = True
 
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = SampleEntry.parse(src, parent, options)
-        r = FieldReader(clz, src, kwargs)
+    def parse(clz, src, parent, **kwargs):
+        rv = SampleEntry.parse(src, parent, **kwargs)
+        r = FieldReader(clz, src, rv)
         r.read('H',"version")
         r.read('H',"revision")
         r.read('I',"vendor")
@@ -899,15 +881,15 @@ class VisualSampleEntry(SampleEntry):
         r.read('H',"width")
         r.read('H',"height")
         r.read('I',"horizresolution")
-        kwargs["horizresolution"] /= 65536.0
+        rv["horizresolution"] /= 65536.0
         r.read('I',"vertresolution")
-        kwargs["vertresolution"] /= 65536.0
+        rv["vertresolution"] /= 65536.0
         r.read('I',"entry_data_size")
         r.read('H',"frame_count")
         r.read(32,"compressorname")
         r.read('H',"bit_depth")
         r.read('H',"colour_table")
-        return kwargs
+        return rv
 
     def encode_fields(self, dest):
         super(VisualSampleEntry, self).encode_fields(dest)
@@ -941,39 +923,39 @@ MP4_BOXES['encv'] = EncryptedSampleEntry
 
 class AVCConfigurationBox(Mp4Atom):
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = Mp4Atom.parse(src, parent, options)
-        r = FieldReader(clz, src, kwargs)
+    def parse(clz, src, parent, **kwargs):
+        rv = Mp4Atom.parse(src, parent, **kwargs)
+        r = FieldReader(clz, src, rv)
         r.read('B',"configurationVersion")
         r.read('B',"AVCProfileIndication")
         r.read('B',"profile_compatibility")
         r.read('B',"AVCLevelIndication")
         r.read('B',"lengthSizeMinusOne", mask=0x03)
         numOfSequenceParameterSets = r.get('B',"numOfSequenceParameterSets", mask=0x1F)
-        kwargs["sps"] = []
+        rv["sps"] = []
         for i in range(numOfSequenceParameterSets):
             sequenceParameterSetLength = struct.unpack('>H', src.read(2))[0]
             sequenceParameterSetNALUnit = src.read(sequenceParameterSetLength)
-            kwargs["sps"].append(sequenceParameterSetNALUnit)
+            rv["sps"].append(sequenceParameterSetNALUnit)
         numOfPictureParameterSets = r.get('B', 'numOfPictureParameterSets')
-        kwargs["pps"] = []
+        rv["pps"] = []
         for i in range(numOfPictureParameterSets):
             pictureParameterSetLength = struct.unpack('>H', src.read(2))[0]
             pictureParameterSetNALUnit = src.read(pictureParameterSetLength)
-            kwargs["pps"].append(pictureParameterSetNALUnit)
-        if clz.is_ext_profile(kwargs["AVCProfileIndication"]):
+            rv["pps"].append(pictureParameterSetNALUnit)
+        if clz.is_ext_profile(rv["AVCProfileIndication"]):
             r.read('B', 'chroma_format', mask=0x03)
             r.read('B', 'luma_bit_depth', mask=0x03)
-            kwargs["luma_bit_depth"] += 8
+            rv["luma_bit_depth"] += 8
             r.read('B', 'chroma_bit_depth', mask=0x03)
-            kwargs["chroma_bit_depth"] += 8
+            rv["chroma_bit_depth"] += 8
             numOfSequenceParameterSetExtensions = r.get('B', 'numOfSequenceParameterSetExtensions')
-            kwargs["sps_ext"] = []
+            rv["sps_ext"] = []
             for i in range(numOfSequenceParameterSetExtensions):
-                length = struct.unpack('>H', src.read(2))[0]
+                length = r.get('H', 'sps_ext_length')
                 NALUnit = src.read(length)
-                kwargs["sps_ext"].append(NALUnit)
-        return kwargs
+                rv["sps_ext"].append(NALUnit)
+        return rv
 
     def _field_repr(self, exclude):
         param_sets = ['sps', 'sps_ext', 'pps']
@@ -1021,15 +1003,15 @@ MP4_BOXES['avcC'] = AVCConfigurationBox
 class AudioSampleEntry(SampleEntry):
     parse_children = True
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = SampleEntry.parse(src, parent, options)
+    def parse(clz, src, parent, **kwargs):
+        rv = SampleEntry.parse(src, parent, **kwargs)
         src.read(8) # reserved
-        kwargs["channel_count"] = struct.unpack('>H', src.read(2))[0]
-        kwargs["sample_size"] = struct.unpack('>H', src.read(2))[0]
+        rv["channel_count"] = struct.unpack('>H', src.read(2))[0]
+        rv["sample_size"] = struct.unpack('>H', src.read(2))[0]
         src.read(4) # reserved
-        kwargs["sampling_frequency"] = struct.unpack('>H', src.read(2))[0]
+        rv["sampling_frequency"] = struct.unpack('>H', src.read(2))[0]
         src.read(2) # reserved
-        return kwargs
+        return rv
 
     def encode_fields(self, dest):
         super(AudioSampleEntry, self).encode_fields(dest)
@@ -1091,21 +1073,21 @@ class EC3SpecificBox(Mp4Atom):
     ACMOD_NUM_CHANS = [2,1,2,3,3,4,4,5]
 
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = Mp4Atom.parse(src, parent, options)
-        r = BitsFieldReader(clz, src, kwargs)
+    def parse(clz, src, parent, **kwargs):
+        rv = Mp4Atom.parse(src, parent, **kwargs)
+        r = BitsFieldReader(clz, src, rv)
         r.read(13, "data_rate")
         num_ind_sub = r.get(3, "num_ind_sub") + 1
-        kwargs["substreams"] = []
+        rv["substreams"] = []
         for i in range(num_ind_sub):
             r2 = r.duplicate({})
             EC3SubStream.parse(r2)
-            kwargs["substreams"].append(EC3SubStream(**r2.kwargs))
+            rv["substreams"].append(EC3SubStream(**r2.kwargs))
         if r.pos()+16 <= r.size:
             r.get(7, 'reserved')
             r.read(1, 'flag_ec3_extension_type_a')
             r.read(8, 'complexity_index_type_a')
-        return kwargs
+        return rv
 
     def encode_fields(self, dest):
         ba = bitstring.BitArray()
@@ -1122,10 +1104,10 @@ MP4_BOXES['dec3'] = EC3SpecificBox
 
 class OriginalFormatBox(Mp4Atom):
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = Mp4Atom.parse(src, parent, options)
-        kwargs["data_format"] = src.read(4)
-        return kwargs
+    def parse(clz, src, parent, **kwargs):
+        rv = Mp4Atom.parse(src, parent, **kwargs)
+        rv["data_format"] = src.read(4)
+        return rv
 
     def encode_fields(self, dest):
         dest.write(self.data_format)
@@ -1135,15 +1117,15 @@ MP4_BOXES['frma'] = OriginalFormatBox
 class MP4AudioSampleEntry(Mp4Atom):
     parse_children = True
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = Mp4Atom.parse(src, parent, options)
-        r = FieldReader(clz, src, kwargs)
+    def parse(clz, src, parent, **kwargs):
+        rv = Mp4Atom.parse(src, parent, **kwargs)
+        r = FieldReader(clz, src, rv)
         r.get(6, 'reserved') # (8)[6] reserved
         r.read('H', "data_reference_index")
         r.get(8+4+4, 'reserved') # (8)[6] reserved
         r.read('H', "timescale")
         r.get(2, 'reserved') # (16) reserved
-        return kwargs
+        return rv
 
     def encode_fields(self, dest):
         w = FieldWriter(self, dest)
@@ -1172,19 +1154,19 @@ class ESDescriptorBox(FullBox):
             d.parent = self
 
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = FullBox.parse(src, parent, options)
+    def parse(clz, src, parent, **kwargs):
+        rv = FullBox.parse(src, parent, **kwargs)
         descriptors=[]
-        end = kwargs["position"]+kwargs["size"]
+        end = rv["position"]+rv["size"]
         while src.tell()<end:
-            d = Descriptor.create(src, parent, options)
+            d = Descriptor.create(src, parent, **rv)
             descriptors.append(d)
             if src.tell() != (d.position + d.size + d.header_size):
                 options.log.warning("Expected descriptor %s to be %d bytes, but read %d bytes",
                                     d.classname, d.size + d.header_size, src.tell() - d.position)
                 src.seek(d.position + d.size + d.header_size)
-        kwargs["descriptors"] = descriptors
-        return kwargs
+        rv["descriptors"] = descriptors
+        return rv
 
     def descriptor(self, name):
         for d in self._fields["descriptors"]:
@@ -1215,10 +1197,10 @@ class SampleDescriptionBox(FullBox):
     parse_children = True
 
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = FullBox.parse(src, parent, options)
-        kwargs["entry_count"] = struct.unpack('>I', src.read(4))[0]
-        return kwargs
+    def parse(clz, src, parent, **kwargs):
+        rv = FullBox.parse(src, parent, **kwargs)
+        rv["entry_count"] = struct.unpack('>I', src.read(4))[0]
+        return rv
 
     def encode_fields(self, dest):
         super(SampleDescriptionBox, self).encode_fields(dest)
@@ -1235,34 +1217,35 @@ class TrackFragmentHeaderBox(FullBox):
     duration_is_empty = 0x010000
     default_base_is_moof = 0x020000
 
-    def __init__(self, *args, **kwargs):
-        super(TrackFragmentHeaderBox, self).__init__(*args, **kwargs)
+    def __init__(self, **kwargs):
+        super(TrackFragmentHeaderBox, self).__init__(**kwargs)
         #default base offset = first byte of moof
         if self.base_data_offset is None:
             self.base_data_offset= self.find_atom('moof').position
         
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = FullBox.parse(src, parent, options)
-        kwargs["base_data_offset"] = None
-        kwargs["sample_description_index"] = 0
-        kwargs["default_sample_duration"] = 0
-        kwargs["default_sample_size"] = 0
-        kwargs["default_sample_flags"] = 0
-        kwargs["track_id"] = struct.unpack('>I', src.read(4))[0]
-        if kwargs["flags"] & clz.base_data_offset_present:
-            kwargs["base_data_offset"] = struct.unpack('>Q', src.read(8))[0]
-        elif kwargs["flags"] & clz.default_base_is_moof:
-            kwargs["base_data_offset"] = parent.find_atom('moof').position
-        if kwargs["flags"] & clz.sample_description_index_present:
-            kwargs["sample_description_index"] = struct.unpack('>I', src.read(4))[0]
-        if kwargs["flags"] & clz.default_sample_duration_present:
-            kwargs["default_sample_duration"] = struct.unpack('>I', src.read(4))[0]
-        if kwargs["flags"] & clz.default_sample_size_present:
-            kwargs["default_sample_size"] = struct.unpack('>I', src.read(4))[0]
-        if kwargs["flags"] & clz.default_sample_flags_present:
-            kwargs["default_sample_flags"] = struct.unpack('>I', src.read(4))[0]
-        return kwargs
+    def parse(clz, src, parent, **kwargs):
+        rv = FullBox.parse(src, parent, **kwargs)
+        rv["base_data_offset"] = None
+        rv["sample_description_index"] = 0
+        rv["default_sample_duration"] = 0
+        rv["default_sample_size"] = 0
+        rv["default_sample_flags"] = 0
+        r = FieldReader(clz, src, rv)
+        r.read('I', 'track_id')
+        if rv["flags"] & clz.base_data_offset_present:
+            r.read('Q', 'base_data_offset')
+        elif rv["flags"] & clz.default_base_is_moof:
+            rv["base_data_offset"] = parent.find_atom('moof').position
+        if rv["flags"] & clz.sample_description_index_present:
+            r.read('I', 'sample_description_index')
+        if rv["flags"] & clz.default_sample_duration_present:
+            r.read('I', 'default_sample_duration')
+        if rv["flags"] & clz.default_sample_size_present:
+            r.read('I', 'default_sample_size')
+        if rv["flags"] & clz.default_sample_flags_present:
+            r.read('I', 'default_sample_flags')
+        return rv
 
     def encode_fields(self, dest):
         super(TrackFragmentHeaderBox, self).encode_fields(dest)
@@ -1293,36 +1276,36 @@ class TrackHeaderBox(FullBox):
     Track_in_preview = 0x000004
 
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = FullBox.parse(src, parent, options)
-        kwargs["is_enabled"] = (kwargs["flags"] & clz.Track_enabled)==clz.Track_enabled
-        kwargs["in_movie"] = (kwargs["flags"] & clz.Track_in_movie)==clz.Track_in_movie
-        kwargs["in_preview"] = (kwargs["flags"] & clz.Track_in_preview)==clz.Track_in_preview
-        if kwargs["version"]==1:
-            kwargs["creation_time"] = struct.unpack('>Q', src.read(8))[0]
-            kwargs["modification_time"] = struct.unpack('>Q', src.read(8))[0]
-            kwargs["track_id"] = struct.unpack('>I', src.read(4))[0]
+    def parse(clz, src, parent, **kwargs):
+        rv = FullBox.parse(src, parent, **kwargs)
+        rv["is_enabled"] = (rv["flags"] & clz.Track_enabled)==clz.Track_enabled
+        rv["in_movie"] = (rv["flags"] & clz.Track_in_movie)==clz.Track_in_movie
+        rv["in_preview"] = (rv["flags"] & clz.Track_in_preview)==clz.Track_in_preview
+        if rv["version"]==1:
+            rv["creation_time"] = struct.unpack('>Q', src.read(8))[0]
+            rv["modification_time"] = struct.unpack('>Q', src.read(8))[0]
+            rv["track_id"] = struct.unpack('>I', src.read(4))[0]
             src.read(4) # reserved
-            kwargs["duration"] = struct.unpack('>Q', src.read(8))[0]
+            rv["duration"] = struct.unpack('>Q', src.read(8))[0]
         else:
-            kwargs["creation_time"] = struct.unpack('>I', src.read(4))[0]
-            kwargs["modification_time"] = struct.unpack('>I', src.read(4))[0]
-            kwargs["track_id"] = struct.unpack('>I', src.read(4))[0]
+            rv["creation_time"] = struct.unpack('>I', src.read(4))[0]
+            rv["modification_time"] = struct.unpack('>I', src.read(4))[0]
+            rv["track_id"] = struct.unpack('>I', src.read(4))[0]
             src.read(4) # reserved
-            kwargs["duration"] = struct.unpack('>I', src.read(4))[0]
-        kwargs["creation_time"] = from_iso_epoch(kwargs["creation_time"])
-        kwargs["modification_time"] = from_iso_epoch(kwargs["modification_time"])
+            rv["duration"] = struct.unpack('>I', src.read(4))[0]
+        rv["creation_time"] = from_iso_epoch(rv["creation_time"])
+        rv["modification_time"] = from_iso_epoch(rv["modification_time"])
         src.read(8) # 2 x 32 bits reserved
-        kwargs["layer"] = struct.unpack('>H', src.read(2))[0]
-        kwargs["alternate_group"] = struct.unpack('>H', src.read(2))[0]
-        kwargs["volume"] = struct.unpack('>H', src.read(2))[0] / 256.0  # value is fixed point 8.8
+        rv["layer"] = struct.unpack('>H', src.read(2))[0]
+        rv["alternate_group"] = struct.unpack('>H', src.read(2))[0]
+        rv["volume"] = struct.unpack('>H', src.read(2))[0] / 256.0  # value is fixed point 8.8
         src.read(2) # reserved
-        kwargs["matrix"] = []
+        rv["matrix"] = []
         for i in range(9):
-            kwargs["matrix"].append( struct.unpack('>I', src.read(4))[0] )
-        kwargs["width"] = struct.unpack('>I', src.read(4))[0] / 65536.0 # value is fixed point 16.16
-        kwargs["height"] = struct.unpack('>I', src.read(4))[0] / 65536.0 # value is fixed point 16.16
-        return kwargs
+            rv["matrix"].append( struct.unpack('>I', src.read(4))[0] )
+        rv["width"] = struct.unpack('>I', src.read(4))[0] / 65536.0 # value is fixed point 16.16
+        rv["height"] = struct.unpack('>I', src.read(4))[0] / 65536.0 # value is fixed point 16.16
+        return rv
 
     def encode_fields(self, dest):
         self.flags = 0
@@ -1355,13 +1338,13 @@ MP4_BOXES['tkhd'] = TrackHeaderBox
 
 class TrackFragmentDecodeTimeBox(FullBox):
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = FullBox.parse(src, parent, options)
-        if kwargs["version"]==1:
-            kwargs["base_media_decode_time"] = struct.unpack('>Q', src.read(8))[0]
+    def parse(clz, src, parent, **kwargs):
+        rv = FullBox.parse(src, parent, **kwargs)
+        if rv["version"]==1:
+            rv["base_media_decode_time"] = struct.unpack('>Q', src.read(8))[0]
         else:
-            kwargs["base_media_decode_time"] = struct.unpack('>I', src.read(4))[0]
-        return kwargs
+            rv["base_media_decode_time"] = struct.unpack('>I', src.read(4))[0]
+        return rv
 
     def encode_fields(self, dest):
         payload = io.BytesIO()
@@ -1379,14 +1362,14 @@ MP4_BOXES['tfdt'] = TrackFragmentDecodeTimeBox
 
 class TrackExtendsBox(FullBox):
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = FullBox.parse(src, parent, options)
-        kwargs["track_id"]  = struct.unpack('>I', src.read(4))[0]
-        kwargs["default_sample_description_index"]  = struct.unpack('>I', src.read(4))[0]
-        kwargs["default_sample_duration"]  = struct.unpack('>I', src.read(4))[0]
-        kwargs["default_sample_size"]  = struct.unpack('>I', src.read(4))[0]
-        kwargs["default_sample_flags"] = struct.unpack('>I', src.read(4))[0]
-        return kwargs
+    def parse(clz, src, parent, **kwargs):
+        rv = FullBox.parse(src, parent, **kwargs)
+        rv["track_id"]  = struct.unpack('>I', src.read(4))[0]
+        rv["default_sample_description_index"]  = struct.unpack('>I', src.read(4))[0]
+        rv["default_sample_duration"]  = struct.unpack('>I', src.read(4))[0]
+        rv["default_sample_size"]  = struct.unpack('>I', src.read(4))[0]
+        rv["default_sample_flags"] = struct.unpack('>I', src.read(4))[0]
+        return rv
 
     def encode_fields(self, dest):
         super(TrackExtendsBox, self).encode_fields(dest)
@@ -1401,24 +1384,24 @@ MP4_BOXES['trex'] = TrackExtendsBox
 
 class MediaHeaderBox(FullBox):
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = FullBox.parse(src, parent, options)
-        if kwargs["version"]==1:
-            kwargs["creation_time"] = struct.unpack('>Q', src.read(8))[0]
-            kwargs["modification_time"] = struct.unpack('>Q', src.read(8))[0]
-            kwargs["timescale"] = struct.unpack('>I', src.read(4))[0]
-            kwargs["duration"] = struct.unpack('>Q', src.read(8))[0]
+    def parse(clz, src, parent, **kwargs):
+        rv = FullBox.parse(src, parent, **kwargs)
+        if rv["version"]==1:
+            rv["creation_time"] = struct.unpack('>Q', src.read(8))[0]
+            rv["modification_time"] = struct.unpack('>Q', src.read(8))[0]
+            rv["timescale"] = struct.unpack('>I', src.read(4))[0]
+            rv["duration"] = struct.unpack('>Q', src.read(8))[0]
         else:
-            kwargs["creation_time"] = struct.unpack('>I', src.read(4))[0]
-            kwargs["modification_time"] = struct.unpack('>I', src.read(4))[0]
-            kwargs["timescale"] = struct.unpack('>I', src.read(4))[0]
-            kwargs["duration"] = struct.unpack('>I', src.read(4))[0]
-        kwargs["creation_time"] = from_iso_epoch(kwargs["creation_time"])
-        kwargs["modification_time"] = from_iso_epoch(kwargs["modification_time"])
+            rv["creation_time"] = struct.unpack('>I', src.read(4))[0]
+            rv["modification_time"] = struct.unpack('>I', src.read(4))[0]
+            rv["timescale"] = struct.unpack('>I', src.read(4))[0]
+            rv["duration"] = struct.unpack('>I', src.read(4))[0]
+        rv["creation_time"] = from_iso_epoch(rv["creation_time"])
+        rv["modification_time"] = from_iso_epoch(rv["modification_time"])
         tmp = struct.unpack('>H', src.read(2))[0]
-        kwargs["language"] = chr(0x60+((tmp>>10)&0x1F)) + chr(0x60+((tmp>>5)&0x1F)) + chr(0x60+(tmp&0x1F))
+        rv["language"] = chr(0x60+((tmp>>10)&0x1F)) + chr(0x60+((tmp>>5)&0x1F)) + chr(0x60+(tmp&0x1F))
         src.read(2) # unsigned int(16) pre_defined = 0
-        return kwargs
+        return rv
 
     def encode_fields(self, dest):
         super(MediaHeaderBox, self).encode_fields(dest)
@@ -1439,10 +1422,10 @@ MP4_BOXES['mdhd'] = MediaHeaderBox
 
 class MovieFragmentHeaderBox(FullBox):
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = FullBox.parse(src, parent, options)
-        kwargs["sequence_number"] = struct.unpack('>I', src.read(4))[0]
-        return kwargs
+    def parse(clz, src, parent, **kwargs):
+        rv = FullBox.parse(src, parent, **kwargs)
+        rv["sequence_number"] = struct.unpack('>I', src.read(4))[0]
+        return rv
 
     def encode_fields(self, dest):
         super(MovieFragmentHeaderBox, self).encode_fields(dest)
@@ -1452,14 +1435,14 @@ MP4_BOXES['mfhd'] = MovieFragmentHeaderBox
 
 class HandlerBox(FullBox):
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = FullBox.parse(src, parent, options)
+    def parse(clz, src, parent, **kwargs):
+        rv = FullBox.parse(src, parent, **kwargs)
         src.read(4) # unsigned int(32) pre_defined = 0
-        kwargs["handler_type"] = src.read(4)
+        rv["handler_type"] = src.read(4)
         src.read(12) # const unsigned int(32)[3] reserved = 0;
-        name_len = kwargs["position"] + kwargs["size"] - src.tell()
-        kwargs["name"] = src.read(name_len)
-        return kwargs
+        name_len = rv["position"] + rv["size"] - src.tell()
+        rv["name"] = src.read(name_len)
+        return rv
 
     def encode_fields(self, dest):
         super(HandlerBox, self).encode_fields(dest)
@@ -1472,13 +1455,13 @@ MP4_BOXES['hdlr'] = HandlerBox
 
 class MovieExtendsHeaderBox(FullBox):
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = FullBox.parse(src, parent, options)
-        if kwargs["version"]==1:
-            kwargs["fragment_duration"] = struct.unpack('>Q', src.read(8))[0]
+    def parse(clz, src, parent, **kwargs):
+        rv = FullBox.parse(src, parent, **kwargs)
+        if rv["version"]==1:
+            rv["fragment_duration"] = struct.unpack('>Q', src.read(8))[0]
         else:
-            kwargs["fragment_duration"] = struct.unpack('>I', src.read(4))[0]
-        return kwargs
+            rv["fragment_duration"] = struct.unpack('>I', src.read(4))[0]
+        return rv
 
     def encode_fields(self, dest):
         super(MovieExtendsHeaderBox, self).encode_fields(dest)
@@ -1491,19 +1474,19 @@ MP4_BOXES['mehd'] = MovieExtendsHeaderBox
 
 class SampleAuxiliaryInformationSizesBox(FullBox):
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = FullBox.parse(src, parent, options)
-        if kwargs["flags"] & 1:
-            kwargs["aux_info_type"] = clz.check_info_type(struct.unpack('>I',
+    def parse(clz, src, parent, **kwargs):
+        rv = FullBox.parse(src, parent, **kwargs)
+        if rv["flags"] & 1:
+            rv["aux_info_type"] = clz.check_info_type(struct.unpack('>I',
                                                                         src.read(4))[0])
-            kwargs["aux_info_type_parameter"] = struct.unpack('>I', src.read(4))[0]
-        kwargs["default_sample_info_size"] = struct.unpack('B', src.read(1))[0]
-        kwargs["sample_info_sizes"] = []
+            rv["aux_info_type_parameter"] = struct.unpack('>I', src.read(4))[0]
+        rv["default_sample_info_size"] = struct.unpack('B', src.read(1))[0]
+        rv["sample_info_sizes"] = []
         sample_count = struct.unpack('>I', src.read(4))[0]
-        if kwargs["default_sample_info_size"] == 0:
+        if rv["default_sample_info_size"] == 0:
             for i in range(sample_count):
-                kwargs["sample_info_sizes"].append(struct.unpack('B', src.read(1))[0])
-        return kwargs
+                rv["sample_info_sizes"].append(struct.unpack('B', src.read(1))[0])
+        return rv
 
     @classmethod
     def check_info_type(clz, info_type):
@@ -1553,14 +1536,18 @@ class CencSampleAuxiliaryData(NamedObject):
 
     @classmethod
     def parse(clz, src, size, iv_size, flags, parent):
+        if iv_size is None:
+            if (flags & 0x02) == 0x00:
+                iv_size = size
+            else:
+                raise ValueError("Unable to determine IV size")
         rv = {}
         rv["initialization_vector"] = src.read(iv_size)
         if (flags & 0x02) == 0x02 and size >= iv_size+2:
             rv["subsamples"] = []
             subsample_count = struct.unpack('>H', src.read(2))[0]
             if size < subsample_count*6:
-                print 'Invalid subsample_count %d'%subsample_count
-                return rv
+                raise ValueError('Invalid subsample_count %d'%subsample_count)
             for i in range(subsample_count):
                 s = {
                     'clear': struct.unpack('>H', src.read(2))[0],
@@ -1579,9 +1566,9 @@ class CencSampleAuxiliaryData(NamedObject):
     def _field_repr(self, exclude):
         rv = []
         rv.append('initialization_vector=0x%s'%self.initialization_vector.encode('hex'))
-        if self._fields.has_key("subsamples"):
+        if hasattr(self, "subsamples"):
             subsamples = []
-            for s in self._fields["subsamples"]:
+            for s in self.subsamples:
                 subsamples.append('{"clear":%d, "encrypted":%d}'%(s["clear"], s["encrypted"]))
             rv.append('subsamples=[%s]'%(','.join(subsamples)))
         return rv
@@ -1594,32 +1581,32 @@ class CencSampleEncryptionBox(FullBox):
             self._fields["samples"] = map(lambda s: CencSampleAuxiliaryData(**s), self._fields["samples"])
 
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = FullBox.parse(src, parent, options)
-        if kwargs["flags"] & 0x01:
+    def parse(clz, src, parent, **kwargs):
+        rv = FullBox.parse(src, parent, **kwargs)
+        if rv["flags"] & 0x01:
             f = '\000'+src.read(3)
-            kwargs["algorithm_id"] = struct.unpack('>I',f)[0]
-            kwargs["iv_size"] = struct.unpack('B', src.read(1))[0]
-            if kwargs["iv_size"] == 0:
-                kwargs["iv_size"] = 8
-            kwargs["kid"] = src.read(16)
+            rv["algorithm_id"] = struct.unpack('>I',f)[0]
+            rv["iv_size"] = struct.unpack('B', src.read(1))[0]
+            if rv["iv_size"] == 0:
+                rv["iv_size"] = 8
+            rv["kid"] = src.read(16)
         else:
             try:
                 moov = parent.find_atom("moov")
                 tenc = moov.find_child("tenc")
-                kwargs["iv_size"] = tenc.iv_size
+                rv["iv_size"] = tenc.iv_size
             except AttributeError:
-                kwargs["iv_size"] = options.iv_size
+                rv["iv_size"] = kwargs["options"].iv_size
         num_entries = struct.unpack('>I', src.read(4))[0]
-        kwargs["subsample_count"] = num_entries
-        kwargs["samples"] = []
+        rv["subsample_count"] = num_entries
+        rv["samples"] = []
         saiz = parent.saiz
         for i in range(num_entries):
             size = saiz.sample_info_sizes[i] if saiz.sample_info_sizes else saiz.default_sample_info_size
             if size:
-                s = CencSampleAuxiliaryData.parse(src, size, kwargs["iv_size"], kwargs["flags"], parent)
-                kwargs["samples"].append(s)
-        return kwargs
+                s = CencSampleAuxiliaryData.parse(src, size, rv["iv_size"], rv["flags"], parent)
+                rv["samples"].append(s)
+        return rv
 
     def encode_fields(self, dest):
         payload = io.BytesIO()
@@ -1648,21 +1635,21 @@ MP4_BOXES["senc"] = CencSampleEncryptionBox
 
 class SampleAuxiliaryInformationOffsetsBox(FullBox):
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = FullBox.parse(src, parent, options)
-        if kwargs["flags"] & 0x01:
-            kwargs["aux_info_type"] = clz.check_info_type(struct.unpack('>I',
+    def parse(clz, src, parent, **kwargs):
+        rv = FullBox.parse(src, parent, **kwargs)
+        if rv["flags"] & 0x01:
+            rv["aux_info_type"] = clz.check_info_type(struct.unpack('>I',
                                                                         src.read(4))[0])
-            kwargs["aux_info_type_parameter"] = struct.unpack('>I', src.read(4))[0]
+            rv["aux_info_type_parameter"] = struct.unpack('>I', src.read(4))[0]
         entry_count = struct.unpack('>I', src.read(4))[0]
-        kwargs["offsets"] = []
+        rv["offsets"] = []
         for i in range(entry_count):
-            if kwargs["version"] == 0:
+            if rv["version"] == 0:
                 o = struct.unpack('>I', src.read(4))[0]
             else:
                 o = struct.unpack('>Q', src.read(8))[0]
-            kwargs["offsets"].append(o)
-        return kwargs
+            rv["offsets"].append(o)
+        return rv
 
     def encode_fields(self, dest):
         payload = io.BytesIO()
@@ -1713,29 +1700,29 @@ class TrackSample(NamedObject):
 
     @classmethod
     def parse(clz, src, index, offset, trun, tfhd):
-        kwargs = {
+        rv = {
             'index': index,
             'offset': offset,
             'duration': None
         }
         flags = trun["flags"]
         if flags & TrackFragmentRunBox.sample_duration_present:
-            kwargs['duration'] = struct.unpack('>I', src.read(4))[0]
+            rv['duration'] = struct.unpack('>I', src.read(4))[0]
         elif tfhd.default_sample_duration:
-            kwargs['duration'] = tfhd.default_sample_duration
+            rv['duration'] = tfhd.default_sample_duration
         if flags & TrackFragmentRunBox.sample_size_present:
-            kwargs['size'] = struct.unpack('>I', src.read(4))[0]
+            rv['size'] = struct.unpack('>I', src.read(4))[0]
         else:
-            kwargs['size'] = tfhd.default_sample_size
+            rv['size'] = tfhd.default_sample_size
         if flags & TrackFragmentRunBox.sample_flags_present:
-            kwargs['flags'] = struct.unpack('>I', src.read(4))[0]
+            rv['flags'] = struct.unpack('>I', src.read(4))[0]
         else:
-            kwargs['flags'] = tfhd.default_sample_flags
+            rv['flags'] = tfhd.default_sample_flags
         if index==0 and (flags & TrackFragmentRunBox.first_sample_flags_present):
-            kwargs['flags'] = trun["first_sample_flags"]
+            rv['flags'] = trun["first_sample_flags"]
         if flags & TrackFragmentRunBox.sample_composition_time_offsets_present:
-            kwargs["composition_time_offset"] = struct.unpack('>i', src.read(4))[0]
-        return kwargs
+            rv["composition_time_offset"] = struct.unpack('>i', src.read(4))[0]
+        return rv
 
     def encode_fields(self, dest):
         flags = self.parent.flags
@@ -1774,28 +1761,28 @@ class TrackFragmentRunBox(FullBox):
             s.parent = self
 
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = FullBox.parse(src, parent, options)
+    def parse(clz, src, parent, **kwargs):
+        rv = FullBox.parse(src, parent, **kwargs)
         tfhd = parent.tfhd
         sample_count = struct.unpack('>I', src.read(4))[0]
-        kwargs["sample_count"] = sample_count
-        if kwargs["flags"] & clz.data_offset_present:
-            kwargs["data_offset"] = struct.unpack('>i', src.read(4))[0]
+        rv["sample_count"] = sample_count
+        if rv["flags"] & clz.data_offset_present:
+            rv["data_offset"] = struct.unpack('>i', src.read(4))[0]
         else:
-            kwargs["data_offset"] = 0
-        if kwargs["flags"] & clz.first_sample_flags_present:
-            kwargs["first_sample_flags"] = struct.unpack('>I', src.read(4))[0]
+            rv["data_offset"] = 0
+        if rv["flags"] & clz.first_sample_flags_present:
+            rv["first_sample_flags"] = struct.unpack('>I', src.read(4))[0]
         else:
-            kwargs["first_sample_flags"] = 0
-        #print('Trun: count=%d offset=%d flags=%x'%(kwargs["sample_count,kwargs["data_offset,kwargs["first_sample_flags))
-        kwargs["samples"] = []
-        offset = kwargs["data_offset"]
+            rv["first_sample_flags"] = 0
+        #print('Trun: count=%d offset=%d flags=%x'%(rv["sample_count,rv["data_offset,rv["first_sample_flags))
+        rv["samples"] = []
+        offset = rv["data_offset"]
         for i in range(sample_count):
-            ts = TrackSample.parse(src, i, offset, kwargs, tfhd)
+            ts = TrackSample.parse(src, i, offset, rv, tfhd)
             ts = TrackSample(**ts)
-            kwargs["samples"].append(ts)
+            rv["samples"].append(ts)
             offset += ts.size
-        return kwargs
+        return rv
 
     def parse_samples(self, src, nal_length_field_length):
         tfhd = self.parent.tfhd
@@ -1823,13 +1810,13 @@ MP4_BOXES['trun']=TrackFragmentRunBox
 
 class TrackEncryptionBox(FullBox):
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = FullBox.parse(src, parent, options)
-        r = FieldReader(clz, src, kwargs)
+    def parse(clz, src, parent, **kwargs):
+        rv = FullBox.parse(src, parent, **kwargs)
+        r = FieldReader(clz, src, rv)
         r.read('0I',"is_encrypted")
         r.read('B',"iv_size")
         r.read(16,"default_kid")
-        return kwargs
+        return rv
 
     def encode_fields(self, dest):
         super(TrackEncryptionBox, self).encode_fields(dest)
@@ -1857,21 +1844,21 @@ class ContentProtectionSpecificBox(FullBox):
             raise ValueError("Invalid system ID")
 
     @classmethod
-    def parse(clz, src, parent, options):
-        kwargs = FullBox.parse(src, parent, options)
-        r = FieldReader(clz, src, kwargs)
+    def parse(clz, src, parent, **kwargs):
+        rv = FullBox.parse(src, parent, **kwargs)
+        r = FieldReader(clz, src, rv)
         r.read(16, "system_id")
-        if kwargs["version"] > 0:
+        if rv["version"] > 0:
             kid_count = r.get('I', 'kid_count')
-            kwargs["key_ids"] = []
+            rv["key_ids"] = []
             for i in range(kid_count):
-                kwargs["key_ids"].append(r.read(16, 'kid'))
+                rv["key_ids"].append(r.read(16, 'kid'))
         data_size = r.get('I', 'data_size')
         if data_size > 0:
             r.read(data_size,"data")
         else:
-            kwargs["data"] = None
-        return kwargs
+            rv["data"] = None
+        return rv
 
     def encode_fields(self, dest):
         super(ContentProtectionSpecificBox, self).encode_fields(dest)
@@ -1903,15 +1890,17 @@ class ContentProtectionSpecificBox(FullBox):
 MP4_BOXES['pssh'] = ContentProtectionSpecificBox
 
 class IsoParser(object):
-    def walk_atoms(self, filename, atom=None):
+    def walk_atoms(self, filename, atom=None, options=None):
         atoms = None
         src = None
         try:
+            if options is not None:
+                options.log.debug('Parse %s', filename)
             if isinstance(filename, basestring):
                 src = io.open(filename, mode="rb", buffering=16384)
             else:
                 src = filename
-            atoms = Mp4Atom.create(src)
+            atoms = Mp4Atom.create(src, options=options)
         finally:
             if src and isinstance(filename,(str,unicode)):
                 src.close()
@@ -1930,11 +1919,17 @@ if __name__ == "__main__":
     ap.add_argument('-d', '--debug', action="store_true")
     ap.add_argument('-s', '--show', help='Show contents of specified atom')
     ap.add_argument('-t', '--tree', action="store_true", help='Show atom tree')
+    ap.add_argument('--ivsize', type=int, help='IV size')
     ap.add_argument('mp4file', help='Filename of MP4 file', nargs='+', default=None)
     args = ap.parse_args()
+    if args.debug:
+        logging.getLogger().setLevel(logging.DEBUG)
+    options = Options()
+    if args.ivsize:
+        options.iv_size = args.ivsize
     for filename in args.mp4file:
         parser = IsoParser()
-        atoms = parser.walk_atoms(filename)
+        atoms = parser.walk_atoms(filename, options=options)
         for atom in atoms:
             if args.tree:
                 atom.dump()

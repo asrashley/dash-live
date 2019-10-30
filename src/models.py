@@ -12,11 +12,20 @@ class Stream(ndb.Model):
     title = ndb.StringProperty(required=True, indexed=True)
     prefix = ndb.StringProperty(required=True, verbose_name='File name prefix', indexed=True,
                                 repeated=False)
+    marlin_la_url = ndb.StringProperty(required=False, indexed=False, default=None)
+    playready_la_url = ndb.StringProperty(required=False, indexed=False, default=None)
 
     @classmethod
     def all(clz):
         return clz.query().order(clz.prefix).fetch()
 
+    def toJSON(self):
+        return {
+            'title': self.title,
+            'prefix': self.prefix,
+            'marlin_la_url': self.marlin_la_url,
+            'playready_la_url': self.playready_la_url,
+        }
 
 class MediaFile(ndb.Model):
     """representation of one MP4 file"""
@@ -85,11 +94,14 @@ class MediaFile(ndb.Model):
                 blob[k] = getattr(i, k)
             if convert_date:
                 blob["creation"] = utils.toIsoDateTime(blob["creation"])
+        r = self.representation
+        if r is not None:
+            r = r.toJSON()
         return {
             "name": self.name,
             "key": self.key.urlsafe(),
             "blob": blob,
-            "representation": self.representation,
+            "representation": r,
         }
 
 

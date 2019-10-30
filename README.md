@@ -18,7 +18,6 @@ A settings.py needs to be created that contains
     cookie_secret='arandomstring'
     csrf_secret = 'arandomstring'
     DEBUG=not on_production_server
-    sas_url=''
 
 The cookie_secret and csrf_secret variables need to contain a randomly
 generated block of ascii characters. There is a gen_settings.py script
@@ -39,15 +38,13 @@ On Ubuntu, the following should install the Python GAE SDK:
 
 Create a Python virtual environment and install the dependencies:
 
-    virtualenv virtenv
+    virtualenv -p python2 virtenv
     . ./virtenv/bin/activate
     pip install -r requirements.txt
 
 The CSS files need to be compiled:
 
-	sudo apt install node-less
     (cd static/css/ && make)
-
 
 Use runserver.bat or runserver.sh depending upon whether you are developing
 on Windows or Linux.
@@ -58,8 +55,6 @@ It will start an HTTP server on port 9080
 There is a dockerfile to create a Docker image that contains GAE and
 all the other required packages to run the development server.
 
-	sudo apt install node-less
-    (cd static/css/ && make)
     docker build -t dashlive -f sdk-dockerfile .
     mkdir gaedata
 
@@ -71,7 +66,7 @@ The docker container can then be used by:
 Note that this docker container runs the DEVELOPMENT ENVIRONMENT
 and is NOT for use in a production environment! The above example
 will use port 80 and 8080 on the Docker host to provide access to
-the application (port 80) and the GAE admin server (port 8080).
+the application (on port 80) and the GAE admin server (port 8080).
 
 Media Files
 -----------
@@ -114,6 +109,46 @@ The media files need to be uploaded once the dash server is running. Go to
 http://localhost:9080/media to upload the media files, one at a time.
 After uploading, each media file needs to be indexed, using the
 "index" button beside each media item.
+
+When running in development mode, the populate-db.py script can be used to
+automate the installation of streams, files and keys
+
+    python populate-db.py --host http://localhost:9080/ bbb.json
+
+Where bbb.json is a JSON file that looks like this:
+
+    {
+        "keys": [
+            {
+                "computed": false,
+                "key": "533a583a843436a536fbe2a5821c4b6c",
+                "kid": "c001de8e567b5fcfbc22c565ed5bda24"
+            },
+            {
+                "computed": true,
+                "kid": "1ab45440532c439994dc5c5ad9584bac"
+            }
+        ],
+        "streams": [
+            {
+                "prefix": "bbb",
+                "title": "Big Buck Bunny",
+                "marlin_la_url": "ms3://ms3.test.expressplay.com:8443/hms/ms3/rights/?b=...",
+                "playready_la_url": "https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg={cfgs}"
+            }
+        ],
+        "files": [
+            "bbb_a1.mp4", "bbb_a1_enc.mp4", "bbb_a2.mp4", "bbb_a2_enc.mp4",
+            "bbb_v1.mp4", "bbb_v1_enc.mp4", "bbb_v2.mp4", "bbb_v2_enc.mp4",
+            "bbb_v3.mp4", "bbb_v3_enc.mp4", "bbb_v4.mp4", "bbb_v4_enc.mp4",
+            "bbb_v5.mp4", "bbb_v5_enc.mp4", "bbb_v6.mp4", "bbb_v6_enc.mp4",
+            "bbb_v7.mp4", "bbb_v7_enc.mp4"
+        ]
+    }
+
+The populate-db.py script will upload all of the keys, streams and
+files listed in the JSON file that don't already exist on the
+server.
 
 Once this has been done, you can add the stream to the list of
 available streams http://localhost:9080/media using the "add" button

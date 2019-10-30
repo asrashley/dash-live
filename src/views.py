@@ -72,6 +72,7 @@ templates.filters['toHtmlString'] = utils.toHtmlString
 templates.filters['toJson'] = utils.toJson
 templates.filters['uuid'] = utils.toUuid
 templates.filters['xmlSafe'] = utils.xmlSafe
+templates.filters['default'] = utils.default
 
 legacy_manifest_names = {
     'enc.mpd': 'hand_made.mpd',
@@ -222,17 +223,26 @@ class RequestHandler(webapp2.RequestHandler):
             laurl = laurl.replace('http://','https://')
         return laurl
 
-    def generate_drm_dict(self):
-        mspr = drm.PlayReady(templates)
+    def generate_drm_dict(self, stream):
+        if isinstance(stream, basestring):
+            stream = models.Stream.query(models.Stream.prefix==stream).get()
+        marlin_la_url = None
+        playready_la_url = None
+        if stream is not None:
+            marlin_la_url = stream.marlin_la_url
+            playready_la_url = stream.playready_la_url
+        mspr = drm.PlayReady(templates, la_url=playready_la_url)
         ck = drm.ClearKey(templates)
         rv = {
             'playready': {
+                'laurl': playready_la_url,
                 'pro': mspr.generate_pro,
                 'cenc': mspr.generate_pssh,
                 'moov': mspr.generate_pssh,
             },
             'marlin': {
-                "MarlinContentIds": True
+                "MarlinContentIds": True,
+                'laurl': marlin_la_url,
             },
             'clearkey': {
                 'laurl': self.generate_clearkey_license_url(),
@@ -345,6 +355,10 @@ class RequestHandler(webapp2.RequestHandler):
         return '\n'.join(rv)
 
     def calculate_dash_params(self, stream, mode, **kwargs):
+        st = models.Stream.query(models.Stream.prefix==stream).get()
+        if st is None:
+            raise ValueError("Invalid stream prefix {0}".format(stream))
+        stream = st
         mpd_url = kwargs.get("mpd_url")
         if mpd_url is None:
             mpd_url = self.request.uri
@@ -352,8 +366,9 @@ class RequestHandler(webapp2.RequestHandler):
                 if v in mpd_url:
                     mpd_url = mpd_url.replace(k,v)
                     break
+        if mpd_url is None:
+            raise ValueError("Unable to determin MPD URL")
         encrypted = self.request.params.get('drm','none').lower() != 'none'
-        #mediaDuration = 9*60 + 32.52 #"PT0H9M32.52S"
         now = datetime.datetime.now(tz=utils.UTC())
         clockDrift=0
         try:
@@ -380,6 +395,7 @@ class RequestHandler(webapp2.RequestHandler):
             "now": now,
             "publishTime": now.replace(microsecond=0),
             "startNumber": 1,
+            "stream": stream,
             "suggestedPresentationDelay": 30,
             "timeShiftBufferDepth": timeShiftBufferDepth,
         }
@@ -429,9 +445,11 @@ class RequestHandler(webapp2.RequestHandler):
             r = mf.representation
             if r is None:
                 continue
-            if r.contentType=="video" and r.encrypted==encrypted and r.filename.startswith(stream+'_v'):
+            if r.contentType=="video" and r.encrypted==encrypted and \
+               r.filename.startswith(stream.prefix+'_v'):
                 video['representations'].append(r)
-            elif r.contentType=="audio" and r.encrypted==encrypted and r.filename.startswith(stream+'_a'):
+            elif r.contentType=="audio" and r.encrypted==encrypted and \
+                 r.filename.startswith(stream.prefix+'_a'):
                 if acodec is None or r.codecs.startswith(acodec):
                     audio['representations'].append(r)
         # if stream is encrypted but there is encrypted version of the audio track, fall back
@@ -441,7 +459,7 @@ class RequestHandler(webapp2.RequestHandler):
                 r = mf.representation
                 if r is None:
                     continue
-                if r.contentType=="audio" and r.filename.startswith(stream+'_a') and r.codecs.startswith(acodec):
+                if r.contentType=="audio" and r.filename.startswith(stream.prefix+'_a') and r.codecs.startswith(acodec):
                     audio['representations'].append(copy.deepcopy(r))
         if mode=='vod' or mode=='odvod':
             if video['representations']:
@@ -484,7 +502,7 @@ class RequestHandler(webapp2.RequestHandler):
         rv["maxSegmentDuration"] = max(video.get('maxSegmentDuration', 0),
                                        audio.get('maxSegmentDuration', 0))
         if encrypted:
-            rv["DRM"] = self.generate_drm_dict()
+            rv["DRM"] = self.generate_drm_dict(stream)
             if not kids:
                 rv["keys"] = models.Key.all_as_dict()
             else:
@@ -949,7 +967,7 @@ class LiveMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):
             atom.moof.traf.trun.parse_samples(src, representation.nalLengthFieldFength)
         if segment_num==0 and representation.encrypted:
             keys = models.Key.get_kids(representation.kids)
-            drms = self.generate_drm_dict()
+            drms = self.generate_drm_dict(stream)
             for drm in drms.values():
                 try:
                     pssh = drm["moov"](representation, keys)
@@ -1095,8 +1113,11 @@ class VideoPlayer(RequestHandler):
         if self.is_https_request():
             context['source'] = context['source'].replace('http://','https://')
         else:
-            if "marlin" in context["drm"]:
-                context['source'] = '#'.join([settings.sas_url,urllib.quote(context['source'])])
+            if "marlin" in context["drm"] and context['dash']['DRM']['marlin']['laurl']:
+                context['source'] = '#'.join([
+                    context['dash']['DRM']['marlin']['laurl'],
+                    context['source']
+                ])
         context['mimeType'] = 'application/dash+xml'
         context['title'] = manifests.manifest[filename]['title']
         template = templates.get_template('video.html')
@@ -1187,7 +1208,7 @@ class MediaHandler(RequestHandler):
                 if is_ajax:
                     csrf_key = self.outer.generate_csrf_cookie()
                     result['upload_url'] = blobstore.create_upload_url(self.outer.uri_for('uploadBlob'))
-                    result['csrf_token'] = self.outer.generate_csrf_token("upload", csrf_key)
+                    result['csrf'] = self.outer.generate_csrf_token("upload", csrf_key)
                     template = templates.get_template('media_row.html')
                     context["media"] = mf
                     result["file_html"] = template.render(context)
@@ -1237,8 +1258,25 @@ class MediaHandler(RequestHandler):
             'streams': self.generate_csrf_token('streams', csrf_key),
             'upload': self.generate_csrf_token('upload', csrf_key),
         }
-        template = templates.get_template('media.html')
-        self.response.write(template.render(context))
+        context['drm'] = {
+            'playready': {
+                'laurl': drm.PlayReady.TEST_LA_URL
+            },
+            'marlin': {
+                'laurl': ''
+            }
+        }
+        is_ajax = self.request.get("ajax", "0") == "1"
+        if is_ajax:
+            result = {}
+            for item in ['csrf_tokens', 'files', 'streams', 'keys', 'upload_url']:
+                result[item] = context[item]
+            result = utils.flatten(result)
+            self.response.content_type='application/json'
+            self.response.write(json.dumps(result))
+        else:
+            template = templates.get_template('media.html')
+            self.response.write(template.render(context))
 
     def media_info(self, mfid, **kwargs):
         result= { "error": "unknown error" }
@@ -1381,27 +1419,31 @@ class KeyHandler(RequestHandler):
             self.response.write(json.dumps(result))
 
 class StreamHandler(RequestHandler):
+    FIELDS=['title', 'prefix', 'marlin_la_url', 'playready_la_url']
+
     """handler for adding or removing a stream"""
     def put(self, **kwargs):
         if not users.is_current_user_admin():
             self.response.write('User is not an administrator')
             self.response.set_status(401)
             return
-        title = self.request.get('title')
-        prefix = self.request.get('prefix')
+        data = {}
+        for f in self.FIELDS:
+            data[f] = self.request.get(f)
+            if data[f]=='':
+                data[f] = None
         result= { "error": "unknown error" }
         try:
             self.check_csrf('streams')
-            st = models.Stream.query(models.Stream.prefix==prefix).get()
+            st = models.Stream.query(models.Stream.prefix==data['prefix']).get()
             if st:
-                raise ValueError("Duplicate prefix {}".format(prefix))
-            st = models.Stream(title=title, prefix=prefix)
+                raise ValueError("Duplicate prefix {prefix}".format(**data))
+            st = models.Stream(**data)
             st.put()
             result = {
-                "title":title,
-                "prefix": prefix,
                 "id": st.key.urlsafe()
             }
+            result.update(data)
         except (ValueError, CsrfFailureException) as err:
             result= {
                 "error": '{}: {:s}'.format(err.__class__.__name__, err)
