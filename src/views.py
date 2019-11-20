@@ -498,7 +498,7 @@ class RequestHandler(webapp2.RequestHandler):
             rv["ref_representation"] = video['representations'][0]
         else:
             rv["ref_representation"] = audio['representations'][0]
-        rv["mediaDuration"] = rv["ref_representation"].mediaDuration
+        rv["mediaDuration"] = rv["ref_representation"].mediaDuration / rv["ref_representation"].timescale
         rv["maxSegmentDuration"] = max(video.get('maxSegmentDuration', 0),
                                        audio.get('maxSegmentDuration', 0))
         if encrypted:

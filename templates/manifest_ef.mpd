@@ -8,13 +8,13 @@
      availabilityStartTime="{{availabilityStartTime|isoDateTime}}"
      {% else %}
      type="static"
-     mediaPresentationDuration="PT5M"
+     mediaPresentationDuration="{{mediaDuration|isoDuration}}"
      {% endif %}
      >
  {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
  <Period id="p1"
      {% if mode!='live' %}
-     duration="PT5M"
+         duration="{{mediaDuration|isoDuration}}"
      {% endif %}
          start="PT0.000S">
       {% for repr in video.representations %}

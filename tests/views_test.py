@@ -327,6 +327,8 @@ class TestHandlers(GAETestCase):
         response = self.app.get(mpd_url)
         mpd = ViewsTestDashValidator(self.app, mode, response.xml, mpd_url)
         mpd.validate()
+        if mode == 'vod':
+            self.assertAlmostEqual(mpd.duration.total_seconds(), self.MEDIA_DURATION, delta=1.0)
 
     def test_get_manifest(self):
         """Exhaustive test of every manifest with every combination of options.
