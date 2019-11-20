@@ -194,6 +194,11 @@ class Representation(object):
         if verbose==1:
             sys.stdout.write('\r\n')
         if len(rv.segments)>2:
+            # We need to exclude the last fragment when trying to estimate fragment
+            # duration, as the last one might be truncated. By using base_media_decode_time
+            # of the last fragment and dividing by number of media fragments (minus one)
+            # provides the best estimate of fragment duration.
+            # Note: len(rv.segments) also includes the init segment, hence the need for -2
             seg_dur = base_media_decode_time/(len(rv.segments)-2)
             rv.mediaDuration = 0
             for seg in rv.segments[1:]:

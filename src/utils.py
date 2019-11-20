@@ -265,7 +265,7 @@ duration_re = re.compile(r'^PT((?P<hours>\d+)[H:])?((?P<minutes>\d+)[M:])?((?P<s
 
 def from_isodatetime(date_time):
     """
-    Convert an ISO formated date string to a datetime.datetime object
+    Convert an ISO formated date string to a datetime.datetime or datetime.timedelta
     """
     if not date_time:
         return None
