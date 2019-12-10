@@ -22,6 +22,7 @@
 
 import base64
 import binascii
+import decimal
 import io
 import logging
 import os
@@ -265,15 +266,29 @@ class Mp4Tests(unittest.TestCase):
             for ch in child.children:
                 self.check_create_atom(ch, orig_data, offset)
         orig_data = orig_data[child.position-offset : child.position+child.size-offset]
-        r = repr(child)
+        try:
+            r = repr(child)
+        except:
+            print child.toJSON(pure=False)
+            raise
         try:
             ch2 = eval(r)
-        except (TypeError, AttributeError, SyntaxError):
+        except:
+            print 'repr:'
             print r
+            print 'json:'
+            print child.toJSON(pure=False)
             raise
         name = 'Encoding %s (%s)'%(child.classname, child.atom_type)
         dest = io.BytesIO()
-        ch2.encode(dest)
+        try:
+            ch2.encode(dest)
+        except:
+            print 'repr:'
+            print r
+            print 'json:'
+            print child.toJSON(pure=False)
+            raise
         new_child_data = dest.getvalue()
         self.assertBuffersEqual(orig_data, new_child_data, name)
 

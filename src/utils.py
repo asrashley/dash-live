@@ -348,7 +348,7 @@ def flatten(items, convert_numbers=False):
             key = item
             item = items[key]
         if hasattr(item, 'toJSON'):
-            item = item.toJSON()
+            item = item.toJSON(pure=True)
         elif isinstance(item,(datetime.date, datetime.datetime,datetime.time)):
             item = toIsoDateTime(item)
         elif isinstance(item,(datetime.timedelta)):
@@ -372,6 +372,54 @@ def flatten(items, convert_numbers=False):
     if items.__class__ == tuple:
         return tuple(rv)
     return rv
+
+
+def as_python(value):
+    """Convert the value into a string of Python code.
+    The result is suitable for use with eval()
+    """
+    if value is None:
+        return 'None'
+    wrap_strings = True
+    if hasattr(value, 'toJSON'):
+        value = value.toJSON()
+        wrap_strings = False
+    if isinstance(value, (list, tuple)):
+        items = map(lambda v: as_python(v), list(value))
+        try:
+            value = '[{0}]'.format(','.join(items))
+        except TypeError:
+            print items
+            raise
+    elif isinstance(value, (dict)):
+        items = []
+        clz = value.get('_type', None)
+        for k, v in value.iteritems():
+            if k == '_type':
+                continue
+            if clz is None:
+                items.append('"{0}": {1}'.format(k, as_python(v)))
+            else:
+                items.append('{0}={1}'.format(k, as_python(v)))
+        if clz is None:
+            value = '{' + ','.join(items) + '}'
+        else:
+            value = '{0}({1})'.format(clz, ','.join(items))
+    elif wrap_strings and isinstance(value, (basestring)):
+        if '"' in value:
+            value = ''.join(["'", value, "'"])
+        else:
+            value = ''.join(['"', value, '"'])
+    elif isinstance(value, (datetime.date, datetime.datetime,datetime.time)):
+        value = 'utils.from_isodatetime("%s")'%(toIsoDateTime(value))
+    elif isinstance(value, (datetime.timedelta)):
+        value = 'utils.from_isodatetime("%s")'%(toIsoDuration(value))
+    elif isinstance(value, decimal.Decimal):
+        value = 'decimal.Decimal(%s)'%(value)
+    else:
+        value = str(value)
+    return value
+
 
 def toJson(value, indent=0):
     if not value:
