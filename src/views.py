@@ -439,6 +439,11 @@ class RequestHandler(webapp2.RequestHandler):
             'initURL': '$RepresentationID$/init.m4a',
             'mediaURL':'$RepresentationID$/$Number$.m4a'
         }
+        if mode=='odvod':
+            del video['initURL']
+            video['mediaURL'] = '$RepresentationID$.m4v'
+            del audio['initURL']
+            audio['mediaURL'] = '$RepresentationID$.m4a'
         acodec = self.request.params.get('acodec')
         media_files = models.MediaFile.all()
         for mf in media_files:
@@ -446,21 +451,21 @@ class RequestHandler(webapp2.RequestHandler):
             if r is None:
                 continue
             if r.contentType=="video" and r.encrypted==encrypted and \
-               r.filename.startswith(stream.prefix+'_v'):
+               r.filename.startswith(stream.prefix):
                 video['representations'].append(r)
             elif r.contentType=="audio" and r.encrypted==encrypted and \
-                 r.filename.startswith(stream.prefix+'_a'):
+                 r.filename.startswith(stream.prefix):
                 if acodec is None or r.codecs.startswith(acodec):
                     audio['representations'].append(r)
-        # if stream is encrypted but there is encrypted version of the audio track, fall back
+        # if stream is encrypted but there is no encrypted version of the audio track, fall back
         # to a clear version
         if not audio['representations'] and acodec:
             for mf in media_files:
                 r = mf.representation
                 if r is None:
                     continue
-                if r.contentType=="audio" and r.filename.startswith(stream.prefix+'_a') and r.codecs.startswith(acodec):
-                    audio['representations'].append(copy.deepcopy(r))
+                if r.contentType=="audio" and r.filename.startswith(stream.prefix) and r.codecs.startswith(acodec):
+                    audio['representations'].append(r)
         if mode=='vod' or mode=='odvod':
             if video['representations']:
                 elapsedTime = datetime.timedelta(seconds = video['representations'][0].mediaDuration / video['representations'][0].timescale)
@@ -575,10 +580,12 @@ class RequestHandler(webapp2.RequestHandler):
             pass
         if v_cgi_params:
             rv["video"]['mediaURL'] += '?' + '&'.join(v_cgi_params)
-            rv["video"]['initURL'] += '?' + '&'.join(v_cgi_params)
+            if mode != 'odvod':
+                rv["video"]['initURL'] += '?' + '&'.join(v_cgi_params)
         if a_cgi_params:
-            rv["audio"]['initURL'] += '?' + '&'.join(a_cgi_params)
             rv["audio"]['mediaURL'] += '?' + '&'.join(a_cgi_params)
+            if mode != 'odvod':
+                rv["audio"]['initURL'] += '?' + '&'.join(a_cgi_params)
         if m_cgi_params:
             lst = []
             for k,v in m_cgi_params.iteritems():
@@ -738,9 +745,12 @@ class MainPage(RequestHandler):
         filenames = manifests.manifest.keys()
         filenames.sort(key=lambda name: manifests.manifest[name]['title'])
         for name in filenames:
+            url = self.uri_for('dash-mpd-v3', manifest=name, stream='placeholder', mode='live')
+            url = url.replace('/placeholder/','/{directory}/')
+            url = url.replace('/live/','/{mode}/')
             context['rows'].append({
                 'filename': name,
-                'url': self.uri_for('dash-mpd-v2', manifest=name, stream='placeholder').replace('placeholder','{directory}'),
+                'url': url,
                 'manifest': manifests.manifest[name],
                 'option': [],
             })
@@ -757,15 +767,21 @@ class MainPage(RequestHandler):
         template = templates.get_template('index.html')
         self.response.write(template.render(context))
 
-class LiveManifest(RequestHandler):
+class ServeManifest(RequestHandler):
     """handler for generating MPD files"""
-    def head(self, stream, manifest, **kwargs):
-        self.get(stream, manifest, **kwargs)
+    def head(self, mode, stream, manifest, **kwargs):
+        self.get(mode, stream, manifest, **kwargs)
 
-    def get(self, stream, manifest, **kwargs):
+    def get(self, mode, stream, manifest, **kwargs):
         if manifest in legacy_manifest_names:
             manifest = legacy_manifest_names[manifest]
         if not manifests.manifest.has_key(manifest):
+            logging.debug('Unknown manifest: %s', manifest)
+            self.response.write('%s not found'%(manifest))
+            self.response.set_status(404)
+            return
+        if mode not in manifests.manifest[manifest]['modes']:
+            logging.debug('Mode %s not supported with manifest %s', mode, manifest)
             self.response.write('%s not found'%(manifest))
             self.response.set_status(404)
             return
@@ -774,7 +790,6 @@ class LiveManifest(RequestHandler):
         context['routes'] = routes
         self.response.content_type='application/dash+xml'
         context['title'] = 'Big Buck Bunny DASH test stream'
-        mode = self.request.params.get('mode', 'live')
         try:
             dash = self.calculate_dash_params(mpd_url=manifest, stream=stream, mode=mode, **kwargs)
         except ValueError, e:
@@ -787,9 +802,20 @@ class LiveManifest(RequestHandler):
         #context['availabilityStartTime'] = datetime.datetime.utcfromtimestamp(dash['availabilityStartTime'])
         if re.search(r'(True|0)',self.request.params.get('base','False'),re.I) is not None:
             del context['baseURL']
+            if mode == 'odvod':
+                prefix = self.uri_for('dash-od-media', filename='RepresentationID', ext='m4v')
+                prefix = prefix.replace('RepresentationID.m4v','')
+            else:
+                prefix = self.uri_for('dash-media', mode=mode, filename='RepresentationID',
+                                      segment_num='init', ext='m4v')
+                prefix = prefix.replace('RepresentationID/init.m4v','')
+                context['video']['initURL'] = prefix + context['video']['initURL']
+                context['audio']['initURL'] = prefix + context['audio']['initURL']
+            context['video']['mediaURL'] = prefix + context['video']['mediaURL']
+            context['audio']['mediaURL'] = prefix + context['audio']['mediaURL']
         if context['abr'] is False:
             context['video']['representations'] = context['video']['representations'][-1:]
-        if context['mode'] == 'live':
+        if mode == 'live':
             try:
                 context['minimumUpdatePeriod'] = float(self.request.params.get('mup', 2.0 * context['video'].get('maxSegmentDuration', 1)))
             except ValueError:
@@ -822,12 +848,22 @@ class LiveManifest(RequestHandler):
         self.response.write(template.render(context))
 
 
-class LegacyManifestUrl(LiveManifest):
+class LegacyManifestUrl(ServeManifest):
     def head(self, manifest, **kwargs):
-        return super(LegacyManifestUrl, self).head("bbb", manifest, **kwargs)
+        stream = kwargs.get("stream", "bbb")
+        mode = self.request.params.get("mode", "live")
+        return super(LegacyManifestUrl, self).head(mode=mode, stream=stream,
+                                                   manifest=manifest, **kwargs)
 
     def get(self, manifest, **kwargs):
-        return super(LegacyManifestUrl, self).get("bbb", manifest, **kwargs)
+        try:
+            stream = kwargs["stream"]
+            del kwargs["stream"]
+        except KeyError:
+            stream = "bbb"
+        mode = self.request.params.get("mode", "live")
+        return super(LegacyManifestUrl, self).get(mode=mode, stream=stream,
+                                                  manifest=manifest, **kwargs)
 
 
 class OnDemandMedia(RequestHandler): #blobstore_handlers.BlobstoreDownloadHandler):

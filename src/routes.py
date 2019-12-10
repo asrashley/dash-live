@@ -20,6 +20,7 @@
 #
 #############################################################################
 
+import re
 import webapp2
 
 class Route(object):
@@ -28,13 +29,20 @@ class Route(object):
         self.handler=handler
         self.title=title
         self.parent=parent
+        # convert App Engine's template syntax in to the Python string.format() syntax
+        self.formatTemplate=re.sub(r':[^>]*>','}', template.replace('<','{'))
+
+        # convert App Engine's template syntax in to the Python regex format
+        reTemplate = re.sub(r'<(\w+):([^>]+)>', r'(?P<\1>\2)', template)
+        self.reTemplate = re.compile(reTemplate)
 
 routes = {
     "del-key":Route(r'/key/<kid:\w+>', handler='views.KeyHandler', title='delete key pairs'),
     "key":Route(r'/key', handler='views.KeyHandler', title='Add key pairs'),
     "clearkey":Route(r'/clearkey', handler='views.ClearkeyHandler', title='W3C clearkey support'),
-    "dash-mpd":Route(r'/dash/<manifest:[\w\-_]+\.mpd>', handler='views.LegacyManifestUrl', title='DASH test stream (old URL)'),
-    "dash-mpd-v2":Route(r'/dash/<stream:\w+>/<manifest:[\w\-_]+\.mpd>', handler='views.LiveManifest', title='DASH test stream'),
+    "dash-mpd-v1":Route(r'/dash/<manifest:[\w\-_]+\.mpd>', handler='views.LegacyManifestUrl', title='DASH test stream (v1 URL)'),
+    "dash-mpd-v2":Route(r'/dash/<stream:\w+>/<manifest:[\w\-_]+\.mpd>', handler='views.LegacyManifestUrl', title='DASH test stream (v2 URL)'),
+    "dash-mpd-v3":Route(r'/dash/<mode:(live|vod|odvod)>/<stream:\w+>/<manifest:[\w\-_]+\.mpd>', handler='views.ServeManifest', title='DASH test stream'),
     "dash-media":Route(r'/dash/<mode:(live|vod)>/<filename:\w+>/<segment_num:(\d+|init)>.<ext:(mp4|m4v|m4a|m4s)>', handler='views.LiveMedia', title="DASH fragment"),
     "dash-od-media":Route(r'/dash/vod/<filename:\w+>.<ext:(mp4|m4v|m4a|m4s)>', handler='views.OnDemandMedia', title="DASH media file"),
     "media-info":Route(r'/media/<mfid:[\w_+=-]+>', handler='views.MediaHandler', title='Media information'),

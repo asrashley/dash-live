@@ -80,7 +80,9 @@ $(document).ready(function(){
   function buildCGI() {
     var params;
 
-    params = {};
+    params = {
+        mode: "vod"
+    };
     $('#buttons tbody .option select').each(function(idx, sel) {
       var val = $(sel).val();
       if (val) {
@@ -107,8 +109,10 @@ $(document).ready(function(){
       $('#play-button').addClass('disabled');
       return;
     }
-    url = manifest.data("uri").replace('{directory}', pageState.streams[cursor.stream].directory);
     params = buildCGI();
+    url = manifest.data("uri").replace('{directory}', pageState.streams[cursor.stream].directory);
+    url = url.replace("{mode}", params.mode.slice(5));
+    delete params.mode;
     url += '?' + Object.values(params).join('&');
     dest.text(url);
     dest.attr('href',document.location.origin+url);
