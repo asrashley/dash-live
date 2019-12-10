@@ -311,13 +311,11 @@ class RequestHandler(webapp2.RequestHandler):
         def output_s_node(sn):
             if sn["duration"] is None:
                 return
-            c = ' r="{:d}"'.format(sn["count"]-1) if sn["count"]>1 else ''
-            t = ' t="{:d}"'.format(sn["start"]) if sn["start"] is not None else ''
-            rv.append('<S {} {} d="{:d}"/>'.format(t, c, sn["duration"]))
+            r = ' r="{0:d}"'.format(sn["count"]-1) if sn["count"]>1 else ''
+            t = ' t="{0:d}"'.format(sn["start"]) if sn["start"] is not None else ''
+            rv.append('<S {r} {t} d="{d:d}"/>'.format(r=r, t=t, d=sn["duration"]))
         
-        rv = ['<SegmentTemplate timescale="%d" '%representation.timescale,
-              'initialization="$RepresentationID$/init.mp4" ',
-              'media="$RepresentationID$/$Number$.mp4" ' ]
+        rv = []
         timeline_start = context["elapsedTime"] - datetime.timedelta(seconds=context["timeShiftBufferDepth"])
         first=True
         segment_num, origin_time = self.calculate_segment_from_timecode(utils.scale_timedelta(timeline_start,1,1), representation, context["ref_representation"])
@@ -326,17 +324,19 @@ class RequestHandler(webapp2.RequestHandler):
         # seg_start_time is the time (in representation timescale units) when the segment_num
         # segment started, relative to availabilityStartTime
         seg_start_time = long(origin_time * representation.timescale + (segment_num-1) * representation.segment_duration)
-        startNumber = context["startNumber"] + (seg_start_time/representation.segment_duration)
         dur=0
         s_node = {
             'duration': None,
             'count': 0,
             'start': None,
         }
-        while dur <= (context["timeShiftBufferDepth"]*representation.timescale):
+        if context["mode"] == 'live':
+            end = context["timeShiftBufferDepth"] * representation.timescale
+        else:
+            end = context["mediaDuration"] * representation.timescale
+        while dur <= end:
             seg = representation.segments[segment_num]
             if first:
-                rv.append('startNumber="%d">'%startNumber)
                 rv.append('<SegmentTimeline>')
                 s_node['start'] = seg_start_time
                 first=False
@@ -351,7 +351,7 @@ class RequestHandler(webapp2.RequestHandler):
             if segment_num > representation.num_segments:
                 segment_num = 1
         output_s_node(s_node)
-        rv.append('</SegmentTimeline></SegmentTemplate>')
+        rv.append('</SegmentTimeline>')
         return '\n'.join(rv)
 
     def calculate_dash_params(self, stream, mode, **kwargs):
