@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011"
-     xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd"
+     xmlns:cenc="urn:mpeg:cenc:2013" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd"
   {% if mode=='live' %}
 type="dynamic"
   {% if minimumUpdatePeriod %}minimumUpdatePeriod="{{minimumUpdatePeriod|isoDuration}}"{% endif %}
@@ -23,19 +23,32 @@ type="dynamic"
   {% endif %}
 >
     <AdaptationSet mimeType="video/mp4" contentType="video" segmentAlignment="true" startWithSAP="1" maxWidth="{{video.maxWidth}}" maxHeight="{{video.maxHeight}}" maxFrameRate="{{video.maxFrameRate}}" par="16:9">
-      {% for repr in video.representations %}
-        {% if loop.first %}
-        <SegmentTemplate presentationTimeOffset="{{video.presentationTimeOffset}}" timescale="{{video.timescale}}" startNumber="{{startNumber}}" initialization="$RepresentationID$/init.m4v" media="{{video.mediaURL|xmlSafe}}" duration="{{repr.segment_duration}}"/>
+      {% for rep in video.representations %}
+      {% if loop.first %}
+        {% include "drm/template.xml" %}
+        <SegmentTemplate
+            presentationTimeOffset="{{video.presentationTimeOffset}}"
+            timescale="{{video.timescale}}"
+            startNumber="{{startNumber}}"
+            initialization="{{video.initURL|xmlSafe}}"
+            media="{{video.mediaURL|xmlSafe}}"
+            duration="{{rep.segment_duration}}"/>
       {% endif %}
-      <Representation id="{{repr.id}}" codecs="{{repr.codecs}}" width="{{repr.width}}" height="{{repr.height}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}" frameRate="{{repr.frameRate}}" sar="{{repr.sar}}" scanType="{{repr.scanType}}" />
+      <Representation id="{{rep.id}}" codecs="{{rep.codecs}}" width="{{rep.width}}" height="{{rep.height}}" startWithSAP="{{rep.startWithSAP}}" bandwidth="{{rep.bitrate}}" frameRate="{{rep.frameRate}}" sar="{{rep.sar}}" scanType="{{rep.scanType}}" />
     {% endfor %}
     </AdaptationSet>
-      {% for repr in audio.representations %}
-      <AdaptationSet mimeType="audio/mp4" contentType="audio" lang="{{repr.language}}" segmentAlignment="true" startWithSAP="{{repr.startWithSAP}}">
-          <Role schemeIdUri="urn:mpeg:dash:role:2011" value="{{repr.role}}"/>
-          <SegmentTemplate presentationTimeOffset="{{audio.presentationTimeOffset}}" timescale="{{audio.timescale}}" initialization="$RepresentationID$/init.m4a" media="{{audio.mediaURL|xmlSafe}}" duration="{{repr.segment_duration}}" startNumber="{{startNumber}}"/>
-            <Representation id="{{repr.id}}" mimeType="audio/mp4" codecs="{{repr.codecs}}" sampleRate="{{repr.sampleRate}}" numChannels="{{repr.numChannels}}" lang="{{repr.language}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
-          <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="{{repr.numChannels}}"/>
+      {% for rep in audio.representations %}
+      <AdaptationSet mimeType="audio/mp4" contentType="audio" lang="{{rep.language}}" segmentAlignment="true" startWithSAP="{{rep.startWithSAP}}">
+          <Role schemeIdUri="urn:mpeg:dash:role:2011" value="{{rep.role}}"/>
+          <SegmentTemplate
+              presentationTimeOffset="{{audio.presentationTimeOffset}}"
+              timescale="{{audio.timescale}}"
+              initialization="{{audio.initURL|xmlSafe}}"
+              media="{{audio.mediaURL|xmlSafe}}"
+              duration="{{rep.segment_duration}}"
+              startNumber="{{startNumber}}"/>
+            <Representation id="{{rep.id}}" mimeType="audio/mp4" codecs="{{rep.codecs}}" sampleRate="{{rep.sampleRate}}" numChannels="{{rep.numChannels}}" lang="{{rep.language}}" startWithSAP="{{rep.startWithSAP}}" bandwidth="{{rep.bitrate}}">
+          <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="{{rep.numChannels}}"/>
           </Representation>
     </AdaptationSet>
        {% endfor %}

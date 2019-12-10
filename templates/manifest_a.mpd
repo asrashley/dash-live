@@ -32,20 +32,25 @@
       maxHeight="{{video.maxHeight}}"
       segmentAlignment="true"
       startWithSAP="1">
-      {% for repr in video.representations %}
-        {% if loop.first %}
-        {{generateSegmentTimeline(repr)}}
+      {% for rep in video.representations %}
+      {% if loop.first %}
+      <SegmentTemplate timescale="{{rep.timescale}}"
+              initialization="{{video.initURL|xmlSafe}}"
+              media="{{video.mediaURL|xmlSafe}}">
+        {{generateSegmentTimeline(rep)}}
+      </SegmentTemplate>
         {% endif %}
         <Representation
-          id="{{repr.id}}"
-          bandwidth="{{repr.bitrate}}"
-          codecs="{{repr.codecs}}"
-          width="{{repr.width}}"
-          height="{{repr.height}}"
-          frameRate="{{repr.frameRate}}">
+          id="{{rep.id}}"
+          bandwidth="{{rep.bitrate}}"
+          codecs="{{rep.codecs}}"
+          width="{{rep.width}}"
+          height="{{rep.height}}"
+          frameRate="{{rep.frameRate}}">
         </Representation>
       {% endfor %}
     </AdaptationSet>
+    {% for rep in audio.representations %}
     <AdaptationSet
       group="2"
       mimeType="audio/mp4"
@@ -53,20 +58,21 @@
       maxBandwidth="{{audio.maxBitrate}}"
       segmentAlignment="true"
       startWithSAP="1">
-      {% for repr in audio.representations %}
-        {% if loop.first %}
-        {{generateSegmentTimeline(repr)}}
-        {% endif %}
+        <SegmentTemplate timescale="{{audio.timescale}}"
+                         initialization="{{audio.initURL|xmlSafe}}"
+                         media="{{audio.mediaURL|xmlSafe}}">
+          {{generateSegmentTimeline(rep)}}
+        </SegmentTemplate>
         <Representation
-          id="{{repr.id}}"
-          bandwidth="{{repr.bitrate}}"
-          codecs="{{repr.codecs}}"
-          sampleRate="{{repr.sampleRate}}"
-          numChannels="{{repr.numChannels}}"
-          lang="{{repr.language}}"
+          id="{{rep.id}}"
+          bandwidth="{{rep.bitrate}}"
+          codecs="{{rep.codecs}}"
+          sampleRate="{{rep.sampleRate}}"
+          numChannels="{{rep.numChannels}}"
+          lang="{{rep.language}}"
         >
         </Representation>
+        </AdaptationSet>
       {% endfor %}
-    </AdaptationSet>
   </Period>
 </MPD>

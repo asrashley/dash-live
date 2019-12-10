@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013"
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011"
+     xmlns:cenc="urn:mpeg:cenc:2013"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd"
      publishTime="{{publishTime|isoDateTime}}"
   {% if mode=='live' %}
     type="dynamic"
@@ -29,37 +32,71 @@
  {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
   <AdaptationSet mimeType="video/mp4" contentType="video" segmentAlignment="true" startWithSAP="1" maxWidth="{{video.maxWidth}}" maxHeight="{{video.maxHeight}}" maxFrameRate="{{video.maxFrameRate}}" par="16:9">
    <ContentComponent id="1" contentType="video"/>
-   {% for repr in video.representations %}
-   {% if repr.encrypted and loop.first %}
-   <ContentProtection schemeIdUri="urn:mpeg:dash:mp4protection:2011" value="cenc" cenc:default_KID="{{repr.default_kid|uuid}}"/>
-   {% if DRM.marlin %}{% include "drm/marlin.xml" %}{% endif %}
-   {% if DRM.playready %}{% include  "drm/playready.xml" %}{% endif %}
-   {% if DRM.clearkey %}{% include  "drm/clearkey.xml" %}{% endif %}
-   {% endif %}
-   {% if loop.first %}
-      <SegmentTemplate startNumber="{{startNumber}}" timescale="{{video.timescale}}" duration="{{repr.segment_duration}}" initialization="{{video.initURL|xmlSafe}}" media="{{video.mediaURL|xmlSafe}}"/>
-   {% endif %}
-   <Representation id="{{repr.id}}" mimeType="video/mp4" codecs="{{repr.codecs}}" width="{{repr.width}}" height="{{repr.height}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
-   </Representation>
+   {% for rep in video.representations %}
+     {% if loop.first %}
+       {% include "drm/template.xml" %}
+       {% if mode=='odvod' %}
+         <SegmentTemplate timescale="{{video.timescale}}">
+           {{generateSegmentTimeline(rep)}}
+         </SegmentTemplate>
+       {% else %}
+         <SegmentTemplate startNumber="{{startNumber}}"
+                          timescale="{{video.timescale}}"
+                          duration="{{rep.segment_duration}}"
+                          initialization="{{video.initURL|xmlSafe}}"
+                          media="{{video.mediaURL|xmlSafe}}" />
+       {% endif %}
+     {% endif %}
+     <Representation id="{{rep.id}}"
+                     mimeType="video/mp4"
+                     codecs="{{rep.codecs}}"
+                     width="{{rep.width}}"
+                     height="{{rep.height}}"
+                     startWithSAP="{{rep.startWithSAP}}"
+                     bandwidth="{{rep.bitrate}}">
+       {% if mode=='odvod' %}
+         <BaseURL>{{video.mediaURL.replace("$RepresentationID$", rep.id)|xmlSafe}}</BaseURL>
+         {{generateSegmentList(rep)}}
+       {% endif %}
+     </Representation>
    {% endfor %}
   </AdaptationSet>
-  {% for repr in audio.representations %}{% if repr.role=="main" %}
-  <AdaptationSet  mimeType="audio/mp4" contentType="audio" lang="{{repr.language}}" segmentAlignment="true" startWithSAP="{{repr.startWithSAP}}">
-     <ContentComponent id="1" contentType="audio" lang="{{audio.representations[0].language}}"/>
-     {% if loop.first %}
-   {% if repr.encrypted %}
-   <ContentProtection schemeIdUri="urn:mpeg:dash:mp4protection:2011" value="cenc" cenc:default_KID="{{repr.default_kid|uuid}}"/>
-   {% if DRM.marlin %}{% include "drm/marlin.xml" %}{% endif %}
-   {% if DRM.playready %}{% include  "drm/playready.xml" %}{% endif %}
-   {% if DRM.clearkey %}{% include  "drm/clearkey.xml" %}{% endif %}
-   {% endif %}
-        <SegmentTemplate startNumber="{{startNumber}}" timescale="{{audio.timescale}}" duration="{{repr.segment_duration}}" initialization="{{audio.initURL|xmlSafe}}" media="{{audio.mediaURL|xmlSafe}}"/>
-     {% endif %}
-     <Representation id="{{repr.id}}" mimeType="audio/mp4" codecs="{{repr.codecs}}" sampleRate="{{repr.sampleRate}}" numChannels="{{repr.numChannels}}" lang="{{repr.lang}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
-     </Representation>
-  </AdaptationSet>
-  {% endif %}
- {% endfor %}
+  {% for rep in audio.representations %}
+    <AdaptationSet mimeType="audio/mp4"
+                   contentType="audio"
+                   lang="{{rep.language|default('und')}}"
+                   segmentAlignment="true"
+                   startWithSAP="{{rep.startWithSAP}}">
+      <ContentComponent id="1" contentType="audio"
+                        lang="{{audio.representations[0].language}}"/>
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="{{rep.role}}"/>
+      {% include "drm/template.xml" %}
+      {% if mode=="odvod" %}
+        <SegmentTemplate timescale="{{audio.timescale}}">
+          {{generateSegmentTimeline(rep)}}
+        </SegmentTemplate>
+      {% else %}
+        <SegmentTemplate startNumber="{{startNumber}}"
+                         timescale="{{audio.timescale}}"
+                         duration="{{rep.segment_duration}}"
+                         initialization="{{audio.initURL|xmlSafe}}"
+                         media="{{audio.mediaURL|xmlSafe}}"/>
+      {% endif %}
+      <Representation id="{{rep.id}}"
+                      mimeType="audio/mp4"
+                      codecs="{{rep.codecs}}"
+                      sampleRate="{{rep.sampleRate}}"
+                      numChannels="{{rep.numChannels}}"
+                      lang="{{rep.lang|default('und')}}"
+                      startWithSAP="{{rep.startWithSAP}}"
+                      bandwidth="{{rep.bitrate}}">
+        {% if mode=='odvod' %}
+          <BaseURL>{{audio.mediaURL.replace("$RepresentationID$", rep.id)|xmlSafe}}</BaseURL>
+          {{generateSegmentList(rep)}}
+        {% endif %}
+      </Representation>
+    </AdaptationSet>
+  {% endfor %}
  </Period>
 </MPD>
 

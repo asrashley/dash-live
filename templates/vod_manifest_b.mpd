@@ -1,4 +1,4 @@
-<MPD type="static" xmlns="urn:mpeg:dash:schema:mpd:2011" profiles="urn:mpeg:dash:profile:isoff-live:2011" minBufferTime="PT1.5S"
+<MPD type="static" xmlns="urn:mpeg:dash:schema:mpd:2011" profiles="urn:mpeg:dash:profile:isoff-live:2011" minBufferTime="PT1.5S" xmlns:cenc="urn:mpeg:cenc:2013" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   mediaPresentationDuration="{{mediaDuration|isoDuration}}">
  <ProgramInformation>
   <Title>{{title}}</Title>
@@ -7,17 +7,28 @@
  {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
   <AdaptationSet>
    <ContentComponent id="1" contentType="video"/>
-   {% for repr in video.representations %}
-   <Representation id="{{repr.id}}" mimeType="video/mp4" codecs="{{repr.codecs}}" width="{{repr.width}}" height="{{repr.height}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
-      <SegmentTemplate startNumber="{{startNumber}}" timescale="{{video.timescale}}" duration="{{repr.segment_duration}}" initialization="{{repr.id}}/init.mp4" media="{{video.mediaURL|xmlSafe}}"/>
+   {% for rep in video.representations %}
+   {% if loop.first %}{% include "drm/template.xml" %}{% endif %}
+   <Representation id="{{rep.id}}" mimeType="video/mp4" codecs="{{rep.codecs}}" width="{{rep.width}}" height="{{rep.height}}" startWithSAP="{{rep.startWithSAP}}" bandwidth="{{rep.bitrate}}">
+      <SegmentTemplate startNumber="{{startNumber}}"
+                       timescale="{{video.timescale}}"
+                       duration="{{rep.segment_duration}}"
+                       initialization="{{video.initURL|xmlSafe}}"
+                       media="{{video.mediaURL|xmlSafe}}"/>
    </Representation>
    {% endfor %}
   </AdaptationSet>
   <AdaptationSet>
      <ContentComponent id="1" contentType="audio" lang="eng"/>
-     {% for repr in audio.representations %}{% if repr.role=="main" %}
-     <Representation id="{{repr.id}}" mimeType="audio/mp4" codecs="{{repr.codecs}}" sampleRate="{{repr.sampleRate}}" numChannels="{{repr.numChannels}}" lang="{{repr.language}}" startWithSAP="{{repr.startWithSAP}}" bandwidth="{{repr.bitrate}}">
-        <SegmentTemplate startNumber="1" timescale="{{audio.timescale}}" duration="{{repr.segment_duration}}" initialization="{{repr.id}}/init.mp4" media="{{audio.mediaURL|xmlSafe}}"/>
+     {% for rep in audio.representations %}
+       {% if loop.first %}{% include "drm/template.xml" %}{% endif %}
+     {% if rep.role=="main" %}
+     <Representation id="{{rep.id}}" mimeType="audio/mp4" codecs="{{rep.codecs}}" sampleRate="{{rep.sampleRate}}" numChannels="{{rep.numChannels}}" lang="{{rep.language}}" startWithSAP="{{rep.startWithSAP}}" bandwidth="{{rep.bitrate}}">
+       <SegmentTemplate startNumber="1"
+                        timescale="{{audio.timescale}}"
+                        duration="{{rep.segment_duration}}"
+                        initialization="{{audio.initURL|xmlSafe}}"
+                        media="{{audio.mediaURL|xmlSafe}}"/>
      </Representation>
      {% endif %}{% endfor %}
   </AdaptationSet>

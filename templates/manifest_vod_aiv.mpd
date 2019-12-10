@@ -2,29 +2,33 @@
 <MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" mediaPresentationDuration="{{mediaDuration|isoDuration}}" minBufferTime="PT10S" profiles="urn:mpeg:dash:profile:isoff-on-demand:2011" type="static" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd">
   <Period start="PT0S" duration="{{mediaDuration|isoDuration}}">
     <AdaptationSet contentType="audio" group="1" lang="en" mimeType="audio/mp4" segmentAlignment="true" subsegmentAlignment="true" subsegmentStartsWithSAP="1">
-     {% for repr in audio.representations %}
-      <Representation audioSamplingRate="{{repr.sampleRate}}" bandwidth="{{repr.bitrate}}" codecs="{{repr.codecs}}" id="audio_eng={{repr.bitrate}}">
+     {% for rep in audio.representations %}
+      <Representation audioSamplingRate="{{rep.sampleRate}}" bandwidth="{{rep.bitrate}}" codecs="{{rep.codecs}}" id="audio_eng={{rep.bitrate}}">
         <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
         {% if baseURL %}
-        <BaseURL>{{baseURL|xmlSafe}}{{repr.id|xmlSafe}}.m4a</BaseURL>
+        <BaseURL>{{baseURL|xmlSafe}}{{rep.id|xmlSafe}}.m4a</BaseURL>
+        {% else %}
+        <BaseURL>{{uri_for('dash-od-media', filename=rep.id, ext='m4a')|xmlSafe}}</BaseURL>
         {% endif %}
-        {{generateSegmentList(repr)}}
+        {{generateSegmentList(rep)}}
       </Representation>
       {% if loop.last %}
-      {{generateSegmentDurations(repr)}}
+      {{generateSegmentDurations(rep)}}
       {% endif %}
    {% endfor %}
     </AdaptationSet>
     <AdaptationSet contentType="video" group="2" lang="en" mimeType="video/mp4" par="16:9" segmentAlignment="true" startWithSAP="1" subsegmentAlignment="true" subsegmentStartsWithSAP="1">
-     {% for repr in video.representations %}
-      <Representation bandwidth="{{repr.bitrate}}" codecs="{{repr.codecs}}" frameRate="{{repr.frameRate}}" height="{{repr.height}}" id="video_eng={{repr.bitrate}}" scanType="progressive" width="{{repr.width}}">
+     {% for rep in video.representations %}
+      <Representation bandwidth="{{rep.bitrate}}" codecs="{{rep.codecs}}" frameRate="{{rep.frameRate}}" height="{{rep.height}}" id="video_eng={{rep.bitrate}}" scanType="progressive" width="{{rep.width}}">
         {% if baseURL %}
-        <BaseURL>{{baseURL|xmlSafe}}{{repr.id|xmlSafe}}.m4v</BaseURL>
-        {{generateSegmentList(repr)}}
+        <BaseURL>{{baseURL|xmlSafe}}{{rep.id|xmlSafe}}.m4v</BaseURL>
+        {% else %}
+        <BaseURL>{{uri_for('dash-od-media', filename=rep.id, ext='m4v')|xmlSafe}}</BaseURL>
         {% endif %}
+        {{generateSegmentList(rep)}}
       </Representation>
       {% if loop.last %}
-      {{generateSegmentDurations(repr)}}
+      {{generateSegmentDurations(rep)}}
       {% endif %}
    {% endfor %}
     </AdaptationSet>
