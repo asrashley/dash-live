@@ -4,6 +4,7 @@ import binascii
 import cookielib
 import copy
 import datetime
+from functools import wraps
 import hashlib
 import hmac
 import io
@@ -14,6 +15,11 @@ import math
 import md5
 import os
 import unittest
+try:
+    from unittest import mock
+except ImportError:
+    # use Python 2 back-port
+    import mock
 import urlparse
 import urllib
 import uuid
@@ -42,13 +48,51 @@ import utils
 import manifests
 import options
 import routes
-from mixins import TestCaseMixin
+from mixins import TestCaseMixin, HideMixinsFilter
 from segment import Representation
 
-# convert App Engine's template syntax in to the Python string format syntax
-for name,r in routes.routes.iteritems():
-    r.template = re.sub(r':[^>]*>','}',r.template.replace('<','{'))
+real_datetime_class = datetime.datetime
 
+def mock_datetime_now(target):
+    """Override ``datetime.datetime.now()`` with a custom target value.
+    This creates a new datetime.datetime class, and alters its now()/utcnow()
+    methods.
+    Returns:
+        A mock.patch context, can be used as a decorator or in a with.
+    """
+    # See http://bugs.python.org/msg68532
+    # And http://docs.python.org/reference/datamodel.html#customizing-instance-and-subclass-checks
+    class DatetimeSubclassMeta(type):
+        """We need to customize the __instancecheck__ method for isinstance().
+        This must be performed at a metaclass level.
+        """
+        @classmethod
+        def __instancecheck__(mcs, obj):
+            return isinstance(obj, real_datetime_class)
+
+    class BaseMockedDatetime(real_datetime_class):
+        @classmethod
+        def now(cls, tz=None):
+            return target.replace(tzinfo=tz)
+
+        @classmethod
+        def utcnow(cls):
+            return target
+
+    # Python2 & Python3-compatible metaclass
+    MockedDatetime = DatetimeSubclassMeta('datetime', (BaseMockedDatetime,), {})
+    return mock.patch.object(datetime, 'datetime', MockedDatetime)
+        
+def add_url(method, url):
+    @wraps(method)
+    def tst_fn(self, *args, **kwargs):
+        try:
+            return method(self, *args, **kwargs)
+        except AssertionError:
+            print url
+            raise
+    return tst_fn
+                                                                                    
 class GAETestCase(TestCaseMixin, unittest.TestCase):
     MEDIA_DURATION=40 # duration of media in test/fixtures directory (in seconds)
 
@@ -60,9 +104,9 @@ class GAETestCase(TestCaseMixin, unittest.TestCase):
         self.testbed._register_stub('file',file_stub)
 
     def setUp(self):
-        FORMAT = "%(filename)s:%(lineno)d %(message)s"
+        #FORMAT = r"%(asctime)-15s:%(levelname)s:%(filename)s@%(lineno)d: %(message)s"
         #logging.basicConfig(format=FORMAT)
-        #logging.getLogger().setLevel(logging.DEBUG)
+        #logging.getLogger('dash').setLevel(logging.INFO)
 
         self.testbed = testbed.Testbed()
         self.testbed.activate()
@@ -127,7 +171,7 @@ class GAETestCase(TestCaseMixin, unittest.TestCase):
         bbb = models.Stream(title='Big Buck Bunny', prefix='bbb')
         bbb.put()
         for idx, rid in enumerate(["bbb_v6","bbb_v6_enc","bbb_v7","bbb_v7_enc",
-                                   "bbb_a1", "bbb_a1_enc"]):
+                                   "bbb_a1", "bbb_a1_enc", "bbb_a2"]):
             filename = rid + ".mp4"
             src_filename = os.path.join(os.path.dirname(__file__), "fixtures", filename)
             src = io.open(src_filename, mode="rb", buffering=16384)
@@ -145,7 +189,8 @@ class GAETestCase(TestCaseMixin, unittest.TestCase):
                                    self.MEDIA_DURATION*rep.timescale,
                                    delta=(rep.timescale / 10),
                                    msg='Invalid duration for {}. Expected {} got {}'.format(
-                                       filename, rep.mediaDuration, 40*rep.timescale))
+                                       filename, self.MEDIA_DURATION*rep.timescale,
+                                       rep.mediaDuration))
             mf = models.MediaFile(name=filename, rep=rep.toJSON(), blob=blob_key)
             mf.put()
         media_files = models.MediaFile.all()
@@ -164,6 +209,9 @@ class GAETestCase(TestCaseMixin, unittest.TestCase):
     def tearDown(self):
         self.logoutCurrentUser()
         self.testbed.deactivate()
+        if hasattr(TestCaseMixin, "_orig_assert_true"):
+            TestCaseMixin._assert_true = TestCaseMixin._orig_assert_true
+            del TestCaseMixin._orig_assert_true
         
     def from_uri(self, name, **kwargs):
         try:
@@ -171,7 +219,7 @@ class GAETestCase(TestCaseMixin, unittest.TestCase):
             del kwargs["absolute"]
         except KeyError:
             absolute = False
-        uri = routes.routes[name].template.format(**kwargs)
+        uri = routes.routes[name].formatTemplate.format(**kwargs)
         if absolute and not uri.startswith("http"):
             uri = 'http://testbed.example.com' + uri
         return uri
@@ -232,28 +280,49 @@ class GAETestCase(TestCaseMixin, unittest.TestCase):
             sys.stdout.write('\n')
         sys.stdout.flush()
 
-
 class ViewsTestDashValidator(dash.DashValidator):
     def __init__(self, app, mode, mpd, url):
-        super(ViewsTestDashValidator, self).__init__(mode, mpd, url)
-        self.app = app
+        opts = dash.Options(strict=True)
+        opts.log = logging.getLogger(__name__)
+        opts.log.addFilter(HideMixinsFilter())
+        #opts.log.setLevel(logging.DEBUG)
+        super(ViewsTestDashValidator, self).__init__(url, app, mode=mode, options=opts)
+        self.representations = {}
+        self.log.debug('Check manifest: %s', url)
         
-    def get_adaptation_set_info(self, adaptation_set, url):
+    def get_representation_info(self, representation):
+        try:
+            return self.representations[representation.unique_id()]
+        except KeyError:
+            pass
+        url = representation.init_seg_url()
         parts = urlparse.urlparse(url)
-        filename = os.path.basename(parts.path)
-        name, ext = os.path.splitext(filename)
-        name += '.mp4'
+        #self.log.debug('match %s %s', routes.routes["dash-media"].reTemplate.pattern, parts.path)
+        match = routes.routes["dash-media"].reTemplate.match(parts.path)
+        if match is None:
+            #self.log.debug('match %s', routes.routes["dash-od-media"].reTemplate.pattern)
+            match = routes.routes["dash-od-media"].reTemplate.match(parts.path)
+        if match is None:
+            self.log.error('match %s %s', url, parts.path)
+        self.assertIsNotNone(match)
+        #filename = os.path.basename(parts.path)
+        filename = match.group("filename")
+        #name, ext = os.path.splitext(filename)
+        name = filename + '.mp4'
+        #self.log.debug("get_representation_info %s %s %s", url, filename, name)
         mf = models.MediaFile.query(models.MediaFile.name==name).get()
         if mf is None:
             filename = os.path.dirname(parts.path).split('/')[-1]
             name = filename + '.mp4'
             mf = models.MediaFile.query(models.MediaFile.name==name).get()
         self.assertIsNotNone(mf)
-        return mf.representation
+        rep = mf.representation
+        info = dash.RepresentationInfo(num_segments=rep.num_segments, **rep.toJSON())
+        self.set_representation_info(representation, info)
+        return info
 
-    def get(self, *args, **kwargs):
-        return self.app.get(*args, **kwargs)
-
+    def set_representation_info(self, representation, info):
+        self.representations[representation.unique_id()] = info
         
 class TestHandlers(GAETestCase):
     def test_index_page(self):
@@ -266,8 +335,10 @@ class TestHandlers(GAETestCase):
         self.assertEqual(response.status_int,200)
         response.mustcontain('Log In', no='href="{}"'.format(self.from_uri('media-index')))
         for filename, manifest in manifests.manifest.iteritems():
-            mpd_url = self.from_uri('dash-mpd-v2', manifest=filename, stream='placeholder')
-            mpd_url = mpd_url.replace('placeholder', '{directory}')
+            mpd_url = self.from_uri('dash-mpd-v3', manifest=filename, stream='placeholder',
+                                    mode='live')
+            mpd_url = mpd_url.replace('/placeholder/', '/{directory}/')
+            mpd_url = mpd_url.replace('/live/', '/{mode}/')
             response.mustcontain(mpd_url)
         self.setCurrentUser(is_admin=True)
         response = self.app.get(url)
@@ -302,15 +373,23 @@ class TestHandlers(GAETestCase):
         self.assertEqual(response.status_int, 200)
         
     def check_manifest(self, filename, indexes, tested):
+        #def _assert_true(self, result, a, b, msg, template):
+        #    if not result:
+        #        if msg is not None:
+        #            raise AssertionError(msg)
+        #        raise AssertionError(template.format(a,b))
+
         params = {}
+        mode = None
         for idx, option in enumerate(self.cgi_options):
             name, values = option
             value = values[indexes[idx]]
-            if value:
+            if name=='mode':
+                mode = value[5:]
+            elif value:
                 params[name] = value
         # remove pointless combinations of options
-        mode = params.get("mode", "mode=live").split('=')[1]
-        if mode == "live" and "vod_" in filename:
+        if mode not in manifests.manifest[filename]['modes']:
             return
         if mode != "live":
             if params.has_key("mup"):
@@ -318,56 +397,70 @@ class TestHandlers(GAETestCase):
             if params.has_key("time"):
                 del params["time"]
         cgi = params.values()
-        url = self.from_uri('dash-mpd', manifest=filename)
+        url = self.from_uri('dash-mpd-v3', manifest=filename, mode=mode, stream='bbb')
         mpd_url = '{}?{}'.format(url, '&'.join(cgi))
         if mpd_url in tested:
             return
-        #print(mpd_url)
         tested.add(mpd_url)
+        #print('mpd_url', mpd_url)
         response = self.app.get(mpd_url)
-        mpd = ViewsTestDashValidator(self.app, mode, response.xml, mpd_url)
-        mpd.validate()
-        if mode == 'vod':
-            self.assertAlmostEqual(mpd.duration.total_seconds(), self.MEDIA_DURATION, delta=1.0)
+        dv = ViewsTestDashValidator(self.app, mode, response.xml, mpd_url)
+        dv.validate(depth=2)
+        if mode != 'live':
+            if dv.manifest.mediaPresentationDuration is None:
+                # duration must be specified in the Period
+                dur = datetime.timedelta(seconds=0)
+                for period in dv.manifest.periods:
+                    self.assertIsNotNone(period.duration)
+                    dur += period.duration
+                self.assertAlmostEqual(dur.total_seconds(), self.MEDIA_DURATION,
+                                       delta=1.0)
+            else:
+                self.assertAlmostEqual(dv.manifest.mediaPresentationDuration.total_seconds(),
+                                       self.MEDIA_DURATION, delta=1.0)
 
-    def test_get_manifest(self):
-        """Exhaustive test of every manifest with every combination of options.
+    def check_a_manifest_using_all_options(self, filename, manifest):
+        """Exhaustive test of a manifest with every combination of options.
         This test is _very_ slow, expect it to take several minutes!"""
         self.setup_media()
         self.logoutCurrentUser()
         pr = drm.PlayReady(self.templates)
         media_files = models.MediaFile.all()
         self.assertGreaterThan(len(media_files), 0)
-        # do a first pass check of every manifest with no CGI options
-        for filename, manifest in manifests.manifest.iteritems():
-            url = self.from_uri('dash-mpd', manifest=filename)
+        # do a first pass check with no CGI options
+        for mode in ['vod', 'live', 'odvod']:
+            if mode not in manifest['modes']:
+                continue
+            url = self.from_uri('dash-mpd-v3', manifest=filename, mode=mode, stream='bbb')
             response = self.app.get(url)
-            mode = 'vod' if 'vod_' in filename else 'live'
+            TestCaseMixin._orig_assert_true = TestCaseMixin._assert_true
+            TestCaseMixin._assert_true = add_url(TestCaseMixin._assert_true, url)
             mpd = ViewsTestDashValidator(self.app, mode, response.xml, url)
-            mpd.validate()
+            mpd.validate(depth=2)
+            TestCaseMixin._assert_true = TestCaseMixin._orig_assert_true
+            del TestCaseMixin._orig_assert_true
 
-        # do the exhaustive check of every option with every manifest
-        total_tests = len(manifests.manifest)
+        # do the exhaustive check of every option
+        total_tests = 1
         count = 0
         for param in self.cgi_options:
             total_tests = total_tests * len(param[1])
-        for filename, manifest in manifests.manifest.iteritems():
-            tested = set([url])
-            indexes = [0] * len(self.cgi_options)
-            done = False
-            while not done:
-                self.progress(count, total_tests)
-                count += 1
-                self.check_manifest(filename, indexes, tested)
-                idx = 0
-                while idx < len(self.cgi_options):
-                    indexes[idx] += 1
-                    if indexes[idx] < len(self.cgi_options[idx][1]):
-                        break
-                    indexes[idx] = 0
-                    idx += 1
-                if idx==len(self.cgi_options):
-                    done=True
+        tested = set([url])
+        indexes = [0] * len(self.cgi_options)
+        done = False
+        while not done:
+            self.progress(count, total_tests)
+            count += 1
+            self.check_manifest(filename, indexes, tested)
+            idx = 0
+            while idx < len(self.cgi_options):
+                indexes[idx] += 1
+                if indexes[idx] < len(self.cgi_options[idx][1]):
+                    break
+                indexes[idx] = 0
+                idx += 1
+            if idx==len(self.cgi_options):
+                done=True
         self.progress(total_tests, total_tests)
 
     def test_availability_start_time(self):
@@ -385,27 +478,34 @@ class TestHandlers(GAETestCase):
         self.assertGreaterThan(len(media_files), 0)
         filename = 'hand_made.mpd'
         manifest = manifests.manifest[filename]
-        now = datetime.datetime.now(tz=utils.UTC())
-        today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        ref_now = real_datetime_class(2019,1,1,4,5,6, tzinfo=utils.UTC())
+        ref_today = real_datetime_class(2019,1,1, tzinfo=utils.UTC())
+        ref_yesterday = ref_today - datetime.timedelta(days=1)
         testcases = [
-            ('', today),
-            ('today', today),
-            ('2019-09-invalid-iso-datetime', today),
-            ('now', now),
-            ('epoch', datetime.datetime(1970, 1, 1, 0, 0, tzinfo=utils.UTC())),
-            ('2009-02-27T10:00:00Z', datetime.datetime(2009,2,27,10,0,0, tzinfo=utils.UTC()) ),
-            ('2013-07-25T09:57:31Z', datetime.datetime(2013,7,25,9,57,31, tzinfo=utils.UTC()) ),
+            ('', ref_now, ref_today),
+            ('today', ref_now, ref_today),
+            ('2019-09-invalid-iso-datetime', ref_now, ref_today),
+            ('now', ref_now, ref_now),
+            ('epoch', ref_now, datetime.datetime(1970, 1, 1, 0, 0, tzinfo=utils.UTC())),
+            ('2009-02-27T10:00:00Z', ref_now, datetime.datetime(2009,2,27,10,0,0, tzinfo=utils.UTC()) ),
+            ('2013-07-25T09:57:31Z', ref_now, datetime.datetime(2013,7,25,9,57,31, tzinfo=utils.UTC()) ),
+            # special case when "now" is midnight, use yesterday midnight as availabilityStartTime
+            ('', ref_today, ref_yesterday),
         ]
-        for option, start_time in testcases:
-            baseurl = self.from_uri('dash-mpd-v2', manifest=filename, stream='bbb')
-            if option:
-                baseurl += '?mode=live&start=' + option
-            response = self.app.get(baseurl)
-            mpd = ViewsTestDashValidator(self.app, 'live', response.xml, baseurl)
-            mpd.validate()
-            if option=='now':
-                start_time = mpd.publishTime - mpd.timeShiftBufferDepth
-            self.assertEqual(mpd.availabilityStartTime, start_time)
+        msg=r'When start="%s" is used, expected MPD@availabilityStartTime to be %s but was %s'
+        for option, now, start_time in testcases:
+            with mock_datetime_now(now):
+                baseurl = self.from_uri('dash-mpd-v3', manifest=filename, stream='bbb', mode='live')
+                if option:
+                    baseurl += '?start=' + option
+                response = self.app.get(baseurl)
+                dv = ViewsTestDashValidator(self.app, 'live', response.xml, baseurl)
+                dv.validate(depth=3)
+                if option=='now':
+                    start_time = dv.manifest.publishTime - dv.manifest.timeShiftBufferDepth
+                self.assertEqual(dv.manifest.availabilityStartTime, start_time,
+                                 msg=msg%(option, start_time.isoformat(),
+                                          dv.manifest.availabilityStartTime.isoformat()))
 
     def test_get_vod_media_using_live_profile(self):
         """Get VoD segments for each DRM type (live profile)"""
@@ -432,8 +532,6 @@ class TestHandlers(GAETestCase):
             response = self.app.get(baseurl)
             mpd = ViewsTestDashValidator(self.app, 'vod', response.xml, baseurl)
             mpd.validate()
-            for period in mpd.periods:
-                period.validate()
         self.progress(total_tests, total_tests)
 
     def test_get_live_media_using_live_profile(self):
@@ -465,8 +563,6 @@ class TestHandlers(GAETestCase):
             self.assertEqual(response.status_int, 200)
             mpd = ViewsTestDashValidator(self.app, "live", response.xml, baseurl)
             mpd.validate()
-            for period in mpd.periods:
-                period.validate()
         self.progress(total_tests, total_tests)
 
     def test_get_vod_media_using_on_demand_profile(self):
@@ -475,20 +571,14 @@ class TestHandlers(GAETestCase):
         self.setup_media()
         media_files = models.MediaFile.all()
         self.assertGreaterThan(len(media_files), 0)
-        chosen = None
         for filename, manifest in manifests.manifest.iteritems():
-            baseurl = self.from_uri('dash-mpd-v2', manifest=filename, stream='bbb')
-            baseurl += '?mode=odvod'
+            if 'odvod' not in manifest['modes']:
+                continue
+            baseurl = self.from_uri('dash-mpd-v3', mode='odvod', manifest=filename, stream='bbb')
             response = self.app.get(baseurl)
-            if "urn:mpeg:dash:profile:isoff-on-demand:2011" in response.xml.get('profiles'):
-                chosen = (baseurl, manifest, response)
-                break
-        self.assertIsNotNone(chosen)
-        baseurl, manifest, response = chosen
-        mpd = ViewsTestDashValidator(self.app, "odvod", response.xml, baseurl)
-        mpd.validate()
-        for period in mpd.periods:
-            period.validate()
+            self.assertIn("urn:mpeg:dash:profile:isoff-on-demand:2011", response.xml.get('profiles'))
+            mpd = ViewsTestDashValidator(self.app, "odvod", response.xml, baseurl)
+            mpd.validate()
 
     def test_request_unknown_media(self):
         url = self.from_uri("dash-media", mode="vod", filename="notfound", segment_num=1, ext="mp4")
@@ -972,6 +1062,17 @@ class TestHandlers(GAETestCase):
         self.assertEqual(response.status_int,200)
         response.mustcontain('bbb_v1.mp4')
 
+def gen_test_fn(filename, manifest):
+    def run_test(self):
+        self.check_a_manifest_using_all_options(filename, manifest)
+    return run_test
+
+for filename, manifest in manifests.manifest.iteritems():
+    name = filename[:-4] # remove '.mpd'
+    if 'manifest' not in name:
+        name = name + '_manifest'
+    setattr(TestHandlers, "test_all_options_%s"%(name), gen_test_fn(filename, manifest))
+    
 if os.environ.get("TESTS"):
     def load_tests(loader, tests, pattern):
         return unittest.loader.TestLoader().loadTestsFromNames(

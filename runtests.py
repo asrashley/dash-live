@@ -51,6 +51,10 @@ except KeyError:
     # in others, it is in a "bin" sub-directory
     if gae_sdk.endswith("bin"):
         gae_sdk = os.path.dirname(gae_sdk)
+
+FORMAT = r"%(asctime)-15s:%(levelname)s:%(filename)s@%(lineno)d: %(message)s"
+logging.basicConfig(format=FORMAT)
+        
 if len(sys.argv)>2:
     os.environ["TESTS"] = ','.join(sys.argv[2:])
     runner.main(gae_sdk, "tests", sys.argv[1])
