@@ -1988,6 +1988,84 @@ class ContentProtectionSpecificBox(FullBox):
         return fields
 MP4_BOXES['pssh'] = ContentProtectionSpecificBox
 
+class SegmentReference(NamedObject):
+    def __init__(self, **kwargs):
+        for key,value in kwargs.iteritems():
+            assert "src" != key
+            if not self.__dict__.has_key(key):
+                setattr(self, key, value)
+
+    @classmethod
+    def parse(clz, src, parent, **kwargs):
+        rv = {}
+        r = BitsFieldReader(clz, src, rv, size=12)
+        r.read(1, 'reference_type')
+        r.read(31, 'referenced_size')
+        r.read(32, 'subsegment_duration')
+        r.read(1, 'starts_with_SAP')
+        r.read(3, 'SAP_type')
+        r.read(28, 'SAP_delta_time')
+        return rv
+
+    def _to_json(self, exclude):
+        fields = {
+            '_type': self.classname
+        }
+        exclude.append('parent')
+        for k,v in self.__dict__.iteritems():
+            if k not in exclude:
+                fields[k] = v
+        return fields
+
+    def encode_fields(self, dest):
+        w = FieldWriter(self, dest)
+        w.writebits(1, 'reference_type')
+        w.writebits(31, 'referenced_size')
+        w.writebits(32, 'subsegment_duration')
+        w.writebits(1, 'starts_with_SAP')
+        w.writebits(3, 'SAP_type')
+        w.writebits(28, 'SAP_delta_time')
+        w.done()
+
+
+class SegmentIndexBox(FullBox):
+    debug=True
+    #def __init__(self, **kwargs):
+    #    super(SegmentIndexBox, self).__init__(**kwargs)
+    #    if self._fields.has_key("references"):
+    #        self._fields["references"] = map(lambda s: SegmentReference(**s), self._fields["references"])
+
+    @classmethod
+    def parse(clz, src, parent, **kwargs):
+        rv = FullBox.parse(src, parent, **kwargs)
+        r = FieldReader(clz, src, rv)
+        r.read('I', 'reference_id')
+        r.read('I', 'timescale')
+        sz = 'I' if rv['version']==0 else 'Q'
+        r.read(sz, 'earliest_presentation_time')
+        r.read(sz, 'first_offset')
+        r.skip(2) # reserved
+        ref_count = r.get('H', 'reference_count')
+        rv["references"] = []
+        for i in range(ref_count):
+            rv["references"].append(SegmentReference(**SegmentReference.parse(src, parent)))
+        return rv
+
+    def encode_fields(self, dest):
+        super(SegmentIndexBox, self).encode_fields(dest)
+        w = FieldWriter(self, dest)
+        w.write('I', 'reference_id')
+        w.write('I', 'timescale')
+        sz = 'I' if self.version==0 else 'Q'
+        w.write(sz, 'earliest_presentation_time')
+        w.write(sz, 'first_offset')
+        w.write('H', 'reserved', 0)
+        w.write('H', 'reference_count', len(self.references))
+        for ref in self.references:
+            ref.encode_fields(dest)
+
+MP4_BOXES['sidx'] = SegmentIndexBox
+
 class IsoParser(object):
     def walk_atoms(self, filename, atom=None, options=None):
         atoms = None
