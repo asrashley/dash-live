@@ -404,7 +404,7 @@ class RequestHandler(webapp2.RequestHandler):
             startParam = self.request.params.get('start', 'today')
             if startParam == 'today':
                 availabilityStartTime = now.replace(hour=0, minute=0, second=0, microsecond=0)
-                if now.hour == 0 and now.minutes == 0:
+                if now.hour == 0 and now.minute == 0:
                     availabilityStartTime -= datetime.timedelta(days=1)
             elif startParam == 'now':
                 availabilityStartTime = rv["publishTime"] - \
@@ -417,8 +417,8 @@ class RequestHandler(webapp2.RequestHandler):
                 except ValueError:
                     availabilityStartTime = now.replace(hour=0, minute=0, second=0, microsecond=0)
             elapsedTime = now - availabilityStartTime
-            if elapsedTime.seconds < rv["timeShiftBufferDepth"]:
-                timeShiftBufferDepth = rv["timeShiftBufferDepth"] = elapsedTime.seconds
+            if elapsedTime.total_seconds() < rv["timeShiftBufferDepth"]:
+                timeShiftBufferDepth = rv["timeShiftBufferDepth"] = elapsedTime.total_seconds()
         else:
             availabilityStartTime = now
         rv["availabilityStartTime"] = availabilityStartTime
