@@ -195,7 +195,10 @@ class PlayReady(object):
         context = {
             "default_kid": default_kid,
             "kids": kids,
-            "la_url": la_url.format(cfgs=cfgs, default_kid=default_keypair.KID.hex)
+            "la_url": la_url.format(cfgs=cfgs,
+                                    default_kid=default_keypair.KID.hex,
+                                    kids=[a["kid"] for a in kids]
+            )
         }
         #print(context["la_url"])
         context["checksum"] = self.generate_checksum(default_keypair)
