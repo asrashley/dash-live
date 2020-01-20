@@ -7,7 +7,7 @@ class Box(object):
         self.size = size
         self.duration = duration
 
-    def toJSON(self):
+    def toJSON(self, pure=False):
         rv= {
             "pos": self.pos,
             "size": self.size,
@@ -56,13 +56,13 @@ class Representation(object):
         args = ','.join(args)
         return 'Representation('+args+')'
 
-    def toJSON(self):
+    def toJSON(self, pure=False):
         rv = {}
         for key,value in self.__dict__.iteritems():
             if key=='num_segments':
                 continue
             elif key=='segments':
-                rv[key] = map(lambda s: s.toJSON(), self.segments)
+                rv[key] = map(lambda s: s.toJSON(pure=pure), self.segments)
             else:
                 rv[key] = value
         return rv

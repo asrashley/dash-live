@@ -19,7 +19,7 @@ class Stream(ndb.Model):
     def all(clz):
         return clz.query().order(clz.prefix).fetch()
 
-    def toJSON(self):
+    def toJSON(self, pure=False):
         return {
             'title': self.title,
             'prefix': self.prefix,
@@ -86,17 +86,17 @@ class MediaFile(ndb.Model):
         list_of_keys = MediaFile.query().fetch(keys_only=True)
         ndb.delete_multi(list_of_keys)
 
-    def toJSON(self, convert_date=True):
+    def toJSON(self, convert_date=True, pure=False):
         i = self.info
         blob  = {}
         if i is not None:
             for k in ["creation", "size", "md5_hash", "content_type", "filename"]:
                 blob[k] = getattr(i, k)
-            if convert_date:
+            if convert_date or pure:
                 blob["creation"] = utils.toIsoDateTime(blob["creation"])
         r = self.representation
         if r is not None:
-            r = r.toJSON()
+            r = r.toJSON(pure=pure)
         return {
             "name": self.name,
             "key": self.key.urlsafe(),
@@ -149,7 +149,7 @@ class Key(ndb.Model):
             rv[k.hkid.lower()] = k
         return rv
 
-    def toJSON(self):
+    def toJSON(self, pure=False):
         return {
             'kid': self.hkid,
             'key': self.hkey,

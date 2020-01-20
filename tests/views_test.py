@@ -1,3 +1,4 @@
+from __future__ import print_function
 
 import base64
 import binascii
@@ -89,7 +90,7 @@ def add_url(method, url):
         try:
             return method(self, *args, **kwargs)
         except AssertionError:
-            print url
+            print(url)
             raise
     return tst_fn
                                                                                     
@@ -168,7 +169,11 @@ class GAETestCase(TestCaseMixin, unittest.TestCase):
         #print(self.cgi_options)
 
     def setup_media(self):
-        bbb = models.Stream(title='Big Buck Bunny', prefix='bbb')
+        bbb = models.Stream(
+            title='Big Buck Bunny', prefix='bbb',
+            marlin_la_url='ms3://localhost/marlin/bbb',
+            playready_la_url=drm.PlayReady.TEST_LA_URL
+        )
         bbb.put()
         for idx, rid in enumerate(["bbb_v6","bbb_v6_enc","bbb_v7","bbb_v7_enc",
                                    "bbb_a1", "bbb_a1_enc", "bbb_a2"]):
@@ -616,6 +621,81 @@ class TestHandlers(GAETestCase):
                 self.assertNotEqual(clean.body, corrupt.body)
             else:
                 self.assertEqual(clean.body, corrupt.body)
+
+    @staticmethod
+    def cgi_combinations(cgi_options):
+        """convert a list of CGI options into a set of all possible combinations"""
+        indexes = [0] * len(cgi_options)
+        result = set()
+        done = False
+        while not done:
+            params = {}
+            mode = None
+            for idx, option in enumerate(cgi_options):
+                name, values = option
+                value = values[indexes[idx]]
+                if name=='mode':
+                    mode = value[5:]
+                if value:
+                    params[name] = value
+            if mode in manifests.manifest[filename]['modes']:
+                if mode != "live":
+                    if params.has_key("mup"):
+                        del params["mup"]
+                    if params.has_key("time"):
+                        del params["time"]
+                cgi = '&'.join(params.values())
+                result.add(cgi)
+            idx = 0
+            while idx < len(cgi_options):
+                indexes[idx] += 1
+                if indexes[idx] < len(cgi_options[idx][1]):
+                    break
+                indexes[idx] = 0
+                idx += 1
+            if idx == len(cgi_options):
+                done = True
+        return result
+        
+    def test_video_playback(self):
+        """Test generating the video HTML page.
+        Checks every manifest with every CGI parameter causes a valid
+        HTML page that allows the video to be watched using a <video> element.
+        """
+        def opt_choose(item):
+            return item[0] in ['mode', 'acodec', 'drm']
+
+        self.setup_media()
+        self.logoutCurrentUser()
+        media_files = models.MediaFile.all()
+        self.assertGreaterThan(len(media_files), 0)
+        url = self.from_uri("video", absolute=True)
+        options = filter(opt_choose, self.cgi_options)
+        options = self.cgi_combinations(options)
+        num_tests = (len(options) * len(models.Stream.all()) *
+                     len(manifests.manifest))
+        count = 0
+        for filename, manifest in manifests.manifest.iteritems():
+            for stream in models.Stream.all():
+                for opt in options:
+                    html_url = url+'?mpd={prefix}/{mpd}&{opt}'.format(
+                        prefix=stream.prefix, mpd=filename, opt=opt)
+                    self.progress(count, num_tests)
+                    response = self.app.get(html_url)
+                    html = response.html
+                    self.assertEqual(html.title.string, manifest['title'])
+                    for script in html.find_all('script'):
+                        if script.get("src"):
+                            continue
+                        script = script.get_text()
+                        self.assertIn('var dashParameters', script)
+                        start = script.index('{')
+                        end = script.rindex('}') + 1
+                        script = json.loads(script[start:end])
+                        for field in ['title', 'prefix', 'playready_la_url', 'marlin_la_url']:
+                            self.assertEqual(script['stream'][field], getattr(stream, field))
+                    count += 1
+        self.progress(num_tests, num_tests)
 
     def test_add_stream(self):
         self.assertEqual(len(models.Stream.all()), 0)
