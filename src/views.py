@@ -177,7 +177,7 @@ class RequestHandler(webapp2.RequestHandler):
         csrf_key = sc.deserialize(self.CSRF_COOKIE_NAME, cookie)
         if not csrf_key:
             logging.debug("csrf deserialize failed")
-            response.delete_cookie(self.CSRF_COOKIE_NAME)
+            self.response.delete_cookie(self.CSRF_COOKIE_NAME)
             raise CsrfFailureException("csrf cookie not valid")
         try:
             token = str(urllib.unquote(self.request.params['csrf_token']))

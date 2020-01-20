@@ -62,7 +62,7 @@ class KeyMaterial(object):
         return binascii.b2a_hex(self.raw)
 
     def from_hex(self, value):
-        self.raw = vale.replace('-','').decode('hex')
+        self.raw = value.replace('-','').decode('hex')
 
     hex = property(to_hex, from_hex)
 

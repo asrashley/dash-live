@@ -441,7 +441,7 @@ class MultipleSegmentBaseType(SegmentBaseType):
         if self.segmentTimeline is not None:
             # 5.3.9.2.1: The attribute @duration and the element SegmentTimeline
             # shall not be present at the same time. 
-            self.assertIsNone(seld.duration)
+            self.assertIsNone(self.duration)
 
 
 class RepresentationBaseType(DashElement):
@@ -890,9 +890,9 @@ class InitSegment(DashElement):
             except (AttributeError) as ae:
                 if 'moov' in self.url:
                     if 'playready' in self.url or 'clearkey' in self.url:
-                        self.assertTrue('moov' not in init_url,
+                        self.assertTrue('moov' not in self.url,
                                         'PSSH box should be present in {}\n{:s}'.format(
-                                            init_url, ae))
+                                            self.url, ae))
         return moov
         
 class MediaSegment(DashElement):
