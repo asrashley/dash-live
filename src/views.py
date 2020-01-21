@@ -260,6 +260,10 @@ class RequestHandler(webapp2.RequestHandler):
                     parts = name.split('-')
                     name = parts[0]
                     d[name] = {}
+                    try:
+                        d[name]['laurl'] = rv[name]['laurl']
+                    except KeyError:
+                        pass
                     for p in parts[1:]:
                         d[name][p] = rv[name][p]
                 else:
