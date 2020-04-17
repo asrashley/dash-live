@@ -33,10 +33,10 @@ _src = os.path.join(os.path.dirname(__file__),"..", "src")
 if not _src in sys.path:
     sys.path.append(_src)
 
-from drm import KeyMaterial, PlayReady, ClearKey
-import mp4
-from segment import Representation
-import utils
+from dashlive import mp4
+from dashlive import utils
+from dashlive.drm import KeyMaterial, PlayReady, ClearKey
+from dashlive.segment import Representation
 
 class KeyStub(object):
     def __init__(self, kid, key):
@@ -48,7 +48,7 @@ class PlayreadyTests(unittest.TestCase):
     def setUp(self):
         self.templates = jinja2.Environment(
             loader=jinja2.FileSystemLoader(
-                os.path.join(os.path.dirname(__file__), '..', 'templates')
+                os.path.join(os.path.dirname(__file__), '..', '..', 'templates')
             ),
             extensions=['jinja2.ext.autoescape'],
             trim_blocks=False,
@@ -282,19 +282,19 @@ class ClearkeyTests(unittest.TestCase):
         for idx in range(len(a)):
             self.assertEqual(ord(a[idx]), ord(b[idx]),
                 'Expected 0x{:02x} got 0x{:02x} at position {}'.format(ord(a[idx]), ord(b[idx]), idx))
-            
+
     def test_pssh_generation(self):
         expected_pssh = [
                 0x00, 0x00, 0x00, 0x44, 0x70, 0x73, 0x73, 0x68,
-                0x01, 0x00, 0x00, 0x00,                        
+                0x01, 0x00, 0x00, 0x00,
                 0x10, 0x77, 0xef, 0xec, 0xc0, 0xb2, 0x4d, 0x02,
                 0xac, 0xe3, 0x3c, 0x1e, 0x52, 0xe2, 0xfb, 0x4b,
-                0x00, 0x00, 0x00, 0x02,                        
+                0x00, 0x00, 0x00, 0x02,
                 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
                 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35,
                 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48,
                 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f, 0x50,
-                0x00, 0x00, 0x00, 0x00,                        
+                0x00, 0x00, 0x00, 0x00,
         ]
         expected_pssh = ''.join(map(lambda a: chr(a), expected_pssh))
         ck = ClearKey(self.templates)
@@ -314,5 +314,3 @@ if os.environ.get("TESTS"):
 
 if __name__ == "__main__":
     unittest.main()
-
-

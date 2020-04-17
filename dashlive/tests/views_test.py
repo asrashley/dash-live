@@ -1,4 +1,3 @@
-
 import base64
 import binascii
 import cookielib
@@ -39,17 +38,17 @@ _src = os.path.join(os.path.dirname(__file__),"..", "src")
 if not _src in sys.path:
     sys.path.append(_src)
 
-import dash
-import drm
-import models
-import mp4
-import views
-import utils
-import manifests
-import options
-import routes
-from mixins import TestCaseMixin, HideMixinsFilter
-from segment import Representation
+from dashlive import drm
+from dashlive import models
+from dashlive import mp4
+from dashlive import views
+from dashlive import utils
+from dashlive import manifests
+from dashlive import options
+from dashlive import routes
+from dashlive.segment import Representation
+from dashlive.tests import dash
+from dashlive.tests.mixins import TestCaseMixin, HideMixinsFilter
 
 real_datetime_class = datetime.datetime
 
@@ -82,7 +81,7 @@ def mock_datetime_now(target):
     # Python2 & Python3-compatible metaclass
     MockedDatetime = DatetimeSubclassMeta('datetime', (BaseMockedDatetime,), {})
     return mock.patch.object(datetime, 'datetime', MockedDatetime)
-        
+
 def add_url(method, url):
     @wraps(method)
     def tst_fn(self, *args, **kwargs):
@@ -92,7 +91,7 @@ def add_url(method, url):
             print url
             raise
     return tst_fn
-                                                                                    
+
 class GAETestCase(TestCaseMixin, unittest.TestCase):
     MEDIA_DURATION=40 # duration of media in test/fixtures directory (in seconds)
 
@@ -120,14 +119,14 @@ class GAETestCase(TestCaseMixin, unittest.TestCase):
         # Clear ndb's in-context cache between tests.
         # This prevents data from leaking between tests.
         ndb.get_context().clear_cache()
-                                        
+
         #self.testbed.setup_env(USER_EMAIL='usermail@gmail.com',USER_ID='1', USER_IS_ADMIN='0')
         self.testbed.init_user_stub()
         self.wsgi = webapp2.WSGIApplication(routes.webapp_routes, debug=True)
         #app.router.add(Route(r'/discover/<service_type:[\w\-_\.]+>/', handler='views.SearchHandler', parent="search", title="Search by type"))
         self.app = webtest.TestApp(self.wsgi, cookiejar=cookielib.CookieJar(), extra_environ={
             'REMOTE_USER':'test@example.com',
-            'REMOTE_ADDR':'10.10.0.1', 
+            'REMOTE_ADDR':'10.10.0.1',
             'HTTP_X_APPENGINE_COUNTRY':'zz',
             'HTTP_USER_AGENT':'Mozilla/5.0 (GAE Unit test) Gecko/20100101 WebTest/2.0',
         })
@@ -205,14 +204,14 @@ class GAETestCase(TestCaseMixin, unittest.TestCase):
                     key = binascii.b2a_hex(mspr.generate_content_key(kid.decode('hex')))
                     keypair = models.Key(hkid=kid, hkey=key, computed=True)
                     keypair.put()
-        
+
     def tearDown(self):
         self.logoutCurrentUser()
         self.testbed.deactivate()
         if hasattr(TestCaseMixin, "_orig_assert_true"):
             TestCaseMixin._assert_true = TestCaseMixin._orig_assert_true
             del TestCaseMixin._orig_assert_true
-        
+
     def from_uri(self, name, **kwargs):
         try:
             absolute = kwargs["absolute"]
@@ -223,7 +222,7 @@ class GAETestCase(TestCaseMixin, unittest.TestCase):
         if absolute and not uri.startswith("http"):
             uri = 'http://testbed.example.com' + uri
         return uri
-            
+
     def setCurrentUser(self, email=None, user_id=None, is_admin=False):
         if email is None:
             email = 'test@example.com'
@@ -243,7 +242,7 @@ class GAETestCase(TestCaseMixin, unittest.TestCase):
 
     def logoutCurrentUser(self):
         self.setCurrentUser('', '', False)
-        
+
     def upload_blobstore_file(self, from_url, upload_url, form, field, filename, contents, content_type = "application/octet-stream"):
         session = datastore.Get(upload_url.split('/')[-1])
         #new_object = "/" + session["gs_bucket_name"] + "/" + str(uuid.uuid4())
@@ -289,7 +288,7 @@ class ViewsTestDashValidator(dash.DashValidator):
         super(ViewsTestDashValidator, self).__init__(url, app, mode=mode, options=opts)
         self.representations = {}
         self.log.debug('Check manifest: %s', url)
-        
+
     def get_representation_info(self, representation):
         try:
             return self.representations[representation.unique_id()]
@@ -323,7 +322,7 @@ class ViewsTestDashValidator(dash.DashValidator):
 
     def set_representation_info(self, representation, info):
         self.representations[representation.unique_id()] = info
-        
+
 class TestHandlers(GAETestCase):
     def test_index_page(self):
         self.setup_media()
@@ -349,7 +348,7 @@ class TestHandlers(GAETestCase):
         #self.setCurrentUser(is_admin=False)
         #response = self.app.get(url)
         #response.mustcontain('<a href="',mpd_url, no=routes.routes['upload'].title)
-        
+
     def test_media_page(self):
         self.setup_media()
         page = views.MediaHandler()
@@ -361,17 +360,17 @@ class TestHandlers(GAETestCase):
         self.logoutCurrentUser()
         response = self.app.get(url, status=401)
         self.assertEqual(response.status_int,401)
-        
+
         # user must be logged in as admin to use media page
         self.setCurrentUser(is_admin=False)
         response = self.app.get(url, status=401)
         self.assertEqual(response.status_int,401)
-        
+
         # user must be logged in as admin to use media page
         self.setCurrentUser(is_admin=True)
         response = self.app.get(url)
         self.assertEqual(response.status_int, 200)
-        
+
     def check_manifest(self, filename, indexes, tested):
         #def _assert_true(self, result, a, b, msg, template):
         #    if not result:
@@ -726,7 +725,7 @@ class TestHandlers(GAETestCase):
 
     def test_add_full_key_pair(self):
         self.assertEqual(len(models.Key.all()), 0)
-        
+
         url = self.from_uri('key', absolute=True)
 
         request = {
@@ -739,12 +738,12 @@ class TestHandlers(GAETestCase):
         self.logoutCurrentUser()
         response = self.app.put(url, status=401)
         self.assertEqual(response.status_int,401)
-        
+
         # user must be logged in as admin to use keys API
         self.setCurrentUser(is_admin=False)
         response = self.app.put(url, status=401)
         self.assertEqual(response.status_int,401)
-        
+
         # user must be logged in as admin to use keys API
         self.setCurrentUser(is_admin=True)
 
@@ -775,7 +774,7 @@ class TestHandlers(GAETestCase):
         url = self.from_uri('media-index', absolute=True)
         response = self.app.get(url)
         self.assertEqual(response.status_int, 200)
-        response.mustcontain(expected_result['kid'], expected_result['key'])        
+        response.mustcontain(expected_result['kid'], expected_result['key'])
 
     def test_add_computed_keys(self):
         self.assertEqual(len(models.Key.all()), 0)
@@ -804,7 +803,7 @@ class TestHandlers(GAETestCase):
         self.assertEqual(keys[0].hkid, expected_result['kid'])
         self.assertEqual(keys[0].hkey, expected_result['key'])
         self.assertEqual(keys[0].computed, True)
-        
+
     def test_delete_key(self):
         self.assertEqual(len(models.Key.all()), 0)
 
@@ -813,7 +812,7 @@ class TestHandlers(GAETestCase):
                              hkey='ccc0f2b3b279926496a7f5d25da692f6',
                              computed=False)
         keypair.put()
-        
+
         keypair = models.Key(hkid='01020304-0506-0708-090A-AABBCCDDEEFF'.replace('-','').lower(),
                              hkey=base64.b64decode('GUf166PQbx+sgBADjyBMvw==').encode('hex'),
                              computed=True)
@@ -821,13 +820,13 @@ class TestHandlers(GAETestCase):
         self.assertEqual(len(models.Key.all()), 2)
 
         url = self.from_uri('del-key', kid=kid, absolute=True)
-        
+
         # user must be logged in to use keys API
         self.logoutCurrentUser()
         response = self.app.delete(url, status=401)
         self.assertEqual(response.status_int,401)
         self.assertEqual(len(models.Key.all()), 2)
-        
+
         # user must be logged in as admin to use keys API
         self.setCurrentUser(is_admin=False)
         response = self.app.delete(url, status=401)
@@ -841,7 +840,7 @@ class TestHandlers(GAETestCase):
         response = self.app.delete(url)
         self.assertTrue(response.json.has_key("error"))
         self.assertIn("CsrfFailureException", response.json["error"])
-        
+
         media_url = self.from_uri('media-index', absolute=True)
         media = self.app.get(media_url)
         keys_table = media.html.find(id="keys")
@@ -877,7 +876,7 @@ class TestHandlers(GAETestCase):
         response = self.app.delete(url + '?csrf_token=' + next_csrf_token)
         expected_result["csrf"] = response.json["csrf"]
         self.assertEqual(expected_result, response.json)
-        
+
     def test_clearkey(self):
         self.assertEqual(len(models.Key.all()), 0)
 
@@ -900,7 +899,7 @@ class TestHandlers(GAETestCase):
             ],
             "type":"temporary",
         }
-        
+
         # user does not need to be logged in to use clearkey
         self.logoutCurrentUser()
         response = self.app.post_json(url, request)
@@ -978,7 +977,7 @@ class TestHandlers(GAETestCase):
             ],
             "type":"temporary",
         }
-        
+
         response = self.app.post_json(url, request)
         try:
             base64.b64decode('*invalid base64*')
@@ -997,7 +996,7 @@ class TestHandlers(GAETestCase):
         s = s.replace('+', '-')     # 62nd char of encoding
         s = s.replace('/', '_')     # 63rd char of encoding
         return s
-        
+
     def test_upload_media_file(self):
         self.upload_media_file(0)
 
@@ -1008,7 +1007,7 @@ class TestHandlers(GAETestCase):
         url = self.from_uri('media-index', absolute=True)
         blobURL = self.from_uri('uploadBlob', absolute=True)
         self.assertIsNotNone(blobURL)
-        
+
         # not logged in, should return authentication error
         self.logoutCurrentUser()
         response = self.app.get(url, status=401)
@@ -1031,7 +1030,7 @@ class TestHandlers(GAETestCase):
         self.logoutCurrentUser()
         # a POST from a non-logged in user should fail
         response = form.submit('submit', status=401)
-        
+
         self.setCurrentUser(is_admin=True)
         response = self.app.get(url)
         self.assertEqual(response.status_int,200)
@@ -1057,7 +1056,7 @@ class TestHandlers(GAETestCase):
             self.assertEqual(response.json, expected_result)
         else:
             response.mustcontain('<h2>Upload complete</h2>')
-        
+
         response = self.app.get(url)
         self.assertEqual(response.status_int,200)
         response.mustcontain('bbb_v1.mp4')
@@ -1072,7 +1071,7 @@ for filename, manifest in manifests.manifest.iteritems():
     if 'manifest' not in name:
         name = name + '_manifest'
     setattr(TestHandlers, "test_all_options_%s"%(name), gen_test_fn(filename, manifest))
-    
+
 if os.environ.get("TESTS"):
     def load_tests(loader, tests, pattern):
         return unittest.loader.TestLoader().loadTestsFromNames(
@@ -1080,4 +1079,4 @@ if os.environ.get("TESTS"):
             TestHandlers)
 
 if __name__ == '__main__':
-    unittest.main()        
+    unittest.main()

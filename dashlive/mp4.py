@@ -1,3 +1,14 @@
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+from builtins import chr
+from builtins import str
+from builtins import hex
+from builtins import map
+from builtins import range
+from past.builtins import basestring
+from past.utils import old_div
+from builtins import object
 from abc import ABCMeta, abstractmethod
 import argparse
 import base64
@@ -10,6 +21,7 @@ import os
 import re
 import struct
 import sys
+from future.utils import with_metaclass
 
 try:
     import bitstring
@@ -17,8 +29,8 @@ except ImportError:
     sys.path.append(os.path.join(os.path.dirname(__file__), "..", "lib"))
     import bitstring
 
-from nal import Nal
-import utils
+from .nal import Nal
+from . import utils
 
 # time values are in seconds since midnight, Jan. 1, 1904, in UTC time
 ISO_EPOCH = datetime.datetime(year=1904, month=1, day=1, tzinfo=utils.UTC())
@@ -32,7 +44,7 @@ def from_iso_epoch(delta):
 
 def to_iso_epoch(dt):
     delta = dt - ISO_EPOCH
-    return long(delta.total_seconds())
+    return int(delta.total_seconds())
 
 class Binary(object):
     BASE64=1
@@ -57,8 +69,7 @@ class Binary(object):
             return 'None'
         return self.toJSON(pure=False)
 
-class NamedObject(object):
-    __metaclass__ = ABCMeta
+class NamedObject(with_metaclass(ABCMeta, object)):
     debug=False
 
     @property
@@ -78,7 +89,7 @@ class NamedObject(object):
     def _field_repr(self, exclude):
         rv = []
         fields = self._to_json(exclude)
-        for k,v in fields.iteritems():
+        for k,v in fields.items():
             if k != '_type':
                 rv.append('{0}={1}'.format(k, utils.as_python(v)))
         return rv
@@ -126,7 +137,7 @@ class FieldReader(object):
         self.kwargs[field] = self.get(size, field, mask)
 
     def get(self, size, field, mask=None):
-        if isinstance(size, (int, long)):
+        if isinstance(size, int):
             value = self.src.read(size)
             if self.log and self.log.isEnabledFor(logging.DEBUG):
                 self.log.debug('%s: read %s size=%d pos=%d value=0x%s', self.clz.__name__, field,
@@ -149,9 +160,9 @@ class FieldReader(object):
             value = self.src.read(int(size[1:]))
             value = value.split('\0')[0]
         elif size[0] == 'D':
-            bsz, asz = map(int, size[1:].split('.'))
+            bsz, asz = list(map(int, size[1:].split('.')))
             shift = 1<<asz
-            value = decimal.Decimal(self.get(format_bit_sizes[bsz+asz], field)) / shift
+            value = old_div(decimal.Decimal(self.get(format_bit_sizes[bsz+asz], field)), shift)
         else:
             raise ValueError("unsupported size: "+size)
         if mask is not None:
@@ -216,19 +227,19 @@ class FieldWriter(object):
             if size=='0I':
                 value = struct.pack('>I', value)[1:]
             elif size[0] == 'D':
-                bsz, asz = map(int, size[1:].split('.'))
+                bsz, asz = list(map(int, size[1:].split('.')))
                 value = value * (1 << asz)
                 value = struct.pack('>'+format_bit_sizes[bsz+asz], int(value))
             else:
                 value = struct.pack('>'+size, value)
-        elif isinstance(size, (int, long)):
+        elif isinstance(size, int):
             padding = size - len(value)
             if padding > 0:
                 value += '\0' * padding
             elif padding < 0:
                 value = value[:size]
         if self.log and self.log.isEnabledFor(logging.DEBUG):
-            if isinstance(value, (int, long)):
+            if isinstance(value, int):
                 v = '0x' + hex(value)
             elif isinstance(value, basestring):
                 v = '0x' + value.encode('hex')
@@ -266,8 +277,7 @@ class Options(object):
             name=type(self).__name__, **self.__dict__
             )
 
-class Mp4Atom(NamedObject):
-    __metaclass__ = ABCMeta
+class Mp4Atom(with_metaclass(ABCMeta, NamedObject)):
     parse_children=False
     include_atom_type=False
 
@@ -276,7 +286,7 @@ class Mp4Atom(NamedObject):
             atom_type = { "atom_type": kwargs["atom_type"] }
         except KeyError:
             atom_type = None
-            for k,v in MP4_BOXES.iteritems():
+            for k,v in MP4_BOXES.items():
                 if v == type(self):
                     atom_type =  k
                     break
@@ -289,9 +299,9 @@ class Mp4Atom(NamedObject):
         self.options = kwargs.get("options", Options())
         self.children = kwargs.get("children", [])
         self._encoded = None
-        for key,value in kwargs.iteritems():
+        for key,value in kwargs.items():
             assert "src" != key
-            if not self.__dict__.has_key(key):
+            if key not in self.__dict__:
                 self._fields[key] = value
         for ch in self.children:
             ch.parent = self
@@ -300,7 +310,7 @@ class Mp4Atom(NamedObject):
         if name[0]=="_":
             # __getattribute__ should have responded before __getattr__ called
             raise AttributeError(name)
-        if self._fields.has_key(name):
+        if name in self._fields:
             return self._fields[name]
         for c in self.children:
             if c._fields["atom_type"] == name:
@@ -317,14 +327,14 @@ class Mp4Atom(NamedObject):
                 self.parent._invalidate()
 
     def __setattr__(self, name, value):
-        if name[0]!='_' and self._fields.has_key(name):
+        if name[0]!='_' and name in self._fields:
             self._fields[name] = value
             self._invalidate()
             return
         object.__setattr__(self, name, value)
             
     def __delattr__(self, name):
-        if self._fields.has_key(name):
+        if name in self._fields:
             raise AttributeError('Unable to delete field {} '.format(name))
         for idx, c in enumerate(self.children):
             if c.atom_type==name or ('-' in c.atom_type and c.atom_type.replace('-','_')==name):
@@ -342,11 +352,11 @@ class Mp4Atom(NamedObject):
         rv = {
             '_type': self.classname
         }
-        for k,v in self._fields.iteritems():
+        for k,v in self._fields.items():
             if k[0] != '_' and not k in exclude:
                 rv[k] = v
         if self.children:
-            ch = map(lambda c: c.toJSON(), self.children)
+            ch = [c.toJSON() for c in self.children]
             rv['children'] = ch
         return rv
 
@@ -432,7 +442,7 @@ class Mp4Atom(NamedObject):
                 break
             try:
                 Box = MP4_BOXES[hdr['atom_type']]
-            except KeyError,k:
+            except KeyError as k:
                 Box = UnknownBox
             options.log.debug('create %s %s pos=%d size=%d',
                               hdr['atom_type'], Box.__name__,
@@ -614,14 +624,13 @@ class FileTypeBox(Mp4Atom):
 
 MP4_BOXES['ftyp'] = FileTypeBox
 
-class Descriptor(NamedObject):
-    __metaclass__ = ABCMeta
+class Descriptor(with_metaclass(ABCMeta, NamedObject)):
     def __init__(self, tag, **kwargs):
         self.tag = tag
         self.children = []
         self._encoded = None
         self.options = kwargs.get("options", Options())
-        for key, value in kwargs.iteritems():
+        for key, value in kwargs.items():
             setattr(self, key, value)
 
     @classmethod
@@ -727,11 +736,11 @@ class Descriptor(NamedObject):
     def _to_json(self, exclude):
         rv = {}
         exclude += ['parent', 'children', 'options', 'data']
-        for k,v in self.__dict__.iteritems():
+        for k,v in self.__dict__.items():
             if k[0]!='_' and k not in exclude:
                 rv[k] = v #as_python(v, False)
         if self.children:
-            rv['children'] = map(lambda c: c.toJSON(pure=False), self.children)
+            rv['children'] = [c.toJSON(pure=False) for c in self.children]
         if 'data' in self.__dict__:
             if self.data is None:
                 rv['data'] = None
@@ -876,7 +885,7 @@ class DecoderSpecificInfo(Descriptor):
                 r.read(1, "extension_flag_3")
         rv["data"] = None
         if r.pos() != 8*rv["size"]:
-            rv["data"] = r.data[r.pos()/8:]
+            rv["data"] = r.data[old_div(r.pos(),8):]
         return rv
 
     def encode_fields(self, dest):
@@ -992,8 +1001,8 @@ class VisualSampleEntry(SampleEntry):
         dest.write(struct.pack('>I', self.spatial_quality))
         dest.write(struct.pack('>H', self.width))
         dest.write(struct.pack('>H', self.height))
-        dest.write(struct.pack('>I', long(self.horizresolution * 65536.0)))
-        dest.write(struct.pack('>I', long(self.vertresolution * 65536.0)))
+        dest.write(struct.pack('>I', int(self.horizresolution * 65536.0)))
+        dest.write(struct.pack('>I', int(self.vertresolution * 65536.0)))
         dest.write(struct.pack('>I', self.entry_data_size))
         dest.write(struct.pack('>H', self.frame_count))
         c = self.compressorname + '\0'*32
@@ -1056,7 +1065,7 @@ class AVCConfigurationBox(Mp4Atom):
         fields = super(AVCConfigurationBox,self)._to_json(exclude)
         for param in param_sets:
             try:
-                fields[param] = map(lambda a: Binary(a), self._fields[param])
+                fields[param] = [Binary(a) for a in self._fields[param]]
             except KeyError:
                 pass
         return fields
@@ -1076,7 +1085,7 @@ class AVCConfigurationBox(Mp4Atom):
         for pps in self.pps:
             d.write('H', 'pps_size', len(pps))
             d.write(None, 'pps', pps)
-        if AVCConfigurationBox.is_ext_profile(self.AVCProfileIndication) and self._fields.has_key('chroma_format'):
+        if AVCConfigurationBox.is_ext_profile(self.AVCProfileIndication) and 'chroma_format' in self._fields:
             d.write('B', 'chroma_format', self.chroma_format + 0xFC)
             d.write('B', 'luma_bit_depth', self.luma_bit_depth - 8 + 0xF8)
             d.write('B', 'chroma_bit_depth', self.chroma_bit_depth - 8 + 0xF8)
@@ -1121,9 +1130,9 @@ MP4_BOXES['ec-3'] = EC3SampleEntry
 
 class EC3SubStream(NamedObject):
     def __init__(self, **kwargs):
-        for key,value in kwargs.iteritems():
+        for key,value in kwargs.items():
             assert "src" != key
-            if not self.__dict__.has_key(key):
+            if key not in self.__dict__:
                 setattr(self, key, value)
 
     @classmethod
@@ -1157,7 +1166,7 @@ class EC3SubStream(NamedObject):
             '_type': self.classname
         }
         exclude.append('parent')
-        for k,v in self.__dict__.iteritems():
+        for k,v in self.__dict__.items():
             if k not in exclude:
                 fields[k] = v
         return fields
@@ -1189,7 +1198,7 @@ class EC3SpecificBox(Mp4Atom):
         ba.append(bitstring.pack('uint:13, uint:3', self.data_rate, num_ind_sub-1))
         for s in self.substreams:
             s.encode_fields(ba)
-        if self._fields.has_key('flag_ec3_extension_type_a'):
+        if 'flag_ec3_extension_type_a' in self._fields:
             ba.append(bitstring.pack('uint:7, bool, uint:8', 0, self.flag_ec3_extension_type_a,
                                      self.complexity_index_type_a))
         dest.write(ba.bytes)
@@ -1197,7 +1206,7 @@ class EC3SpecificBox(Mp4Atom):
     def _to_json(self, exclude):
         exclude.append('substreams')
         rv = super(EC3SpecificBox, self)._to_json(exclude)
-        rv['substreams'] = map(lambda s: s.toJSON(), self.substreams)
+        rv['substreams'] = [s.toJSON() for s in self.substreams]
         return rv
 
 MP4_BOXES['dec3'] = EC3SpecificBox
@@ -1441,7 +1450,7 @@ class TrackFragmentDecodeTimeBox(FullBox):
 
     def encode_fields(self, dest):
         payload = io.BytesIO()
-        if self.base_media_decode_time > long(1<<32):
+        if self.base_media_decode_time > int(1<<32):
             self.version = 1
         else:
             self.version = 0
@@ -1506,7 +1515,7 @@ class MediaHeaderBox(FullBox):
         dest.write(struct.pack(sz, to_iso_epoch(self.modification_time)))
         dest.write(struct.pack('>I', self.timescale))
         dest.write(struct.pack(sz, self.duration))
-        chars = map(lambda c: ord(c) - 0x60, list(self.language))
+        chars = [ord(c) - 0x60 for c in list(self.language)]
         lang = (chars[0] << 10) + (chars[1] << 5) + chars[2]
         dest.write(struct.pack('>H', lang))
         dest.write(struct.pack('>H', 0)) # pre_defined
@@ -1614,7 +1623,7 @@ class SampleAuxiliaryInformationSizesBox(FullBox):
     def _to_json(self, exclude):
         exclude.append('aux_info_type')
         fields = super(FullBox,self)._to_json(exclude)
-        if self._fields.has_key("aux_info_type"):
+        if "aux_info_type" in self._fields:
             if isinstance(self.aux_info_type, basestring):
                 fields['aux_info_type'] = '"%s"'%self.aux_info_type
             else:
@@ -1626,7 +1635,7 @@ MP4_BOXES['saiz'] = SampleAuxiliaryInformationSizesBox
 
 class CencSampleAuxiliaryData(NamedObject):
     def __init__(self, **kwargs):
-        for key,value in kwargs.iteritems():
+        for key,value in kwargs.items():
             assert "src" != key
             setattr(self, key, value)
 
@@ -1673,8 +1682,8 @@ class CencSampleAuxiliaryData(NamedObject):
 class CencSampleEncryptionBox(FullBox):
     def __init__(self, **kwargs):
         super(CencSampleEncryptionBox, self).__init__(**kwargs)
-        if self._fields.has_key("samples"):
-            self._fields["samples"] = map(lambda s: CencSampleAuxiliaryData(**s), self._fields["samples"])
+        if "samples" in self._fields:
+            self._fields["samples"] = [CencSampleAuxiliaryData(**s) for s in self._fields["samples"]]
 
     @classmethod
     def parse(clz, src, parent, **kwargs):
@@ -1722,8 +1731,8 @@ class CencSampleEncryptionBox(FullBox):
             fields["kid"] = "0x%s"%self.kid.encode('hex')
         except AttributeError:
             pass
-        if self._fields.has_key("samples"):
-            fields["samples"] = map(lambda s: s.toJSON(), self.samples)
+        if "samples" in self._fields:
+            fields["samples"] = [s.toJSON() for s in self.samples]
         return fields
 
 MP4_BOXES["senc"] = CencSampleEncryptionBox
@@ -1766,7 +1775,7 @@ class SampleAuxiliaryInformationOffsetsBox(FullBox):
     def _to_json(self, exclude):
         exclude.append('aux_info_type')
         fields = super(FullBox,self)._to_json(exclude)
-        if self._fields.has_key("aux_info_type"):
+        if "aux_info_type" in self._fields:
             if isinstance(self.aux_info_type, basestring):
                 fields['aux_info_type'] = '"%s"'%self.aux_info_type
             else:
@@ -1782,14 +1791,14 @@ class TrackSample(NamedObject):
         self.index = index
         self.offset = offset
         self._fields = {}
-        for key,value in kwargs.iteritems():
+        for key,value in kwargs.items():
             self._fields[key] = value
 
     def __getattr__(self, name):
         if name[0]=="_":
             # __getattribute__ should have responded before __getattr__ called
             raise AttributeError(name)
-        if self._fields.has_key(name):
+        if name in self._fields:
             return self._fields[name]
         raise AttributeError(name)
 
@@ -1836,7 +1845,7 @@ class TrackSample(NamedObject):
             'index': self.index,
             'offset': self.offset
         }
-        for k,v in self._fields.iteritems():
+        for k,v in self._fields.items():
             if v is None or k in exclude:
                 continue
             rv[k] = v
@@ -1905,7 +1914,7 @@ class TrackFragmentRunBox(FullBox):
     def _to_json(self, exclude):
         exclude.append('samples')
         fields = super(TrackFragmentRunBox, self)._to_json(exclude)
-        fields["samples"] = map(lambda s: s.toJSON(), self.samples)
+        fields["samples"] = [s.toJSON() for s in self.samples]
         return fields
 
 MP4_BOXES['trun']=TrackFragmentRunBox
@@ -1983,16 +1992,16 @@ class ContentProtectionSpecificBox(FullBox):
             fields["data"] = Binary(self._fields["data"])
         fields['system_id'] = Binary(self.system_id, encoding=Binary.HEX)
         if self.version > 0:
-            kids = map(lambda k: Binary(k, encoding=Binary.HEX), self.key_ids)
+            kids = [Binary(k, encoding=Binary.HEX) for k in self.key_ids]
             fields['key_ids'] = kids
         return fields
 MP4_BOXES['pssh'] = ContentProtectionSpecificBox
 
 class SegmentReference(NamedObject):
     def __init__(self, **kwargs):
-        for key,value in kwargs.iteritems():
+        for key,value in kwargs.items():
             assert "src" != key
-            if not self.__dict__.has_key(key):
+            if key not in self.__dict__:
                 setattr(self, key, value)
 
     @classmethod
@@ -2012,7 +2021,7 @@ class SegmentReference(NamedObject):
             '_type': self.classname
         }
         exclude.append('parent')
-        for k,v in self.__dict__.iteritems():
+        for k,v in self.__dict__.items():
             if k not in exclude:
                 fields[k] = v
         return fields
@@ -2079,7 +2088,7 @@ class IsoParser(object):
                 src = filename
             atoms = Mp4Atom.create(src, options=options)
         finally:
-            if src and isinstance(filename,(str,unicode)):
+            if src and isinstance(filename,str):
                 src.close()
         return atoms
 

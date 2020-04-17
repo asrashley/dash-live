@@ -20,19 +20,26 @@
 #
 #############################################################################
 
+from __future__ import print_function
+from __future__ import absolute_import
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
+from builtins import object
 import base64
 import binascii
 import re
 try:
-    import cStringIO as StringIO
+    from StringIO import StringIO # python 2
 except ImportError:
-    import StringIO
+    from io import StringIO
 import struct
 from xml.etree import ElementTree
 from Crypto.Cipher import AES
 from Crypto.Hash import SHA256
 
-import mp4
+from . import mp4
 
 class KeyMaterial(object):
     length = 16
@@ -79,7 +86,7 @@ class KeyMaterial(object):
 
 class PlayReady(object):
     SYSTEM_ID = "9a04f079-9840-4286-ab92-e65be0885f95"
-    RAW_SYSTEM_ID = "9a04f07998404286ab92e65be0885f95".decode("hex")
+    RAW_SYSTEM_ID = binascii.unhexlify("9a04f07998404286ab92e65be0885f95")
     TEST_KEY_SEED = base64.b64decode("XVBovsmzhP9gRIZxWfFta3VVRPzVEWmJsazEJ46I")
     TEST_LA_URL = "https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg={cfgs}"
     DRM_AES_KEYSIZE_128 = 16
@@ -103,8 +110,8 @@ class PlayReady(object):
         dword = ''.join([guid[6:8], guid[4:6],guid[2:4],guid[0:2]])
         word1 = ''.join([guid[10:12], guid[8:10]])
         word2 = ''.join([guid[14:16], guid[12:14]])
-        # looking at example streams, word 3 appears to be in big endian format! 
-        word3 = ''.join([guid[16:18], guid[18:20]]) 
+        # looking at example streams, word 3 appears to be in big endian format!
+        word3 = ''.join([guid[16:18], guid[18:20]])
         result = '-'.join([dword, word1, word2, word3, guid[20:]])
         assert len(result) == 36
         if raw == True:
@@ -171,7 +178,7 @@ class PlayReady(object):
         la_url = self.la_url
         cfgs = []
         kids = []
-        for keypair in keys.values():
+        for keypair in list(keys.values()):
             guid_kid = PlayReady.hex_to_le_guid(keypair.KID.raw, raw=True)
             rkey = keypair.KEY.raw
             kids.append({
@@ -255,7 +262,7 @@ class PlayReady(object):
                 if len(prh) != record_length:
                     raise IOError("PlayReady Object too small")
                 record['PlayReadyHeader'] = prh.decode('utf-16')
-                record['xml'] = ElementTree.parse(StringIO.StringIO(record['PlayReadyHeader']))
+                record['xml'] = ElementTree.parse(StringIO(record['PlayReadyHeader']))
             objects.append(record)
         return record
 
@@ -264,8 +271,8 @@ class PlayReady(object):
         pro = self.generate_pro(representation, keys)
         pssh_version = 0 if len(keys)==1 else 1
         if isinstance(keys, dict):
-            keys = keys.keys()
-        keys = map(lambda k: KeyMaterial(k).raw, keys)
+            keys = list(keys.keys())
+        keys = [KeyMaterial(k).raw for k in keys]
         return mp4.ContentProtectionSpecificBox(version=pssh_version,
                                                 flags=0,
                                                 system_id=PlayReady.SYSTEM_ID,
@@ -284,8 +291,8 @@ class ClearKey(object):
         """Generate a Clearkey PSSH box"""
         # see https://www.w3.org/TR/eme-initdata-cenc/
         if isinstance(keys, dict):
-            keys = keys.keys()
-        keys = map(lambda k: KeyMaterial(k).raw, keys)
+            keys = list(keys.keys())
+        keys = [KeyMaterial(k).raw for k in keys]
         return mp4.ContentProtectionSpecificBox(version=1, flags=0,
                                                 system_id=self.PSSH_SYSTEM_ID,
                                                 key_ids=keys,
@@ -294,7 +301,7 @@ class ClearKey(object):
 
 if __name__ == "__main__":
     import sys
-    import utils
+    from . import utils
 
     PR_ID = PlayReady.SYSTEM_ID.replace('-','').lower()
 

@@ -34,8 +34,9 @@ _src = os.path.join(os.path.dirname(__file__),"..", "src")
 if not _src in sys.path:
     sys.path.append(_src)
 
-import mp4
-import utils
+import dashlive
+from dashlive import mp4
+from dashlive import utils
 
 class Mp4Tests(unittest.TestCase):
     def setUp(self):
@@ -71,7 +72,7 @@ class Mp4Tests(unittest.TestCase):
             if msg is not None:
                 raise AssertionError(msg)
             raise AssertionError(template.format(a,b))
-                                                                
+
     def assertBuffersEqual(self, a, b, name=None):
         lmsg = 'Expected length {expected:d} does not match {actual:d}'
         dmsg = 'Expected 0x{expected:02x} got 0x{actual:02x} at position {position:d}'
@@ -82,7 +83,7 @@ class Mp4Tests(unittest.TestCase):
         for idx in range(len(a)):
             self.assertEqual(ord(a[idx]), ord(b[idx]),
                              dmsg.format(expected=ord(a[idx]), actual=ord(b[idx]), position=idx))
-            
+
     def assertGreaterOrEqual(self, a, b, msg=None):
         self._assert_true(a>=b, a, b, msg, r'{} < {}')
 
@@ -136,7 +137,7 @@ class Mp4Tests(unittest.TestCase):
         new_moov = new_moov[0]
         self.assertEqual(new_moov.atom_type, 'moov')
         self.assertEqual(len(new_moov.children), 4)
-        
+
     def test_remove_box_from_moov(self):
         src = utils.BufferedReader(None, data=self.moov)
         atoms = mp4.Mp4Atom.create(src, options={'cache_encoded':True})
@@ -198,7 +199,7 @@ class Mp4Tests(unittest.TestCase):
         src = utils.BufferedReader(None, data=data)
         new_moof = mp4.Mp4Atom.create(src)[0]
         self.assertBuffersEqual(expected_data, data)
-        
+
     def test_wrap_boxes(self):
         src = utils.BufferedReader(None, data=self.moov)
         atoms = mp4.Mp4Atom.create(src, options={'cache_encoded':True})
@@ -358,7 +359,7 @@ class Mp4Tests(unittest.TestCase):
         ec3.encode(dest)
         new_ec3_data = dest.getvalue()
         self.assertBuffersEqual(orig_ec3_data, new_ec3_data)
-        
+
 if os.environ.get("TESTS"):
     def load_tests(loader, tests, pattern):
         return unittest.loader.TestLoader().loadTestsFromNames(
@@ -367,5 +368,3 @@ if os.environ.get("TESTS"):
 
 if __name__ == "__main__":
     unittest.main()
-
-        

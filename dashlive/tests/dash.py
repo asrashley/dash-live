@@ -1,4 +1,15 @@
+from __future__ import division
+from __future__ import print_function
+from __future__ import absolute_import
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import range
+from past.builtins import basestring
+from past.utils import old_div
+from builtins import object
 from abc import ABCMeta, abstractmethod
+import argparse
 import collections
 import datetime
 import inspect
@@ -9,21 +20,29 @@ import re
 import sys
 import time
 import traceback
-import urlparse
-import xml.etree.ElementTree as ET
+import urllib.parse
+#import xml.etree.ElementTree as ET
+
+import requests
+from lxml import etree as ET
+
+from future.utils import with_metaclass
 
 _src = os.path.join(os.path.dirname(__file__),"..", "src")
 if not _src in sys.path:
     sys.path.append(_src)
 
-import drm
-import mp4
-import utils
-import mixins
+from dashlive import drm
+from dashlive import mp4
+from dashlive import utils
+from . import mixins
 
 class Options(object):
     def __init__(self, strict=True):
         self.strict = strict
+        self.save = False
+        self.verbose = False
+        self.log = logging.getLogger(__name__)
 
 class UTC(datetime.tzinfo):
     def utcoffset(self, dt):
@@ -53,8 +72,7 @@ class MissingSegmentException(ValidationException):
         self.status = response.status_int
         self.reason = response.status
 
-class HttpClient(mixins.TestCaseMixin):
-    __metaclass__ = ABCMeta
+class HttpClient(with_metaclass(ABCMeta, mixins.TestCaseMixin)):
     @abstractmethod
     def get(self, url, headers=None, params=None, status=None, xhr=False):
         raise Exception("Not implemented")
@@ -67,15 +85,14 @@ class ContextAdapter(logging.LoggerAdapter):
             return '%s\n    "%s"\n' % (msg, url), kwargs
         return msg, kwargs
 
-class DashElement(mixins.TestCaseMixin):
-    __metaclass__ = ABCMeta
+class DashElement(with_metaclass(ABCMeta, mixins.TestCaseMixin)):
     class Parent(object):
         pass
     xmlNamespaces = {
         'cenc': 'urn:mpeg:cenc:2013',
         'dash': 'urn:mpeg:dash:schema:mpd:2011',
         'mspr': 'urn:microsoft:playready',
-	'scte35': "http://www.scte.org/schemas/35/2016",
+        'scte35': "http://www.scte.org/schemas/35/2016",
         'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
     }
 
@@ -104,7 +121,7 @@ class DashElement(mixins.TestCaseMixin):
             if len(base):
                 self.baseurl = base[0].text
                 if self.parent and not self.baseurl.startswith('http'):
-                    self.baseurl = urlparse.urljoin(parent.baseurl, self.baseurl)
+                    self.baseurl = urllib.parse.urljoin(parent.baseurl, self.baseurl)
             elif parent:
                 self.baseurl = parent.baseurl
             self.ID = elt.get('id')
@@ -146,7 +163,7 @@ class DashElement(mixins.TestCaseMixin):
 
     @classmethod
     def init_xml_namespaces(clz):
-        for prefix, url in clz.xmlNamespaces.iteritems():
+        for prefix, url in clz.xmlNamespaces.items():
             ET.register_namespace(prefix, url)
 
     @abstractmethod
@@ -169,10 +186,8 @@ class DashElement(mixins.TestCaseMixin):
                 raise AssertionError(msg)
             self.log.warning('%s', msg)
 
-            
-class DashValidator(DashElement):
-    __metaclass__ = ABCMeta
-    
+
+class DashValidator(with_metaclass(ABCMeta, DashElement)):
     def __init__(self, url, http_client, mode=None, options=None):
         DashElement.init_xml_namespaces()
         super(DashValidator, self).__init__(None, parent=None, options=options)
@@ -217,13 +232,13 @@ class DashValidator(DashElement):
                                'manifest has not been updated for {1} seconds'.format(
                                    self.manifest.minimumUpdatePeriod, age.total_seconds()))
         self.manifest.validate(depth=depth)
-        
+
     def save_manifest(self, filename=None):
         now = RelaxedDateTime.now(UTC())
         if filename is None:
             filename = self.url
         if filename.startswith('http:'):
-            parts = urlparse.urlsplit(filename)
+            parts = urllib.parse.urlsplit(filename)
             head, tail = os.path.split(parts.path)
             if tail and tail[0]!='.':
                 filename = tail
@@ -274,7 +289,7 @@ class RepresentationInfo(object):
         self.init_segment = None
         self.media_segments = []
         self.segments = []
-        for k,v in kwargs.iteritems():
+        for k,v in kwargs.items():
             setattr(self, k, v)
 
 
@@ -300,8 +315,7 @@ class Manifest(DashElement):
         if self.publishTime is None:
             self.publishTime = datetime.datetime.now()
         self.mpd_type = xml.get("type", "static")
-        self.periods = map(lambda p: Period(p, self),
-                           xml.findall('./dash:Period', self.xmlNamespaces))
+        self.periods = [Period(p, self) for p in xml.findall('./dash:Period', self.xmlNamespaces)]
 
         self.dump_attributes()
 
@@ -341,7 +355,7 @@ class Manifest(DashElement):
             for period in self.periods:
                 period.validate(depth-1)
 
-        
+
 class Period(DashElement):
     attributes = [
         ('start', utils.from_isodatetime, None),
@@ -356,8 +370,8 @@ class Period(DashElement):
                 self.start = parent.availabilityStartTime + \
                              datetime.timedelta(seconds=self.start.total_seconds())
         adps = period.findall('./dash:AdaptationSet', self.xmlNamespaces)
-        self.adaptation_sets = map(lambda a: AdaptationSet(a, self), adps)
-                                   
+        self.adaptation_sets = [AdaptationSet(a, self) for a in adps]
+
     def validate(self, depth=-1):
         if depth!=0:
             for adap_set in self.adaptation_sets:
@@ -375,10 +389,9 @@ class SegmentBaseType(DashElement):
     def __init__(self, elt, parent):
         super(SegmentBaseType, self).__init__(elt, parent)
         inits = elt.findall('./dash:Initialization', self.xmlNamespaces)
-        self.initializationList = map(lambda u: URLType(u, self), inits)
-        self.representationIndex = map(lambda i: URLType(i, self),
-                                       elt.findall('./dash:RepresentationIndex', self.xmlNamespaces))
-                    
+        self.initializationList = [URLType(u, self) for u in inits]
+        self.representationIndex = [URLType(i, self) for i in elt.findall('./dash:RepresentationIndex', self.xmlNamespaces)]
+
 class URLType(DashElement):
     attributes = [
         ("sourceURL", str, None),
@@ -391,9 +404,14 @@ class URLType(DashElement):
     def validate(self, depth=-1):
         pass
 
+class ConditionalUintType(mixins.TestCaseMixin):
+    def __init__(self, value):
+        self.assertIsInstance(value, (int, str))
+        self.value = value
+
 class FrameRateType(mixins.TestCaseMixin):
     pattern = re.compile(r"([0-9]*[0-9])(/[0-9]*[0-9])?$")
-    
+
     def __init__(self, num, denom=1):
         if isinstance(num, basestring):
             match = self.pattern.match(num)
@@ -407,7 +425,7 @@ class FrameRateType(mixins.TestCaseMixin):
         if denom == 1:
             self.value = num
         else:
-            self.value = float(num) / float(denom)
+            self.value = old_div(float(num), float(denom))
 
     def __float__(self):
         return self.value
@@ -435,17 +453,19 @@ class MultipleSegmentBaseType(SegmentBaseType):
         bss = elt.findall('./dash:BitstreamSwitching', self.xmlNamespaces)
         if len(bss):
             self.BitstreamSwitching = bss[0].text
-            
+
     def validate(self, depth=-1):
         super(MultipleSegmentBaseType,self).validate(depth)
         if self.segmentTimeline is not None:
             # 5.3.9.2.1: The attribute @duration and the element SegmentTimeline
-            # shall not be present at the same time. 
+            # shall not be present at the same time.
             self.assertIsNone(seld.duration)
 
 
 class RepresentationBaseType(DashElement):
     attributes = [
+        ('audioSamplingRate', str, None),
+        ('codecs', str, None),
         ('profiles', str, None),
         ('width', int, None),
         ('height', int, None),
@@ -455,22 +475,22 @@ class RepresentationBaseType(DashElement):
     def __init__(self, elt, parent):
         super(RepresentationBaseType, self).__init__(elt, parent)
         prot = elt.findall('./dash:ContentProtection', self.xmlNamespaces)
-        self.contentProtection = map(lambda cp: ContentProtection(cp, self), prot)
+        self.contentProtection = [ContentProtection(cp, self) for cp in prot]
         self.segmentTemplate = None
         templates = elt.findall('./dash:SegmentTemplate', self.xmlNamespaces)
         if len(templates):
             self.segmentTemplate = SegmentTemplate(templates[0], self)
         self.segmentList = None
         seg_list = elt.findall('./dash:SegmentList', self.xmlNamespaces)
-        self.segmentList = map(lambda s: SegmentListType(s, self), seg_list)
-        
+        self.segmentList = [SegmentListType(s, self) for s in seg_list]
+
 class SegmentTimeline(DashElement):
     SegmentEntry = collections.namedtuple('SegmentEntry',['start', 'duration'])
 
     def __init__(self, timeline, parent):
         super(SegmentTimeline, self).__init__(timeline, parent)
         self.segments = []
-        start = None
+        start = oNone
         self.duration = 0
         for seg in timeline:
             repeat = int(seg.get('r','0')) + 1
@@ -504,7 +524,7 @@ class SegmentListType(MultipleSegmentBaseType):
     def __init__(self, elt, parent):
         super(SegmentListType, self).__init__(elt, parent)
         urls = elt.findall('./dash:SegmentURL', self.xmlNamespaces)
-        self.segmentURLs = map(lambda u: SegmentURL(u, self), urls)
+        self.segmentURLs = [SegmentURL(u, self) for u in urls]
 
     def validate(self, depth=-1):
         super(SegmentListType, self).validate(depth)
@@ -562,6 +582,7 @@ class AdaptationSet(RepresentationBaseType):
         ('maxHeight', int, None),
         ('minFrameRate', FrameRateType, None),
         ('maxFrameRate', FrameRateType, None),
+        ('segmentAlignment', ConditionalUintType, False),
     ]
 
     def __init__(self, adap_set, parent):
@@ -572,7 +593,7 @@ class AdaptationSet(RepresentationBaseType):
             if cp.default_KID:
                 self.default_KID = cp.default_KID
                 break
-        self.representations = map(lambda r: Representation(r, self), reps)
+        self.representations = [Representation(r, self) for r in reps]
 
     def validate(self, depth=-1):
         if len(self.contentProtection):
@@ -622,8 +643,8 @@ class Representation(RepresentationBaseType):
         self.assertIsNotNone(self.segmentTemplate)
         self.assertIsNotNone(self.segmentTemplate.initialization)
         url = self.format_url_template(self.segmentTemplate.initialization)
-        return urlparse.urljoin(self.baseurl, url)
-        
+        return urllib.parse.urljoin(self.baseurl, url)
+
     def generate_segments_live_profile(self):
         self.assertNotEqual(self.mode, 'odvod')
         self.assertIsNotNone(self.segmentTemplate)
@@ -641,7 +662,7 @@ class Representation(RepresentationBaseType):
             seg_duration = self.segmentTemplate.duration
             if seg_duration is None:
                 self.assertIsNotNone(timeline)
-                seg_duration = timeline.duration / len(timeline.segments)
+                seg_duration = old_div(timeline.duration, len(timeline.segments))
             if timeline is not None:
                 num_segments = len(timeline.segments)
                 if decode_time is None:
@@ -649,7 +670,7 @@ class Representation(RepresentationBaseType):
             else:
                 self.assertIsNotNone(self.mpd.timeShiftBufferDepth)
                 self.assertGreaterThan(self.mpd.timeShiftBufferDepth.total_seconds(),
-                                       seg_duration / self.segmentTemplate.timescale)
+                                       old_div(seg_duration, self.segmentTemplate.timescale))
                 num_segments = math.floor(self.mpd.timeShiftBufferDepth.total_seconds() *
                                       self.segmentTemplate.timescale / seg_duration)
                 num_segments = int(num_segments)
@@ -684,13 +705,13 @@ class Representation(RepresentationBaseType):
         elif self.parent.minFrameRate is not None:
             frameRate = self.parent.minFrameRate.value
         if self.segmentTemplate is not None:
-            tolerance = self.segmentTemplate.timescale / frameRate
+            tolerance = old_div(self.segmentTemplate.timescale, frameRate)
         else:
-            tolerance = info.timescale / frameRate
+            tolerance = old_div(info.timescale, frameRate)
         self.log.debug('Generating %d MediaSegments', num_segments)
         for idx in range(num_segments):
             url = self.format_url_template(self.segmentTemplate.media, seg_num, decode_time)
-            url = urlparse.urljoin(self.baseurl, url)
+            url = urllib.parse.urljoin(self.baseurl, url)
             if self.parent.contentType == 'audio':
                 tol = tolerance * frameRate / 2
             elif idx==0:
@@ -705,7 +726,7 @@ class Representation(RepresentationBaseType):
                 decode_time += timeline.segments[idx].duration
             else:
                 decode_time = None
-            
+
     def generate_segments_on_demand_profile(self):
         self.media_segments = []
         self.init_segment = None
@@ -732,9 +753,9 @@ class Representation(RepresentationBaseType):
         elif self.parent.minFrameRate is not None:
             frameRate = self.parent.minFrameRate.value
         if self.segmentTemplate is not None:
-            tolerance = self.segmentTemplate.timescale / frameRate
+            tolerance = old_div(self.segmentTemplate.timescale, frameRate)
         else:
-            tolerance = info.timescale / frameRate
+            tolerance = old_div(info.timescale, frameRate)
         for idx, item in enumerate(seg_list):
             self.assertIsNotNone(item.mediaRange)
             url = self.baseurl
@@ -807,7 +828,7 @@ class Representation(RepresentationBaseType):
         decode_time = None
         if seg_duration is None:
             self.assertIsNotNone(timeline)
-            seg_duration = timeline.duration / len(timeline.segments)
+            seg_duration = old_div(timeline.duration, len(timeline.segments))
         if timeline is not None:
             num_segments = len(self.segmentTemplate.segmentTimeline.segments)
             decode_time = timeline.segments[0].start
@@ -833,9 +854,9 @@ class Representation(RepresentationBaseType):
         if decode_time is None:
             decode_time = (first_fragment - startNumber) * seg_duration
         self.assertIsNotNone(decode_time)
-        pos = self.mpd.availabilityStartTime + datetime.timedelta(seconds=(decode_time / timescale))
+        pos = self.mpd.availabilityStartTime + datetime.timedelta(seconds=(old_div(decode_time, timescale)))
         earliest_pos = now - self.mpd.timeShiftBufferDepth - \
-                       datetime.timedelta(seconds=(seg_duration / timescale))
+                       datetime.timedelta(seconds=(old_div(seg_duration, timescale)))
         self.checkGreaterThanOrEqual(pos, earliest_pos,
                              'Position {0} is before first available fragment time {1}'.format(
                                  pos, earliest_pos))
@@ -894,7 +915,7 @@ class InitSegment(DashElement):
                                         'PSSH box should be present in {}\n{:s}'.format(
                                             init_url, ae))
         return moov
-        
+
 class MediaSegment(DashElement):
     def __init__(self, parent, url, info, seg_num, decode_time, tolerance, seg_range):
         super(MediaSegment, self).__init__(None, parent)
@@ -904,8 +925,9 @@ class MediaSegment(DashElement):
         self.tolerance = tolerance
         self.seg_range = seg_range
         self.url = url
-        self.log.debug('%s $Number$=%d $Time$=%s tolerance=%d', url, seg_num,
-                       str(decode_time), tolerance)
+        #self.log.debug('%s $Number$=%d $Time$=%s tolerance=%d',
+        #               url.replace('%','^'), seg_num,
+        #               str(decode_time), tolerance)
 
     def validate(self, depth=-1):
         if depth==0:
@@ -963,93 +985,94 @@ class MediaSegment(DashElement):
                     dts += sample.duration
         return moof
 
-if __name__ == "__main__":
-    import argparse
-    import requests
+class HttpResponse(mixins.TestCaseMixin):
+    def __init__(self, response):
+        self.response = response
+        self.status_code = self.status_int = response.status_code
+        self._xml = None
+        self.headers = response.headers
+        self.headerlist = list(response.headers.keys())
+        if response.ok:
+            self.status = 'OK'
+        else:
+            self.status = response.reason
 
-    class HttpResponse(mixins.TestCaseMixin):
-        def __init__(self, response):
-            self.response = response
-            self.status_code = self.status_int = response.status_code
-            self._xml = None
-            self.headers = response.headers
-            self.headerlist = response.headers.keys()
-            if response.ok:
-                self.status = 'OK'
+    @property
+    def xml(self):
+        if self._xml is None:
+            self._xml = ET.fromstring(self.response.content)
+        return self._xml
+
+    @property
+    def forms(self, id):
+        raise Exception("Not implemented")
+
+    @property
+    def json(self):
+        return self.response.json
+
+    @property
+    def body(self):
+        return self.response.content
+
+    def mustcontain(self, *strings):
+        for text in strings:
+            self.assertIn(text, self.response.text)
+
+    def warning(self, fmt, *args):
+        logging.getLogger(__name__).warning(fmt, *args)
+
+class RequestsHttpClient(HttpClient):
+    def __init__(self):
+        self.session = requests.Session()
+
+    def get(self, url, headers=None, params=None, status=None, xhr=False):
+        try:
+            self.log.debug('GET %s', url)
+        except AttributeError:
+            print('GET %s' % (url))
+        if xhr:
+            if headers is None:
+                headers = {'X-REQUESTED-WITH': 'XMLHttpRequest' }
             else:
-                self.status = response.reason
+                h = {'X-REQUESTED-WITH': 'XMLHttpRequest' }
+                h.update(headers)
+                headers = h
+        rv = HttpResponse(self.session.get(url, data=params, headers=headers))
+        if status is not None:
+            self.assertEqual(rv.status_code, status)
+        return rv
 
-        @property
-        def xml(self):
-            if self._xml is None:
-                self._xml = ET.fromstring(self.response.text)
-            return self._xml
 
-        @property
-        def forms(self, id):
-            raise Exception("Not implemented")
+class BasicDashValidator(DashValidator):
+    def __init__(self, url, options):
+        super(BasicDashValidator, self).__init__(url, RequestsHttpClient(), options=options)
+        self.representations = {}
+        self.url = url
 
-        @property
-        def json(self):
-            return self.response.json
+    def get_representation_info(self, rep):
+        try:
+            return self.representations[rep.unique_id()]
+        except KeyError:
+            pass
+        template = rep.segmentTemplate
+        timescale = template.timescale
+        num_segments = None
+        duration = rep.parent.parent.duration
+        if duration is None:
+            duration = rep.mpd.duration
+        if template.segmentTimeline is not None:
+            num_segments = len(template.segmentTimeline.segments)
+        elif duration is not None:
+            seg_dur = template.duration
+            num_segments = int(math.floor(duration.total_seconds() * timescale / seg_dur))
+        return RepresentationInfo(encrypted=False, timescale=timescale,
+                                  num_segments=num_segments)
 
-        @property
-        def body(self):
-            return self.response.content
+    def set_representation_info(self, representation, info):
+        self.representations[representation.unique_id()] = info
 
-        def mustcontain(self, *strings):
-            for text in strings:
-                self.assertIn(text, self.response.text)
-
-        def warning(self, fmt, *args):
-            logging.getLogger(__name__).warning(fmt, *args)
-
-    class RequestsHttpClient(HttpClient):
-        def __init__(self):
-            self.session = requests.Session()
-
-        def get(self, url, headers=None, params=None, status=None, xhr=False):
-            try:
-                self.log.debug('GET %s', url)
-            except AttributeError:
-                print('GET %s' % (url))
-            if xhr:
-                if headers is None:
-                    headers = {'X-REQUESTED-WITH': 'XMLHttpRequest' }
-                else:
-                    h = {'X-REQUESTED-WITH': 'XMLHttpRequest' }
-                    h.update(headers)
-                    headers = h
-            rv = HttpResponse(self.session.get(url, data=params, headers=headers))
-            if status is not None:
-                self.assertEqual(rv.status_code, status)
-            return rv
-
-            
-    class BasicDashValidator(DashValidator):
-        def __init__(self, url, options):
-            super(BasicDashValidator, self).__init__(url, RequestsHttpClient(), options=options)
-            self.representations = {}
-            self.url = url
-
-        def get_representation_info(self, rep):
-            try:
-                return self.representations[rep.unique_id()]
-            except KeyError:
-                pass
-            timescale = int(rep.template.get('timescale', '1'), 10)
-            num_segments = None
-            duration = rep.parent.parent.duration
-            if duration is None:
-                duration = rep.mpd.duration
-            if duration is not None:
-                seg_dur = int(rep.template.get('duration', '1'), 10)
-                num_segments = int(math.floor(duration.total_seconds() * timescale / seg_dur))
-            return RepresentationInfo(encrypted=False, timescale=timescale, num_segments=num_segments)
-
-        def set_representation_info(self, representation, info):
-            self.representations[representation.unique_id()] = info
-
+def main():
     parser = argparse.ArgumentParser(description='DASH live manifest validator')
     parser.add_argument('--strict', action='store_true', dest='strict',
                         help='Abort if an error is detected')
@@ -1090,3 +1113,6 @@ if __name__ == "__main__":
                     err_file.write(str(err)+'\n')
             if args.strict:
                 raise
+
+if __name__ == "__main__":
+    main()

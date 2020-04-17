@@ -54,11 +54,11 @@ except KeyError:
 
 FORMAT = r"%(asctime)-15s:%(levelname)s:%(filename)s@%(lineno)d: %(message)s"
 logging.basicConfig(format=FORMAT)
-        
+
 if len(sys.argv)>2:
     os.environ["TESTS"] = ','.join(sys.argv[2:])
-    runner.main(gae_sdk, "tests", sys.argv[1])
+    runner.main(gae_sdk, "dashlive/tests", sys.argv[1])
 elif len(sys.argv)>1:
-    runner.main(gae_sdk, "tests", sys.argv[1])
+    runner.main(gae_sdk, "dashlive/tests", sys.argv[1])
 else:
-    runner.main(gae_sdk, "tests", "*_test.py")
+    runner.main(gae_sdk, "dashlive/tests", "*_test.py")

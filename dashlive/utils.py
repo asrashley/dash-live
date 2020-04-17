@@ -1,3 +1,9 @@
+from __future__ import division
+from __future__ import print_function
+from builtins import str
+from past.builtins import basestring
+from past.utils import old_div
+from builtins import object
 #############################################################################
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -114,12 +120,12 @@ class BufferedReader(io.RawIOBase):
 
     def cache(self, bucket):
         #print('cache', bucket)
-        if self.buffers.has_key(bucket):
+        if bucket in self.buffers:
             return
         if self.num_buffers == self.max_buffers:
             remove = None
             oldest = None
-            for k,v in self.buffers.iteritems():
+            for k,v in self.buffers.items():
                 if remove is None or v.timestamp < oldest:
                     remove = k
                     oldest = v.timestamp
@@ -197,10 +203,10 @@ def toIsoDuration(secs):
         secs = float(secs)
     elif isinstance(secs, datetime.timedelta):
         secs = secs.total_seconds()
-    hrs = math.floor(secs/3600)
+    hrs = math.floor(old_div(secs,3600))
     rv=['PT']
     secs %= 3600
-    mins = math.floor(secs/60)
+    mins = math.floor(old_div(secs,60))
     secs %= 60
     if hrs:
         rv.append('%dH'%hrs)
@@ -307,7 +313,7 @@ def toHtmlString(item, className=None):
             rv='<table class="%s">'%className
         else:
             rv='<table>'
-        for key,val in item.iteritems():
+        for key,val in item.items():
             rv.append('<tr><td>%s</td><td>%s</td></tr>'%(str(key),toHtmlString(val)))
         rv.append('</table>')
         rv = '\n'.join(rv)
@@ -353,7 +359,7 @@ def flatten(items, convert_numbers=False):
             item = toIsoDateTime(item)
         elif isinstance(item,(datetime.timedelta)):
             item = toIsoDuration(item)
-        elif convert_numbers and isinstance(item,long):
+        elif convert_numbers and isinstance(item,int):
             item = '%d'%item
         elif isinstance(item,decimal.Decimal):
             item = float(item)
@@ -385,16 +391,16 @@ def as_python(value):
         value = value.toJSON()
         wrap_strings = False
     if isinstance(value, (list, tuple)):
-        items = map(lambda v: as_python(v), list(value))
+        items = [as_python(v) for v in list(value)]
         try:
             value = '[{0}]'.format(','.join(items))
         except TypeError:
-            print items
+            print(items)
             raise
     elif isinstance(value, (dict)):
         items = []
         clz = value.get('_type', None)
-        for k, v in value.iteritems():
+        for k, v in value.items():
             if k == '_type':
                 continue
             if clz is None:
@@ -445,8 +451,8 @@ def scale_timedelta(delta, num, denom):
     """Scale the given timedelta, avoiding overflows"""
     secs = num * delta.seconds
     msecs = num* delta.microseconds
-    secs += msecs / 1000000.0
-    return secs / denom
+    secs += old_div(msecs, 1000000.0)
+    return old_div(secs, denom)
 
 def toBase64(value):
     return base64.b64encode(value)
