@@ -103,8 +103,8 @@ class PlayReady(object):
         dword = ''.join([guid[6:8], guid[4:6],guid[2:4],guid[0:2]])
         word1 = ''.join([guid[10:12], guid[8:10]])
         word2 = ''.join([guid[14:16], guid[12:14]])
-        # looking at example streams, word 3 appears to be in big endian format! 
-        word3 = ''.join([guid[16:18], guid[18:20]]) 
+        # looking at example streams, word 3 appears to be in big endian format!
+        word3 = ''.join([guid[16:18], guid[18:20]])
         result = '-'.join([dword, word1, word2, word3, guid[20:]])
         assert len(result) == 36
         if raw == True:
@@ -296,12 +296,12 @@ if __name__ == "__main__":
     import sys
     import utils
 
-    PR_ID = PlayReady.SYSTEM_ID.replace('-','').lower()
+    #PR_ID = PlayReady.SYSTEM_ID.replace('-','').lower()
 
     def show_pssh(atom):
         if atom.atom_type=='pssh':
             print(atom)
-            if atom.system_id == PR_ID:
+            if atom.system_id == PlayReady.RAW_SYSTEM_ID:
                 pro = PlayReady.parse_pro(utils.BufferedReader(None, data=atom.data))
                 print(pro)
         else:

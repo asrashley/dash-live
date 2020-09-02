@@ -322,7 +322,7 @@ class Mp4Atom(NamedObject):
             self._invalidate()
             return
         object.__setattr__(self, name, value)
-            
+
     def __delattr__(self, name):
         if self._fields.has_key(name):
             raise AttributeError('Unable to delete field {} '.format(name))
@@ -331,7 +331,7 @@ class Mp4Atom(NamedObject):
                 self.remove_child(idx)
                 return
         raise AttributeError(name)
-        
+
     def _field_repr(self, exclude):
         fields = []
         if not self.include_atom_type:
@@ -402,7 +402,7 @@ class Mp4Atom(NamedObject):
         if child.size:
             self.size += child.size
         self._invalidate()
-        
+
     @classmethod
     def create(cls, src, parent=None, options=None):
         assert src is not None
@@ -464,7 +464,7 @@ class Mp4Atom(NamedObject):
                                     atom.atom_type, atom.size, src.tell()-atom.position)
             cursor += atom.size
         return rv
-        
+
     @classmethod
     def parse(cls, src, parent, options=None, **kwargs):
         try:
@@ -547,10 +547,13 @@ class Mp4Atom(NamedObject):
     @abstractmethod
     def encode_fields(self, dest):
         pass
-    
+
     def dump(self, indent=''):
+        atom_type = self.atom_type
+        if len(atom_type) != 4:
+            atom_type = 'UUID(' + atom_type.encode('hex') + ')'
         print('{}{}: {:d} -> {:d} [{:d} bytes]'.format(indent,
-                                                       self.atom_type,
+                                                       atom_type,
                                                        self.position,
                                                        self.position + self.size,
                                                        self.size))
@@ -1322,7 +1325,7 @@ class TrackFragmentHeaderBox(FullBox):
         #default base offset = first byte of moof
         if self.base_data_offset is None:
             self.base_data_offset= self.find_atom('moof').position
-        
+
     @classmethod
     def parse(clz, src, parent, **kwargs):
         rv = FullBox.parse(src, parent, **kwargs)
@@ -1523,7 +1526,7 @@ class MovieFragmentHeaderBox(FullBox):
     def encode_fields(self, dest):
         super(MovieFragmentHeaderBox, self).encode_fields(dest)
         dest.write(struct.pack('>I', self.sequence_number))
-    
+
 MP4_BOXES['mfhd'] = MovieFragmentHeaderBox
 
 class HandlerBox(FullBox):
