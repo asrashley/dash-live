@@ -1037,15 +1037,16 @@ if __name__ == "__main__":
                 return self.representations[rep.unique_id()]
             except KeyError:
                 pass
-            timescale = int(rep.template.get('timescale', '1'), 10)
+            timescale = rep.segmentTemplate.timescale
             num_segments = None
             duration = rep.parent.parent.duration
             if duration is None:
-                duration = rep.mpd.duration
+                duration = rep.mpd.mediaPresentationDuration
             if duration is not None:
-                seg_dur = int(rep.template.get('duration', '1'), 10)
+                seg_dur = rep.segmentTemplate.duration
                 num_segments = int(math.floor(duration.total_seconds() * timescale / seg_dur))
-            return RepresentationInfo(encrypted=False, timescale=timescale, num_segments=num_segments)
+            return RepresentationInfo(encrypted=False, timescale=timescale,
+                                      num_segments=num_segments)
 
         def set_representation_info(self, representation, info):
             self.representations[representation.unique_id()] = info
