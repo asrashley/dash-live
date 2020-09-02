@@ -489,7 +489,9 @@ class RequestHandler(webapp2.RequestHandler):
             audio['representations'][0].role='main'
         else:
             for rep in audio['representations']:
-                if rep.codecs.startswith(self.request.params.get('main_audio','mp4a')):
+                if self.request.params.get('main_audio', None) == rep.id:
+                    rep.role='main'
+                elif rep.codecs.startswith(self.request.params.get('main_audio','mp4a')):
                     rep.role='main'
                 else:
                     rep.role='alternate'

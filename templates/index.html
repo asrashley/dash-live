@@ -40,11 +40,11 @@
       <tr class="play-row"><td colspan="2" id="play-cell">
           <div id="play-button" class="disabled" >
             <a class="button play-icon"><span class="fa fa-play icon"></span></a>
-			<select name="stream" class="play-select">
-			{% for stream in streams %}
-			<option value="{{stream.prefix}}">Play {{stream.title}}</option>
-			{% endfor %}
-			</select>
+            <select name="stream" class="play-select">
+            {% for stream in streams %}
+            <option value="{{stream.prefix}}">Play {{stream.title}}</option>
+            {% endfor %}
+            </select>
           </div>
       </td></tr>
     </tbody>
@@ -193,8 +193,8 @@
                 manifest request ocurs between &lt;time&gt; and &lt;time&gt;+&lt;minimumUpdatePeriod&gt;</td>
                 <td>&check;</td><td>&cross;</td><td>&cross;</td>
             </tr>
-            <tr><td>main_audio=(mp4a|ec-3)</td><td>Select audio AdaptationSet that will
-            be given the &quot;main&quot; role (AAC or E-AC3)</td>
+            <tr><td>main_audio=(mp4a|ec-3|&lt;id&gt;)</td><td>Select audio AdaptationSet that will
+            be given the &quot;main&quot; role (AAC, E-AC3 or ID of stream)</td>
                 <td>&check;</td><td>&cross;</td><td>&cross;</td>
             </tr>
             <tr><td>mup=&lt;number&gt;</td><td>Specify minimumUpdatePeriod (in seconds) or -1 to disable updates</td>
