@@ -229,8 +229,16 @@ class RequestHandler(webapp2.RequestHandler):
         marlin_la_url = None
         playready_la_url = None
         if stream is not None:
-            marlin_la_url = stream.marlin_la_url
-            playready_la_url = stream.playready_la_url
+            marlin_la_url = self.request.params.get('marlin_la_url')
+            if marlin_la_url is None:
+                marlin_la_url = stream.marlin_la_url
+            else:
+                marlin_la_url = urllib.unquote_plus(marlin_la_url)
+            playready_la_url = self.request.params.get('playready_la_url')
+            if playready_la_url is None:
+                playready_la_url = stream.playready_la_url
+            else:
+                playready_la_url = urllib.unquote_plus(playready_la_url)
         mspr = drm.PlayReady(templates, la_url=playready_la_url)
         ck = drm.ClearKey(templates)
         rv = {
@@ -540,23 +548,25 @@ class RequestHandler(webapp2.RequestHandler):
             timeSource['url']= urlparse.urljoin(self.request.host_url,
                                                 self.uri_for('time',format=timeSource['format']))
         rv["timeSource"] = timeSource
-        v_cgi_params = []
-        a_cgi_params = []
+        v_cgi_params = {}
+        a_cgi_params = {}
         m_cgi_params = copy.deepcopy(dict(self.request.params))
-        if self.request.params.get('drm', 'none') != 'none':
-            v_cgi_params.append('drm={}'.format(self.request.params.get('drm')))
-            a_cgi_params.append('drm={}'.format(self.request.params.get('drm')))
-        if self.request.params.get('start'):
-            v_cgi_params.append('start=%s'%utils.toIsoDateTime(availabilityStartTime))
-            a_cgi_params.append('start=%s'%utils.toIsoDateTime(availabilityStartTime))
-            m_cgi_params['start'] = utils.toIsoDateTime(availabilityStartTime)
+        for param in ['drm', 'marlin_la_url', 'playready_la_url', 'start']:
+            value = self.request.params.get(param)
+            if value is None or (param == 'drm' and value == 'none'):
+                continue
+            if param == 'start':
+                value = utils.toIsoDateTime(availabilityStartTime)
+            v_cgi_params[param] = value
+            a_cgi_params[param] = value
+            m_cgi_params[param] = value
         if clockDrift:
             rv["timeSource"]['url'] += '?drift=%d'%clockDrift
-            v_cgi_params.append('drift=%d'%clockDrift)
-            a_cgi_params.append('drift=%d'%clockDrift)
+            v_cgi_params['drift'] = str(clockDrift)
+            a_cgi_params['drift'] = str(clockDrift)
         if mode=='live' and timeShiftBufferDepth != self.DEFAULT_TIMESHIFT_BUFFER_DEPTH:
-            v_cgi_params.append('depth=%d'%timeShiftBufferDepth)
-            a_cgi_params.append('depth=%d'%timeShiftBufferDepth)
+            v_cgi_params['depth'] = str(timeShiftBufferDepth)
+            a_cgi_params['depth'] = str(timeShiftBufferDepth)
         for code in self.INJECTED_ERROR_CODES:
             if self.request.params.get('v%03d'%code) is not None:
                 times = self.calculate_injected_error_segments(self.request.params.get('v%03d'%code), \
@@ -564,45 +574,51 @@ class RequestHandler(webapp2.RequestHandler):
                                                                timeShiftBufferDepth, \
                                                                video['representations'][0])
                 if times:
-                    v_cgi_params.append('%03d=%s'%(code,times))
+                    v_cgi_params['%03d'%(code)] = times
             if self.request.params.get('a%03d'%code) is not None:
                 times = self.calculate_injected_error_segments(self.request.params.get('a%03d'%code), \
                                                                now, availabilityStartTime, \
                                                                timeShiftBufferDepth, \
                                                                audio['representations'][0])
                 if times:
-                    a_cgi_params.append('%03d=%s'%(code,times))
+                    a_cgi_params['%03d'%(code)] = times
         if self.request.params.get('vcorrupt') is not None:
             segs = self.calculate_injected_error_segments(self.request.params.get('vcorrupt'), \
                                                           now, availabilityStartTime, \
                                                           timeShiftBufferDepth, \
                                                           video['representations'][0])
             if segs:
-                v_cgi_params.append('corrupt=%s'%(segs))
+                v_cgi_params['corrupt'] = segs
         try:
             updateCount = int(self.request.params.get('update','0'),10)
             m_cgi_params['update']=str(updateCount+1)
         except ValueError:
             pass
-        if v_cgi_params:
-            rv["video"]['mediaURL'] += '?' + '&'.join(v_cgi_params)
-            if mode != 'odvod':
-                rv["video"]['initURL'] += '?' + '&'.join(v_cgi_params)
-        if a_cgi_params:
-            rv["audio"]['mediaURL'] += '?' + '&'.join(a_cgi_params)
-            if mode != 'odvod':
-                rv["audio"]['initURL'] += '?' + '&'.join(a_cgi_params)
+        rv["video"]['mediaURL'] += self.dict_to_cgi_params(v_cgi_params)
+        rv["audio"]['mediaURL'] += self.dict_to_cgi_params(a_cgi_params)
+        if mode != 'odvod':
+            rv["video"]['initURL'] += self.dict_to_cgi_params(v_cgi_params)
+            rv["audio"]['initURL'] += self.dict_to_cgi_params(a_cgi_params)
         if m_cgi_params:
-            lst = []
-            for k,v in m_cgi_params.iteritems():
-                lst.append('%s=%s'%(k,v))
             locationURL = self.request.uri
             if '?' in locationURL:
                 locationURL = locationURL[:self.request.uri.index('?')]
-            locationURL = locationURL + '?' + '&'.join(lst)
+            locationURL = locationURL + self.dict_to_cgi_params(m_cgi_params)
             rv["locationURL"] = locationURL
         return rv
 
+    @staticmethod
+    def dict_to_cgi_params(params):
+        """
+        Convert dictionary into a CGI parameter string
+        """
+        lst = []
+        for k,v in params.iteritems():
+            lst.append('%s=%s'%(k,v))
+        if lst:
+            return '?' + '&'.join(lst)
+        return ''
+    
     def add_allowed_origins(self):
         try:
             if self.ALLOWED_DOMAINS.search(self.request.headers['Origin']):

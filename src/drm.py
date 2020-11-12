@@ -257,7 +257,7 @@ class PlayReady(object):
                 record['PlayReadyHeader'] = prh.decode('utf-16')
                 record['xml'] = ElementTree.parse(StringIO.StringIO(record['PlayReadyHeader']))
             objects.append(record)
-        return record
+        return objects
 
     def generate_pssh(self, representation, keys):
         """Generate a PlayReady Object (PRO) inside a PSSH box"""

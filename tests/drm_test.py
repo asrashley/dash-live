@@ -141,7 +141,7 @@ class PlayreadyTests(unittest.TestCase):
         representation = Representation(id='V1', default_kid=self.keys.keys()[0])
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64('Xy6jKG4PJSY=')
         e_pro = PlayReady.parse_pro(utils.BufferedReader(None, data=base64.b64decode(self.expected_pro)))
-        xml = e_pro['xml']
+        xml = e_pro[0]['xml']
         self.assertEqual(xml.getroot().get("version"),
                          '{:02.1f}.0.0'.format(mspr.version))
         algid = xml.findall('./prh:DATA/prh:PROTECTINFO/prh:ALGID', self.namespaces)
@@ -180,15 +180,17 @@ class PlayreadyTests(unittest.TestCase):
         self.assertEqual(atoms[0].system_id, PlayReady.RAW_SYSTEM_ID)
         self.assertEqual(atoms[0].data.encode('hex'), expected_pro.encode('hex'))
         actual_pro = mspr.parse_pro(utils.BufferedReader(None, data=atoms[0].data))
-        self.assertEqual(actual_pro['xml'].getroot().get("version"),
+        self.assertEqual(actual_pro[0]['xml'].getroot().get("version"),
                          '{:02.1f}.0.0'.format(mspr.version))
-        algid = actual_pro['xml'].findall('./prh:DATA/prh:PROTECTINFO/prh:ALGID', self.namespaces)
+        algid = actual_pro[0]['xml'].findall('./prh:DATA/prh:PROTECTINFO/prh:ALGID',
+                                             self.namespaces)
         self.assertEqual(len(algid), 1)
         self.assertEqual(algid[0].text, "AESCTR")
-        keylen = actual_pro['xml'].findall('./prh:DATA/prh:PROTECTINFO/prh:KEYLEN', self.namespaces)
+        keylen = actual_pro[0]['xml'].findall('./prh:DATA/prh:PROTECTINFO/prh:KEYLEN',
+                                              self.namespaces)
         self.assertEqual(len(keylen), 1)
         self.assertEqual(keylen[0].text, "16")
-        kid = actual_pro['xml'].findall('./prh:DATA/prh:KID', self.namespaces)
+        kid = actual_pro[0]['xml'].findall('./prh:DATA/prh:KID', self.namespaces)
         self.assertEqual(len(kid), 1)
         guid = PlayReady.hex_to_le_guid(self.keys.keys()[0], raw=False)
         self.assertEqual(base64.b64decode(kid[0].text).encode('hex'), guid.replace('-',''))
@@ -212,9 +214,9 @@ class PlayreadyTests(unittest.TestCase):
             print atoms[0].key_ids
         self.assertEqual(atoms[0].system_id, PlayReady.RAW_SYSTEM_ID)
         actual_pro = mspr.parse_pro(utils.BufferedReader(None, data=atoms[0].data))
-        self.assertEqual(actual_pro['xml'].getroot().get("version"),
+        self.assertEqual(actual_pro[0]['xml'].getroot().get("version"),
                          '{:02.1f}.0.0'.format(mspr.version))
-        kid = actual_pro['xml'].findall('./prh:DATA/prh:PROTECTINFO/prh:KID', self.namespaces)
+        kid = actual_pro[0]['xml'].findall('./prh:DATA/prh:PROTECTINFO/prh:KID', self.namespaces)
         self.assertEqual(len(kid), 1)
         self.assertEqual(kid[0].get("ALGID"), "AESCTR")
         self.assertEqual(kid[0].get("CHECKSUM"), 'Xy6jKG4PJSY=')
@@ -241,10 +243,10 @@ class PlayreadyTests(unittest.TestCase):
         self.assertEqual(len(atoms[0].key_ids), len(keys))
         self.assertEqual(atoms[0].system_id, PlayReady.RAW_SYSTEM_ID)
         actual_pro = mspr.parse_pro(utils.BufferedReader(None, data=atoms[0].data))
-        self.assertEqual(actual_pro['xml'].getroot().get("version"),
+        self.assertEqual(actual_pro[0]['xml'].getroot().get("version"),
                          '{:02.1f}.0.0'.format(mspr.version))
-        kids = actual_pro['xml'].findall('./prh:DATA/prh:PROTECTINFO/prh:KIDS/prh:KID',
-                                         self.namespaces)
+        kids = actual_pro[0]['xml'].findall('./prh:DATA/prh:PROTECTINFO/prh:KIDS/prh:KID',
+                                            self.namespaces)
         guid_map = {}
         for keypair in keys.values():
             guid = PlayReady.hex_to_le_guid(keypair.KID.raw, raw=True)
