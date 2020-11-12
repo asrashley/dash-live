@@ -116,7 +116,7 @@ class DashMediaCreator(object):
             aspect = float(n) / float(d)
         else:
             aspect = float(self.options.aspect)
-        height = int(float(height) / aspect)
+        height = 4 * (int(float(height) / aspect) // 4)
         print "{}: {}x{} {}Kbps".format(dest, width, height, bitrate)
         profile="baseline"
         cbr=(bitrate *10) // 12
