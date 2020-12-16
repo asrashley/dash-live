@@ -2103,14 +2103,18 @@ if __name__ == "__main__":
     ap.add_argument('--json', action="store_true")
     ap.add_argument('-s', '--show', help='Show contents of specified atom')
     ap.add_argument('-t', '--tree', action="store_true", help='Show atom tree')
-    ap.add_argument('--ivsize', type=int, help='IV size')
+    ap.add_argument('--ivsize', type=int, help='IV size (in bits or bytes)')
     ap.add_argument('mp4file', help='Filename of MP4 file', nargs='+', default=None)
     args = ap.parse_args()
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
     options = Options()
     if args.ivsize:
-        options.iv_size = args.ivsize
+        if args.ivsize > 16:
+            # user has provided IV size in bits
+            options.iv_size = args.ivsize // 8
+        else:
+            options.iv_size = args.ivsize
     for filename in args.mp4file:
         parser = IsoParser()
         atoms = parser.walk_atoms(filename, options=options)
