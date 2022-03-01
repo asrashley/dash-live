@@ -165,8 +165,8 @@ $(document).ready(function(){
             method: 'GET',
             dataType: 'json',
         }).done(function(result) {
+            var i;
             if(result.error) {
-              var i;
               dialog.find('.modal-body .error').text(result.error);
             } else {
                 dialog.find(".modal-body").html('<p>Indexing ' +
