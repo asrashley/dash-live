@@ -53,7 +53,9 @@ from webapp2_extras import security
 from webapp2_extras.appengine.users import login_required, admin_required
 
 from routes import routes
-import drm, mp4, utils, models, settings, manifests, options, segment
+import mp4, utils, models, settings, manifests, options, segment
+from drm.clearkey import ClearKey
+from drm.playready import PlayReady
 from webob import exc
 
 templates = jinja2.Environment(
@@ -239,8 +241,8 @@ class RequestHandler(webapp2.RequestHandler):
                 playready_la_url = stream.playready_la_url
             else:
                 playready_la_url = urllib.unquote_plus(playready_la_url)
-        mspr = drm.PlayReady(templates, la_url=playready_la_url)
-        ck = drm.ClearKey(templates)
+        mspr = PlayReady(templates, la_url=playready_la_url)
+        ck = ClearKey(templates)
         rv = {
             'playready': {
                 'laurl': playready_la_url,
@@ -1140,7 +1142,7 @@ class VideoPlayer(RequestHandler):
             keys = context['dash']['keys']
             for kid in keys.keys():
                 item = keys[kid].toJSON()
-                item['guidKid'] = drm.PlayReady.hex_to_le_guid(keys[kid].hkid, raw=False)
+                item['guidKid'] = PlayReady.hex_to_le_guid(keys[kid].hkid, raw=False)
                 item['b64Key'] = keys[kid].KEY.b64
                 keys[kid] = item
         params=[]
@@ -1318,7 +1320,7 @@ class MediaHandler(RequestHandler):
         }
         context['drm'] = {
             'playready': {
-                'laurl': drm.PlayReady.TEST_LA_URL
+                'laurl': PlayReady.TEST_LA_URL
             },
             'marlin': {
                 'laurl': ''
@@ -1422,7 +1424,7 @@ class KeyHandler(RequestHandler):
             if key:
                 key = models.KeyMaterial(key)
             else:
-                key = models.KeyMaterial(raw=drm.PlayReady.generate_content_key(kid.raw))
+                key = models.KeyMaterial(raw=PlayReady.generate_content_key(kid.raw))
                 computed = True
             keypair = models.Key.query(models.Key.hkid==kid.hex).get()
             if keypair:

@@ -34,48 +34,7 @@ from Crypto.Hash import SHA256
 
 import mp4
 
-class KeyMaterial(object):
-    length = 16
-
-    def __init__(self, value=None, hex=None, b64=None, raw=None):
-        if value is not None:
-            if len(value) == 16:
-                self.raw = value
-            elif re.match(r'^(0x)?[0-9a-f-]+$', value, re.IGNORECASE):
-                if value.startswith('0x'):
-                    value = value[2:]
-                self.raw = binascii.unhexlify(value.replace('-',''))
-            else:
-                self.raw = base64.b64decode(value)
-        elif raw is not None:
-            self.raw = raw
-        elif hex is not None:
-            self.raw = binascii.unhexlify(hex.replace('-',''))
-        elif b64 is not None:
-            self.raw = binascii.a2b_base64(b64)
-        else:
-            raise ValueError("One of value, hex, b64 or raw must be provided")
-        if len(self.raw) != self.length:
-            raise ValueError("Size {} is invalid".format(len(self.raw)))
-
-    def to_hex(self):
-        return binascii.b2a_hex(self.raw)
-
-    def from_hex(self, value):
-        self.raw = value.replace('-','').decode('hex')
-
-    hex = property(to_hex, from_hex)
-
-    def to_base64(self):
-        return base64.b64encode(self.raw)
-
-    def from_base64(self, value):
-        self.raw = base64.b64decode(value)
-
-    b64 = property(to_base64, from_base64)
-
-    def __len__(self):
-        return self.length
+from keymaterial import KeyMaterial
 
 class PlayReady(object):
     SYSTEM_ID = "9a04f079-9840-4286-ab92-e65be0885f95"
@@ -272,44 +231,3 @@ class PlayReady(object):
                                                 key_ids=keys,
                                                 data=pro)
 
-
-class ClearKey(object):
-    MPD_SYSTEM_ID = "e2719d58-a985-b3c9-781a-b030af78d30e"
-    PSSH_SYSTEM_ID = "1077efec-c0b2-4d02-ace3-3c1e52e2fb4b"
-
-    def __init__(self, templates):
-        self.templates = templates
-
-    def generate_pssh(self, representation, keys):
-        """Generate a Clearkey PSSH box"""
-        # see https://www.w3.org/TR/eme-initdata-cenc/
-        if isinstance(keys, dict):
-            keys = keys.keys()
-        keys = map(lambda k: KeyMaterial(k).raw, keys)
-        return mp4.ContentProtectionSpecificBox(version=1, flags=0,
-                                                system_id=self.PSSH_SYSTEM_ID,
-                                                key_ids=keys,
-                                                data=None
-        )
-
-if __name__ == "__main__":
-    import sys
-    import utils
-
-    #PR_ID = PlayReady.SYSTEM_ID.replace('-','').lower()
-
-    def show_pssh(atom):
-        if atom.atom_type=='pssh':
-            print(atom)
-            if atom.system_id == PlayReady.RAW_SYSTEM_ID:
-                pro = PlayReady.parse_pro(utils.BufferedReader(None, data=atom.data))
-                print(pro)
-        else:
-            for child in atom.children:
-                show_pssh(child)
-
-    for filename in sys.argv[1:]:
-        parser = mp4.IsoParser()
-        atoms = parser.walk_atoms(filename)
-        for atom in atoms:
-            show_pssh(atom)

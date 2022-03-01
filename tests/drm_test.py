@@ -33,7 +33,9 @@ _src = os.path.join(os.path.dirname(__file__),"..", "src")
 if not _src in sys.path:
     sys.path.append(_src)
 
-from drm import KeyMaterial, PlayReady, ClearKey
+from drm.keymaterial import KeyMaterial
+from drm.playready import PlayReady
+from drm.clearkey import ClearKey
 import mp4
 from segment import Representation
 import utils

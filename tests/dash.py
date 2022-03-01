@@ -16,7 +16,7 @@ _src = os.path.join(os.path.dirname(__file__),"..", "src")
 if not _src in sys.path:
     sys.path.append(_src)
 
-import drm
+from drm.playready import PlayReady
 import mp4
 import utils
 import mixins
@@ -894,8 +894,8 @@ class InitSegment(DashElement):
                 pssh = moov.pssh
                 #print pssh
                 self.assertEqual(len(pssh.system_id), 16)
-                if pssh.system_id == drm.PlayReady.RAW_SYSTEM_ID:
-                    for pro in drm.PlayReady.parse_pro(utils.BufferedReader(None, data=pssh.data)):
+                if pssh.system_id == PlayReady.RAW_SYSTEM_ID:
+                    for pro in PlayReady.parse_pro(utils.BufferedReader(None, data=pssh.data)):
                         version = pro['xml'].getroot().get("version")
                         self.assertIn(version, ["4.0.0.0", "4.1.0.0", "4.2.0.0"])
             except (AttributeError) as ae:

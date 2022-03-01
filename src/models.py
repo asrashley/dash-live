@@ -4,7 +4,7 @@ from google.appengine.ext import ndb
 from google.appengine.api import search
 from google.appengine.ext.blobstore import blobstore
 
-from drm import KeyMaterial
+from drm.keymaterial import KeyMaterial
 from segment import Representation
 import utils
 
