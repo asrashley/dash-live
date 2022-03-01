@@ -77,6 +77,7 @@ class DashElement(mixins.TestCaseMixin):
         'mspr': 'urn:microsoft:playready',
 	'scte35': "http://www.scte.org/schemas/35/2016",
         'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+        'prh': 'http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader',
     }
 
     attributes = []
@@ -113,7 +114,7 @@ class DashElement(mixins.TestCaseMixin):
         self.parse_attributes(elt, self.attributes)
 
     def parse_attributes(self, elt, attributes):
-        for name, conv, dflt in self.attributes:
+        for name, conv, dflt in attributes:
             if ':' in name:
                 ns, nm = name.split(':')
                 name = nm
@@ -527,6 +528,15 @@ class SegmentURL(DashElement):
         self.assertIsNotNone(self.index)
 
 
+class DescriptorElement(object):
+    def __init__(self, elt):
+        self.attributes = elt.attrib
+        self.tag = elt.tag
+        self.children = []
+        self.text = elt.text
+        for child in elt:
+            self.children.append(DescriptorElement(child))
+            
 class Descriptor(DashElement):
     attributes = [
         ('schemeIdUri', str, None),
@@ -535,7 +545,9 @@ class Descriptor(DashElement):
 
     def __init__(self, elt, parent):
         super(Descriptor, self).__init__(elt, parent)
-        #TODO: copy innerXML
+        self.children = []
+        for child in elt:
+            self.children.append(DescriptorElement(child))
 
     def validate(self, depth=-1):
         self.assertIsNotNone(self.schemeIdUri)
@@ -883,10 +895,9 @@ class InitSegment(DashElement):
                 #print pssh
                 self.assertEqual(len(pssh.system_id), 16)
                 if pssh.system_id == drm.PlayReady.RAW_SYSTEM_ID:
-                    pro = drm.PlayReady.parse_pro(utils.BufferedReader(None, data=pssh.data))
-                    #print pro
-                    version = pro['xml'].getroot().get("version")
-                    self.assertIn(version, ["4.0.0.0", "4.1.0.0", "4.2.0.0"])
+                    for pro in drm.PlayReady.parse_pro(utils.BufferedReader(None, data=pssh.data)):
+                        version = pro['xml'].getroot().get("version")
+                        self.assertIn(version, ["4.0.0.0", "4.1.0.0", "4.2.0.0"])
             except (AttributeError) as ae:
                 if 'moov' in self.url:
                     if 'playready' in self.url or 'clearkey' in self.url:

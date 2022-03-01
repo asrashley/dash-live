@@ -116,7 +116,7 @@ class DashMediaCreator(object):
             aspect = float(n) / float(d)
         else:
             aspect = float(self.options.aspect)
-        height = int(float(height) / aspect)
+        height = 4 * (int(float(height) / aspect) // 4)
         print "{}: {}x{} {}Kbps".format(dest, width, height, bitrate)
         profile="baseline"
         cbr=(bitrate *10) // 12
@@ -171,6 +171,8 @@ class DashMediaCreator(object):
             "-t", str(self.options.duration),
             "-threads", "0",
         ]
+        if self.options.framerate:
+            ffmpeg_args += ["-r", str(self.options.framerate)]
         if first:
             ffmpeg_args += [
 	        "-codec:a:0", "aac",
@@ -392,8 +394,8 @@ class DashMediaCreator(object):
         # MP4Box does not appear to be able to encrypt and fragment in one
         # stage, so first encrypt the media and then fragment it afterwards
         args = ["MP4Box", "-crypt", xmlfile, "-out", moov_filename]
-        if fps:
-            args += ["-fps", str(fps)]
+        if self.options.framerate:
+            args += ["-fps", str(self.options.framerate)]
         args.append(source)
         print(args)
         rv = subprocess.check_call(args)
