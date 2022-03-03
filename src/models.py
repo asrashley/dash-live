@@ -115,6 +115,8 @@ class Key(ndb.Model):
                               validator=kid_validator)
     hkey = ndb.StringProperty(required=True, verbose_name='Content encryption key')
     computed = ndb.BooleanProperty(verbose_name='computed')
+    halg = ndb.StringProperty(required=False, indexed=False, default=None,
+                              verbose_name='Encryption algorithm')
 
     @property
     def KID(self):
@@ -123,6 +125,12 @@ class Key(ndb.Model):
     @property
     def KEY(self):
         return KeyMaterial(self.hkey)
+
+    @property
+    def ALG(self):
+        if self.halg is None:
+            return "AESCTR"
+        return self.halg
 
     @classmethod
     def get_kids(clz, kids):
@@ -153,5 +161,6 @@ class Key(ndb.Model):
         return {
             'kid': self.hkid,
             'key': self.hkey,
+            'alg': self.ALG,
             'computed': self.computed,
         }

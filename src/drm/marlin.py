@@ -21,25 +21,22 @@
 #############################################################################
 
 from drm.base import DrmBase
-from drm.keymaterial import KeyMaterial
-from mp4 import ContentProtectionSpecificBox
 
-class ClearKey(DrmBase):
-    MPD_SYSTEM_ID = "e2719d58-a985-b3c9-781a-b030af78d30e"
-    PSSH_SYSTEM_ID = "1077efec-c0b2-4d02-ace3-3c1e52e2fb4b"
-
-    def dash_scheme_id(self):
-        return "urn:uuid:{0}".format(self.MPD_SYSTEM_ID)
+class Marlin(DrmBase):
+    MPD_SYSTEM_ID = '5e629af5-38da-4063-8977-97ffbd9902d4'
     
     def generate_pssh(self, representation, keys):
-        """Generate a Clearkey PSSH box"""
-        # see https://www.w3.org/TR/eme-initdata-cenc/
-        if isinstance(keys, dict):
-            keys = keys.keys()
-        keys = map(lambda k: KeyMaterial(k).raw, keys)
-        return ContentProtectionSpecificBox(version=1, flags=0,
-                                            system_id=self.PSSH_SYSTEM_ID,
-                                            key_ids=keys,
-                                            data=None
-        )
+        raise RuntimeError('generate_pssh has not been implemented for Marlin')
+        
+    def dash_scheme_id(self):
+        """
+        Returns the DASH schemeIdUri for Marlin
+        """
+        return "urn:uuid:{0}".format(self.MPD_SYSTEM_ID)
 
+    @classmethod
+    def is_supported_scheme_id(cls, uri):
+        if not uri.startswith("urn:uuid:"):
+            return False
+        return uri[9:].lower() == cls.SYSTEM_ID
+        

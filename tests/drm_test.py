@@ -41,9 +41,10 @@ from segment import Representation
 import utils
 
 class KeyStub(object):
-    def __init__(self, kid, key):
+    def __init__(self, kid, key, alg=None):
         self.KID = KeyMaterial(hex=kid)
         self.KEY = KeyMaterial(hex=key)
+        self.ALG = 'AESCTR' if alg is None else alg
         self.computed = False
 
 class PlayreadyTests(unittest.TestCase):
@@ -117,7 +118,7 @@ class PlayreadyTests(unittest.TestCase):
 
     def test_wrm_generation(self):
         self.maxDiff = None
-        mspr = PlayReady(self.templates, la_url=self.la_url, version=4.0)
+        mspr = PlayReady(self.templates, la_url=self.la_url, version=2.0, header_version=4.0)
         representation = Representation(id='V1', default_kid=self.keys.keys()[0])
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64('Xy6jKG4PJSY=')
         wrm = mspr.generate_wrmheader(representation, self.keys)
@@ -132,20 +133,23 @@ class PlayreadyTests(unittest.TestCase):
     expected_pro = r'VAMAAAEAAQBKAzwAVwBSAE0ASABFAEEARABFAFIAIAB4AG0AbABuAHMAPQAiAGgAdAB0AHAAOgAvAC8AcwBjAGgAZQBtAGEAcwAuAG0AaQBjAHIAbwBzAG8AZgB0AC4AYwBvAG0ALwBEAFIATQAvADIAMAAwADcALwAwADMALwBQAGwAYQB5AFIAZQBhAGQAeQBIAGUAYQBkAGUAcgAiACAAdgBlAHIAcwBpAG8AbgA9ACIANAAuADAALgAwAC4AMAAiAD4APABEAEEAVABBAD4APABQAFIATwBUAEUAQwBUAEkATgBGAE8APgA8AEsARQBZAEwARQBOAD4AMQA2ADwALwBLAEUAWQBMAEUATgA+ADwAQQBMAEcASQBEAD4AQQBFAFMAQwBUAFIAPAAvAEEATABHAEkARAA+ADwALwBQAFIATwBUAEUAQwBUAEkATgBGAE8APgA8AEsASQBEAD4AUQBGAFMAMABHAGkAeABUAG0AVQBPAFUAMwBGAHgAYQAyAFYAaABMAHIAQQA9AD0APAAvAEsASQBEAD4APABDAEgARQBDAEsAUwBVAE0APgBYAHkANgBqAEsARwA0AFAASgBTAFkAPQA8AC8AQwBIAEUAQwBLAFMAVQBNAD4APABMAEEAXwBVAFIATAA+AGgAdAB0AHAAcwA6AC8ALwBhAG0AcwBzAGEAbQBwAGwAZQBzAC4AawBlAHkAZABlAGwAaQB2AGUAcgB5AC4AbQBlAGQAaQBhAHMAZQByAHYAaQBjAGUAcwAuAHcAaQBuAGQAbwB3AHMALgBuAGUAdAAvAFAAbABhAHkAUgBlAGEAZAB5AC8APAAvAEwAQQBfAFUAUgBMAD4APABDAFUAUwBUAE8ATQBBAFQAVABSAEkAQgBVAFQARQBTAD4APABJAEkAUwBfAEQAUgBNAF8AVgBFAFIAUwBJAE8ATgA+ADgALgAwAC4AMQA5ADAANwAuADMAMgA8AC8ASQBJAFMAXwBEAFIATQBfAFYARQBSAFMASQBPAE4APgA8AC8AQwBVAFMAVABPAE0AQQBUAFQAUgBJAEIAVQBUAEUAUwA+ADwALwBEAEEAVABBAD4APAAvAFcAUgBNAEgARQBBAEQARQBSAD4A'
     def test_pro_generation(self):
         self.maxDiff = None
-        mspr = PlayReady(self.templates, la_url=self.la_url, version=4.0)
+        mspr = PlayReady(self.templates, la_url=self.la_url, version=2.0, header_version=4.0)
         representation = Representation(id='V1', default_kid=self.keys.keys()[0])
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64('Xy6jKG4PJSY=')
         pro = base64.b64encode(mspr.generate_pro(representation, self.keys))
         self.assertEqual(pro, self.expected_pro)
 
-    def test_pssh_parsing_v4_0(self):
-        mspr = PlayReady(self.templates, la_url=self.la_url, version=4.0)
+    def test_parsing_pro_v4_0(self):
+        """
+        Check parsing of a pre-defined PlayReady Object (PRO)
+        """
+        mspr = PlayReady(self.templates, la_url=self.la_url, header_version=4.0)
         representation = Representation(id='V1', default_kid=self.keys.keys()[0])
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64('Xy6jKG4PJSY=')
         e_pro = PlayReady.parse_pro(utils.BufferedReader(None, data=base64.b64decode(self.expected_pro)))
         xml = e_pro[0]['xml']
         self.assertEqual(xml.getroot().get("version"),
-                         '{:02.1f}.0.0'.format(mspr.version))
+                         '{:02.1f}.0.0'.format(mspr.header_version))
         algid = xml.findall('./prh:DATA/prh:PROTECTINFO/prh:ALGID', self.namespaces)
         self.assertEqual(len(algid), 1)
         self.assertEqual(algid[0].text, "AESCTR")
@@ -160,11 +164,17 @@ class PlayreadyTests(unittest.TestCase):
     def test_pssh_generation_v4_0(self):
         """Generate and parse PlayReady Header v4.0.0.0"""
         self.assertEqual(len(self.keys), 1)
-        mspr = PlayReady(self.templates, la_url=self.la_url, version=4.0)
+        mspr = PlayReady(self.templates, la_url=self.la_url, header_version=4.0)
         representation = Representation(id='V1', default_kid=self.keys.keys()[0],
                                         kids=self.keys.keys())
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64('Xy6jKG4PJSY=')
         pssh = mspr.generate_pssh(representation, self.keys).encode()
+        self.check_generated_pssh_v4_0(self.keys, mspr, pssh)
+
+    def check_generated_pssh_v4_0(self, keys, mspr, pssh):
+        """
+        Check the PSSH matches the v4.0.0.0 Schema
+        """
         expected_len = 4 + 4 # Atom(length, 'pssh')
         expected_len += 4 # FullBox(version, flags)
         # PSSH(SystemID, DataSize, Data)
@@ -183,7 +193,7 @@ class PlayreadyTests(unittest.TestCase):
         self.assertEqual(atoms[0].data.encode('hex'), expected_pro.encode('hex'))
         actual_pro = mspr.parse_pro(utils.BufferedReader(None, data=atoms[0].data))
         self.assertEqual(actual_pro[0]['xml'].getroot().get("version"),
-                         '{:02.1f}.0.0'.format(mspr.version))
+                         '4.0.0.0')
         algid = actual_pro[0]['xml'].findall('./prh:DATA/prh:PROTECTINFO/prh:ALGID',
                                              self.namespaces)
         self.assertEqual(len(algid), 1)
@@ -194,18 +204,24 @@ class PlayreadyTests(unittest.TestCase):
         self.assertEqual(keylen[0].text, "16")
         kid = actual_pro[0]['xml'].findall('./prh:DATA/prh:KID', self.namespaces)
         self.assertEqual(len(kid), 1)
-        guid = PlayReady.hex_to_le_guid(self.keys.keys()[0], raw=False)
+        guid = PlayReady.hex_to_le_guid(keys.keys()[0], raw=False)
         self.assertEqual(base64.b64decode(kid[0].text).encode('hex'), guid.replace('-',''))
 
 
     def test_pssh_generation_v4_1(self):
         """Generate and parse PlayReady Header v4.1.0.0"""
         self.assertEqual(len(self.keys), 1)
-        mspr = PlayReady(self.templates, la_url=self.la_url, version=4.1)
+        mspr = PlayReady(self.templates, la_url=self.la_url, header_version=4.1)
         representation = Representation(id='V1', default_kid=self.keys.keys()[0],
                                         kids=self.keys.keys())
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64('Xy6jKG4PJSY=')
         pssh = mspr.generate_pssh(representation, self.keys).encode()
+        self.check_generated_pssh_v4_1(self.keys, mspr, pssh)
+
+    def check_generated_pssh_v4_1(self, keys, mspr, pssh):
+        """
+        Check the PSSH matches the v4.1.0.0 Schema
+        """
         parser = mp4.IsoParser()
         src = utils.BufferedReader(None, data=pssh)
         atoms = parser.walk_atoms(src)
@@ -216,26 +232,30 @@ class PlayreadyTests(unittest.TestCase):
             print atoms[0].key_ids
         self.assertEqual(atoms[0].system_id, PlayReady.RAW_SYSTEM_ID)
         actual_pro = mspr.parse_pro(utils.BufferedReader(None, data=atoms[0].data))
-        self.assertEqual(actual_pro[0]['xml'].getroot().get("version"),
-                         '{:02.1f}.0.0'.format(mspr.version))
+        self.assertEqual(actual_pro[0]['xml'].getroot().get("version"), '4.1.0.0')
         kid = actual_pro[0]['xml'].findall('./prh:DATA/prh:PROTECTINFO/prh:KID', self.namespaces)
         self.assertEqual(len(kid), 1)
         self.assertEqual(kid[0].get("ALGID"), "AESCTR")
         self.assertEqual(kid[0].get("CHECKSUM"), 'Xy6jKG4PJSY=')
-        guid = PlayReady.hex_to_le_guid(self.keys.keys()[0], raw=False)
+        guid = PlayReady.hex_to_le_guid(keys.keys()[0], raw=False)
         self.assertEqual(base64.b64decode(kid[0].get("VALUE")).encode('hex'), guid.replace('-',''))
 
     def test_pssh_generation_v4_2(self):
         """Generate and parse PlayReady Header v4.2.0.0"""
-        self.keys = None
         keys = {}
         for kid, key in [
                 ("1AB45440532C439994DC5C5AD9584BAC", "ccc0f2b3b279926496a7f5d25da692f6"),
                 ("db06a8feec164de292282c71e9b856ab", "3179923adf3c929892951e62f93a518a") ]:
             keys[kid.lower()] = KeyStub(kid, key)
-        mspr = PlayReady(self.templates, la_url=self.la_url, version=4.2)
+        mspr = PlayReady(self.templates, la_url=self.la_url, header_version=4.2)
         representation = Representation(id='V1', default_kid=keys.keys()[0], kids=keys.keys())
         pssh = mspr.generate_pssh(representation, keys).encode()
+        self.check_generated_pssh_v4_2(keys, mspr, pssh)
+
+    def check_generated_pssh_v4_2(self, keys, mspr, pssh):
+        """
+        Check the PSSH matches the v4.2.0.0 Schema
+        """
         parser = mp4.IsoParser()
         src = utils.BufferedReader(None, data=pssh)
         atoms = parser.walk_atoms(src)
@@ -245,8 +265,7 @@ class PlayreadyTests(unittest.TestCase):
         self.assertEqual(len(atoms[0].key_ids), len(keys))
         self.assertEqual(atoms[0].system_id, PlayReady.RAW_SYSTEM_ID)
         actual_pro = mspr.parse_pro(utils.BufferedReader(None, data=atoms[0].data))
-        self.assertEqual(actual_pro[0]['xml'].getroot().get("version"),
-                         '{:02.1f}.0.0'.format(mspr.version))
+        self.assertEqual(actual_pro[0]['xml'].getroot().get("version"), '4.2.0.0')
         kids = actual_pro[0]['xml'].findall('./prh:DATA/prh:PROTECTINFO/prh:KIDS/prh:KID',
                                             self.namespaces)
         guid_map = {}
@@ -262,6 +281,99 @@ class PlayreadyTests(unittest.TestCase):
             checksum = base64.b64encode(checksum)
             self.assertEqual(kid.get("CHECKSUM"), checksum)
 
+    def test_pssh_generation_v4_3(self):
+        """
+        Generate and parse PlayReady Header v4.3.0.0
+        """
+        self.keys = None
+        keys = {}
+        for kid, key in [
+                ("1AB45440532C439994DC5C5AD9584BAC", "ccc0f2b3b279926496a7f5d25da692f6"),
+                ("db06a8feec164de292282c71e9b856ab", "3179923adf3c929892951e62f93a518a") ]:
+            keys[kid.lower()] = KeyStub(kid, key, alg='AESCBC')
+        mspr = PlayReady(self.templates, la_url=self.la_url, header_version=4.3)
+        representation = Representation(id='V1', default_kid=keys.keys()[0], kids=keys.keys())
+        pssh = mspr.generate_pssh(representation, keys).encode()
+        self.check_generated_pssh_v4_3(keys, mspr, pssh)
+
+    def check_generated_pssh_v4_3(self, keys, mspr, pssh):
+        """
+        Check the PSSH matches the v4.3.0.0 Schema
+        """
+        parser = mp4.IsoParser()
+        src = utils.BufferedReader(None, data=pssh)
+        atoms = parser.walk_atoms(src)
+        self.assertEqual(len(atoms), 1)
+        self.assertEqual(atoms[0].atom_type, 'pssh')
+        self.assertTrue(isinstance(atoms[0], mp4.ContentProtectionSpecificBox))
+        self.assertEqual(len(atoms[0].key_ids), len(keys))
+        self.assertEqual(atoms[0].system_id, PlayReady.RAW_SYSTEM_ID)
+        actual_pro = mspr.parse_pro(utils.BufferedReader(None, data=atoms[0].data))
+        self.assertEqual(actual_pro[0]['xml'].getroot().get("version"), '4.3.0.0')
+
+        kids = actual_pro[0]['xml'].findall('./prh:DATA/prh:PROTECTINFO/prh:KIDS/prh:KID',
+                                            self.namespaces)
+        guid_map = {}
+        for keypair in keys.values():
+            guid = PlayReady.hex_to_le_guid(keypair.KID.raw, raw=True)
+            guid = base64.b64encode(guid)
+            guid_map[guid] = keypair
+        self.assertEqual(len(kids), len(keys))
+        for kid in kids:
+            self.assertEqual(kid.get("ALGID"), "AESCBC")
+            keypair = guid_map[kid.get("VALUE")]
+            checksum = mspr.generate_checksum(keypair)
+            checksum = base64.b64encode(checksum)
+            self.assertEqual(kid.get("CHECKSUM"), checksum)
+
+    def test_pssh_generation_auto_header_version(self):
+        """
+        Generate and parse PlayReady object where header version automatically
+        chosen
+        """
+        self.assertEqual(len(self.keys), 1)
+        mspr = PlayReady(self.templates, la_url=self.la_url, version=1.0)
+        representation = Representation(id='V1', default_kid=self.keys.keys()[0],
+                                        kids=self.keys.keys())
+        mspr.generate_checksum = lambda keypair: binascii.a2b_base64('Xy6jKG4PJSY=')
+
+        # check v4.0 (as defined in PlayReady v1.0)
+        pssh = mspr.generate_pssh(representation, self.keys).encode()
+        self.check_generated_pssh_v4_0(self.keys, mspr, pssh)
+        mspr.version = None
+        pssh = mspr.generate_pssh(representation, self.keys).encode()
+        self.check_generated_pssh_v4_0(self.keys, mspr, pssh)
+
+        # check v4.1 (as defined in PlayReady v2.0)
+        mspr.version = 2.0
+        pssh = mspr.generate_pssh(representation, self.keys).encode()
+        self.check_generated_pssh_v4_1(self.keys, mspr, pssh)
+
+        # check v4.2 (as defined in PlayReady v3.0)
+        keys = {}
+        for kid, key in [
+                ("1AB45440532C439994DC5C5AD9584BAC", "ccc0f2b3b279926496a7f5d25da692f6"),
+                ("db06a8feec164de292282c71e9b856ab", "3179923adf3c929892951e62f93a518a") ]:
+            keys[kid.lower()] = KeyStub(kid, key, alg='AESCTR')
+        mspr.version = 3.0
+        pssh = mspr.generate_pssh(representation, keys).encode()
+        self.check_generated_pssh_v4_2(keys, mspr, pssh)
+        mspr.version = None
+        pssh = mspr.generate_pssh(representation, keys).encode()
+        self.check_generated_pssh_v4_2(keys, mspr, pssh)
+
+        # check v4.3 (as defined in PlayReady v4.0)
+        keys = {}
+        for kid, key in [
+                ("1AB45440532C439994DC5C5AD9584BAC", "ccc0f2b3b279926496a7f5d25da692f6"),
+                ("db06a8feec164de292282c71e9b856ab", "3179923adf3c929892951e62f93a518a") ]:
+            keys[kid.lower()] = KeyStub(kid, key, alg='AESCBC')
+        mspr.version = 4.0
+        pssh = mspr.generate_pssh(representation, keys).encode()
+        self.check_generated_pssh_v4_3(keys, mspr, pssh)
+        mspr.version = None
+        pssh = mspr.generate_pssh(representation, keys).encode()
+        self.check_generated_pssh_v4_3(keys, mspr, pssh)
 
 class ClearkeyTests(unittest.TestCase):
     def setUp(self):
@@ -286,19 +398,19 @@ class ClearkeyTests(unittest.TestCase):
         for idx in range(len(a)):
             self.assertEqual(ord(a[idx]), ord(b[idx]),
                 'Expected 0x{:02x} got 0x{:02x} at position {}'.format(ord(a[idx]), ord(b[idx]), idx))
-            
+
     def test_pssh_generation(self):
         expected_pssh = [
                 0x00, 0x00, 0x00, 0x44, 0x70, 0x73, 0x73, 0x68,
-                0x01, 0x00, 0x00, 0x00,                        
+                0x01, 0x00, 0x00, 0x00,
                 0x10, 0x77, 0xef, 0xec, 0xc0, 0xb2, 0x4d, 0x02,
                 0xac, 0xe3, 0x3c, 0x1e, 0x52, 0xe2, 0xfb, 0x4b,
-                0x00, 0x00, 0x00, 0x02,                        
+                0x00, 0x00, 0x00, 0x02,
                 0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37,
                 0x38, 0x39, 0x30, 0x31, 0x32, 0x33, 0x34, 0x35,
                 0x41, 0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48,
                 0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f, 0x50,
-                0x00, 0x00, 0x00, 0x00,                        
+                0x00, 0x00, 0x00, 0x00,
         ]
         expected_pssh = ''.join(map(lambda a: chr(a), expected_pssh))
         ck = ClearKey(self.templates)
@@ -318,5 +430,3 @@ if os.environ.get("TESTS"):
 
 if __name__ == "__main__":
     unittest.main()
-
-

@@ -60,6 +60,9 @@ class TestCaseMixin(object):
     def assertIsNotNone(self, a, msg=None):
         self._assert_true(a is not None, a, None, msg, r'{} is None')
 
+    def assertStartsWith(self, a, b, msg=None):
+        self._assert_true(a.startswith(b), a, b, msg, r'{} does not start with {}')
+
     def assertEndsWith(self, a, b, msg=None):
         self._assert_true(a.endswith(b), a, b, msg, r'{} does not end with {}')
 

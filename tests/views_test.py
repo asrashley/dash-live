@@ -1,3 +1,25 @@
+#############################################################################
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
+#############################################################################
+#
+#  Project Name        :    Simulated MPEG DASH service
+#
+#  Author              :    Alex Ashley
+#
+#############################################################################
+
 from __future__ import print_function
 
 import base64
@@ -549,25 +571,36 @@ class TestHandlers(GAETestCase):
                 drm_options = o[1]
                 break
         self.assertIsNotNone(drm_options)
-        pr = PlayReady(self.templates)
         media_files = models.MediaFile.all()
         self.assertGreaterThan(len(media_files), 0)
-        total_tests = len(drm_options)
+        total_tests = len(drm_options) * len(PlayReady.MAJOR_VERSIONS)
         test_count = 0
         filename = 'hand_made.mpd'
         manifest = manifests.manifest[filename]
         for drm_opt in drm_options:
-            self.progress(test_count, total_tests)
-            test_count += 1
-            now = datetime.datetime.now(tz=utils.UTC())
-            availabilityStartTime = now - datetime.timedelta(minutes=test_count)
-            availabilityStartTime = utils.toIsoDateTime(availabilityStartTime)
-            baseurl = self.from_uri('dash-mpd-v2', manifest=filename, stream='bbb')
-            baseurl += '?mode=live&' + drm_opt + '&start='+availabilityStartTime
-            response = self.app.get(baseurl)
-            self.assertEqual(response.status_int, 200)
-            mpd = ViewsTestDashValidator(self.app, "live", response.xml, baseurl)
-            mpd.validate()
+            for version in PlayReady.MAJOR_VERSIONS:
+                pr = PlayReady(self.templates, version=version)
+                self.progress(test_count, total_tests)
+                test_count += 1
+                if ('playready' not in drm_opt and
+                    'all' not in drm_opt and
+                    version != PlayReady.MAJOR_VERSIONS[0]):
+                    # when drm_opt is not PlayReady, there is no need to test
+                    # each PlayReady version
+                    continue
+                now = datetime.datetime.now(tz=utils.UTC())
+                availabilityStartTime = utils.toIsoDateTime(
+                    now - datetime.timedelta(minutes=(1+(test_count % 20))))
+                baseurl = self.from_uri('dash-mpd-v2', manifest=filename, stream='bbb')
+                options = [
+                    'mode=live', drm_opt, 'start='+availabilityStartTime,
+                    'playready_version={0}'.format(version)
+                ]
+                baseurl += '?' + '&'.join(options)
+                response = self.app.get(baseurl)
+                self.assertEqual(response.status_int, 200)
+                mpd = ViewsTestDashValidator(self.app, "live", response.xml, baseurl)
+                mpd.validate()
         self.progress(total_tests, total_tests)
 
     def test_get_vod_media_using_on_demand_profile(self):

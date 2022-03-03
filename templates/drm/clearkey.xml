@@ -1,7 +1,7 @@
 {% if DRM.clearkey.laurl %}
 <ContentProtection
     xmlns:clearkey="http://dashif.org/guidelines/clearKey" value="ClearKey1.0"
-	schemeIdUri="urn:uuid:e2719d58-a985-b3c9-781a-b030af78d30e">
+	schemeIdUri="{{DRM.clearkey.scheme_id}}">
   <clearkey:Laurl Lic_type="EME-1.0">{{DRM.clearkey.laurl}}</clearkey:Laurl>
 </ContentProtection>
 {% endif %}

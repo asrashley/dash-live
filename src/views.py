@@ -56,6 +56,7 @@ from routes import routes
 import mp4, utils, models, settings, manifests, options, segment
 from drm.clearkey import ClearKey
 from drm.playready import PlayReady
+from drm.marlin import Marlin
 from webob import exc
 
 templates = jinja2.Environment(
@@ -230,6 +231,7 @@ class RequestHandler(webapp2.RequestHandler):
             stream = models.Stream.query(models.Stream.prefix==stream).get()
         marlin_la_url = None
         playready_la_url = None
+        playready_version = None
         if stream is not None:
             marlin_la_url = self.request.params.get('marlin_la_url')
             if marlin_la_url is None:
@@ -241,25 +243,37 @@ class RequestHandler(webapp2.RequestHandler):
                 playready_la_url = stream.playready_la_url
             else:
                 playready_la_url = urllib.unquote_plus(playready_la_url)
-        mspr = PlayReady(templates, la_url=playready_la_url)
+            playready_version = self.request.params.get('playready_version')
+            if playready_version is not None:
+                playready_version = float(playready_version)
+        mspr = PlayReady(templates, la_url=playready_la_url, version=playready_version)
         ck = ClearKey(templates)
+        marlin = Marlin(templates)
         rv = {
             'playready': {
+                'cenc': mspr.generate_pssh,
                 'laurl': playready_la_url,
                 'pro': mspr.generate_pro,
-                'cenc': mspr.generate_pssh,
                 'moov': mspr.generate_pssh,
+                'scheme_id': mspr.dash_scheme_id(),
+                'version': playready_version,
             },
             'marlin': {
-                "MarlinContentIds": True,
+                'MarlinContentIds': True,
                 'laurl': marlin_la_url,
+                'scheme_id': marlin.dash_scheme_id(),
             },
             'clearkey': {
+                'scheme_id': ck.dash_scheme_id(),
                 'laurl': self.generate_clearkey_license_url(),
                 'cenc': ck.generate_pssh,
                 'moov': ck.generate_pssh,
             }
         }
+        if playready_version == 1.0:
+            # PlayReady v1.0 (PIFF) mode only allows an mspr:pro element
+            rv['playready']['cenc'] = None
+            rv['playready']['moov'] = None
         drms = self.request.params.get('drm')
         if drms is None or drms == 'all':
             return rv
@@ -269,11 +283,9 @@ class RequestHandler(webapp2.RequestHandler):
                 if '-' in name:
                     parts = name.split('-')
                     name = parts[0]
-                    d[name] = {}
-                    try:
-                        d[name]['laurl'] = rv[name]['laurl']
-                    except KeyError:
-                        pass
+                    d[name] = utils.pick_items(
+                        rv[name],
+                        ['MarlinContentIds', 'laurl', 'scheme_id', 'version'])
                     for p in parts[1:]:
                         d[name][p] = rv[name][p]
                 else:
