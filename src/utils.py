@@ -466,6 +466,19 @@ def sizeFormat(value, binary=True):
     if not units:
         units = 'T'
     return '{:d}{}B'.format(value, units[-1])
+
+def pick_items(src, keys):
+    """
+    Create a new dictionary, copying all keys listed in 'keys'
+    """
+    rv = {}
+    for key in keys:
+        try:
+            rv[key] = src[key]
+        except KeyError:
+            pass
+    return rv
+
 #
 # The following code is from djangoappengine/utils.py
 #

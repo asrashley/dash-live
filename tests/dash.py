@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+import base64
 import collections
 import datetime
 import inspect
@@ -16,7 +17,7 @@ _src = os.path.join(os.path.dirname(__file__),"..", "src")
 if not _src in sys.path:
     sys.path.append(_src)
 
-import drm
+from drm.playready import PlayReady
 import mp4
 import utils
 import mixins
@@ -75,7 +76,7 @@ class DashElement(mixins.TestCaseMixin):
         'cenc': 'urn:mpeg:cenc:2013',
         'dash': 'urn:mpeg:dash:schema:mpd:2011',
         'mspr': 'urn:microsoft:playready',
-	'scte35': "http://www.scte.org/schemas/35/2016",
+        'scte35': "http://www.scte.org/schemas/35/2016",
         'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
         'prh': 'http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader',
     }
@@ -170,10 +171,10 @@ class DashElement(mixins.TestCaseMixin):
                 raise AssertionError(msg)
             self.log.warning('%s', msg)
 
-            
+
 class DashValidator(DashElement):
     __metaclass__ = ABCMeta
-    
+
     def __init__(self, url, http_client, mode=None, options=None):
         DashElement.init_xml_namespaces()
         super(DashValidator, self).__init__(None, parent=None, options=options)
@@ -218,7 +219,7 @@ class DashValidator(DashElement):
                                'manifest has not been updated for {1} seconds'.format(
                                    self.manifest.minimumUpdatePeriod, age.total_seconds()))
         self.manifest.validate(depth=depth)
-        
+
     def save_manifest(self, filename=None):
         now = RelaxedDateTime.now(UTC())
         if filename is None:
@@ -291,6 +292,10 @@ class Manifest(DashElement):
     def __init__(self, parent, url, mode, xml):
         super(Manifest, self).__init__(xml, parent)
         self.url = url
+        parsed = urlparse.urlparse(url)
+        self.params = {}
+        for key, value in urlparse.parse_qs(parsed.query).iteritems():
+            self.params[key] = value[0]
         self.mode = mode
         if self.baseurl is None:
             self.baseurl = url
@@ -303,7 +308,6 @@ class Manifest(DashElement):
         self.mpd_type = xml.get("type", "static")
         self.periods = map(lambda p: Period(p, self),
                            xml.findall('./dash:Period', self.xmlNamespaces))
-
         self.dump_attributes()
 
     @property
@@ -342,7 +346,7 @@ class Manifest(DashElement):
             for period in self.periods:
                 period.validate(depth-1)
 
-        
+
 class Period(DashElement):
     attributes = [
         ('start', utils.from_isodatetime, None),
@@ -358,7 +362,7 @@ class Period(DashElement):
                              datetime.timedelta(seconds=self.start.total_seconds())
         adps = period.findall('./dash:AdaptationSet', self.xmlNamespaces)
         self.adaptation_sets = map(lambda a: AdaptationSet(a, self), adps)
-                                   
+
     def validate(self, depth=-1):
         if depth!=0:
             for adap_set in self.adaptation_sets:
@@ -379,7 +383,7 @@ class SegmentBaseType(DashElement):
         self.initializationList = map(lambda u: URLType(u, self), inits)
         self.representationIndex = map(lambda i: URLType(i, self),
                                        elt.findall('./dash:RepresentationIndex', self.xmlNamespaces))
-                    
+
 class URLType(DashElement):
     attributes = [
         ("sourceURL", str, None),
@@ -394,7 +398,7 @@ class URLType(DashElement):
 
 class FrameRateType(mixins.TestCaseMixin):
     pattern = re.compile(r"([0-9]*[0-9])(/[0-9]*[0-9])?$")
-    
+
     def __init__(self, num, denom=1):
         if isinstance(num, basestring):
             match = self.pattern.match(num)
@@ -436,12 +440,12 @@ class MultipleSegmentBaseType(SegmentBaseType):
         bss = elt.findall('./dash:BitstreamSwitching', self.xmlNamespaces)
         if len(bss):
             self.BitstreamSwitching = bss[0].text
-            
+
     def validate(self, depth=-1):
         super(MultipleSegmentBaseType,self).validate(depth)
         if self.segmentTimeline is not None:
             # 5.3.9.2.1: The attribute @duration and the element SegmentTimeline
-            # shall not be present at the same time. 
+            # shall not be present at the same time.
             self.assertIsNone(self.duration)
 
 
@@ -464,7 +468,7 @@ class RepresentationBaseType(DashElement):
         self.segmentList = None
         seg_list = elt.findall('./dash:SegmentList', self.xmlNamespaces)
         self.segmentList = map(lambda s: SegmentListType(s, self), seg_list)
-        
+
 class SegmentTimeline(DashElement):
     SegmentEntry = collections.namedtuple('SegmentEntry',['start', 'duration'])
 
@@ -536,7 +540,7 @@ class DescriptorElement(object):
         self.text = elt.text
         for child in elt:
             self.children.append(DescriptorElement(child))
-            
+
 class Descriptor(DashElement):
     attributes = [
         ('schemeIdUri', str, None),
@@ -559,6 +563,51 @@ class ContentProtection(Descriptor):
 
     def __init__(self, elt, parent):
         super(ContentProtection, self).__init__(elt, parent)
+
+    def validate(self, depth=-1):
+        super(ContentProtection, self).validate(depth)
+        if self.schemeIdUri == "urn:mpeg:dash:mp4protection:2011":
+            self.assertEqual(self.value, "cenc")
+        else:
+            self.assertStartsWith(self.schemeIdUri, "urn:uuid:")
+        if depth == 0:
+            return
+        for child in self.children:
+            if child.tag == '{urn:mpeg:cenc:2013}pssh':
+                data = base64.b64decode(child.text)
+                src = utils.BufferedReader(None, data=data)
+                atoms = mp4.Mp4Atom.create(src)
+                self.assertEqual(len(atoms), 1)
+                self.assertEqual(atoms[0].atom_type, 'pssh')
+                pssh = atoms[0]
+                if PlayReady.is_supported_scheme_id(self.schemeIdUri):
+                    self.assertEqual(pssh.system_id, PlayReady.RAW_SYSTEM_ID)
+                    pro = self.parse_playready_pro(pssh.data)
+                    self.validate_playready_pro(pro)
+            elif child.tag == '{urn:microsoft:playready}pro':
+                self.assertTrue(PlayReady.is_supported_scheme_id(self.schemeIdUri))
+                data = base64.b64decode(child.text)
+                pro = self.parse_playready_pro(data)
+                self.validate_playready_pro(pro)
+
+    def parse_playready_pro(self, data):
+        return PlayReady.parse_pro(utils.BufferedReader(None, data=data))
+
+    def validate_playready_pro(self, pro):
+        self.assertEqual(len(pro), 1)
+        xml = pro[0]['xml'].getroot()
+        self.assertEqual(xml.tag, '{http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader}WRMHEADER')
+        self.assertIn(xml.attrib['version'], ["4.0.0.0", "4.1.0.0", "4.2.0.0", "4.3.0.0"])
+        if 'playready_version' in self.mpd.params:
+            version = float(self.mpd.params['playready_version'])
+            if version < 2.0:
+                self.assertEqual(xml.attrib['version'], "4.0.0.0")
+                self.assertEqual(self.schemeIdUri, "urn:uuid:"+PlayReady.SYSTEM_ID_V10)
+            elif version < 3.0:
+                self.assertIn(xml.attrib['version'], ["4.0.0.0", "4.1.0.0"])
+            elif version < 4.0:
+                self.assertIn(xml.attrib['version'], ["4.0.0.0", "4.1.0.0", "4.2.0.0"])
+
 
 
 class AdaptationSet(RepresentationBaseType):
@@ -635,7 +684,7 @@ class Representation(RepresentationBaseType):
         self.assertIsNotNone(self.segmentTemplate.initialization)
         url = self.format_url_template(self.segmentTemplate.initialization)
         return urlparse.urljoin(self.baseurl, url)
-        
+
     def generate_segments_live_profile(self):
         self.assertNotEqual(self.mode, 'odvod')
         self.assertIsNotNone(self.segmentTemplate)
@@ -717,7 +766,7 @@ class Representation(RepresentationBaseType):
                 decode_time += timeline.segments[idx].duration
             else:
                 decode_time = None
-            
+
     def generate_segments_on_demand_profile(self):
         self.media_segments = []
         self.init_segment = None
@@ -889,23 +938,33 @@ class InitSegment(DashElement):
                 moov = atom
                 break
         self.assertIsNotNone(moov)
-        if self.info.encrypted:
-            try:
-                pssh = moov.pssh
-                #print pssh
-                self.assertEqual(len(pssh.system_id), 16)
-                if pssh.system_id == drm.PlayReady.RAW_SYSTEM_ID:
-                    for pro in drm.PlayReady.parse_pro(utils.BufferedReader(None, data=pssh.data)):
-                        version = pro['xml'].getroot().get("version")
-                        self.assertIn(version, ["4.0.0.0", "4.1.0.0", "4.2.0.0"])
-            except (AttributeError) as ae:
-                if 'moov' in self.url:
-                    if 'playready' in self.url or 'clearkey' in self.url:
-                        self.assertTrue('moov' not in self.url,
-                                        'PSSH box should be present in {}\n{:s}'.format(
-                                            self.url, ae))
+        if not self.info.encrypted:
+            return moov
+        try:
+            pssh = moov.pssh
+            self.assertEqual(len(pssh.system_id), 16)
+            if pssh.system_id == PlayReady.RAW_SYSTEM_ID:
+                for pro in PlayReady.parse_pro(utils.BufferedReader(None, data=pssh.data)):
+                    root = pro['xml'].getroot()
+                    version = root.get("version")
+                    self.assertIn(version, ["4.0.0.0", "4.1.0.0", "4.2.0.0", "4.3.0.0"])
+                    if 'playready_version' not in self.mpd.params:
+                        continue
+                    version = float(self.mpd.params['playready_version'])
+                    if version < 2.0:
+                        self.assertEqual(root.attrib['version'], "4.0.0.0")
+                    elif version < 3.0:
+                        self.assertIn(root.attrib['version'], ["4.0.0.0", "4.1.0.0"])
+                    elif version < 4.0:
+                        self.assertIn(root.attrib['version'], ["4.0.0.0", "4.1.0.0", "4.2.0.0"])
+        except (AttributeError) as ae:
+            if 'moov' in self.url:
+                if 'playready' in self.url or 'clearkey' in self.url:
+                    self.assertTrue('moov' not in self.url,
+                                    'PSSH box should be present in {}\n{:s}'.format(
+                                        self.url, ae))
         return moov
-        
+
 class MediaSegment(DashElement):
     def __init__(self, parent, url, info, seg_num, decode_time, tolerance, seg_range):
         super(MediaSegment, self).__init__(None, parent)
@@ -1036,7 +1095,7 @@ if __name__ == "__main__":
                 self.assertEqual(rv.status_code, status)
             return rv
 
-            
+
     class BasicDashValidator(DashValidator):
         def __init__(self, url, options):
             super(BasicDashValidator, self).__init__(url, RequestsHttpClient(), options=options)

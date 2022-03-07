@@ -34,59 +34,29 @@ from Crypto.Hash import SHA256
 
 import mp4
 
-class KeyMaterial(object):
-    length = 16
+from drm.base import DrmBase
+from drm.keymaterial import KeyMaterial
 
-    def __init__(self, value=None, hex=None, b64=None, raw=None):
-        if value is not None:
-            if len(value) == 16:
-                self.raw = value
-            elif re.match(r'^(0x)?[0-9a-f-]+$', value, re.IGNORECASE):
-                if value.startswith('0x'):
-                    value = value[2:]
-                self.raw = binascii.unhexlify(value.replace('-',''))
-            else:
-                self.raw = base64.b64decode(value)
-        elif raw is not None:
-            self.raw = raw
-        elif hex is not None:
-            self.raw = binascii.unhexlify(hex.replace('-',''))
-        elif b64 is not None:
-            self.raw = binascii.a2b_base64(b64)
-        else:
-            raise ValueError("One of value, hex, b64 or raw must be provided")
-        if len(self.raw) != self.length:
-            raise ValueError("Size {} is invalid".format(len(self.raw)))
-
-    def to_hex(self):
-        return binascii.b2a_hex(self.raw)
-
-    def from_hex(self, value):
-        self.raw = value.replace('-','').decode('hex')
-
-    hex = property(to_hex, from_hex)
-
-    def to_base64(self):
-        return base64.b64encode(self.raw)
-
-    def from_base64(self, value):
-        self.raw = base64.b64decode(value)
-
-    b64 = property(to_base64, from_base64)
-
-    def __len__(self):
-        return self.length
-
-class PlayReady(object):
+class PlayReady(DrmBase):
+    MAJOR_VERSIONS = [1.0, 2.0, 3.0, 4.0]
     SYSTEM_ID = "9a04f079-9840-4286-ab92-e65be0885f95"
+    SYSTEM_ID_V10 = "79f0049a-4098-8642-ab92-e65be0885f95"
     RAW_SYSTEM_ID = "9a04f07998404286ab92e65be0885f95".decode("hex")
     TEST_KEY_SEED = base64.b64decode("XVBovsmzhP9gRIZxWfFta3VVRPzVEWmJsazEJ46I")
     TEST_LA_URL = "https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg={cfgs}"
     DRM_AES_KEYSIZE_128 = 16
 
-    def __init__(self, templates, la_url=None, version=None, security_level=150):
-        self.templates = templates
+    def __init__(self, templates, la_url=None, version=None, header_version=None,
+                 security_level=150):
+        """
+        :la_url: The license URL
+        :version: The PlayReady version (1.0 .. 4.0)
+        :header_version: The WRMHEADER version (4.0, 4.1, 4.2 or 4.3)
+        :security_level: Minimum security level (150, 2000, 3000)
+        """
+        super(PlayReady, self).__init__(templates)
         self.version = version
+        self.header_version = header_version
         self.la_url = la_url
         self.security_level = security_level
 
@@ -171,13 +141,16 @@ class PlayReady(object):
         la_url = self.la_url
         cfgs = []
         kids = []
+        cenc_alg = 'AESCTR'
         for keypair in keys.values():
             guid_kid = PlayReady.hex_to_le_guid(keypair.KID.raw, raw=True)
             rkey = keypair.KEY.raw
             kids.append({
                 'kid': guid_kid,
+                'alg': keypair.ALG,
                 'checksum': self.generate_checksum(keypair),
             })
+            cenc_alg = keypair.ALG
             cfg = [
                 'kid:' + base64.b64encode(guid_kid),
                 'persist:false',
@@ -200,22 +173,33 @@ class PlayReady(object):
                                     kids=[a["kid"] for a in kids]
             )
         }
-        #print(context["la_url"])
         context["checksum"] = self.generate_checksum(default_keypair)
-        version = self.version
-        if version is None:
-            if len(keys)==1:
-                version = 4.1
+        header_version = self.header_version
+        if header_version is None:
+            # Choose the lowest header version that supports the features
+            # required for the supplied keys
+            if cenc_alg != 'AESCTR':
+                header_version = 4.3
+            elif len(keys)==1:
+                if self.version >= 2.0:
+                    header_version = 4.1
+                else:
+                    header_version = 4.0
             else:
-                version = 4.2
-        if version==4.2:
-            template = self.templates.get_template('drm/wrmheader42.xml')
-        elif version==4.1:
-            template = self.templates.get_template('drm/wrmheader41.xml')
-        else:
-            if version != 4.0:
-                raise ValueError("PlayReady header version {} has not been implemented".format(version))
-            template = self.templates.get_template('drm/wrmheader40.xml')
+                header_version = 4.2
+            if self.version is not None:
+                if ((header_version == 4.3 and self.version < 4.0) or
+                    (header_version == 4.2 and self.version < 3.0) or
+                    (header_version == 4.1 and self.version < 2.0)):
+                    raise ValueError(
+                        '{0} WRMHEADER is not supported by PlayReady v{1}'.format(
+                            header_version, self.version
+                        ))
+        if header_version not in [4.0, 4.1, 4.2, 4.3]:
+            raise ValueError(
+                "PlayReady header version {} has not been implemented".format(version))
+        template = self.templates.get_template('drm/wrmheader{0}.xml'.format(
+            int(header_version*10)))
         xml = template.render(context)
         xml = re.sub(r'[\r\n]', '', xml)
         xml = re.sub(r'>\s+<', '><', xml)
@@ -272,44 +256,17 @@ class PlayReady(object):
                                                 key_ids=keys,
                                                 data=pro)
 
+    def dash_scheme_id(self):
+        """
+        Returns the schemeIdUri for PlayReady
+        """
+        if self.version == 1.0:
+            return "urn:uuid:{0}".format(self.SYSTEM_ID_V10)
+        return "urn:uuid:{0}".format(self.SYSTEM_ID)
 
-class ClearKey(object):
-    MPD_SYSTEM_ID = "e2719d58-a985-b3c9-781a-b030af78d30e"
-    PSSH_SYSTEM_ID = "1077efec-c0b2-4d02-ace3-3c1e52e2fb4b"
-
-    def __init__(self, templates):
-        self.templates = templates
-
-    def generate_pssh(self, representation, keys):
-        """Generate a Clearkey PSSH box"""
-        # see https://www.w3.org/TR/eme-initdata-cenc/
-        if isinstance(keys, dict):
-            keys = keys.keys()
-        keys = map(lambda k: KeyMaterial(k).raw, keys)
-        return mp4.ContentProtectionSpecificBox(version=1, flags=0,
-                                                system_id=self.PSSH_SYSTEM_ID,
-                                                key_ids=keys,
-                                                data=None
-        )
-
-if __name__ == "__main__":
-    import sys
-    import utils
-
-    #PR_ID = PlayReady.SYSTEM_ID.replace('-','').lower()
-
-    def show_pssh(atom):
-        if atom.atom_type=='pssh':
-            print(atom)
-            if atom.system_id == PlayReady.RAW_SYSTEM_ID:
-                pro = PlayReady.parse_pro(utils.BufferedReader(None, data=atom.data))
-                print(pro)
-        else:
-            for child in atom.children:
-                show_pssh(child)
-
-    for filename in sys.argv[1:]:
-        parser = mp4.IsoParser()
-        atoms = parser.walk_atoms(filename)
-        for atom in atoms:
-            show_pssh(atom)
+    @classmethod
+    def is_supported_scheme_id(cls, uri):
+        if not uri.startswith("urn:uuid:"):
+            return False
+        return uri[9:].lower() in [cls.SYSTEM_ID, cls.SYSTEM_ID_V10]
+        

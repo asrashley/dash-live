@@ -1,0 +1,13 @@
+<WRMHEADER xmlns="http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader" version="4.3.0.0">
+  <DATA>
+    <PROTECTINFO>
+      <KIDS>
+        {% for kid in kids %}
+          <KID ALGID="{{kid.alg}}" CHECKSUM="{{kid.checksum|base64}}"
+                     VALUE="{{kid.kid|base64}}"></KID>
+       {% endfor %}
+      </KIDS>
+    </PROTECTINFO>
+    <LA_URL>{{la_url|xmlSafe}}</LA_URL>
+  </DATA>
+</WRMHEADER>

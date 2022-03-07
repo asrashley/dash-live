@@ -1,3 +1,25 @@
+#############################################################################
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
+#############################################################################
+#
+#  Project Name        :    Simulated MPEG DASH service
+#
+#  Author              :    Alex Ashley
+#
+#############################################################################
+
 from __future__ import print_function
 
 import base64
@@ -41,7 +63,7 @@ if not _src in sys.path:
     sys.path.append(_src)
 
 import dash
-import drm
+from drm.playready import PlayReady
 import models
 import mp4
 import views
@@ -172,7 +194,7 @@ class GAETestCase(TestCaseMixin, unittest.TestCase):
         bbb = models.Stream(
             title='Big Buck Bunny', prefix='bbb',
             marlin_la_url='ms3://localhost/marlin/bbb',
-            playready_la_url=drm.PlayReady.TEST_LA_URL
+            playready_la_url=PlayReady.TEST_LA_URL
         )
         bbb.put()
         for idx, rid in enumerate(["bbb_v6","bbb_v6_enc","bbb_v7","bbb_v7_enc",
@@ -205,7 +227,7 @@ class GAETestCase(TestCaseMixin, unittest.TestCase):
             if r is None:
                 continue
             if r.encrypted:
-                mspr = drm.PlayReady(self.templates)
+                mspr = PlayReady(self.templates)
                 for kid in r.kids:
                     key = binascii.b2a_hex(mspr.generate_content_key(kid.decode('hex')))
                     keypair = models.Key(hkid=kid, hkey=key, computed=True)
@@ -429,7 +451,7 @@ class TestHandlers(GAETestCase):
         This test is _very_ slow, expect it to take several minutes!"""
         self.setup_media()
         self.logoutCurrentUser()
-        pr = drm.PlayReady(self.templates)
+        pr = PlayReady(self.templates)
         media_files = models.MediaFile.all()
         self.assertGreaterThan(len(media_files), 0)
         # do a first pass check with no CGI options
@@ -478,7 +500,7 @@ class TestHandlers(GAETestCase):
                 drm_options = o[1]
                 break
         self.assertIsNotNone(drm_options)
-        pr = drm.PlayReady(self.templates)
+        pr = PlayReady(self.templates)
         media_files = models.MediaFile.all()
         self.assertGreaterThan(len(media_files), 0)
         filename = 'hand_made.mpd'
@@ -549,25 +571,36 @@ class TestHandlers(GAETestCase):
                 drm_options = o[1]
                 break
         self.assertIsNotNone(drm_options)
-        pr = drm.PlayReady(self.templates)
         media_files = models.MediaFile.all()
         self.assertGreaterThan(len(media_files), 0)
-        total_tests = len(drm_options)
+        total_tests = len(drm_options) * len(PlayReady.MAJOR_VERSIONS)
         test_count = 0
         filename = 'hand_made.mpd'
         manifest = manifests.manifest[filename]
         for drm_opt in drm_options:
-            self.progress(test_count, total_tests)
-            test_count += 1
-            now = datetime.datetime.now(tz=utils.UTC())
-            availabilityStartTime = now - datetime.timedelta(minutes=test_count)
-            availabilityStartTime = utils.toIsoDateTime(availabilityStartTime)
-            baseurl = self.from_uri('dash-mpd-v2', manifest=filename, stream='bbb')
-            baseurl += '?mode=live&' + drm_opt + '&start='+availabilityStartTime
-            response = self.app.get(baseurl)
-            self.assertEqual(response.status_int, 200)
-            mpd = ViewsTestDashValidator(self.app, "live", response.xml, baseurl)
-            mpd.validate()
+            for version in PlayReady.MAJOR_VERSIONS:
+                pr = PlayReady(self.templates, version=version)
+                self.progress(test_count, total_tests)
+                test_count += 1
+                if ('playready' not in drm_opt and
+                    'all' not in drm_opt and
+                    version != PlayReady.MAJOR_VERSIONS[0]):
+                    # when drm_opt is not PlayReady, there is no need to test
+                    # each PlayReady version
+                    continue
+                now = datetime.datetime.now(tz=utils.UTC())
+                availabilityStartTime = utils.toIsoDateTime(
+                    now - datetime.timedelta(minutes=(1+(test_count % 20))))
+                baseurl = self.from_uri('dash-mpd-v2', manifest=filename, stream='bbb')
+                options = [
+                    'mode=live', drm_opt, 'start='+availabilityStartTime,
+                    'playready_version={0}'.format(version)
+                ]
+                baseurl += '?' + '&'.join(options)
+                response = self.app.get(baseurl)
+                self.assertEqual(response.status_int, 200)
+                mpd = ViewsTestDashValidator(self.app, "live", response.xml, baseurl)
+                mpd.validate()
         self.progress(total_tests, total_tests)
 
     def test_get_vod_media_using_on_demand_profile(self):
@@ -594,7 +627,7 @@ class TestHandlers(GAETestCase):
         PlayReady LA_URL in the manifest
         """
         # TODO: don't hard code KID
-        test_la_url = drm.PlayReady.TEST_LA_URL.format(
+        test_la_url = PlayReady.TEST_LA_URL.format(
             cfgs='(kid:QFS0GixTmUOU3Fxa2VhLrA==,persist:false,sl:150)')
         self.check_playready_la_url_value(test_la_url, [])
         
@@ -622,7 +655,7 @@ class TestHandlers(GAETestCase):
         mpd = ViewsTestDashValidator(self.app, 'vod', response.xml, baseurl)
         mpd.validate()
         self.assertEqual(len(mpd.manifest.periods), 1)
-        schemeIdUri = "urn:uuid:" + drm.PlayReady.SYSTEM_ID.upper()
+        schemeIdUri = "urn:uuid:" + PlayReady.SYSTEM_ID.upper()
         pro_tag = "{{{0}}}pro".format(mpd.xmlNamespaces['mspr'])
         for adap_set in mpd.manifest.periods[0].adaptation_sets:
             for prot in adap_set.contentProtection:
@@ -632,7 +665,7 @@ class TestHandlers(GAETestCase):
                     if elt.tag != pro_tag:
                         continue
                     pro = base64.b64decode(elt.text)
-                    for record in drm.PlayReady.parse_pro(utils.BufferedReader(None, data=pro)):
+                    for record in PlayReady.parse_pro(utils.BufferedReader(None, data=pro)):
                         la_urls = record['xml'].findall(
                             './prh:DATA/prh:LA_URL', mpd.xmlNamespaces)
                         self.assertEqual(len(la_urls), 1)

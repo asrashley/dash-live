@@ -36,6 +36,7 @@ COPY templates/drm/* $HOME/dash-live/templates/drm/
 COPY static/css/* $HOME/dash-live/static/css/
 COPY runserver.sh $HOME/dash-live/
 COPY src/*.py $HOME/dash-live/src/
+COPY src/drm/*.py $HOME/dash-live/src/drm/
 WORKDIR /home/dash/dash-live
 RUN python ./gen-settings.py
 RUN python -m lesscpy static/css -o static/css/
