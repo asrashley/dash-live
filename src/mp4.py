@@ -169,6 +169,17 @@ class FieldReader(object):
         elif size == '0I':
             d = self.src.read(3)
             value = (ord(d[0]) << 16) + (ord(d[1]) << 8) + ord(d[2])
+        elif size == 'S0':
+            value = ''
+            d = self.src.read(1)
+            while ord(d) != 0:
+                value += d
+                d = self.src.read(1)
+            if self.log and self.log.isEnabledFor(logging.DEBUG):
+                self.log.debug('%s: read %s size=%d pos=%d value="%s"',
+                               self.clz.__name__, field,
+                               len(value), self.src.tell(), value)
+            return value
         elif size[0] == 'S':
             value = self.src.read(int(size[1:]))
             value = value.split('\0')[0]
@@ -244,6 +255,8 @@ class FieldWriter(object):
         if isinstance(size, basestring):
             if size == '0I':
                 value = struct.pack('>I', value)[1:]
+            elif size == 'S0':
+                value += '\0'
             elif size[0] == 'D':
                 bsz, asz = map(int, size[1:].split('.'))
                 value = value * (1 << asz)
@@ -2154,6 +2167,54 @@ class SegmentIndexBox(FullBox):
 
 
 MP4_BOXES['sidx'] = SegmentIndexBox
+
+class EventMessageBox(FullBox):
+    @classmethod
+    def parse(clz, src, parent, **kwargs):
+        rv = FullBox.parse(src, parent, **kwargs)
+        r = FieldReader(clz, src, rv)
+        if rv['version'] == 0:
+            r.read('S0', 'scheme_id_uri')
+            r.read('S0', 'value')
+            r.read('I', 'timescale')
+            r.read('I', 'presentation_time_delta')
+            r.read('I', 'event_duration')
+            r.read('I', 'event_id')
+        elif rv['version'] == 1:
+            r.read('I', 'timescale')
+            r.read('Q', 'presentation_time')
+            r.read('I', 'event_duration')
+            r.read('I', 'event_id')
+            r.read('S0', 'scheme_id_uri')
+            r.read('S0', 'value')
+        rv["data"] = None
+        end = rv["position"] + rv["size"]
+        if src.tell() < end:
+            r.read(end - src.tell(), 'data')
+        return rv
+
+    def encode_fields(self, dest):
+        super(EventMessageBox, self).encode_fields(dest)
+        d = FieldWriter(self, dest)
+        if self.version == 0:
+            d.write('S0', 'scheme_id_uri')
+            d.write('S0', 'value')
+            d.write('I', 'timescale')
+            d.write('I', 'presentation_time_delta')
+            d.write('I', 'event_duration')
+            d.write('I', 'event_id')
+        elif self.version == 1:
+            d.write('I', 'timescale')
+            d.write('Q', 'presentation_time')
+            d.write('I', 'event_duration')
+            d.write('I', 'event_id')
+            d.write('S0', 'scheme_id_uri')
+            d.write('S0', 'value')
+        if self.data is not None:
+            d.write(len(self.data), 'data')
+
+
+MP4_BOXES['emsg'] = EventMessageBox
 
 class IsoParser(object):
     def walk_atoms(self, filename, atom=None, options=None):
