@@ -41,12 +41,13 @@ class Buffer(object):
     @property
     def end(self):
         return self.pos + self.size
-    
+
+
 class BufferedReader(io.RawIOBase):
-    def __init__(self, reader, buffersize=16384, data=None, offset=0, size=None,
-                 max_buffers=30):
+    def __init__(self, reader, buffersize=16384, data=None, offset=0,
+                 size=None, max_buffers=30):
         super(BufferedReader, self).__init__()
-        #print('BufferedReader', reader, buffersize, offset, size)
+        # print('BufferedReader', reader, buffersize, offset, size)
         self.reader = reader
         self.buffers = {}
         self.buffersize = buffersize
@@ -60,13 +61,13 @@ class BufferedReader(io.RawIOBase):
             self.buffersize = self.size
             self.buffers[0] = Buffer(self.pos, data)
             self.num_buffers = 1
-            self.max_buffers = self.num_buffers+1
-        
+            self.max_buffers = self.num_buffers + 1
+
     def readable(self):
         return not self.closed
 
     def seek(self, offset, whence=io.SEEK_SET):
-        #print('seek', offset, whence)
+        # print('seek', offset, whence)
         if whence == io.SEEK_SET:
             self.pos = offset
         elif whence == io.SEEK_CUR:
@@ -88,7 +89,7 @@ class BufferedReader(io.RawIOBase):
         return not self.closed
 
     def peek(self, size):
-        #print('peek', self.pos, size)
+        # print('peek', self.pos, size)
         assert size > 0
         if self.size is not None:
             size = min(size, self.size - self.pos)
@@ -103,31 +104,31 @@ class BufferedReader(io.RawIOBase):
         todo = size
         while todo:
             self.cache(bucket)
-            sz = min(todo, self.buffersize-offset)
+            sz = min(todo, self.buffersize - offset)
             rv.append(self.buffers[bucket].data[offset:].tobytes())
             bucket += self.buffersize
             offset = 0
             todo -= sz
-        if len(rv)==1:
+        if len(rv) == 1:
             return rv[0]
         return r''.join(rv)
 
     def cache(self, bucket):
-        #print('cache', bucket)
-        if self.buffers.has_key(bucket):
+        # print('cache', bucket)
+        if bucket in self.buffers:
             return
         if self.num_buffers == self.max_buffers:
             remove = None
             oldest = None
-            for k,v in self.buffers.iteritems():
+            for k, v in self.buffers.iteritems():
                 if remove is None or v.timestamp < oldest:
                     remove = k
                     oldest = v.timestamp
             if remove is not None:
                 del self.buffers[remove]
                 self.num_buffers -= 1
-        if self.reader.tell() != bucket+self.offset:
-            self.reader.seek(bucket+self.offset, io.SEEK_SET)
+        if self.reader.tell() != (bucket + self.offset):
+            self.reader.seek(bucket + self.offset, io.SEEK_SET)
         b = Buffer(bucket, self.reader.read(self.buffersize))
         if self.size is None and b.size < self.buffersize:
             self.size = bucket + b.size
@@ -136,8 +137,8 @@ class BufferedReader(io.RawIOBase):
         assert self.num_buffers <= self.max_buffers
 
     def read(self, n=-1):
-        #print('read', self.pos, n)
-        if n==-1:
+        # print('read', self.pos, n)
+        if n == -1:
             return self.readall()
         if self.size is not None:
             n = min(n, self.size - self.pos)
@@ -184,7 +185,7 @@ def toIsoDateTime(value):
         rv += 'Z'
     else:
         # replace +00:00 timezone with Z
-        rv = re.sub('[+-]00:00$','Z',rv)
+        rv = re.sub('[+-]00:00$', 'Z', rv)
     return rv
 
 def toIsoDuration(secs):
@@ -193,55 +194,58 @@ def toIsoDuration(secs):
      :param secs: the duration to convert, in seconds
      :returns: an ISO8601 formatted string version of the duration
     """
-    if isinstance(secs,basestring):
+    if isinstance(secs, basestring):
         secs = float(secs)
     elif isinstance(secs, datetime.timedelta):
         secs = secs.total_seconds()
-    hrs = math.floor(secs/3600)
-    rv=['PT']
+    hrs = math.floor(secs / 3600)
+    rv = ['PT']
     secs %= 3600
-    mins = math.floor(secs/60)
+    mins = math.floor(secs / 60)
     secs %= 60
     if hrs:
-        rv.append('%dH'%hrs)
+        rv.append('%dH' % hrs)
     if hrs or mins:
-        rv.append('%dM'%mins)
-    rv.append('%0.2fS'%secs)
+        rv.append('%dM' % mins)
+    rv.append('%0.2fS' % secs)
     return ''.join(rv)
 
+
 date_hacks = [
-    (re.compile('Apri[^l]'),'Apr '), (re.compile('Sept[^e]'),'Sep '),
-    (re.compile(r'(\w{3} \d{1,2},? \d{4})\s*-\s*(.*$)'), r'\1 \2' ),
-    (re.compile(r'(\w{3} \d{1,2}), (\d{4}\s*\d{1,2}:\d{2})'), r'\1 \2' ),
-    (re.compile(r'(\w{3})-(\d{2})$'), r'\1 \2' ),
-    (re.compile(r'(.+) ([PCE][SD]?T)$'),r'\1')
+    (re.compile('Apri[^l]'), 'Apr '),
+    (re.compile('Sept[^e]'), 'Sep '),
+    (re.compile(r'(\w{3} \d{1,2},? \d{4})\s*-\s*(.*$)'), r'\1 \2'),
+    (re.compile(r'(\w{3} \d{1,2}), (\d{4}\s*\d{1,2}:\d{2})'), r'\1 \2'),
+    (re.compile(r'(\w{3})-(\d{2})$'), r'\1 \2'),
+    (re.compile(r'(.+) ([PCE][SD]?T)$'), r'\1')
 ]
 
 def parse_date(date, format=None):
     """Try to create a datetime from the given string"""
-    formats = ["%Y-%m-%d",  "%m/%d/%y", "%m/%d/%Y", "%b %Y", "%b %y", "%m/xx/%y",
-               "%a %b %d %Y", "%B %d %Y %H:%M", "%b %d %Y %H:%M",
-               "%B %d %Y", "%b %d %Y",'%a %b %d, %Y']
+    formats = ["%Y-%m-%d", "%m/%d/%y", "%m/%d/%Y", "%b %Y", "%b %y",
+               "%m/xx/%y", "%a %b %d %Y", "%B %d %Y %H:%M",
+               "%b %d %Y %H:%M", "%B %d %Y", "%b %d %Y",
+               "%a %b %d, %Y"]
     if format is not None:
-        formats.insert(0,format)
+        formats.insert(0, format)
     if not isinstance(date, basestring):
         date = str(date)
     d = date
     tz = datetime.timedelta(0)
-    if re.match('.+\s+ES?T$',date):
+    if re.match(r'.+\s+ES?T$', date):
         tz = datetime.timedelta(hours=5)
-    elif re.match('.+\s+EDT$',date):
+    elif re.match(r'.+\s+EDT$', date):
         tz = datetime.timedelta(hours=4)
-    elif re.match('.+\s+PS?T$',date):
+    elif re.match(r'.+\s+PS?T$', date):
         tz = datetime.timedelta(hours=8)
-    elif re.match('.+\s+PDT$',date):
+    elif re.match(r'.+\s+PDT$', date):
         tz = datetime.timedelta(hours=7)
-    for regex,sub in date_hacks:
-        d = regex.sub(sub,d)
+    for regex, sub in date_hacks:
+        d = regex.sub(sub, d)
     for f in formats:
         try:
             rv = datetime.datetime.strptime(d, f)
-            rv += tz;
+            rv += tz
             return rv
         except ValueError:
             pass
@@ -261,6 +265,7 @@ def dateTimeFormat(value, fmt):
         return value
     return value.strftime(fmt)
 
+
 duration_re = re.compile(r'^PT((?P<hours>\d+)[H:])?((?P<minutes>\d+)[M:])?((?P<seconds>[\d.]+)S?)?$')
 
 def from_isodatetime(date_time):
@@ -269,96 +274,107 @@ def from_isodatetime(date_time):
     """
     if not date_time:
         return None
-    if date_time[:2]=='PT':
+    if date_time[:2] == 'PT':
         match = duration_re.match(date_time)
         if not match:
             raise ValueError(date_time)
-        hours, minutes, seconds = match.group('hours'), match.group('minutes'), match.group('seconds')
+        hours = match.group('hours')
+        minutes = match.group('minutes')
+        seconds = match.group('seconds')
         secs = 0
         if hours is not None:
-            secs += int(match.group('hours'))*3600
+            secs += int(match.group('hours')) * 3600
         if minutes is not None:
-            secs += int(match.group('minutes'))*60
+            secs += int(match.group('minutes')) * 60
         if seconds is not None:
             secs += float(match.group('seconds'))
         return datetime.timedelta(seconds=secs)
     if 'T' in date_time:
         try:
-            return datetime.datetime.strptime(date_time, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=UTC())
+            return datetime.datetime.strptime(
+                date_time, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=UTC())
         except ValueError:
             pass
         try:
-            return datetime.datetime.strptime(date_time, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC())
+            return datetime.datetime.strptime(
+                date_time, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC())
         except ValueError:
-            return datetime.datetime.strptime(date_time, "%Y-%m-%dT%H:%MZ").replace(tzinfo=UTC())
-    if not 'Z' in date_time:
+            return datetime.datetime.strptime(
+                date_time, "%Y-%m-%dT%H:%MZ").replace(tzinfo=UTC())
+    if 'Z' not in date_time:
         try:
             return datetime.datetime.strptime(date_time, "%Y-%m-%d")
         except ValueError:
             return datetime.datetime.strptime(date_time, "%d/%m/%Y")
-    return datetime.datetime.strptime(date_time, "%H:%M:%SZ").replace(tzinfo=UTC()).time()
+    return datetime.datetime.strptime(
+        date_time, "%H:%M:%SZ").replace(tzinfo=UTC()).time()
 
 def toHtmlString(item, className=None):
-    """Converts an object in to a form suitable for rendering in an HTML page.
     """
-    rv=item
-    if isinstance(item,dict):
+    Converts an object in to a form suitable for rendering in an HTML page.
+    """
+    rv = item
+    if isinstance(item, dict):
         if className:
-            rv='<table class="%s">'%className
+            rv = '<table class="%s">' % className
         else:
-            rv='<table>'
-        for key,val in item.iteritems():
-            rv.append('<tr><td>%s</td><td>%s</td></tr>'%(str(key),toHtmlString(val)))
+            rv = '<table>'
+        for key, val in item.iteritems():
+            rv.append('<tr><td>%s</td><td>%s</td></tr>' % (
+                str(key), toHtmlString(val)))
         rv.append('</table>')
         rv = '\n'.join(rv)
-    elif isinstance(item,(list,tuple)):
+    elif isinstance(item, (list, tuple)):
         rv = []
         for val in item:
             rv.append(toHtmlString(val))
         if item.__class__ == tuple:
-            rv = ''.join(['(',','.join(rv),')'])
+            rv = ''.join(['(', ','.join(rv), ')'])
         else:
-            rv = ''.join(['[',','.join(rv),']'])
+            rv = ''.join(['[', ','.join(rv), ']'])
         if className:
-            rv = '<span class="%s">%s</span>'%(className,rv)
-    elif isinstance(item,bool):
+            rv = '<span class="{0}">{1}</span>'.format(className, rv)
+    elif isinstance(item, bool):
         if className is None:
-            className=''
-        rv = '<span class="bool-yes %s">&check;</span>'%className if item else '<span class="bool-no %s">&cross;</span>'%className
+            className = ''
+        yn = "bool-yes" if item else "bool-no"
+        rv = '<span class="{0} {1}">&check;</span>'.format(yn, className)
     else:
         if className:
-            rv = '<span class="%s">%s</span>'%(className,str(rv))
+            rv = '<span class="{0}">{1:s}</span>'.format(className, rv)
         else:
             rv = str(rv)
     return rv
 
 def flatten(items, convert_numbers=False):
-    """Converts an object in to a form suitable for storage.
-    flatten will take a dictionary, list or tuple and inspect each item in the object looking for
-    items such as datetime.datetime objects that need to be converted to a canonical form before
+    """
+    Converts an object in to a form suitable for storage.
+    flatten will take a dictionary, list or tuple and inspect each item
+    in the object looking for items such as datetime.datetime objects
+    that need to be converted to a canonical form before
     they can be processed for storage.
     """
-    if isinstance(items,dict):
-        rv={}
+    if isinstance(items, dict):
+        rv = {}
     else:
         rv = []
     for item in items:
         key = None
-        if isinstance(items,dict):
+        if isinstance(items, dict):
             key = item
             item = items[key]
         if hasattr(item, 'toJSON'):
             item = item.toJSON(pure=True)
-        elif isinstance(item,(datetime.date, datetime.datetime,datetime.time)):
+        elif isinstance(item, (datetime.date, datetime.datetime, datetime.time)):
             item = toIsoDateTime(item)
-        elif isinstance(item,(datetime.timedelta)):
+        elif isinstance(item, (datetime.timedelta)):
             item = toIsoDuration(item)
-        elif convert_numbers and isinstance(item,long):
-            item = '%d'%item
-        elif isinstance(item,decimal.Decimal):
+        elif convert_numbers and isinstance(item, long):
+            item = '%d' % item
+        elif isinstance(item, decimal.Decimal):
             item = float(item)
         elif isinstance(item, basestring):
-            item = str(item).replace("'","\'")
+            item = str(item).replace("'", "\'")
         elif isinstance(item, (list, set, tuple)):
             item = flatten(list(item))
         elif isinstance(item, dict):
@@ -366,7 +382,7 @@ def flatten(items, convert_numbers=False):
         if callable(item):
             continue
         if key:
-            rv[key]=item
+            rv[key] = item
         else:
             rv.append(item)
     if items.__class__ == tuple:
@@ -375,7 +391,8 @@ def flatten(items, convert_numbers=False):
 
 
 def as_python(value):
-    """Convert the value into a string of Python code.
+    """
+    Convert the value into a string of Python code.
     The result is suitable for use with eval()
     """
     if value is None:
@@ -410,12 +427,12 @@ def as_python(value):
             value = ''.join(["'", value, "'"])
         else:
             value = ''.join(['"', value, '"'])
-    elif isinstance(value, (datetime.date, datetime.datetime,datetime.time)):
-        value = 'utils.from_isodatetime("%s")'%(toIsoDateTime(value))
+    elif isinstance(value, (datetime.date, datetime.datetime, datetime.time)):
+        value = 'utils.from_isodatetime("%s")' % (toIsoDateTime(value))
     elif isinstance(value, (datetime.timedelta)):
-        value = 'utils.from_isodatetime("%s")'%(toIsoDuration(value))
+        value = 'utils.from_isodatetime("%s")' % (toIsoDuration(value))
     elif isinstance(value, decimal.Decimal):
-        value = 'decimal.Decimal(%s)'%(value)
+        value = 'decimal.Decimal(%s)' % (value)
     else:
         value = str(value)
     return value
@@ -432,9 +449,11 @@ def toJson(value, indent=0):
         return value
 
 def xmlSafe(value):
-    """Convert the given string to a format that is safe for inclusion in an XML document.
     """
-    return value.replace('&','&amp;')
+    Convert the given string to a format that is safe for inclusion
+    in an XML document.
+    """
+    return value.replace('&', '&amp;')
 
 def default(value, default_value):
     if value:
@@ -444,18 +463,20 @@ def default(value, default_value):
 def scale_timedelta(delta, num, denom):
     """Scale the given timedelta, avoiding overflows"""
     secs = num * delta.seconds
-    msecs = num* delta.microseconds
+    msecs = num * delta.microseconds
     secs += msecs / 1000000.0
     return secs / denom
 
 def toBase64(value):
     return base64.b64encode(value)
-    
+
 def toUuid(value):
     if not isinstance(value, basestring):
         value = value.encode('hex')
     value = value.upper()
-    return '-'.join([value[:8], value[8:12], value[12:16], value[16:20], value[20:] ])
+    return '-'.join([
+        value[:8], value[8:12], value[12:16], value[16:20],
+        value[20:]])
 
 def sizeFormat(value, binary=True):
     units = ['G', 'M', 'K', '']
@@ -478,6 +499,7 @@ def pick_items(src, keys):
         except KeyError:
             pass
     return rv
+
 
 #
 # The following code is from djangoappengine/utils.py

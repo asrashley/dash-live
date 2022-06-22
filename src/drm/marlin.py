@@ -22,12 +22,13 @@
 
 from drm.base import DrmBase
 
+
 class Marlin(DrmBase):
     MPD_SYSTEM_ID = '5e629af5-38da-4063-8977-97ffbd9902d4'
-    
+
     def generate_pssh(self, representation, keys):
         raise RuntimeError('generate_pssh has not been implemented for Marlin')
-        
+
     def dash_scheme_id(self):
         """
         Returns the DASH schemeIdUri for Marlin
@@ -39,4 +40,3 @@ class Marlin(DrmBase):
         if not uri.startswith("urn:uuid:"):
             return False
         return uri[9:].lower() == cls.SYSTEM_ID
-        

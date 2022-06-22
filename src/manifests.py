@@ -22,62 +22,62 @@
 
 manifest = {
     'hand_made.mpd': {
-        'title':'Hand-made manifest',
+        'title': 'Hand-made manifest',
         'modes': ['live', 'vod', 'odvod']
     },
     'manifest_vod_aiv.mpd': {
-        'title':'AIV on demand profile',
+        'title': 'AIV on demand profile',
         'modes': ['odvod'],
         'params': {
-            'mode':'odvod',
+            'mode': 'odvod',
             'drm': 'none',
         },
     },
     'manifest_a.mpd': {
-        'title':'Vendor A live profile',
+        'title': 'Vendor A live profile',
         'modes': ['live', 'vod'],
         'params': {
-            'mode':'live',
+            'mode': 'live',
             'drm': 'none',
         },
     },
     'vod_manifest_b.mpd': {
-        'title':'Vendor B VOD using live profile',
+        'title': 'Vendor B VOD using live profile',
         'modes': ['vod'],
         'params': {
-            'mode':'live',
+            'mode': 'live',
             'drm': 'none',
         },
     },
     'manifest_e.mpd': {
-        'title':'Vendor E live profile',
+        'title': 'Vendor E live profile',
         'modes': ['live', 'vod'],
         'params': {
-            'mode':'live',
+            'mode': 'live',
             'drm': 'none',
         },
     },
-    'manifest_h.mpd':  {
-        'title':'Vendor H live profile',
+    'manifest_h.mpd': {
+        'title': 'Vendor H live profile',
         'modes': ['live', 'vod'],
         'params': {
-            'mode':'live',
+            'mode': 'live',
             'drm': 'none',
         },
     },
-    'manifest_i.mpd':  {
-        'title':'Vendor I live profile',
+    'manifest_i.mpd': {
+        'title': 'Vendor I live profile',
         'modes': ['live', 'vod'],
         'params': {
-            'mode':'live',
+            'mode': 'live',
             'drm': 'none',
         },
     },
-    'manifest_ef.mpd':  {
-        'title':'Vendor EF live profile',
+    'manifest_ef.mpd': {
+        'title': 'Vendor EF live profile',
         'modes': ['live', 'vod'],
         'params': {
-            'mode':'live',
+            'mode': 'live',
             'drm': 'none',
             'acodec': 'mp4a',
         },

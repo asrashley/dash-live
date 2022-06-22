@@ -24,6 +24,7 @@ import base64
 import binascii
 import re
 
+
 class KeyMaterial(object):
     length = 16
 
@@ -34,13 +35,13 @@ class KeyMaterial(object):
             elif re.match(r'^(0x)?[0-9a-f-]+$', value, re.IGNORECASE):
                 if value.startswith('0x'):
                     value = value[2:]
-                self.raw = binascii.unhexlify(value.replace('-',''))
+                self.raw = binascii.unhexlify(value.replace('-', ''))
             else:
                 self.raw = base64.b64decode(value)
         elif raw is not None:
             self.raw = raw
         elif hex is not None:
-            self.raw = binascii.unhexlify(hex.replace('-',''))
+            self.raw = binascii.unhexlify(hex.replace('-', ''))
         elif b64 is not None:
             self.raw = binascii.a2b_base64(b64)
         else:
@@ -52,7 +53,7 @@ class KeyMaterial(object):
         return binascii.b2a_hex(self.raw)
 
     def from_hex(self, value):
-        self.raw = value.replace('-','').decode('hex')
+        self.raw = value.replace('-', '').decode('hex')
 
     hex = property(to_hex, from_hex)
 
@@ -66,4 +67,3 @@ class KeyMaterial(object):
 
     def __len__(self):
         return self.length
-
