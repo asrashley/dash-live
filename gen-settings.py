@@ -6,6 +6,7 @@ TEMPLATE="""from utils import on_production_server
 cookie_secret = r'{cookie}'
 csrf_secret = r'{csrf}'
 DEBUG = not on_production_server
+allowed_domains = "*"
 """
 
 cookie = []

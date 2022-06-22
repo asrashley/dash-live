@@ -15,13 +15,19 @@ A settings.py needs to be created that contains
 
     from utils import on_production_server
 
-    cookie_secret='arandomstring'
+    cookie_secret = 'arandomstring'
     csrf_secret = 'arandomstring'
-    DEBUG=not on_production_server
+    DEBUG = not on_production_server
+    allowed_domains = "*"
 
 The cookie_secret and csrf_secret variables need to contain a randomly
 generated block of ascii characters. There is a gen_settings.py script
 that can be used to auto-generate settings.py
+
+The `allowed_domains` setting is optional. If it is missing, a default
+list of domains that supports common JavaScript DASH libraries will be
+used. An `allowed_domains` value of "*" tells the server to allow any
+request from any domain.
 
 ### Running development server directly on the host machine
 Install the Python 2 Google App Engine (GAE)

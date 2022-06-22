@@ -99,7 +99,7 @@ class RequestHandler(webapp2.RequestHandler):
     CSRF_EXPIRY = 1200
     CSRF_KEY_LENGTH = 32
     CSRF_SALT_LENGTH = 8
-    ALLOWED_DOMAINS = re.compile(
+    DEFAULT_ALLOWED_DOMAINS = re.compile(
         r'^http://(dashif\.org)|(shaka-player-demo\.appspot\.com)|(mediapm\.edgesuite\.net)')
     DEFAULT_TIMESHIFT_BUFFER_DEPTH = 60
     INJECTED_ERROR_CODES = [404, 410, 503, 504]
@@ -672,12 +672,18 @@ class RequestHandler(webapp2.RequestHandler):
         return ''
 
     def add_allowed_origins(self):
+        allowed_domains = getattr(settings, 'allowed_domains', self.DEFAULT_ALLOWED_DOMAINS)
+        if allowed_domains == "*":
+            self.response.headers.add_header("Access-Control-Allow-Origin", "*")
+            self.response.headers.add_header("Access-Control-Allow-Methods", "HEAD, GET, POST")
+            return
         try:
-            if self.ALLOWED_DOMAINS.search(self.request.headers['Origin']):
-                self.response.headers.add_header(
-                    "Access-Control-Allow-Origin", self.request.headers['Origin'])
-                self.response.headers.add_header(
-                    "Access-Control-Allow-Methods", "HEAD, GET, POST")
+            if isinstance(allowed_domains, str):
+                allowed_domains = re.compile(allowed_domains)
+            if allowed_domains.search(self.request.headers['Origin']):
+                self.response.headers.add_header("Access-Control-Allow-Origin",
+                                                 self.request.headers['Origin'])
+                self.response.headers.add_header("Access-Control-Allow-Methods", "HEAD, GET, POST")
         except KeyError:
             pass
 
