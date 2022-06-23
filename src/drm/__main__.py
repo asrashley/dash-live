@@ -27,10 +27,12 @@ from mp4 import IsoParser
 
 if __name__ == "__main__":
     def show_pssh(atom):
-        if atom.atom_type=='pssh':
+        if atom.atom_type == 'pssh':
             print(atom)
             if atom.system_id == PlayReady.RAW_SYSTEM_ID:
-                pro = PlayReady.parse_pro(utils.BufferedReader(None, data=atom.data))
+                pro = PlayReady.parse_pro(
+                    utils.BufferedReader(
+                        None, data=atom.data))
                 print(pro)
         else:
             for child in atom.children:

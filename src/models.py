@@ -1,7 +1,6 @@
 import re
 
 from google.appengine.ext import ndb
-from google.appengine.api import search
 from google.appengine.ext.blobstore import blobstore
 
 from drm.keymaterial import KeyMaterial
@@ -69,7 +68,6 @@ class MediaFile(ndb.Model):
         for b in blobstore.BlobInfo.get(map(lambda f: f.blob, files)):
             if b is not None:
                 blobs[b.key()] = b
-        result = []
         for f in files:
             try:
                 f._info = blobs[f.blob]
@@ -88,7 +86,7 @@ class MediaFile(ndb.Model):
 
     def toJSON(self, convert_date=True, pure=False):
         i = self.info
-        blob  = {}
+        blob = {}
         if i is not None:
             for k in ["creation", "size", "md5_hash", "content_type", "filename"]:
                 blob[k] = getattr(i, k)
@@ -108,12 +106,14 @@ class MediaFile(ndb.Model):
 def kid_validator(prop, value):
     if not re.match(r'^[0-9a-f-]+$', value, re.IGNORECASE):
         raise TypeError('Expected a hex value, not {:s}'.format(value))
-    return value.replace('-','').lower()
+    return value.replace('-', '').lower()
 
 class Key(ndb.Model):
-    hkid = ndb.StringProperty(required=True, indexed=True, verbose_name='Key identifier',
+    hkid = ndb.StringProperty(required=True, indexed=True,
+                              verbose_name='Key identifier',
                               validator=kid_validator)
-    hkey = ndb.StringProperty(required=True, verbose_name='Content encryption key')
+    hkey = ndb.StringProperty(required=True,
+                              verbose_name='Content encryption key')
     computed = ndb.BooleanProperty(verbose_name='computed')
     halg = ndb.StringProperty(required=False, indexed=False, default=None,
                               verbose_name='Encryption algorithm')
@@ -135,8 +135,8 @@ class Key(ndb.Model):
     @classmethod
     def get_kids(clz, kids):
         kids = map(lambda k: k.lower(), kids)
-        if len(kids)==1:
-            q = clz.query(clz.hkid==kids[0])
+        if len(kids) == 1:
+            q = clz.query(clz.hkid == kids[0])
         else:
             q = clz.query(clz.hkid.IN(kids))
         rv = {}

@@ -22,16 +22,17 @@
 
 from abc import ABCMeta, abstractmethod
 
+
 class DrmBase(object):
     __metaclass__ = ABCMeta
-    
+
     def __init__(self, templates):
         self.templates = templates
 
     @abstractmethod
     def dash_scheme_id(self):
         raise RuntimeError('dash_scheme_id has not been implemented')
-    
+
     @abstractmethod
     def generate_pssh(self, representation, keys):
         raise RuntimeError('generate_pssh has not been implemented')

@@ -26,13 +26,13 @@ import os
 import sys
 import unittest
 
-_src = os.path.join(os.path.dirname(__file__),"..", "src")
-if not _src in sys.path:
+_src = os.path.join(os.path.dirname(__file__), "..", "src")
+if _src not in sys.path:
     sys.path.append(_src)
 
-import mp4
-import segment
 import utils
+import segment
+import mp4
 
 class SegmentTests(unittest.TestCase):
     def setUp(self):
@@ -46,7 +46,8 @@ class SegmentTests(unittest.TestCase):
             src = utils.BufferedReader(io.FileIO(filename, 'rb'))
             wrap = mp4.Wrapper(atom_type='wrap', parent=None,
                                children=mp4.Mp4Atom.create(src))
-            rep = segment.Representation.create(filename=name, atoms=wrap.children)
+            rep = segment.Representation.create(
+                filename=name, atoms=wrap.children)
             self.assertEqual(rep.version, segment.Representation.VERSION)
             if 'v' in name:
                 self.assertEqual(rep.contentType, "video")
@@ -61,17 +62,18 @@ class SegmentTests(unittest.TestCase):
             idx = 0
             pos = 0
             for c in wrap.children:
-                if c.atom_type=='moof':
+                if c.atom_type == 'moof':
                     msg = 'Expected position for segment {0:d} of {1:s} to be {2:d} but was {3:d}'.format(
                         idx, name, rep.segments[idx].pos, pos)
                     self.assertEqual(rep.segments[idx].pos, pos, msg)
                     msg = 'Expected size for segment {0:d} of {1:s} to be {2:d} but was {3:d}'.format(
                         idx, name, c.position - pos, rep.segments[idx].size)
-                    self.assertEqual(c.position - pos, rep.segments[idx].size, msg)
+                    self.assertEqual(
+                        c.position - pos, rep.segments[idx].size, msg)
                     pos = c.position
                     idx += 1
 
-        
+
 if os.environ.get("TESTS"):
     def load_tests(loader, tests, pattern):
         return unittest.loader.TestLoader().loadTestsFromNames(
@@ -80,4 +82,3 @@ if os.environ.get("TESTS"):
 
 if __name__ == "__main__":
     unittest.main()
-

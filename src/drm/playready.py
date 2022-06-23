@@ -21,7 +21,6 @@
 #############################################################################
 
 import base64
-import binascii
 import re
 try:
     import cStringIO as StringIO
@@ -37,12 +36,14 @@ import mp4
 from drm.base import DrmBase
 from drm.keymaterial import KeyMaterial
 
+
 class PlayReady(DrmBase):
     MAJOR_VERSIONS = [1.0, 2.0, 3.0, 4.0]
     SYSTEM_ID = "9a04f079-9840-4286-ab92-e65be0885f95"
     SYSTEM_ID_V10 = "79f0049a-4098-8642-ab92-e65be0885f95"
     RAW_SYSTEM_ID = "9a04f07998404286ab92e65be0885f95".decode("hex")
-    TEST_KEY_SEED = base64.b64decode("XVBovsmzhP9gRIZxWfFta3VVRPzVEWmJsazEJ46I")
+    TEST_KEY_SEED = base64.b64decode(
+        "XVBovsmzhP9gRIZxWfFta3VVRPzVEWmJsazEJ46I")
     TEST_LA_URL = "https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg={cfgs}"
     DRM_AES_KEYSIZE_128 = 16
 
@@ -62,24 +63,24 @@ class PlayReady(DrmBase):
 
     @classmethod
     def hex_to_le_guid(clz, guid, raw):
-        if raw==True:
-            if len(guid)!=16:
+        if raw is True:
+            if len(guid) != 16:
                 raise ValueError("GUID should be 16 bytes")
             guid = guid.encode('hex')
         else:
             guid = guid.replace('-', '')
-        if len(guid)!=32:
+        if len(guid) != 32:
             raise ValueError("GUID should be 32 hex characters")
-        dword = ''.join([guid[6:8], guid[4:6],guid[2:4],guid[0:2]])
+        dword = ''.join([guid[6:8], guid[4:6], guid[2:4], guid[0:2]])
         word1 = ''.join([guid[10:12], guid[8:10]])
         word2 = ''.join([guid[14:16], guid[12:14]])
-        # looking at example streams, word 3 appears to be in big endian format!
+        # looking at example streams, word 3 appears to be in big endian
+        # format!
         word3 = ''.join([guid[16:18], guid[18:20]])
         result = '-'.join([dword, word1, word2, word3, guid[20:]])
         assert len(result) == 36
-        if raw == True:
-            return result.replace('-','').decode('hex')
-        #raise ValueError(guid, result)
+        if raw is True:
+            return result.replace('-', '').decode('hex')
         return result
 
     def generate_checksum(self, keypair):
@@ -91,7 +92,7 @@ class PlayReady(DrmBase):
         msg = cipher.encrypt(guid_kid)
         return msg[:8]
 
-    #https://docs.microsoft.com/en-us/playready/specifications/playready-key-seed
+    # https://docs.microsoft.com/en-us/playready/specifications/playready-key-seed
     @classmethod
     def generate_content_key(clz, keyId, keySeed=None):
         """Generate a content key from the key ID"""
@@ -102,12 +103,14 @@ class PlayReady(DrmBase):
         keyId = PlayReady.hex_to_le_guid(keyId, raw=True)
         if len(keySeed) < 30:
             raise ValueError("Key seed must be at least 30 bytes")
-        # Truncate the key seed to 30 bytes, key seed must be at least 30 bytes long.
+        # Truncate the key seed to 30 bytes, key seed must be at least 30 bytes
+        # long.
         truncatedKeySeed = keySeed[:30]
-        assert len(keyId)==16
-        assert len(truncatedKeySeed)==30
-        # Create sha_A_Output buffer.  It is the SHA of the truncatedKeySeed and the keyIdAsBytes
-        sha_A = SHA256.new();
+        assert len(keyId) == 16
+        assert len(truncatedKeySeed) == 30
+        # Create sha_A_Output buffer.  It is the SHA of the truncatedKeySeed
+        # and the keyIdAsBytes
+        sha_A = SHA256.new()
         sha_A.update(truncatedKeySeed)
         sha_A.update(keyId)
         sha_A_Output = bytearray(sha_A.digest())
@@ -132,8 +135,8 @@ class PlayReady(DrmBase):
         contentKey = bytearray(PlayReady.DRM_AES_KEYSIZE_128)
         for i in range(PlayReady.DRM_AES_KEYSIZE_128):
             contentKey[i] = sha_A_Output[i] ^ sha_A_Output[i + PlayReady.DRM_AES_KEYSIZE_128] \
-                            ^ sha_B_Output[i] ^ sha_B_Output[i + PlayReady.DRM_AES_KEYSIZE_128] \
-                            ^ sha_C_Output[i] ^ sha_C_Output[i + PlayReady.DRM_AES_KEYSIZE_128]
+                ^ sha_B_Output[i] ^ sha_B_Output[i + PlayReady.DRM_AES_KEYSIZE_128] \
+                ^ sha_C_Output[i] ^ sha_C_Output[i + PlayReady.DRM_AES_KEYSIZE_128]
         return contentKey
 
     def generate_wrmheader(self, representation, keys):
@@ -154,7 +157,7 @@ class PlayReady(DrmBase):
             cfg = [
                 'kid:' + base64.b64encode(guid_kid),
                 'persist:false',
-                'sl:'+str(self.security_level)
+                'sl:' + str(self.security_level)
             ]
             if not keypair.computed:
                 cfg.append('contentkey:' + base64.b64encode(rkey))
@@ -164,14 +167,16 @@ class PlayReady(DrmBase):
             la_url = self.TEST_LA_URL
         default_keypair = keys[representation.default_kid.lower()]
         default_key = default_keypair.KEY.raw
-        default_kid = PlayReady.hex_to_le_guid(default_keypair.KID.raw, raw=True)
+        default_kid = PlayReady.hex_to_le_guid(
+            default_keypair.KID.raw, raw=True)
         context = {
             "default_kid": default_kid,
+            "default_key": default_key,
             "kids": kids,
             "la_url": la_url.format(cfgs=cfgs,
                                     default_kid=default_keypair.KID.hex,
                                     kids=[a["kid"] for a in kids]
-            )
+                                    )
         }
         context["checksum"] = self.generate_checksum(default_keypair)
         header_version = self.header_version
@@ -180,7 +185,7 @@ class PlayReady(DrmBase):
             # required for the supplied keys
             if cenc_alg != 'AESCTR':
                 header_version = 4.3
-            elif len(keys)==1:
+            elif len(keys) == 1:
                 if self.version >= 2.0:
                     header_version = 4.1
                 else:
@@ -190,20 +195,19 @@ class PlayReady(DrmBase):
             if self.version is not None:
                 if ((header_version == 4.3 and self.version < 4.0) or
                     (header_version == 4.2 and self.version < 3.0) or
-                    (header_version == 4.1 and self.version < 2.0)):
+                        (header_version == 4.1 and self.version < 2.0)):
                     raise ValueError(
                         '{0} WRMHEADER is not supported by PlayReady v{1}'.format(
                             header_version, self.version
                         ))
         if header_version not in [4.0, 4.1, 4.2, 4.3]:
             raise ValueError(
-                "PlayReady header version {} has not been implemented".format(version))
+                "PlayReady header version {} has not been implemented".format(header_version))
         template = self.templates.get_template('drm/wrmheader{0}.xml'.format(
-            int(header_version*10)))
+            int(header_version * 10)))
         xml = template.render(context)
         xml = re.sub(r'[\r\n]', '', xml)
         xml = re.sub(r'>\s+<', '><', xml)
-        #raise ValueError(xml)
         wrm = xml.encode('utf-16')
         if ord(wrm[0]) == 0xFF and ord(wrm[1]) == 0xFE:
             # remove UTF-16 byte order mark
@@ -214,7 +218,7 @@ class PlayReady(DrmBase):
         """Generate PlayReady Object (PRO)"""
         wrm = self.generate_wrmheader(representation, keys)
         record = struct.pack('<HH', 0x001, len(wrm)) + wrm
-        pro = struct.pack('<IH', len(record)+6, 1) + record
+        pro = struct.pack('<IH', len(record) + 6, 1) + record
         return pro
 
     @classmethod
@@ -239,14 +243,15 @@ class PlayReady(DrmBase):
                 if len(prh) != record_length:
                     raise IOError("PlayReady Object too small")
                 record['PlayReadyHeader'] = prh.decode('utf-16')
-                record['xml'] = ElementTree.parse(StringIO.StringIO(record['PlayReadyHeader']))
+                record['xml'] = ElementTree.parse(
+                    StringIO.StringIO(record['PlayReadyHeader']))
             objects.append(record)
         return objects
 
     def generate_pssh(self, representation, keys):
         """Generate a PlayReady Object (PRO) inside a PSSH box"""
         pro = self.generate_pro(representation, keys)
-        pssh_version = 0 if len(keys)==1 else 1
+        pssh_version = 0 if len(keys) == 1 else 1
         if isinstance(keys, dict):
             keys = keys.keys()
         keys = map(lambda k: KeyMaterial(k).raw, keys)
@@ -269,4 +274,3 @@ class PlayReady(DrmBase):
         if not uri.startswith("urn:uuid:"):
             return False
         return uri[9:].lower() in [cls.SYSTEM_ID, cls.SYSTEM_ID_V10]
-        

@@ -25,22 +25,25 @@ that can be used to auto-generate settings.py
 
 ### Running development server directly on the host machine
 Install the Python 2 Google App Engine (GAE)
- 
+
 https://cloud.google.com/appengine/docs/standard/python/download
 
 On Ubuntu, the following should install the Python GAE SDK:
 
     echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-	sudo apt-get install apt-transport-https ca-certificates
-	curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
-	sudo apt-get update && sudo apt-get install google-cloud-sdk
+    sudo apt-get install apt-transport-https ca-certificates
+    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+    sudo apt-get update && sudo apt-get install google-cloud-sdk
     sudo apt-get install google-cloud-sdk-app-engine-python google-cloud-sdk-app-engine-python-extras google-cloud-sdk-datastore-emulator
 
 Create a Python virtual environment and install the dependencies:
 
-    virtualenv -p python2 virtenv
-    . ./virtenv/bin/activate
-    pip install -r requirements.txt
+```sh
+sudo python2 -m pip install virtualenv
+virtualenv -p python2 virtenv
+. ./virtenv/bin/activate
+pip install -r requirements.txt
+```
 
 The CSS files need to be compiled:
 
@@ -83,7 +86,7 @@ ones are in the clear. For example:
 * bbb_a2.mp4
 * bbb_a2_enc.mp4
 * bbb_v1.mp4
-* bbb_v1_enc.mp4 
+* bbb_v1_enc.mp4
 * bbb_v2.mp4
 * bbb_v2_enc.mp4
 * bbb_v3.mp4
@@ -152,7 +155,7 @@ server.
 
 Once this has been done, you can add the stream to the list of
 available streams http://localhost:9080/media using the "add" button
-in the "Streams" table. The prefix must be the filename prefix used 
+in the "Streams" table. The prefix must be the filename prefix used
 when creating the media. In the above example, the prefix would be
 "bbb".
 
