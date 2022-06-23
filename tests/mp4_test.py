@@ -23,6 +23,7 @@
 # base64 and decimal are used when using eval() to create an mp4
 # atom from the string returned by repr() on an existing mp4 atom
 import base64
+import binascii
 import decimal
 import io
 import logging
@@ -40,6 +41,9 @@ import utils
 import mp4
 
 class Mp4Tests(unittest.TestCase):
+    __DECIMAL_TO_AVOID_UNUSED_IMPORT = decimal.Decimal(1)
+    __BASE64_TO_AVOID_UNUSED_IMPORT = base64.EMPTYSTRING
+
     def setUp(self):
         self.fixtures = os.path.join(os.path.dirname(__file__), "fixtures")
         self.timescale = 240
@@ -52,14 +56,17 @@ class Mp4Tests(unittest.TestCase):
 
     @property
     def segment(self):
+        """An initialization segment"""
         return self._get_media('_segment', "seg1.mp4")
 
     @property
     def moov(self):
+        """An unencrypted video fragment"""
         return self._get_media('_moov', "moov.mp4")
 
     @property
     def enc_moov(self):
+        """An encrypted video fragment"""
         return self._get_media('_enc_moov', "enc-moov.mp4")
 
     def _get_media(self, name, filename):
@@ -80,6 +87,9 @@ class Mp4Tests(unittest.TestCase):
         if name is not None:
             lmsg = ': '.join([name, lmsg])
             dmsg = ': '.join([name, dmsg])
+        if len(a) != len(b):
+            self.hexdumpBuffer('expected', a)
+            self.hexdumpBuffer('actual', b)
         self.assertEqual(
             len(a), len(b), lmsg.format(
                 expected=len(a), actual=len(b)))
@@ -89,6 +99,24 @@ class Mp4Tests(unittest.TestCase):
 
     def assertGreaterOrEqual(self, a, b, msg=None):
         self._assert_true(a >= b, a, b, msg, r'{} < {}')
+
+    def assertLessThan(self, a, b, msg=None):
+        self._assert_true(a < b, a, b, msg, r'{} >= {}')
+
+    @staticmethod
+    def hexdumpBuffer(label, data):
+        print('==={0}==='.format(label))
+        line = []
+        for idx, d in enumerate(data):
+            asc = d if d >= ' ' and d <= 'z' else ' '
+            line.append('{0:02x} {1} '.format(ord(d), asc))
+            if len(line) == 8:
+                print('{0:04d}: {1}'.format(idx - 7, '  '.join(line)))
+                line = []
+        if line:
+            print('{0:04d}: {1}'.format(len(data) - len(line),
+                                        '  '.join(line)))
+        print('==={0}==='.format('=' * len(label)))
 
     def test_parse_moov(self):
         src = utils.BufferedReader(None, data=self.moov)
@@ -369,6 +397,77 @@ class Mp4Tests(unittest.TestCase):
         ec3.encode(dest)
         new_ec3_data = dest.getvalue()
         self.assertBuffersEqual(orig_ec3_data, new_ec3_data)
+
+    def test_parse_dash_events(self):
+        """Test parsing a fragment with DASH event messages in it"""
+        with open(os.path.join(self.fixtures, "emsg.mp4"), "rb") as f:
+            src_data = f.read()
+        src = utils.BufferedReader(None, data=src_data)
+        atoms = mp4.Mp4Atom.create(src)
+        self.assertEqual(len(atoms), 9)
+        expected_data = [
+            "YMID=337880795,YCSP=337880795,YSEQ=1:4,YTYP=S,YDUR=0.00",
+            "YMID=337880795,YCSP=337880795,YSEQ=1:4,YTYP=M,YDUR=2.00",
+            "YMID=337880795,YCSP=337880795,YSEQ=1:4,YTYP=M,YDUR=4.00",
+            "YMID=337880795,YCSP=337880795,YSEQ=1:4,YTYP=M,YDUR=6.00",
+            "YMID=337880795,YCSP=337880795,YSEQ=1:4,YTYP=E,YDUR=7.75",
+        ]
+        for idx, atom in enumerate(atoms):
+            if atom.atom_type != "emsg":
+                continue
+            self.assertGreaterOrEqual(idx, 2)
+            self.assertLessThan(idx, 7)
+            self.assertEqual(atom.data, expected_data[idx - 2])
+            self.assertEqual(atom.event_duration, 0)
+            self.assertEqual(atom.event_id, 98 + idx)
+            self.assertEqual(atom.scheme_id_uri, "urn:example:a:id3:2016")
+            self.assertEqual(atom.timescale, 12800)
+            self.assertEqual(atom.value, "")
+            self.assertEqual(atom.version, 0)
+
+    def test_create_all_segments_in_emsg_file(self):
+        self.check_create_all_segments_in_file("emsg.mp4")
+
+    def test_create_emsg_v1(self):
+        emsg = mp4.EventMessageBox(
+            version=1, flags=0,
+            scheme_id_uri="urn:example:2022:6",
+            value="42", timescale=1000, event_id=123,
+            presentation_time=0x012345,
+            event_duration=0x678,
+            data="Hello World")
+        data = emsg.encode()
+        # self.hexdumpBuffer('emsg', data)
+        # print(binascii.b2a_hex(data))
+        expected_data = ''.join([
+            '00000041',  # length
+            '656d7367',  # "emsg"
+            '01',  # version
+            '000000',  # flags
+            '000003e8',  # timescale
+            '0000000000012345',  # presentation time
+            '00000678',  # event duration
+            '0000007b',  # event ID
+            binascii.b2a_hex("urn:example:2022:6"), "00",
+            binascii.b2a_hex("42"), "00",
+            binascii.b2a_hex("Hello World"),
+        ])
+        # print(expected_data)
+        expected_data = binascii.a2b_hex(expected_data)
+        self.assertBuffersEqual(expected_data, data)
+        src = utils.BufferedReader(None, data=expected_data)
+        atoms = mp4.Mp4Atom.create(src)
+        self.assertEqual(len(atoms), 1)
+        new_emsg = atoms[0]
+        self.assertEqual(emsg.version, new_emsg.version)
+        self.assertEqual(emsg.flags, new_emsg.flags)
+        self.assertEqual(emsg.scheme_id_uri, new_emsg.scheme_id_uri)
+        self.assertEqual(emsg.value, new_emsg.value)
+        self.assertEqual(emsg.timescale, new_emsg.timescale)
+        self.assertEqual(emsg.event_id, new_emsg.event_id)
+        self.assertEqual(emsg.presentation_time, new_emsg.presentation_time)
+        self.assertEqual(emsg.event_duration, new_emsg.event_duration)
+        self.assertEqual(emsg.data, new_emsg.data)
 
 
 if os.environ.get("TESTS"):
