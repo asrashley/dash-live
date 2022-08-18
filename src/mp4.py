@@ -1685,10 +1685,11 @@ class SampleAuxiliaryInformationSizesBox(FullBox):
     @classmethod
     def check_info_type(clz, info_type):
         s = ''.join([
-            (info_type >> 24) & 0xFF,
-            (info_type >> 16) & 0xFF,
-            (info_type >> 8) & 0xFF,
-            (info_type) & 0xFF])
+            chr((info_type >> 24) & 0xFF),
+            chr((info_type >> 16) & 0xFF),
+            chr((info_type >> 8) & 0xFF),
+            chr((info_type) & 0xFF)
+        ])
         if s.isalpha():
             return s
         return info_type
