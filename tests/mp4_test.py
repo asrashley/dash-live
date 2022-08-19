@@ -469,6 +469,83 @@ class Mp4Tests(unittest.TestCase):
         self.assertEqual(emsg.event_duration, new_emsg.event_duration)
         self.assertEqual(emsg.data, new_emsg.data)
 
+    def test_create_emsg_v0_from_scratch(self):
+        emsg = mp4.EventMessageBox(version=0,
+                                   flags=0,
+                                   scheme_id_uri='urn:example:scheme:2022',
+                                   timescale=0x1234,
+                                   event_duration=0x3456,
+                                   presentation_time_delta=0xabcd,
+                                   event_id=0x6789,
+                                   value="3366",
+                                   data='hello world'
+                                   )
+        data = emsg.encode()
+        # self.hexdumpBuffer('data', data)
+        atom = ''.join([
+            'emsg', # atom type
+            chr(0), # version
+            3*chr(0), # flags
+            emsg.scheme_id_uri, chr(0),
+            emsg.value, chr(0),
+            struct.pack('>I', emsg.timescale),
+            struct.pack('>I', emsg.presentation_time_delta),
+            struct.pack('>I', emsg.event_duration),
+            struct.pack('>I', emsg.event_id),
+            emsg.data,
+        ])
+        length = struct.pack('>I', len(atom) + 4)
+        expected = length + atom
+        self.assertBuffersEqual(expected, data, name="emsg")
+        src = utils.BufferedReader(None, data=data)
+        new_emsg = mp4.Mp4Atom.create(src)
+        self.assertEqual(len(new_emsg), 1)
+        self.assertEqual(new_emsg[0].atom_type, 'emsg')
+        self.assertEqual(emsg.timescale, new_emsg[0].timescale)
+        self.assertEqual(emsg.presentation_time_delta,
+                         new_emsg[0].presentation_time_delta)
+        self.assertEqual(emsg.event_duration, new_emsg[0].event_duration)
+        self.assertEqual(emsg.event_id, new_emsg[0].event_id)
+        self.assertEqual(emsg.data, new_emsg[0].data)
+
+    def test_create_emsg_v1_from_scratch(self):
+        emsg = mp4.EventMessageBox(version=1,
+                                   flags=0,
+                                   scheme_id_uri='urn:example:scheme:2022',
+                                   timescale=0x1234,
+                                   event_duration=0x3456,
+                                   presentation_time=0xabcdef0123456,
+                                   event_id=0x6789,
+                                   value="3366",
+                                   data='hello world'
+                                   )
+        data = emsg.encode()
+        # self.hexdumpBuffer('data', data)
+        atom = ''.join([
+            'emsg', # atom type
+            chr(1), # version
+            3*chr(0), # flags
+            struct.pack('>I', emsg.timescale),
+            struct.pack('>Q', emsg.presentation_time),
+            struct.pack('>I', emsg.event_duration),
+            struct.pack('>I', emsg.event_id),
+            emsg.scheme_id_uri, chr(0),
+            emsg.value, chr(0),
+            emsg.data,
+        ])
+        length = struct.pack('>I', len(atom) + 4)
+        expected = length + atom
+        self.assertBuffersEqual(expected, data, name="emsg")
+        src = utils.BufferedReader(None, data=data)
+        new_emsg = mp4.Mp4Atom.create(src)
+        self.assertEqual(len(new_emsg), 1)
+        self.assertEqual(new_emsg[0].atom_type, 'emsg')
+        self.assertEqual(emsg.timescale, new_emsg[0].timescale)
+        self.assertEqual(emsg.presentation_time,
+                         new_emsg[0].presentation_time)
+        self.assertEqual(emsg.event_duration, new_emsg[0].event_duration)
+        self.assertEqual(emsg.event_id, new_emsg[0].event_id)
+        self.assertEqual(emsg.data, new_emsg[0].data)
 
 if os.environ.get("TESTS"):
     def load_tests(loader, tests, pattern):
