@@ -109,4 +109,12 @@ options = [
             ('Use EME/MSE (no DRM)', 'mse=2'),
         ]
     },
+    {
+        'name': 'events',
+        'title': 'DASH events',
+        'options': [
+            ('None', ''),
+            ('PingPong', 'events=ping'),
+        ]
+    },
 ]

@@ -28,9 +28,23 @@
  </ProgramInformation>
  <Location>{{request_uri|xmlSafe}}</Location>
  {% if mode=='live' %}<UTCTiming schemeIdUri="{{timeSource.method}}" value="{{timeSource.url}}"/>{% endif %}
- <Period start="PT0S" id="p0" {% if mode!='live' %}duration="{{mediaDuration|isoDuration}}"{% endif %}>
+ <Period
+     start="{{period.start|isoDuration}}"
+     id="{{period.id}}"
+     {% if period.duration %}duration="{{period.duration|isoDuration}}"{% endif %}
+   >
  {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
-  <AdaptationSet mimeType="video/mp4" contentType="video" segmentAlignment="true" startWithSAP="1" maxWidth="{{video.maxWidth}}" maxHeight="{{video.maxHeight}}" maxFrameRate="{{video.maxFrameRate}}" par="16:9">
+ {% include "events/period.xml" %}
+ <AdaptationSet
+     mimeType="video/mp4"
+     contentType="video"
+     segmentAlignment="true"
+     startWithSAP="1"
+     maxWidth="{{video.maxWidth}}"
+     maxHeight="{{video.maxHeight}}"
+     maxFrameRate="{{video.maxFrameRate}}"
+     par="16:9">
+   {% include "events/adaptationset.xml" %}
    <ContentComponent id="1" contentType="video"/>
    {% for rep in video.representations %}
      {% if loop.first %}
@@ -99,4 +113,3 @@
   {% endfor %}
  </Period>
 </MPD>
-

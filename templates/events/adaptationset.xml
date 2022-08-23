@@ -1,0 +1,5 @@
+{% if video.event_streams %}
+  {% for stream in video.event_streams %}
+    {% include "events/inband_event_stream.xml" %}
+  {% endfor %}
+{% endif %}

@@ -1,0 +1,5 @@
+{% if period.event_streams %}
+{% for stream in period.event_streams %}
+{% include "events/event_stream.xml" %}
+{% endfor %}
+{% endif %}

@@ -1,0 +1,5 @@
+{%- if rep.event_streams %}
+  {%- for stream in rep.event_streams %}
+    {%- include "events/inband_event_stream.xml" %}
+  {% endfor %}
+{% endif %}

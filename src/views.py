@@ -55,6 +55,7 @@ import utils
 from drm.clearkey import ClearKey
 from drm.playready import PlayReady
 from drm.marlin import Marlin
+from events import EventFactory
 from routes import routes
 
 templates = jinja2.Environment(
@@ -442,9 +443,16 @@ class RequestHandler(webapp2.RequestHandler):
             "mode": mode,
             "mpd_url": mpd_url,
             "now": now,
+            "period": {
+                "start": datetime.timedelta(0),
+                "id": "p0",
+            },
             "publishTime": now.replace(microsecond=0),
             "startNumber": 1,
             "stream": stream,
+            "subtitle": {
+                "adaptationSets": []
+            },
             "suggestedPresentationDelay": 30,
             "timeShiftBufferDepth": timeShiftBufferDepth,
         }
@@ -603,7 +611,13 @@ class RequestHandler(webapp2.RequestHandler):
         v_cgi_params = {}
         a_cgi_params = {}
         m_cgi_params = copy.deepcopy(dict(self.request.params))
-        for param in ['drm', 'marlin_la_url', 'playready_la_url', 'start']:
+        param_list = ['drm', 'marlin_la_url', 'playready_la_url', 'start']
+        if self.request.params.get('events', None) is not None:
+            param_list.append('events')
+            event_generators = EventFactory.create_event_generators(self.request)
+            for evg in event_generators:
+                param_list += evg.cgi_parameters().keys()
+        for param in param_list:
             value = self.request.params.get(param)
             if value is None or (param == 'drm' and value == 'none'):
                 continue
@@ -889,7 +903,6 @@ class ServeManifest(RequestHandler):
         context["headers"] = []
         context['routes'] = routes
         self.response.content_type = 'application/dash+xml'
-        context['title'] = 'Big Buck Bunny DASH test stream'
         try:
             dash = self.calculate_dash_params(
                 mpd_url=manifest, stream=stream, mode=mode, **kwargs)
@@ -961,6 +974,23 @@ class ServeManifest(RequestHandler):
                         'Invalid CGI parameters: %s' % (str(e)))
                     self.response.set_status(400)
                     return
+        event_generators = EventFactory.create_event_generators(self.request)
+        if event_generators:
+            for evgen in event_generators:
+                stream = evgen.create_manifest_context(context)
+                if evgen.inband:
+                    # TODO: allow AdaptationSet for inband events to be
+                    # configurable
+                    if 'video' in context:
+                        try:
+                            context['video']['event_streams'].append(stream)
+                        except KeyError:
+                            context['video']['event_streams'] = [stream]
+                else:
+                    try:
+                        context['period']['event_streams'].append(stream)
+                    except KeyError:
+                        context['period']['event_streams'] = [stream]
         template = templates.get_template(manifest)
         self.add_allowed_origins()
         self.response.headers.add_header('Accept-Ranges', 'none')
@@ -1167,6 +1197,22 @@ class LiveMedia(RequestHandler):
                 del atom.sidx
             except AttributeError:
                 pass
+        if segment_num > 0 and self.response.content_type == 'video/mp4':
+            event_generators = EventFactory.create_event_generators(self.request)
+            if event_generators:
+                logging.debug('creating emsg boxes')
+                moof_idx = atom.index('moof')
+                for evgen in event_generators:
+                    boxes = evgen.create_emsg_boxes(
+                        moof=atom.moof,
+                        params=dash,
+                        segment_num=segment_num,
+                        mod_segment=mod_segment,
+                        representation=representation)
+                    # the emsg boxes must be inserted before the
+                    # moof box (see DASH section 5.10.3.3)
+                    for idx, emsg in enumerate(boxes):
+                        atom.children.insert(moof_idx + idx, emsg)
         self.add_allowed_origins()
         data = io.BytesIO()
         atom.encode(data)

@@ -368,6 +368,95 @@ class Manifest(DashElement):
                 period.validate(depth - 1)
 
 
+class DescriptorElement(object):
+    def __init__(self, elt):
+        self.attributes = elt.attrib
+        self.tag = elt.tag
+        self.children = []
+        self.text = elt.text
+        for child in elt:
+            self.children.append(DescriptorElement(child))
+
+
+class Descriptor(DashElement):
+    attributes = [
+        ('schemeIdUri', str, None),
+        ('value', str, None),
+    ]
+
+    def __init__(self, elt, parent):
+        super(Descriptor, self).__init__(elt, parent)
+        self.children = []
+        for child in elt:
+            self.children.append(DescriptorElement(child))
+
+    def validate(self, depth=-1):
+        self.assertIsNotNone(self.schemeIdUri)
+
+
+class DashEvent(DashElement):
+    attributes = [
+        ('contentEncoding', str, None),
+        ('duration', int, -1),
+        ('id', int, None),
+        ('messageData', str, None),
+        ('presentationTime', int, 0),
+    ]
+
+    def __init__(self, elt, parent):
+        super(DashEvent, self).__init__(elt, parent)
+        self.children = []
+        for child in elt:
+            self.children.append(child)
+
+    def validate(self, depth=-1):
+        if self.children:
+            self.assertIsNone(self.messageData)
+        if self.contentEncoding is not None:
+            self.assertEqual(self.contentEncoding, 'base64')
+
+
+class EventStreamBase(Descriptor):
+    """
+    Base class for inband and MPD event streams
+    """
+    attributes = Descriptor.attributes + [
+        ('timescale', int, 1),
+        ('presentationTimeOffset', int, 0),
+    ]
+
+    def __init__(self, elt, parent):
+        super(EventStreamBase, self).__init__(elt, parent)
+        evs = elt.findall('./dash:Event', self.xmlNamespaces)
+        self.events = map(lambda a: DashEvent(a, self), evs)
+
+
+class EventStream(EventStreamBase):
+    """
+    An EventStream, where events are carried in the manifest
+    """
+    def __init__(self, elt, parent):
+        super(EventStream, self).__init__(elt, parent)
+
+    def validate(self, depth=-1):
+        super(EventStream, self).validate(depth)
+        if depth == 0:
+            return
+        for event in self.events:
+            event.validate(depth - 1)
+
+
+class InbandEventStream(EventStreamBase):
+    """
+    An EventStream, where events are carried in the media
+    """
+    def __init__(self, elt, parent):
+        super(InbandEventStream, self).__init__(elt, parent)
+
+    def validate(self, depth=-1):
+        super(InbandEventStream, self).validate(depth)
+        self.assertEqual(len(self.children), 0)
+
 class Period(DashElement):
     attributes = [
         ('start', utils.from_isodatetime, None),
@@ -385,6 +474,8 @@ class Period(DashElement):
                     datetime.timedelta(seconds=self.start.total_seconds())
         adps = period.findall('./dash:AdaptationSet', self.xmlNamespaces)
         self.adaptation_sets = map(lambda a: AdaptationSet(a, self), adps)
+        evs = period.findall('./dash:EventStream', self.xmlNamespaces)
+        self.event_streams = map(lambda r: EventStream(r, self), evs)
 
     def validate(self, depth=-1):
         if depth != 0:
@@ -568,32 +659,6 @@ class SegmentURL(DashElement):
         self.assertIsNotNone(self.index)
 
 
-class DescriptorElement(object):
-    def __init__(self, elt):
-        self.attributes = elt.attrib
-        self.tag = elt.tag
-        self.children = []
-        self.text = elt.text
-        for child in elt:
-            self.children.append(DescriptorElement(child))
-
-
-class Descriptor(DashElement):
-    attributes = [
-        ('schemeIdUri', str, None),
-        ('value', str, None),
-    ]
-
-    def __init__(self, elt, parent):
-        super(Descriptor, self).__init__(elt, parent)
-        self.children = []
-        for child in elt:
-            self.children.append(DescriptorElement(child))
-
-    def validate(self, depth=-1):
-        self.assertIsNotNone(self.schemeIdUri)
-
-
 class ContentProtection(Descriptor):
     attributes = Descriptor.attributes + [
         ('cenc:default_KID', str, None),
@@ -682,6 +747,8 @@ class AdaptationSet(RepresentationBaseType):
                 self.default_KID = cp.default_KID
                 break
         self.representations = map(lambda r: Representation(r, self), reps)
+        ibevs = adap_set.findall('./dash:InbandEventStream', self.xmlNamespaces)
+        self.event_streams = map(lambda r: InbandEventStream(r, self), ibevs)
 
     def validate(self, depth=-1):
         if len(self.contentProtection):
@@ -869,14 +936,14 @@ class Representation(RepresentationBaseType):
 
     def validate(self, depth=-1):
         self.assertIsNotNone(self.bandwidth)
-        if depth == 0:
-            return
         info = self.validator.get_representation_info(self)
         self.assertIsNotNone(info)
         if getattr(info, "moov", None) is None:
             info.moov = self.init_segment.validate(depth - 1)
             self.validator.set_representation_info(self, info)
         self.assertIsNotNone(info.moov)
+        if depth == 0:
+            return
         if self.mode == "odvod":
             self.check_on_demand_profile()
         else:
@@ -1036,7 +1103,7 @@ class MediaSegment(DashElement):
         self.log.debug('%s $Number$=%d $Time$=%s tolerance=%d', url, seg_num,
                        str(decode_time), tolerance)
 
-    def validate(self, depth=-1):
+    def validate(self, depth=-1, all_atoms=False):
         if depth == 0:
             return None
         headers = None
@@ -1068,10 +1135,12 @@ class MediaSegment(DashElement):
                             msg='Sequence number error, expected {0}, got {1}'.format(
                                 self.seg_num, moof.mfhd.sequence_number))
         moov = self.info.moov
-        self.log.debug('decode_time=%s base_media_decode_time=%d delta=%d', str(self.decode_time),
-                       moof.traf.tfdt.base_media_decode_time,
-                       abs(moof.traf.tfdt.base_media_decode_time - self.decode_time))
         if self.decode_time is not None:
+            self.log.debug(
+                'decode_time=%s base_media_decode_time=%d delta=%d',
+                str(self.decode_time),
+                moof.traf.tfdt.base_media_decode_time,
+                abs(moof.traf.tfdt.base_media_decode_time - self.decode_time))
             seg_dt = moof.traf.tfdt.base_media_decode_time
             msg = 'Decode time {seg_dt:d} should be {dt:d} for segment {num} in {url:s}'.format(
                 seg_dt=seg_dt, dt=self.decode_time, num=self.seg_num, url=self.url)
@@ -1080,19 +1149,22 @@ class MediaSegment(DashElement):
                 self.decode_time,
                 delta=self.tolerance,
                 msg=msg)
-            pts_values = set()
-            dts = moof.traf.tfdt.base_media_decode_time
-            for sample in moof.traf.trun.samples:
-                try:
-                    pts = dts + sample.composition_time_offset
-                except AttributeError:
-                    pts = dts
-                self.checkNotIn(pts, pts_values)
-                pts_values.add(pts)
-                if sample.duration is None:
-                    dts += moov.mvex.trex.default_sample_duration
-                else:
-                    dts += sample.duration
+        pts_values = set()
+        dts = moof.traf.tfdt.base_media_decode_time
+        for sample in moof.traf.trun.samples:
+            try:
+                pts = dts + sample.composition_time_offset
+            except AttributeError:
+                pts = dts
+            self.checkNotIn(pts, pts_values)
+            pts_values.add(pts)
+            if sample.duration is None:
+                dts += moov.mvex.trex.default_sample_duration
+            else:
+                dts += sample.duration
+        self.duration = dts - moof.traf.tfdt.base_media_decode_time
+        if all_atoms:
+            return atoms
         return moof
 
 
