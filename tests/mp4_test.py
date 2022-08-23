@@ -483,9 +483,9 @@ class Mp4Tests(unittest.TestCase):
         data = emsg.encode()
         # self.hexdumpBuffer('data', data)
         atom = ''.join([
-            'emsg', # atom type
-            chr(0), # version
-            3*chr(0), # flags
+            'emsg',  # atom type
+            chr(0),  # version
+            3 * chr(0),  # flags
             emsg.scheme_id_uri, chr(0),
             emsg.value, chr(0),
             struct.pack('>I', emsg.timescale),
@@ -522,9 +522,9 @@ class Mp4Tests(unittest.TestCase):
         data = emsg.encode()
         # self.hexdumpBuffer('data', data)
         atom = ''.join([
-            'emsg', # atom type
-            chr(1), # version
-            3*chr(0), # flags
+            'emsg',  # atom type
+            chr(1),  # version
+            3 * chr(0),  # flags
             struct.pack('>I', emsg.timescale),
             struct.pack('>Q', emsg.presentation_time),
             struct.pack('>I', emsg.event_duration),
@@ -546,6 +546,7 @@ class Mp4Tests(unittest.TestCase):
         self.assertEqual(emsg.event_duration, new_emsg[0].event_duration)
         self.assertEqual(emsg.event_id, new_emsg[0].event_id)
         self.assertEqual(emsg.data, new_emsg[0].data)
+
 
 if os.environ.get("TESTS"):
     def load_tests(loader, tests, pattern):

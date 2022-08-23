@@ -21,18 +21,6 @@
 #############################################################################
 
 from __future__ import print_function
-from segment import Representation
-from mixins import TestCaseMixin, HideMixinsFilter
-import routes
-import options
-import manifests
-import utils
-import views
-import mp4
-import models
-from drm.playready import PlayReady
-import dash
-
 import base64
 import binascii
 import cookielib
@@ -54,6 +42,25 @@ import urlparse
 import urllib
 import uuid
 import sys
+
+_src = os.path.join(os.path.dirname(__file__), "..", "src")
+if _src not in sys.path:
+    sys.path.append(_src)
+
+# these imports *must* be after the modification of sys.path
+from segment import Representation
+from mixins import TestCaseMixin, HideMixinsFilter
+import dash
+import events
+import routes
+import options
+import manifests
+import utils
+import views
+import mp4
+import models
+from drm.playready import PlayReady
+
 
 from google.appengine.ext import ndb, testbed
 from google.appengine.api import files, users
@@ -250,13 +257,10 @@ class GAETestCase(TestCaseMixin, unittest.TestCase):
             TestCaseMixin._assert_true = TestCaseMixin._orig_assert_true
             del TestCaseMixin._orig_assert_true
 
-    def from_uri(self, name, **kwargs):
-        try:
-            absolute = kwargs["absolute"]
-            del kwargs["absolute"]
-        except KeyError:
-            absolute = False
+    def from_uri(self, name, absolute=False, params=None, **kwargs):
         uri = routes.routes[name].formatTemplate.format(**kwargs)
+        if params is not None:
+            uri += '?' + urllib.urlencode(params)
         if absolute and not uri.startswith("http"):
             uri = 'http://testbed.example.com' + uri
         return uri
@@ -433,12 +437,6 @@ class TestHandlers(GAETestCase):
         self.assertEqual(response.status_int, 200)
 
     def check_manifest(self, filename, indexes, tested):
-        # def _assert_true(self, result, a, b, msg, template):
-        #    if not result:
-        #        if msg is not None:
-        #            raise AssertionError(msg)
-        #        raise AssertionError(template.format(a,b))
-
         params = {}
         mode = None
         for idx, option in enumerate(self.cgi_options):
@@ -466,6 +464,9 @@ class TestHandlers(GAETestCase):
         if mpd_url in tested:
             return
         tested.add(mpd_url)
+        self.check_manifest_url(mpd_url, mode)
+
+    def check_manifest_url(self, mpd_url, mode):
         response = self.app.get(mpd_url)
         dv = ViewsTestDashValidator(self.app, mode, response.xml, mpd_url)
         dv.validate(depth=2)
@@ -481,10 +482,13 @@ class TestHandlers(GAETestCase):
             else:
                 self.assertAlmostEqual(dv.manifest.mediaPresentationDuration.total_seconds(),
                                        self.MEDIA_DURATION, delta=1.0)
+        return dv
 
     def check_a_manifest_using_all_options(self, filename, manifest):
-        """Exhaustive test of a manifest with every combination of options.
-        This test is _very_ slow, expect it to take several minutes!"""
+        """
+        Exhaustive test of a manifest with every combination of options.
+        This test is _very_ slow, expect it to take several minutes!
+        """
         self.setup_media()
         self.logoutCurrentUser()
         media_files = models.MediaFile.all()
@@ -672,6 +676,108 @@ class TestHandlers(GAETestCase):
             mpd = ViewsTestDashValidator(
                 self.app, "odvod", response.xml, baseurl)
             mpd.validate()
+
+    def test_inline_ping_pong_dash_events(self):
+        """
+        Test DASH 'PingPong' events carried in the manifest
+        """
+        self.logoutCurrentUser()
+        self.setup_media()
+        params = {
+            'events': 'ping',
+            'ping_count': '4',
+            'ping_inband': '0',
+            'ping_start': '256',
+        }
+        url = self.from_uri(
+            'dash-mpd-v3',
+            manifest='hand_made.mpd',
+            mode='vod',
+            stream='bbb',
+            params=params)
+        dv = self.check_manifest_url(url, 'vod')
+        for period in dv.manifest.periods:
+            self.assertEqual(len(period.event_streams), 1)
+            event_stream = period.event_streams[0]
+            self.assertEqual(event_stream.schemeIdUri, events.PingPong.schemeIdUri)
+            self.assertEqual(event_stream.value, events.PingPong.PARAMS['value'])
+            self.assertIsInstance(event_stream, dash.EventStream)
+            self.assertEqual(len(event_stream.events), 4)
+            presentationTime = 256
+            for idx, event in enumerate(event_stream.events):
+                self.assertEqual(event.id, idx)
+                self.assertEqual(event.presentationTime, presentationTime)
+                self.assertEqual(event.duration, events.PingPong.PARAMS['duration'])
+                presentationTime += events.PingPong.PARAMS['interval']
+
+    def test_inband_ping_pong_dash_events(self):
+        """
+        Test DASH 'PingPong' events carried in the video media segments
+        """
+        self.logoutCurrentUser()
+        self.setup_media()
+        params = {
+            'events': 'ping',
+            'ping_count': 4,
+            'ping_inband': True,
+            'ping_start': 200,
+        }
+        url = self.from_uri(
+            'dash-mpd-v3',
+            manifest='hand_made.mpd',
+            mode='vod',
+            stream='bbb',
+            params=params)
+        dv = self.check_manifest_url(url, 'vod')
+        for period in dv.manifest.periods:
+            for adp in period.adaptation_sets:
+                if adp.contentType != 'video':
+                    continue
+                self.assertEqual(len(adp.event_streams), 1)
+                event_stream = adp.event_streams[0]
+                self.assertEqual(event_stream.schemeIdUri, events.PingPong.schemeIdUri)
+                self.assertEqual(event_stream.value, events.PingPong.PARAMS['value'])
+                self.assertIsInstance(event_stream, dash.InbandEventStream)
+                rep = adp.representations[0]
+                info = dv.get_representation_info(rep)
+                self.check_inband_events_for_representation(rep, params, info)
+
+    def check_inband_events_for_representation(self, rep, params, info):
+        """
+        Check all of the fragments in the given representation
+        """
+        rep.validate(depth=0)
+        ev_presentation_time = params['ping_start']
+        event_id = 0
+        for seg in rep.media_segments:
+            # print(seg.url)
+            frag = mp4.Wrapper(
+                atom_type='wrap',
+                children=seg.validate(depth=1, all_atoms=True))
+            seg_presentation_time = (
+                ev_presentation_time * info.timescale /
+                events.PingPong.PARAMS['timescale'])
+            decode_time = frag.moof.traf.tfdt.base_media_decode_time
+            seg_end = decode_time + seg.duration
+            if seg_presentation_time < decode_time or seg_presentation_time >= seg_end:
+                # check that there are no emsg boxes in fragment
+                with self.assertRaises(AttributeError):
+                    emsg = frag.emsg
+                continue
+            delta = seg_presentation_time - decode_time
+            delta = (delta * events.PingPong.PARAMS['timescale'] /
+                     info.timescale)
+            emsg = frag.emsg
+            self.assertEqual(emsg.scheme_id_uri, events.PingPong.schemeIdUri)
+            self.assertEqual(emsg.value, events.PingPong.PARAMS['value'])
+            self.assertEqual(emsg.presentation_time_delta, delta)
+            self.assertEqual(emsg.event_id, event_id)
+            if (event_id & 1) == 0:
+                self.assertEqual(emsg.data, 'ping')
+            else:
+                self.assertEqual(emsg.data, 'pong')
+            ev_presentation_time += events.PingPong.PARAMS['interval']
+            event_id += 1
 
     def test_request_unknown_media(self):
         url = self.from_uri(
@@ -1295,7 +1401,6 @@ class TestHandlers(GAETestCase):
         response = self.app.get(url)
         self.assertEqual(response.status_int, 200)
         response.mustcontain('bbb_v1.mp4')
-
 
 def gen_test_fn(filename, manifest):
     def run_test(self):

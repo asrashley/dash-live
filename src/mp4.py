@@ -612,9 +612,29 @@ class Mp4Atom(NamedObject):
         for c in self.children:
             c.dump(indent + '  ')
 
+class WrapperIterator:
+    def __init__(self, wrapper):
+        self._wrapper = wrapper
+        self._current = 0
+
+    def next(self):
+        if self._current < len(self._wrapper.children):
+            rv = self._wrapper.children[self._current]
+            self._current += 1
+            return rv
+        raise StopIteration
+
+
 class Wrapper(Mp4Atom):
+    def __init__(self, **kwargs):
+        super(Wrapper, self).__init__(**kwargs)
+
     def encode_fields(self, dest):
         pass
+
+    def __iter__(self):
+        return WrapperIterator(self)
+
 
 class UnknownBox(Mp4Atom):
     include_atom_type = True

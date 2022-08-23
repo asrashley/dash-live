@@ -1,0 +1,8 @@
+{%- if stream.inband %}
+<InbandEventStream
+ schemeIdUri="{{stream.schemeIdUri}}"
+ timescale="{{stream.timescale}}"
+ value="{{stream.value}}"
+ {%- if stream.presentationTimeOffset %} presentationTimeOffset="{{stream.presentationTimeOffset}}"{% endif %}
+ />
+{% endif %}

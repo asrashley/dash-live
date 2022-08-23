@@ -1,0 +1,20 @@
+{% if not stream.inband %}
+<EventStream
+ schemeIdUri="{{stream.schemeIdUri}}"
+ timescale="{{stream.timescale}}"
+ value="{{stream.value}}"
+ {% if stream.presentationTimeOffset %}presentationTimeOffset="{{stream.presentationTimeOffset}}"{% endif %}
+>
+{% for event in stream.events %}
+<Event
+ duration="{{event.duration}}"
+ id="{{event.id}}"
+ presentationTime="{{event.presentationTime}}"
+ {% if event.contentEncoding %}contentEncoding="{{event.contentEncoding}}"{% endif %}
+ {% if event.messageData %}messageData="{{event.messageData}}"{% endif %}
+>
+{% if event.data %}{{event.data}}{% endif %}
+</Event>
+{% endfor %}
+</EventStream>
+{% endif %}
