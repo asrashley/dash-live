@@ -82,4 +82,13 @@ manifest = {
             'acodec': 'mp4a',
         },
     },
+    'manifest_n.mpd': {
+        'title': 'Provider N live profile',
+        'modes': ['live', 'vod'],
+        'params': {
+            'events': 'none',
+            'mode': 'live',
+            'drm': 'none',
+        },
+    },
 }

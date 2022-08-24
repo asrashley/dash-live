@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MPD
+    xmlns="urn:mpeg:dash:schema:mpd:2011"
+    xmlns:cenc="urn:mpeg:cenc:2013"
+    xmlns:mspr="urn:microsoft:playready"
+    xmlns:mas="urn:marlin:mas:1-0:services:schemas:mpd"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="urn:mpeg:schema:mpd:2011 DASH-MPD.xsd"
+    profiles="urn:mpeg:profile:isoff-live:2011"
+    publishTime="{{publishTime|isoDateTime}}"
+    minBufferTime="PT8.0S"
+  {% if mode=='live' %}
+    type="dynamic"
+    {% if availabilityStartTime %}availabilityStartTime="{{availabilityStartTime|isoDateTime}}"{% endif %}
+    {% if minimumUpdatePeriod %}minimumUpdatePeriod="{{minimumUpdatePeriod|isoDuration}}"{% endif %}
+    {% if timeShiftBufferDepth %}timeShiftBufferDepth="{{timeShiftBufferDepth|isoDuration}}"{% endif %}
+  {% else %}
+    type="static"
+    mediaPresentationDuration="{{mediaDuration|isoDuration}}"
+  {% endif %}
+    >
+    <Period
+     start="{{period.start|isoDuration}}"
+     id="{{period.id}}"
+     {% if period.duration %}duration="{{period.duration|isoDuration}}"{% endif %}
+    >
+    {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
+    {% include "events/period.xml" %}
+    <AdaptationSet
+        mimeType="video/mp4"
+        par="16:9"
+        segmentAlignment="true"
+        startWithSAP="1">
+      {% for rep in video.representations %}
+        {% if loop.first %}
+          {% include "drm/template.xml" %}
+          <SegmentTemplate
+              initialization="{{video.initURL|xmlSafe}}"
+              media="{{video.mediaURL|xmlSafe}}"
+              presentationTimeOffset="{{video.presentationTimeOffset}}"
+              timescale="{{video.timescale}}"
+              >
+            {{generateSegmentTimeline(rep)}}
+          </SegmentTemplate>
+        {% endif %}
+        <Representation
+           id="{{rep.id}}"
+           mimeType="video/mp4"
+           codecs="{{rep.codecs}}"
+           width="{{rep.width}}"
+           height="{{rep.height}}"
+           startWithSAP="{{rep.startWithSAP}}"
+           bandwidth="{{rep.bitrate}}">
+          {% include "events/representation.xml" %}
+        </Representation>
+      {% endfor %}
+    </AdaptationSet>
+  {% for rep in audio.representations %}
+    {% if loop.first %}
+      <AdaptationSet
+        lang="eng"
+        mimeType="audio/mp4"
+        segmentAlignment="true"
+        startWithSAP="1"
+        >
+        {% include "drm/template.xml" %}
+      <SegmentTemplate
+          initialization="{{audio.initURL|xmlSafe}}"
+          media="{{audio.mediaURL|xmlSafe}}"
+          presentationTimeOffset="{{audio.presentationTimeOffset}}"
+          timescale="{{audio.timescale}}"
+          >
+        {{generateSegmentTimeline(rep)}}
+      </SegmentTemplate>
+    {% endif %}
+    <Representation
+        audioSamplingRate="{{rep.sampleRate}}"
+        bandwidth="{{rep.bitrate}}"
+        codecs="{{rep.codecs}}"
+        id="{{rep.id}}" />
+    {% if loop.last %}
+      </AdaptationSet>
+    {% endif %}
+  {% endfor %}
+  {% for adp in subtitle.adaptationSets %}
+    <AdaptationSet
+      lang="eng"
+      mimeType="application/mp4"
+      segmentAlignment="true"
+      startWithSAP="1"
+      >
+      {% for rep in adp.representations %}
+        {% if loop.first %}
+        <SegmentTemplate
+            initialization="{{adp.initURL|xmlSafe}}"
+            media="{{adp.mediaURL|xmlSafe}}"
+            presentationTimeOffset="{{adp.presentationTimeOffset}}"
+            timescale="{{adp.timescale}}">
+          {{generateSegmentTimeline(rep)}}
+        </SegmentTemplate>
+        {% endif %}
+        <Representation
+            bandwidth="{{rep.bitrate}}"
+            codecs="stpp"
+            id="{{rep.id}}"
+            />
+      {% endfor %}
+    </AdaptationSet>
+  {% endfor %}
+  </Period>
+</MPD>

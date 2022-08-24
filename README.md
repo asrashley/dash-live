@@ -171,6 +171,32 @@ provide the KID. In this case, the server will auto-generate the
 encryption key using the key generation algorithm provided by
 MicroSoft PlayReady using the test key seed.
 
+Unit Tests
+==========
+To run all unit tests, which will take quite a long time (e.g. 45
+minutes) to complete:
+
+```sh
+python ./runtests.py
+```
+
+It is also possible to run the set of tests for one area by providing
+the name of the Python file containing the tests, without the tests/
+prefix:
+
+```sh
+python ./runtests.py mp4_test.py
+```
+
+... which will run every test in the tests/mp4_test.py file.
+
+To specify one or more tests within that test file, a list of test
+functions can also be added to the runtests.py command line:
+
+```sh
+python ./runtests.py views_test.py test_inband_ping_pong_dash_events test_all_options_manifest_n
+```
+
 License
 =======
 Licensed under the Apache License, Version 2.0 (the "License");
