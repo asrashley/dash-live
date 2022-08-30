@@ -266,7 +266,10 @@ def dateTimeFormat(value, fmt):
     return value.strftime(fmt)
 
 
-duration_re = re.compile(r'^PT((?P<hours>\d+)[H:])?((?P<minutes>\d+)[M:])?((?P<seconds>[\d.]+)S?)?$')
+duration_re = re.compile(r''.join([
+    r'^P((?P<years>\d+)Y)?((?P<months>\d+)M)?((?P<days>\d+)D)?',
+    r'T((?P<hours>\d+)[H:])?((?P<minutes>\d+)[M:])?((?P<seconds>[\d.]+)S?)?$'
+]))
 
 def from_isodatetime(date_time):
     """
@@ -274,14 +277,23 @@ def from_isodatetime(date_time):
     """
     if not date_time:
         return None
-    if date_time[:2] == 'PT':
+    if date_time[0] == 'P':
         match = duration_re.match(date_time)
         if not match:
             raise ValueError(date_time)
+        years = match.group('years')
+        months = match.group('months')
+        days = match.group('days')
         hours = match.group('hours')
         minutes = match.group('minutes')
         seconds = match.group('seconds')
         secs = 0
+        if years is not None:
+            secs += int(match.group('years')) * 3600 * 24 * 365
+        if months is not None:
+            secs += int(match.group('months')) * 3600 * 24 * 30
+        if days is not None:
+            secs += int(match.group('days')) * 3600 * 24
         if hours is not None:
             secs += int(match.group('hours')) * 3600
         if minutes is not None:

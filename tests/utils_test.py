@@ -30,6 +30,8 @@ class DateTimeTests(unittest.TestCase):
             ('PT45S', datetime.timedelta(seconds=45)),
             ('PT4.5S', datetime.timedelta(seconds=4.5)),
             ('PT01:45:19', datetime.timedelta(hours=1, minutes=45, seconds=19)),
+            ('P0Y0M0DT0H0M20S', datetime.timedelta(seconds=20)),
+            ('P0Y0M0DT0H18M28.976S', datetime.timedelta(minutes=18, seconds=28.976)),
         ]
         for test in tests:
             tc = utils.from_isodatetime(test[0])
