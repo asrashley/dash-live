@@ -43,6 +43,53 @@ class TestCaseMixin(object):
             br = round(b, places)
             self._assert_true(ar == br, a, b, msg, '{} !~= {}')
 
+    def assertGreaterOrEqual(self, a, b, msg=None):
+        self._assert_true(a >= b, a, b, msg, r'{} < {}')
+
+    def assertObjectEqual(self, expected, actual, msg=None, strict=False):
+        for key, value in expected.iteritems():
+            if msg is None:
+                key_name = key
+            else:
+                key_name = '{0}.{1}'.format(msg, key)
+            if expected is None:
+                self.assertIsNone(
+                    actual, '{0}: {1} should be None'.format(key_name, actual))
+            else:
+                self.assertIsNotNone(
+                    actual, '{0}: {1} should not be None'.format(key_name, actual))
+            if isinstance(value, dict):
+                self.assertObjectEqual(value, actual[key], key_name, strict=strict)
+            elif isinstance(value, list):
+                self.assertListEqual(value, actual[key], key_name)
+            else:
+                self.assertIn(key, actual,
+                              '{0}: missing key {1}'.format(key_name, key))
+                assert_msg = r'{0}: expected "{1}" got "{2}"'.format(
+                    key_name, value, actual[key])
+                self.assertEqual(value, actual[key], msg=assert_msg)
+        if strict:
+            for key in actual.keys():
+                self.assertIn(key, expected)
+
+    def assertListEqual(self, expected, actual, msg=None):
+        if msg is None:
+            msg = ''
+        assert_msg = '{0}: expected length {1} got {2}'.format(
+            msg, len(expected), len(actual))
+        self.assertEqual(len(expected), len(actual), assert_msg)
+        idx = 0
+        for exp, act in zip(expected, actual):
+            if isinstance(exp, list):
+                self.assertListEqual(exp, act, '{0:s}[{1:d}]'.format(msg, idx))
+            elif isinstance(exp, dict):
+                self.assertObjectEqual(exp, act, '{0:s}[{1:d}]'.format(msg, idx))
+            else:
+                assert_msg = '{0:s}[{1:d}] expected "{2}" got "{3}"'.format(
+                    msg, idx, exp, act)
+                self.assertEqual(exp, act, assert_msg)
+            idx += 1
+
     def assertGreaterThan(self, a, b, msg=None):
         self._assert_true(a > b, a, b, msg, r'{} <= {}')
 
@@ -144,6 +191,40 @@ class TestCaseMixin(object):
     def checkIsInstance(self, a, types, msg=None):
         self._check_true(isinstance(a, types), a, types,
                          msg, r'{} is not instance of {}')
+
+    def hexdumpBuffer(self, label, data):
+        print('==={0}==='.format(label))
+        line = []
+        for idx, d in enumerate(data):
+            asc = d if d >= ' ' and d <= 'z' else ' '
+            line.append('{0:02x} {1} '.format(ord(d), asc))
+            if len(line) == 8:
+                print('{0:04d}: {1}'.format(idx - 7, '  '.join(line)))
+                line = []
+        if line:
+            print('{0:04d}: {1}'.format(len(data) - len(line),
+                                        '  '.join(line)))
+        print('==={0}==='.format('=' * len(label)))
+
+    def assertBuffersEqual(self, a, b, name=None):
+        lmsg = 'Expected length {expected:d} does not match {actual:d}'
+        dmsg = 'Expected 0x{expected:02x} got 0x{actual:02x} at position {position:d}'
+        if name is not None:
+            lmsg = ': '.join([name, lmsg])
+            dmsg = ': '.join([name, dmsg])
+        if len(a) != len(b):
+            self.hexdumpBuffer('expected', a)
+            self.hexdumpBuffer('actual', b)
+        self.assertEqual(
+            len(a), len(b), lmsg.format(
+                expected=len(a), actual=len(b)))
+        if a == b:
+            return
+        self.hexdumpBuffer('expected', a)
+        self.hexdumpBuffer('actual', b)
+        for idx in range(len(a)):
+            self.assertEqual(ord(a[idx]), ord(b[idx]),
+                             dmsg.format(expected=ord(a[idx]), actual=ord(b[idx]), position=idx))
 
 
 class HideMixinsFilter(logging.Filter):

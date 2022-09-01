@@ -977,7 +977,8 @@ class ServeManifest(RequestHandler):
         event_generators = EventFactory.create_event_generators(self.request)
         if event_generators:
             for evgen in event_generators:
-                stream = evgen.create_manifest_context(context)
+                stream = evgen.create_manifest_context(
+                    context=context, templates=templates)
                 if evgen.inband:
                     # TODO: allow AdaptationSet for inband events to be
                     # configurable

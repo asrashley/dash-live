@@ -1,7 +1,25 @@
-import mixins
-import utils
-import mp4
-from drm.playready import PlayReady
+#############################################################################
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
+#############################################################################
+#
+#  Project Name        :    Simulated MPEG DASH service
+#
+#  Author              :    Alex Ashley
+#
+#############################################################################
+
 from abc import ABCMeta, abstractmethod
 import base64
 import collections
@@ -395,6 +413,9 @@ class Descriptor(DashElement):
 
 
 class DashEvent(DashElement):
+    """
+    Contains the information for one manifest DASH event
+    """
     attributes = [
         ('contentEncoding', str, None),
         ('duration', int, -1),
@@ -450,6 +471,7 @@ class InbandEventStream(EventStreamBase):
     """
     An EventStream, where events are carried in the media
     """
+
     def __init__(self, elt, parent):
         super(InbandEventStream, self).__init__(elt, parent)
 
@@ -478,9 +500,12 @@ class Period(DashElement):
         self.event_streams = map(lambda r: EventStream(r, self), evs)
 
     def validate(self, depth=-1):
-        if depth != 0:
-            for adap_set in self.adaptation_sets:
-                adap_set.validate(depth - 1)
+        if depth == 0:
+            return
+        for adap_set in self.adaptation_sets:
+            adap_set.validate(depth - 1)
+        for evs in self.event_streams:
+            evs.validate(depth - 1)
 
 
 class SegmentBaseType(DashElement):
@@ -937,7 +962,6 @@ class Representation(RepresentationBaseType):
     def validate(self, depth=-1):
         self.assertIsNotNone(self.bandwidth)
         info = self.validator.get_representation_info(self)
-        self.assertIsNotNone(info)
         if getattr(info, "moov", None) is None:
             info.moov = self.init_segment.validate(depth - 1)
             self.validator.set_representation_info(self, info)
@@ -952,6 +976,7 @@ class Representation(RepresentationBaseType):
         # next_seg_num = self.media_segments[0].seg_num
         self.log.debug('starting next_decode_time: %s', str(next_decode_time))
         for seg in self.media_segments:
+            seg.set_info(info)
             if seg.decode_time is None:
                 self.assertIsNotNone(next_decode_time)
                 seg.decode_time = next_decode_time
@@ -1103,9 +1128,10 @@ class MediaSegment(DashElement):
         self.log.debug('%s $Number$=%d $Time$=%s tolerance=%d', url, seg_num,
                        str(decode_time), tolerance)
 
+    def set_info(self, info):
+        self.info = info
+
     def validate(self, depth=-1, all_atoms=False):
-        if depth == 0:
-            return None
         headers = None
         if self.seg_range is not None:
             headers = {"Range": "bytes={}".format(self.seg_range)}
@@ -1252,16 +1278,19 @@ if __name__ == "__main__":
                 pass
             timescale = rep.segmentTemplate.timescale
             num_segments = None
-            duration = rep.parent.parent.duration
-            if duration is None:
-                duration = rep.mpd.mediaPresentationDuration
-            if duration is not None:
-                seg_dur = rep.segmentTemplate.duration
-                num_segments = int(
-                    math.floor(
-                        duration.total_seconds() *
-                        timescale /
-                        seg_dur))
+            if rep.segmentTemplate.segmentTimeline is not None:
+                num_segments = len(rep.segmentTemplate.segmentTimeline.segments)
+            else:
+                duration = rep.parent.parent.duration
+                if duration is None:
+                    duration = rep.mpd.mediaPresentationDuration
+                if duration is not None:
+                    seg_dur = rep.segmentTemplate.duration
+                    num_segments = int(
+                        math.floor(
+                            duration.total_seconds() *
+                            timescale /
+                            seg_dur))
             return RepresentationInfo(encrypted=False, timescale=timescale,
                                       num_segments=num_segments)
 

@@ -35,16 +35,17 @@ class EventFactory(object):
     def create_event_generators(cls, request):
         names = request.params.get("events", "").lower()
         if not names:
-            return None
+            return []
         retval = []
         for name in names.split(','):
             try:
                 ev = cls.EVENT_TYPES[name]
                 retval.append(ev(request))
-            except KeyError:
+            except KeyError as err:
+                print(err)
                 continue
         if not retval:
-            return None
+            return []
         return retval
 
 class EventBase(object):
@@ -103,16 +104,15 @@ class EventBase(object):
     def create_emsg_boxes(self, **kwargs):
         return None
 
-class PingPong(EventBase):
+class RepeatingEventBase(EventBase):
     """
-    The PingPong event scheme alternates payloads of 'ping' and 'pong'
+    A base class for events that repeat at a fixed interval
     """
-    schemeIdUri = r'urn:dash-live:pingpong:2022'
 
-    def __init__(self, request):
-        super(PingPong, self).__init__('ping_', request)
+    def __init__(self, prefix, request):
+        super(RepeatingEventBase, self).__init__(prefix, request)
 
-    def create_manifest_context(self, context):
+    def create_manifest_context(self, context, templates):
         stream = {
             'schemeIdUri': self.schemeIdUri,
             'value': self.value,
@@ -123,7 +123,7 @@ class PingPong(EventBase):
             stream['events'] = []
             presentation_time = self.start
             for idx in range(self.count):
-                data = 'ping' if (idx & 1) == 0 else 'pong'
+                data = self.get_manifest_event_payload(templates, idx, presentation_time)
                 stream['events'].append({
                     'data': data,
                     'duration': self.duration,
@@ -132,6 +132,10 @@ class PingPong(EventBase):
                 })
                 presentation_time += self.interval
         return stream
+
+    @abstractmethod
+    def get_manifest_event_payload(self, templates, index, presentation_time):
+        return ""
 
     def create_emsg_boxes(self, segment_num, mod_segment, moof, representation, **kwargs):
         # start and end time of the fragment (representation timebase)
@@ -175,7 +179,8 @@ class PingPong(EventBase):
                 presentation_time += self.interval
                 continue
             assert(presentation_time >= seg_start)
-            data = 'ping' if (event_id & 1) == 0 else 'pong'
+            data = self.get_emsg_event_payload(
+                event_id, presentation_time)
             kwargs = {
                 'version': self.version,
                 'flags': 0,
