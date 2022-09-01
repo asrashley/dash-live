@@ -4,6 +4,9 @@
  timescale="{{stream.timescale}}"
  value="{{stream.value}}"
  {% if stream.presentationTimeOffset %}presentationTimeOffset="{{stream.presentationTimeOffset}}"{% endif %}
+ {% if stream.schemeIdUri == "urn:scte:scte35:2014:xml+bin" %}
+   xmlns:scte35="http://www.scte.org/schemas/35/2016"
+ {% endif %}
 >
 {% for event in stream.events %}
 <Event

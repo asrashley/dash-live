@@ -25,6 +25,10 @@ import copy
 import datetime
 
 import mp4
+from mpeg import MPEG_TIMEBASE
+from scte35 import descriptors
+from scte35.binarysignal import BinarySignal, SapType
+from scte35.splice_insert import SpliceInsert
 import utils
 
 class EventFactory(object):
@@ -205,5 +209,89 @@ class RepeatingEventBase(EventBase):
             #    event_id, presentation_time))
         return retval
 
+    @abstractmethod
+    def get_emsg_event_payload(self, event_id, presentation_time):
+        return chr(0)
+
+class PingPong(RepeatingEventBase):
+    """
+    The PingPong event scheme alternates payloads of 'ping' and 'pong'
+    """
+    schemeIdUri = r'urn:dash-live:pingpong:2022'
+
+    def __init__(self, request):
+        super(PingPong, self).__init__("ping_", request)
+
+    def get_manifest_event_payload(self, templates, event_id, presentation_time):
+        if (event_id & 1) == 0:
+            return 'ping'
+        return 'pong'
+
+    def get_emsg_event_payload(self, event_id, presentation_time):
+        data = 'ping' if (event_id & 1) == 0 else 'pong'
+        return data
+
 
 EventFactory.EVENT_TYPES['ping'] = PingPong
+
+class Scte35(RepeatingEventBase):
+    schemeIdUri = "urn:scte:scte35:2014:xml+bin"
+    PARAMS = {
+        "program_id": 1620,
+    }
+
+    def __init__(self, request):
+        super(Scte35, self).__init__("scte35_", request)
+        if self.inband:
+            self.version = 1
+
+    def get_manifest_event_payload(self, templates, event_id, presentation_time):
+        splice = self.create_binary_signal(event_id, presentation_time)
+        data = splice.encode()
+        template = templates.get_template('events/scte35_xml_bin_event.xml')
+        xml = template.render(binary=data)
+        return xml
+
+    def get_emsg_event_payload(self, event_id, presentation_time):
+        splice = self.create_binary_signal(event_id, presentation_time)
+        return splice.encode()
+
+    def create_binary_signal(self, event_id, presentation_time):
+        pts = presentation_time * MPEG_TIMEBASE / self.timescale
+        duration = self.duration * MPEG_TIMEBASE / self.timescale
+        # auto_return is True for the OUT and False for the IN
+        auto_return = (event_id & 1) == 0
+        avail_num = event_id // 2
+
+        segmentation_descriptor = descriptors.SegmentationDescriptor(
+            segmentation_event_id=avail_num,
+            segmentation_duration=0,
+            segmentation_type_id=(descriptors.SegmentationTypeId.PROVIDER_PLACEMENT_OP_START +
+                                  (event_id & 1)),
+        )
+        splice = BinarySignal(
+            sap_type=SapType.CLOSED_GOP_NO_LEADING_PICTURES,
+            splice_insert=SpliceInsert(
+                out_of_network_indicator=True,
+                splice_time={
+                    "pts": pts
+                },
+                avails_expected=avail_num,
+                splice_event_id=event_id,
+                program_splice_flag=True,
+                avail_num=avail_num,
+                unique_program_id=self.program_id,
+                break_duration={
+                    "duration": duration,
+                    "auto_return": auto_return,
+                }
+            ),
+            descriptors=[
+                segmentation_descriptor,
+            ],
+        )
+        return splice
+
+
+Scte35.PARAMS.update(RepeatingEventBase.PARAMS)
+EventFactory.EVENT_TYPES['scte35'] = Scte35

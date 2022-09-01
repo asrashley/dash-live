@@ -115,6 +115,7 @@ options = [
         'options': [
             ('None', ''),
             ('PingPong', 'events=ping'),
+            ('SCTE35', 'events=scte35'),
         ]
     },
 ]

@@ -37,6 +37,12 @@ _src = os.path.join(os.path.dirname(__file__), "..", "src")
 if _src not in sys.path:
     sys.path.append(_src)
 
+import mixins
+import mp4
+from mpeg import MPEG_TIMEBASE
+import scte35
+import utils
+from drm.playready import PlayReady
 
 class Options(object):
     def __init__(self, strict=True):
@@ -435,12 +441,31 @@ class DashEvent(DashElement):
             self.assertIsNone(self.messageData)
         if self.contentEncoding is not None:
             self.assertEqual(self.contentEncoding, 'base64')
+        if self.parent.schemeIdUri == EventStreamBase.SCTE35_XML_BIN_EVENTS:
+            self.assertEqual(len(self.children), 1)
+            bin_elt = self.children[0].findall('./scte35:Binary', self.xmlNamespaces)
+            self.assertIsNotNone(bin_elt)
+            self.assertEqual(len(bin_elt), 1)
+            data = base64.b64decode(bin_elt[0].text)
+            src = utils.BufferedReader(None, data=data)
+            sig = scte35.BinarySignal.parse(src, size=len(data))
+            timescale = self.parent.timescale
+            self.assertIn('splice_insert', sig)
+            self.assertIn('break_duration', sig['splice_insert'])
+            duration = sig['splice_insert']['break_duration']['duration']
+            self.assertAlmostEqual(self.duration / timescale, duration / MPEG_TIMEBASE)
+            self.scte35_binary_signal = sig
 
 
 class EventStreamBase(Descriptor):
     """
     Base class for inband and MPD event streams
     """
+
+    SCTE35_XML_EVENTS = "urn:scte:scte35:2013:xml"
+    SCTE35_XML_BIN_EVENTS = "urn:scte:scte35:2014:xml+bin"
+    SCTE35_INBAND_EVENTS = "urn:scte:scte35:2013:bin"
+
     attributes = Descriptor.attributes + [
         ('timescale', int, 1),
         ('presentationTimeOffset', int, 0),
@@ -456,11 +481,13 @@ class EventStream(EventStreamBase):
     """
     An EventStream, where events are carried in the manifest
     """
+
     def __init__(self, elt, parent):
         super(EventStream, self).__init__(elt, parent)
 
     def validate(self, depth=-1):
         super(EventStream, self).validate(depth)
+        self.assertNotEqual(self.schemeIdUri, self.SCTE35_INBAND_EVENTS)
         if depth == 0:
             return
         for event in self.events:
