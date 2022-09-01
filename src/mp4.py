@@ -39,6 +39,8 @@ except ImportError:
     sys.path.append(os.path.join(os.path.dirname(__file__), "..", "lib"))
     import bitstring
 
+from bitio import FieldReader, BitsFieldReader, FieldWriter
+from objects import Binary, NamedObject
 from nal import Nal
 import utils
 
@@ -55,252 +57,6 @@ def from_iso_epoch(delta):
 def to_iso_epoch(dt):
     delta = dt - ISO_EPOCH
     return long(delta.total_seconds())
-
-class Binary(object):
-    BASE64 = 1
-    HEX = 2
-
-    def __init__(self, data, encoding=BASE64):
-        self.data = data
-        self.encoding = encoding
-
-    def toJSON(self, pure=False):
-        if self.data is None:
-            return None
-        if pure:
-            if self.encoding == self.BASE64:
-                return base64.b64encode(self.data)
-            return '0x' + self.data.encode('hex')
-        if self.encoding == self.BASE64:
-            return 'base64.b64decode("%s")' % base64.b64encode(self.data)
-        return '"%s".decode("hex")' % (self.data.encode('hex'))
-
-    def __repr__(self):
-        if self.data is None:
-            return 'None'
-        return self.toJSON(pure=False)
-
-class NamedObject(object):
-    __metaclass__ = ABCMeta
-    debug = False
-
-    @property
-    def classname(self):
-        clz = type(self)
-        if clz.__module__.startswith('__'):
-            return clz.__name__
-        return clz.__module__ + '.' + clz.__name__
-
-    def __repr__(self, exclude=None):
-        if exclude is None:
-            exclude = []
-        fields = self._field_repr(exclude)
-        fields = ','.join(fields)
-        return '{name}({fields})'.format(name=self.classname, fields=fields)
-
-    def _field_repr(self, exclude):
-        rv = []
-        fields = self._to_json(exclude)
-        for k, v in fields.iteritems():
-            if k != '_type':
-                rv.append('{0}={1}'.format(k, utils.as_python(v)))
-        return rv
-
-    @abstractmethod
-    def _to_json(self, exclude):
-        return {}
-
-    def toJSON(self, exclude=None, pure=False):
-        if exclude is None:
-            exclude = ['parent']
-        rv = {
-            '_type': self.classname
-        }
-        rv.update(self._to_json(exclude))
-        if pure:
-            rv = utils.flatten(rv)
-        return rv
-
-
-format_sizes = {
-    'B': 1,
-    'H': 2,
-    'I': 4,
-    'Q': 8,
-}
-
-format_bit_sizes = {
-    8: 'B',
-    16: 'H',
-    32: 'I',
-    64: 'Q',
-}
-
-class FieldReader(object):
-    def __init__(self, clz, src, kwargs):
-        self.clz = clz
-        self.src = src
-        self.kwargs = kwargs
-        if getattr(self.clz, 'debug', False):
-            self.log = logging.getLogger('mp4')
-        else:
-            self.log = None
-
-    def read(self, size, field, mask=None):
-        self.kwargs[field] = self.get(size, field, mask)
-
-    def get(self, size, field, mask=None):
-        if isinstance(size, (int, long)):
-            value = self.src.read(size)
-            if self.log and self.log.isEnabledFor(logging.DEBUG):
-                self.log.debug('%s: read %s size=%d pos=%d value=0x%s', self.clz.__name__, field,
-                               size, self.src.tell(), value.encode('hex'))
-            return value
-        if size == 'B':
-            value = ord(self.src.read(1))
-        elif size == 'H':
-            d = self.src.read(2)
-            value = (ord(d[0]) << 8) + ord(d[1])
-        elif size == 'I':
-            d = self.src.read(4)
-            value = (ord(d[0]) << 24) + (ord(d[1]) << 16) + (ord(d[2]) << 8) + ord(d[3])
-        elif size == 'Q':
-            value = struct.unpack('>Q', self.src.read(8))[0]
-        elif size == '0I':
-            d = self.src.read(3)
-            value = (ord(d[0]) << 16) + (ord(d[1]) << 8) + ord(d[2])
-        elif size == 'S0':
-            value = ''
-            d = self.src.read(1)
-            while ord(d) != 0:
-                value += d
-                d = self.src.read(1)
-            if self.log and self.log.isEnabledFor(logging.DEBUG):
-                self.log.debug('%s: read %s size=%d pos=%d value="%s"',
-                               self.clz.__name__, field,
-                               len(value), self.src.tell(), value)
-            return value
-        elif size[0] == 'S':
-            value = self.src.read(int(size[1:]))
-            value = value.split('\0')[0]
-        elif size[0] == 'D':
-            bsz, asz = map(int, size[1:].split('.'))
-            shift = 1 << asz
-            value = decimal.Decimal(
-                self.get(format_bit_sizes[bsz + asz], field)) / shift
-        else:
-            raise ValueError("unsupported size: " + size)
-        if mask is not None:
-            value &= mask
-        if self.log:
-            self.log.debug(
-                '%s: read %s size=%s pos=%d value=0x%x',
-                self.clz.__name__, field,
-                str(size), self.src.tell(), value)
-        return value
-
-    def skip(self, size):
-        self.get(size, 'skip')
-
-class BitsFieldReader(object):
-    def __init__(self, clz, src, kwargs, size=None, data=None):
-        self.clz = clz
-        if size is None:
-            size = kwargs["size"] - kwargs["header_size"]
-        if data is None:
-            self.data = src.read(size)
-            self.src = bitstring.ConstBitStream(bytes=self.data)
-        else:
-            self.data = data
-            self.src = src
-        self.kwargs = kwargs
-        self.size = 8 * size
-        if getattr(self.clz, 'debug', False):
-            self.log = logging.getLogger('mp4')
-        else:
-            self.log = None
-
-    def duplicate(self, kwargs):
-        return BitsFieldReader(self.clz, self.src, kwargs,
-                               size=len(self.data), data=self.data)
-
-    def read(self, size, field):
-        self.kwargs[field] = self.get(size, field)
-
-    def get(self, size, field):
-        if self.log:
-            self.log.debug(
-                '%s: read %s size=%d pos=%s', self.clz.__name__, field, size,
-                self.src.pos)
-        if size == 1:
-            return self.src.read('bool')
-        return self.src.read('uint:%d' % size)
-
-    def pos(self):
-        return self.src.pos
-
-class FieldWriter(object):
-    def __init__(self, obj, dest):
-        self.obj = obj
-        self.dest = dest
-        self.bits = None
-        if getattr(self.obj, 'debug', False):
-            self.log = logging.getLogger('mp4')
-        else:
-            self.log = None
-
-    def write(self, size, field, value=None):
-        if value is None:
-            value = getattr(self.obj, field)
-        if isinstance(size, basestring):
-            if size == '0I':
-                value = struct.pack('>I', value)[1:]
-            elif size == 'S0':
-                value += '\0'
-            elif size[0] == 'D':
-                bsz, asz = map(int, size[1:].split('.'))
-                value = value * (1 << asz)
-                value = struct.pack('>' + format_bit_sizes[bsz + asz],
-                                    int(value))
-            else:
-                value = struct.pack('>' + size, value)
-        elif isinstance(size, (int, long)):
-            padding = size - len(value)
-            if padding > 0:
-                value += '\0' * padding
-            elif padding < 0:
-                value = value[:size]
-        if self.log and self.log.isEnabledFor(logging.DEBUG):
-            if isinstance(value, (int, long)):
-                v = '0x' + hex(value)
-            elif isinstance(value, basestring):
-                v = '0x' + value.encode('hex')
-            else:
-                v = str(value)
-            self.log.debug(
-                '%s: Write %s size=%s (%d) pos=%d value=%s',
-                self.obj.classname, field, str(size), len(value),
-                self.dest.tell(), v)
-        self.dest.write(value)
-
-    def writebits(self, size, field, value=None):
-        if self.bits is None:
-            self.bits = bitstring.BitArray()
-        if value is None:
-            value = getattr(self.obj, field)
-        if isinstance(value, bool):
-            value = 1 if value else 0
-        if self.log:
-            self.log.debug(
-                '%s: WriteBits %s size=%d value=0x%x',
-                self.obj.classname, field, size,
-                value)
-        self.bits.append(bitstring.Bits(uint=value, length=size))
-
-    def done(self):
-        if self.bits is not None:
-            self.dest.write(self.bits.bytes)
-
 
 class Options(object):
     def __init__(self, **kwargs):
@@ -956,8 +712,8 @@ class DecoderSpecificInfo(Descriptor):
                     r.read(1, "aac_spectral_data_resilience_flag")
                 r.read(1, "extension_flag_3")
         rv["data"] = None
-        if r.pos() != (8 * rv["size"]):
-            rv["data"] = r.data[r.pos() / 8:]
+        if r.bitpos() != (8 * rv["size"]):
+            rv["data"] = r.data[r.bytepos():]
         return rv
 
     def encode_fields(self, dest):
@@ -1265,7 +1021,7 @@ class EC3SpecificBox(Mp4Atom):
     @classmethod
     def parse(clz, src, parent, **kwargs):
         rv = Mp4Atom.parse(src, parent, **kwargs)
-        r = BitsFieldReader(clz, src, rv)
+        r = BitsFieldReader(clz, src, rv, size=None)
         r.read(13, "data_rate")
         num_ind_sub = r.get(3, "num_ind_sub") + 1
         rv["substreams"] = []
@@ -1273,7 +1029,7 @@ class EC3SpecificBox(Mp4Atom):
             r2 = r.duplicate({})
             EC3SubStream.parse(r2)
             rv["substreams"].append(EC3SubStream(**r2.kwargs))
-        if (r.pos() + 16) <= r.size:
+        if (r.bitpos() + 16) <= r.bitsize:
             r.get(7, 'reserved')
             r.read(1, 'flag_ec3_extension_type_a')
             r.read(8, 'complexity_index_type_a')
@@ -2238,6 +1994,9 @@ class EventMessageBox(FullBox):
 MP4_BOXES['emsg'] = EventMessageBox
 
 class IsoParser(object):
+    __DECIMAL_TO_AVOID_UNUSED_IMPORT = decimal.Decimal(1)
+    __BASE64_TO_AVOID_UNUSED_IMPORT = base64.b64encode(b'')
+
     def walk_atoms(self, filename, atom=None, options=None):
         atoms = None
         src = None

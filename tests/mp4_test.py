@@ -38,9 +38,10 @@ if _src not in sys.path:
 
 # these imports *must* be after the modification of sys.path
 import utils
+from mixins import TestCaseMixin
 import mp4
 
-class Mp4Tests(unittest.TestCase):
+class Mp4Tests(TestCaseMixin, unittest.TestCase):
     __DECIMAL_TO_AVOID_UNUSED_IMPORT = decimal.Decimal(1)
     __BASE64_TO_AVOID_UNUSED_IMPORT = base64.EMPTYSTRING
 
@@ -74,49 +75,6 @@ class Mp4Tests(unittest.TestCase):
             with open(os.path.join(self.fixtures, filename), "rb") as f:
                 setattr(self, name, f.read())
         return getattr(self, name)
-
-    def _assert_true(self, result, a, b, msg, template):
-        if not result:
-            if msg is not None:
-                raise AssertionError(msg)
-            raise AssertionError(template.format(a, b))
-
-    def assertBuffersEqual(self, a, b, name=None):
-        lmsg = 'Expected length {expected:d} does not match {actual:d}'
-        dmsg = 'Expected 0x{expected:02x} got 0x{actual:02x} at position {position:d}'
-        if name is not None:
-            lmsg = ': '.join([name, lmsg])
-            dmsg = ': '.join([name, dmsg])
-        if len(a) != len(b):
-            self.hexdumpBuffer('expected', a)
-            self.hexdumpBuffer('actual', b)
-        self.assertEqual(
-            len(a), len(b), lmsg.format(
-                expected=len(a), actual=len(b)))
-        for idx in range(len(a)):
-            self.assertEqual(ord(a[idx]), ord(b[idx]),
-                             dmsg.format(expected=ord(a[idx]), actual=ord(b[idx]), position=idx))
-
-    def assertGreaterOrEqual(self, a, b, msg=None):
-        self._assert_true(a >= b, a, b, msg, r'{} < {}')
-
-    def assertLessThan(self, a, b, msg=None):
-        self._assert_true(a < b, a, b, msg, r'{} >= {}')
-
-    @staticmethod
-    def hexdumpBuffer(label, data):
-        print('==={0}==='.format(label))
-        line = []
-        for idx, d in enumerate(data):
-            asc = d if d >= ' ' and d <= 'z' else ' '
-            line.append('{0:02x} {1} '.format(ord(d), asc))
-            if len(line) == 8:
-                print('{0:04d}: {1}'.format(idx - 7, '  '.join(line)))
-                line = []
-        if line:
-            print('{0:04d}: {1}'.format(len(data) - len(line),
-                                        '  '.join(line)))
-        print('==={0}==='.format('=' * len(label)))
 
     def test_parse_moov(self):
         src = utils.BufferedReader(None, data=self.moov)
