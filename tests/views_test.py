@@ -51,6 +51,7 @@ import utils
 import views
 import mp4
 import models
+import scte35
 from drm.playready import PlayReady
 from mpeg import MPEG_TIMEBASE
 from gae_base import GAETestBase
@@ -545,6 +546,85 @@ class TestHandlers(GAETestBase):
                 self.assertEqual(emsg.data, 'pong')
             ev_presentation_time += events.PingPong.PARAMS['interval']
             event_id += 1
+
+    def test_inline_scte35_dash_events(self):
+        """
+        Test DASH scte35 events carried in the manifest
+        """
+        self.logoutCurrentUser()
+        self.setup_media()
+        params = {
+            'events': 'scte35',
+            'scte35_count': '4',
+            'scte35_inband': '0',
+            'scte35_start': '256',
+            'scte35_program_id': '345',
+        }
+        url = self.from_uri(
+            'dash-mpd-v3',
+            manifest='hand_made.mpd',
+            mode='vod',
+            stream='bbb',
+            params=params)
+        dv = self.check_manifest_url(url, 'vod')
+        dv.validate()
+        for period in dv.manifest.periods:
+            self.assertEqual(len(period.event_streams), 1)
+            event_stream = period.event_streams[0]
+            self.assertEqual(event_stream.schemeIdUri, events.Scte35.schemeIdUri)
+            self.assertEqual(event_stream.value, events.Scte35.PARAMS['value'])
+            self.assertIsInstance(event_stream, dash.EventStream)
+            self.assertEqual(len(event_stream.events), 4)
+            presentationTime = 256
+            for idx, event in enumerate(event_stream.events):
+                self.assertEqual(event.id, idx)
+                self.assertEqual(event.presentationTime, presentationTime)
+                self.assertEqual(event.duration, events.Scte35.PARAMS['duration'])
+                auto_return = (idx & 1) == 0
+                avail_num = idx // 2
+                expected = {
+                    'table_id': 0xFC,
+                    'private_indicator': False,
+                    'protocol_version': 0,
+                    'encrypted_packet': False,
+                    'splice_command_type': 5,
+                    'splice_insert': {
+                        'avail_num': avail_num,
+                        'break_duration': {
+                            'auto_return': auto_return,
+                            'duration': int(round(event.duration * MPEG_TIMEBASE / event_stream.timescale))
+                        },
+                        'splice_time': {
+                            'pts': int(round(event.presentationTime * MPEG_TIMEBASE / event_stream.timescale))
+                        },
+                        'out_of_network_indicator': True,
+                        'splice_event_cancel_indicator': False,
+                        'splice_immediate_flag': False,
+                        'unique_program_id': 345,
+                    },
+                    'descriptors': [{
+                        "segment_num": 0,
+                        "tag": 2,
+                        "web_delivery_allowed_flag": True,
+                        "segmentation_type_id": 0x34 + (idx & 1),
+                        "device_restrictions": 3,
+                        "archive_allowed_flag": True,
+                        "components": None,
+                        "segmentation_event_id": avail_num,
+                        "segmentation_duration": 0,
+                        "no_regional_blackout_flag": True,
+                        "segmentation_event_cancel_indicator": False,
+                        "segmentation_duration_flag": True,
+                        "delivery_not_restricted_flag": True,
+                        "segments_expected": 0,
+                        "program_segmentation_flag": True,
+                        "segmentation_upid_type": 15,
+                        "identifier": scte35.descriptors.SegmentationDescriptor.IDENTIFIER,
+                    }],
+                }
+                # print(json.dumps(event.scte35_binary_signal, indent=2))
+                self.assertObjectEqual(expected, event.scte35_binary_signal)
+                presentationTime += events.Scte35.PARAMS['interval']
 
     def test_request_unknown_media(self):
         url = self.from_uri(
