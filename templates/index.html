@@ -17,7 +17,7 @@
       {% for row in rows %}
       <tr id="row{{loop.index0}}">
         <td class="manifest active" data-uri="{{row.url}}"
-            data-filename="{{row.filename}}" data-params="{{row.manifest.params|toJson|escape}}">
+            data-filename="{{row.filename}}" data-params="{{row.manifest.restrictions|toJson|escape}}">
         <span class="key manifest-key active">{{loop.index0}}</span>
           {% if row.manifest.title %}
           <a class="manifest-title" href="{{row.url}}">{{row.manifest.title}}</a>

@@ -38,7 +38,7 @@ if _src not in sys.path:
 
 # these imports *must* be after the modification of sys.path
 import utils
-from mixins import TestCaseMixin
+from mixins.testcase import TestCaseMixin
 import mp4
 
 class Mp4Tests(TestCaseMixin, unittest.TestCase):

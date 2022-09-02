@@ -21,13 +21,14 @@
 #############################################################################
 
 from abc import abstractmethod
+import copy
 
 from bitio import BitsFieldWriter
 from objects import Binary, ObjectWithFields
 
 class SpliceDescriptor(ObjectWithFields):
     TAGS = {}
-    debug = False
+    CUE_IDENTIFIER = 0x43554549  # "CUEI"
 
     @classmethod
     def from_kwargs(cls, tag, **kwargs):
@@ -35,7 +36,10 @@ class SpliceDescriptor(ObjectWithFields):
             DescriptorClass = cls.TAGS[tag]
         except KeyError:
             DescriptorClass = UnknownSpliceDescriptor
-        return DescriptorClass(tag=tag, **kwargs)
+        args = copy.deepcopy(DescriptorClass.DEFAULT_VALUES)
+        args.update(**kwargs)
+        args['tag'] = tag
+        return DescriptorClass(**args)
 
     @classmethod
     def parse(cls, bit_reader):
@@ -81,6 +85,9 @@ class UnknownSpliceDescriptor(SpliceDescriptor):
 
 class AvailDescriptor(SpliceDescriptor):
     TAG = 0
+    DEFAULT_VALUES = {
+        'identifier': SpliceDescriptor.CUE_IDENTIFIER,
+    }
 
     @classmethod
     def parse(cls, bit_reader, kwargs):
@@ -92,6 +99,9 @@ class AvailDescriptor(SpliceDescriptor):
 
 class DtmfDescriptor(SpliceDescriptor):
     TAG = 1
+    DEFAULT_VALUES = {
+        'identifier': SpliceDescriptor.CUE_IDENTIFIER,
+    }
 
     @classmethod
     def parse(cls, bit_reader, kwargs):
@@ -157,12 +167,12 @@ class SegmentationTypeId(object):
 
 class SegmentationDescriptor(SpliceDescriptor):
     TAG = 2
-    IDENTIFIER = 0x43554549  # "CUEI"
     DEFAULT_VALUES = {
         'delivery_not_restricted_flag': True,
-        'identifier': IDENTIFIER,
+        'identifier': SpliceDescriptor.CUE_IDENTIFIER,
         'segmentation_event_cancel_indicator': False,
         'program_segmentation_flag': True,
+        'segmentation_duration': None,
         'segmentation_upid_type': 0x0F,  # no UPID
         'segmentation_upid': None,
         'segment_num': 0,
@@ -215,10 +225,10 @@ class SegmentationDescriptor(SpliceDescriptor):
         r.read(8, 'segmentation_upid_type')
         upid_length = r.get(8, 'segmentation_upid_length')
         r.read_bytes(upid_length, 'segmentation_upid')
-        r.read(8, 'segmentation_type_id')
+        r.read(8, 'segmentation_type')
         r.read(8, 'segment_num')
         r.read(8, 'segments_expected')
-        if kwargs['segmentation_type_id'] in {0x34, 0x36, 0x38, 0x3A}:
+        if kwargs['segmentation_type'] in {0x34, 0x36, 0x38, 0x3A}:
             r.read(8, 'sub_segment_num')
             r.read(8, 'sub_segments_expected')
 
@@ -257,16 +267,19 @@ class SegmentationDescriptor(SpliceDescriptor):
             upid_length = len(self.segmentation_upid)
             w.write(8, 'segmentation_upid_length', value=upid_length)
             w.write_bytes('segmentation_upid', value=self.segmentation_upid.data)
-        w.write(8, 'segmentation_type_id')
+        w.write(8, 'segmentation_type')
         w.write(8, 'segment_num')
         w.write(8, 'segments_expected')
-        if self.segmentation_type_id in {0x34, 0x36, 0x38, 0x3A}:
+        if self.segmentation_type in {0x34, 0x36, 0x38, 0x3A}:
             w.write(8, 'sub_segment_num')
             w.write(8, 'sub_segments_expected')
 
 
 class TimeDescriptor(SpliceDescriptor):
     TAG = 3
+    DEFAULT_VALUES = {
+        'identifier': SpliceDescriptor.CUE_IDENTIFIER,
+    }
 
     @classmethod
     def parse(cls, r, kwargs):
@@ -283,6 +296,9 @@ class TimeDescriptor(SpliceDescriptor):
 
 class AudioDescriptor(SpliceDescriptor):
     TAG = 4
+    DEFAULT_VALUES = {
+        'identifier': SpliceDescriptor.CUE_IDENTIFIER,
+    }
 
     @classmethod
     def parse(cls, r, kwargs):

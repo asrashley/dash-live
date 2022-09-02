@@ -20,6 +20,9 @@
 #
 #############################################################################
 
-from binarysignal import BinarySignal
+from mixins.check_manifest import DashManifestCheckMixin
+from gae_base import GAETestBase
 
-__all__ = [BinarySignal]
+class HandMadeManifestTest(GAETestBase, DashManifestCheckMixin):
+    def test_hand_made_manifest(self):
+        self.check_a_manifest_using_all_options('hand_made.mpd')
