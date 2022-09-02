@@ -19,7 +19,22 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+import os
+import unittest
 
-from binarysignal import BinarySignal
+from mixins.check_manifest import DashManifestCheckMixin
+from gae_base import GAETestBase
 
-__all__ = [BinarySignal]
+class ManifestETest(GAETestBase, DashManifestCheckMixin):
+    def test_manifest_e(self):
+        self.check_a_manifest_using_major_options('manifest_e.mpd')
+
+
+if os.environ.get("TESTS"):
+    def load_tests(loader, tests, pattern):
+        return unittest.loader.TestLoader().loadTestsFromNames(
+            os.environ["TESTS"].split(','),
+            ManifestETest)
+
+if __name__ == '__main__':
+    unittest.main()

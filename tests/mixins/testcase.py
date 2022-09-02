@@ -1,6 +1,28 @@
+#############################################################################
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
+#############################################################################
+#
+#  Project Name        :    Simulated MPEG DASH service
+#
+#  Author              :    Alex Ashley
+#
+#############################################################################
+
 import logging
 import os
-
+import sys
 
 class TestCaseMixin(object):
     @property
@@ -208,7 +230,7 @@ class TestCaseMixin(object):
 
     def assertBuffersEqual(self, a, b, name=None):
         lmsg = 'Expected length {expected:d} does not match {actual:d}'
-        dmsg = 'Expected 0x{expected:02x} got 0x{actual:02x} at position {position:d}'
+        dmsg = 'Expected 0x{expected:02x} got 0x{actual:02x} at position {position:d} (bit {bitpos:d})'
         if name is not None:
             lmsg = ': '.join([name, lmsg])
             dmsg = ': '.join([name, dmsg])
@@ -223,8 +245,23 @@ class TestCaseMixin(object):
         self.hexdumpBuffer('expected', a)
         self.hexdumpBuffer('actual', b)
         for idx in range(len(a)):
-            self.assertEqual(ord(a[idx]), ord(b[idx]),
-                             dmsg.format(expected=ord(a[idx]), actual=ord(b[idx]), position=idx))
+            bitpos = idx * 8
+            self.assertEqual(
+                ord(a[idx]), ord(b[idx]),
+                dmsg.format(expected=ord(a[idx]), actual=ord(b[idx]),
+                            position=idx, bitpos=bitpos))
+
+    def progress(self, pos, total):
+        if pos == 0:
+            sys.stdout.write('\n')
+        sys.stdout.write(
+            '\r {:05.1f}%'.format(
+                100.0 *
+                float(pos) /
+                float(total)))
+        if pos == total:
+            sys.stdout.write('\n')
+        sys.stdout.flush()
 
 
 class HideMixinsFilter(logging.Filter):

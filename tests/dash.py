@@ -37,12 +37,12 @@ _src = os.path.join(os.path.dirname(__file__), "..", "src")
 if _src not in sys.path:
     sys.path.append(_src)
 
-import mixins
-import mp4
+from drm.playready import PlayReady
+from mixins.testcase import HideMixinsFilter, TestCaseMixin
 from mpeg import MPEG_TIMEBASE
+import mp4
 import scte35
 import utils
-from drm.playready import PlayReady
 
 class Options(object):
     def __init__(self, strict=True):
@@ -85,7 +85,7 @@ class MissingSegmentException(ValidationException):
         self.reason = response.status
 
 
-class HttpClient(mixins.TestCaseMixin):
+class HttpClient(TestCaseMixin):
     __metaclass__ = ABCMeta
 
     @abstractmethod
@@ -101,7 +101,7 @@ class ContextAdapter(logging.LoggerAdapter):
         return msg, kwargs
 
 
-class DashElement(mixins.TestCaseMixin):
+class DashElement(TestCaseMixin):
     __metaclass__ = ABCMeta
 
     class Parent(object):
@@ -566,7 +566,7 @@ class URLType(DashElement):
         pass
 
 
-class FrameRateType(mixins.TestCaseMixin):
+class FrameRateType(TestCaseMixin):
     pattern = re.compile(r"([0-9]*[0-9])(/[0-9]*[0-9])?$")
 
     def __init__(self, num, denom=1):
@@ -1225,7 +1225,7 @@ if __name__ == "__main__":
     import argparse
     import requests
 
-    class HttpResponse(mixins.TestCaseMixin):
+    class HttpResponse(TestCaseMixin):
         def __init__(self, response):
             self.response = response
             self.status_code = self.status_int = response.status_code
@@ -1348,7 +1348,7 @@ if __name__ == "__main__":
     FORMAT = r"%(asctime)-15s:%(levelname)s:%(filename)s@%(lineno)d: %(message)s"
     logging.basicConfig(format=FORMAT)
     args.log = logging.getLogger(__name__)
-    args.log.addFilter(mixins.HideMixinsFilter())
+    args.log.addFilter(HideMixinsFilter())
     if args.verbose > 0:
         args.log.setLevel(logging.DEBUG)
     bdv = BasicDashValidator(args.manifest, args)

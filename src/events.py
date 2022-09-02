@@ -266,8 +266,8 @@ class Scte35(RepeatingEventBase):
         segmentation_descriptor = descriptors.SegmentationDescriptor(
             segmentation_event_id=avail_num,
             segmentation_duration=0,
-            segmentation_type_id=(descriptors.SegmentationTypeId.PROVIDER_PLACEMENT_OP_START +
-                                  (event_id & 1)),
+            segmentation_type=(descriptors.SegmentationTypeId.PROVIDER_PLACEMENT_OP_START +
+                               (event_id & 1)),
         )
         splice = BinarySignal(
             sap_type=SapType.CLOSED_GOP_NO_LEADING_PICTURES,

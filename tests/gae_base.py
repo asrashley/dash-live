@@ -33,21 +33,6 @@ import urllib
 import uuid
 import sys
 
-_src = os.path.join(os.path.dirname(__file__), "..", "src")
-if _src not in sys.path:
-    sys.path.append(_src)
-
-# these imports *must* be after the modification of sys.path
-from segment import Representation
-from mixins import TestCaseMixin
-import routes
-import options
-import utils
-import views
-import mp4
-import models
-from drm.playready import PlayReady
-
 from google.appengine.ext import ndb, testbed
 from google.appengine.api import files, users
 from google.appengine.api.files import file_service_stub
@@ -55,6 +40,20 @@ from google.appengine.api.blobstore import blobstore_stub, file_blob_storage
 import jinja2
 import webapp2
 import webtest  # if this import fails, "pip install WebTest"
+
+_src = os.path.join(os.path.dirname(__file__), "..", "src")
+if _src not in sys.path:
+    sys.path.append(_src)
+
+# these imports *must* be after the modification of sys.path
+from segment import Representation
+from mixins.testcase import TestCaseMixin
+import routes
+import utils
+import views
+import mp4
+import models
+from drm.playready import PlayReady
 
 class GAETestBase(TestCaseMixin, unittest.TestCase):
     # duration of media in test/fixtures directory (in seconds)
@@ -113,29 +112,6 @@ class GAETestBase(TestCaseMixin, unittest.TestCase):
             trim_blocks=False,
         )
         self.templates.filters['base64'] = utils.toBase64
-        self.cgi_options = []
-        drmloc = []
-        for opt in options.options:
-            if opt['name'] == 'drmloc':
-                for loc in opt['options']:
-                    if loc[1]:
-                        drmloc.append(loc[1].split('=')[1])
-        for opt in options.options:
-            # the MSE option is exluded from the list as it does not change
-            # anything in the manifest responses
-            if opt['name'] in ['mse', 'drmloc']:
-                continue
-            opts = map(lambda o: o[1], opt['options'])
-            if opt['name'] == 'drm':
-                for d in opt['options']:
-                    if d[1] == 'drm=none':
-                        continue
-                    for loc in drmloc:
-                        if "pro" in loc and d[1] != 'drm=playready' and d[1] != 'drm=all':
-                            continue
-                        opts.append(d[1] + '-' + loc)
-            self.cgi_options.append((opt["name"], opts))
-        # print(self.cgi_options)
 
     def setup_media(self):
         bbb = models.Stream(
@@ -256,15 +232,3 @@ class GAETestBase(TestCaseMixin, unittest.TestCase):
         logging.debug(message)
         return self.app.post(upload_url, params=form,
                              headers=headers, upload_files=upload_files)
-
-    def progress(self, pos, total):
-        if pos == 0:
-            sys.stdout.write('\n')
-        sys.stdout.write(
-            '\r {:05.2f}%'.format(
-                100.0 *
-                float(pos) /
-                float(total)))
-        if pos == total:
-            sys.stdout.write('\n')
-        sys.stdout.flush()

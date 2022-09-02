@@ -37,7 +37,7 @@ class SapType(object):
 class BinarySignal(MpegSectionTable):
     TABLE_ID = 0xFC
     DEFAULT_VALUES = {
-        'cw_index': 0,
+        'cw_index': 0xFF,
         'descriptors': [],
         'encryption_algorithm': 0,
         'encrypted_packet': False,
@@ -55,7 +55,6 @@ class BinarySignal(MpegSectionTable):
         'descriptors': ListOf(SpliceDescriptor.from_kwargs),
         'time_signal': SpliceTime,
     }
-    debug = False
 
     @classmethod
     def parse_payload(cls, r, kwargs):
@@ -94,11 +93,11 @@ class BinarySignal(MpegSectionTable):
         return kwargs
 
     def encode_fields(self, w):
-        if 'splice_schedule' in self._fields:
+        if self._fields.get('splice_schedule', None) is not None:
             self.splice_command_type = 4
-        elif 'splice_insert' in self._fields:
+        elif self._fields.get('splice_insert', None) is not None:
             self.splice_command_type = 5
-        elif 'time_signal' in self._fields:
+        elif self._fields.get('time_signal', None) is not None:
             self.splice_command_type = 6
         else:
             self.splice_command_type = 0

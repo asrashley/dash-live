@@ -22,19 +22,37 @@
 
 from bitio import BitsFieldReader, BitsFieldWriter
 
-from objects import ObjectWithFields
+from objects import ListOf, ObjectWithFields
 from break_duration import BreakDuration
 from splice_time import SpliceTime
+
+class ElementaryComponent(ObjectWithFields):
+    @classmethod
+    def parse(cls, src):
+        kwargs = {}
+        r = BitsFieldReader(cls, src, kwargs)
+        r.read(8, 'tag')
+        kwargs['splice_time'] = SpliceTime.parse(r)
+        return kwargs
+
+    def encode(self, dest):
+        w = BitsFieldWriter(self, dest)
+        w.write(8, 'tag')
+        self.splice_time.encode(w)
+
 
 class SpliceInsert(ObjectWithFields):
     OBJECT_FIELDS = {
         'break_duration': BreakDuration,
         'splice_time': SpliceTime,
+        'components': ListOf(ElementaryComponent),
     }
     DEFAULT_VALUES = {
+        "components": [],
         "splice_event_cancel_indicator": False,
         "splice_immediate_flag": False,
         "out_of_network_indicator": True,
+        "splice_time": None,
     }
 
     @classmethod
@@ -53,14 +71,13 @@ class SpliceInsert(ObjectWithFields):
         r.get(4, 'reserved')
         if kwargs['program_splice_flag'] and not kwargs['splice_immediate_flag']:
             kwargs['splice_time'] = SpliceTime.parse(r)
+        else:
+            kwargs['splice_time'] = None
+        kwargs['components'] = []
         if not kwargs['program_splice_flag']:
-            r.read(8, 'component_count')
-            kwargs['components'] = []
-            for j in range(kwargs['component_count']):
-                kwargs['components'].append({
-                    'tag': r.get(8, 'tag'),
-                    'splice_time': SpliceTime.parse(r)
-                })
+            component_count = r.get(8, 'component_count')
+            for j in range(component_count):
+                kwargs['components'].append(ElementaryComponent.parse(r))
         if kwargs['duration_flag']:
             kwargs['break_duration'] = BreakDuration.parse(r)
         else:
@@ -71,6 +88,7 @@ class SpliceInsert(ObjectWithFields):
         return kwargs
 
     def encode(self, dest):
+        self.program_splice_flag = self.splice_time is not None
         w = BitsFieldWriter(self, dest)
         w.write(32, 'splice_event_id')
         w.write(1, 'splice_event_cancel_indicator')
@@ -86,8 +104,7 @@ class SpliceInsert(ObjectWithFields):
         if self.program_splice_flag and not self.splice_immediate_flag:
             self.splice_time.encode(w)
         if not self.program_splice_flag:
-            self.component_count = len(self.components)
-            w.write(8, 'component_count')
+            w.write(8, 'component_count', value=len(self.components))
             for comp in self.components:
                 w.write(8, 'tag', value=comp.tag)
                 comp.splice_time.encode(w)

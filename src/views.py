@@ -853,7 +853,7 @@ class MainPage(RequestHandler):
         context['keys'] = models.Key.all_as_dict()
         context['rows'] = []
         filenames = manifests.manifest.keys()
-        filenames.sort(key=lambda name: manifests.manifest[name]['title'])
+        filenames.sort(key=lambda name: manifests.manifest[name].title)
         for name in filenames:
             url = self.uri_for('dash-mpd-v3', manifest=name,
                                stream='placeholder', mode='live')
@@ -888,12 +888,15 @@ class ServeManifest(RequestHandler):
     def get(self, mode, stream, manifest, **kwargs):
         if manifest in legacy_manifest_names:
             manifest = legacy_manifest_names[manifest]
-        if manifest not in manifests.manifest:
+        try:
+            mft = manifests.manifest[manifest]
+        except KeyError:
             logging.debug('Unknown manifest: %s', manifest)
             self.response.write('%s not found' % (manifest))
             self.response.set_status(404)
             return
-        if mode not in manifests.manifest[manifest]['modes']:
+        modes = mft.restrictions.get('mode', options.supported_modes)
+        if mode not in modes:
             logging.debug(
                 'Mode %s not supported with manifest %s', mode, manifest)
             self.response.write('%s not found' % (manifest))
@@ -1346,7 +1349,7 @@ class VideoPlayer(RequestHandler):
                     context['source']
                 ])
         context['mimeType'] = 'application/dash+xml'
-        context['title'] = manifests.manifest[filename]['title']
+        context['title'] = manifests.manifest[filename].title
         template = templates.get_template('video.html')
         self.response.write(template.render(context))
 
