@@ -27,14 +27,20 @@ import logging
 import os
 import sys
 import unittest
+try:
+    from unittest import mock
+except ImportError:
+    # use Python 2 back-port
+    import mock
 
 _src = os.path.join(os.path.dirname(__file__), "..", "src")
 if _src not in sys.path:
     sys.path.append(_src)
 
 # these imports *must* be after the modification of sys.path
+from purecrc import Crc32Mpeg2 as PureCrc32Mpeg2
 from mixins.testcase import TestCaseMixin
-from mpeg import MPEG_TIMEBASE
+import mpeg
 from scte35.binarysignal import BinarySignal
 from scte35.descriptors import SegmentationTypeId
 import utils
@@ -79,6 +85,7 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
                 'provider_avail_id': 0x00000135
             }],
             'crc': 0x62dba30a,
+            'crc_valid': True,
         }
     }, {
         # section 14.3 time_signal example from SCTE-35
@@ -115,6 +122,7 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
                 'segments_expected': 0,
             }],
             'crc': 0xa9cc6758,
+            'crc_valid': True,
         }
     }, {
         # DASH test stream
@@ -136,7 +144,7 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
                 'avails_expected': 3,
                 'break_duration': {
                     'auto_return': True,
-                    'duration': int(round(2399838222.0 * MPEG_TIMEBASE / dash_timebase))
+                    'duration': int(round(2399838222.0 * mpeg.MPEG_TIMEBASE / dash_timebase))
                 },
                 'splice_time': {
                     'pts': 2304779056,
@@ -161,7 +169,7 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
                 'avails_expected': 8,
                 'break_duration': {
                     'auto_return': True,
-                    'duration': int(round(299838222.0 * MPEG_TIMEBASE / dash_timebase))
+                    'duration': int(round(299838222.0 * mpeg.MPEG_TIMEBASE / dash_timebase))
                 },
                 'splice_time': {
                     'pts': 2307479056,
@@ -186,7 +194,7 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
                 'avails_expected': 3,
                 'break_duration': {
                     'auto_return': True,
-                    'duration': int(round(2399838222.0 * MPEG_TIMEBASE / dash_timebase))
+                    'duration': int(round(2399838222.0 * mpeg.MPEG_TIMEBASE / dash_timebase))
                 },
                 'splice_time': {
                     'pts': 2394419056,
@@ -211,7 +219,7 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
                 'avails_expected': 7,
                 'break_duration': {
                     'auto_return': True,
-                    'duration': int(round(599838222.0 * MPEG_TIMEBASE / dash_timebase))
+                    'duration': int(round(599838222.0 * mpeg.MPEG_TIMEBASE / dash_timebase))
                 },
                 'splice_time': {
                     'pts': 2405219056,
@@ -236,7 +244,7 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
                 'avails_expected': 7,
                 'break_duration': {
                     'auto_return': True,
-                    'duration': int(round(599838222.0 * MPEG_TIMEBASE / dash_timebase))
+                    'duration': int(round(599838222.0 * mpeg.MPEG_TIMEBASE / dash_timebase))
                 },
                 'splice_time': {
                     'pts': 2410619056,
@@ -245,7 +253,29 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
         }
     }]
 
+    def setUp(self):
+        for tc in self.test_cases:
+            if 'crc' not in tc['expected']:
+                data = base64.b64decode(tc['input'])
+                crc = PureCrc32Mpeg2()
+                crc.process(map(lambda b: ord(b), data[:-4]))
+                tc['expected']['crc'] = crc.final()
+                tc['expected']['crc_valid'] = True
+
     def test_parsing_splice_info_section(self):
+        for idx, tc in enumerate(self.test_cases):
+            # print('test_case', idx + 1)
+            data = base64.b64decode(tc['input'])
+            src = utils.BufferedReader(None, data=data)
+            splice_kwargs = BinarySignal.parse(src, size=len(data))
+            self.assertIn('crc', tc['expected'])
+            self.assertObjectEqual(tc['expected'], splice_kwargs)
+            splice = BinarySignal(**splice_kwargs)
+            encoded = splice.encode()
+            self.assertBuffersEqual(data, encoded)
+
+    @mock.patch('mpeg.Crc32Mpeg2', new=PureCrc32Mpeg2)
+    def test_parsing_splice_info_section_with_pure_python_crc(self):
         for idx, tc in enumerate(self.test_cases):
             # print('test_case', idx + 1)
             data = base64.b64decode(tc['input'])
@@ -257,6 +287,17 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
             self.assertBuffersEqual(data, encoded)
 
     def test_generating_splice_info_section(self):
+        for idx, tc in enumerate(self.test_cases):
+            # print('test_case', idx + 1)
+            data = base64.b64decode(tc['input'])
+            kwargs = copy.deepcopy(BinarySignal.DEFAULT_VALUES)
+            kwargs.update(**tc['expected'])
+            splice = BinarySignal(**kwargs)
+            encoded = splice.encode()
+            self.assertBuffersEqual(data, encoded)
+
+    @mock.patch('mpeg.Crc32Mpeg2', new=PureCrc32Mpeg2)
+    def test_generating_splice_info_section_with_pure_python_crc(self):
         for idx, tc in enumerate(self.test_cases):
             # print('test_case', idx + 1)
             data = base64.b64decode(tc['input'])
