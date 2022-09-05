@@ -41,35 +41,35 @@ class Route(object):
 routes = {
     "del-key": Route(
         r'/key/<kid:\w+>',
-        handler='views.KeyHandler',
+        handler='requesthandler.keypairs.KeyHandler',
         title='delete key pairs'),
     "key": Route(
         r'/key',
-        handler='views.KeyHandler',
+        handler='requesthandler.keypairs.KeyHandler',
         title='Add key pairs'),
     "clearkey": Route(
         r'/clearkey',
-        handler='views.ClearkeyHandler',
+        handler='requesthandler.clearkey.ClearkeyHandler',
         title='W3C clearkey support'),
     "dash-mpd-v1": Route(
         r'/dash/<manifest:[\w\-_]+\.mpd>',
-        handler='views.LegacyManifestUrl',
+        handler='requesthandler.manifest_requests.LegacyManifestUrl',
         title='DASH test stream (v1 URL)'),
     "dash-mpd-v2": Route(
         r'/dash/<stream:\w+>/<manifest:[\w\-_]+\.mpd>',
-        handler='views.LegacyManifestUrl',
+        handler='requesthandler.manifest_requests.LegacyManifestUrl',
         title='DASH test stream (v2 URL)'),
     "dash-mpd-v3": Route(
         r'/dash/<mode:(live|vod|odvod)>/<stream:\w+>/<manifest:[\w\-_]+\.mpd>',
-        handler='views.ServeManifest',
+        handler='requesthandler.manifest_requests.ServeManifest',
         title='DASH test stream'),
     "dash-media": Route(
         r'/dash/<mode:(live|vod)>/<filename:\w+>/<segment_num:(\d+|init)>.<ext:(mp4|m4v|m4a|m4s)>',
-        handler='views.LiveMedia',
+        handler='requesthandler.media_requests.LiveMedia',
         title="DASH fragment"),
     "dash-od-media": Route(
         r'/dash/vod/<filename:\w+>.<ext:(mp4|m4v|m4a|m4s)>',
-        handler='views.OnDemandMedia',
+        handler='requesthandler.media_requests.OnDemandMedia',
         title="DASH media file"),
     "media-info": Route(
         r'/media/<mfid:[\w_+=-]+>',
@@ -77,31 +77,31 @@ routes = {
         title='Media information'),
     "media-index": Route(
         r'/media',
-        handler='views.MediaHandler',
+        handler='requesthandler.media_management.MediaHandler',
         title='Media file management'),
     "time": Route(
         r'/time/<format:(xsd|iso|ntp)>',
-        handler='views.UTCTimeHandler',
+        handler='requesthandler.utctime.UTCTimeHandler',
         title='Current time of day'),
     "del-stream": Route(
         r'/stream/<id:[\w_+=-]+>',
-        handler='views.StreamHandler',
+        handler='requesthandler.streams.StreamHandler',
         title='Delete stream'),
     "stream": Route(
         r'/stream',
-        handler='views.StreamHandler',
+        handler='requesthandler.streams.StreamHandler',
         title='Add stream'),
     "uploadBlob": Route(
         r'/blob',
-        handler='views.MediaHandler',
+        handler='requesthandler.media_management.MediaHandler',
         title='Upload blob'),
     "video": Route(
         r'/video',
-        handler='views.VideoPlayer',
+        handler='requesthandler.htmlpage.VideoPlayer',
         title='DASH test stream player'),
     "home": Route(
         r'/',
-        handler='views.MainPage',
+        handler='requesthandler.htmlpage.MainPage',
         title='DASH test streams'),
 }
 

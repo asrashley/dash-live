@@ -22,48 +22,63 @@
 
 supported_modes = {'live', 'vod', 'odvod'}
 
+class CgiOption(object):
+    """
+    Container class for one CGI option
+    """
+    def __init__(self, name, title, options):
+        """
+        :name: The name of the options
+        :title: The title to use in the UI
+        :options: List of allowed values for this option
+        """
+        self.name = name
+        self.title = title
+        self.options = options
+
+
 options = [
-    {
-        'name': 'mode',
-        'title': 'Operating mode',
-        'options': [
+    CgiOption(
+        name='mode',
+        title='Operating mode',
+        options=[
             ('VOD live profile', 'mode=vod'),
             ('Live stream', 'mode=live'),
             ('VOD OD profile', 'mode=odvod'),
         ]
-    },
-    {
-        'name': 'abr',
-        'title': 'Adaptive bitrate',
-        'options': [
+    ),
+    CgiOption(
+        name='abr',
+        title='Adaptive bitrate',
+        options=[
             ('yes', ''),
             ('no', 'abr=0'),
         ]
-    },
-    {
-        'name': 'acodec',
-        'title': 'Audio codec',
-        'options': [
+    ),
+    CgiOption(
+        name='acodec',
+        title='Audio codec',
+        options=[
             ('AAC', 'acodec=mp4a'),
             ('E-AC3', 'acodec=ec-3'),
             ('Both AAC and E-AC3', ''),
         ]
-    },
-    {
-        'name': 'drm',
-        'title': 'Encryption',
-        'options': [
+    ),
+    CgiOption(
+        name='drm',
+        title='Encryption',
+        options=[
             ('None', 'drm=none'),
             ('PlayReady', 'drm=playready'),
             ('Marlin', 'drm=marlin'),
             ('ClearKey', 'drm=clearkey'),
             ('All', 'drm=all'),
         ]
-    },
-    {
-        'name': 'drmloc',
-        'title': 'DRM location',
-        'options': [
+    ),
+    CgiOption(
+        name='drmloc',
+        title='DRM location',
+        options=[
             ('All locations', ''),
             ('mspr:pro element in MPD', 'drmloc=pro'),
             ('dash:cenc element in MPD', 'drmloc=cenc'),
@@ -72,52 +87,52 @@ options = [
             ('mspr:pro MPD + PSSH init', 'drmloc=pro-moov'),
             ('dash:cenc MPD + PSSH init', 'drmloc=cenc-moov'),
         ]
-    },
-    {
-        'name': 'time',
-        'title': 'UTC timing element',
-        'options': [
+    ),
+    CgiOption(
+        name='time',
+        title='UTC timing element',
+        options=[
             ('None', ''),
             ('xsd:date', 'time=xsd'),
             ('iso datetime', 'time=iso'),
             ('NTP', 'time=ntp'),
             ('HTTP HEAD', 'time=head'),
         ]
-    },
-    {
-        'name': 'mup',
-        'title': 'Manifest update rate',
-        'options': [
+    ),
+    CgiOption(
+        name='mup',
+        title='Manifest update rate',
+        options=[
             ('Every 2 fragments', ''),
             ('Never', 'mup=-1'),
             ('Every fragment', 'mup=4'),
             ('Every 30 seconds', 'mup=30'),
         ]
-    },
-    {
-        'name': 'base',
-        'title': 'BaseURL element',
-        'options': [
+    ),
+    CgiOption(
+        name='base',
+        title='BaseURL element',
+        options=[
             ('Yes', ''),
             ('No', 'base=0'),
         ]
-    },
-    {
-        'name': 'mse',
-        'title': 'Native playback',
-        'options': [
+    ),
+    CgiOption(
+        name='mse',
+        title='Native playback',
+        options=[
             ('Yes', ''),
             ('Use EME/MSE', 'mse=1'),
             ('Use EME/MSE (no DRM)', 'mse=2'),
         ]
-    },
-    {
-        'name': 'events',
-        'title': 'DASH events',
-        'options': [
+    ),
+    CgiOption(
+        name='events',
+        title='DASH events',
+        options=[
             ('None', ''),
             ('PingPong', 'events=ping'),
             ('SCTE35', 'events=scte35'),
         ]
-    },
+    ),
 ]
