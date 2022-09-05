@@ -21,7 +21,12 @@
 #############################################################################
 from abc import abstractmethod
 
-from crccheck.crc import Crc32Mpeg2
+try:
+    from crccheck.crc import Crc32Mpeg2
+except ImportError:
+    # when running inside GAE environment, the crccheck library cannot be
+    # used as it has native code. Fall back to a pure python implementation
+    from purecrc import Crc32Mpeg2
 
 from bitio import BitsFieldReader, BitsFieldWriter
 from objects import ObjectWithFields
@@ -44,6 +49,9 @@ class MpegSectionTable(ObjectWithFields):
         kwargs['header_size'] = r.bytepos() - kwargs['position']
         cls.parse_payload(r, kwargs)
         r.read(32, 'crc')
+        crc = Crc32Mpeg2()
+        crc.process(map(lambda b: ord(b), r.data[kwargs['position']:r.bytepos()]))
+        kwargs['crc_valid'] = crc.final() == 0
         return kwargs
 
     def encode(self, dest=None):
