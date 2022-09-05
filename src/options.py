@@ -26,7 +26,7 @@ class CgiOption(object):
     """
     Container class for one CGI option
     """
-    def __init__(self, name, title, options):
+    def __init__(self, name, title, options, hidden=False):
         """
         :name: The name of the options
         :title: The title to use in the UI
@@ -35,6 +35,7 @@ class CgiOption(object):
         self.name = name
         self.title = title
         self.options = options
+        self.hidden = hidden
 
 
 options = [
@@ -89,6 +90,24 @@ options = [
         ]
     ),
     CgiOption(
+        name='periods',
+        title='Use multiple periods',
+        options=[
+            ('No', ''),
+            ('2 periods', 'periods=2'),
+            ('3 periods', 'periods=3'),
+        ]
+    ),
+    CgiOption(
+        name='events',
+        title='DASH events',
+        options=[
+            ('None', ''),
+            ('PingPong', 'events=ping'),
+            ('SCTE35', 'events=scte35'),
+        ]
+    ),
+    CgiOption(
         name='time',
         title='UTC timing element',
         options=[
@@ -107,7 +126,8 @@ options = [
             ('Never', 'mup=-1'),
             ('Every fragment', 'mup=4'),
             ('Every 30 seconds', 'mup=30'),
-        ]
+        ],
+        hidden=True
     ),
     CgiOption(
         name='base',
@@ -115,7 +135,8 @@ options = [
         options=[
             ('Yes', ''),
             ('No', 'base=0'),
-        ]
+        ],
+        hidden=True
     ),
     CgiOption(
         name='mse',
@@ -124,15 +145,6 @@ options = [
             ('Yes', ''),
             ('Use EME/MSE', 'mse=1'),
             ('Use EME/MSE (no DRM)', 'mse=2'),
-        ]
-    ),
-    CgiOption(
-        name='events',
-        title='DASH events',
-        options=[
-            ('None', ''),
-            ('PingPong', 'events=ping'),
-            ('SCTE35', 'events=scte35'),
         ]
     ),
 ]

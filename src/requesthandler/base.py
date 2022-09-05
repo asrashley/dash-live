@@ -36,6 +36,7 @@ from google.appengine.api import users, memcache
 from webapp2_extras import securecookie
 from webapp2_extras import security
 
+import manifests
 import models
 import settings
 import utils
@@ -74,8 +75,7 @@ class RequestHandlerBase(webapp2.RequestHandler):
             "import_script": self.import_script,
             "http_protocol": self.request.host_url.split(':')[0]
         }
-        for k, v in kwargs.iteritems():
-            context[k] = v
+        context.update(kwargs)
         p = route.parent
         context["breadcrumbs"] = []
         while p:
@@ -179,11 +179,12 @@ class RequestHandlerBase(webapp2.RequestHandler):
             raise CsrfFailureException("signatures do not match")
         return True
 
-    def get_bool_param(self, param):
-        value = self.request.params.get(param, "false").lower()
+    def get_bool_param(self, param, default=False):
+        value = self.request.params.get(param, str(default)).lower()
         return value in ["1", "true"]
 
-    def compute_av_values(self, av, startNumber):
+    def compute_av_values(self, av, startNumber=1):
+        av['startNumber'] = startNumber
         av['timescale'] = av['representations'][0].timescale
         av['presentationTimeOffset'] = int(
             (startNumber - 1) * av['representations'][0].segment_duration)
@@ -363,12 +364,10 @@ class RequestHandlerBase(webapp2.RequestHandler):
         rv.append('</SegmentTimeline>')
         return '\n'.join(rv)
 
-    def calculate_dash_params(self, stream, mode, **kwargs):
-        st = models.Stream.query(models.Stream.prefix == stream).get()
-        if st is None:
-            raise ValueError("Invalid stream prefix {0}".format(stream))
-        stream = st
-        mpd_url = kwargs.get("mpd_url")
+    def calculate_dash_params(self, prefix, mode, mpd_url=None):
+        stream = models.Stream.query(models.Stream.prefix == prefix).get()
+        if stream is None:
+            raise ValueError("Invalid stream prefix {0}".format(prefix))
         if mpd_url is None:
             mpd_url = self.request.uri
             for k, v in self.legacy_manifest_names.iteritems():
@@ -377,6 +376,7 @@ class RequestHandlerBase(webapp2.RequestHandler):
                     break
         if mpd_url is None:
             raise ValueError("Unable to determin MPD URL")
+        manifest_info = manifests.manifest[mpd_url]
         encrypted = self.request.params.get('drm', 'none').lower() != 'none'
         now = datetime.datetime.now(tz=utils.UTC())
         clockDrift = 0
@@ -384,17 +384,14 @@ class RequestHandlerBase(webapp2.RequestHandler):
             clockDrift = int(self.request.params.get('drift', '0'), 10)
             if clockDrift:
                 now -= datetime.timedelta(seconds=clockDrift)
-        except ValueError:
-            pass
-        timeShiftBufferDepth = 0
-        if mode == 'live':
-            try:
-                timeShiftBufferDepth = int(self.request.params.get(
-                    'depth', str(self.DEFAULT_TIMESHIFT_BUFFER_DEPTH)), 10)
-            except ValueError:
-                timeShiftBufferDepth = self.DEFAULT_TIMESHIFT_BUFFER_DEPTH  # in seconds
+        except ValueError as err:
+            logging.warning('Invalid clock drift CGI parameter: %s', err)
+
+        avail_start, elapsedTime, ts_buffer_depth = self.calculate_availability_start(
+            mode, now)
         rv = {
             "DRM": {},
+            "abr": self.get_bool_param('abr', default=True),
             "clockDrift": clockDrift,
             "encrypted": encrypted,
             "generateSegmentList": self.generateSegmentList,
@@ -403,130 +400,108 @@ class RequestHandlerBase(webapp2.RequestHandler):
             "mode": mode,
             "mpd_url": mpd_url,
             "now": now,
-            "period": {
-                "start": datetime.timedelta(0),
-                "id": "p0",
-            },
+            "periods": [],
             "publishTime": now.replace(microsecond=0),
             "startNumber": 1,
             "stream": stream,
-            "subtitle": {
-                "adaptationSets": []
-            },
             "suggestedPresentationDelay": 30,
-            "timeShiftBufferDepth": timeShiftBufferDepth,
+            "timeShiftBufferDepth": ts_buffer_depth,
         }
-        elapsedTime = datetime.timedelta(seconds=0)
-        if mode == 'live':
-            startParam = self.request.params.get('start', 'today')
-            if startParam == 'today':
-                availabilityStartTime = now.replace(
-                    hour=0, minute=0, second=0, microsecond=0)
-                if now.hour == 0 and now.minute == 0:
-                    availabilityStartTime -= datetime.timedelta(days=1)
-            elif startParam == 'now':
-                availabilityStartTime = rv["publishTime"] - \
-                    datetime.timedelta(
-                        seconds=self.DEFAULT_TIMESHIFT_BUFFER_DEPTH)
-            elif startParam == 'epoch':
-                availabilityStartTime = datetime.datetime(
-                    1970, 1, 1, 0, 0, tzinfo=utils.UTC())
-            else:
-                try:
-                    availabilityStartTime = utils.from_isodatetime(startParam)
-                except ValueError:
-                    availabilityStartTime = now.replace(
-                        hour=0, minute=0, second=0, microsecond=0)
-            elapsedTime = now - availabilityStartTime
-            if elapsedTime.total_seconds() < rv["timeShiftBufferDepth"]:
-                timeShiftBufferDepth = rv["timeShiftBufferDepth"] = elapsedTime.total_seconds(
-                )
-        else:
-            availabilityStartTime = now
-        rv["availabilityStartTime"] = availabilityStartTime
+        period = {
+            "start": datetime.timedelta(0),
+            "id": "p0",
+            "adaptationSets": [],
+            "event_streams": [],
+        }
+        rv["availabilityStartTime"] = avail_start
         rv["elapsedTime"] = elapsedTime
-        if mode == 'odvod':
-            rv["baseURL"] = urlparse.urljoin(
-                self.request.host_url, '/dash/vod') + '/'
+        audio, video = self.calculate_audio_video_context(stream, mode, encrypted)
+        if rv['abr'] is False:
+            video['representations'] = video['representations'][-1:]
+        cgi_params = self.calculate_cgi_parameters(
+            mode=mode, now=now, avail_start=avail_start, clockDrift=clockDrift,
+            ts_buffer_depth=ts_buffer_depth, audio=audio, video=video)
+        video['mediaURL'] += self.dict_to_cgi_params(cgi_params['video'])
+        audio['mediaURL'] += self.dict_to_cgi_params(cgi_params['audio'])
+        if mode != 'odvod':
+            video['initURL'] += self.dict_to_cgi_params(cgi_params['video'])
+            audio['initURL'] += self.dict_to_cgi_params(cgi_params['audio'])
+        if cgi_params['manifest']:
+            locationURL = self.request.uri
+            if '?' in locationURL:
+                locationURL = locationURL[:self.request.uri.index('?')]
+            locationURL = locationURL + self.dict_to_cgi_params(cgi_params['manifest'])
+            rv["locationURL"] = locationURL
+        use_base_url = self.get_bool_param('base', True)
+        if use_base_url:
+            if mode == 'odvod':
+                rv["baseURL"] = urlparse.urljoin(
+                    self.request.host_url, '/dash/vod') + '/'
+            else:
+                rv["baseURL"] = urlparse.urljoin(
+                    self.request.host_url, '/dash/' + mode) + '/'
+            if self.is_https_request():
+                rv["baseURL"] = rv["baseURL"].replace('http://', 'https://')
         else:
-            rv["baseURL"] = urlparse.urljoin(
-                self.request.host_url, '/dash/' + mode) + '/'
-        if self.is_https_request():
-            rv["baseURL"] = rv["baseURL"].replace('http://', 'https://')
-        video = {
-            'representations': [],
-            'initURL': '$RepresentationID$/init.m4v',
-            'mediaURL': '$RepresentationID$/$Number$.m4v',
-        }
-        audio = {
-            'representations': [],
-            'initURL': '$RepresentationID$/init.m4a',
-            'mediaURL': '$RepresentationID$/$Number$.m4a'
-        }
-        if mode == 'odvod':
-            del video['initURL']
-            video['mediaURL'] = '$RepresentationID$.m4v'
-            del audio['initURL']
-            audio['mediaURL'] = '$RepresentationID$.m4a'
-        acodec = self.request.params.get('acodec')
-        media_files = models.MediaFile.all()
-        for mf in media_files:
-            r = mf.representation
-            if r is None:
-                continue
-            if r.contentType == "video" and r.encrypted == encrypted and \
-               r.filename.startswith(stream.prefix):
-                video['representations'].append(r)
-            elif r.contentType == "audio" and r.encrypted == encrypted and \
-                    r.filename.startswith(stream.prefix):
-                if acodec is None or r.codecs.startswith(acodec):
-                    audio['representations'].append(r)
-        # if stream is encrypted but there is no encrypted version of the audio track, fall back
-        # to a clear version
-        if not audio['representations'] and acodec:
-            for mf in media_files:
-                r = mf.representation
-                if r is None:
-                    continue
-                if r.contentType == "audio" and r.filename.startswith(
-                        stream.prefix) and r.codecs.startswith(acodec):
-                    audio['representations'].append(r)
-        if mode == 'vod' or mode == 'odvod':
+            if mode == 'odvod':
+                prefix = self.uri_for(
+                    'dash-od-media', filename='RepresentationID', ext='m4v')
+                prefix = prefix.replace('RepresentationID.m4v', '')
+            else:
+                prefix = self.uri_for('dash-media', mode=mode, filename='RepresentationID',
+                                      segment_num='init', ext='m4v')
+                prefix = prefix.replace('RepresentationID/init.m4v', '')
+                video['initURL'] = prefix + video['initURL']
+                audio['initURL'] = prefix + audio['initURL']
+            video['mediaURL'] = prefix + video['mediaURL']
+            audio['mediaURL'] = prefix + audio['mediaURL']
+        if mode == 'live':
+            try:
+                rv['minimumUpdatePeriod'] = float(self.request.params.get(
+                    'mup', 2.0 * video.get('maxSegmentDuration', 1)))
+            except ValueError:
+                rv['minimumUpdatePeriod'] = 2.0 * \
+                    video.get('maxSegmentDuration', 1)
+            if rv['minimumUpdatePeriod'] <= 0:
+                del rv['minimumUpdatePeriod']
+        elif mode == 'vod' or mode == 'odvod':
             if video['representations']:
                 elapsedTime = datetime.timedelta(
                     seconds=video['representations'][0].mediaDuration / video['representations'][0].timescale)
             elif audio['representations']:
                 elapsedTime = datetime.timedelta(
                     seconds=audio['representations'][0].mediaDuration / audio['representations'][0].timescale)
-            timeShiftBufferDepth = elapsedTime.seconds
-        if video['representations']:
-            self.compute_av_values(video, rv["startNumber"])
-            video['minWidth'] = min(
-                [a.width for a in video['representations']])
-            video['minHeight'] = min(
-                [a.height for a in video['representations']])
-            video['maxWidth'] = max(
-                [a.width for a in video['representations']])
-            video['maxHeight'] = max(
-                [a.height for a in video['representations']])
-            video['maxFrameRate'] = max(
-                [a.frameRate for a in video['representations']])
-        rv["video"] = video
+            ts_buffer_depth = elapsedTime.seconds
+        event_generators = EventFactory.create_event_generators(self.request)
+        for evgen in event_generators:
+            ev_stream = evgen.create_manifest_context(
+                context=rv, templates=templates)
+            if evgen.inband:
+                # TODO: allow AdaptationSet for inband events to be
+                # configurable
+                video['event_streams'].append(ev_stream)
+            else:
+                period['event_streams'].append(ev_stream)
+        period["adaptationSets"].append(video)
 
-        if len(audio['representations']) == 1:
-            audio['representations'][0].role = 'main'
-        else:
-            for rep in audio['representations']:
-                if self.request.params.get('main_audio', None) == rep.id:
-                    rep.role = 'main'
-                elif rep.codecs.startswith(self.request.params.get('main_audio', 'mp4a')):
-                    rep.role = 'main'
-                else:
-                    rep.role = 'alternate'
-        if audio['representations']:
-            self.compute_av_values(audio, rv["startNumber"])
-        rv["audio"] = audio
+        for idx, rep in enumerate(audio['representations']):
+            audio_adp = copy.copy(audio)
+            audio_adp['contentComponent'] = {
+                'id': str(idx + 2),
+                'contentType': "audio",
+            }
+            audio_adp['representations'] = [rep]
+            if len(audio['representations']) == 1:
+                audio_adp['role'] = 'main'
+            elif self.request.params.get('main_audio', None) == rep.id:
+                audio_adp['role'] = 'main'
+            elif rep.codecs.startswith(self.request.params.get('main_audio', 'mp4a')):
+                audio_adp['role'] = 'main'
+            else:
+                audio_adp['role'] = 'alternate'
+            period["adaptationSets"].append(audio_adp)
 
+        rv["periods"].append(period)
         kids = set()
         for rep in video['representations'] + audio['representations']:
             if rep.encrypted:
@@ -565,12 +540,142 @@ class RequestHandlerBase(webapp2.RequestHandler):
                           'format': 'xsd'
             }
         if 'url' not in timeSource:
-            timeSource['url'] = urlparse.urljoin(self.request.host_url,
-                                                 self.uri_for('time', format=timeSource['format']))
+            timeSource['url'] = urlparse.urljoin(
+                self.request.host_url,
+                self.uri_for('time', format=timeSource['format']))
+            timeSource['url'] += self.dict_to_cgi_params(cgi_params['time'])
         rv["timeSource"] = timeSource
+        if 'periods' not in manifest_info.features:
+            rv["video"] = video
+            rv["audio"] = audio
+            rv["period"] = rv["periods"][0]
+        return rv
+
+    def get_timeshift_buffer_depth(self, mode):
+        timeShiftBufferDepth = 0
+        if mode == 'live':
+            try:
+                timeShiftBufferDepth = int(self.request.params.get(
+                    'depth', str(self.DEFAULT_TIMESHIFT_BUFFER_DEPTH)), 10)
+            except ValueError:
+                timeShiftBufferDepth = self.DEFAULT_TIMESHIFT_BUFFER_DEPTH  # in seconds
+        return timeShiftBufferDepth
+
+    def calculate_availability_start(self, mode, now):
+        timeShiftBufferDepth = self.get_timeshift_buffer_depth(mode)
+        elapsedTime = datetime.timedelta(seconds=0)
+        if mode == 'live':
+            startParam = self.request.params.get('start', 'today')
+            if startParam == 'today':
+                availabilityStartTime = now.replace(
+                    hour=0, minute=0, second=0, microsecond=0)
+                if now.hour == 0 and now.minute == 0:
+                    availabilityStartTime -= datetime.timedelta(days=1)
+            elif startParam == 'now':
+                publishTime = now.replace(microsecond=0)
+                availabilityStartTime = (
+                    publishTime -
+                    datetime.timedelta(seconds=self.DEFAULT_TIMESHIFT_BUFFER_DEPTH))
+            elif startParam == 'epoch':
+                availabilityStartTime = datetime.datetime(
+                    1970, 1, 1, 0, 0, tzinfo=utils.UTC())
+            else:
+                try:
+                    availabilityStartTime = utils.from_isodatetime(startParam)
+                except ValueError as err:
+                    logging.warning('Failed to parse availabilityStartTime: %s', err)
+                    availabilityStartTime = now.replace(
+                        hour=0, minute=0, second=0, microsecond=0)
+            # print('availabilityStartTime', availabilityStartTime, startParam)
+            elapsedTime = now - availabilityStartTime
+            if elapsedTime.total_seconds() < timeShiftBufferDepth:
+                timeShiftBufferDepth = elapsedTime.total_seconds()
+        else:
+            availabilityStartTime = now
+        return availabilityStartTime, elapsedTime, timeShiftBufferDepth
+
+    def calculate_audio_video_context(self, stream, mode, encrypted):
+        audio = {
+            'initURL': '$RepresentationID$/init.m4a',
+            'mediaURL': '$RepresentationID$/$Number$.m4a',
+            'mimeType': "audio/mp4",
+            'contentType': "audio",
+            'lang': 'und',
+            'segmentAlignment': "true",
+            'event_streams': [],
+            'representations': [],
+        }
+        video = {
+            'initURL': '$RepresentationID$/init.m4v',
+            'mediaURL': '$RepresentationID$/$Number$.m4v',
+            'mimeType': "video/mp4",
+            'contentType': "video",
+            'segmentAlignment': "true",
+            'startWithSAP': "1",
+            'par': "16:9",
+            'contentComponent': {
+                'id': "1",
+                'contentType': "video",
+            },
+            'event_streams': [],
+            'representations': [],
+        }
+        if mode == 'odvod':
+            del video['initURL']
+            video['mediaURL'] = '$RepresentationID$.m4v'
+            del audio['initURL']
+            audio['mediaURL'] = '$RepresentationID$.m4a'
+        acodec = self.request.params.get('acodec')
+        media_files = models.MediaFile.all()
+        for mf in media_files:
+            r = mf.representation
+            if r is None:
+                continue
+            if r.contentType == "video" and r.encrypted == encrypted and \
+               r.filename.startswith(stream.prefix):
+                video['representations'].append(r)
+            elif r.contentType == "audio" and r.encrypted == encrypted and \
+                    r.filename.startswith(stream.prefix):
+                if acodec is None or r.codecs.startswith(acodec):
+                    audio['representations'].append(r)
+                    if r.language:
+                        audio['lang'] = r.language
+        # if stream is encrypted but there is no encrypted version of the audio track, fall back
+        # to a clear version
+        if not audio['representations'] and acodec:
+            for mf in media_files:
+                r = mf.representation
+                if r is None:
+                    continue
+                if r.contentType == "audio" and r.filename.startswith(
+                        stream.prefix) and r.codecs.startswith(acodec):
+                    audio['representations'].append(r)
+                    if r.language:
+                        audio['lang'] = r.language
+        if video['representations']:
+            self.compute_av_values(video)
+            video['minWidth'] = min(
+                [a.width for a in video['representations']])
+            video['minHeight'] = min(
+                [a.height for a in video['representations']])
+            video['maxWidth'] = max(
+                [a.width for a in video['representations']])
+            video['maxHeight'] = max(
+                [a.height for a in video['representations']])
+            video['maxFrameRate'] = max(
+                [a.frameRate for a in video['representations']])
+        if audio['representations']:
+            self.compute_av_values(audio)
+        assert(isinstance(video['representations'], list))
+        assert(isinstance(audio['representations'], list))
+        return audio, video
+
+    def calculate_cgi_parameters(self, mode, now, avail_start, clockDrift,
+                                 ts_buffer_depth, audio, video):
         v_cgi_params = {}
         a_cgi_params = {}
         m_cgi_params = copy.deepcopy(dict(self.request.params))
+        t_cgi_params = {}
         param_list = ['drm', 'marlin_la_url', 'playready_la_url', 'start']
         if self.request.params.get('events', None) is not None:
             param_list.append('events')
@@ -582,56 +687,57 @@ class RequestHandlerBase(webapp2.RequestHandler):
             if value is None or (param == 'drm' and value == 'none'):
                 continue
             if param == 'start':
-                value = utils.toIsoDateTime(availabilityStartTime)
+                value = utils.toIsoDateTime(avail_start)
             v_cgi_params[param] = value
             a_cgi_params[param] = value
             m_cgi_params[param] = value
         if clockDrift:
-            rv["timeSource"]['url'] += '?drift=%d' % clockDrift
+            t_cgi_params['drift'] = str(clockDrift)
             v_cgi_params['drift'] = str(clockDrift)
             a_cgi_params['drift'] = str(clockDrift)
-        if mode == 'live' and timeShiftBufferDepth != self.DEFAULT_TIMESHIFT_BUFFER_DEPTH:
-            v_cgi_params['depth'] = str(timeShiftBufferDepth)
-            a_cgi_params['depth'] = str(timeShiftBufferDepth)
+        if mode == 'live' and ts_buffer_depth != self.DEFAULT_TIMESHIFT_BUFFER_DEPTH:
+            v_cgi_params['depth'] = str(ts_buffer_depth)
+            a_cgi_params['depth'] = str(ts_buffer_depth)
         for code in self.INJECTED_ERROR_CODES:
             if self.request.params.get('v%03d' % code) is not None:
-                times = self.calculate_injected_error_segments(self.request.params.get('v%03d' % code),
-                                                               now, availabilityStartTime,
-                                                               timeShiftBufferDepth,
-                                                               video['representations'][0])
+                times = self.calculate_injected_error_segments(
+                    self.request.params.get('v%03d' % code),
+                    now,
+                    avail_start,
+                    ts_buffer_depth,
+                    video['representations'][0])
                 if times:
                     v_cgi_params['%03d' % (code)] = times
             if self.request.params.get('a%03d' % code) is not None:
-                times = self.calculate_injected_error_segments(self.request.params.get('a%03d' % code),
-                                                               now, availabilityStartTime,
-                                                               timeShiftBufferDepth,
-                                                               audio['representations'][0])
+                times = self.calculate_injected_error_segments(
+                    self.request.params.get('a%03d' % code),
+                    now,
+                    avail_start,
+                    ts_buffer_depth,
+                    audio['representations'][0])
                 if times:
                     a_cgi_params['%03d' % (code)] = times
         if self.request.params.get('vcorrupt') is not None:
-            segs = self.calculate_injected_error_segments(self.request.params.get('vcorrupt'),
-                                                          now, availabilityStartTime,
-                                                          timeShiftBufferDepth,
-                                                          video['representations'][0])
+            segs = self.calculate_injected_error_segments(
+                self.request.params.get('vcorrupt'),
+                now,
+                avail_start,
+                ts_buffer_depth,
+                video['representations'][0])
             if segs:
                 v_cgi_params['corrupt'] = segs
         try:
             updateCount = int(self.request.params.get('update', '0'), 10)
             m_cgi_params['update'] = str(updateCount + 1)
-        except ValueError:
-            pass
-        rv["video"]['mediaURL'] += self.dict_to_cgi_params(v_cgi_params)
-        rv["audio"]['mediaURL'] += self.dict_to_cgi_params(a_cgi_params)
-        if mode != 'odvod':
-            rv["video"]['initURL'] += self.dict_to_cgi_params(v_cgi_params)
-            rv["audio"]['initURL'] += self.dict_to_cgi_params(a_cgi_params)
-        if m_cgi_params:
-            locationURL = self.request.uri
-            if '?' in locationURL:
-                locationURL = locationURL[:self.request.uri.index('?')]
-            locationURL = locationURL + self.dict_to_cgi_params(m_cgi_params)
-            rv["locationURL"] = locationURL
-        return rv
+        except ValueError as err:
+            logging.warning('Invalid update CGI parameter: %s', err)
+
+        return {
+            'audio': a_cgi_params,
+            'video': v_cgi_params,
+            'manifest': m_cgi_params,
+            'time': t_cgi_params,
+        }
 
     @staticmethod
     def dict_to_cgi_params(params):

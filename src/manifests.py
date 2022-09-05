@@ -72,11 +72,11 @@ class DashManifest(object):
 manifest = {
     'hand_made.mpd': DashManifest(
         title='Hand-made manifest',
-        features={'abr', 'base', 'drm', 'events', 'mode', 'mup', 'time'},
+        features={'abr', 'base', 'drm', 'events', 'mode', 'mup', 'periods', 'time'},
     ),
     'manifest_vod_aiv.mpd': DashManifest(
         title='AIV on demand profile',
-        features={'abr', 'base'},
+        features={'abr', 'base', 'periods'},
         restrictions={
             'mode': {'odvod'},
             'drm': {'none'},

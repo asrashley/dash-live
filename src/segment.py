@@ -57,10 +57,12 @@ class Representation(object):
         args = ','.join(args)
         return 'Representation(' + args + ')'
 
-    def toJSON(self, pure=False):
+    def toJSON(self, pure=False, exclude=None):
+        if exclude is None:
+            exclude = set()
         rv = {}
         for key, value in self.__dict__.iteritems():
-            if key == 'num_segments':
+            if key == 'num_segments' or key in exclude:
                 continue
             elif key == 'segments':
                 rv[key] = map(lambda s: s.toJSON(pure=pure), self.segments)

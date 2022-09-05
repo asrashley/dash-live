@@ -24,16 +24,24 @@ import datetime
 from functools import wraps
 import logging
 import os
+import sys
 import urlparse
+import xml.etree.ElementTree as ET
+
+_src = os.path.join(os.path.dirname(__file__), "..", "..", "src")
+if _src not in sys.path:
+    sys.path.append(_src)
 
 from testcase import HideMixinsFilter
+
+from requesthandler.manifest_requests import ServeManifest
 
 import dash
 import manifests
 import models
 import options
 import routes
-
+from requesthandler.templates import templates
 
 def add_url(method, url):
     @wraps(method)
@@ -93,6 +101,40 @@ class ViewsTestDashValidator(dash.DashValidator):
 
     def set_representation_info(self, representation, info):
         self.representations[representation.unique_id()] = info
+
+class MockRequest(object):
+    class MockRoute(object):
+        def __init__(self):
+            self.name = "dash-mpd-v3"
+
+    def __init__(self, url, headers=None):
+        if headers is None:
+            headers = {}
+        self.uri = url
+        parsed = urlparse.urlparse(url)
+        self.scheme = parsed.scheme
+        self.host_url = r'{0}://{1}'.format(parsed.scheme, parsed.netloc)
+        self.params = {}
+        for key, values in urlparse.parse_qs(parsed.query).iteritems():
+            self.params[key] = values[0]
+        self.remote_addr = '127.0.0.1'
+        self.headers = headers
+        self.route = self.MockRoute()
+
+class MockServeManifest(ServeManifest):
+    def __init__(self, request, **kwargs):
+        super(MockServeManifest, self).__init__(**kwargs)
+        self.request = request
+
+    def is_https_request(self):
+        return False
+
+    def uri_for(self, route, **kwargs):
+        if route == 'time':
+            return r'{0}/time/{1}'.format(self.request.host_url, kwargs['format'])
+        if route == 'clearkey':
+            return r'{0}/clearkey/'.format(self.request.host_url)
+        raise ValueError(r'Unsupported route name: {0}'.format(route))
 
 class DashManifestCheckMixin(object):
     def _assert_true(self, result, a, b, msg, template):
@@ -217,3 +259,95 @@ class DashManifestCheckMixin(object):
             return dv
         finally:
             self.current_url = ''
+
+    def check_generated_manifest_against_fixture(self, mpd_filename, mode, **kwargs):
+        """
+        Check a freshly generated manifest against a "known good" previous example
+        """
+        self.setup_media()
+        self.init_xml_namespaces()
+        context = self.generate_manifest_context(
+            mpd_filename, mode=mode, prefix='bbb', **kwargs)
+        template = templates.get_template(mpd_filename)
+        text = template.render(context)
+        # print(text)
+        encrypted = kwargs.get('drm', 'none') != 'none'
+        fixture = self.fixture_filename(mpd_filename, mode, encrypted)
+        expected = ET.parse(fixture).getroot()
+        actual = ET.fromstring(text)
+        self.assertXmlEqual(expected, actual)
+
+    def generate_manifest_context(self, mpd_filename, mode, prefix, **kwargs):
+        url = r'http://unit.test/{0}/{1}{2}'.format(
+            prefix, mpd_filename, MockServeManifest.dict_to_cgi_params(kwargs))
+        request = MockRequest(url)
+        mock = MockServeManifest(request)
+        stream = models.Stream.query(models.Stream.prefix == prefix).get()
+        self.assertIsNotNone(stream)
+        context = mock.calculate_dash_params(mpd_url=mpd_filename, prefix=prefix, mode=mode)
+        encrypted = kwargs.get('drm', 'none') != 'none'
+        if encrypted:
+            context["DRM"] = mock.generate_drm_dict(stream)
+        context['remote_addr'] = mock.request.remote_addr
+        context['request_uri'] = mock.request.uri
+        context['title'] = stream.title
+        return context
+
+    @staticmethod
+    def fixture_filename(mpd_name, mode, encrypted):
+        """returns absolute file path of the given fixture"""
+        name, ext = os.path.splitext(mpd_name)
+        enc = '_enc' if encrypted else ''
+        filename = r'{0}_{1}{2}{3}'.format(name, mode, enc, ext)
+        return os.path.join(os.path.dirname(__file__), '..', 'fixtures', filename)
+
+    xmlNamespaces = {
+        'cenc': 'urn:mpeg:cenc:2013',
+        'dash': 'urn:mpeg:dash:schema:mpd:2011',
+        'mspr': 'urn:microsoft:playready',
+        'scte35': "http://www.scte.org/schemas/35/2016",
+        'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
+        'prh': 'http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader',
+    }
+
+    @classmethod
+    def init_xml_namespaces(clz):
+        for prefix, url in clz.xmlNamespaces.iteritems():
+            ET.register_namespace(prefix, url)
+
+    def assertXmlTextEqual(self, expected, actual, msg=None):
+        if expected is not None:
+            expected = expected.strip()
+            if expected == "":
+                expected = None
+        if actual is not None:
+            actual = actual.strip()
+            if actual == "":
+                actual = None
+        msg = r'{0}: Expected "{1}" got "{2}"'.format(msg, expected, actual)
+        self.assertEqual(expected, actual, msg=msg)
+
+    def assertXmlEqual(self, expected, actual, msg=None, strict=False):
+        self.assertEqual(expected.tag, actual.tag, msg=msg)
+        if msg is None:
+            prefix = expected.tag
+        else:
+            prefix = r'{0}/{1}'.format(msg, expected.tag)
+        self.assertXmlTextEqual(
+            expected.text, actual.text,
+            msg='{0}: text does not match'.format(prefix))
+        self.assertXmlTextEqual(
+            expected.tail, actual.tail,
+            msg='{0}: tail does not match'.format(prefix))
+
+        for name, exp_value in expected.attrib.iteritems():
+            key_name = '{0}@{1}'.format(prefix, name)
+            self.assertIn(name, actual.attrib, msg='Missing attribute {}'.format(key_name))
+            act_value = actual.attrib[name]
+            self.assertEqual(
+                exp_value, act_value,
+                msg='attribute {0} should be "{1}" but was "{2}"'.format(
+                    key_name, exp_value, act_value))
+        for exp, act in zip(expected, actual):
+            name = '{0}/{1}'.format(prefix, exp.tag)
+            self.assertXmlEqual(exp, act, msg=name)

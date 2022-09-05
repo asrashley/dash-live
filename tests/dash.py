@@ -233,6 +233,7 @@ class DashValidator(DashElement):
             self.assertEqual(result.status_int, 200,
                              'Failed to load manifest: {0:d} {1}'.format(
                                  result.status_int, self.url))
+            # print(result.text)
             self.xml = result.xml
         if self.mode is None:
             if self.xml.get("type") == "dynamic":
@@ -1170,6 +1171,8 @@ class MediaSegment(DashElement):
         else:
             if response.status_int != 206:
                 raise MissingSegmentException(self.url, response)
+        if self.parent.mimeType is not None:
+            self.assertStartsWith(response.headers['content-type'], self.parent.mimeType)
         src = utils.BufferedReader(None, data=response.body)
         options = {}
         if self.info.encrypted:

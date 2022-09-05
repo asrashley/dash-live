@@ -113,23 +113,27 @@ class VideoPlayer(RequestHandlerBase):
             stream, filename = filename.split('/')
             stream = stream.lower()
         mode = self.request.params.get("mode", "live")
-        context['dash'] = self.calculate_dash_params(
-            mpd_url=filename, mode=mode, stream=stream)
-        for idx in range(len(context['dash']['video']['representations'])):
-            context['dash']['video']['representations'][idx] = context['dash']['video']['representations'][idx].toJSON()
-            del context['dash']['video']['representations'][idx]["segments"]
-        for idx in range(len(context['dash']['audio']['representations'])):
-            context['dash']['audio']['representations'][idx] = context['dash']['audio']['representations'][idx].toJSON()
-            del context['dash']['audio']['representations'][idx]["segments"]
-        del context['dash']['ref_representation']
-        if context['dash']['encrypted']:
-            keys = context['dash']['keys']
+        try:
+            dash_parms = self.calculate_dash_params(
+                mpd_url=filename, mode=mode, prefix=stream)
+        except ValueError as err:
+            self.response.write(err)
+            self.response.set_status(400)
+            return
+        for item in {'periods', 'period', 'ref_representation', 'audio', 'video'}:
+            try:
+                del dash_parms[item]
+            except KeyError:
+                pass
+        if dash_parms['encrypted']:
+            keys = dash_parms['keys']
             for kid in keys.keys():
                 item = keys[kid].toJSON()
                 item['guidKid'] = PlayReady.hex_to_le_guid(
                     keys[kid].hkid, raw=False)
                 item['b64Key'] = keys[kid].KEY.b64
                 keys[kid] = item
+        context['dash'] = dash_parms
         params = []
         for k, v in self.request.params.iteritems():
             if k in ['mpd', 'mse']:

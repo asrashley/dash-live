@@ -31,7 +31,7 @@ templates = jinja2.Environment(
         os.path.join(os.path.dirname(__file__), '..', '..', 'templates')
     ),
     extensions=['jinja2.ext.autoescape'],
-    trim_blocks=False,
+    trim_blocks=True,
 )
 templates.filters['base64'] = utils.toBase64
 templates.filters['dateTimeFormat'] = utils.dateTimeFormat

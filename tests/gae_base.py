@@ -115,7 +115,8 @@ class GAETestBase(TestCaseMixin, unittest.TestCase):
 
     def setup_media(self):
         bbb = models.Stream(
-            title='Big Buck Bunny', prefix='bbb',
+            title='Big Buck Bunny',
+            prefix='bbb',
             marlin_la_url='ms3://localhost/marlin/bbb',
             playready_la_url=PlayReady.TEST_LA_URL
         )
@@ -136,12 +137,15 @@ class GAETestBase(TestCaseMixin, unittest.TestCase):
             files.finalize(blob_filename)
             blob_key = files.blobstore.get_blob_key(blob_filename)
             rep = Representation.create(filename, atoms)
-            self.assertAlmostEqual(rep.mediaDuration,
-                                   self.MEDIA_DURATION * rep.timescale,
-                                   delta=(rep.timescale / 10),
-                                   msg='Invalid duration for {}. Expected {} got {}'.format(
-                                       filename, self.MEDIA_DURATION * rep.timescale,
-                                       rep.mediaDuration))
+            encrypted = rid.endswith('_enc')
+            self.assertEqual(encrypted, rep.encrypted)
+            self.assertAlmostEqual(
+                rep.mediaDuration,
+                self.MEDIA_DURATION * rep.timescale,
+                delta=(rep.timescale / 10),
+                msg='Invalid duration for {}. Expected {} got {}'.format(
+                    filename, self.MEDIA_DURATION * rep.timescale,
+                    rep.mediaDuration))
             mf = models.MediaFile(
                 name=filename,
                 rep=rep.toJSON(),

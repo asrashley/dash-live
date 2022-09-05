@@ -20,6 +20,7 @@
 #
 #############################################################################
 
+import datetime
 import io
 import logging
 
@@ -78,14 +79,30 @@ class LiveMedia(RequestHandlerBase):
             self.response.write('%s not found' % filename)
             self.response.set_status(404)
             return
-        stream = filename.split('_')[0]
+        stream_name = filename.split('_')[0]
+        stream = models.Stream.query(models.Stream.prefix == stream_name).get()
+        if stream is None:
+            self.response.write('%s not found' % stream_name)
+            self.response.set_status(404)
+            return
+        representation = mf.representation
         try:
-            dash = self.calculate_dash_params(mode=mode, stream=stream)
+            audio, video = self.calculate_audio_video_context(
+                stream, mode, representation.encrypted)
+            # dash = self.calculate_dash_params(mode=mode, stream=stream)
         except ValueError as e:
             self.response.write('Invalid CGI parameters: %s' % (str(e)))
             self.response.set_status(400)
             return
-        representation = mf.representation
+        # TODO: add subtitle support
+        if ext == 'm4a':
+            adp_set = audio
+        else:
+            adp_set = video
+        if video['representations']:
+            ref_representation = video['representations'][0]
+        else:
+            ref_representation = audio['representations'][0]
         if segment_num == 'init':
             mod_segment = segment_num = 0
         else:
@@ -113,7 +130,7 @@ class LiveMedia(RequestHandlerBase):
                             self.request.params.get(str(code)), str(e)))
                         self.response.set_status(400)
                         return
-            if dash['mode'] == 'live':
+            if mode == 'live':
                 # 5.3.9.5.3 Media Segment information
                 # For services with MPD@type='dynamic', the Segment availability
                 # start time of a Media Segment is the sum of:
@@ -126,31 +143,35 @@ class LiveMedia(RequestHandlerBase):
                 # the Segment availability start time, the MPD duration of the
                 # Media Segment and the value of the attribute @timeShiftBufferDepth
                 # for this Representation
-                lastFragment = dash['startNumber'] + int(utils.scale_timedelta(
-                    dash['elapsedTime'], representation.timescale, representation.segment_duration))
+                now = datetime.datetime.now(tz=utils.UTC())
+                _, elapsedTime, timeShiftBufferDepth = self.calculate_availability_start(
+                    mode, now)
+                lastFragment = adp_set['startNumber'] + int(utils.scale_timedelta(
+                    elapsedTime, representation.timescale, representation.segment_duration))
                 firstFragment = (
                     lastFragment -
                     int(representation.timescale *
-                        dash['timeShiftBufferDepth'] / representation.segment_duration) - 1)
-                firstFragment = max(dash['startNumber'], firstFragment)
+                        timeShiftBufferDepth / representation.segment_duration) - 1)
+                firstFragment = max(adp_set['startNumber'], firstFragment)
             else:
-                firstFragment = dash['startNumber']
+                firstFragment = adp_set['startNumber']
                 lastFragment = firstFragment + representation.num_segments - 1
             if segment_num < firstFragment or segment_num > lastFragment:
                 self.response.write('Segment %d not found (valid range= %d->%d)' %
                                     (segment_num, firstFragment, lastFragment))
                 self.response.set_status(404)
                 return
-            if dash['mode'] == 'live':
+            if mode == 'live':
                 # elapsed_time is the time (in seconds) since availabilityStartTime
                 # for the requested fragment
-                ref = dash["ref_representation"]
                 elapsed_time = (
-                    segment_num - dash['startNumber']) * ref.segment_duration / float(ref.timescale)
+                    (segment_num - adp_set['startNumber']) * ref_representation.segment_duration /
+                    float(ref_representation.timescale))
                 try:
-                    mod_segment, origin_time = self.calculate_segment_from_timecode(elapsed_time,
-                                                                                    representation,
-                                                                                    dash['ref_representation'])
+                    mod_segment, origin_time = self.calculate_segment_from_timecode(
+                        elapsed_time,
+                        representation,
+                        ref_representation)
                 except ValueError:
                     raise
                     self.response.write('Segment %d not found (valid range= %d->%d)' %
@@ -158,13 +179,8 @@ class LiveMedia(RequestHandlerBase):
                     self.response.set_status(404)
                     return
             else:
-                mod_segment = 1 + segment_num - dash['startNumber']
-        if ext == 'm4a':
-            self.response.content_type = 'audio/mp4'
-        elif ext == 'm4v':
-            self.response.content_type = 'video/mp4'
-        else:
-            self.response.content_type = 'application/mp4'
+                mod_segment = 1 + segment_num - adp_set['startNumber']
+        self.response.content_type = adp_set['mimeType']
         assert mod_segment >= 0 and mod_segment <= representation.num_segments
         frag = representation.segments[mod_segment]
         blob_reader = blobstore.BlobReader(
@@ -188,7 +204,7 @@ class LiveMedia(RequestHandlerBase):
                     atom.moov.append_child(pssh)
                 except KeyError:
                     pass
-        if dash['mode'] == 'live':
+        if mode == 'live':
             if segment_num == 0:
                 try:
                     # remove the mehd box as this stream is not supposed to
@@ -202,7 +218,7 @@ class LiveMedia(RequestHandlerBase):
                 delta = long(origin_time * representation.timescale)
                 if delta < 0:
                     raise IOError("Failure in calculating delta %s %d %d %d" % (
-                        str(delta), segment_num, mod_segment, dash['startNumber']))
+                        str(delta), segment_num, mod_segment, adp_set['startNumber']))
                 atom.moof.traf.tfdt.base_media_decode_time += delta
 
                 # Update the sequenceNumber field in the MovieFragmentHeader
@@ -222,7 +238,7 @@ class LiveMedia(RequestHandlerBase):
                 for evgen in event_generators:
                     boxes = evgen.create_emsg_boxes(
                         moof=atom.moof,
-                        params=dash,
+                        adaptation_set=adp_set,
                         segment_num=segment_num,
                         mod_segment=mod_segment,
                         representation=representation)
