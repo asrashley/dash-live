@@ -48,9 +48,9 @@ if _src not in sys.path:
 # these imports *must* be after the modification of sys.path
 from segment import Representation
 from mixins.testcase import TestCaseMixin
+from requesthandler.media_management import MediaHandler
 import routes
 import utils
-import views
 import mp4
 import models
 from drm.playready import PlayReady
@@ -99,7 +99,7 @@ class GAETestBase(TestCaseMixin, unittest.TestCase):
         self.wsgi.router.add(
             webapp2.Route(
                 template=r'/_ah/upload/<blob_id:[\w\-_\.]+>',
-                handler=views.MediaHandler,
+                handler=MediaHandler,
                 name="uploadBlob_ah"))
         routes.routes['uploadBlob_ah'] = routes.routes['uploadBlob']
         self.auth = None

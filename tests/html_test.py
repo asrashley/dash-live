@@ -33,13 +33,13 @@ if _src not in sys.path:
 from gae_base import GAETestBase
 import manifests
 import models
-import views
+from requesthandler.htmlpage import MainPage
+from requesthandler.media_management import MediaHandler
 
 class TestHtmlPageHandlers(GAETestBase):
     def test_index_page(self):
         self.setup_media()
-        page = views.MainPage()
-        self.assertIsNotNone(getattr(page, 'get', None))
+        self.assertIsNotNone(getattr(MainPage(), 'get', None))
         url = self.from_uri('home', absolute=True)
         self.logoutCurrentUser()
         response = self.app.get(url)
@@ -67,9 +67,8 @@ class TestHtmlPageHandlers(GAETestBase):
 
     def test_media_page(self):
         self.setup_media()
-        page = views.MediaHandler()
-        self.assertIsNotNone(getattr(page, 'get', None))
-        self.assertIsNotNone(getattr(page, 'post', None))
+        self.assertIsNotNone(getattr(MediaHandler(), 'get', None))
+        self.assertIsNotNone(getattr(MediaHandler(), 'post', None))
         url = self.from_uri('media-index', absolute=True)
 
         # user must be logged in to use media page

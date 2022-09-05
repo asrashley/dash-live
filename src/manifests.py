@@ -37,35 +37,35 @@ class DashManifest(object):
         cgi_options = []
         drmloc = []
         for opt in options.options:
-            if opt['name'] == 'drmloc':
-                for name, value in opt['options']:
+            if opt.name == 'drmloc':
+                for name, value in opt.options:
                     if value:
                         drmloc.append(value.split('=')[1])
         for opt in options.options:
-            if opt['name'] not in self.features and opt['name'] not in self.restrictions.keys():
+            if opt.name not in self.features and opt.name not in self.restrictions.keys():
                 continue
             # the MSE option is exluded from the list as it does not change
             # anything in the manifest responses. drmloc is handled as part
             # of the drm option
-            if opt['name'] in {'mse', 'drmloc'}:
+            if opt.name in {'mse', 'drmloc'}:
                 continue
-            if simplified and opt['name'] in {'abr', 'mup'}:
+            if simplified and opt.name in {'abr', 'mup'}:
                 continue
-            if opt['name'] in self.restrictions:
-                allowed = self.restrictions[opt['name']]
-                opts = ['{0}={1}'.format(opt['name'], i) for i in allowed]
+            if opt.name in self.restrictions:
+                allowed = self.restrictions[opt.name]
+                opts = ['{0}={1}'.format(opt.name, i) for i in allowed]
             else:
-                opts = map(lambda o: o[1], opt['options'])
+                opts = map(lambda o: o[1], opt.options)
 
-            if opt['name'] == 'drm' and 'drm' in opts:
-                for d in opt['options']:
+            if opt.name == 'drm' and 'drm' in opts:
+                for d in opt.options:
                     if d[1] == 'drm=none':
                         continue
                     for loc in drmloc:
                         if "pro" in loc and d[1] != 'drm=playready' and d[1] != 'drm=all':
                             continue
                         opts.append(d[1] + '-' + loc)
-            cgi_options.append((opt["name"], opts))
+            cgi_options.append((opt.name, opts))
         return cgi_options
 
 
