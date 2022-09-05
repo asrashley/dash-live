@@ -56,7 +56,6 @@
       {% endfor %}
     </AdaptationSet>
   {% for rep in audio.representations %}
-    {% if loop.first %}
       <AdaptationSet
         lang="eng"
         mimeType="audio/mp4"
@@ -72,40 +71,12 @@
           >
         {{generateSegmentTimeline(rep)}}
       </SegmentTemplate>
-    {% endif %}
     <Representation
         audioSamplingRate="{{rep.sampleRate}}"
         bandwidth="{{rep.bitrate}}"
         codecs="{{rep.codecs}}"
         id="{{rep.id}}" />
-    {% if loop.last %}
       </AdaptationSet>
-    {% endif %}
-  {% endfor %}
-  {% for adp in subtitle.adaptationSets %}
-    <AdaptationSet
-      lang="eng"
-      mimeType="application/mp4"
-      segmentAlignment="true"
-      startWithSAP="1"
-      >
-      {% for rep in adp.representations %}
-        {% if loop.first %}
-        <SegmentTemplate
-            initialization="{{adp.initURL|xmlSafe}}"
-            media="{{adp.mediaURL|xmlSafe}}"
-            presentationTimeOffset="{{adp.presentationTimeOffset}}"
-            timescale="{{adp.timescale}}">
-          {{generateSegmentTimeline(rep)}}
-        </SegmentTemplate>
-        {% endif %}
-        <Representation
-            bandwidth="{{rep.bitrate}}"
-            codecs="stpp"
-            id="{{rep.id}}"
-            />
-      {% endfor %}
-    </AdaptationSet>
   {% endfor %}
   </Period>
 </MPD>

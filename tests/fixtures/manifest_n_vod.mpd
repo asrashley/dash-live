@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xmlns:mspr="urn:microsoft:playready" xmlns:mas="urn:marlin:mas:1-0:services:schemas:mpd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:mpeg:schema:mpd:2011 DASH-MPD.xsd" profiles="urn:mpeg:profile:isoff-live:2011" publishTime="2022-09-06T09:59:02Z" minBufferTime="PT8.0S" type="static" mediaPresentationDuration="PT40.00S">
+  <Period start="PT0.00S" id="p0">
+    <BaseURL>http://unit.test/dash/vod/</BaseURL>
+    <AdaptationSet mimeType="video/mp4" par="16:9" segmentAlignment="true" startWithSAP="1">
+      <SegmentTemplate initialization="$RepresentationID$/init.m4v" media="$RepresentationID$/$Number$.m4v" presentationTimeOffset="0" timescale="240">
+        <SegmentTimeline>
+          <S r="10" t="0" d="960"/>
+        </SegmentTimeline>
+      </SegmentTemplate>
+      <Representation id="bbb_v6" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="374782">
+                  </Representation>
+      <Representation id="bbb_v7" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="191821">
+                  </Representation>
+    </AdaptationSet>
+    <AdaptationSet lang="eng" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
+      <SegmentTemplate initialization="$RepresentationID$/init.m4a" media="$RepresentationID$/$Number$.m4a" presentationTimeOffset="0" timescale="44100">
+        <SegmentTimeline>
+          <S r="2" t="0" d="176128"/>
+          <S d="177152"/>
+          <S r="2" d="176128"/>
+          <S d="177152"/>
+          <S r="2" d="176128"/>
+        </SegmentTimeline>
+      </SegmentTemplate>
+      <Representation audioSamplingRate="44100" bandwidth="98381" codecs="mp4a.40.2" id="bbb_a1"/>
+    </AdaptationSet>
+  </Period>
+</MPD>

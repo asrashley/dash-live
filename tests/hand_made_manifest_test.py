@@ -19,10 +19,45 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+import os
+import unittest
 
-from mixins.check_manifest import DashManifestCheckMixin
 from gae_base import GAETestBase
+from mixins.check_manifest import DashManifestCheckMixin
+from utils import from_isodatetime
 
-class HandMadeManifestTest(GAETestBase, DashManifestCheckMixin):
+class HandMadeManifestTests(GAETestBase, DashManifestCheckMixin):
     def test_hand_made_manifest(self):
         self.check_a_manifest_using_all_options('hand_made.mpd')
+
+    @GAETestBase.mock_datetime_now(from_isodatetime("2022-09-06T15:10:02Z"))
+    def test_generated_manifest_against_fixture(self):
+        self.check_generated_manifest_against_fixture(
+            'hand_made.mpd', mode='vod', acodec='mp4a')
+
+    @GAETestBase.mock_datetime_now(from_isodatetime("2022-09-06T15:10:00Z"))
+    def test_generated_drm_manifest_against_fixture(self):
+        self.check_generated_manifest_against_fixture(
+            'hand_made.mpd', mode='vod', drm='all',
+            acodec='mp4a')
+
+    @GAETestBase.mock_datetime_now(from_isodatetime("2022-09-06T15:10:02Z"))
+    def test_generated_live_manifest_against_fixture(self):
+        self.check_generated_manifest_against_fixture(
+            'hand_made.mpd', mode='live', acodec='mp4a')
+
+    @GAETestBase.mock_datetime_now(from_isodatetime("2022-09-06T15:10:00Z"))
+    def test_generated_live_drm_manifest_against_fixture(self):
+        self.check_generated_manifest_against_fixture(
+            'hand_made.mpd', mode='live', drm='all',
+            acodec='mp4a')
+
+
+if os.environ.get("TESTS"):
+    def load_tests(loader, tests, pattern):
+        return unittest.loader.TestLoader().loadTestsFromNames(
+            os.environ["TESTS"].split(','),
+            HandMadeManifestTests)
+
+if __name__ == '__main__':
+    unittest.main()

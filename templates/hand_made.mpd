@@ -27,89 +27,81 @@
   <Title>{{title}}</Title>
  </ProgramInformation>
  <Location>{{request_uri|xmlSafe}}</Location>
- {% if mode=='live' %}<UTCTiming schemeIdUri="{{timeSource.method}}" value="{{timeSource.url}}"/>{% endif %}
- <Period
+ {% if mode=='live' %}<UTCTiming schemeIdUri="{{timeSource.method}}"
+ value="{{timeSource.url}}"/>{% endif %}
+ {% for period in periods %}
+   <Period
      start="{{period.start|isoDuration}}"
      id="{{period.id}}"
      {% if period.duration %}duration="{{period.duration|isoDuration}}"{% endif %}
    >
- {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
- {% include "events/period.xml" %}
- <AdaptationSet
-     mimeType="video/mp4"
-     contentType="video"
-     segmentAlignment="true"
-     startWithSAP="1"
-     maxWidth="{{video.maxWidth}}"
-     maxHeight="{{video.maxHeight}}"
-     maxFrameRate="{{video.maxFrameRate}}"
-     par="16:9">
-   {% include "events/adaptationset.xml" %}
-   <ContentComponent id="1" contentType="video"/>
-   {% for rep in video.representations %}
-     {% if loop.first %}
-       {% include "drm/template.xml" %}
-       {% if mode=='odvod' %}
-         <SegmentTemplate timescale="{{video.timescale}}">
-           {{generateSegmentTimeline(rep)}}
-         </SegmentTemplate>
-       {% else %}
-         <SegmentTemplate startNumber="{{startNumber}}"
-                          timescale="{{video.timescale}}"
-                          duration="{{rep.segment_duration}}"
-                          initialization="{{video.initURL|xmlSafe}}"
-                          media="{{video.mediaURL|xmlSafe}}" />
-       {% endif %}
-     {% endif %}
-     <Representation id="{{rep.id}}"
-                     mimeType="video/mp4"
-                     codecs="{{rep.codecs}}"
-                     width="{{rep.width}}"
-                     height="{{rep.height}}"
-                     startWithSAP="{{rep.startWithSAP}}"
-                     bandwidth="{{rep.bitrate}}">
-       {% if mode=='odvod' %}
-         <BaseURL>{{video.mediaURL.replace("$RepresentationID$", rep.id)|xmlSafe}}</BaseURL>
-         {{generateSegmentList(rep)}}
-       {% endif %}
-     </Representation>
-   {% endfor %}
-  </AdaptationSet>
-  {% for rep in audio.representations %}
-    <AdaptationSet mimeType="audio/mp4"
-                   contentType="audio"
-                   lang="{{rep.language|default('und')}}"
-                   segmentAlignment="true"
-                   startWithSAP="{{rep.startWithSAP}}">
-      <ContentComponent id="1" contentType="audio"
-                        lang="{{audio.representations[0].language}}"/>
-      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="{{rep.role}}"/>
-      {% include "drm/template.xml" %}
-      {% if mode=="odvod" %}
-        <SegmentTemplate timescale="{{audio.timescale}}">
-          {{generateSegmentTimeline(rep)}}
-        </SegmentTemplate>
-      {% else %}
-        <SegmentTemplate startNumber="{{startNumber}}"
-                         timescale="{{audio.timescale}}"
-                         duration="{{rep.segment_duration}}"
-                         initialization="{{audio.initURL|xmlSafe}}"
-                         media="{{audio.mediaURL|xmlSafe}}"/>
-      {% endif %}
-      <Representation id="{{rep.id}}"
-                      mimeType="audio/mp4"
-                      codecs="{{rep.codecs}}"
-                      sampleRate="{{rep.sampleRate}}"
-                      numChannels="{{rep.numChannels}}"
-                      lang="{{rep.lang|default('und')}}"
-                      startWithSAP="{{rep.startWithSAP}}"
-                      bandwidth="{{rep.bitrate}}">
-        {% if mode=='odvod' %}
-          <BaseURL>{{audio.mediaURL.replace("$RepresentationID$", rep.id)|xmlSafe}}</BaseURL>
-          {{generateSegmentList(rep)}}
-        {% endif %}
-      </Representation>
-    </AdaptationSet>
-  {% endfor %}
- </Period>
+     {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
+     {% include "events/period.xml" %}
+     {% for adp in period.adaptationSets %}
+       <AdaptationSet
+         mimeType="{{adp.mimeType}}"
+         contentType="{{adp.contentType}}"
+         segmentAlignment="{{adp.segmentAlignment}}"
+         startWithSAP="{{adp.startWithSAP}}"
+         {% if adp.contentType == "video" %}
+           maxWidth="{{adp.maxWidth}}"
+           maxHeight="{{adp.maxHeight}}"
+           maxFrameRate="{{adp.maxFrameRate}}"
+           par="{{adp.par}}"
+         {% elif adp.contentType == "audio" %}
+           lang="{{adp.language}}"
+         {% endif %}
+         >
+         {% include "events/adaptationset.xml" %}
+         <ContentComponent
+             id="{{adp.contentComponent.id}}"
+             contentType="{{adp.contentComponent.contentType}}"
+             />
+         {% if adp.role %}
+           <Role
+             schemeIdUri="urn:mpeg:dash:role:2011"
+             value="{{adp.role}}"
+           />
+         {% endif %}
+         {% for rep in adp.representations %}
+           {% if loop.first %}
+             {% include "drm/template.xml" %}
+             {% if mode=='odvod' %}
+               <SegmentTemplate timescale="{{adp.timescale}}">
+                 {{generateSegmentTimeline(rep)}}
+               </SegmentTemplate>
+             {% else %}
+               <SegmentTemplate
+                   startNumber="{{adp.startNumber}}"
+                   timescale="{{adp.timescale}}"
+                   duration="{{rep.segment_duration}}"
+                   initialization="{{adp.initURL|xmlSafe}}"
+                   media="{{adp.mediaURL|xmlSafe}}" />
+             {% endif %}
+           {% endif %}
+           <Representation
+               id="{{rep.id}}"
+               mimeType="{{adp.mimeType}}"
+               codecs="{{rep.codecs}}"
+               {% if adp.contentType == "video" %}
+                 width="{{rep.width}}"
+                 height="{{rep.height}}"
+               {% elif adp.contentType == "audio" %}
+                   sampleRate="{{adp.sampleRate}}"
+                   numChannels="{{adp.numChannels}}"
+                   lang="{{adp.lang}}"
+               {% endif %}
+               startWithSAP="{{rep.startWithSAP}}"
+               bandwidth="{{rep.bitrate}}"
+           >
+             {% if mode=='odvod' %}
+               <BaseURL>{{adp.mediaURL.replace("$RepresentationID$", rep.id)|xmlSafe}}</BaseURL>
+               {{generateSegmentList(rep)}}
+             {% endif %}
+           </Representation>
+         {% endfor %} {# representations #}
+       </AdaptationSet>
+     {% endfor %} {# adaptationSets #}
+   </Period>
+ {% endfor %} {# periods #}
 </MPD>

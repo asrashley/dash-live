@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd" publishTime="2022-09-06T06:45:07Z" type="static" profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014" mediaPresentationDuration="PT9M51.00S" minBufferTime="PT1.5S">
+  <ProgramInformation>
+    <Title>Big Buck Bunny DASH test stream</Title>
+  </ProgramInformation>
+  <Location>https://wll1p00830.dev.youview.co.uk/dash/vod/bbb/hand_made.mpd?acodec=mp4a&amp;drm=all&amp;time=xsd</Location>
+  <Period start="PT0S" id="p0" duration="PT9M51.00S">
+    <BaseURL>https://wll1p00830.dev.youview.co.uk/dash/vod/</BaseURL>
+    <AdaptationSet mimeType="video/mp4" contentType="video" segmentAlignment="true" startWithSAP="1" maxWidth="1920" maxHeight="1080" maxFrameRate="24" par="16:9">
+      <ContentComponent id="1" contentType="video"/>
+      <ContentProtection schemeIdUri="urn:mpeg:dash:mp4protection:2011" value="cenc" cenc:default_KID="1AB45440-532C-4399-94DC-5C5AD9584BAC"/>
+      <ContentProtection xmlns:mas="urn:marlin:mas:1-0:services:schemas:mpd" schemeIdUri="urn:uuid:5e629af5-38da-4063-8977-97ffbd9902d4">
+        <mas:MarlinContentIds>
+          <mas:MarlinContentId>urn:marlin:kid:1ab45440532c439994dc5c5ad9584bac</mas:MarlinContentId>
+        </mas:MarlinContentIds>
+      </ContentProtection>
+      <ContentProtection xmlns:mspr="urn:microsoft:playready" schemeIdUri="urn:uuid:9a04f079-9840-4286-ab92-e65be0885f95" value="2.0" cenc:default_KID="1AB45440-532C-4399-94DC-5C5AD9584BAC">
+        <cenc:pssh>AAAD2nBzc2gAAAAAmgTweZhAQoarkuZb4IhflQAAA7q6AwAAAQABALADPABXAFIATQBIAEUAQQBEAEUAUgAgAHgAbQBsAG4AcwA9ACIAaAB0AHQAcAA6AC8ALwBzAGMAaABlAG0AYQBzAC4AbQBpAGMAcgBvAHMAbwBmAHQALgBjAG8AbQAvAEQAUgBNAC8AMgAwADAANwAvADAAMwAvAFAAbABhAHkAUgBlAGEAZAB5AEgAZQBhAGQAZQByACIAIAB2AGUAcgBzAGkAbwBuAD0AIgA0AC4AMAAuADAALgAwACIAPgA8AEQAQQBUAEEAPgA8AFAAUgBPAFQARQBDAFQASQBOAEYATwA+ADwASwBFAFkATABFAE4APgAxADYAPAAvAEsARQBZAEwARQBOAD4APABBAEwARwBJAEQAPgBBAEUAUwBDAFQAUgA8AC8AQQBMAEcASQBEAD4APAAvAFAAUgBPAFQARQBDAFQASQBOAEYATwA+ADwASwBJAEQAPgBRAEYAUwAwAEcAaQB4AFQAbQBVAE8AVQAzAEYAeABhADIAVgBoAEwAcgBBAD0APQA8AC8ASwBJAEQAPgA8AEMASABFAEMASwBTAFUATQA+AFIATABsAE8ASwBPAFcANQBJAEkAbwA9ADwALwBDAEgARQBDAEsAUwBVAE0APgA8AEwAQQBfAFUAUgBMAD4AaAB0AHQAcABzADoALwAvAHQAZQBzAHQALgBwAGwAYQB5AHIAZQBhAGQAeQAuAG0AaQBjAHIAbwBzAG8AZgB0AC4AYwBvAG0ALwBzAGUAcgB2AGkAYwBlAC8AcgBpAGcAaAB0AHMAbQBhAG4AYQBnAGUAcgAuAGEAcwBtAHgAPwBjAGYAZwA9ACgAawBpAGQAOgBRAEYAUwAwAEcAaQB4AFQAbQBVAE8AVQAzAEYAeABhADIAVgBoAEwAcgBBAD0APQAsAHAAZQByAHMAaQBzAHQAOgB0AHIAdQBlACwAcwBsADoAMQA1ADAAKQA8AC8ATABBAF8AVQBSAEwAPgA8AEMAVQBTAFQATwBNAEEAVABUAFIASQBCAFUAVABFAFMAPgA8AEkASQBTAF8ARABSAE0AXwBWAEUAUgBTAEkATwBOAD4AOAAuADAALgAxADkAMAA3AC4AMwAyADwALwBJAEkAUwBfAEQAUgBNAF8AVgBFAFIAUwBJAE8ATgA+ADwALwBDAFUAUwBUAE8ATQBBAFQAVABSAEkAQgBVAFQARQBTAD4APAAvAEQAQQBUAEEAPgA8AC8AVwBSAE0ASABFAEEARABFAFIAPgA=</cenc:pssh>
+        <mspr:pro>ugMAAAEAAQCwAzwAVwBSAE0ASABFAEEARABFAFIAIAB4AG0AbABuAHMAPQAiAGgAdAB0AHAAOgAvAC8AcwBjAGgAZQBtAGEAcwAuAG0AaQBjAHIAbwBzAG8AZgB0AC4AYwBvAG0ALwBEAFIATQAvADIAMAAwADcALwAwADMALwBQAGwAYQB5AFIAZQBhAGQAeQBIAGUAYQBkAGUAcgAiACAAdgBlAHIAcwBpAG8AbgA9ACIANAAuADAALgAwAC4AMAAiAD4APABEAEEAVABBAD4APABQAFIATwBUAEUAQwBUAEkATgBGAE8APgA8AEsARQBZAEwARQBOAD4AMQA2ADwALwBLAEUAWQBMAEUATgA+ADwAQQBMAEcASQBEAD4AQQBFAFMAQwBUAFIAPAAvAEEATABHAEkARAA+ADwALwBQAFIATwBUAEUAQwBUAEkATgBGAE8APgA8AEsASQBEAD4AUQBGAFMAMABHAGkAeABUAG0AVQBPAFUAMwBGAHgAYQAyAFYAaABMAHIAQQA9AD0APAAvAEsASQBEAD4APABDAEgARQBDAEsAUwBVAE0APgBSAEwAbABPAEsATwBXADUASQBJAG8APQA8AC8AQwBIAEUAQwBLAFMAVQBNAD4APABMAEEAXwBVAFIATAA+AGgAdAB0AHAAcwA6AC8ALwB0AGUAcwB0AC4AcABsAGEAeQByAGUAYQBkAHkALgBtAGkAYwByAG8AcwBvAGYAdAAuAGMAbwBtAC8AcwBlAHIAdgBpAGMAZQAvAHIAaQBnAGgAdABzAG0AYQBuAGEAZwBlAHIALgBhAHMAbQB4AD8AYwBmAGcAPQAoAGsAaQBkADoAUQBGAFMAMABHAGkAeABUAG0AVQBPAFUAMwBGAHgAYQAyAFYAaABMAHIAQQA9AD0ALABwAGUAcgBzAGkAcwB0ADoAdAByAHUAZQAsAHMAbAA6ADEANQAwACkAPAAvAEwAQQBfAFUAUgBMAD4APABDAFUAUwBUAE8ATQBBAFQAVABSAEkAQgBVAFQARQBTAD4APABJAEkAUwBfAEQAUgBNAF8AVgBFAFIAUwBJAE8ATgA+ADgALgAwAC4AMQA5ADAANwAuADMAMgA8AC8ASQBJAFMAXwBEAFIATQBfAFYARQBSAFMASQBPAE4APgA8AC8AQwBVAFMAVABPAE0AQQBUAFQAUgBJAEIAVQBUAEUAUwA+ADwALwBEAEEAVABBAD4APAAvAFcAUgBNAEgARQBBAEQARQBSAD4A</mspr:pro>
+      </ContentProtection>
+      <ContentProtection xmlns:clearkey="http://dashif.org/guidelines/clearKey" value="ClearKey1.0" schemeIdUri="urn:uuid:e2719d58-a985-b3c9-781a-b030af78d30e">
+        <clearkey:Laurl Lic_type="EME-1.0">https://wll1p00830.dev.youview.co.uk/clearkey</clearkey:Laurl>
+      </ContentProtection>
+      <ContentProtection schemeIdUri="urn:uuid:1077efec-c0b2-4d02-ace3-3c1e52e2fb4b">
+        <cenc:pssh>AAAANHBzc2gBAAAAEHfv7MCyTQKs4zweUuL7SwAAAAEatFRAUyxDmZTcXFrZWEusAAAAAA==</cenc:pssh>
+      </ContentProtection>
+      <SegmentTemplate startNumber="1" timescale="240" duration="960" initialization="$RepresentationID$/init.m4v?drm=all" media="$RepresentationID$/$Number$.m4v?drm=all"/>
+      <Representation id="bbb_v6_enc" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="375758">
+       
+     </Representation>
+      <Representation id="bbb_v2_enc" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="1810835">
+       
+     </Representation>
+      <Representation id="bbb_v4_enc" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="662922">
+       
+     </Representation>
+      <Representation id="bbb_v7_enc" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="192830">
+       
+     </Representation>
+      <Representation id="bbb_v3_enc" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="1030263">
+       
+     </Representation>
+      <Representation id="bbb_v1_enc" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="2957049">
+       
+     </Representation>
+      <Representation id="bbb_v5_enc" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="575949">
+       
+     </Representation>
+    </AdaptationSet>
+    <AdaptationSet mimeType="audio/mp4" contentType="audio" lang="und" segmentAlignment="true" startWithSAP="1">
+      <ContentComponent id="1" contentType="audio" lang="und"/>
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+      <ContentProtection schemeIdUri="urn:mpeg:dash:mp4protection:2011" value="cenc" cenc:default_KID="1AB45440-532C-4399-94DC-5C5AD9584BAC"/>
+      <ContentProtection xmlns:mas="urn:marlin:mas:1-0:services:schemas:mpd" schemeIdUri="urn:uuid:5e629af5-38da-4063-8977-97ffbd9902d4">
+        <mas:MarlinContentIds>
+          <mas:MarlinContentId>urn:marlin:kid:1ab45440532c439994dc5c5ad9584bac</mas:MarlinContentId>
+        </mas:MarlinContentIds>
+      </ContentProtection>
+      <ContentProtection xmlns:mspr="urn:microsoft:playready" schemeIdUri="urn:uuid:9a04f079-9840-4286-ab92-e65be0885f95" value="2.0" cenc:default_KID="1AB45440-532C-4399-94DC-5C5AD9584BAC">
+        <cenc:pssh>AAAD2nBzc2gAAAAAmgTweZhAQoarkuZb4IhflQAAA7q6AwAAAQABALADPABXAFIATQBIAEUAQQBEAEUAUgAgAHgAbQBsAG4AcwA9ACIAaAB0AHQAcAA6AC8ALwBzAGMAaABlAG0AYQBzAC4AbQBpAGMAcgBvAHMAbwBmAHQALgBjAG8AbQAvAEQAUgBNAC8AMgAwADAANwAvADAAMwAvAFAAbABhAHkAUgBlAGEAZAB5AEgAZQBhAGQAZQByACIAIAB2AGUAcgBzAGkAbwBuAD0AIgA0AC4AMAAuADAALgAwACIAPgA8AEQAQQBUAEEAPgA8AFAAUgBPAFQARQBDAFQASQBOAEYATwA+ADwASwBFAFkATABFAE4APgAxADYAPAAvAEsARQBZAEwARQBOAD4APABBAEwARwBJAEQAPgBBAEUAUwBDAFQAUgA8AC8AQQBMAEcASQBEAD4APAAvAFAAUgBPAFQARQBDAFQASQBOAEYATwA+ADwASwBJAEQAPgBRAEYAUwAwAEcAaQB4AFQAbQBVAE8AVQAzAEYAeABhADIAVgBoAEwAcgBBAD0APQA8AC8ASwBJAEQAPgA8AEMASABFAEMASwBTAFUATQA+AFIATABsAE8ASwBPAFcANQBJAEkAbwA9ADwALwBDAEgARQBDAEsAUwBVAE0APgA8AEwAQQBfAFUAUgBMAD4AaAB0AHQAcABzADoALwAvAHQAZQBzAHQALgBwAGwAYQB5AHIAZQBhAGQAeQAuAG0AaQBjAHIAbwBzAG8AZgB0AC4AYwBvAG0ALwBzAGUAcgB2AGkAYwBlAC8AcgBpAGcAaAB0AHMAbQBhAG4AYQBnAGUAcgAuAGEAcwBtAHgAPwBjAGYAZwA9ACgAawBpAGQAOgBRAEYAUwAwAEcAaQB4AFQAbQBVAE8AVQAzAEYAeABhADIAVgBoAEwAcgBBAD0APQAsAHAAZQByAHMAaQBzAHQAOgB0AHIAdQBlACwAcwBsADoAMQA1ADAAKQA8AC8ATABBAF8AVQBSAEwAPgA8AEMAVQBTAFQATwBNAEEAVABUAFIASQBCAFUAVABFAFMAPgA8AEkASQBTAF8ARABSAE0AXwBWAEUAUgBTAEkATwBOAD4AOAAuADAALgAxADkAMAA3AC4AMwAyADwALwBJAEkAUwBfAEQAUgBNAF8AVgBFAFIAUwBJAE8ATgA+ADwALwBDAFUAUwBUAE8ATQBBAFQAVABSAEkAQgBVAFQARQBTAD4APAAvAEQAQQBUAEEAPgA8AC8AVwBSAE0ASABFAEEARABFAFIAPgA=</cenc:pssh>
+        <mspr:pro>ugMAAAEAAQCwAzwAVwBSAE0ASABFAEEARABFAFIAIAB4AG0AbABuAHMAPQAiAGgAdAB0AHAAOgAvAC8AcwBjAGgAZQBtAGEAcwAuAG0AaQBjAHIAbwBzAG8AZgB0AC4AYwBvAG0ALwBEAFIATQAvADIAMAAwADcALwAwADMALwBQAGwAYQB5AFIAZQBhAGQAeQBIAGUAYQBkAGUAcgAiACAAdgBlAHIAcwBpAG8AbgA9ACIANAAuADAALgAwAC4AMAAiAD4APABEAEEAVABBAD4APABQAFIATwBUAEUAQwBUAEkATgBGAE8APgA8AEsARQBZAEwARQBOAD4AMQA2ADwALwBLAEUAWQBMAEUATgA+ADwAQQBMAEcASQBEAD4AQQBFAFMAQwBUAFIAPAAvAEEATABHAEkARAA+ADwALwBQAFIATwBUAEUAQwBUAEkATgBGAE8APgA8AEsASQBEAD4AUQBGAFMAMABHAGkAeABUAG0AVQBPAFUAMwBGAHgAYQAyAFYAaABMAHIAQQA9AD0APAAvAEsASQBEAD4APABDAEgARQBDAEsAUwBVAE0APgBSAEwAbABPAEsATwBXADUASQBJAG8APQA8AC8AQwBIAEUAQwBLAFMAVQBNAD4APABMAEEAXwBVAFIATAA+AGgAdAB0AHAAcwA6AC8ALwB0AGUAcwB0AC4AcABsAGEAeQByAGUAYQBkAHkALgBtAGkAYwByAG8AcwBvAGYAdAAuAGMAbwBtAC8AcwBlAHIAdgBpAGMAZQAvAHIAaQBnAGgAdABzAG0AYQBuAGEAZwBlAHIALgBhAHMAbQB4AD8AYwBmAGcAPQAoAGsAaQBkADoAUQBGAFMAMABHAGkAeABUAG0AVQBPAFUAMwBGAHgAYQAyAFYAaABMAHIAQQA9AD0ALABwAGUAcgBzAGkAcwB0ADoAdAByAHUAZQAsAHMAbAA6ADEANQAwACkAPAAvAEwAQQBfAFUAUgBMAD4APABDAFUAUwBUAE8ATQBBAFQAVABSAEkAQgBVAFQARQBTAD4APABJAEkAUwBfAEQAUgBNAF8AVgBFAFIAUwBJAE8ATgA+ADgALgAwAC4AMQA5ADAANwAuADMAMgA8AC8ASQBJAFMAXwBEAFIATQBfAFYARQBSAFMASQBPAE4APgA8AC8AQwBVAFMAVABPAE0AQQBUAFQAUgBJAEIAVQBUAEUAUwA+ADwALwBEAEEAVABBAD4APAAvAFcAUgBNAEgARQBBAEQARQBSAD4A</mspr:pro>
+      </ContentProtection>
+      <ContentProtection xmlns:clearkey="http://dashif.org/guidelines/clearKey" value="ClearKey1.0" schemeIdUri="urn:uuid:e2719d58-a985-b3c9-781a-b030af78d30e">
+        <clearkey:Laurl Lic_type="EME-1.0">https://wll1p00830.dev.youview.co.uk/clearkey</clearkey:Laurl>
+      </ContentProtection>
+      <ContentProtection schemeIdUri="urn:uuid:1077efec-c0b2-4d02-ace3-3c1e52e2fb4b">
+        <cenc:pssh>AAAANHBzc2gBAAAAEHfv7MCyTQKs4zweUuL7SwAAAAEatFRAUyxDmZTcXFrZWEusAAAAAA==</cenc:pssh>
+      </ContentProtection>
+      <SegmentTemplate startNumber="1" timescale="44100" duration="176399" initialization="$RepresentationID$/init.m4a?drm=all" media="$RepresentationID$/$Number$.m4a?drm=all"/>
+      <Representation id="bbb_a1_enc" mimeType="audio/mp4" codecs="mp4a.40.2" sampleRate="44100" numChannels="2" lang="und" startWithSAP="1" bandwidth="101094">
+        
+      </Representation>
+    </AdaptationSet>
+  </Period>
+</MPD>

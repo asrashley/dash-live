@@ -22,7 +22,6 @@
 
 import datetime
 import logging
-import re
 
 import manifests
 import options
@@ -31,7 +30,6 @@ import utils
 from .base import RequestHandlerBase
 from .templates import templates
 
-from events import EventFactory
 from routes import routes
 
 class ServeManifest(RequestHandlerBase):
@@ -63,45 +61,12 @@ class ServeManifest(RequestHandlerBase):
         self.response.content_type = 'application/dash+xml'
         try:
             dash = self.calculate_dash_params(
-                mpd_url=manifest, stream=stream, mode=mode, **kwargs)
+                mpd_url=manifest, prefix=stream, mode=mode)
         except ValueError as e:
             self.response.write('Invalid CGI parameters: %s' % (str(e)))
             self.response.set_status(400)
             return
         context.update(dash)
-        context['abr'] = self.request.params.get('abr', "True")
-        context['abr'] = re.search(r'(True|0)', context['abr'], re.I)
-        # context['availabilityStartTime'] = datetime.datetime.utcfromtimestamp(dash['availabilityStartTime'])
-        if re.search(r'(True|0)', self.request.params.get(
-                'base', 'False'), re.I) is not None:
-            del context['baseURL']
-            if mode == 'odvod':
-                prefix = self.uri_for(
-                    'dash-od-media', filename='RepresentationID', ext='m4v')
-                prefix = prefix.replace('RepresentationID.m4v', '')
-            else:
-                prefix = self.uri_for('dash-media', mode=mode, filename='RepresentationID',
-                                      segment_num='init', ext='m4v')
-                prefix = prefix.replace('RepresentationID/init.m4v', '')
-                context['video']['initURL'] = prefix + \
-                    context['video']['initURL']
-                context['audio']['initURL'] = prefix + \
-                    context['audio']['initURL']
-            context['video']['mediaURL'] = prefix + \
-                context['video']['mediaURL']
-            context['audio']['mediaURL'] = prefix + \
-                context['audio']['mediaURL']
-        if context['abr'] is False:
-            context['video']['representations'] = context['video']['representations'][-1:]
-        if mode == 'live':
-            try:
-                context['minimumUpdatePeriod'] = float(self.request.params.get(
-                    'mup', 2.0 * context['video'].get('maxSegmentDuration', 1)))
-            except ValueError:
-                context['minimumUpdatePeriod'] = 2.0 * \
-                    context['video'].get('maxSegmentDuration', 1)
-            if context['minimumUpdatePeriod'] <= 0:
-                del context['minimumUpdatePeriod']
         for code in self.INJECTED_ERROR_CODES:
             if self.request.params.get('m%03d' % code) is not None:
                 try:
@@ -132,24 +97,6 @@ class ServeManifest(RequestHandlerBase):
                         'Invalid CGI parameters: %s' % (str(e)))
                     self.response.set_status(400)
                     return
-        event_generators = EventFactory.create_event_generators(self.request)
-        if event_generators:
-            for evgen in event_generators:
-                stream = evgen.create_manifest_context(
-                    context=context, templates=templates)
-                if evgen.inband:
-                    # TODO: allow AdaptationSet for inband events to be
-                    # configurable
-                    if 'video' in context:
-                        try:
-                            context['video']['event_streams'].append(stream)
-                        except KeyError:
-                            context['video']['event_streams'] = [stream]
-                else:
-                    try:
-                        context['period']['event_streams'].append(stream)
-                    except KeyError:
-                        context['period']['event_streams'] = [stream]
         template = templates.get_template(manifest)
         self.add_allowed_origins()
         self.response.headers.add_header('Accept-Ranges', 'none')
