@@ -58,7 +58,7 @@ class TestDashEventGeneration(DashManifestCheckMixin, GAETestBase):
             mode='vod',
             stream='bbb',
             params=params)
-        dv = self.check_manifest_url(url, 'vod')
+        dv = self.check_manifest_url(url, 'vod', encrypted=False)
         for period in dv.manifest.periods:
             self.assertEqual(len(period.event_streams), 1)
             event_stream = period.event_streams[0]
@@ -91,7 +91,7 @@ class TestDashEventGeneration(DashManifestCheckMixin, GAETestBase):
             mode='vod',
             stream='bbb',
             params=params)
-        dv = self.check_manifest_url(url, 'vod')
+        dv = self.check_manifest_url(url, 'vod', encrypted=False)
         for period in dv.manifest.periods:
             for adp in period.adaptation_sets:
                 if adp.contentType != 'video':
@@ -161,7 +161,7 @@ class TestDashEventGeneration(DashManifestCheckMixin, GAETestBase):
             mode='vod',
             stream='bbb',
             params=params)
-        dv = self.check_manifest_url(url, 'vod')
+        dv = self.check_manifest_url(url, 'vod', encrypted=False)
         dv.validate()
         for period in dv.manifest.periods:
             self.assertEqual(len(period.event_streams), 1)
