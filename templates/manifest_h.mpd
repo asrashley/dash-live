@@ -21,8 +21,8 @@
   <Period start="PT0S">
        {% for rep in video.representations %}
          {% if loop.first %}
-           {% include "drm/template.xml" %}
       <AdaptationSet mimeType="video/mp4" startWithSAP="{{rep.startWithSAP}}" segmentAlignment="true">
+           {% include "drm/template.xml" %}
             <SegmentTemplate
                 presentationTimeOffset="{{video.presentationTimeOffset}}"
                 timescale="{{video.timescale}}"

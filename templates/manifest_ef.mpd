@@ -22,9 +22,9 @@
          start="PT0.000S">
      {% for rep in video.representations %}
        {% if loop.first %}
-         {% include "drm/template.xml" %}
     <AdaptationSet mimeType="video/mp4" codecs="{{rep.codecs}}"
                    startWithSAP="1" segmentAlignment="true">
+      {% include "drm/template.xml" %}
       {% endif %}
       <Representation bandwidth="{{rep.bitrate}}" id="{{rep.id}}" frameRate="{{rep.frameRate}}" width="{{rep.width}}" sar="{{rep.sar}}" height="{{rep.height}}" scanType="{{rep.scanType}}">
         <SegmentTemplate startNumber="{{startNumber}}" duration="{{rep.segment_duration}}" initialization="{{video.initURL|xmlSafe}}" media="{{video.mediaURL|xmlSafe}}" timescale="{{video.timescale}}"/>
@@ -32,12 +32,12 @@
 	  {% if loop.last %}</AdaptationSet>{% endif %}
       {% endfor %}
     {% for rep in audio.representations %}
-      {% include "drm/template.xml" %}
       <AdaptationSet mimeType="audio/mp4"
                      codecs="{{rep.codecs}}"
                      startWithSAP="{{rep.startWithSAP}}"
                      segmentAlignment="true"
                      lang="{{rep.language|default('und')}}">
+        {% include "drm/template.xml" %}
         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
         <Representation bandwidth="{{rep.bitrate}}"
                         id="{{rep.id}}"

@@ -26,20 +26,15 @@ import datetime
 import os
 import unittest
 import urllib
-import sys
 
-_src = os.path.join(os.path.dirname(__file__), "..", "src")
-if _src not in sys.path:
-    sys.path.append(_src)
+from mixins.check_manifest import DashManifestCheckMixin
+from mixins.view_validator import ViewsTestDashValidator
 
-# these imports *must* be after the modification of sys.path
-from mixins.manifest import DashManifestCheckMixin
 import manifests
 import utils
 import models
 from drm.playready import PlayReady
 from gae_base import GAETestBase
-from view_validator import ViewsTestDashValidator
 
 class TestHandlers(GAETestBase, DashManifestCheckMixin):
     def test_availability_start_time(self):
@@ -86,7 +81,8 @@ class TestHandlers(GAETestBase, DashManifestCheckMixin):
                     baseurl += '?start=' + option
                 response = self.app.get(baseurl)
                 dv = ViewsTestDashValidator(
-                    self.app, 'live', response.xml, baseurl)
+                    self.app, mode='live', mpd=response.xml,
+                    url=baseurl, encrypted=False)
                 dv.validate(depth=3)
                 if option == 'now':
                     start_time = dv.manifest.publishTime - dv.manifest.timeShiftBufferDepth
@@ -118,8 +114,9 @@ class TestHandlers(GAETestBase, DashManifestCheckMixin):
                 'dash-mpd-v2', manifest=filename, stream='bbb')
             baseurl += '?mode=vod&' + drm_opt
             response = self.app.get(baseurl)
+            encrypted = drm_opt != 'drm=none'
             mpd = ViewsTestDashValidator(
-                self.app, 'vod', response.xml, baseurl)
+                self.app, 'vod', response.xml, baseurl, encrypted)
             mpd.validate()
         self.progress(total_tests, total_tests)
 
@@ -161,8 +158,9 @@ class TestHandlers(GAETestBase, DashManifestCheckMixin):
                 baseurl += '?' + '&'.join(options)
                 response = self.app.get(baseurl)
                 self.assertEqual(response.status_int, 200)
+                encrypted = drm_opt != "drm=none"
                 mpd = ViewsTestDashValidator(
-                    self.app, "live", response.xml, baseurl)
+                    self.app, "live", response.xml, baseurl, encrypted)
                 mpd.validate()
         self.progress(total_tests, total_tests)
 
@@ -185,7 +183,7 @@ class TestHandlers(GAETestBase, DashManifestCheckMixin):
                 "urn:mpeg:dash:profile:isoff-on-demand:2011",
                 response.xml.get('profiles'))
             mpd = ViewsTestDashValidator(
-                self.app, "odvod", response.xml, baseurl)
+                self.app, "odvod", response.xml, baseurl, False)
             mpd.validate()
 
     def test_request_unknown_media(self):
@@ -226,7 +224,9 @@ class TestHandlers(GAETestBase, DashManifestCheckMixin):
         args += ['mode=vod', 'drm=playready']
         baseurl += '?' + '&'.join(args)
         response = self.app.get(baseurl)
-        mpd = ViewsTestDashValidator(self.app, 'vod', response.xml, baseurl)
+        mpd = ViewsTestDashValidator(
+            self.app, mode='vod', mpd=response.xml, url=baseurl,
+            encrypted=True)
         mpd.validate()
         self.assertEqual(len(mpd.manifest.periods), 1)
         schemeIdUri = "urn:uuid:" + PlayReady.SYSTEM_ID.upper()

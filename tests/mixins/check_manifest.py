@@ -22,26 +22,23 @@
 
 import datetime
 from functools import wraps
-import logging
 import os
 import sys
 import urlparse
 import xml.etree.ElementTree as ET
 
-_src = os.path.join(os.path.dirname(__file__), "..", "..", "src")
+_src = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "..", "src"))
 if _src not in sys.path:
     sys.path.append(_src)
 
-from testcase import HideMixinsFilter
-
 from requesthandler.manifest_requests import ServeManifest
+from requesthandler.templates import templates
 
-import dash
 import manifests
 import models
 import options
-import routes
-from requesthandler.templates import templates
+from view_validator import ViewsTestDashValidator
 
 def add_url(method, url):
     @wraps(method)
@@ -52,55 +49,6 @@ def add_url(method, url):
             print(url)
             raise
     return tst_fn
-
-class ViewsTestDashValidator(dash.DashValidator):
-    def __init__(self, app, mode, mpd, url):
-        opts = dash.Options(strict=True)
-        opts.log = logging.getLogger(__name__)
-        opts.log.addFilter(HideMixinsFilter())
-        # opts.log.setLevel(logging.DEBUG)
-        super(
-            ViewsTestDashValidator,
-            self).__init__(
-            url,
-            app,
-            mode=mode,
-            options=opts)
-        self.representations = {}
-        self.log.debug('Check manifest: %s', url)
-
-    def get_representation_info(self, representation):
-        try:
-            return self.representations[representation.unique_id()]
-        except KeyError:
-            pass
-        url = representation.init_seg_url()
-        parts = urlparse.urlparse(url)
-        # self.log.debug('match %s %s', routes.routes["dash-media"].reTemplate.pattern, parts.path)
-        match = routes.routes["dash-media"].reTemplate.match(parts.path)
-        if match is None:
-            # self.log.debug('match %s', routes.routes["dash-od-media"].reTemplate.pattern)
-            match = routes.routes["dash-od-media"].reTemplate.match(parts.path)
-        if match is None:
-            self.log.error('match %s %s', url, parts.path)
-        self.assertIsNotNone(match)
-        filename = match.group("filename")
-        name = filename + '.mp4'
-        # self.log.debug("get_representation_info %s %s %s", url, filename, name)
-        mf = models.MediaFile.query(models.MediaFile.name == name).get()
-        if mf is None:
-            filename = os.path.dirname(parts.path).split('/')[-1]
-            name = filename + '.mp4'
-            mf = models.MediaFile.query(models.MediaFile.name == name).get()
-        self.assertIsNotNone(mf)
-        rep = mf.representation
-        info = dash.RepresentationInfo(
-            num_segments=rep.num_segments, **rep.toJSON())
-        self.set_representation_info(representation, info)
-        return info
-
-    def set_representation_info(self, representation, info):
-        self.representations[representation.unique_id()] = info
 
 class MockRequest(object):
     class MockRoute(object):
@@ -173,7 +121,7 @@ class DashManifestCheckMixin(object):
                 manifest=filename,
                 mode=mode,
                 stream='bbb')
-            self.check_manifest_url(url, mode)
+            self.check_manifest_url(url, mode, encrypted=False)
 
         # do the exhaustive check of every option
         total_tests = 1
@@ -226,6 +174,7 @@ class DashManifestCheckMixin(object):
                 del params["mup"]
             if "time" in params:
                 del params["time"]
+        encrypted = params.get("drm", "drm=none") != "drm=none"
         cgi = params.values()
         url = self.from_uri(
             'dash-mpd-v3',
@@ -236,14 +185,16 @@ class DashManifestCheckMixin(object):
         if mpd_url in tested:
             return
         tested.add(mpd_url)
-        self.check_manifest_url(mpd_url, mode)
+        self.check_manifest_url(mpd_url, mode, encrypted)
 
-    def check_manifest_url(self, mpd_url, mode):
+    def check_manifest_url(self, mpd_url, mode, encrypted):
         try:
             self.current_url = mpd_url
             response = self.app.get(mpd_url)
-            dv = ViewsTestDashValidator(self.app, mode, response.xml, mpd_url)
-            dv.validate(depth=2)
+            # print(response.text)
+            dv = ViewsTestDashValidator(
+                self.app, mode, response.xml, mpd_url, encrypted)
+            dv.validate(depth=3)
             if mode != 'live':
                 if dv.manifest.mediaPresentationDuration is None:
                     # duration must be specified in the Period

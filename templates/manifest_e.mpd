@@ -39,6 +39,7 @@ type="dynamic"
     </AdaptationSet>
       {% for rep in audio.representations %}
       <AdaptationSet mimeType="audio/mp4" contentType="audio" lang="{{rep.language}}" segmentAlignment="true" startWithSAP="{{rep.startWithSAP}}">
+          {% include "drm/template.xml" %}
           <Role schemeIdUri="urn:mpeg:dash:role:2011" value="{{rep.role}}"/>
           <SegmentTemplate
               presentationTimeOffset="{{audio.presentationTimeOffset}}"

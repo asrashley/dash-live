@@ -44,9 +44,13 @@ import mp4
 import scte35
 import utils
 
-class Options(object):
-    def __init__(self, strict=True):
+class ValidatorOptions(object):
+    """
+    Options that can be passed to the DASH validator
+    """
+    def __init__(self, strict=True, encrypted=False):
         self.strict = strict
+        self.encrypted = encrypted
 
 
 class UTC(datetime.tzinfo):
@@ -218,7 +222,7 @@ class DashValidator(DashElement):
         super(DashValidator, self).__init__(None, parent=None, options=options)
         self.http = http_client
         self.baseurl = self.url = url
-        self.options = options if options is not None else Options()
+        self.options = options if options is not None else ValidatorOptions()
         self.mode = mode
         self.validator = self
         self.xml = None
@@ -808,6 +812,8 @@ class AdaptationSet(RepresentationBaseType):
             self.assertIsNotNone(self.default_KID,
                                  'default_KID cannot be missing for protected stream: {}'.format(self.baseurl))
         self.assertIn(self.contentType, ['video', 'audio', None])
+        if not self.options.encrypted:
+            self.assertEqual(len(self.contentProtection), 0)
         if depth == 0:
             return
         for cp in self.contentProtection:
@@ -994,6 +1000,24 @@ class Representation(RepresentationBaseType):
             info.moov = self.init_segment.validate(depth - 1)
             self.validator.set_representation_info(self, info)
         self.assertIsNotNone(info.moov)
+        if self.options.encrypted:
+            if self.contentProtection:
+                cp_elts = self.contentProtection
+            else:
+                cp_elts = self.parent.contentProtection
+            self.assertGreaterThan(
+                len(cp_elts), 0,
+                msg='An encrypted stream must have ContentProtection elements')
+            found = False
+            for elt in cp_elts:
+                if (elt.schemeIdUri == "urn:mpeg:dash:mp4protection:2011" and
+                        elt.value == "cenc"):
+                    found = True
+            self.assertTrue(
+                found, msg="DASH CENC ContentProtection element not found")
+        else:
+            # parent ContentProtection elements checked in parent's validate()
+            self.assertEqual(len(self.contentProtection), 0)
         if depth == 0:
             return
         if self.mode == "odvod":
@@ -1175,6 +1199,7 @@ class MediaSegment(DashElement):
             self.assertStartsWith(response.headers['content-type'], self.parent.mimeType)
         src = utils.BufferedReader(None, data=response.body)
         options = {}
+        self.assertEqual(self.options.encrypted, self.info.encrypted)
         if self.info.encrypted:
             options["iv_size"] = self.info.iv_size
         atoms = mp4.Mp4Atom.create(src, options=options)
@@ -1184,8 +1209,19 @@ class MediaSegment(DashElement):
             if a.atom_type == 'moof':
                 moof = a
                 break
-            self.assertNotEqual(a.atom_type, 'mdat')
+            self.assertNotEqual(
+                a.atom_type, 'mdat',
+                msg='Failed to find moof box before mdat box')
         self.assertIsNotNone(moof)
+        try:
+            _ = moof.traf.senc
+            self.assertNotEqual(
+                self.info.encrypted, False,
+                msg='senc box should not be found in a clear stream')
+        except AttributeError:
+            self.assertNotEqual(
+                self.info.encrypted, True,
+                msg='Failed to find senc box in encrypted stream')
         if self.seg_num is not None:
             self.checkEqual(moof.mfhd.sequence_number, self.seg_num,
                             msg='Sequence number error, expected {0}, got {1}'.format(
@@ -1346,7 +1382,7 @@ if __name__ == "__main__":
     parser.add_argument(
         'manifest',
         help='URL or filename of manifest to validate')
-    args = parser.parse_args(namespace=Options(strict=False))
+    args = parser.parse_args(namespace=ValidatorOptions(strict=False))
     # FORMAT = r"%(asctime)-15s:%(levelname)s:%(filename)s@%(lineno)d: %(message)s\n  [%(url)s]"
     FORMAT = r"%(asctime)-15s:%(levelname)s:%(filename)s@%(lineno)d: %(message)s"
     logging.basicConfig(format=FORMAT)
