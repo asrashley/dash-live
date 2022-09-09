@@ -99,10 +99,10 @@ class LiveMedia(RequestHandlerBase):
             adp_set = audio
         else:
             adp_set = video
-        if video['representations']:
-            ref_representation = video['representations'][0]
+        if video.representations:
+            ref_representation = video.representations[0]
         else:
-            ref_representation = audio['representations'][0]
+            ref_representation = audio.representations[0]
         if segment_num == 'init':
             mod_segment = segment_num = 0
         else:
@@ -146,15 +146,15 @@ class LiveMedia(RequestHandlerBase):
                 now = datetime.datetime.now(tz=utils.UTC())
                 _, elapsedTime, timeShiftBufferDepth = self.calculate_availability_start(
                     mode, now)
-                lastFragment = adp_set['startNumber'] + int(utils.scale_timedelta(
+                lastFragment = adp_set.startNumber + int(utils.scale_timedelta(
                     elapsedTime, representation.timescale, representation.segment_duration))
                 firstFragment = (
                     lastFragment -
                     int(representation.timescale *
                         timeShiftBufferDepth / representation.segment_duration) - 1)
-                firstFragment = max(adp_set['startNumber'], firstFragment)
+                firstFragment = max(adp_set.startNumber, firstFragment)
             else:
-                firstFragment = adp_set['startNumber']
+                firstFragment = adp_set.startNumber
                 lastFragment = firstFragment + representation.num_segments - 1
             if segment_num < firstFragment or segment_num > lastFragment:
                 self.response.write('Segment %d not found (valid range= %d->%d)' %
@@ -165,7 +165,7 @@ class LiveMedia(RequestHandlerBase):
                 # elapsed_time is the time (in seconds) since availabilityStartTime
                 # for the requested fragment
                 elapsed_time = (
-                    (segment_num - adp_set['startNumber']) * ref_representation.segment_duration /
+                    (segment_num - adp_set.startNumber) * ref_representation.segment_duration /
                     float(ref_representation.timescale))
                 try:
                     mod_segment, origin_time = self.calculate_segment_from_timecode(
@@ -179,8 +179,8 @@ class LiveMedia(RequestHandlerBase):
                     self.response.set_status(404)
                     return
             else:
-                mod_segment = 1 + segment_num - adp_set['startNumber']
-        self.response.content_type = adp_set['mimeType']
+                mod_segment = 1 + segment_num - adp_set.startNumber
+        self.response.content_type = adp_set.mimeType
         assert mod_segment >= 0 and mod_segment <= representation.num_segments
         frag = representation.segments[mod_segment]
         blob_reader = blobstore.BlobReader(
@@ -218,7 +218,7 @@ class LiveMedia(RequestHandlerBase):
                 delta = long(origin_time * representation.timescale)
                 if delta < 0:
                     raise IOError("Failure in calculating delta %s %d %d %d" % (
-                        str(delta), segment_num, mod_segment, adp_set['startNumber']))
+                        str(delta), segment_num, mod_segment, adp_set.startNumber))
                 atom.moof.traf.tfdt.base_media_decode_time += delta
 
                 # Update the sequenceNumber field in the MovieFragmentHeader

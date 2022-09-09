@@ -4,7 +4,7 @@ from google.appengine.ext import ndb
 from google.appengine.ext.blobstore import blobstore
 
 from drm.keymaterial import KeyMaterial
-from segment import Representation
+from dash.representation import Representation
 import utils
 
 class Stream(ndb.Model):

@@ -34,7 +34,7 @@ from gae_base import GAETestBase
 from mpeg import MPEG_TIMEBASE
 from mixins.check_manifest import DashManifestCheckMixin
 
-import dash
+import dash_validator
 import events
 import mp4
 import scte35
@@ -64,7 +64,7 @@ class TestDashEventGeneration(DashManifestCheckMixin, GAETestBase):
             event_stream = period.event_streams[0]
             self.assertEqual(event_stream.schemeIdUri, events.PingPong.schemeIdUri)
             self.assertEqual(event_stream.value, events.PingPong.PARAMS['value'])
-            self.assertIsInstance(event_stream, dash.EventStream)
+            self.assertIsInstance(event_stream, dash_validator.EventStream)
             self.assertEqual(len(event_stream.events), 4)
             presentationTime = 256
             for idx, event in enumerate(event_stream.events):
@@ -100,7 +100,7 @@ class TestDashEventGeneration(DashManifestCheckMixin, GAETestBase):
                 event_stream = adp.event_streams[0]
                 self.assertEqual(event_stream.schemeIdUri, events.PingPong.schemeIdUri)
                 self.assertEqual(event_stream.value, events.PingPong.PARAMS['value'])
-                self.assertIsInstance(event_stream, dash.InbandEventStream)
+                self.assertIsInstance(event_stream, dash_validator.InbandEventStream)
                 rep = adp.representations[0]
                 info = dv.get_representation_info(rep)
                 self.check_inband_events_for_representation(rep, params, info)
@@ -168,7 +168,7 @@ class TestDashEventGeneration(DashManifestCheckMixin, GAETestBase):
             event_stream = period.event_streams[0]
             self.assertEqual(event_stream.schemeIdUri, events.Scte35.schemeIdUri)
             self.assertEqual(event_stream.value, events.Scte35.PARAMS['value'])
-            self.assertIsInstance(event_stream, dash.EventStream)
+            self.assertIsInstance(event_stream, dash_validator.EventStream)
             self.assertEqual(len(event_stream.events), 4)
             presentationTime = 256
             for idx, event in enumerate(event_stream.events):
