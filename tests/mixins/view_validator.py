@@ -26,13 +26,13 @@ import urlparse
 
 from testcase import HideMixinsFilter
 
-import dash
+from dash_validator import DashValidator, RepresentationInfo, ValidatorOptions
 import models
 import routes
 
-class ViewsTestDashValidator(dash.DashValidator):
+class ViewsTestDashValidator(DashValidator):
     def __init__(self, http_client, mode, mpd, url, encrypted):
-        opts = dash.ValidatorOptions(strict=True, encrypted=encrypted)
+        opts = ValidatorOptions(strict=True, encrypted=encrypted)
         opts.log = logging.getLogger(__name__)
         opts.log.addFilter(HideMixinsFilter())
         # opts.log.setLevel(logging.DEBUG)
@@ -71,7 +71,7 @@ class ViewsTestDashValidator(dash.DashValidator):
             mf = models.MediaFile.query(models.MediaFile.name == name).get()
         self.assertIsNotNone(mf)
         rep = mf.representation
-        info = dash.RepresentationInfo(
+        info = RepresentationInfo(
             num_segments=rep.num_segments, **rep.toJSON())
         self.set_representation_info(representation, info)
         return info

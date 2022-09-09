@@ -23,6 +23,7 @@
 import datetime
 from functools import wraps
 import os
+import re
 import sys
 import urlparse
 import xml.etree.ElementTree as ET
@@ -38,7 +39,25 @@ from requesthandler.templates import templates
 import manifests
 import models
 import options
+from utils import dict_to_cgi_params
 from view_validator import ViewsTestDashValidator
+
+class QName(object):
+    """
+    Back-port of python 3 features of ElementTree.QName
+    """
+
+    NAMESPACE_RE = re.compile(r'^({(?P<namespace>[^}]+)})?(?P<localname>.+)$')
+
+    def __init__(self, text):
+        self.text = text
+        match = self.NAMESPACE_RE.match(text)
+        if match is None:
+            self.namespace = None
+            self.localname = text
+        else:
+            self.namespace = match.group('namespace')
+            self.localname = match.group('localname')
 
 def add_url(method, url):
     @wraps(method)
@@ -230,7 +249,7 @@ class DashManifestCheckMixin(object):
 
     def generate_manifest_context(self, mpd_filename, mode, prefix, **kwargs):
         url = r'http://unit.test/{0}/{1}{2}'.format(
-            prefix, mpd_filename, MockServeManifest.dict_to_cgi_params(kwargs))
+            prefix, mpd_filename, dict_to_cgi_params(kwargs))
         request = MockRequest(url)
         mock = MockServeManifest(request)
         stream = models.Stream.query(models.Stream.prefix == prefix).get()
@@ -278,12 +297,17 @@ class DashManifestCheckMixin(object):
         msg = r'{0}: Expected "{1}" got "{2}"'.format(msg, expected, actual)
         self.assertEqual(expected, actual, msg=msg)
 
-    def assertXmlEqual(self, expected, actual, msg=None, strict=False):
-        self.assertEqual(expected.tag, actual.tag, msg=msg)
+    def assertXmlEqual(self, expected, actual, index=0, msg=None, strict=False):
+        tag = QName(expected.tag)
         if msg is None:
-            prefix = expected.tag
+            prefix = tag.localname
         else:
-            prefix = r'{0}/{1}'.format(msg, expected.tag)
+            prefix = r'{0}/{1}'.format(msg, tag.localname)
+        if index > 0:
+            prefix += r'[{0:d}]'.format(index)
+        self.assertEqual(
+            expected.tag, actual.tag,
+            msg=r'{0}: Expected "{1}" got "{2}"'.format(prefix, expected.tag, actual.tag))
         self.assertXmlTextEqual(
             expected.text, actual.text,
             msg='{0}: text does not match'.format(prefix))
@@ -299,6 +323,8 @@ class DashManifestCheckMixin(object):
                 exp_value, act_value,
                 msg='attribute {0} should be "{1}" but was "{2}"'.format(
                     key_name, exp_value, act_value))
+        counts = {}
         for exp, act in zip(expected, actual):
-            name = '{0}/{1}'.format(prefix, exp.tag)
-            self.assertXmlEqual(exp, act, msg=name)
+            idx = counts.get(exp.tag, 0)
+            self.assertXmlEqual(exp, act, msg=prefix, index=idx)
+            counts[exp.tag] = idx + 1

@@ -512,6 +512,16 @@ def pick_items(src, keys):
             pass
     return rv
 
+def dict_to_cgi_params(params):
+    """
+    Convert dictionary into a CGI parameter string
+    """
+    if not params:
+        return ''
+    lst = []
+    for k, v in params.iteritems():
+        lst.append('%s=%s' % (k, v))
+    return '?' + '&'.join(lst)
 
 #
 # The following code is from djangoappengine/utils.py

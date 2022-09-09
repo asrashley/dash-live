@@ -1,38 +1,34 @@
+#############################################################################
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+#
+#############################################################################
+#
+#  Project Name        :    Simulated MPEG DASH service
+#
+#  Author              :    Alex Ashley
+#
+#############################################################################
+
 import os
 import sys
 
-class Box(object):
-    def __init__(self, pos, size, duration=None):
-        self.pos = pos
-        self.size = size
-        self.duration = duration
-
-    def toJSON(self, pure=False):
-        rv = {
-            "pos": self.pos,
-            "size": self.size,
-        }
-        if self.duration:
-            rv["duration"] = self.duration
-        return rv
-
-    def __repr__(self):
-        if self.duration:
-            return '({:d},{:d},{:d})'.format(self.pos, self.size, self.duration)
-        return '({:d},{:d})'.format(self.pos, self.size)
-
+from segment import Segment
 
 class Representation(object):
     VERSION = 2
 
     def __init__(self, id, **kwargs):
-        def convert_dict(item):
-            if isinstance(item, dict):
-                item = Box(**item)
-            elif isinstance(item, tuple):
-                item = Box(*item)
-            return item
-
         self.version = 0
         self.id = id
         self.segments = []
@@ -41,8 +37,16 @@ class Representation(object):
         self.codecs = ''
         for key, value in kwargs.iteritems():
             object.__setattr__(self, key, value)
-        self.segments = [convert_dict(s) for s in self.segments]
+        self.segments = map(self._convert_dict, self.segments)
         self.num_segments = len(self.segments) - 1
+
+    @staticmethod
+    def _convert_dict(item):
+        if isinstance(item, dict):
+            item = Segment(**item)
+        elif isinstance(item, tuple):
+            item = Segment(*item)
+        return item
 
     def __repr__(self):
         args = []
@@ -79,7 +83,7 @@ class Representation(object):
                             filename=filename,
                             version=Representation.VERSION)
         for atom in atoms:
-            seg = Box(pos=atom.position, size=atom.size)
+            seg = Segment(pos=atom.position, size=atom.size)
             if atom.atom_type == 'ftyp':
                 if verbose > 1:
                     print('Init seg', atom)

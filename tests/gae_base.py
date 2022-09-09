@@ -46,7 +46,7 @@ if _src not in sys.path:
     sys.path.append(_src)
 
 # these imports *must* be after the modification of sys.path
-from segment import Representation
+from dash.representation import Representation
 from mixins.testcase import TestCaseMixin
 from requesthandler.media_management import MediaHandler
 import routes

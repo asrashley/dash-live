@@ -30,8 +30,8 @@ _src = os.path.join(os.path.dirname(__file__), "..", "src")
 if _src not in sys.path:
     sys.path.append(_src)
 
+from dash.representation import Representation
 import utils
-import segment
 import mp4
 
 class SegmentTests(unittest.TestCase):
@@ -46,9 +46,9 @@ class SegmentTests(unittest.TestCase):
             src = utils.BufferedReader(io.FileIO(filename, 'rb'))
             wrap = mp4.Wrapper(atom_type='wrap', parent=None,
                                children=mp4.Mp4Atom.create(src))
-            rep = segment.Representation.create(
+            rep = Representation.create(
                 filename=name, atoms=wrap.children)
-            self.assertEqual(rep.version, segment.Representation.VERSION)
+            self.assertEqual(rep.version, Representation.VERSION)
             if 'v' in name:
                 self.assertEqual(rep.contentType, "video")
                 self.assertEqual(rep.timescale, 240)

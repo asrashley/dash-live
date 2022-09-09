@@ -99,7 +99,7 @@ class NamedObject(object):
 
 def object_from(clz, value):
     if value is None:
-        return value
+        return None
     if isinstance(value, list):
         return clz(value)
     if isinstance(value, dict):
@@ -108,6 +108,16 @@ def object_from(clz, value):
         return clz(value)
     return value
 
+def clone_object(clz, value):
+    if value is None:
+        return None
+    if isinstance(value, list):
+        return clz(value)
+    if isinstance(value, dict):
+        return clz(**value)
+    if isinstance(clz, type) and not isinstance(value, clz):
+        return clz(value)
+    return copy.deepcopy(value)
 
 class ListOf(object):
     def __init__(self, clazz):
@@ -120,16 +130,31 @@ class ListOf(object):
 class ObjectWithFields(NamedObject):
     OBJECT_FIELDS = {}
     DEFAULT_VALUES = {}
+    REQUIRED_FIELDS = {}
 
     def __init__(self, **kwargs):
-        self._fields = copy.deepcopy(self.DEFAULT_VALUES)
-        for key, value in kwargs.iteritems():
-            if key not in self.__dict__:
-                if key in self.OBJECT_FIELDS:
-                    clz = self.OBJECT_FIELDS[key]
-                    self._fields[key] = object_from(clz, value)
-                else:
-                    self._fields[key] = value
+        self._fields = {}
+        self._copy_args(self.DEFAULT_VALUES)
+        self._copy_args(kwargs)
+        for key, clz in self.REQUIRED_FIELDS.iteritems():
+            assert key in self._fields
+            assert isinstance(self._fields[key], clz)
+
+    def clone(self):
+        kwargs = {}
+        for key, value in self._fields.iteritems():
+            if isinstance(value, ObjectWithFields):
+                value = value.clone()
+            elif key in self.OBJECT_FIELDS:
+                clz = self.OBJECT_FIELDS[key]
+                value = clone_object(clz, value)
+            kwargs[key] = value
+        return self.__class__(**kwargs)
+
+    def apply_defaults(self, defaults):
+        for key, value in defaults.iteritems():
+            if key not in self._fields:
+                self._fields[key] = value
 
     def __getattr__(self, name):
         if name[0] == "_":
@@ -158,3 +183,12 @@ class ObjectWithFields(NamedObject):
                             v = clz(v)
                 rv[k] = v
         return rv
+
+    def _copy_args(self, args):
+        for key, value in args.iteritems():
+            if key not in self.__dict__:
+                if key in self.OBJECT_FIELDS:
+                    clz = self.OBJECT_FIELDS[key]
+                    self._fields[key] = object_from(clz, value)
+                else:
+                    self._fields[key] = value

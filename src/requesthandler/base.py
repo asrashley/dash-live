@@ -41,6 +41,7 @@ import models
 import settings
 import utils
 
+from dash.adaptation_set import AdaptationSet
 from drm.clearkey import ClearKey
 from drm.playready import PlayReady
 from drm.marlin import Marlin
@@ -182,16 +183,6 @@ class RequestHandlerBase(webapp2.RequestHandler):
     def get_bool_param(self, param, default=False):
         value = self.request.params.get(param, str(default)).lower()
         return value in ["1", "true"]
-
-    def compute_av_values(self, av, startNumber=1):
-        av['startNumber'] = startNumber
-        av['timescale'] = av['representations'][0].timescale
-        av['presentationTimeOffset'] = int(
-            (startNumber - 1) * av['representations'][0].segment_duration)
-        av['minBitrate'] = min([a.bitrate for a in av['representations']])
-        av['maxBitrate'] = max([a.bitrate for a in av['representations']])
-        av['maxSegmentDuration'] = max(
-            [a.segment_duration for a in av['representations']]) / av['timescale']
 
     def generate_clearkey_license_url(self):
         laurl = urlparse.urljoin(
@@ -417,20 +408,17 @@ class RequestHandlerBase(webapp2.RequestHandler):
         rv["elapsedTime"] = elapsedTime
         audio, video = self.calculate_audio_video_context(stream, mode, encrypted)
         if rv['abr'] is False:
-            video['representations'] = video['representations'][-1:]
+            video.representations = video.representations[-1:]
         cgi_params = self.calculate_cgi_parameters(
             mode=mode, now=now, avail_start=avail_start, clockDrift=clockDrift,
             ts_buffer_depth=ts_buffer_depth, audio=audio, video=video)
-        video['mediaURL'] += self.dict_to_cgi_params(cgi_params['video'])
-        audio['mediaURL'] += self.dict_to_cgi_params(cgi_params['audio'])
-        if mode != 'odvod':
-            video['initURL'] += self.dict_to_cgi_params(cgi_params['video'])
-            audio['initURL'] += self.dict_to_cgi_params(cgi_params['audio'])
+        video.append_cgi_params(cgi_params['video'])
+        audio.append_cgi_params(cgi_params['audio'])
         if cgi_params['manifest']:
             locationURL = self.request.uri
             if '?' in locationURL:
                 locationURL = locationURL[:self.request.uri.index('?')]
-            locationURL = locationURL + self.dict_to_cgi_params(cgi_params['manifest'])
+            locationURL = locationURL + utils.dict_to_cgi_params(cgi_params['manifest'])
             rv["locationURL"] = locationURL
         use_base_url = self.get_bool_param('base', True)
         if use_base_url:
@@ -451,26 +439,25 @@ class RequestHandlerBase(webapp2.RequestHandler):
                 prefix = self.uri_for('dash-media', mode=mode, filename='RepresentationID',
                                       segment_num='init', ext='m4v')
                 prefix = prefix.replace('RepresentationID/init.m4v', '')
-                video['initURL'] = prefix + video['initURL']
-                audio['initURL'] = prefix + audio['initURL']
-            video['mediaURL'] = prefix + video['mediaURL']
-            audio['mediaURL'] = prefix + audio['mediaURL']
+                video.initURL = prefix + video.initURL
+                audio.initURL = prefix + audio.initURL
+            video.mediaURL = prefix + video.mediaURL
+            audio.mediaURL = prefix + audio.mediaURL
         if mode == 'live':
             try:
                 rv['minimumUpdatePeriod'] = float(self.request.params.get(
-                    'mup', 2.0 * video.get('maxSegmentDuration', 1)))
+                    'mup', 2.0 * video.maxSegmentDuration))
             except ValueError:
-                rv['minimumUpdatePeriod'] = 2.0 * \
-                    video.get('maxSegmentDuration', 1)
+                rv['minimumUpdatePeriod'] = 2.0 * video.maxSegmentDuration
             if rv['minimumUpdatePeriod'] <= 0:
                 del rv['minimumUpdatePeriod']
         elif mode == 'vod' or mode == 'odvod':
-            if video['representations']:
+            if video.representations:
                 elapsedTime = datetime.timedelta(
-                    seconds=video['representations'][0].mediaDuration / video['representations'][0].timescale)
-            elif audio['representations']:
+                    seconds=video.representations[0].mediaDuration / video.representations[0].timescale)
+            elif audio.representations:
                 elapsedTime = datetime.timedelta(
-                    seconds=audio['representations'][0].mediaDuration / audio['representations'][0].timescale)
+                    seconds=audio.representations[0].mediaDuration / audio.representations[0].timescale)
             ts_buffer_depth = elapsedTime.seconds
         event_generators = EventFactory.create_event_generators(self.request)
         for evgen in event_generators:
@@ -479,42 +466,39 @@ class RequestHandlerBase(webapp2.RequestHandler):
             if evgen.inband:
                 # TODO: allow AdaptationSet for inband events to be
                 # configurable
-                video['event_streams'].append(ev_stream)
+                video.event_streams.append(ev_stream)
             else:
                 period['event_streams'].append(ev_stream)
         period["adaptationSets"].append(video)
 
-        for idx, rep in enumerate(audio['representations']):
-            audio_adp = copy.copy(audio)
-            audio_adp['contentComponent'] = {
-                'id': str(idx + 2),
-                'contentType': "audio",
-            }
-            audio_adp['representations'] = [rep]
-            if len(audio['representations']) == 1:
-                audio_adp['role'] = 'main'
+        for idx, rep in enumerate(audio.representations):
+            audio_adp = audio.clone()
+            audio_adp.contentComponent.id = idx + 2
+            audio_adp.representations = [rep]
+            if len(audio.representations) == 1:
+                audio_adp.role = 'main'
             elif self.request.params.get('main_audio', None) == rep.id:
-                audio_adp['role'] = 'main'
+                audio_adp.role = 'main'
             elif rep.codecs.startswith(self.request.params.get('main_audio', 'mp4a')):
-                audio_adp['role'] = 'main'
+                audio_adp.role = 'main'
             else:
-                audio_adp['role'] = 'alternate'
+                audio_adp.role = 'alternate'
             period["adaptationSets"].append(audio_adp)
 
         rv["periods"].append(period)
         kids = set()
-        for rep in video['representations'] + audio['representations']:
+        for rep in video.representations + audio.representations:
             if rep.encrypted:
                 kids.update(rep.kids)
         rv["kids"] = kids
-        if video['representations']:
-            rv["ref_representation"] = video['representations'][0]
+        if video.representations:
+            rv["ref_representation"] = video.representations[0]
         else:
-            rv["ref_representation"] = audio['representations'][0]
+            rv["ref_representation"] = audio.representations[0]
         rv["mediaDuration"] = rv["ref_representation"].mediaDuration / \
             rv["ref_representation"].timescale
-        rv["maxSegmentDuration"] = max(video.get('maxSegmentDuration', 0),
-                                       audio.get('maxSegmentDuration', 0))
+        rv["maxSegmentDuration"] = max(video.maxSegmentDuration,
+                                       audio.maxSegmentDuration)
         if encrypted:
             rv["DRM"] = self.generate_drm_dict(stream)
             if not kids:
@@ -543,7 +527,7 @@ class RequestHandlerBase(webapp2.RequestHandler):
             timeSource['url'] = urlparse.urljoin(
                 self.request.host_url,
                 self.uri_for('time', format=timeSource['format']))
-            timeSource['url'] += self.dict_to_cgi_params(cgi_params['time'])
+            timeSource['url'] += utils.dict_to_cgi_params(cgi_params['time'])
         rv["timeSource"] = timeSource
         if 'periods' not in manifest_info.features:
             rv["video"] = video
@@ -595,36 +579,8 @@ class RequestHandlerBase(webapp2.RequestHandler):
         return availabilityStartTime, elapsedTime, timeShiftBufferDepth
 
     def calculate_audio_video_context(self, stream, mode, encrypted):
-        audio = {
-            'initURL': '$RepresentationID$/init.m4a',
-            'mediaURL': '$RepresentationID$/$Number$.m4a',
-            'mimeType': "audio/mp4",
-            'contentType': "audio",
-            'lang': 'und',
-            'segmentAlignment': "true",
-            'event_streams': [],
-            'representations': [],
-        }
-        video = {
-            'initURL': '$RepresentationID$/init.m4v',
-            'mediaURL': '$RepresentationID$/$Number$.m4v',
-            'mimeType': "video/mp4",
-            'contentType': "video",
-            'segmentAlignment': "true",
-            'startWithSAP': "1",
-            'par': "16:9",
-            'contentComponent': {
-                'id': "1",
-                'contentType': "video",
-            },
-            'event_streams': [],
-            'representations': [],
-        }
-        if mode == 'odvod':
-            del video['initURL']
-            video['mediaURL'] = '$RepresentationID$.m4v'
-            del audio['initURL']
-            audio['mediaURL'] = '$RepresentationID$.m4a'
+        audio = AdaptationSet(mode=mode, contentType='audio', id=2)
+        video = AdaptationSet(mode=mode, contentType='video', id=1)
         acodec = self.request.params.get('acodec')
         media_files = models.MediaFile.all()
         for mf in media_files:
@@ -633,41 +589,25 @@ class RequestHandlerBase(webapp2.RequestHandler):
                 continue
             if r.contentType == "video" and r.encrypted == encrypted and \
                r.filename.startswith(stream.prefix):
-                video['representations'].append(r)
+                video.representations.append(r)
             elif r.contentType == "audio" and r.encrypted == encrypted and \
                     r.filename.startswith(stream.prefix):
                 if acodec is None or r.codecs.startswith(acodec):
-                    audio['representations'].append(r)
-                    if r.language:
-                        audio['lang'] = r.language
+                    audio.representations.append(r)
         # if stream is encrypted but there is no encrypted version of the audio track, fall back
         # to a clear version
-        if not audio['representations'] and acodec:
+        if not audio.representations and acodec:
             for mf in media_files:
                 r = mf.representation
                 if r is None:
                     continue
                 if r.contentType == "audio" and r.filename.startswith(
                         stream.prefix) and r.codecs.startswith(acodec):
-                    audio['representations'].append(r)
-                    if r.language:
-                        audio['lang'] = r.language
-        if video['representations']:
-            self.compute_av_values(video)
-            video['minWidth'] = min(
-                [a.width for a in video['representations']])
-            video['minHeight'] = min(
-                [a.height for a in video['representations']])
-            video['maxWidth'] = max(
-                [a.width for a in video['representations']])
-            video['maxHeight'] = max(
-                [a.height for a in video['representations']])
-            video['maxFrameRate'] = max(
-                [a.frameRate for a in video['representations']])
-        if audio['representations']:
-            self.compute_av_values(audio)
-        assert(isinstance(video['representations'], list))
-        assert(isinstance(audio['representations'], list))
+                    audio.representations.append(r)
+        video.compute_av_values()
+        audio.compute_av_values()
+        assert(isinstance(video.representations, list))
+        assert(isinstance(audio.representations, list))
         return audio, video
 
     def calculate_cgi_parameters(self, mode, now, avail_start, clockDrift,
@@ -705,7 +645,7 @@ class RequestHandlerBase(webapp2.RequestHandler):
                     now,
                     avail_start,
                     ts_buffer_depth,
-                    video['representations'][0])
+                    video.representations[0])
                 if times:
                     v_cgi_params['%03d' % (code)] = times
             if self.request.params.get('a%03d' % code) is not None:
@@ -714,7 +654,7 @@ class RequestHandlerBase(webapp2.RequestHandler):
                     now,
                     avail_start,
                     ts_buffer_depth,
-                    audio['representations'][0])
+                    audio.representations[0])
                 if times:
                     a_cgi_params['%03d' % (code)] = times
         if self.request.params.get('vcorrupt') is not None:
@@ -723,7 +663,7 @@ class RequestHandlerBase(webapp2.RequestHandler):
                 now,
                 avail_start,
                 ts_buffer_depth,
-                video['representations'][0])
+                video.representations[0])
             if segs:
                 v_cgi_params['corrupt'] = segs
         try:
@@ -738,18 +678,6 @@ class RequestHandlerBase(webapp2.RequestHandler):
             'manifest': m_cgi_params,
             'time': t_cgi_params,
         }
-
-    @staticmethod
-    def dict_to_cgi_params(params):
-        """
-        Convert dictionary into a CGI parameter string
-        """
-        lst = []
-        for k, v in params.iteritems():
-            lst.append('%s=%s' % (k, v))
-        if lst:
-            return '?' + '&'.join(lst)
-        return ''
 
     def add_allowed_origins(self):
         allowed_domains = getattr(settings, 'allowed_domains', self.DEFAULT_ALLOWED_DOMAINS)

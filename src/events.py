@@ -24,6 +24,7 @@ from abc import ABCMeta, abstractmethod
 import copy
 import datetime
 
+from dash.event_stream import EventStream
 import mp4
 from mpeg import MPEG_TIMEBASE
 from scte35 import descriptors
@@ -117,18 +118,17 @@ class RepeatingEventBase(EventBase):
         super(RepeatingEventBase, self).__init__(prefix, request)
 
     def create_manifest_context(self, context, templates):
-        stream = {
-            'schemeIdUri': self.schemeIdUri,
-            'value': self.value,
-            'timescale': self.timescale,
-            'inband': self.inband,
-        }
+        stream = EventStream(
+            schemeIdUri=self.schemeIdUri,
+            value=self.value,
+            timescale=self.timescale,
+            inband=self.inband)
+
         if not self.inband and self.count > 0:
-            stream['events'] = []
             presentation_time = self.start
             for idx in range(self.count):
                 data = self.get_manifest_event_payload(templates, idx, presentation_time)
-                stream['events'].append({
+                stream.events.append({
                     'data': data,
                     'duration': self.duration,
                     'id': idx,

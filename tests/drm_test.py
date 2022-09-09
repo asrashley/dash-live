@@ -33,7 +33,7 @@ if _src not in sys.path:
     sys.path.append(_src)
 
 import utils
-from segment import Representation
+from dash.representation import Representation
 import mp4
 from drm.clearkey import ClearKey
 from drm.playready import PlayReady
