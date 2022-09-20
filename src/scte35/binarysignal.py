@@ -20,13 +20,12 @@
 #
 #############################################################################
 
-from mpeg import MpegSectionTable
-from objects import ListOf
-from descriptors import SpliceDescriptor
-
-from splice_time import SpliceTime
-from splice_insert import SpliceInsert
-from splice_schedule import SpliceSchedule
+from mpeg.section_table import MpegSectionTable
+from scte35.descriptors import SpliceDescriptor
+from scte35.splice_time import SpliceTime
+from scte35.splice_insert import SpliceInsert
+from scte35.splice_schedule import SpliceSchedule
+from utils.list_of import ListOf
 
 class SapType(object):
     CLOSED_GOP_NO_LEADING_PICTURES = 0
@@ -46,13 +45,16 @@ class BinarySignal(MpegSectionTable):
         'pts_adjustment': 0,
         'sap_type': SapType.UNSPECIFIED,
         'section_syntax_indicator': False,
+        'splice_insert': None,
+        'splice_schedule': None,
         'table_id': TABLE_ID,
         'tier': 0xfff,
+        'time_signal': None,
     }
     OBJECT_FIELDS = {
         'splice_insert': SpliceInsert,
         'splice_schedule': SpliceSchedule,
-        'descriptors': ListOf(SpliceDescriptor.from_kwargs),
+        'descriptors': ListOf(SpliceDescriptor),
         'time_signal': SpliceTime,
     }
 
@@ -66,6 +68,8 @@ class BinarySignal(MpegSectionTable):
         r.read(12, 'tier')
         r.read(12, 'splice_command_length')
         r.read(8, 'splice_command_type')
+        for field in {'splice_schedule', 'splice_insert', 'time_signal'}:
+            kwargs[field] = None
         if kwargs['splice_command_type'] == 0:
             # splice_null() - nothing to do
             pass
@@ -93,11 +97,11 @@ class BinarySignal(MpegSectionTable):
         return kwargs
 
     def encode_fields(self, w):
-        if self._fields.get('splice_schedule', None) is not None:
+        if self.splice_schedule is not None:
             self.splice_command_type = 4
-        elif self._fields.get('splice_insert', None) is not None:
+        elif self.splice_insert is not None:
             self.splice_command_type = 5
-        elif self._fields.get('time_signal', None) is not None:
+        elif self.time_signal is not None:
             self.splice_command_type = 6
         else:
             self.splice_command_type = 0
@@ -110,7 +114,6 @@ class BinarySignal(MpegSectionTable):
         pos = w.bitpos()
         w.write(12, 'splice_command_length', value=0)
         w.write(8, 'splice_command_type')
-
         if self.splice_command_type == 4:
             self.splice_schedule.encode(w)
         elif self.splice_command_type == 5:

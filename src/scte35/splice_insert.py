@@ -20,11 +20,11 @@
 #
 #############################################################################
 
-from bitio import BitsFieldReader, BitsFieldWriter
-
-from objects import ListOf, ObjectWithFields
-from break_duration import BreakDuration
-from splice_time import SpliceTime
+from scte35.break_duration import BreakDuration
+from scte35.splice_time import SpliceTime
+from utils.bitio import BitsFieldReader, BitsFieldWriter
+from utils.object_with_fields import ObjectWithFields
+from utils.list_of import ListOf
 
 class ElementaryComponent(ObjectWithFields):
     @classmethod

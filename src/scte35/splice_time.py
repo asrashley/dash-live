@@ -20,8 +20,8 @@
 #
 #############################################################################
 
-from bitio import BitsFieldReader, BitsFieldWriter
-from objects import ObjectWithFields
+from utils.bitio import BitsFieldReader, BitsFieldWriter
+from utils.object_with_fields import ObjectWithFields
 
 class SpliceTime(ObjectWithFields):
     @classmethod

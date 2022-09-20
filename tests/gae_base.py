@@ -37,23 +37,22 @@ from google.appengine.ext import ndb, testbed
 from google.appengine.api import files, users
 from google.appengine.api.files import file_service_stub
 from google.appengine.api.blobstore import blobstore_stub, file_blob_storage
-import jinja2
 import webapp2
 import webtest  # if this import fails, "pip install WebTest"
 
-_src = os.path.join(os.path.dirname(__file__), "..", "src")
+_src = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "..", "src"))
 if _src not in sys.path:
     sys.path.append(_src)
 
 # these imports *must* be after the modification of sys.path
-from dash.representation import Representation
-from mixins.testcase import TestCaseMixin
-from requesthandler.media_management import MediaHandler
-import routes
-import utils
-import mp4
-import models
 from drm.playready import PlayReady
+from mpeg import mp4
+from mpeg.dash.representation import Representation
+from testcase.mixin import TestCaseMixin
+from server import routes, models
+from server.requesthandler.media_management import MediaHandler
+from templates.factory import TemplateFactory
 
 class GAETestBase(TestCaseMixin, unittest.TestCase):
     # duration of media in test/fixtures directory (in seconds)
@@ -104,14 +103,7 @@ class GAETestBase(TestCaseMixin, unittest.TestCase):
         routes.routes['uploadBlob_ah'] = routes.routes['uploadBlob']
         self.auth = None
         self.uid = "4d9cf5f4-4574-4381-9df3-1d6e7ca295ff"
-        self.templates = jinja2.Environment(
-            loader=jinja2.FileSystemLoader(
-                os.path.join(os.path.dirname(__file__), 'templates')
-            ),
-            extensions=['jinja2.ext.autoescape'],
-            trim_blocks=False,
-        )
-        self.templates.filters['base64'] = utils.toBase64
+        self.templates = TemplateFactory()
 
     def setup_media(self):
         bbb = models.Stream(

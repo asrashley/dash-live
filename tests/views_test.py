@@ -24,17 +24,17 @@ from __future__ import print_function
 import base64
 import datetime
 import os
+import logging
 import unittest
 import urllib
 
 from mixins.check_manifest import DashManifestCheckMixin
 from mixins.view_validator import ViewsTestDashValidator
-
-import manifests
-import utils
-import models
+from server import manifests, models
 from drm.playready import PlayReady
 from gae_base import GAETestBase
+from utils.buffered_reader import BufferedReader
+from utils.date_time import UTC, toIsoDateTime
 
 class TestHandlers(GAETestBase, DashManifestCheckMixin):
     def test_availability_start_time(self):
@@ -51,8 +51,8 @@ class TestHandlers(GAETestBase, DashManifestCheckMixin):
         self.assertIsNotNone(drm_options)
         media_files = models.MediaFile.all()
         self.assertGreaterThan(len(media_files), 0)
-        ref_now = self.real_datetime_class(2019, 1, 1, 4, 5, 6, tzinfo=utils.UTC())
-        ref_today = self.real_datetime_class(2019, 1, 1, tzinfo=utils.UTC())
+        ref_now = self.real_datetime_class(2019, 1, 1, 4, 5, 6, tzinfo=UTC())
+        ref_today = self.real_datetime_class(2019, 1, 1, tzinfo=UTC())
         ref_yesterday = ref_today - datetime.timedelta(days=1)
         testcases = [
             ('', ref_now, ref_today),
@@ -60,11 +60,11 @@ class TestHandlers(GAETestBase, DashManifestCheckMixin):
             ('2019-09-invalid-iso-datetime', ref_now, ref_today),
             ('now', ref_now, ref_now),
             ('epoch', ref_now, datetime.datetime(
-                1970, 1, 1, 0, 0, tzinfo=utils.UTC())),
+                1970, 1, 1, 0, 0, tzinfo=UTC())),
             ('2009-02-27T10:00:00Z', ref_now,
-             datetime.datetime(2009, 2, 27, 10, 0, 0, tzinfo=utils.UTC())),
+             datetime.datetime(2009, 2, 27, 10, 0, 0, tzinfo=UTC())),
             ('2013-07-25T09:57:31Z', ref_now,
-             datetime.datetime(2013, 7, 25, 9, 57, 31, tzinfo=utils.UTC())),
+             datetime.datetime(2013, 7, 25, 9, 57, 31, tzinfo=UTC())),
             # special case when "now" is midnight, use yesterday midnight as
             # availabilityStartTime
             ('', ref_today, ref_yesterday),
@@ -146,8 +146,8 @@ class TestHandlers(GAETestBase, DashManifestCheckMixin):
                     # when drm_opt is not PlayReady, there is no need to test
                     # each PlayReady version
                     continue
-                now = datetime.datetime.now(tz=utils.UTC())
-                availabilityStartTime = utils.toIsoDateTime(
+                now = datetime.datetime.now(tz=UTC())
+                availabilityStartTime = toIsoDateTime(
                     now - datetime.timedelta(minutes=(1 + (test_count % 20))))
                 baseurl = self.from_uri(
                     'dash-mpd-v2', manifest=filename, stream='bbb')
@@ -240,7 +240,7 @@ class TestHandlers(GAETestBase, DashManifestCheckMixin):
                         continue
                     pro = base64.b64decode(elt.text)
                     for record in PlayReady.parse_pro(
-                            utils.BufferedReader(None, data=pro)):
+                            BufferedReader(None, data=pro)):
                         la_urls = record['xml'].findall(
                             './prh:DATA/prh:LA_URL', mpd.xmlNamespaces)
                         self.assertEqual(len(la_urls), 1)
@@ -283,6 +283,8 @@ class TestHandlers(GAETestBase, DashManifestCheckMixin):
 
 if os.environ.get("TESTS"):
     def load_tests(loader, tests, pattern):
+        logging.basicConfig()
+        logging.getLogger().setLevel(logging.DEBUG)
         return unittest.loader.TestLoader().loadTestsFromNames(
             os.environ["TESTS"].split(','),
             TestHandlers)

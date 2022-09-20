@@ -20,7 +20,7 @@
 #
 #############################################################################
 import sys
-import utils
+from utils.buffered_reader import BufferedReader
 
 from drm.playready import PlayReady
 from mp4 import IsoParser
@@ -31,7 +31,7 @@ if __name__ == "__main__":
             print(atom)
             if atom.system_id == PlayReady.RAW_SYSTEM_ID:
                 pro = PlayReady.parse_pro(
-                    utils.BufferedReader(
+                    BufferedReader(
                         None, data=atom.data))
                 print(pro)
         else:

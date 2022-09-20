@@ -24,6 +24,9 @@ from abc import ABCMeta, abstractmethod
 
 
 class DrmBase(object):
+    """
+    Base class for all DRM implementations
+    """
     __metaclass__ = ABCMeta
 
     def __init__(self, templates):

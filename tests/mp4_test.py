@@ -20,11 +20,7 @@
 #
 #############################################################################
 
-# base64 and decimal are used when using eval() to create an mp4
-# atom from the string returned by repr() on an existing mp4 atom
-import base64
 import binascii
-import decimal
 import io
 import logging
 import os
@@ -32,19 +28,16 @@ import struct
 import sys
 import unittest
 
-_src = os.path.join(os.path.dirname(__file__), "..", "src")
+_src = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
 if _src not in sys.path:
     sys.path.append(_src)
 
 # these imports *must* be after the modification of sys.path
-import utils
-from mixins.testcase import TestCaseMixin
-import mp4
+from testcase.mixin import TestCaseMixin
+from mpeg import mp4
+from utils.buffered_reader import BufferedReader
 
 class Mp4Tests(TestCaseMixin, unittest.TestCase):
-    __DECIMAL_TO_AVOID_UNUSED_IMPORT = decimal.Decimal(1)
-    __BASE64_TO_AVOID_UNUSED_IMPORT = base64.EMPTYSTRING
-
     def setUp(self):
         self.fixtures = os.path.join(os.path.dirname(__file__), "fixtures")
         self.timescale = 240
@@ -53,7 +46,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         self._moov = None
         self._enc_moov = None
         self._segment = None
-        logging.basicConfig(level=logging.WARNING)
+        logging.basicConfig(level=logging.DEBUG)
 
     @property
     def segment(self):
@@ -77,7 +70,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         return getattr(self, name)
 
     def test_parse_moov(self):
-        src = utils.BufferedReader(None, data=self.moov)
+        src = BufferedReader(None, data=self.moov)
         atoms = mp4.Mp4Atom.create(src)
         self.assertEqual(len(atoms), 5)
         self.assertEqual(atoms[0].atom_type, 'ftyp')
@@ -89,7 +82,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         self.assertEqual(len(moov.children), 3)
 
     def test_parse_encrypted_moov(self):
-        src = utils.BufferedReader(None, data=self.enc_moov)
+        src = BufferedReader(None, data=self.enc_moov)
         atoms = mp4.Mp4Atom.create(src)
         self.assertEqual(len(atoms), 6)
         self.assertEqual(atoms[0].atom_type, 'ftyp')
@@ -102,7 +95,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         self.assertEqual(len(moov.children), 5)
 
     def test_add_pssh_box_to_moov(self):
-        src = utils.BufferedReader(None, data=self.moov)
+        src = BufferedReader(None, data=self.moov)
         atoms = mp4.Mp4Atom.create(src, options={'cache_encoded': True})
         self.assertEqual(len(atoms), 5)
         self.assertEqual(atoms[2].atom_type, 'moov')
@@ -120,7 +113,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         moov_size = moov.size
         moov.insert_child(0, pssh)
         new_moov_data = moov.encode()
-        src = utils.BufferedReader(None, data=new_moov_data)
+        src = BufferedReader(None, data=new_moov_data)
         new_moov = mp4.Mp4Atom.create(src)
         self.assertEqual(len(new_moov_data), moov_size + len(enc_pssh))
         self.assertEqual(len(new_moov), 1)
@@ -129,7 +122,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         self.assertEqual(len(new_moov.children), 4)
 
     def test_remove_box_from_moov(self):
-        src = utils.BufferedReader(None, data=self.moov)
+        src = BufferedReader(None, data=self.moov)
         atoms = mp4.Mp4Atom.create(src, options={'cache_encoded': True})
         self.assertEqual(len(atoms), 5)
         self.assertEqual(atoms[2].atom_type, 'moov')
@@ -139,12 +132,12 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         del moov.mvex
         new_moov_data = moov.encode()
         self.assertEqual(len(new_moov_data), moov_size - mvex.size)
-        src = utils.BufferedReader(None, data=new_moov_data)
+        src = BufferedReader(None, data=new_moov_data)
         new_moov = mp4.Mp4Atom.create(src)
         self.assertEqual(len(new_moov), 1)
 
     def test_update_base_media_decode_time(self):
-        src = utils.BufferedReader(None, data=self.segment)
+        src = BufferedReader(None, data=self.segment)
         frag = mp4.Mp4Atom.create(src, options={'cache_encoded': True})
         self.assertEqual(len(frag), 4)
         self.assertEqual(frag[0].atom_type, 'moof')
@@ -170,14 +163,14 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
             expected_data = expected_data[moof.position:moof.position + moof.size]
             moof.traf.tfdt.base_media_decode_time = base_media_decode_time
             data = moof.encode()
-            src = utils.BufferedReader(None, data=data)
+            src = BufferedReader(None, data=data)
             new_moof = mp4.Mp4Atom.create(src)[0]
             self.assertBuffersEqual(expected_data, data)
             self.assertEqual(new_moof.traf.tfdt.base_media_decode_time,
                              base_media_decode_time)
 
     def test_update_mfhd_sequence_number(self):
-        src = utils.BufferedReader(None, data=self.segment)
+        src = BufferedReader(None, data=self.segment)
         frag = mp4.Mp4Atom.create(src, options={'cache_encoded': True})
         self.assertEqual(len(frag), 4)
         self.assertEqual(frag[0].atom_type, 'moof')
@@ -189,13 +182,13 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
                                  self.segment[offset + 4:moof.position + moof.size]])
         moof.mfhd.sequence_number = segment_num
         data = moof.encode()
-        src = utils.BufferedReader(None, data=data)
+        src = BufferedReader(None, data=data)
         new_moof = mp4.Mp4Atom.create(src)[0]
         self.assertBuffersEqual(expected_data, data)
         self.assertEqual(new_moof.mfhd.sequence_number, segment_num)
 
     def test_wrap_boxes(self):
-        src = utils.BufferedReader(None, data=self.moov)
+        src = BufferedReader(None, data=self.moov)
         atoms = mp4.Mp4Atom.create(src, options={'cache_encoded': True})
         self.assertEqual(len(atoms), 5)
         wrap = mp4.Wrapper(atom_type='wrap', position=0, size=len(self.moov), parent=None,
@@ -205,7 +198,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         self.assertBuffersEqual(data[8:], self.moov)
 
     def test_create_all_boxes_in_moov(self):
-        src = utils.BufferedReader(None, data=self.moov)
+        src = BufferedReader(None, data=self.moov)
         wrap = mp4.Wrapper(atom_type='wrap', position=0, size=len(self.moov), parent=None,
                            children=mp4.Mp4Atom.create(src))
         moov = wrap.moov
@@ -214,7 +207,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         self.check_create_atom(moov, self.moov)
 
     def test_create_all_boxes_in_encrypted_moov(self):
-        src = utils.BufferedReader(None, data=self.enc_moov)
+        src = BufferedReader(None, data=self.enc_moov)
         wrap = mp4.Wrapper(atom_type='wrap', position=0, size=len(self.enc_moov), parent=None,
                            children=mp4.Mp4Atom.create(src))
         moov = wrap.moov
@@ -223,7 +216,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         self.check_create_atom(moov, self.enc_moov)
 
     def test_create_all_boxes_in_moof(self):
-        src = utils.BufferedReader(None, data=self.segment)
+        src = BufferedReader(None, data=self.segment)
         wrap = mp4.Wrapper(atom_type='wrap', position=0, size=len(self.segment), parent=None,
                            children=mp4.Mp4Atom.create(src))
         moof = wrap.moof
@@ -231,8 +224,8 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
             self.check_create_atom(child, self.segment)
 
         moof_data = self.segment[moof.position:moof.position + moof.size]
-        r = repr(moof)
-        moof = eval(r)
+        r = moof.toJSON()
+        moof = mp4.Mp4Atom.fromJSON(r)
         dest = io.BytesIO()
         moof.encode(dest)
         new_moof_data = dest.getvalue()
@@ -249,7 +242,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
 
     def check_create_all_segments_in_file(self, name):
         filename = os.path.join(self.fixtures, name)
-        src = utils.BufferedReader(io.FileIO(filename, 'rb'))
+        src = BufferedReader(io.FileIO(filename, 'rb'))
         segments = mp4.Mp4Atom.create(src)
         for segment in segments:
             src.seek(segment.position)
@@ -262,34 +255,16 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
                 self.check_create_atom(ch, orig_data, offset)
         orig_data = orig_data[child.position -
                               offset: child.position + child.size - offset]
-        try:
-            r = repr(child)
-        except BaseException:
-            print child.toJSON(pure=False)
-            raise
-        try:
-            ch2 = eval(r)
-        except BaseException:
-            print 'repr:'
-            print r
-            print 'json:'
-            print child.toJSON(pure=False)
-            raise
+        js = child.toJSON()
+        ch2 = mp4.Mp4Atom.fromJSON(js)
         name = 'Encoding %s (%s)' % (child.classname, child.atom_type)
         dest = io.BytesIO()
-        try:
-            ch2.encode(dest)
-        except BaseException:
-            print 'repr:'
-            print r
-            print 'json:'
-            print child.toJSON(pure=False)
-            raise
+        ch2.encode(dest)
         new_child_data = dest.getvalue()
         self.assertBuffersEqual(orig_data, new_child_data, name)
 
     def test_avc3_encoding_from_original(self):
-        src = utils.BufferedReader(None, data=self.moov)
+        src = BufferedReader(None, data=self.moov)
         atoms = mp4.Mp4Atom.create(src, options={'cache_encoded': True})
         self.assertEqual(len(atoms), 5)
         self.assertEqual(atoms[2].atom_type, 'moov')
@@ -302,7 +277,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         self.assertBuffersEqual(avc3_data, new_avc3_data)
 
     def test_avc3_encoding_all_boxes(self):
-        src = utils.BufferedReader(None, data=self.moov)
+        src = BufferedReader(None, data=self.moov)
         atoms = mp4.Mp4Atom.create(src)
         self.assertEqual(len(atoms), 5)
         self.assertEqual(atoms[2].atom_type, 'moov')
@@ -327,7 +302,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         new_avc3_data = dest.getvalue()
         self.assertBuffersEqual(avc3_data, new_avc3_data)
 
-        avc3 = eval(repr(avc3))
+        avc3 = mp4.Mp4Atom.fromJSON(avc3.toJSON())
         dest = io.BytesIO()
         avc3.encode(dest)
         new_avc3_data = dest.getvalue()
@@ -336,7 +311,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
     def test_eac3_specific_box(self):
         with open(os.path.join(self.fixtures, "eac3-moov.mp4"), "rb") as f:
             src_data = f.read()
-        src = utils.BufferedReader(None, data=src_data)
+        src = BufferedReader(None, data=src_data)
         atoms = mp4.Mp4Atom.create(src)
         self.assertEqual(len(atoms), 6)
         self.assertEqual(atoms[3].atom_type, 'moov')
@@ -350,7 +325,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
 
         # create a new EC3SampleEntry object from the fields in the current
         # object
-        ec3 = eval(repr(ec3))
+        ec3 = mp4.Mp4Atom.fromJSON(ec3.toJSON())
         dest = io.BytesIO()
         ec3.encode(dest)
         new_ec3_data = dest.getvalue()
@@ -360,7 +335,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         """Test parsing a fragment with DASH event messages in it"""
         with open(os.path.join(self.fixtures, "emsg.mp4"), "rb") as f:
             src_data = f.read()
-        src = utils.BufferedReader(None, data=src_data)
+        src = BufferedReader(None, data=src_data)
         atoms = mp4.Mp4Atom.create(src)
         self.assertEqual(len(atoms), 9)
         expected_data = [
@@ -413,7 +388,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         # print(expected_data)
         expected_data = binascii.a2b_hex(expected_data)
         self.assertBuffersEqual(expected_data, data)
-        src = utils.BufferedReader(None, data=expected_data)
+        src = BufferedReader(None, data=expected_data)
         atoms = mp4.Mp4Atom.create(src)
         self.assertEqual(len(atoms), 1)
         new_emsg = atoms[0]
@@ -455,7 +430,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         length = struct.pack('>I', len(atom) + 4)
         expected = length + atom
         self.assertBuffersEqual(expected, data, name="emsg")
-        src = utils.BufferedReader(None, data=data)
+        src = BufferedReader(None, data=data)
         new_emsg = mp4.Mp4Atom.create(src)
         self.assertEqual(len(new_emsg), 1)
         self.assertEqual(new_emsg[0].atom_type, 'emsg')
@@ -494,7 +469,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         length = struct.pack('>I', len(atom) + 4)
         expected = length + atom
         self.assertBuffersEqual(expected, data, name="emsg")
-        src = utils.BufferedReader(None, data=data)
+        src = BufferedReader(None, data=data)
         new_emsg = mp4.Mp4Atom.create(src)
         self.assertEqual(len(new_emsg), 1)
         self.assertEqual(new_emsg[0].atom_type, 'emsg')

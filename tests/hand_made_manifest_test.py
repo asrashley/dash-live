@@ -24,7 +24,7 @@ import unittest
 
 from gae_base import GAETestBase
 from mixins.check_manifest import DashManifestCheckMixin
-from utils import from_isodatetime
+from utils.date_time import from_isodatetime
 
 class HandMadeManifestTests(GAETestBase, DashManifestCheckMixin):
     def test_hand_made_manifest(self):

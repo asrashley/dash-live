@@ -1,7 +1,7 @@
 import random
 import os
 
-TEMPLATE="""from utils import on_production_server
+TEMPLATE="""from server.gae import on_production_server
 
 cookie_secret = r'{cookie}'
 csrf_secret = r'{csrf}'
@@ -19,7 +19,7 @@ for i in range(20):
 cookie = ''.join(cookie)
 csrf = ''.join(csrf)
 
-if not os.path.exists("settings.py"):
-    with open('settings.py', 'w') as out:
+if not os.path.exists("src/server/settings.py"):
+    with open('src/server/settings.py', 'wt') as out:
         out.write(TEMPLATE.format(**locals()))
 

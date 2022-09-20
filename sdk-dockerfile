@@ -33,10 +33,18 @@ COPY *.py $HOME/dash-live/
 COPY *.yaml $HOME/dash-live/
 COPY templates/* $HOME/dash-live/templates/
 COPY templates/drm/* $HOME/dash-live/templates/drm/
+COPY templates/events/* $HOME/dash-live/templates/events/
 COPY static/css/* $HOME/dash-live/static/css/
 COPY runserver.sh $HOME/dash-live/
-COPY src/*.py $HOME/dash-live/src/
 COPY src/drm/*.py $HOME/dash-live/src/drm/
+COPY src/mpeg/*.py $HOME/dash-live/src/mpeg/
+COPY src/mpeg/dash/*.py $HOME/dash-live/src/mpeg/dash/
+COPY src/scte35/*.py $HOME/dash-live/src/scte35/
+COPY src/server/*.py $HOME/dash-live/src/server/
+COPY src/server/requesthandler/*.py $HOME/dash-live/src/server/requesthandler/
+COPY src/templates/*.py $HOME/dash-live/src/templates/
+COPY src/testcase/*.py $HOME/dash-live/src/testcase/
+COPY src/utils/*.py $HOME/dash-live/src/utils/
 WORKDIR /home/dash/dash-live
 RUN python ./gen-settings.py
 RUN python -m lesscpy static/css -o static/css/

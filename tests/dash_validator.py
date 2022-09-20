@@ -28,21 +28,17 @@ import logging
 import math
 import os
 import re
-import sys
 import time
 import urlparse
 import xml.etree.ElementTree as ET
 
-_src = os.path.join(os.path.dirname(__file__), "..", "src")
-if _src not in sys.path:
-    sys.path.append(_src)
-
 from drm.playready import PlayReady
-from mixins.testcase import HideMixinsFilter, TestCaseMixin
-from mpeg import MPEG_TIMEBASE
-import mp4
+from testcase.mixin import HideMixinsFilter, TestCaseMixin
+from mpeg import MPEG_TIMEBASE, mp4
 import scte35
-import utils
+from utils.date_time import from_isodatetime, scale_timedelta, UTC
+from utils.binary import Binary
+from utils.buffered_reader import BufferedReader
 
 class ValidatorOptions(object):
     """
@@ -51,17 +47,6 @@ class ValidatorOptions(object):
     def __init__(self, strict=True, encrypted=False):
         self.strict = strict
         self.encrypted = encrypted
-
-
-class UTC(datetime.tzinfo):
-    def utcoffset(self, dt):
-        return datetime.timedelta(0)
-
-    def dst(self, dt):
-        return datetime.timedelta(0)
-
-    def tzname(self):
-        return 'UTC'
 
 
 class RelaxedDateTime(datetime.datetime):
@@ -331,11 +316,11 @@ class RepresentationInfo(object):
 
 class Manifest(DashElement):
     attributes = [
-        ('availabilityStartTime', utils.from_isodatetime, None),
-        ('minimumUpdatePeriod', utils.from_isodatetime, None),
-        ('timeShiftBufferDepth', utils.from_isodatetime, None),
-        ('mediaPresentationDuration', utils.from_isodatetime, None),
-        ('publishTime', utils.from_isodatetime, None),
+        ('availabilityStartTime', from_isodatetime, None),
+        ('minimumUpdatePeriod', from_isodatetime, None),
+        ('timeShiftBufferDepth', from_isodatetime, None),
+        ('mediaPresentationDuration', from_isodatetime, None),
+        ('publishTime', from_isodatetime, None),
     ]
 
     def __init__(self, parent, url, mode, xml):
@@ -452,7 +437,7 @@ class DashEvent(DashElement):
             self.assertIsNotNone(bin_elt)
             self.assertEqual(len(bin_elt), 1)
             data = base64.b64decode(bin_elt[0].text)
-            src = utils.BufferedReader(None, data=data)
+            src = BufferedReader(None, data=data)
             sig = scte35.BinarySignal.parse(src, size=len(data))
             timescale = self.parent.timescale
             self.assertIn('splice_insert', sig)
@@ -513,9 +498,9 @@ class InbandEventStream(EventStreamBase):
 
 class Period(DashElement):
     attributes = [
-        ('start', utils.from_isodatetime, None),
+        ('start', from_isodatetime, None),
         # self.parent.mediaPresentationDuration),
-        ('duration', utils.from_isodatetime, DashElement.Parent),
+        ('duration', from_isodatetime, DashElement.Parent),
     ]
 
     def __init__(self, period, parent):
@@ -735,14 +720,16 @@ class ContentProtection(Descriptor):
         for child in self.children:
             if child.tag == '{urn:mpeg:cenc:2013}pssh':
                 data = base64.b64decode(child.text)
-                src = utils.BufferedReader(None, data=data)
+                src = BufferedReader(None, data=data)
                 atoms = mp4.Mp4Atom.create(src)
                 self.assertEqual(len(atoms), 1)
                 self.assertEqual(atoms[0].atom_type, 'pssh')
                 pssh = atoms[0]
                 if PlayReady.is_supported_scheme_id(self.schemeIdUri):
-                    self.assertEqual(pssh.system_id, PlayReady.RAW_SYSTEM_ID)
-                    pro = self.parse_playready_pro(pssh.data)
+                    self.assertIsInstance(pssh.system_id, Binary)
+                    self.assertEqual(pssh.system_id.data, PlayReady.RAW_SYSTEM_ID)
+                    self.assertIsInstance(pssh.data, Binary)
+                    pro = self.parse_playready_pro(pssh.data.data)
                     self.validate_playready_pro(pro)
             elif child.tag == '{urn:microsoft:playready}pro':
                 self.assertTrue(
@@ -753,7 +740,7 @@ class ContentProtection(Descriptor):
                 self.validate_playready_pro(pro)
 
     def parse_playready_pro(self, data):
-        return PlayReady.parse_pro(utils.BufferedReader(None, data=data))
+        return PlayReady.parse_pro(BufferedReader(None, data=data))
 
     def validate_playready_pro(self, pro):
         self.assertEqual(len(pro), 1)
@@ -890,9 +877,9 @@ class Representation(RepresentationBaseType):
                 num_segments = int(num_segments)
                 self.assertGreaterThan(num_segments, 0)
                 num_segments = min(num_segments, 25)
-            now = datetime.datetime.now(tz=utils.UTC())
+            now = datetime.datetime.now(tz=UTC())
             elapsed_time = now - self.mpd.availabilityStartTime
-            last_fragment = self.segmentTemplate.startNumber + int(utils.scale_timedelta(
+            last_fragment = self.segmentTemplate.startNumber + int(scale_timedelta(
                 elapsed_time, self.segmentTemplate.timescale, seg_duration))
             # first_fragment = last_fragment - math.floor(
             #    self.mpd.timeShiftBufferDepth.total_seconds() * self.segmentTemplate.timescale /
@@ -1071,12 +1058,12 @@ class Representation(RepresentationBaseType):
                                       timescale / seg_duration)
             num_segments = int(num_segments)
             num_segments = min(num_segments, 25)
-        now = datetime.datetime.now(tz=utils.UTC())
+        now = datetime.datetime.now(tz=UTC())
         elapsed_time = now - self.mpd.availabilityStartTime
         startNumber = self.segmentTemplate.startNumber
         # TODO: subtract Period@start
-        last_fragment = startNumber + int(utils.scale_timedelta(elapsed_time, timescale,
-                                                                seg_duration))
+        last_fragment = startNumber + int(
+            scale_timedelta(elapsed_time, timescale, seg_duration))
         first_fragment = last_fragment - math.floor(
             self.mpd.timeShiftBufferDepth.total_seconds() * timescale / seg_duration)
         if first_fragment < startNumber:
@@ -1122,7 +1109,7 @@ class InitSegment(DashElement):
             headers = {"Range": "bytes={}".format(self.seg_range)}
         self.log.debug('GET: %s %s', self.url, headers)
         response = self.http.get(self.url, headers=headers)
-        src = utils.BufferedReader(None, data=response.body)
+        src = BufferedReader(None, data=response.body)
         atoms = mp4.Mp4Atom.create(src)
         self.assertGreaterThan(len(atoms), 1)
         self.assertEqual(atoms[0].atom_type, 'ftyp')
@@ -1139,7 +1126,7 @@ class InitSegment(DashElement):
             self.assertEqual(len(pssh.system_id), 16)
             if pssh.system_id == PlayReady.RAW_SYSTEM_ID:
                 for pro in PlayReady.parse_pro(
-                        utils.BufferedReader(None, data=pssh.data)):
+                        BufferedReader(None, data=pssh.data)):
                     root = pro['xml'].getroot()
                     version = root.get("version")
                     self.assertIn(
@@ -1197,7 +1184,7 @@ class MediaSegment(DashElement):
                 raise MissingSegmentException(self.url, response)
         if self.parent.mimeType is not None:
             self.assertStartsWith(response.headers['content-type'], self.parent.mimeType)
-        src = utils.BufferedReader(None, data=response.body)
+        src = BufferedReader(None, data=response.body)
         options = {}
         self.assertEqual(self.options.encrypted, self.info.encrypted)
         if self.info.encrypted:
