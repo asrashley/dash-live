@@ -37,7 +37,7 @@ if _src not in sys.path:
 # these imports *must* be after the modification of sys.path
 
 from gae_base import GAETestBase
-import models
+from server import models
 
 class TestRestApi(GAETestBase):
     def test_add_stream(self):

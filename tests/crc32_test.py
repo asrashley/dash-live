@@ -28,8 +28,8 @@ _src = os.path.join(os.path.dirname(__file__), "..", "src")
 if _src not in sys.path:
     sys.path.append(_src)
 
-from mixins.testcase import TestCaseMixin
-from purecrc import Crc32Mpeg2
+from testcase.mixin import TestCaseMixin
+from utils.purecrc import Crc32Mpeg2
 
 class Crc32Tests(TestCaseMixin, unittest.TestCase):
     def test_pure_python_crc32(self):

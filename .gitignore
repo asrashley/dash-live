@@ -1,4 +1,5 @@
 settings.py
+src/server/settings.py
 runner.py
 *.sql3
 *.pyc

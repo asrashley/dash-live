@@ -30,9 +30,9 @@ _src = os.path.join(os.path.dirname(__file__), "..", "src")
 if _src not in sys.path:
     sys.path.append(_src)
 
-from dash.representation import Representation
-import utils
-import mp4
+from mpeg.dash.representation import Representation
+from mpeg import mp4
+from utils.buffered_reader import BufferedReader
 
 class SegmentTests(unittest.TestCase):
     def setUp(self):
@@ -43,7 +43,7 @@ class SegmentTests(unittest.TestCase):
         for name in ["bbb_a1.mp4", "bbb_a1_enc.mp4", "bbb_a2.mp4", "bbb_v6.mp4",
                      "bbb_v6_enc.mp4", "bbb_v7.mp4", "bbb_v7_enc.mp4", ]:
             filename = os.path.join(self.fixtures, name)
-            src = utils.BufferedReader(io.FileIO(filename, 'rb'))
+            src = BufferedReader(io.FileIO(filename, 'rb'))
             wrap = mp4.Wrapper(atom_type='wrap', parent=None,
                                children=mp4.Mp4Atom.create(src))
             rep = Representation.create(

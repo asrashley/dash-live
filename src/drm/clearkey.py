@@ -22,12 +22,12 @@
 
 from drm.base import DrmBase
 from drm.keymaterial import KeyMaterial
-from mp4 import ContentProtectionSpecificBox
-
+from mpeg.mp4 import ContentProtectionSpecificBox
 
 class ClearKey(DrmBase):
     MPD_SYSTEM_ID = "e2719d58-a985-b3c9-781a-b030af78d30e"
     PSSH_SYSTEM_ID = "1077efec-c0b2-4d02-ace3-3c1e52e2fb4b"
+    RAW_PSSH_SYSTEM_ID = PSSH_SYSTEM_ID.replace('-', '').decode('hex')
 
     def dash_scheme_id(self):
         return "urn:uuid:{0}".format(self.MPD_SYSTEM_ID)
@@ -39,7 +39,7 @@ class ClearKey(DrmBase):
             keys = keys.keys()
         keys = map(lambda k: KeyMaterial(k).raw, keys)
         return ContentProtectionSpecificBox(version=1, flags=0,
-                                            system_id=self.PSSH_SYSTEM_ID,
+                                            system_id=self.RAW_PSSH_SYSTEM_ID,
                                             key_ids=keys,
                                             data=None
                                             )

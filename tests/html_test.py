@@ -24,17 +24,17 @@ from __future__ import print_function
 import json
 import os
 import sys
+import unittest
 
-_src = os.path.join(os.path.dirname(__file__), "..", "src")
+_src = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
 if _src not in sys.path:
     sys.path.append(_src)
 
 # these imports *must* be after the modification of sys.path
 from gae_base import GAETestBase
-import manifests
-import models
-from requesthandler.htmlpage import MainPage
-from requesthandler.media_management import MediaHandler
+from server import manifests, models
+from server.requesthandler.htmlpage import MainPage
+from server.requesthandler.media_management import MediaHandler
 
 class TestHtmlPageHandlers(GAETestBase):
     def test_index_page(self):
@@ -168,3 +168,13 @@ class TestHtmlPageHandlers(GAETestBase):
             if idx == len(cgi_options):
                 done = True
         return result
+
+
+if os.environ.get("TESTS"):
+    def load_tests(loader, tests, pattern):
+        return unittest.loader.TestLoader().loadTestsFromNames(
+            os.environ["TESTS"].split(','),
+            TestHtmlPageHandlers)
+
+if __name__ == "__main__":
+    unittest.main()

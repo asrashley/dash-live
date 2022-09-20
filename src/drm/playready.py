@@ -27,15 +27,16 @@ try:
 except ImportError:
     import StringIO
 import struct
+import sys
+
 from xml.etree import ElementTree
 from Crypto.Cipher import AES
 from Crypto.Hash import SHA256
 
-import mp4
-
+from mpeg import mp4
 from drm.base import DrmBase
 from drm.keymaterial import KeyMaterial
-
+from utils.buffered_reader import BufferedReader
 
 class PlayReady(DrmBase):
     MAJOR_VERSIONS = [1.0, 2.0, 3.0, 4.0]
@@ -50,6 +51,7 @@ class PlayReady(DrmBase):
     def __init__(self, templates, la_url=None, version=None, header_version=None,
                  security_level=150):
         """
+        :templates: The jinja2 template environment to use
         :la_url: The license URL
         :version: The PlayReady version (1.0 .. 4.0)
         :header_version: The WRMHEADER version (4.0, 4.1, 4.2 or 4.3)
@@ -203,8 +205,8 @@ class PlayReady(DrmBase):
         if header_version not in [4.0, 4.1, 4.2, 4.3]:
             raise ValueError(
                 "PlayReady header version {} has not been implemented".format(header_version))
-        template = self.templates.get_template('drm/wrmheader{0}.xml'.format(
-            int(header_version * 10)))
+        template = self.templates.get_template(
+            'drm/wrmheader{0}.xml'.format(int(header_version * 10)))
         xml = template.render(context)
         xml = re.sub(r'[\r\n]', '', xml)
         xml = re.sub(r'>\s+<', '><', xml)
@@ -251,15 +253,16 @@ class PlayReady(DrmBase):
     def generate_pssh(self, representation, keys):
         """Generate a PlayReady Object (PRO) inside a PSSH box"""
         pro = self.generate_pro(representation, keys)
-        pssh_version = 0 if len(keys) == 1 else 1
+        if len(keys) < 2:
+            return mp4.ContentProtectionSpecificBox(
+                version=0, flags=0, system_id=PlayReady.RAW_SYSTEM_ID,
+                key_ids=[], data=pro)
         if isinstance(keys, dict):
             keys = keys.keys()
         keys = map(lambda k: KeyMaterial(k).raw, keys)
-        return mp4.ContentProtectionSpecificBox(version=pssh_version,
-                                                flags=0,
-                                                system_id=PlayReady.SYSTEM_ID,
-                                                key_ids=keys,
-                                                data=pro)
+        return mp4.ContentProtectionSpecificBox(
+            version=1, flags=0, system_id=PlayReady.RAW_SYSTEM_ID,
+            key_ids=keys, data=pro)
 
     def dash_scheme_id(self):
         """
@@ -274,3 +277,10 @@ class PlayReady(DrmBase):
         if not uri.startswith("urn:uuid:"):
             return False
         return uri[9:].lower() in [cls.SYSTEM_ID, cls.SYSTEM_ID_V10]
+
+
+if __name__ == "__main__":
+    for arg in sys.argv[1:]:
+        data = base64.b64decode(arg)
+        pro = PlayReady.parse_pro(BufferedReader(None, data=data))
+        print(pro.toJSON())

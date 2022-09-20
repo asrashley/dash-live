@@ -20,10 +20,10 @@
 #
 #############################################################################
 
-from bitio import BitsFieldReader, BitsFieldWriter
-from objects import ListOf, ObjectWithFields
-
-from break_duration import BreakDuration
+from scte35.break_duration import BreakDuration
+from utils.bitio import BitsFieldReader, BitsFieldWriter
+from utils.object_with_fields import ObjectWithFields
+from utils.list_of import ListOf
 
 class SpliceItem(ObjectWithFields):
     OBJECT_FIELDS = {

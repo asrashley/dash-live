@@ -33,13 +33,10 @@ _src = os.path.abspath(
 if _src not in sys.path:
     sys.path.append(_src)
 
-from requesthandler.manifest_requests import ServeManifest
-from requesthandler.templates import templates
-
-import manifests
-import models
-import options
-from utils import dict_to_cgi_params
+from server import manifests, models, cgi_options
+from server.requesthandler.manifest_requests import ServeManifest
+from templates.factory import TemplateFactory
+from utils.objects import dict_to_cgi_params
 from view_validator import ViewsTestDashValidator
 
 class QName(object):
@@ -128,7 +125,7 @@ class DashManifestCheckMixin(object):
         if the manifest uses lots of features.
         """
         manifest = manifests.manifest[filename]
-        cgi_options = manifest.get_cgi_options(simplified)
+        options = manifest.get_cgi_options(simplified)
         self.setup_media()
         self.logoutCurrentUser()
         media_files = models.MediaFile.all()
@@ -145,27 +142,27 @@ class DashManifestCheckMixin(object):
         # do the exhaustive check of every option
         total_tests = 1
         count = 0
-        for param in cgi_options:
+        for param in options:
             total_tests = total_tests * len(param[1])
         tested = set([url])
-        indexes = [0] * len(cgi_options)
+        indexes = [0] * len(options)
         done = False
         while not done:
             self.progress(count, total_tests)
             count += 1
-            self.check_manifest_using_options(filename, cgi_options, indexes, tested)
+            self.check_manifest_using_options(filename, options, indexes, tested)
             idx = 0
-            while idx < len(cgi_options):
+            while idx < len(options):
                 indexes[idx] += 1
-                if indexes[idx] < len(cgi_options[idx][1]):
+                if indexes[idx] < len(options[idx][1]):
                     break
                 indexes[idx] = 0
                 idx += 1
-            if idx == len(cgi_options):
+            if idx == len(options):
                 done = True
         self.progress(total_tests, total_tests)
 
-    def check_manifest_using_options(self, filename, cgi_options, indexes, tested):
+    def check_manifest_using_options(self, filename, options, indexes, tested):
         """
         Check one manifest using a specific combination of options
         :filename: the filename of the manifest
@@ -174,7 +171,7 @@ class DashManifestCheckMixin(object):
         """
         params = {}
         mode = None
-        for idx, option in enumerate(cgi_options):
+        for idx, option in enumerate(options):
             name, values = option
             value = values[indexes[idx]]
             if name == 'mode':
@@ -182,10 +179,10 @@ class DashManifestCheckMixin(object):
             elif value:
                 params[name] = value
         self.assertIsNotNone(mode)
-        self.assertIn(mode, options.supported_modes)
+        self.assertIn(mode, cgi_options.supported_modes)
         # remove pointless combinations of options
         mft = manifests.manifest[filename]
-        modes = mft.restrictions.get('mode', options.supported_modes)
+        modes = mft.restrictions.get('mode', cgi_options.supported_modes)
         if mode not in modes:
             return
         if mode != "live":
@@ -207,6 +204,9 @@ class DashManifestCheckMixin(object):
         self.check_manifest_url(mpd_url, mode, encrypted)
 
     def check_manifest_url(self, mpd_url, mode, encrypted):
+        """
+        Test one manifest for validity
+        """
         try:
             self.current_url = mpd_url
             response = self.app.get(mpd_url)
@@ -238,7 +238,7 @@ class DashManifestCheckMixin(object):
         self.init_xml_namespaces()
         context = self.generate_manifest_context(
             mpd_filename, mode=mode, prefix='bbb', **kwargs)
-        template = templates.get_template(mpd_filename)
+        template = TemplateFactory.get_template(mpd_filename)
         text = template.render(context)
         # print(text)
         encrypted = kwargs.get('drm', 'none') != 'none'

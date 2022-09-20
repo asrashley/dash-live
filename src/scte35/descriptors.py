@@ -23,8 +23,9 @@
 from abc import abstractmethod
 import copy
 
-from bitio import BitsFieldWriter
-from objects import Binary, ObjectWithFields
+from utils.bitio import BitsFieldWriter
+from utils.binary import Binary
+from utils.object_with_fields import ObjectWithFields
 
 class SpliceDescriptor(ObjectWithFields):
     TAGS = {}
@@ -36,8 +37,11 @@ class SpliceDescriptor(ObjectWithFields):
             DescriptorClass = cls.TAGS[tag]
         except KeyError:
             DescriptorClass = UnknownSpliceDescriptor
-        args = copy.deepcopy(DescriptorClass.DEFAULT_VALUES)
-        args.update(**kwargs)
+        if DescriptorClass.DEFAULT_VALUES is None:
+            args = kwargs
+        else:
+            args = copy.deepcopy(DescriptorClass.DEFAULT_VALUES)
+            args.update(**kwargs)
         args['tag'] = tag
         return DescriptorClass(**args)
 
@@ -46,7 +50,7 @@ class SpliceDescriptor(ObjectWithFields):
         rv = {
             'position': bit_reader.bytepos()
         }
-        r = bit_reader.duplicate(rv)
+        r = bit_reader.duplicate(cls.__name__, rv)
         r.read(8, 'tag')
         r.read(8, 'length')
         r.read(32, 'identifier')
