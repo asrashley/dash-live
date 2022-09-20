@@ -136,7 +136,9 @@ class RequestHandlerBase(webapp2.RequestHandler):
         return rv
 
     def check_csrf(self, service):
-        """check that the CSRF token from the cookie and the submitted form match"""
+        """
+        check that the CSRF token from the cookie and the submitted form match
+        """
         sc = securecookie.SecureCookieSerializer(settings.cookie_secret)
         try:
             cookie = self.request.cookies[self.CSRF_COOKIE_NAME]
