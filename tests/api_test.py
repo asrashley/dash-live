@@ -28,6 +28,8 @@ import sys
 import unittest
 import urllib
 
+from google.appengine.ext import blobstore
+
 import webtest
 
 _src = os.path.join(os.path.dirname(__file__), "..", "src")
@@ -38,6 +40,7 @@ if _src not in sys.path:
 
 from gae_base import GAETestBase
 from server import models
+from templates.tags import dateTimeFormat
 
 class TestRestApi(GAETestBase):
     def test_add_stream(self):
@@ -97,6 +100,83 @@ class TestRestApi(GAETestBase):
         response.mustcontain(
             expected_result['title'],
             expected_result['prefix'])
+
+    def test_get_stream_info(self):
+        """
+        Test getting info on one media file
+        """
+        self.setup_media()
+        media_file =  models.MediaFile.all()[0]
+        url = self.from_uri('media-info', mfid=media_file.key.urlsafe(), absolute=True)
+        url += '?ajax=1'
+
+        # user must be logged in to use stream API
+        self.logoutCurrentUser()
+        response = self.app.get(url, status=401)
+
+        # user must be logged in as admin to use stream API
+        self.setCurrentUser(is_admin=False)
+        response = self.app.get(url, status=401)
+
+        # user must be logged in as admin to use stream API
+        self.setCurrentUser(is_admin=True)
+        response = self.app.get(url)
+        actual = response.json
+        bi = blobstore.BlobInfo.get(media_file.blob)
+        info = {
+            'size': bi.size,
+            'creation': dateTimeFormat(bi.creation, "%H:%M:%S %d/%m/%Y"),
+            'md5': bi.md5_hash,
+        }
+        expected = {
+            "representation": media_file.rep,
+            "name": media_file.name,
+            "key": media_file.key.urlsafe(),
+            "blob": info,
+        }
+
+    def test_index_stream(self):
+        """
+        Test indexing of one representation file
+        """
+        self.setup_media()
+        media_file =  models.MediaFile.all()[0]
+
+        url = self.from_uri('media-info', mfid=media_file.key.urlsafe(), absolute=True)
+        url += '?index=1'
+
+        # user must be logged in to use stream API
+        self.logoutCurrentUser()
+        response = self.app.get(url, status=401)
+
+        # user must be logged in as admin to use stream API
+        self.setCurrentUser(is_admin=False)
+        response = self.app.get(url, status=401)
+        self.assertEqual(response.status_int, 401)
+
+        # user must be logged in as admin to use stream API
+        self.setCurrentUser(is_admin=True)
+
+        # request without CSRF token should fail
+        response = self.app.get(url)
+        self.assertTrue("error" in response.json)
+        self.assertIn("csrf", response.json["error"])
+
+        media_url = self.from_uri('media-index', absolute=True)
+        media = self.app.get(media_url + '?ajax=1')
+        self.assertIn("csrf_tokens", media.json)
+        self.assertIn("files", media.json['csrf_tokens'])
+        csrf_url = url + '&csrf_token=' + media.json['csrf_tokens']['files']
+
+        response = self.app.get(csrf_url)
+        actual = response.json
+        expected = {
+            "indexed": media_file.key.urlsafe(),
+            "representation": media_file.rep,
+            "csrf": actual["csrf"],
+        }
+        self.assertObjectEqual(expected, actual)
+
 
     def test_delete_stream(self):
         self.assertEqual(len(models.Stream.all()), 0)
