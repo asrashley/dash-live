@@ -33,8 +33,8 @@ from utils.date_time import from_isodatetime
 class ServeManifest(RequestHandlerBase):
     """handler for generating MPD files"""
 
-    def head(self, mode, stream, manifest, **kwargs):
-        self.get(mode, stream, manifest, **kwargs)
+    def head(self, **kwargs):
+        self.get(**kwargs)
 
     def get(self, mode, stream, manifest, **kwargs):
         if manifest in self.legacy_manifest_names:
@@ -105,8 +105,9 @@ class LegacyManifestUrl(ServeManifest):
     def head(self, manifest, **kwargs):
         stream = kwargs.get("stream", "bbb")
         mode = self.request.params.get("mode", "live")
-        return super(LegacyManifestUrl, self).head(mode=mode, stream=stream,
-                                                   manifest=manifest, **kwargs)
+        kwargs["stream"] = stream
+        kwargs["mode"] = mode
+        return super(LegacyManifestUrl, self).head(manifest=manifest, **kwargs)
 
     def get(self, manifest, **kwargs):
         try:
@@ -114,6 +115,6 @@ class LegacyManifestUrl(ServeManifest):
             del kwargs["stream"]
         except KeyError:
             stream = "bbb"
-        mode = self.request.params.get("mode", "live")
-        return super(LegacyManifestUrl, self).get(mode=mode, stream=stream,
-                                                  manifest=manifest, **kwargs)
+        kwargs["mode"] = self.request.params.get("mode", "live")
+        return super(LegacyManifestUrl, self).get(
+            stream=stream, manifest=manifest, **kwargs)

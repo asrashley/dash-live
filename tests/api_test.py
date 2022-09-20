@@ -106,7 +106,7 @@ class TestRestApi(GAETestBase):
         Test getting info on one media file
         """
         self.setup_media()
-        media_file =  models.MediaFile.all()[0]
+        media_file = models.MediaFile.all()[0]
         url = self.from_uri('media-info', mfid=media_file.key.urlsafe(), absolute=True)
         url += '?ajax=1'
 
@@ -120,6 +120,7 @@ class TestRestApi(GAETestBase):
 
         # user must be logged in as admin to use stream API
         self.setCurrentUser(is_admin=True)
+
         response = self.app.get(url)
         actual = response.json
         bi = blobstore.BlobInfo.get(media_file.blob)
@@ -134,13 +135,18 @@ class TestRestApi(GAETestBase):
             "key": media_file.key.urlsafe(),
             "blob": info,
         }
+        self.assertObjectEqual(expected, actual)
+        mfid = "aghkZXZ-Tm9uZXIWCxIJTWVkaWFGaWxlGICAgICAgIAJDA"
+        url = self.from_uri('media-info', mfid=mfid, absolute=True)
+        url += '?ajax=1'
+        response = self.app.get(url, status=404)
 
     def test_index_stream(self):
         """
         Test indexing of one representation file
         """
         self.setup_media()
-        media_file =  models.MediaFile.all()[0]
+        media_file = models.MediaFile.all()[0]
 
         url = self.from_uri('media-info', mfid=media_file.key.urlsafe(), absolute=True)
         url += '?index=1'
@@ -176,7 +182,6 @@ class TestRestApi(GAETestBase):
             "csrf": actual["csrf"],
         }
         self.assertObjectEqual(expected, actual)
-
 
     def test_delete_stream(self):
         self.assertEqual(len(models.Stream.all()), 0)
@@ -572,6 +577,38 @@ class TestRestApi(GAETestBase):
         response = self.app.get(url)
         self.assertEqual(response.status_int, 200)
         response.mustcontain('bbb_v1.mp4')
+
+    def test_delete_media_file(self):
+        self.setup_media()
+        num_files = len(models.MediaFile.all())
+        media_file = models.MediaFile.all()[0]
+        mfid = media_file.key.urlsafe()
+        url = self.from_uri('media-info', mfid=mfid, absolute=True)
+        url += '?ajax=1'
+        # user must be logged in to use stream API
+        self.logoutCurrentUser()
+        response = self.app.delete(url, status=401)
+
+        # user must be logged in as admin to use stream API
+        self.setCurrentUser(is_admin=False)
+        response = self.app.delete(url, status=401)
+
+        # user must be logged in as admin to use stream API
+        self.setCurrentUser(is_admin=True)
+
+        # request should fail due to lack of CSRF token
+        response = self.app.delete(url)
+        self.assertEqual(response.json['error'], "csrf cookie not present")
+
+        media_url = self.from_uri('media-index', absolute=True)
+        media = self.app.get(media_url + '?ajax=1')
+        self.assertIn("csrf_tokens", media.json)
+        self.assertIn("files", media.json['csrf_tokens'])
+
+        csrf_url = url + '&csrf_token=' + media.json['csrf_tokens']['files']
+        response = self.app.delete(csrf_url)
+        self.assertEqual(response.json["deleted"], mfid)
+        self.assertEqual(len(models.MediaFile.all()), num_files - 1)
 
 
 if os.environ.get("TESTS"):
