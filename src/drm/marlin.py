@@ -37,6 +37,7 @@ class Marlin(DrmBase):
 
     @classmethod
     def is_supported_scheme_id(cls, uri):
+        uri = uri.lower()
         if not uri.startswith("urn:uuid:"):
             return False
-        return uri[9:].lower() == cls.SYSTEM_ID
+        return uri[9:] == cls.MPD_SYSTEM_ID
