@@ -26,6 +26,7 @@ import io
 import logging
 import os
 import unittest
+import urllib
 import sys
 
 _src = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
@@ -40,10 +41,13 @@ from testcase.mixin import TestCaseMixin
 from utils.binary import Binary
 from utils.buffered_reader import BufferedReader
 
+from gae_base import GAETestBase
 from key_stub import KeyStub
+from mixins.view_validator import ViewsTestDashValidator
 
-class PlayreadyTests(TestCaseMixin, unittest.TestCase):
+class PlayreadyTests(GAETestBase, unittest.TestCase):
     def setUp(self):
+        super(PlayreadyTests, self).setUp()
         self.templates = TemplateFactory()
         self.keys = {}
         for kid, key in [
@@ -507,6 +511,57 @@ class PlayreadyTests(TestCaseMixin, unittest.TestCase):
         self._patch_position_values(expected, -8)
         actual = new_init_seg.toJSON()
         self.assertObjectEqual(expected, actual)
+
+    def test_playready_la_url(self):
+        """
+        PlayReady LA_URL in the manifest
+        """
+        # TODO: don't hard code KID
+        test_la_url = PlayReady.TEST_LA_URL.format(
+            cfgs='(kid:QFS0GixTmUOU3Fxa2VhLrA==,persist:false,sl:150)')
+        self.check_playready_la_url_value(test_la_url, [])
+
+    def test_playready_la_url_override(self):
+        """
+        Replace LA_URL in stream with CGI playready_la_url parameter
+        """
+        test_la_url = 'https://licence.url.override/'
+        self.check_playready_la_url_value(
+            test_la_url,
+            ['playready_la_url={0}'.format(urllib.quote_plus(test_la_url))])
+
+    def check_playready_la_url_value(self, test_la_url, args):
+        """
+        Check the LA_URL in the PRO element is correct
+        """
+        self.setup_media()
+        self.logoutCurrentUser()
+        filename = 'hand_made.mpd'
+        baseurl = self.from_uri('dash-mpd-v2', manifest=filename, stream='bbb')
+        args += ['mode=vod', 'drm=playready']
+        baseurl += '?' + '&'.join(args)
+        response = self.app.get(baseurl)
+        mpd = ViewsTestDashValidator(
+            self.app, mode='vod', mpd=response.xml, url=baseurl,
+            encrypted=True)
+        mpd.validate()
+        self.assertEqual(len(mpd.manifest.periods), 1)
+        schemeIdUri = "urn:uuid:" + PlayReady.SYSTEM_ID.upper()
+        pro_tag = "{{{0}}}pro".format(mpd.xmlNamespaces['mspr'])
+        for adap_set in mpd.manifest.periods[0].adaptation_sets:
+            for prot in adap_set.contentProtection:
+                if prot.schemeIdUri != schemeIdUri:
+                    continue
+                for elt in prot.children:
+                    if elt.tag != pro_tag:
+                        continue
+                    pro = base64.b64decode(elt.text)
+                    for record in PlayReady.parse_pro(
+                            BufferedReader(None, data=pro)):
+                        la_urls = record['xml'].findall(
+                            './prh:DATA/prh:LA_URL', mpd.xmlNamespaces)
+                        self.assertEqual(len(la_urls), 1)
+                        self.assertEqual(la_urls[0].text, test_la_url)
 
     def _patch_position_values(self, expected, delta):
         if 'position' in expected:
