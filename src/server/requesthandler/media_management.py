@@ -24,7 +24,7 @@ import logging
 import json
 import os
 
-from google.appengine.api import users
+from google.appengine.api import datastore_errors, users
 from google.appengine.ext import blobstore
 from google.appengine.ext.webapp import blobstore_handlers
 from google.appengine.ext.ndb.model import Key
@@ -170,8 +170,12 @@ class MediaHandler(RequestHandlerBase):
     def media_info(self, mfid, **kwargs):
         result = {"error": "unknown error"}
         try:
-            mf = models.MediaFile.query(
-                models.Key.key == Key(urlsafe=mfid)).get()
+            try:
+                mf = models.MediaFile.query(
+                    models.Key.key == Key(urlsafe=mfid)).get()
+            except datastore_errors.Error as err:
+                logging.warning("MediaFile query error: %s", err)
+                mf = None
             if not mf:
                 self.response.write('{} not found'.format(mfid))
                 self.response.set_status(404)
@@ -209,7 +213,6 @@ class MediaHandler(RequestHandlerBase):
             result["csrf"] = self.generate_csrf_token('files', csrf_key)
             self.response.content_type = 'application/json'
             self.response.write(json.dumps(result))
-
 
     def delete(self, mfid, **kwargs):
         """
