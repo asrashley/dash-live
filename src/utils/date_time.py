@@ -53,12 +53,6 @@ def to_iso_epoch(dt):
     return long(delta.total_seconds())
 
 
-def dateTimeToUnixEpoch(dt):
-    """ Convert a dateTime to number of seconds since the Unix epoch.
-    """
-    epoch = datetime.datetime(year=1970, month=1, day=1, tzinfo=UTC())
-    return (dt - epoch).total_seconds()
-
 def toIsoDateTime(value):
     """ Convert a datetime to an ISO8601 formatted dateTime string.
 

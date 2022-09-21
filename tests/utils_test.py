@@ -12,12 +12,13 @@ _src = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
 if _src not in sys.path:
     sys.path.append(_src)
 
-from utils.date_time import from_isodatetime, UTC
+from utils.date_time import from_isodatetime, toIsoDuration, UTC
 from utils.buffered_reader import BufferedReader
+from utils import objects
 
 
 class DateTimeTests(unittest.TestCase):
-    def test_isoformat(self):
+    def test_from_isodatetime(self):
         tests = [
             ('2009-02-27T10:00:00Z', datetime.datetime(2009,
              2, 27, 10, 0, 0, tzinfo=UTC())),
@@ -49,6 +50,21 @@ class DateTimeTests(unittest.TestCase):
         self.assertEqual(date_val.microsecond, 123000)
         self.assertTrue(date_val.isoformat().startswith(date_str[:-1]))
 
+    def test_to_isoduration(self):
+        tests = [
+            ('PT14H0M0.00S', datetime.timedelta(hours=14)),
+            ('PT26H0M0.00S', datetime.timedelta(hours=26)),
+            ('PT14H0M0.00S', datetime.timedelta(hours=14)),
+            ('PT1M0.00S', datetime.timedelta(minutes=1)),
+            ('PT2M0.00S', datetime.timedelta(minutes=2)),
+            ('PT1M0.00S', datetime.timedelta(minutes=1)),
+            ('PT45.00S', datetime.timedelta(seconds=45)),
+            ('PT4.50S', datetime.timedelta(seconds=4.5)),
+            ('PT1H45M19.00S', datetime.timedelta(hours=1, minutes=45, seconds=19)),
+        ]
+        for expected, src in tests:
+            self.assertEqual(expected, toIsoDuration(src))
+
 
 class BufferedReaderTests(unittest.TestCase):
     def test_buffer_reader(self):
@@ -71,6 +87,72 @@ class BufferedReaderTests(unittest.TestCase):
         self.assertEqual(len(p), 8)
         for i in range(8):
             self.assertEqual(ord(p[i]), i + 8)
+
+class HasTwoJson(object):
+    def __init__(self, result, pure):
+        self.pure = pure
+        self.result = result
+
+    def toJSON(self, pure):
+        if pure != self.pure:
+            raise AssertionError(
+                "Wrong pure argument. Got {0} expected {1}".format(pure, self.pure))
+        return self.result
+
+class ObjectTests(unittest.TestCase):
+    def test_flatten(self):
+        list_input = [
+            'string', datetime.datetime(2019, 2, 1, 4, 5, 6, tzinfo=UTC()),
+            HasTwoJson("has_json", True),
+            datetime.timedelta(minutes=1, seconds=30),
+        ]
+        list_expected = [
+            "string", "2019-02-01T04:05:06Z", "has_json", "PT1M30.00S",
+        ]
+        dict_input = {
+            'hello': 'world',
+            'datetime': datetime.datetime(2019, 2, 1, 4, 5, 6, tzinfo=UTC()),
+            'timedelta': datetime.timedelta(minutes=2, seconds=30),
+        }
+        dict_expected = {
+            'hello': 'world',
+            'datetime': "2019-02-01T04:05:06Z",
+            'timedelta': "PT2M30.00S",
+        }
+
+        test_cases = [
+            (None, False, None),
+            (None, True, None),
+            ('string', False, 'string'),
+            ("'string'", True, "\'string\'"),
+            (HasTwoJson("json", False), False, "json"),
+            (HasTwoJson("json", True), True, "json"),
+            (datetime.datetime(2019, 2, 1, 4, 5, 6, tzinfo=UTC()),
+             False, "2019-02-01T04:05:06Z"),
+            (datetime.timedelta(minutes=1, seconds=30),
+             False, "PT1M30.00S"),
+            (list_input, True, list_expected),
+            (dict_input, True, dict_expected),
+            (tuple(list_input), True, tuple(list_expected)),
+        ]
+        for value, pure, expected in test_cases:
+            actual = objects.flatten(value, pure=pure)
+            self.assertEqual(expected, actual)
+
+    def test_pick_item(self):
+        src = {
+            1: 'one',
+            2: 'two',
+            'three': 'three',
+            4: 'four',
+            'five': 5,
+        }
+        expected = {
+            1: 'one',
+            2: 'two',
+            'five': 5,
+        }
+        self.assertEqual(expected, objects.pick_items(src, [1, 2, 'five', 7]))
 
 
 if __name__ == "__main__":
