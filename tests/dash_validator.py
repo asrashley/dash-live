@@ -202,7 +202,7 @@ class DashElement(TestCaseMixin):
 class DashValidator(DashElement):
     __metaclass__ = ABCMeta
 
-    def __init__(self, url, http_client, mode=None, options=None):
+    def __init__(self, url, http_client, mode=None, options=None, xml=None):
         DashElement.init_xml_namespaces()
         super(DashValidator, self).__init__(None, parent=None, options=options)
         self.http = http_client
@@ -210,9 +210,11 @@ class DashValidator(DashElement):
         self.options = options if options is not None else ValidatorOptions()
         self.mode = mode
         self.validator = self
-        self.xml = None
+        self.xml = xml
         self.manifest = None
         self.prev_manifest = None
+        if xml is not None:
+            self.manifest = Manifest(self, self.url, self.mode, self.xml)
 
     def load(self, xml=None):
         self.prev_manifest = self.manifest
@@ -362,12 +364,15 @@ class Manifest(DashElement):
             self.assertIsNone(self.mediaPresentationDuration,
                               "MPD@mediaPresentationDuration must not be present for live manifest: %s" % self.url)
         else:
-            self.assertEqual(self.mpd_type, "static",
-                             "MPD@type must be static for VOD manifest: %s" % self.url)
+            msg = r'MPD@type must be static for VOD manifest, got "{0}": {1}'.format(
+                self.mpd_type, self.url)
+            self.assertEqual(self.mpd_type, "static", msg=msg)
             if self.mediaPresentationDuration is not None:
-                self.assertGreaterThan(self.mediaPresentationDuration, datetime.timedelta(seconds=0),
-                                       'Invalid MPD@mediaPresentationDuration "{}": {}'.format(
-                    self.mediaPresentationDuration, self.url))
+                self.assertGreaterThan(
+                    self.mediaPresentationDuration,
+                    datetime.timedelta(seconds=0),
+                    'Invalid MPD@mediaPresentationDuration "{}": {}'.format(
+                        self.mediaPresentationDuration, self.url))
             else:
                 msg = 'If MPD@mediaPresentationDuration is not present, ' +\
                       'Period@duration must be present: ' + self.url

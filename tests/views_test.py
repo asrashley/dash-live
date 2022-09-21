@@ -78,7 +78,7 @@ class TestHandlers(GAETestBase, DashManifestCheckMixin):
                     baseurl += '?start=' + option
                 response = self.app.get(baseurl)
                 dv = ViewsTestDashValidator(
-                    self.app, mode='live', mpd=response.xml,
+                    http_client=self.app, mode='live', xml=response.xml,
                     url=baseurl, encrypted=False)
                 dv.validate(depth=3)
                 if option == 'now':
@@ -86,6 +86,10 @@ class TestHandlers(GAETestBase, DashManifestCheckMixin):
                 self.assertEqual(dv.manifest.availabilityStartTime, start_time,
                                  msg=msg % (option, start_time.isoformat(),
                                             dv.manifest.availabilityStartTime.isoformat()))
+                head = self.app.head(baseurl)
+                self.assertEqual(
+                    head.headers['Content-Length'],
+                    response.headers['Content-Length'])
 
     def test_get_vod_media_using_live_profile(self):
         """Get VoD segments for each DRM type (live profile)"""
@@ -108,13 +112,19 @@ class TestHandlers(GAETestBase, DashManifestCheckMixin):
             self.progress(test_count, total_tests)
             test_count += 1
             baseurl = self.from_uri(
-                'dash-mpd-v2', manifest=filename, stream='bbb')
-            baseurl += '?mode=vod&' + drm_opt
+                'dash-mpd-v3', manifest=filename, stream='bbb', mode='vod')
+            baseurl += '?' + drm_opt
             response = self.app.get(baseurl)
+            self.assertEqual(response.status_int, 200)
             encrypted = drm_opt != 'drm=none'
             mpd = ViewsTestDashValidator(
-                self.app, 'vod', response.xml, baseurl, encrypted)
+                http_client=self.app, mode='vod', xml=response.xml,
+                url=baseurl, encrypted=encrypted)
             mpd.validate()
+            head = self.app.head(baseurl)
+            self.assertEqual(
+                head.headers['Content-Length'],
+                response.headers['Content-Length'])
         self.progress(total_tests, total_tests)
 
     def test_get_live_media_using_live_profile(self):
@@ -153,11 +163,16 @@ class TestHandlers(GAETestBase, DashManifestCheckMixin):
                     'playready_version={0}'.format(version)
                 ]
                 baseurl += '?' + '&'.join(options)
+                # 'dash-mpd-v2' will always return a redirect to the v3 URL
+                response = self.app.get(baseurl, status=302)
+                # Handle redirect request
+                baseurl = response.headers['Location']
                 response = self.app.get(baseurl)
                 self.assertEqual(response.status_int, 200)
                 encrypted = drm_opt != "drm=none"
                 mpd = ViewsTestDashValidator(
-                    self.app, "live", response.xml, baseurl, encrypted)
+                    http_client=self.app, mode="live", xml=response.xml,
+                    url=baseurl, encrypted=encrypted)
                 mpd.validate()
         self.progress(total_tests, total_tests)
 
@@ -180,7 +195,8 @@ class TestHandlers(GAETestBase, DashManifestCheckMixin):
                 "urn:mpeg:dash:profile:isoff-on-demand:2011",
                 response.xml.get('profiles'))
             mpd = ViewsTestDashValidator(
-                self.app, "odvod", response.xml, baseurl, False)
+                http_client=self.app, mode="odvod", xml=response.xml,
+                url=baseurl, encrypted=False)
             mpd.validate()
 
     def test_request_unknown_media(self):

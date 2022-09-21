@@ -63,10 +63,6 @@ class RequestHandlerBase(webapp2.RequestHandler):
     DEFAULT_TIMESHIFT_BUFFER_DEPTH = 60
     INJECTED_ERROR_CODES = [404, 410, 503, 504]
     SCRIPT_TEMPLATE = r'<script src="/js/{mode}/{filename}{min}.js" type="text/javascript"></script>'
-    legacy_manifest_names = {
-        'enc.mpd': 'hand_made.mpd',
-        'manifest_vod.mpd': 'hand_made.mpd',
-    }
 
     def create_context(self, **kwargs):
         route = routes[self.request.route.name]
@@ -358,16 +354,10 @@ class RequestHandlerBase(webapp2.RequestHandler):
         rv.append('</SegmentTimeline>')
         return '\n'.join(rv)
 
-    def calculate_dash_params(self, prefix, mode, mpd_url=None):
+    def calculate_dash_params(self, prefix, mode, mpd_url):
         stream = models.Stream.query(models.Stream.prefix == prefix).get()
         if stream is None:
             raise ValueError("Invalid stream prefix {0}".format(prefix))
-        if mpd_url is None:
-            mpd_url = self.request.uri
-            for k, v in self.legacy_manifest_names.iteritems():
-                if v in mpd_url:
-                    mpd_url = mpd_url.replace(k, v)
-                    break
         if mpd_url is None:
             raise ValueError("Unable to determin MPD URL")
         manifest_info = manifests.manifest[mpd_url]

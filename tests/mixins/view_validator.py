@@ -30,21 +30,21 @@ from dash_validator import DashValidator, RepresentationInfo, ValidatorOptions
 from server import models, routes
 
 class ViewsTestDashValidator(DashValidator):
-    def __init__(self, http_client, mode, mpd, url, encrypted, debug=False):
+    def __init__(self, http_client, mode, url, encrypted=False, xml=None, debug=False):
         opts = ValidatorOptions(strict=True, encrypted=encrypted)
         opts.log = logging.getLogger(__name__)
         opts.log.addFilter(HideMixinsFilter())
         if debug:
             opts.log.setLevel(logging.DEBUG)
-        super(
-            ViewsTestDashValidator,
-            self).__init__(
-            url,
-            http_client,
+        super(ViewsTestDashValidator, self).__init__(
+            url=url,
+            http_client=http_client,
             mode=mode,
             options=opts)
         self.representations = {}
         self.log.debug('Check manifest: %s', url)
+        if xml is not None:
+            self.load(xml)
 
     def get_representation_info(self, representation):
         try:

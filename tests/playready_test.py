@@ -37,7 +37,6 @@ from drm.playready import PlayReady
 from mpeg.dash.representation import Representation
 from mpeg import mp4
 from templates.factory import TemplateFactory
-from testcase.mixin import TestCaseMixin
 from utils.binary import Binary
 from utils.buffered_reader import BufferedReader
 
@@ -537,12 +536,12 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
         self.setup_media()
         self.logoutCurrentUser()
         filename = 'hand_made.mpd'
-        baseurl = self.from_uri('dash-mpd-v2', manifest=filename, stream='bbb')
-        args += ['mode=vod', 'drm=playready']
+        baseurl = self.from_uri('dash-mpd-v3', manifest=filename, stream='bbb', mode='vod')
+        args += ['drm=playready']
         baseurl += '?' + '&'.join(args)
         response = self.app.get(baseurl)
         mpd = ViewsTestDashValidator(
-            self.app, mode='vod', mpd=response.xml, url=baseurl,
+            http_client=self.app, mode='vod', xml=response.xml, url=baseurl,
             encrypted=True)
         mpd.validate()
         self.assertEqual(len(mpd.manifest.periods), 1)

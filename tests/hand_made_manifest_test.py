@@ -30,6 +30,18 @@ class HandMadeManifestTests(GAETestBase, DashManifestCheckMixin):
     def test_hand_made_manifest(self):
         self.check_a_manifest_using_all_options('hand_made.mpd')
 
+    def test_legacy_vod_manifest_name(self):
+        self.setup_media()
+        url = self.from_uri('dash-mpd-v1', manifest='manifest_vod.mpd')
+        self.check_manifest_url(url, mode="vod", encrypted=False, check_head=True)
+
+    def test_legacy_encrypted_manifest_name(self):
+        self.setup_media()
+        url = self.from_uri('dash-mpd-v1', manifest='enc.mpd')
+        self.check_manifest_url(url, mode="vod", encrypted=True, check_head=True)
+        url += '?mode=live'
+        self.check_manifest_url(url, mode="live", encrypted=True, check_head=True)
+
     @GAETestBase.mock_datetime_now(from_isodatetime("2022-09-06T15:10:02Z"))
     def test_generated_manifest_against_fixture(self):
         self.check_generated_manifest_against_fixture(
