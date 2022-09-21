@@ -44,9 +44,6 @@ from utils.object_with_fields import ObjectWithFields
 from utils.list_of import ListOf
 from mpeg.nal import Nal
 
-MP4_BOXES = {}
-MP4_DESCRIPTORS = {}
-
 class Options(ObjectWithFields):
     DEFAULT_VALUES = {
         "cache_encoded": False,
@@ -70,6 +67,10 @@ class Mp4Atom(ObjectWithFields):
     }
     DEFAULT_EXCLUDE = {'options', 'parent'}
 
+    BOXES = {}  # map from box fourcc to class
+    DESCRIPTORS = {}  # map from descriptor tag to class
+    BOX_TYPES = {}  # reverse map from class name to class
+
     def __init__(self, **kwargs):
         self._encoded = None
         super(Mp4Atom, self).__init__(**kwargs)
@@ -83,7 +84,7 @@ class Mp4Atom(ObjectWithFields):
             atom_type = kwargs["atom_type"]
         except KeyError:
             atom_type = None
-            for k, v in MP4_BOXES.iteritems():
+            for k, v in Mp4Atom.BOXES.iteritems():
                 if v == type(self):
                     atom_type = k
                     break
@@ -229,7 +230,7 @@ class Mp4Atom(ObjectWithFields):
             if hdr is None:
                 break
             try:
-                Box = MP4_BOXES[hdr['atom_type']]
+                Box = Mp4Atom.BOXES[hdr['atom_type']]
             except KeyError:
                 Box = UnknownBox
             options.log.debug('%sfound atom "%s" type=%s pos=%d size=%d',
@@ -279,10 +280,9 @@ class Mp4Atom(ObjectWithFields):
             name = src['_type']
             if name.startswith('mpeg.mp4.'):
                 name = name[9:]
-            # TODO: remove the use of eval()
-            Box = eval(name)
+            Box = Mp4Atom.BOX_TYPES[name]
         elif 'atom_type' in src:
-            Box = MP4_BOXES[src['atom_type']]
+            Box = Mp4Atom.BOXES[src['atom_type']]
         else:
             Box = UnknownBox
         src['parent'] = parent
@@ -483,7 +483,7 @@ class FileTypeBox(Mp4Atom):
             d.write(4, 'compatible_brand', cb)
 
 
-MP4_BOXES['ftyp'] = FileTypeBox
+Mp4Atom.BOXES['ftyp'] = FileTypeBox
 
 class Descriptor(ObjectWithFields):
     __metaclass__ = ABCMeta
@@ -517,7 +517,7 @@ class Descriptor(ObjectWithFields):
             options = Options()
         kw = Descriptor.parse_header(src)
         try:
-            Desc = MP4_DESCRIPTORS[kw["tag"]]
+            Desc = Mp4Atom.DESCRIPTORS[kw["tag"]]
         except KeyError:
             Desc = UnknownDescriptor
         total_size = kw["size"] + kw["header_size"]
@@ -550,7 +550,7 @@ class Descriptor(ObjectWithFields):
     def from_kwargs(clz, tag, **kwargs):
         assert isinstance(tag, int)
         try:
-            Desc = MP4_DESCRIPTORS[tag]
+            Desc = Mp4Atom.DESCRIPTORS[tag]
         except KeyError:
             Desc = UnknownDescriptor
         if Desc.DEFAULT_VALUES is None:
@@ -729,7 +729,7 @@ class ESDescriptor(Descriptor):
             w.write('H', 'ocr_es_id')
 
 
-MP4_DESCRIPTORS[0x03] = ESDescriptor
+Mp4Atom.DESCRIPTORS[0x03] = ESDescriptor
 
 class DecoderConfigDescriptor(Descriptor):
     @classmethod
@@ -759,7 +759,7 @@ class DecoderConfigDescriptor(Descriptor):
         w.write('I', "avg_bitrate")
 
 
-MP4_DESCRIPTORS[0x04] = DecoderConfigDescriptor
+Mp4Atom.DESCRIPTORS[0x04] = DecoderConfigDescriptor
 
 class DecoderSpecificInfo(Descriptor):
     SAMPLE_RATES = [96000, 88200, 64000, 48000, 44100, 32000,
@@ -834,7 +834,7 @@ class DecoderSpecificInfo(Descriptor):
             w.write(None, "data")
 
 
-MP4_DESCRIPTORS[0x05] = DecoderSpecificInfo
+Mp4Atom.DESCRIPTORS[0x05] = DecoderSpecificInfo
 
 class FullBox(Mp4Atom):
     @classmethod
@@ -867,17 +867,17 @@ class MovieBox(BoxWithChildren):
     pass
 
 
-MP4_BOXES['moov'] = MovieBox
+Mp4Atom.BOXES['moov'] = MovieBox
 
 class TrackBox(BoxWithChildren):
     include_atom_type = False
     pass
 
 
-MP4_BOXES['trak'] = TrackBox
+Mp4Atom.BOXES['trak'] = TrackBox
 
 for box in ['mdia', 'minf', 'mvex', 'moof', 'schi', 'sinf', 'stbl', 'traf']:
-    MP4_BOXES[box] = BoxWithChildren
+    Mp4Atom.BOXES[box] = BoxWithChildren
 
 class SampleEntry(Mp4Atom):
     @classmethod
@@ -941,19 +941,19 @@ class AVC1SampleEntry(VisualSampleEntry):
     pass
 
 
-MP4_BOXES['avc1'] = AVC1SampleEntry
+Mp4Atom.BOXES['avc1'] = AVC1SampleEntry
 
 class AVC3SampleEntry(VisualSampleEntry):
     pass
 
 
-MP4_BOXES['avc3'] = AVC3SampleEntry
+Mp4Atom.BOXES['avc3'] = AVC3SampleEntry
 
 class EncryptedSampleEntry(VisualSampleEntry):
     pass
 
 
-MP4_BOXES['encv'] = EncryptedSampleEntry
+Mp4Atom.BOXES['encv'] = EncryptedSampleEntry
 
 class AVCConfigurationBox(Mp4Atom):
     OBJECT_FIELDS = {
@@ -1031,7 +1031,7 @@ class AVCConfigurationBox(Mp4Atom):
                                128, 134, 135, 138, 139]
 
 
-MP4_BOXES['avcC'] = AVCConfigurationBox
+Mp4Atom.BOXES['avcC'] = AVCConfigurationBox
 
 class AudioSampleEntry(SampleEntry):
     parse_children = True
@@ -1060,7 +1060,7 @@ class EC3SampleEntry(AudioSampleEntry):
     pass
 
 
-MP4_BOXES['ec-3'] = EC3SampleEntry
+Mp4Atom.BOXES['ec-3'] = EC3SampleEntry
 
 class EC3SubStream(ObjectWithFields):
     DEFAULT_EXCLUDE = {'src'}
@@ -1132,7 +1132,7 @@ class EC3SpecificBox(Mp4Atom):
         dest.write(ba.bytes)
 
 
-MP4_BOXES['dec3'] = EC3SpecificBox
+Mp4Atom.BOXES['dec3'] = EC3SpecificBox
 
 class OriginalFormatBox(Mp4Atom):
     @classmethod
@@ -1145,7 +1145,7 @@ class OriginalFormatBox(Mp4Atom):
         dest.write(self.data_format)
 
 
-MP4_BOXES['frma'] = OriginalFormatBox
+Mp4Atom.BOXES['frma'] = OriginalFormatBox
 
 # see table 6.3 of 3GPP TS 26.244 V12.3.0
 class MP4AudioSampleEntry(Mp4Atom):
@@ -1174,13 +1174,13 @@ class MP4AudioSampleEntry(Mp4Atom):
         w.write(2, 'reserved', '')
 
 
-MP4_BOXES['mp4a'] = MP4AudioSampleEntry
+Mp4Atom.BOXES['mp4a'] = MP4AudioSampleEntry
 
 class EncryptedMP4A(MP4AudioSampleEntry):
     pass
 
 
-MP4_BOXES['enca'] = EncryptedMP4A
+Mp4Atom.BOXES['enca'] = EncryptedMP4A
 
 class ESDescriptorBox(FullBox):
     OBJECT_FIELDS = {
@@ -1239,7 +1239,7 @@ class ESDescriptorBox(FullBox):
             d.encode(dest)
 
 
-MP4_BOXES['esds'] = ESDescriptorBox
+Mp4Atom.BOXES['esds'] = ESDescriptorBox
 
 class SampleDescriptionBox(FullBox):
     parse_children = True
@@ -1255,7 +1255,7 @@ class SampleDescriptionBox(FullBox):
         dest.write(struct.pack('>I', self.entry_count))
 
 
-MP4_BOXES['stsd'] = SampleDescriptionBox
+Mp4Atom.BOXES['stsd'] = SampleDescriptionBox
 
 class TrackFragmentHeaderBox(FullBox):
     base_data_offset_present = 0x000001
@@ -1311,7 +1311,7 @@ class TrackFragmentHeaderBox(FullBox):
             dest.write(struct.pack('>I', self.default_sample_flags))
 
 
-MP4_BOXES['tfhd'] = TrackFragmentHeaderBox
+Mp4Atom.BOXES['tfhd'] = TrackFragmentHeaderBox
 
 class TrackHeaderBox(FullBox):
     Track_enabled = 0x000001
@@ -1385,7 +1385,7 @@ class TrackHeaderBox(FullBox):
         d.write('D16.16', 'height')  # long(self.height * 65536.0))
 
 
-MP4_BOXES['tkhd'] = TrackHeaderBox
+Mp4Atom.BOXES['tkhd'] = TrackHeaderBox
 
 class TrackFragmentDecodeTimeBox(FullBox):
     @classmethod
@@ -1411,7 +1411,7 @@ class TrackFragmentDecodeTimeBox(FullBox):
             dest=dest, payload=payload.getvalue())
 
 
-MP4_BOXES['tfdt'] = TrackFragmentDecodeTimeBox
+Mp4Atom.BOXES['tfdt'] = TrackFragmentDecodeTimeBox
 
 class TrackExtendsBox(FullBox):
     @classmethod
@@ -1433,7 +1433,7 @@ class TrackExtendsBox(FullBox):
         dest.write(struct.pack('>I', self.default_sample_flags))
 
 
-MP4_BOXES['trex'] = TrackExtendsBox
+Mp4Atom.BOXES['trex'] = TrackExtendsBox
 
 class MediaHeaderBox(FullBox):
     OBJECT_FIELDS = {
@@ -1482,7 +1482,7 @@ class MediaHeaderBox(FullBox):
         dest.write(struct.pack('>H', 0))  # pre_defined
 
 
-MP4_BOXES['mdhd'] = MediaHeaderBox
+Mp4Atom.BOXES['mdhd'] = MediaHeaderBox
 
 class MovieFragmentHeaderBox(FullBox):
     @classmethod
@@ -1496,7 +1496,7 @@ class MovieFragmentHeaderBox(FullBox):
         dest.write(struct.pack('>I', self.sequence_number))
 
 
-MP4_BOXES['mfhd'] = MovieFragmentHeaderBox
+Mp4Atom.BOXES['mfhd'] = MovieFragmentHeaderBox
 
 class HandlerBox(FullBox):
     @classmethod
@@ -1520,7 +1520,7 @@ class HandlerBox(FullBox):
         dest.write(chr(0))  # string is null terminated
 
 
-MP4_BOXES['hdlr'] = HandlerBox
+Mp4Atom.BOXES['hdlr'] = HandlerBox
 
 class MovieExtendsHeaderBox(FullBox):
     @classmethod
@@ -1540,7 +1540,7 @@ class MovieExtendsHeaderBox(FullBox):
             dest.write(struct.pack('>I', self.fragment_duration))
 
 
-MP4_BOXES['mehd'] = MovieExtendsHeaderBox
+Mp4Atom.BOXES['mehd'] = MovieExtendsHeaderBox
 
 class SampleAuxiliaryInformationSizesBox(FullBox):
     @classmethod
@@ -1598,7 +1598,7 @@ class SampleAuxiliaryInformationSizesBox(FullBox):
         return fields
 
 
-MP4_BOXES['saiz'] = SampleAuxiliaryInformationSizesBox
+Mp4Atom.BOXES['saiz'] = SampleAuxiliaryInformationSizesBox
 
 class CencSubSample(ObjectWithFields):
     REQUIRED_FIELDS = {
@@ -1706,7 +1706,7 @@ class CencSampleEncryptionBox(FullBox):
             dest=dest, payload=payload.getvalue())
 
 
-MP4_BOXES["senc"] = CencSampleEncryptionBox
+Mp4Atom.BOXES["senc"] = CencSampleEncryptionBox
 
 class SampleAuxiliaryInformationOffsetsBox(FullBox):
     @classmethod
@@ -1756,7 +1756,7 @@ class SampleAuxiliaryInformationOffsetsBox(FullBox):
 
 SampleAuxiliaryInformationOffsetsBox.check_info_type = SampleAuxiliaryInformationSizesBox.check_info_type
 
-MP4_BOXES['saio'] = SampleAuxiliaryInformationOffsetsBox
+Mp4Atom.BOXES['saio'] = SampleAuxiliaryInformationOffsetsBox
 
 class TrackSample(ObjectWithFields):
     REQUIRED_FIELDS = {
@@ -1868,7 +1868,7 @@ class TrackFragmentRunBox(FullBox):
             sample.encode_fields(dest)
 
 
-MP4_BOXES['trun'] = TrackFragmentRunBox
+Mp4Atom.BOXES['trun'] = TrackFragmentRunBox
 
 class TrackEncryptionBox(FullBox):
     OBJECT_FIELDS = {
@@ -1893,7 +1893,7 @@ class TrackEncryptionBox(FullBox):
         w.write(16, "default_kid")
 
 
-MP4_BOXES['tenc'] = TrackEncryptionBox
+Mp4Atom.BOXES['tenc'] = TrackEncryptionBox
 
 class ContentProtectionSpecificBox(FullBox):
     OBJECT_FIELDS = {
@@ -1960,7 +1960,7 @@ class ContentProtectionSpecificBox(FullBox):
             w.write(None, 'data')
 
 
-MP4_BOXES['pssh'] = ContentProtectionSpecificBox
+Mp4Atom.BOXES['pssh'] = ContentProtectionSpecificBox
 
 class SegmentReference(ObjectWithFields):
     def __init__(self, **kwargs):
@@ -2039,7 +2039,7 @@ class SegmentIndexBox(FullBox):
             ref.encode_fields(dest)
 
 
-MP4_BOXES['sidx'] = SegmentIndexBox
+Mp4Atom.BOXES['sidx'] = SegmentIndexBox
 
 class EventMessageBox(FullBox):
     @classmethod
@@ -2087,7 +2087,11 @@ class EventMessageBox(FullBox):
             d.write(len(self.data), 'data')
 
 
-MP4_BOXES['emsg'] = EventMessageBox
+Mp4Atom.BOXES['emsg'] = EventMessageBox
+
+for clz in Mp4Atom.BOXES.values():
+    Mp4Atom.BOX_TYPES[clz.__name__] = clz
+    Mp4Atom.BOX_TYPES['UnknownBox'] = UnknownBox
 
 class IsoParser(object):
     @staticmethod
