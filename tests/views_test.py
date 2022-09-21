@@ -32,10 +32,42 @@ from server import manifests, models
 from drm.playready import PlayReady
 from gae_base import GAETestBase
 from utils.date_time import UTC, toIsoDateTime
+from utils.objects import dict_to_cgi_params
 
 class TestHandlers(GAETestBase, DashManifestCheckMixin):
+    def test_request_unknown_manifest(self):
+        self.setup_media()
+        self.logoutCurrentUser()
+        baseurl = self.from_uri(
+            'dash-mpd-v3', manifest='unknown.mpd', stream='bbb', mode='live')
+        self.app.get(baseurl, status=404)
+
+    def test_request_unknown_mode(self):
+        self.setup_media()
+        self.logoutCurrentUser()
+        baseurl = self.from_uri(
+            'dash-mpd-v3', manifest='hand_made.mpd', stream='bbb', mode='unknown')
+        self.app.get(baseurl, status=404)
+
+    def test_request_invalid_num_failures(self):
+        self.setup_media()
+        self.logoutCurrentUser()
+        baseurl = self.from_uri(
+            'dash-mpd-v3', manifest='hand_made.mpd', stream='bbb', mode='live')
+        url = baseurl + '?failures=foo'
+        self.app.get(url, status=400)
+        url = baseurl + '?m404=foo'
+        self.app.get(url, status=400)
+
+    def test_legacy_unknown_manifest(self):
+        self.setup_media()
+        url = self.from_uri('dash-mpd-v1', manifest='unknown.mpd')
+        self.app.get(url, status=404)
+
     def test_availability_start_time(self):
-        """Control of MPD@availabilityStartTime using the start parameter"""
+        """
+        Control of MPD@availabilityStartTime using the start parameter
+        """
         self.setup_media()
         self.logoutCurrentUser()
         filename = 'hand_made.mpd'
@@ -90,6 +122,38 @@ class TestHandlers(GAETestBase, DashManifestCheckMixin):
                 self.assertEqual(
                     head.headers['Content-Length'],
                     response.headers['Content-Length'])
+
+    def test_create_manifest_error(self):
+        self.setup_media()
+        self.logoutCurrentUser()
+        start = self.real_datetime_class(2022, 1, 1, 4, 2, 6, tzinfo=UTC())
+        before = self.real_datetime_class(2022, 1, 1, 4, 4, 6, tzinfo=UTC())
+        active = self.real_datetime_class(2022, 1, 1, 4, 5, 6, tzinfo=UTC())
+        after = self.real_datetime_class(2022, 1, 1, 4, 7, 6, tzinfo=UTC())
+        baseurl = self.from_uri(
+            'dash-mpd-v3', manifest='hand_made.mpd',
+            stream='bbb', mode='live')
+        for code in [404, 410, 503, 504]:
+            params = {
+                'm{0:03d}'.format(code): toIsoDateTime(active),
+                'start': toIsoDateTime(start),
+                'mup': '45',
+            }
+            url = baseurl + dict_to_cgi_params(params)
+            with self.mock_datetime_now(before):
+                response = self.app.get(url)
+                self.assertEqual(response.status_int, 200)
+                dv = ViewsTestDashValidator(
+                    http_client=self.app, mode='live',
+                    xml=response.xml, url=url, encrypted=False)
+                dv.validate(depth=2)
+            with self.mock_datetime_now(active):
+                response = self.app.get(url, status=code)
+            with self.mock_datetime_now(after):
+                dv = ViewsTestDashValidator(
+                    http_client=self.app, mode='live',
+                    url=url, encrypted=False)
+                dv.validate(depth=2)
 
     def test_get_vod_media_using_live_profile(self):
         """Get VoD segments for each DRM type (live profile)"""

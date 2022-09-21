@@ -29,6 +29,7 @@ from server import manifests, cgi_options
 from server.routes import routes
 from templates.factory import TemplateFactory
 from utils.date_time import from_isodatetime
+from utils.objects import dict_to_cgi_params
 
 class ServeManifest(RequestHandlerBase):
     """handler for generating MPD files"""
