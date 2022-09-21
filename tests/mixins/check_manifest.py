@@ -203,18 +203,30 @@ class DashManifestCheckMixin(object):
         tested.add(mpd_url)
         self.check_manifest_url(mpd_url, mode, encrypted)
 
-    def check_manifest_url(self, mpd_url, mode, encrypted):
+    def check_manifest_url(self, mpd_url, mode, encrypted, check_head=False):
         """
         Test one manifest for validity
         """
         try:
             self.current_url = mpd_url
             response = self.app.get(mpd_url)
+            if response.status_int == 302:
+                # Handle redirect request
+                mpd_url = response.headers['Location']
+                self.current_url = mpd_url
+                response = self.app.get(mpd_url)
             # print(response.text)
             dv = ViewsTestDashValidator(
-                self.app, mode, response.xml, mpd_url, encrypted)
+                http_client=self.app, mode=mode, xml=response.xml,
+                url=mpd_url, encrypted=encrypted)
             dv.validate(depth=3)
+            if check_head:
+                head = self.app.head(mpd_url)
             if mode != 'live':
+                if check_head:
+                    self.assertEqual(
+                        head.headers['Content-Length'],
+                        response.headers['Content-Length'])
                 if dv.manifest.mediaPresentationDuration is None:
                     # duration must be specified in the Period
                     dur = datetime.timedelta(seconds=0)

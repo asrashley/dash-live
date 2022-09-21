@@ -37,8 +37,6 @@ class ServeManifest(RequestHandlerBase):
         self.get(**kwargs)
 
     def get(self, mode, stream, manifest, **kwargs):
-        if manifest in self.legacy_manifest_names:
-            manifest = self.legacy_manifest_names[manifest]
         try:
             mft = manifests.manifest[manifest]
         except KeyError:
@@ -65,56 +63,70 @@ class ServeManifest(RequestHandlerBase):
             self.response.set_status(400)
             return
         context.update(dash)
-        for code in self.INJECTED_ERROR_CODES:
-            if self.request.params.get('m%03d' % code) is not None:
-                try:
-                    num_failures = int(
-                        self.request.params.get('failures', '1'), 10)
-                    for d in self.request.params.get(
-                            'm%03d' % code).split(','):
-                        tm = from_isodatetime(d)
-                        tm = dash['availabilityStartTime'].replace(
-                            hour=tm.hour, minute=tm.minute, second=tm.second)
-                        try:
-                            tm2 = tm + \
-                                datetime.timedelta(
-                                    seconds=context['minimumUpdatePeriod'])
-                        except KeyError:
-                            tm2 = tm + \
-                                datetime.timedelta(
-                                    seconds=context['minimumUpdatePeriod'])
-                        if dash['now'] >= tm and dash['now'] <= tm2:
-                            if code < 500 or self.increment_memcache_counter(
-                                    0, code) <= num_failures:
-                                self.response.write(
-                                    'Synthetic %d for manifest' % (code))
-                                self.response.set_status(code)
-                                return
-                except ValueError as e:
-                    self.response.write(
-                        'Invalid CGI parameters: %s' % (str(e)))
-                    self.response.set_status(400)
-                    return
+        if mode == 'live' and self.check_for_synthetic_manifest_error(context):
+            return
         template = TemplateFactory.get_template(manifest)
         self.add_allowed_origins()
         self.response.headers.add_header('Accept-Ranges', 'none')
         self.response.write(template.render(context))
 
+    def check_for_synthetic_manifest_error(self, context):
+        try:
+            num_failures = int(self.request.params.get('failures', '1'), 10)
+        except ValueError as err:
+            self.response.write('Invalid CGI parameters: %s' % (str(err)))
+            self.response.set_status(400)
+            return True
+        for code in self.INJECTED_ERROR_CODES:
+            if self.request.params.get('m%03d' % code) is None:
+                continue
+            dates = self.request.params.get('m%03d' % code, "").split(',')
+            for d in dates:
+                try:
+                    tm = from_isodatetime(d)
+                except ValueError as e:
+                    self.response.write(
+                        'Invalid CGI parameters: %s' % (str(e)))
+                    self.response.set_status(400)
+                    return True
+                tm = context['availabilityStartTime'].replace(
+                    hour=tm.hour, minute=tm.minute, second=tm.second)
+                try:
+                    tm2 = (tm + datetime.timedelta(
+                        seconds=context['minimumUpdatePeriod']))
+                except KeyError:
+                    tm2 = (tm + datetime.timedelta(
+                        seconds=context['minimumUpdatePeriod']))
+                if context['now'] >= tm and context['now'] <= tm2:
+                    if code < 500 or self.increment_memcache_counter(0, code) <= num_failures:
+                        self.response.write(
+                            'Synthetic %d for manifest' % (code))
+                        self.response.set_status(code)
+                        return True
+        return False
+
 
 class LegacyManifestUrl(ServeManifest):
+    legacy_manifest_names = {
+        'hand_made.mpd': ('hand_made.mpd', {}),
+        'enc.mpd': ('hand_made.mpd', {'drm': 'all'}),
+        'manifest_vod.mpd': ('hand_made.mpd', {'mode': 'vod'}),
+    }
+
     def head(self, manifest, **kwargs):
-        stream = kwargs.get("stream", "bbb")
-        mode = self.request.params.get("mode", "live")
-        kwargs["stream"] = stream
-        kwargs["mode"] = mode
-        return super(LegacyManifestUrl, self).head(manifest=manifest, **kwargs)
+        return self.get(manifest, **kwargs)
 
     def get(self, manifest, **kwargs):
         try:
-            stream = kwargs["stream"]
-            del kwargs["stream"]
+            name, params = self.legacy_manifest_names[manifest]
+            stream = kwargs.get("stream", "bbb")
+            mode = self.request.params.get("mode", "vod")
+            url = self.uri_for('dash-mpd-v3', manifest=name,
+                               stream=stream, mode=mode)
+            params.update(self.request.params)
+            url += dict_to_cgi_params(params)
+            self.redirect(url)
         except KeyError:
-            stream = "bbb"
-        kwargs["mode"] = self.request.params.get("mode", "live")
-        return super(LegacyManifestUrl, self).get(
-            stream=stream, manifest=manifest, **kwargs)
+            logging.debug('Unknown manifest: %s', manifest)
+            self.response.write('%s not found' % (manifest))
+            self.response.set_status(404)
