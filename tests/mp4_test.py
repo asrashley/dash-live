@@ -22,7 +22,6 @@
 
 import binascii
 import io
-import logging
 import os
 import struct
 import sys
@@ -46,7 +45,6 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         self._moov = None
         self._enc_moov = None
         self._segment = None
-        logging.basicConfig(level=logging.DEBUG)
 
     @property
     def segment(self):
