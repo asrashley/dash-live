@@ -310,7 +310,7 @@ class TestHandlers(GAETestBase, DashManifestCheckMixin):
 if os.environ.get("TESTS"):
     def load_tests(loader, tests, pattern):
         logging.basicConfig()
-        logging.getLogger().setLevel(logging.DEBUG)
+        # logging.getLogger().setLevel(logging.DEBUG)
         return unittest.loader.TestLoader().loadTestsFromNames(
             os.environ["TESTS"].split(','),
             TestHandlers)
