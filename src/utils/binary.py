@@ -29,7 +29,6 @@ class Binary(object):
     def __init__(self, data, encoding=BASE64, _type=None):
         if data is not None:
             if _type is not None:
-                assert _type == self.classname
                 if encoding == self.BASE64:
                     data = base64.b64decode(data)
                 elif encoding == self.HEX:
@@ -42,10 +41,12 @@ class Binary(object):
         if data is not None:
             if isinstance(data, Binary):
                 return data
-            if encoding == clz.HEX or data[:2] == '0x':
-                data = unhexlify(data)
-            elif encoding == clz.BASE64:
+            if encoding == clz.BASE64:
                 data = base64.b64decode(data)
+            elif encoding == clz.HEX or data[:2] == '0x':
+                if data[:2] == '0x':
+                    data = data[2:]
+                data = unhexlify(data)
         if encoding is None:
             encoding = clz.BASE64
         return Binary(data=data, encoding=encoding)
@@ -93,3 +94,22 @@ class Binary(object):
             self.classname,
             self.encoding,
             encoded_data)
+
+class HexBinary(Binary):
+    def __init__(self, data, encoding=None, _type=None):
+        super(HexBinary, self).__init__(data, encoding, _type)
+        self.encoding = Binary.HEX
+
+    @classmethod
+    def from_kwargs(clz, data, encoding=None, _type=None):
+        assert encoding != Binary.BASE64
+        if data is not None:
+            if isinstance(data, HexBinary):
+                return data
+            if encoding is None and (len(data) % 2) == 0 and data[:2] == '0x':
+                encoding = Binary.HEX
+            if encoding == Binary.HEX:
+                data = unhexlify(data)
+        if encoding is None:
+            encoding = Binary.HEX
+        return HexBinary(data=data, encoding=encoding)

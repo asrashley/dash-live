@@ -38,7 +38,7 @@ except ImportError:
     import bitstring
 
 from utils.bitio import FieldReader, BitsFieldReader, FieldWriter
-from utils.binary import Binary
+from utils.binary import Binary, HexBinary
 from utils.date_time import DateTimeField, from_iso_epoch, to_iso_epoch
 from utils.object_with_fields import ObjectWithFields
 from utils.list_of import ListOf
@@ -1600,6 +1600,7 @@ class SampleAuxiliaryInformationSizesBox(FullBox):
 
 Mp4Atom.BOXES['saiz'] = SampleAuxiliaryInformationSizesBox
 
+# See 2.2.4 of Common File Format & Media Formats Specification Version 2.1
 class CencSubSample(ObjectWithFields):
     REQUIRED_FIELDS = {
         'clear': int,
@@ -1620,24 +1621,28 @@ class CencSubSample(ObjectWithFields):
 
 
 class CencSampleAuxiliaryData(ObjectWithFields):
+    UseSubsampleEncryption = 2
+
     OBJECT_FIELDS = {
-        "initialization_vector": Binary,
+        "initialization_vector": HexBinary,
         "subsamples": ListOf(CencSubSample),
     }
 
     @classmethod
     def parse(clz, src, size, iv_size, flags, parent):
+        subsample_encryption = (flags & clz.UseSubsampleEncryption) == clz.UseSubsampleEncryption
         if iv_size is None:
-            if (flags & 0x02) == 0x00:
+            if not subsample_encryption:
                 iv_size = size
             else:
                 raise ValueError("Unable to determine IV size")
         rv = {
             "iv_size": iv_size,
+            "size": size,
         }
         rv["initialization_vector"] = src.read(iv_size)
         rv["subsamples"] = []
-        if (flags & 0x02) == 0x02 and size >= (iv_size + 2):
+        if subsample_encryption and size >= (iv_size + 2):
             subsample_count = struct.unpack('>H', src.read(2))[0]
             if size < (subsample_count * 6):
                 raise ValueError('Invalid subsample_count %d' % subsample_count)
@@ -1654,10 +1659,9 @@ class CencSampleAuxiliaryData(ObjectWithFields):
             for samp in self.subsamples:
                 samp.encode_fields(dest)
 
-
 class CencSampleEncryptionBox(FullBox):
     OBJECT_FIELDS = {
-        "kid": Binary,
+        "kid": HexBinary,
         "samples": ListOf(CencSampleAuxiliaryData),
     }
     OBJECT_FIELDS.update(FullBox.OBJECT_FIELDS)
@@ -1680,7 +1684,7 @@ class CencSampleEncryptionBox(FullBox):
             except AttributeError:
                 rv["iv_size"] = kwargs["options"].iv_size
         num_entries = struct.unpack('>I', src.read(4))[0]
-        rv["subsample_count"] = num_entries
+        rv["sample_count"] = num_entries
         rv["samples"] = []
         saiz = parent.saiz
         for i in range(num_entries):
@@ -1699,6 +1703,7 @@ class CencSampleEncryptionBox(FullBox):
             payload.write(struct.pack('>I', self.algorithm_id))
             payload.write(struct.pack('B', self.iv_size))
             payload.write(self.kid)
+        self.sample_count = len(self.samples)
         payload.write(struct.pack('>I', len(self.samples)))
         for s in self.samples:
             s.encode_fields(payload, self)
