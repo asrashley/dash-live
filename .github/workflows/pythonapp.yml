@@ -24,19 +24,12 @@ jobs:
         flake8 src tests --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 src tests --count --ignore E302,E402,C901,W504 --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-    - name: Unit tests (excluding slower manifest tests)
+    - name: Unit tests that don't need Google App Engine runtime
       run: |
-        python tests/api_test.py
         python tests/clearkey_test.py
         python tests/crc32_test.py
-        python tests/events_test.py
-        python tests/html_test.py
         python tests/keymaterial_test.py
-        python tests/manifest_n_test.py
         python tests/marlin_test.py
         python tests/mp4_test.py
-        python tests/playready_test.py
-        python tests/scte35_test.py
         python tests/segment_test.py
         python tests/utils_test.py
-        python tests/views_test.py
