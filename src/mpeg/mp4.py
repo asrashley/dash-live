@@ -48,6 +48,7 @@ class Options(ObjectWithFields):
     DEFAULT_VALUES = {
         "cache_encoded": False,
         "iv_size": None,
+        "strict": False,
     }
 
     def __init__(self, **kwargs):
@@ -260,9 +261,11 @@ class Mp4Atom(ObjectWithFields):
             if encoded:
                 atom._encoded = encoded
             if (src.tell() - atom.position) != atom.size:
-                options.log.warning(
-                    '%s: expected %s to contain %d bytes but parsed %d bytes',
+                msg = r'{0}: expected "{1}" to contain {2:d} bytes but parsed {3:d} bytes'.format(
                     prefix, atom.atom_type, atom.size, src.tell() - atom.position)
+                options.log.warning(msg)
+                if options.strict:
+                    raise ValueError(msg)
             cursor += atom.size
         return rv
 
@@ -846,13 +849,15 @@ class FullBox(Mp4Atom):
         rv["flags"] = struct.unpack('>I', f)[0]
         return rv
 
-    def encode_fields(self, dest, payload=None):
+    def encode_fields(self, dest):
         d = FieldWriter(self, dest)
         d.write('B', 'version')
         d.write(3, 'flags', value=struct.pack('>I', self.flags)[1:])
-        if payload is not None:
-            d.write(None, 'payload', value=payload)
+        self.encode_box_fields(dest)
 
+    @abstractmethod
+    def encode_box_fields(self, dest):
+        pass
 
 class BoxWithChildren(Mp4Atom):
     parse_children = True
@@ -1233,8 +1238,7 @@ class ESDescriptorBox(FullBox):
                 return
         raise AttributeError(name)
 
-    def encode_fields(self, dest):
-        super(ESDescriptorBox, self).encode_fields(dest)
+    def encode_box_fields(self, dest):
         for d in self.descriptors:
             d.encode(dest)
 
@@ -1250,9 +1254,9 @@ class SampleDescriptionBox(FullBox):
         rv["entry_count"] = struct.unpack('>I', src.read(4))[0]
         return rv
 
-    def encode_fields(self, dest):
-        super(SampleDescriptionBox, self).encode_fields(dest)
-        dest.write(struct.pack('>I', self.entry_count))
+    def encode_box_fields(self, dest):
+        w = FieldWriter(self, dest)
+        w.write('I', 'entry_count')
 
 
 Mp4Atom.BOXES['stsd'] = SampleDescriptionBox
@@ -1296,19 +1300,19 @@ class TrackFragmentHeaderBox(FullBox):
             r.read('I', 'default_sample_flags')
         return rv
 
-    def encode_fields(self, dest):
-        super(TrackFragmentHeaderBox, self).encode_fields(dest)
-        dest.write(struct.pack('>I', self.track_id))
+    def encode_box_fields(self, dest):
+        w = FieldWriter(self, dest)
+        w.write('I', 'track_id')
         if self.flags & self.base_data_offset_present:
-            dest.write(struct.pack('>Q', self.base_data_offset))
+            w.write('Q', 'base_data_offset')
         if self.flags & self.sample_description_index_present:
-            dest.write(struct.pack('>I', self.sample_description_index))
+            w.write('I', 'sample_description_index')
         if self.flags & self.default_sample_duration_present:
-            dest.write(struct.pack('>I', self.default_sample_duration))
+            w.write('I', 'default_sample_duration')
         if self.flags & self.default_sample_size_present:
-            dest.write(struct.pack('>I', self.default_sample_size))
+            w.write('I', 'default_sample_size')
         if self.flags & self.default_sample_flags_present:
-            dest.write(struct.pack('>I', self.default_sample_flags))
+            w.write('I', 'default_sample_flags')
 
 
 Mp4Atom.BOXES['tfhd'] = TrackFragmentHeaderBox
@@ -1364,6 +1368,8 @@ class TrackHeaderBox(FullBox):
         if self.in_preview:
             self.flags |= self.Track_in_preview
         super(TrackHeaderBox, self).encode_fields(dest)
+
+    def encode_box_fields(self, dest):
         d = FieldWriter(self, dest)
         if self.version == 1:
             sz = 'Q'
@@ -1398,17 +1404,18 @@ class TrackFragmentDecodeTimeBox(FullBox):
         return rv
 
     def encode_fields(self, dest):
-        payload = io.BytesIO()
         if self.base_media_decode_time > long(1 << 32):
             self.version = 1
         else:
             self.version = 0
+        super(TrackFragmentDecodeTimeBox, self).encode_fields(dest)
+
+    def encode_box_fields(self, dest):
+        d = FieldWriter(self, dest)
         if self.version == 1:
-            payload.write(struct.pack('>Q', self.base_media_decode_time))
+            d.write('Q', 'base_media_decode_time')
         else:
-            payload.write(struct.pack('>I', self.base_media_decode_time))
-        return super(TrackFragmentDecodeTimeBox, self).encode_fields(
-            dest=dest, payload=payload.getvalue())
+            d.write('I', 'base_media_decode_time')
 
 
 Mp4Atom.BOXES['tfdt'] = TrackFragmentDecodeTimeBox
@@ -1424,13 +1431,13 @@ class TrackExtendsBox(FullBox):
         rv["default_sample_flags"] = struct.unpack('>I', src.read(4))[0]
         return rv
 
-    def encode_fields(self, dest):
-        super(TrackExtendsBox, self).encode_fields(dest)
-        dest.write(struct.pack('>I', self.track_id))
-        dest.write(struct.pack('>I', self.default_sample_description_index))
-        dest.write(struct.pack('>I', self.default_sample_duration))
-        dest.write(struct.pack('>I', self.default_sample_size))
-        dest.write(struct.pack('>I', self.default_sample_flags))
+    def encode_box_fields(self, dest):
+        w = FieldWriter(self, dest)
+        w.write('I', 'track_id')
+        w.write('I', 'default_sample_description_index')
+        w.write('I', 'default_sample_duration')
+        w.write('I', 'default_sample_size')
+        w.write('I', 'default_sample_flags')
 
 
 Mp4Atom.BOXES['trex'] = TrackExtendsBox
@@ -1466,20 +1473,20 @@ class MediaHeaderBox(FullBox):
         src.read(2)  # unsigned int(16) pre_defined = 0
         return rv
 
-    def encode_fields(self, dest):
-        super(MediaHeaderBox, self).encode_fields(dest)
+    def encode_box_fields(self, dest):
+        w = FieldWriter(self, dest)
         if self.version == 1:
-            sz = '>Q'
+            sz = 'Q'
         else:
-            sz = '>I'
-        dest.write(struct.pack(sz, to_iso_epoch(self.creation_time)))
-        dest.write(struct.pack(sz, to_iso_epoch(self.modification_time)))
-        dest.write(struct.pack('>I', self.timescale))
-        dest.write(struct.pack(sz, self.duration))
+            sz = 'I'
+        w.write(sz, 'creation_time', value=to_iso_epoch(self.creation_time))
+        w.write(sz, 'modification_time', value=to_iso_epoch(self.modification_time))
+        w.write('I', 'timescale')
+        w.write(sz, 'duration')
         chars = map(lambda c: ord(c) - 0x60, list(self.language))
         lang = (chars[0] << 10) + (chars[1] << 5) + chars[2]
-        dest.write(struct.pack('>H', lang))
-        dest.write(struct.pack('>H', 0))  # pre_defined
+        w.write('H', 'lang', value=lang)
+        w.write('H', 'pre_defined', value=0)
 
 
 Mp4Atom.BOXES['mdhd'] = MediaHeaderBox
@@ -1491,9 +1498,9 @@ class MovieFragmentHeaderBox(FullBox):
         rv["sequence_number"] = struct.unpack('>I', src.read(4))[0]
         return rv
 
-    def encode_fields(self, dest):
-        super(MovieFragmentHeaderBox, self).encode_fields(dest)
-        dest.write(struct.pack('>I', self.sequence_number))
+    def encode_box_fields(self, dest):
+        w = FieldWriter(self, dest)
+        w.write('I', 'sequence_number')
 
 
 Mp4Atom.BOXES['mfhd'] = MovieFragmentHeaderBox
@@ -1511,13 +1518,12 @@ class HandlerBox(FullBox):
             rv["name"] = rv["name"].split('\0')[0]
         return rv
 
-    def encode_fields(self, dest):
-        super(HandlerBox, self).encode_fields(dest)
-        dest.write('\0' * 4)  # pre_defined = 0
-        dest.write(self.handler_type)
-        dest.write('\0' * 12)  # reserved = 0
-        dest.write(self.name)
-        dest.write(chr(0))  # string is null terminated
+    def encode_box_fields(self, dest):
+        w = FieldWriter(self, dest)
+        w.write('I', 'pre_defined', value=0)
+        w.write(None, 'handler_type')
+        w.write(None, 'reserved', value=('\0' * 12))  # reserved = 0
+        w.write('S0', 'name')
 
 
 Mp4Atom.BOXES['hdlr'] = HandlerBox
@@ -1532,12 +1538,12 @@ class MovieExtendsHeaderBox(FullBox):
             rv["fragment_duration"] = struct.unpack('>I', src.read(4))[0]
         return rv
 
-    def encode_fields(self, dest):
-        super(MovieExtendsHeaderBox, self).encode_fields(dest)
+    def encode_box_fields(self, dest):
+        w = FieldWriter(self, dest)
         if self.version == 1:
-            dest.write(struct.pack('>Q', self.fragment_duration))
+            w.write('Q', 'fragment_duration')
         else:
-            dest.write(struct.pack('>I', self.fragment_duration))
+            w.write('I', 'fragment_duration')
 
 
 Mp4Atom.BOXES['mehd'] = MovieExtendsHeaderBox
@@ -1558,21 +1564,18 @@ class SampleAuxiliaryInformationSizesBox(FullBox):
                     struct.unpack('B', src.read(1))[0])
         return rv
 
-
-    def encode_fields(self, dest):
-        payload = io.BytesIO()
+    def encode_box_fields(self, dest):
+        w = FieldWriter(self, dest)
         if self.flags & 1:
-            payload.write(struct.pack('>I', self.aux_info_type))
-            payload.write(struct.pack('>I', self.aux_info_type_parameter))
-        payload.write(struct.pack('B', self.default_sample_info_size))
+            w.write('I', 'aux_info_type')
+            w.write('I', 'aux_info_type_parameter')
+        w.write('B', 'default_sample_info_size')
         if self.default_sample_info_size == 0:
             self.sample_count = len(self.sample_info_sizes)
-        payload.write(struct.pack('>I', self.sample_count))
+        w.write('I', 'sample_count')
         if self.default_sample_info_size == 0:
             for sz in self.sample_info_sizes:
-                payload.write(struct.pack('B', sz))
-        super(SampleAuxiliaryInformationSizesBox, self).encode_fields(
-            dest=dest, payload=payload.getvalue())
+                w.write('B', 'size', value=sz)
 
     def _to_json(self, exclude):
         exclude.add('aux_info_type')
@@ -1599,9 +1602,10 @@ class CencSubSample(ObjectWithFields):
         }
         return rv
 
-    def encode_fields(self, dest):
-        dest.write(struct.pack('>H', self.clear))
-        dest.write(struct.pack('>I', self.encrypted))
+    def encode(self, dest):
+        d = FieldWriter(self, dest)
+        d.write('H', 'clear')
+        d.write('I', 'encrypted')
 
 
 class CencSampleAuxiliaryData(ObjectWithFields):
@@ -1634,14 +1638,15 @@ class CencSampleAuxiliaryData(ObjectWithFields):
                 rv["subsamples"].append(CencSubSample.parse(src))
         return rv
 
-    def encode_fields(self, dest, parent):
-        assert isinstance(self.initialization_vector, Binary)
+    def encode(self, dest, parent):
         assert len(self.initialization_vector) == self.iv_size
-        dest.write(self.initialization_vector.data)
-        if (parent.flags & 0x02) == 0x02:
-            dest.write(struct.pack('>H', len(self.subsamples)))
+        d = FieldWriter(self, dest)
+        d.write(None, 'initialization_vector')
+        if ((parent.flags & self.UseSubsampleEncryption) == self.UseSubsampleEncryption and
+                self.subsamples):
+            d.write('H', 'subsample_count', value=len(self.subsamples))
             for samp in self.subsamples:
-                samp.encode_fields(dest)
+                samp.encode(dest)
 
 class CencSampleEncryptionBox(FullBox):
     OBJECT_FIELDS = {
@@ -1682,17 +1687,19 @@ class CencSampleEncryptionBox(FullBox):
     def encode_fields(self, dest):
         if len(self.samples) > 0:
             self.flags |= 0x02
-        payload = io.BytesIO()
+        super(CencSampleEncryptionBox, self).encode_fields(dest)
+
+    def encode_box_fields(self, dest):
+        d = FieldWriter(self, dest)
         if self.flags & 0x01:
-            payload.write(struct.pack('>I', self.algorithm_id))
-            payload.write(struct.pack('B', self.iv_size))
-            payload.write(self.kid)
+            alg = struct.pack('>I', self.algorithm_id)
+            d.write(3, 'algorithm_id', value=alg[1:])
+            d.write('B', 'iv_size')
+            d.write(16, 'kid')
         self.sample_count = len(self.samples)
-        payload.write(struct.pack('>I', len(self.samples)))
+        d.write('I', 'sample_count', value=len(self.samples))
         for s in self.samples:
-            s.encode_fields(payload, self)
-        return super(CencSampleEncryptionBox, self).encode_fields(
-            dest=dest, payload=payload.getvalue())
+            s.encode(dest, self)
 
 
 Mp4Atom.BOXES["senc"] = CencSampleEncryptionBox
@@ -1714,22 +1721,17 @@ class SampleAuxiliaryInformationOffsetsBox(FullBox):
             rv["offsets"].append(o)
         return rv
 
-    def encode_fields(self, dest):
-        payload = io.BytesIO()
+    def encode_box_fields(self, dest):
+        w = FieldWriter(self, dest)
         if self.flags & 0x01:
-            if isinstance(self.aux_info_type, basestring):
-                payload.write(self.aux_info_type)
-            else:
-                payload.write(struct.pack('>I', self.aux_info_type))
-            payload.write(struct.pack('>I', self.aux_info_type_parameter))
-        payload.write(struct.pack('>I', len(self.offsets)))
+            w.write('I', 'aux_info_type')
+            w.write('I', 'aux_info_type_parameter')
+        w.write('I', 'entry_count', value=len(self.offsets))
         for off in self.offsets:
             if self.version == 0:
-                payload.write(struct.pack('>I', off))
+                w.write('I', 'offset', value=off)
             else:
-                payload.write(struct.pack('>Q', off))
-        super(SampleAuxiliaryInformationOffsetsBox, self).encode_fields(
-            dest=dest, payload=payload.getvalue())
+                w.write('Q', 'offset', value=off)
 
     def _to_json(self, exclude):
         exclude.add('aux_info_type')
@@ -1773,7 +1775,7 @@ class TrackSample(ObjectWithFields):
             rv["composition_time_offset"] = struct.unpack('>i', src.read(4))[0]
         return rv
 
-    def encode_fields(self, dest):
+    def encode(self, dest):
         flags = self.parent.flags
         d = FieldWriter(self, dest)
         if flags & TrackFragmentRunBox.sample_duration_present:
@@ -1840,15 +1842,15 @@ class TrackFragmentRunBox(FullBox):
                 pos += nal.size + nal_length_field_length
                 sample.nals.append(nal)
 
-    def encode_fields(self, dest):
-        super(TrackFragmentRunBox, self).encode_fields(dest)
-        dest.write(struct.pack('>I', self.sample_count))
+    def encode_box_fields(self, dest):
+        w = FieldWriter(self, dest)
+        w.write('I', 'sample_count')
         if self.flags & self.data_offset_present:
-            dest.write(struct.pack('>i', self.data_offset))
+            w.write('I', 'data_offset')
         if self.flags & self.first_sample_flags_present:
-            dest.write(struct.pack('>I', self.first_sample_flags))
+            w.write('I', 'first_sample_flags')
         for sample in self.samples:
-            sample.encode_fields(dest)
+            sample.encode(dest)
 
 
 Mp4Atom.BOXES['trun'] = TrackFragmentRunBox
@@ -1868,8 +1870,7 @@ class TrackEncryptionBox(FullBox):
         r.read(16, "default_kid")
         return rv
 
-    def encode_fields(self, dest):
-        super(TrackEncryptionBox, self).encode_fields(dest)
+    def encode_box_fields(self, dest):
         w = FieldWriter(self, dest)
         w.write('0I', "is_encrypted")
         w.write('B', "iv_size")
@@ -1928,8 +1929,7 @@ class ContentProtectionSpecificBox(FullBox):
             rv["data"] = None
         return rv
 
-    def encode_fields(self, dest):
-        super(ContentProtectionSpecificBox, self).encode_fields(dest)
+    def encode_box_fields(self, dest):
         w = FieldWriter(self, dest)
         w.write(16, 'system_id')
         if self.version > 0:
@@ -1974,7 +1974,7 @@ class SegmentReference(ObjectWithFields):
                 fields[k] = v
         return fields
 
-    def encode_fields(self, dest):
+    def encode(self, dest):
         w = FieldWriter(self, dest)
         w.writebits(1, 'reference_type')
         w.writebits(31, 'referenced_size')
@@ -2008,8 +2008,7 @@ class SegmentIndexBox(FullBox):
                 SegmentReference(**SegmentReference.parse(src, parent)))
         return rv
 
-    def encode_fields(self, dest):
-        super(SegmentIndexBox, self).encode_fields(dest)
+    def encode_box_fields(self, dest):
         w = FieldWriter(self, dest)
         w.write('I', 'reference_id')
         w.write('I', 'timescale')
@@ -2019,7 +2018,7 @@ class SegmentIndexBox(FullBox):
         w.write('H', 'reserved', 0)
         w.write('H', 'reference_count', len(self.references))
         for ref in self.references:
-            ref.encode_fields(dest)
+            ref.encode(w)
 
 
 Mp4Atom.BOXES['sidx'] = SegmentIndexBox
@@ -2049,8 +2048,7 @@ class EventMessageBox(FullBox):
             r.read(end - src.tell(), 'data')
         return rv
 
-    def encode_fields(self, dest):
-        super(EventMessageBox, self).encode_fields(dest)
+    def encode_box_fields(self, dest):
         d = FieldWriter(self, dest)
         if self.version == 0:
             d.write('S0', 'scheme_id_uri')
@@ -2067,7 +2065,7 @@ class EventMessageBox(FullBox):
             d.write('S0', 'scheme_id_uri')
             d.write('S0', 'value')
         if self.data is not None:
-            d.write(len(self.data), 'data')
+            d.write(None, 'data')
 
 
 Mp4Atom.BOXES['emsg'] = EventMessageBox
