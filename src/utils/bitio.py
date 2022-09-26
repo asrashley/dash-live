@@ -187,6 +187,8 @@ class BitsFieldReader(object):
 class FieldWriter(object):
     def __init__(self, obj, dest, debug=False):
         self.obj = obj
+        if isinstance(dest, FieldWriter):
+            dest = dest.dest
         self.dest = dest
         self.bits = None
         if debug or getattr(self.obj, 'debug', False):
@@ -230,7 +232,7 @@ class FieldWriter(object):
                 '%s: Write %s size=%s (%d) pos=%d value=%s',
                 self.obj.classname, field, str(size), len(value),
                 self.dest.tell(), v)
-        self.dest.write(value)
+        return self.dest.write(value)
 
     def writebits(self, size, field, value=None):
         if self.bits is None:

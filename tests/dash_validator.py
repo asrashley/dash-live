@@ -1190,7 +1190,7 @@ class MediaSegment(DashElement):
         if self.parent.mimeType is not None:
             self.assertStartsWith(response.headers['content-type'], self.parent.mimeType)
         src = BufferedReader(None, data=response.body)
-        options = {}
+        options = {"strict": True}
         self.assertEqual(self.options.encrypted, self.info.encrypted)
         if self.info.encrypted:
             options["iv_size"] = self.info.iv_size
