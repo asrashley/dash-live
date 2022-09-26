@@ -1547,40 +1547,27 @@ class SampleAuxiliaryInformationSizesBox(FullBox):
     def parse(clz, src, parent, **kwargs):
         rv = FullBox.parse(src, parent, **kwargs)
         if rv["flags"] & 1:
-            rv["aux_info_type"] = clz.check_info_type(
-                struct.unpack('>I', src.read(4))[0])
+            rv["aux_info_type"] = struct.unpack('>I', src.read(4))[0]
             rv["aux_info_type_parameter"] = struct.unpack('>I', src.read(4))[0]
         rv["default_sample_info_size"] = struct.unpack('B', src.read(1))[0]
         rv["sample_info_sizes"] = []
-        sample_count = struct.unpack('>I', src.read(4))[0]
+        rv["sample_count"] = struct.unpack('>I', src.read(4))[0]
         if rv["default_sample_info_size"] == 0:
-            for i in range(sample_count):
+            for i in range(rv["sample_count"]):
                 rv["sample_info_sizes"].append(
                     struct.unpack('B', src.read(1))[0])
         return rv
 
-    @classmethod
-    def check_info_type(clz, info_type):
-        s = ''.join([
-            chr((info_type >> 24) & 0xFF),
-            chr((info_type >> 16) & 0xFF),
-            chr((info_type >> 8) & 0xFF),
-            chr((info_type) & 0xFF)
-        ])
-        if s.isalpha():
-            return s
-        return info_type
 
     def encode_fields(self, dest):
         payload = io.BytesIO()
         if self.flags & 1:
-            if isinstance(self.aux_info_type, basestring):
-                payload.write(self.aux_info_type)
-            else:
-                payload.write(struct.pack('>I', self.aux_info_type))
+            payload.write(struct.pack('>I', self.aux_info_type))
             payload.write(struct.pack('>I', self.aux_info_type_parameter))
         payload.write(struct.pack('B', self.default_sample_info_size))
-        payload.write(struct.pack('>I', len(self.sample_info_sizes)))
+        if self.default_sample_info_size == 0:
+            self.sample_count = len(self.sample_info_sizes)
+        payload.write(struct.pack('>I', self.sample_count))
         if self.default_sample_info_size == 0:
             for sz in self.sample_info_sizes:
                 payload.write(struct.pack('B', sz))
@@ -1588,13 +1575,10 @@ class SampleAuxiliaryInformationSizesBox(FullBox):
             dest=dest, payload=payload.getvalue())
 
     def _to_json(self, exclude):
-        exclude.append('aux_info_type')
+        exclude.add('aux_info_type')
         fields = super(FullBox, self)._to_json(exclude)
         if "aux_info_type" in self._fields:
-            if isinstance(self.aux_info_type, basestring):
-                fields['aux_info_type'] = '"%s"' % self.aux_info_type
-            else:
-                fields['aux_info_type'] = '0x%x' % self.aux_info_type
+            fields['aux_info_type'] = '0x%x' % self.aux_info_type
         return fields
 
 
@@ -1718,8 +1702,7 @@ class SampleAuxiliaryInformationOffsetsBox(FullBox):
     def parse(clz, src, parent, **kwargs):
         rv = FullBox.parse(src, parent, **kwargs)
         if rv["flags"] & 0x01:
-            rv["aux_info_type"] = clz.check_info_type(
-                struct.unpack('>I', src.read(4))[0])
+            rv["aux_info_type"] = struct.unpack('>I', src.read(4))[0]
             rv["aux_info_type_parameter"] = struct.unpack('>I', src.read(4))[0]
         entry_count = struct.unpack('>I', src.read(4))[0]
         rv["offsets"] = []
@@ -1752,14 +1735,9 @@ class SampleAuxiliaryInformationOffsetsBox(FullBox):
         exclude.add('aux_info_type')
         fields = super(FullBox, self)._to_json(exclude)
         if "aux_info_type" in self._fields:
-            if isinstance(self.aux_info_type, basestring):
-                fields['aux_info_type'] = '"%s"' % self.aux_info_type
-            else:
-                fields['aux_info_type'] = '0x%x' % self.aux_info_type
+            fields['aux_info_type'] = '0x%x' % self.aux_info_type
         return fields
 
-
-SampleAuxiliaryInformationOffsetsBox.check_info_type = SampleAuxiliaryInformationSizesBox.check_info_type
 
 Mp4Atom.BOXES['saio'] = SampleAuxiliaryInformationOffsetsBox
 

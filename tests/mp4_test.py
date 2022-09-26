@@ -229,6 +229,17 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         new_moof_data = dest.getvalue()
         self.assertBuffersEqual(moof_data, new_moof_data)
 
+    def test_check_sample_count_in_saiz_box(self):
+        filename = os.path.join(self.fixtures, "bbb_a1_enc.mp4")
+        src = BufferedReader(io.FileIO(filename, 'rb'))
+        segments = mp4.Mp4Atom.create(src)
+        for seg in segments:
+            if seg.atom_type != 'moof':
+                continue
+            saiz = seg.traf.saiz
+            trun = seg.traf.trun
+            self.assertEqual(saiz.sample_count, trun.sample_count)
+
     def test_create_all_segments_in_video_file(self):
         self.check_create_all_segments_in_file("bbb_v7.mp4")
 
