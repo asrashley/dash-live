@@ -73,10 +73,10 @@ class Mp4Atom(ObjectWithFields):
     BOX_TYPES = {}  # reverse map from class name to class
 
     def __init__(self, **kwargs):
-        self._encoded = None
         super(Mp4Atom, self).__init__(**kwargs)
         children_default = [] if self.parse_children else None
         self.apply_defaults({
+            '_encoded': None,
             'children': children_default,
             'options': Options(),
             'parent': None,
@@ -211,6 +211,12 @@ class Mp4Atom(ObjectWithFields):
 
     @classmethod
     def load(cls, src, parent=None, options=None):
+        """
+        Parse the given source to create MP4 atoms.
+        :src: a readable (file) source
+        :parent: the parent MP4Atom
+        :options: the mp4.Options to use, or a dictionary of option values
+        """
         assert src is not None
         if options is None:
             options = Options()
@@ -267,7 +273,7 @@ class Mp4Atom(ObjectWithFields):
             if atom.parse_children:
                 # options.log.debug('Parse %s children', hdr['atom_type'])
                 Mp4Atom.load(src, atom, options)
-            if encoded:
+            else:
                 atom._encoded = encoded
             if (src.tell() - atom.position) != atom.size:
                 msg = r'{0}: expected "{1}" to contain {2:d} bytes but parsed {3:d} bytes'.format(
@@ -376,10 +382,13 @@ class Mp4Atom(ObjectWithFields):
         if self._encoded is not None:
             self.options.log.debug('%s: Using pre-encoded data length=%d',
                                    self._fullname, len(self._encoded))
-            if self.size != (4 + len(fourcc) + len(self._encoded)):
-                self.options.log.warning(
-                    "%s: Expected size %d, actual size %d", self.size,
-                    self._fullname, 4 + len(fourcc) + len(self._encoded))
+            expected_size = 4 + len(fourcc) + len(self._encoded)
+            if self.size != expected_size:
+                msg = r'{0}: Expected size {1:d}, actual size {2:d}'.format(
+                    self._fullname, self.size, expected_size)
+                self.options.log.warning(msg)
+                if self.options.strict:
+                    raise ValueError(msg)
             out.write(struct.pack('>I', self.size))
             out.write(fourcc)
             out.write(self._encoded)
