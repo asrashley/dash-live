@@ -22,7 +22,7 @@
 
 from scte35.break_duration import BreakDuration
 from scte35.splice_time import SpliceTime
-from utils.bitio import BitsFieldReader, BitsFieldWriter
+from utils.fio import BitsFieldReader, BitsFieldWriter
 from utils.object_with_fields import ObjectWithFields
 from utils.list_of import ListOf
 

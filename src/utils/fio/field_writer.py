@@ -45,9 +45,9 @@ class FieldWriter(object):
         self.dest = dest
         self.bits = None
         if debug or getattr(self.obj, 'debug', False):
-            self.log = logging.getLogger('bitio')
+            self.log = logging.getLogger('fio')
         elif hasattr(self.obj, 'options') and getattr(self.obj.options, 'debug', False):
-            self.log = logging.getLogger('bitio')
+            self.log = logging.getLogger('fio')
         else:
             self.log = None
 

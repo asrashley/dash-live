@@ -23,7 +23,7 @@
 from abc import abstractmethod
 import copy
 
-from utils.bitio import BitsFieldWriter
+from utils.fio import BitsFieldWriter
 from utils.binary import Binary
 from utils.object_with_fields import ObjectWithFields
 

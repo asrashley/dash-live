@@ -43,7 +43,7 @@ class BitsFieldWriter(object):
         else:
             self.bits = dest
         if getattr(obj, 'debug', False):
-            self.log = logging.getLogger('bitio')
+            self.log = logging.getLogger('fio')
         else:
             self.log = None
 
