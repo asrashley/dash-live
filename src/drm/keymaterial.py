@@ -41,6 +41,8 @@ class KeyMaterial(object):
         elif raw is not None:
             self.raw = raw
         elif hex is not None:
+            if hex.startswith('0x'):
+                hex = hex[2:]
             self.raw = binascii.unhexlify(hex.replace('-', ''))
         elif b64 is not None:
             self.raw = binascii.a2b_base64(b64)
