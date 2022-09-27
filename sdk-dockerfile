@@ -45,6 +45,7 @@ COPY src/server/requesthandler/*.py $HOME/dash-live/src/server/requesthandler/
 COPY src/templates/*.py $HOME/dash-live/src/templates/
 COPY src/testcase/*.py $HOME/dash-live/src/testcase/
 COPY src/utils/*.py $HOME/dash-live/src/utils/
+COPY src/utils/bitio/*.py $HOME/dash-live/src/utils/bitio/
 WORKDIR /home/dash/dash-live
 RUN python ./gen-settings.py
 RUN python -m lesscpy static/css -o static/css/
