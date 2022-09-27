@@ -201,7 +201,7 @@ class Mp4Atom(ObjectWithFields):
         self._invalidate()
 
     @classmethod
-    def create(cls, src, parent=None, options=None):
+    def load(cls, src, parent=None, options=None):
         assert src is not None
         if options is None:
             options = Options()
@@ -218,9 +218,9 @@ class Mp4Atom(ObjectWithFields):
             prefix = ''
         rv = parent.children
         if end is None:
-            options.log.debug('%sCreate start=%d end=None', prefix, cursor)
+            options.log.debug('%sLoad start=%d end=None', prefix, cursor)
         else:
-            options.log.debug('%sCreate start=%d end=%d (%d)', prefix,
+            options.log.debug('%sLoad start=%d end=%d (%d)', prefix,
                               cursor, end, end - cursor)
         while end is None or cursor < end:
             assert cursor is not None
@@ -257,7 +257,7 @@ class Mp4Atom(ObjectWithFields):
             rv.append(atom)
             if atom.parse_children:
                 # options.log.debug('Parse %s children', hdr['atom_type'])
-                Mp4Atom.create(src, atom, options)
+                Mp4Atom.load(src, atom, options)
             if encoded:
                 atom._encoded = encoded
             if (src.tell() - atom.position) != atom.size:
@@ -515,7 +515,7 @@ class Descriptor(ObjectWithFields):
             self._fullname = self.classname
 
     @classmethod
-    def create(clz, src, parent, options=None, **kwargs):
+    def load(clz, src, parent, options=None, **kwargs):
         if options is None:
             options = Options()
         kw = Descriptor.parse_header(src)
@@ -525,7 +525,7 @@ class Descriptor(ObjectWithFields):
             Desc = UnknownDescriptor
         total_size = kw["size"] + kw["header_size"]
         options.log.debug(
-            'create descriptor: tag=%s type=%s pos=%d size=%d',
+            'load descriptor: tag=%s type=%s pos=%d size=%d',
             kw["tag"], Desc.__name__, kw["position"], total_size)
         encoded = src.peek(kw["size"])[:kw["size"]]
         if len(encoded) < kw["size"]:
@@ -540,7 +540,7 @@ class Descriptor(ObjectWithFields):
             options.log.debug(
                 'Descriptor: parse descriptor pos=%d end=%d',
                 src.tell(), end)
-            dc = Descriptor.create(src, parent=rv, options=options)
+            dc = Descriptor.load(src, parent=rv, options=options)
             rv.children.append(dc)
             if (src.tell() - dc.position) != (dc.size + dc.header_size):
                 options.log.warning(
@@ -1208,7 +1208,7 @@ class ESDescriptorBox(FullBox):
         while src.tell() < end:
             options.log.debug(
                 'ESDescriptorBox: parse descriptor pos=%d end=%d', src.tell(), end)
-            d = Descriptor.create(src, parent=parent, options=options)
+            d = Descriptor.load(src, parent=parent, options=options)
             descriptors.append(d)
             if src.tell() != (d.position + d.size + d.header_size):
                 options.log.warning(
@@ -2086,7 +2086,7 @@ class IsoParser(object):
                 src = io.open(filename, mode="rb", buffering=16384)
             else:
                 src = filename
-            atoms = Mp4Atom.create(src, options=options)
+            atoms = Mp4Atom.load(src, options=options)
         finally:
             if src and isinstance(filename, (str, unicode)):
                 src.close()

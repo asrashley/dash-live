@@ -191,7 +191,7 @@ class LiveMedia(RequestHandlerBase):
         if representation.encrypted:
             options.iv_size = representation.iv_size
         atom = mp4.Wrapper(
-            atom_type='wrap', children=mp4.Mp4Atom.create(src, options=options))
+            atom_type='wrap', children=mp4.Mp4Atom.load(src, options=options))
         if self.request.params.get('corrupt') is not None:
             atom.moof.traf.trun.parse_samples(
                 src, representation.nalLengthFieldFength)
