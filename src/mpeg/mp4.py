@@ -75,8 +75,9 @@ class Mp4Atom(ObjectWithFields):
     def __init__(self, **kwargs):
         self._encoded = None
         super(Mp4Atom, self).__init__(**kwargs)
+        children_default = [] if self.parse_children else None
         self.apply_defaults({
-            'children': [],
+            'children': children_default,
             'options': Options(),
             'parent': None,
             'size': 0,
@@ -97,8 +98,9 @@ class Mp4Atom(ObjectWithFields):
             self._fullname = r'{0}.{1}'.format(self.parent._fullname, self.atom_type)
         else:
             self._fullname = self.atom_type
-        for ch in self.children:
-            ch.parent = self
+        if self.children:
+            for ch in self.children:
+                ch.parent = self
 
     def __getattr__(self, name):
         if name in self.__dict__:
@@ -108,6 +110,8 @@ class Mp4Atom(ObjectWithFields):
             raise AttributeError(name)
         if name in self._fields:
             # __getattribute__ should have responded before __getattr__ called
+            raise AttributeError(name)
+        if not self.children:
             raise AttributeError(name)
         for c in self.children:
             if c.atom_type == name:
@@ -161,6 +165,8 @@ class Mp4Atom(ObjectWithFields):
         raise AttributeError(atom_type)
 
     def find_child(self, atom_type):
+        if self.children is None:
+            return None
         for child in self.children:
             if child.atom_type == atom_type:
                 return child
@@ -178,7 +184,10 @@ class Mp4Atom(ObjectWithFields):
     def append_child(self, child):
         self.options.log.debug(
             '%s: append_child "%s"', self._fullname, child.atom_type)
-        self.children.append(child)
+        if self.children is None:
+            self.children = [child]
+        else:
+            self.children.append(child)
         if child.size:
             self.size += child.size
         else:
@@ -294,8 +303,11 @@ class Mp4Atom(ObjectWithFields):
             return Box(**src)
 
         children = src['children']
-        src['children'] = []
+        if children is not None:
+            src['children'] = []
         rv = Box(**src)
+        if children is None:
+            return rv
         for child in children:
             if isinstance(child, dict):
                 child['parent'] = rv
@@ -377,8 +389,9 @@ class Mp4Atom(ObjectWithFields):
         out.write(struct.pack('>I', 0))
         out.write(fourcc)
         self.encode_fields(dest=out)
-        for child in self.children:
-            child.encode(dest=out)
+        if self.children:
+            for child in self.children:
+                child.encode(dest=out)
         self.size = out.tell() - self.position
         # replace the length field
         out.seek(self.position)
@@ -405,8 +418,9 @@ class Mp4Atom(ObjectWithFields):
         if 'descriptors' in self._fields:
             for d in self.descriptors:
                 d.dump(indent + '  ')
-        for c in self.children:
-            c.dump(indent + '  ')
+        if self.children is not None:
+            for c in self.children:
+                c.dump(indent + '  ')
 
 
 Mp4Atom.OBJECT_FIELDS['children'] = ListOf(Mp4Atom)
@@ -425,6 +439,8 @@ class WrapperIterator:
 
 
 class Wrapper(Mp4Atom):
+    parse_children = True
+
     def encode_fields(self, dest):
         pass
 
@@ -1857,7 +1873,7 @@ Mp4Atom.BOXES['trun'] = TrackFragmentRunBox
 
 class TrackEncryptionBox(FullBox):
     OBJECT_FIELDS = {
-        "default_kid": Binary,
+        "default_kid": HexBinary,
     }
     OBJECT_FIELDS.update(FullBox.OBJECT_FIELDS)
 
@@ -2100,7 +2116,7 @@ class IsoParser(object):
                                  sort_keys=True, indent=2))
             else:
                 print(atom)
-        else:
+        elif atom.children:
             for child in atom.children:
                 IsoParser.show_atom(atom_types, as_json, child)
 

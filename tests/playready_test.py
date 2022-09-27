@@ -565,7 +565,7 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
     def _patch_position_values(self, expected, delta):
         if 'position' in expected:
             expected['position'] += delta
-        if 'children' in expected:
+        if 'children' in expected and expected['children'] is not None:
             for child in expected['children']:
                 self._patch_position_values(child, delta)
 
