@@ -472,7 +472,7 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
         self.assertEqual(len(self.keys), 1)
         filename = os.path.join(self.fixtures, 'bbb_a1_enc.mp4')
         src = BufferedReader(io.FileIO(filename, 'rb'))
-        segments = mp4.Mp4Atom.create(src)
+        segments = mp4.Mp4Atom.load(src)
         options = mp4.Options(debug=True)
         init_seg = mp4.Wrapper(atom_type='wrap', options=options)
         for seg in segments:
@@ -502,7 +502,7 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
         new_init_seg = mp4.Wrapper(
             atom_type='wrap', options=options,
             size=len(data),
-            children=mp4.Mp4Atom.create(src))
+            children=mp4.Mp4Atom.load(src))
         self.assertEqual(new_init_seg.children[0].atom_type, 'ftyp')
         self.assertEqual(len(new_init_seg.moov.children), len(init_seg.moov.children))
         expected = init_seg.toJSON()

@@ -726,7 +726,7 @@ class ContentProtection(Descriptor):
             if child.tag == '{urn:mpeg:cenc:2013}pssh':
                 data = base64.b64decode(child.text)
                 src = BufferedReader(None, data=data)
-                atoms = mp4.Mp4Atom.create(src)
+                atoms = mp4.Mp4Atom.load(src)
                 self.assertEqual(len(atoms), 1)
                 self.assertEqual(atoms[0].atom_type, 'pssh')
                 pssh = atoms[0]
@@ -1115,7 +1115,7 @@ class InitSegment(DashElement):
         self.log.debug('GET: %s %s', self.url, headers)
         response = self.http.get(self.url, headers=headers)
         src = BufferedReader(None, data=response.body)
-        atoms = mp4.Mp4Atom.create(src)
+        atoms = mp4.Mp4Atom.load(src)
         self.assertGreaterThan(len(atoms), 1)
         self.assertEqual(atoms[0].atom_type, 'ftyp')
         moov = None
@@ -1194,7 +1194,7 @@ class MediaSegment(DashElement):
         self.assertEqual(self.options.encrypted, self.info.encrypted)
         if self.info.encrypted:
             options["iv_size"] = self.info.iv_size
-        atoms = mp4.Mp4Atom.create(src, options=options)
+        atoms = mp4.Mp4Atom.load(src, options=options)
         self.assertGreaterThan(len(atoms), 1)
         moof = None
         for a in atoms:

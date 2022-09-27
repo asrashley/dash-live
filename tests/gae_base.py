@@ -119,7 +119,7 @@ class GAETestBase(TestCaseMixin, unittest.TestCase):
             src_filename = os.path.join(
                 os.path.dirname(__file__), "fixtures", filename)
             src = io.open(src_filename, mode="rb", buffering=16384)
-            atoms = mp4.Mp4Atom.create(src)
+            atoms = mp4.Mp4Atom.load(src)
             src.seek(0)
             data = src.read()
             src.close()

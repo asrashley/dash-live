@@ -45,7 +45,7 @@ class SegmentTests(unittest.TestCase):
             filename = os.path.join(self.fixtures, name)
             src = BufferedReader(io.FileIO(filename, 'rb'))
             wrap = mp4.Wrapper(atom_type='wrap', parent=None,
-                               children=mp4.Mp4Atom.create(src))
+                               children=mp4.Mp4Atom.load(src))
             rep = Representation.create(
                 filename=name, atoms=wrap.children)
             self.assertEqual(rep.version, Representation.VERSION)

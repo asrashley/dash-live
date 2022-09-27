@@ -224,6 +224,6 @@ if __name__ == '__main__':
 
     src = utils.BufferedReader(io.FileIO(sys.argv[1], 'rb'))
     wrap = mp4.Wrapper(atom_type='wrap', parent=None,
-                       children=mp4.Mp4Atom.create(src))
+                       children=mp4.Mp4Atom.load(src))
     rep = Representation.create(filename=sys.argv[1], atoms=wrap.children)
     print repr(rep)
