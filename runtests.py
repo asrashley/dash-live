@@ -38,6 +38,13 @@ if not os.path.exists("runner.py"):
 
 import runner
 
+def fixup_test_filename(name):
+    _, tail = os.path.split(name)
+    root, ext = os.path.splitext(tail)
+    if not ext:
+        ext = '.py'
+    return root + ext
+
 try:
     # On Windows, assume GAE SDK is installed in user's local app data directory
     appdata = os.environ['LOCALAPPDATA']
@@ -54,11 +61,12 @@ except KeyError:
 
 FORMAT = r"%(asctime)-15s:%(levelname)s:%(filename)s@%(lineno)d: %(message)s"
 logging.basicConfig(format=FORMAT)
+logging.getLogger().setLevel(logging.ERROR)
         
-if len(sys.argv)>2:
+if len(sys.argv) > 2:
     os.environ["TESTS"] = ','.join(sys.argv[2:])
-    runner.main(gae_sdk, "tests", sys.argv[1])
-elif len(sys.argv)>1:
-    runner.main(gae_sdk, "tests", sys.argv[1])
+    runner.main(gae_sdk, "tests", fixup_test_filename(sys.argv[1]))
+elif len(sys.argv) > 1:
+    runner.main(gae_sdk, "tests", fixup_test_filename(sys.argv[1]))
 else:
     runner.main(gae_sdk, "tests", "*_test.py")
