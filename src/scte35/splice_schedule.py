@@ -21,7 +21,7 @@
 #############################################################################
 
 from scte35.break_duration import BreakDuration
-from utils.bitio import BitsFieldReader, BitsFieldWriter
+from utils.fio import BitsFieldReader, BitsFieldWriter
 from utils.object_with_fields import ObjectWithFields
 from utils.list_of import ListOf
 

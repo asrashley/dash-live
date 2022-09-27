@@ -20,7 +20,7 @@
 #
 #############################################################################
 
-from utils.bitio import BitsFieldReader, BitsFieldWriter
+from utils.fio import BitsFieldReader, BitsFieldWriter
 from utils.object_with_fields import ObjectWithFields
 
 class SpliceTime(ObjectWithFields):

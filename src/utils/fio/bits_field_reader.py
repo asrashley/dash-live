@@ -66,7 +66,7 @@ class BitsFieldReader(object):
             bitsize = 8 * size
         self.bitsize = bitsize
         if debug:
-            self.log = logging.getLogger('bitio')
+            self.log = logging.getLogger('fio')
         else:
             self.log = None
 

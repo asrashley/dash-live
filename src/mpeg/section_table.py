@@ -28,7 +28,7 @@ except ImportError:
     # used as it has native code. Fall back to a pure python implementation
     from utils.purecrc import Crc32Mpeg2
 
-from utils.bitio import BitsFieldReader, BitsFieldWriter
+from utils.fio import BitsFieldReader, BitsFieldWriter
 from utils.object_with_fields import ObjectWithFields
 
 class MpegSectionTable(ObjectWithFields):

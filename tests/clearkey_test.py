@@ -74,8 +74,8 @@ if os.environ.get("TESTS"):
         logging.basicConfig(format=FORMAT, level=logging.DEBUG)
         # mp4_log = logging.getLogger('mp4')
         # mp4_log.setLevel(logging.DEBUG)
-        # bitio_log = logging.getLogger('bitio')
-        # bitio_log.setLevel(logging.DEBUG)
+        # fio_log = logging.getLogger('fio')
+        # fio_log.setLevel(logging.DEBUG)
         return unittest.loader.TestLoader().loadTestsFromNames(
             os.environ["TESTS"].split(','),
             ClearkeyTests)

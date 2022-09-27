@@ -37,7 +37,7 @@ except ImportError:
     sys.path.append(os.path.join(os.path.dirname(__file__), "..", "lib"))
     import bitstring
 
-from utils.bitio import FieldReader, BitsFieldReader, FieldWriter
+from utils.fio import FieldReader, BitsFieldReader, FieldWriter
 from utils.binary import Binary, HexBinary
 from utils.date_time import DateTimeField, from_iso_epoch, to_iso_epoch
 from utils.object_with_fields import ObjectWithFields
