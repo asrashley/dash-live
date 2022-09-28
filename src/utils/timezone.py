@@ -21,11 +21,15 @@
 #############################################################################
 
 import datetime
+import re
 
 # A UTC class, see https://docs.python.org/2.7/library/datetime.html#datetime.tzinfo
 class UTC(datetime.tzinfo):
     """UTC"""
     ZERO = datetime.timedelta(0)
+
+    def __repr__(self):
+        return "UTC()"
 
     def utcoffset(self, dt):
         return self.ZERO
@@ -35,3 +39,33 @@ class UTC(datetime.tzinfo):
 
     def dst(self, dt):
         return self.ZERO
+
+
+class FixedOffsetTimeZone(datetime.tzinfo):
+    """Fixed offset in hours and minutes east from UTC."""
+
+    tzinfo_re = re.compile(r'^(?P<delta>[+-])(?P<hour>\d+):(?P<minute>\d+)$')
+
+    def __init__(self, delta_str):
+        tz_match = self.tzinfo_re.match(delta_str)
+        if tz_match is None:
+            raise ValueError(
+                r'Failed to parse timezone {}'.format(delta_str))
+        offset = int(tz_match.group('hour'), 10) * 60
+        offset += int(tz_match.group('minute'), 10)
+        if tz_match.group('delta') == '-':
+            offset = -offset
+        self.__offset = datetime.timedelta(minutes=offset)
+        self.__name = delta_str
+
+    def __repr__(self):
+        return 'FixedOffsetTimeZone({})'.format(self.__name)
+
+    def utcoffset(self, dt):
+        return self.__offset
+
+    def tzname(self, dt):
+        return self.__name
+
+    def dst(self, dt):
+        return datetime.timedelta(0)
