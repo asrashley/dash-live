@@ -24,6 +24,8 @@ class DateTimeTests(unittest.TestCase):
              2, 27, 10, 0, 0, tzinfo=UTC())),
             ('2013-07-25T09:57:31Z', datetime.datetime(2013,
              7, 25, 9, 57, 31, tzinfo=UTC())),
+            ('2022-09-21T15:35:31.541000+00:00', datetime.datetime(
+                2022, 9, 21, 15, 35, 31, 541000, tzinfo=UTC())),
             ('PT14H00M00S', datetime.timedelta(hours=14)),
             ('PT26H00M00S', datetime.timedelta(hours=26)),
             ('PT14H', datetime.timedelta(hours=14)),

@@ -25,7 +25,7 @@ import math
 import re
 import time
 
-from utils.utc import UTC
+from utils.timezone import UTC, FixedOffsetTimeZone
 
 # time values are in seconds since midnight, Jan. 1, 1904, in UTC time
 ISO_EPOCH = datetime.datetime(year=1904, month=1, day=1, tzinfo=UTC())
@@ -38,6 +38,12 @@ date_hacks = [
     (re.compile(r'(\w{3})-(\d{2})$'), r'\1 \2'),
     (re.compile(r'(.+) ([PCE][SD]?T)$'), r'\1')
 ]
+
+date_time_re = re.compile(r''.join([
+    r'^(?P<year>\d+)-(?P<month>\d+)-(?P<day>\d+)',
+    r'T(?P<hour>\d+):(?P<minute>\d+):(?P<second>[\d.]+)',
+    r'(?P<tzinfo>(Z|([+-]\d+:\d+)))$'
+]))
 
 duration_re = re.compile(r''.join([
     r'^P((?P<years>\d+)Y)?((?P<months>\d+)M)?((?P<days>\d+)D)?',
@@ -126,6 +132,11 @@ def parse_date(date, format=None):
     return None
 
 
+def parse_timezone(value):
+    if value.upper() == 'Z':
+        return UTC()
+    return FixedOffsetTimeZone(value)
+
 def from_isodatetime(date_time):
     """
     Convert an ISO formated date string to a datetime.datetime or datetime.timedelta
@@ -157,17 +168,24 @@ def from_isodatetime(date_time):
             secs += float(match.group('seconds'))
         return datetime.timedelta(seconds=secs)
     if 'T' in date_time:
-        try:
-            return datetime.datetime.strptime(
-                date_time, "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=UTC())
-        except ValueError:
-            pass
-        try:
-            return datetime.datetime.strptime(
-                date_time, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC())
-        except ValueError:
-            return datetime.datetime.strptime(
-                date_time, "%Y-%m-%dT%H:%MZ").replace(tzinfo=UTC())
+        match = date_time_re.match(date_time)
+        if not match:
+            raise ValueError(date_time)
+        kwargs = {}
+        for key, value in match.groupdict().iteritems():
+            if key == 'tzinfo':
+                kwargs[key] = parse_timezone(value)
+            elif key == 'second':
+                if '.' in value:
+                    secs = float(value)
+                    kwargs[key] = int(secs)
+                    secs -= int(secs)
+                    kwargs['microsecond'] = int(1000000.0 * secs)
+                else:
+                    kwargs[key] = int(value, 10)
+            else:
+                kwargs[key] = int(value, 10)
+        return datetime.datetime(**kwargs)
     if 'Z' not in date_time:
         try:
             return datetime.datetime.strptime(date_time, "%Y-%m-%d")

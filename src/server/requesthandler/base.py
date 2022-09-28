@@ -49,7 +49,7 @@ from server.requesthandler.exceptions import CsrfFailureException
 from server.routes import routes
 from templates.factory import TemplateFactory
 import utils.objects
-from utils.utc import UTC
+from utils.timezone import UTC
 from utils.date_time import scale_timedelta, from_isodatetime, toIsoDateTime
 
 class RequestHandlerBase(webapp2.RequestHandler):
