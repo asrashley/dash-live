@@ -87,6 +87,7 @@ cgi_options = [
     CgiOption(
         name='drmloc',
         title='DRM location',
+        hidden=True,
         options=[
             ('All locations', ''),
             ('mspr:pro element in MPD', 'drmloc=pro'),
@@ -99,6 +100,7 @@ cgi_options = [
     ),
     CgiOption(
         name='periods',
+        hidden=True,
         title='Use multiple periods',
         options=[
             ('No', ''),

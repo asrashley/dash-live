@@ -33,7 +33,8 @@ if _src not in sys.path:
 # these imports *must* be after the modification of sys.path
 from gae_base import GAETestBase
 from server import manifests, models
-from server.requesthandler.htmlpage import MainPage
+from server.cgi_options import cgi_options
+from server.requesthandler.htmlpage import CgiOptionsPage, MainPage
 from server.requesthandler.media_management import MediaHandler
 
 class TestHtmlPageHandlers(GAETestBase):
@@ -53,6 +54,8 @@ class TestHtmlPageHandlers(GAETestBase):
             mpd_url = mpd_url.replace('/placeholder/', '/{directory}/')
             mpd_url = mpd_url.replace('/live/', '/{mode}/')
             response.mustcontain(mpd_url)
+        options_url = self.from_uri('cgi-options', absolute=False)
+        response.mustcontain(r'href="{}"'.format(options_url))
         self.setCurrentUser(is_admin=True)
         response = self.app.get(url)
         self.assertEqual(response.status_int, 200)
@@ -61,9 +64,30 @@ class TestHtmlPageHandlers(GAETestBase):
                 self.from_uri('media-index')),
             no="Log In")
         response.mustcontain('Log Out')
-        # self.setCurrentUser(is_admin=False)
-        # response = self.app.get(url)
-        # response.mustcontain('<a href="',mpd_url, no=routes.routes['upload'].title)
+
+    def test_cgi_options_page(self):
+        self.assertIsNotNone(getattr(CgiOptionsPage(), 'get', None))
+        url = self.from_uri('cgi-options', absolute=True)
+        self.logoutCurrentUser()
+        response = self.app.get(url)
+        self.assertEqual(response.status_int, 200)
+        response.mustcontain(
+            'Log In', no='href="{}"'.format(
+                self.from_uri('media-index')))
+        for option in cgi_options:
+            if option.name == 'drmloc':
+                continue
+            response.mustcontain(option.name)
+        self.setCurrentUser(is_admin=True)
+        response = self.app.get(url)
+        self.assertEqual(response.status_int, 200)
+        response.mustcontain(
+            'href="{}"'.format(
+                self.from_uri('media-index')),
+            no="Log In")
+        response.mustcontain('Log Out')
+        home_url = self.from_uri('home', absolute=False)
+        response.mustcontain(r'href="{}"'.format(home_url))
 
     def test_media_page(self):
         self.setup_media()

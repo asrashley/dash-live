@@ -59,6 +59,9 @@
   <p class="info">
     The MPD files for live streams are dynamically
     generated so that they appear to be live sources, using static media files.
+    Requests for manifests and for media fragments can be modified
+    using various CGI parameters, which are documented on the
+    <a href="{{uri_for('cgi-options')}}" class="link">CGI options</a> page.
   </p>
   <div class="container">
   <div class="representations row">
@@ -67,9 +70,9 @@
       <caption>Video Representations</caption>
       <thead><tr>{% for f in video_fields %}<th class="{{f}}">{{f}}</th>{% endfor %}</tr></thead>
       <tbody>
-        {% for repr in video_representations %}
+        {% for rep in video_representations %}
         <tr>
-          {% for f in video_fields %}<td class="{{f}}">{{repr[f]|toHtmlString}}</td>{% endfor %}
+          {% for f in video_fields %}<td class="{{f}}">{{rep[f]|toHtmlString}}</td>{% endfor %}
         </tr>
         {% endfor %}
       </tbody>
@@ -97,167 +100,6 @@
     </div>
   </div>
   </div>
-    <div class="cgi-parameters">
-    <p class="info">There are a number of CGI parameters that can be used to modify
-    manifests, media segments and time sources.</p>
-        <table class="cgi-params table table-striped">
-            <caption>CGI parameters</caption>
-            <thead><tr><th>Parameter</th><th>Description</th><th>Manifest</th><th>Media</th><th>Time source</th></tr></thead>
-            <tbody>
-            <tr><td>404=&lt;num&gt;,&lt;num&gt;,...<br/>410=&lt;num&gt;,&lt;num&gt;,...</td>
-            <td>Cause a 404 or 410 error to be generated
-                when requesting the given segment number.</td>
-                <td>&cross;</td><td>&check;</td><td>&cross;</td>
-            </tr>
-            <tr><td>503=&lt;num&gt;,&lt;num&gt;,...<br/>504=&lt;num&gt;,&lt;num&gt;,...</td>
-            <td>Cause a 503 or 504 error to be generated
-                when requesting the given segment number.  Retries for the same
-                segment will succeed, unless the segment has fallen outside of
-                the timeshift buffer depth.</td>
-                <td>&cross;</td><td>&check;</td><td>&cross;</td>
-            </tr>
-            <tr><td>a404=&lt;time&gt;,&lt;time&gt;,...<br/>a410=&lt;time&gt;,&lt;time&gt;,...</td>
-            <td>Cause a 404 or 410 error to be generated
-                when requesting the audio segment that corresponds to the specified time.
-                Time must be in the form HH:MM:SSZ</td>
-                <td>&check;</td><td>&cross;</td><td>&cross;</td>
-            </tr>
-            <tr><td>a503=&lt;time&gt;,&lt;time&gt;,...<br/>a504=&lt;time&gt;,&lt;time&gt;,...</td>
-            <td>Cause a 503 or 504 error to be generated
-                on the first request for the audio segment that corresponds to the specified time.
-                Time must be  in the form HH:MM:SSZ. Retries for the same
-                segment will succeed, unless the segment has fallen outside of
-                the timeshift buffer depth.</td>
-                <td>&check;</td><td>&cross;</td><td>&cross;</td>
-            </tr>
-            <tr><td>abr=(true|false)</td><td>Enable or
-                disable adaptive bitrate.</td>
-                <td>&check;</td><td>&cross;</td><td>&cross;</td>
-            </tr>
-            <tr><td>acodec=(mp4a|ec-3)</td><td>Filter audio adaptation sets by audio codec (AAC or E-AC3)</td>
-                <td>&check;</td><td>&cross;</td><td>&cross;</td>
-            </tr>
-            <tr><td>base=(true|false)</td><td>Include a BaseURL element?</td>
-                <td>&check;</td><td>&cross;</td><td>&cross;</td>
-            </tr>
-            <tr><td>corrupt=&lt;number&gt;,&lt;number&gt;,...</td>
-            <td>Cause video corruption to be generated when requesting a fragment at the given time.
-                Invalid data is placed inside NAL packets of video frames. &lt;number&gt;
-                is the segment number of the segment to corrupt.
-            </td>
-                <td>&cross;</td><td>&check;</td><td>&cross;</td>
-            </tr>
-            <tr><td>depth=&lt;number&gt;</td><td>Number of seconds of timeshiftBufferDepth</td>
-                <td>&check;</td><td>&check;</td><td>&cross;</td>
-            </tr>
-            <tr><td>drift=&lt;number&gt;</td><td>Number of seconds of delay to add to wall clock time</td>
-                <td>&check;</td><td>&check;</td><td>&check;</td>
-            </tr>
-            <tr><td>drm=&lt;drmlist&gt;</td>
-              <td><p>A comma separated list of DRMs:</p>
-                <ul>
-                    <li>all - All supported DRMs</li>
-                    <li>clearkey - W3C ClearKey</li>
-                    <li>marlin - Intertrust Marlin</li>
-                    <li>none - No DRM</li>
-                    <li>playready - Microsoft PlayReady</li>
-                </ul>
-                <p>For example: <span class="pre">drm=playready,marlin</span></p>
-                <p style="margin-top: 0.5em">Optionally with a hyphen separated list of locations for the DRM
-                  data:</p>
-                  <ul>
-                    <li>pro - An mspr:pro element in the MPD (only
-                    applicable to PlayReady)</li>
-                    <li>cenc - A cenc:pssh element in the MPD</li>
-                    <li>moov - A PSSH box in the init segment</li>
-                  </ul>
-                <p>For example: <span class="pre">drm=playready-pro-cenc,clearkey-moov</span></p>
-              </td>
-                <td>&check;</td><td>&check;</td><td>&cross;</td>
-            </tr>
-            <tr><td>failures=&lt;number&gt;</td><td>Number of times to respond with a 5xx error before
-                accepting the request. Only relevant in combination with one of the error injection
-                parameters (e.g. v503, m503).</td>
-                <td>&check;</td><td>&check;</td><td>&cross;</td>
-            </tr>
-            <tr><td>frames=&lt;number&gt;</td><td>Number of frames to corrupt per segment.
-            Only relevant when the corrupt CGI parameter is present.  </td>
-                <td>&check;</td><td>&check;</td><td>&cross;</td>
-            </tr>
-            <tr><td>m404=&lt;time&gt;,&lt;time&gt;,...<br/>m410=&lt;time&gt;,&lt;time&gt;,...</td>
-            <td>Cause a 404 or 410 error to be generated
-                when requesting a manifest at the given time. Time must be
-                in the form HH:MM:SSZ. An HTTP error will be generated if a
-                manifest request ocurs between &lt;time&gt; and &lt;time&gt;+&lt;minimumUpdatePeriod&gt; </td>
-                <td>&check;</td><td>&cross;</td><td>&cross;</td>
-            </tr>
-            <tr><td>m503=&lt;time&gt;,&lt;time&gt;,...<br/>m504=&lt;time&gt;,&lt;time&gt;,...</td>
-            <td>Cause a 503 or 504 error to be generated
-                on the first request for the manifest at the given time.
-                Time must be  in the form HH:MM:SSZ. Retries for the same
-                manifest will succeed.  An HTTP error will be generated if a
-                manifest request ocurs between &lt;time&gt; and &lt;time&gt;+&lt;minimumUpdatePeriod&gt;</td>
-                <td>&check;</td><td>&cross;</td><td>&cross;</td>
-            </tr>
-            <tr><td>main_audio=(mp4a|ec-3|&lt;id&gt;)</td><td>Select audio AdaptationSet that will
-            be given the &quot;main&quot; role (AAC, E-AC3 or ID of stream)</td>
-                <td>&check;</td><td>&cross;</td><td>&cross;</td>
-            </tr>
-            <tr>
-              <td>marlin_la_url=&lt;escaped-url&gt;</td>
-              <td>Override the Marlin S-URL field for this stream</td>
-              <td>&check;</td><td>&cross;</td><td>&cross;</td>
-            </tr>
-            <tr><td>mup=&lt;number&gt;</td><td>Specify minimumUpdatePeriod (in seconds) or -1 to disable updates</td>
-                <td>&check;</td><td>&cross;</td><td>&cross;</td>
-            </tr>
-            <tr>
-              <td>playready_la_url=&lt;escaped-url&gt;</td>
-              <td>Override the PlayReady LA_URL field for this stream</td>
-              <td>&check;</td><td>&check;</td><td>&cross;</td>
-            </tr>
-            <tr>
-              <td>playready_version=&lt;number&gt;</td>
-              <td>Set the PlayReady version compatibility for this stream</td>
-              <td>&check;</td><td>&check;</td><td>&cross;</td>
-            </tr>
-            <tr><td>start=(today|epoch|now|iso-datetime)</td><td>Specify
-                availabilityStartTime as "today", "now", "epoch" or an
-                ISO datetime (YYYY-MM-DDTHH:MM:SSZ). "today" will
-                select midnight UTC today, "now" will select
-                publishTime - timeShiftBufferDepth, and "epoch" will
-                select the Unix epoch (Jan 1 1970).
-              </td>
-              <td>&check;</td><td>&check;</td><td>&cross;</td>
-            </tr>
-            <tr><td>time=(xsd|iso|ntp|head)</td><td>Select UTCTiming element HTTP method.</td>
-                <td>&check;</td><td>&cross;</td><td>&cross;</td>
-            </tr>
-            <tr><td>v404=&lt;time&gt;,&lt;time&gt;,...<br/>
-                v410=&lt;time&gt;,&lt;time&gt;,...
-            </td><td>Cause a 404 or 410 error to be generated
-                when requesting the video segment that corresponds to the specified time.
-                Time must be in the form HH:MM:SSZ</td>
-                <td>&check;</td><td>&cross;</td><td>&cross;</td>
-            </tr>
-            <tr><td>v503=&lt;time&gt;,&lt;time&gt;,...<br/>
-                v504=&lt;time&gt;,&lt;time&gt;,...
-            </td><td>Cause a 503 or 504 error to be generated
-                on the first request for the video segment that corresponds to the specified time.
-                Time must be  in the form HH:MM:SSZ. Retries for the same
-                segment will succeed, unless the segment has fallen outside of
-                the timeshift buffer depth.</td>
-                <td>&check;</td><td>&cross;</td><td>&cross;</td>
-            </tr>
-            <tr><td>vcorrupt=&lt;time&gt;,&lt;time&gt;,...</td>
-            <td>Cause video corruption to be generated when requesting a fragment at the given time.
-                Invalid data is placed inside NAL packets of video frames.
-                Each time must be in the form HH:MM:SSZ.</td>
-                <td>&check;</td><td>&cross;</td><td>&cross;</td>
-            </tr>
-            </tbody>
-        </table>
-    </div>
 {% endblock %}
 
 {% block scripts %}
