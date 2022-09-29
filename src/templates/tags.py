@@ -82,9 +82,16 @@ def toHtmlString(item, className=None):
             rv = '<span class="{0}">{1}</span>'.format(className, rv)
     elif isinstance(item, bool):
         if className is None:
-            className = ''
-        yn = "bool-yes" if item else "bool-no"
-        rv = '<span class="{0} {1}">&check;</span>'.format(yn, className)
+            classes = []
+        else:
+            classes = [className]
+        if item:
+            classes.append("bool-yes")
+            entity = r"&check;"
+        else:
+            classes.append("bool-no")
+            entity = r"&cross;"
+        rv = '<span class="{0}">{1}</span>'.format(' '.join(classes), entity)
     else:
         if className:
             rv = '<span class="{0}">{1:s}</span>'.format(className, rv)
