@@ -36,11 +36,13 @@ https://cloud.google.com/appengine/docs/standard/python/download
 
 On Ubuntu, the following should install the Python GAE SDK:
 
-    echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
-    sudo apt-get install apt-transport-https ca-certificates
-    curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
-    sudo apt-get update && sudo apt-get install google-cloud-sdk
-    sudo apt-get install google-cloud-sdk-app-engine-python google-cloud-sdk-app-engine-python-extras google-cloud-sdk-datastore-emulator
+```sh
+echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" | sudo tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+sudo apt-get install apt-transport-https ca-certificates
+curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+sudo apt-get update && sudo apt-get install google-cloud-sdk
+sudo apt-get install google-cloud-sdk-app-engine-python google-cloud-sdk-app-engine-python-extras google-cloud-sdk-datastore-emulator
+```
 
 Create a Python virtual environment and install the dependencies:
 
@@ -53,7 +55,9 @@ pip install -r requirements.txt
 
 The CSS files need to be compiled:
 
-    (cd static/css/ && make)
+```sh
+(cd static/css/ && make)
+```
 
 Use runserver.bat or runserver.sh depending upon whether you are developing
 on Windows or Linux.
@@ -64,13 +68,17 @@ It will start an HTTP server on port 9080
 There is a dockerfile to create a Docker image that contains GAE and
 all the other required packages to run the development server.
 
-    docker build -t dashlive -f sdk-dockerfile .
-    mkdir gaedata
+```sh
+docker build -t dashlive -f sdk-dockerfile .
+mkdir gaedata
+```
 
 The docker container can then be used by:
 
-    docker run -i -t -p 9080:80/tcp -p 9081:8080/tcp \
+```sh
+docker run -i -t -p 9080:80/tcp -p 9081:8080/tcp \
     -v gaedata:/home/dash/.gaedata dashlive
+```
 
 Note that this docker container runs the DEVELOPMENT ENVIRONMENT
 and is NOT for use in a production environment! The above example
@@ -195,6 +203,14 @@ functions can also be added to the runtests.py command line:
 
 ```sh
 python ./runtests.py views_test.py test_inband_ping_pong_dash_events test_all_options_manifest_n
+```
+
+To run the unit tests inside a Docker container:
+
+```sh
+docker build -t dashlive -f sdk-dockerfile .
+docker run --mount type=bind,source=`pwd`/tests,destination=/home/dash/dash-live/tests \
+    -it --entrypoint /home/dash/dash-live/runtests.py dashlive
 ```
 
 License
