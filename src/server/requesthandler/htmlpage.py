@@ -37,8 +37,11 @@ class MainPage(RequestHandlerBase):
         context = self.create_context(**kwargs)
         context["headers"] = []
         context['routes'] = routes
-        context['video_fields'] = ['id', 'codecs',
-                                   'bitrate', 'width', 'height', 'encrypted']
+        context['audio_fields'] = [
+            'id', 'codecs', 'bitrate', 'sampleRate', 'numChannels',
+            'language', 'encrypted']
+        context['video_fields'] = [
+            'id', 'codecs', 'bitrate', 'width', 'height', 'encrypted']
         context['video_representations'] = []
         context['audio_representations'] = []
         for mf in models.MediaFile.all():
@@ -51,8 +54,6 @@ class MainPage(RequestHandlerBase):
                 context['audio_representations'].append(r)
         context['video_representations'].sort(key=lambda r: r.filename)
         context['audio_representations'].sort(key=lambda r: r.filename)
-        context['audio_fields'] = ['id', 'codecs', 'bitrate',
-                                   'sampleRate', 'numChannels', 'language', 'encrypted']
         context['streams'] = models.Stream.all()
         context['keys'] = models.Key.all_as_dict()
         context['rows'] = []
@@ -80,6 +81,19 @@ class MainPage(RequestHandlerBase):
                 }
                 context['rows'].append(row)
         template = TemplateFactory.get_template('index.html')
+        self.response.write(template.render(context))
+
+
+class CgiOptionsPage(RequestHandlerBase):
+    """
+    handler for page that describes each CGI option
+    """
+
+    def get(self, **kwargs):
+        context = self.create_context(**kwargs)
+        context["headers"] = []
+        context['routes'] = routes
+        template = TemplateFactory.get_template('cgi_options.html')
         self.response.write(template.render(context))
 
 

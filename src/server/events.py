@@ -229,6 +229,10 @@ class PingPong(RepeatingEventBase):
 EventFactory.EVENT_TYPES['ping'] = PingPong
 
 class Scte35(RepeatingEventBase):
+    """
+    Generates SCTE35 events that alternate between placement opportunity start
+    and end.
+    """
     schemeIdUri = "urn:scte:scte35:2014:xml+bin"
     PARAMS = {
         "program_id": 1620,

@@ -99,6 +99,10 @@ routes = {
         r'/video',
         handler='server.requesthandler.htmlpage.VideoPlayer',
         title='DASH test stream player'),
+    "cgi-options": Route(
+        r'/options',
+        handler='server.requesthandler.htmlpage.CgiOptionsPage',
+        title='Manifest and Media CGI options'),
     "home": Route(
         r'/',
         handler='server.requesthandler.htmlpage.MainPage',
