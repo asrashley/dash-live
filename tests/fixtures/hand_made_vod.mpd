@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd" publishTime="2022-09-06T15:10:02Z" type="static" profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014" mediaPresentationDuration="PT40.00S" minBufferTime="PT1.5S">
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd" publishTime="2022-09-06T15:10:02Z" type="static" profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014" mediaPresentationDuration="PT40S" minBufferTime="PT1.5S">
   <ProgramInformation>
     <Title>Big Buck Bunny</Title>
   </ProgramInformation>
   <Location>http://unit.test/bbb/hand_made.mpd?acodec=mp4a</Location>
-  <Period start="PT0.00S" id="p0">
+  <Period start="PT0S" id="p0">
     <BaseURL>http://unit.test/dash/vod/</BaseURL>
     <AdaptationSet mimeType="video/mp4" contentType="video" segmentAlignment="true" startWithSAP="1" maxWidth="1920" maxHeight="1080" maxFrameRate="24" par="16:9">
       <ContentComponent id="1" contentType="video"/>

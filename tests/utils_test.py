@@ -54,15 +54,22 @@ class DateTimeTests(unittest.TestCase):
 
     def test_to_isoduration(self):
         tests = [
-            ('PT14H0M0.00S', datetime.timedelta(hours=14)),
-            ('PT26H0M0.00S', datetime.timedelta(hours=26)),
-            ('PT14H0M0.00S', datetime.timedelta(hours=14)),
-            ('PT1M0.00S', datetime.timedelta(minutes=1)),
-            ('PT2M0.00S', datetime.timedelta(minutes=2)),
-            ('PT1M0.00S', datetime.timedelta(minutes=1)),
-            ('PT45.00S', datetime.timedelta(seconds=45)),
-            ('PT4.50S', datetime.timedelta(seconds=4.5)),
-            ('PT1H45M19.00S', datetime.timedelta(hours=1, minutes=45, seconds=19)),
+            ('PT14H0M0S', datetime.timedelta(hours=14)),
+            ('PT26H0M0S', datetime.timedelta(hours=26)),
+            ('PT14H0M0S', datetime.timedelta(hours=14)),
+            ('PT1M0S', datetime.timedelta(minutes=1)),
+            ('PT2M0S', datetime.timedelta(minutes=2)),
+            ('PT1M0S', datetime.timedelta(minutes=1)),
+            ('PT45S', datetime.timedelta(seconds=45)),
+            ('PT4.5S', datetime.timedelta(seconds=4.5)),
+            ('PT4.56S', datetime.timedelta(seconds=4, microseconds=560000)),
+            ('PT4.067S', datetime.timedelta(seconds=4.067)),
+            ('PT4.008S', datetime.timedelta(seconds=4, microseconds=7800)),
+            ('PT4.007S', datetime.timedelta(seconds=4, microseconds=7300)),
+            ('PT4.001S', datetime.timedelta(seconds=4, microseconds=1000)),
+            ('PT2.001S', datetime.timedelta(seconds=2, microseconds=500)),
+            ('PT3S', datetime.timedelta(seconds=3, microseconds=499)),
+            ('PT1H45M19S', datetime.timedelta(hours=1, minutes=45, seconds=19)),
         ]
         for expected, src in tests:
             self.assertEqual(expected, toIsoDuration(src))
@@ -109,7 +116,7 @@ class ObjectTests(unittest.TestCase):
             datetime.timedelta(minutes=1, seconds=30),
         ]
         list_expected = [
-            "string", "2019-02-01T04:05:06Z", "has_json", "PT1M30.00S",
+            "string", "2019-02-01T04:05:06Z", "has_json", "PT1M30S",
         ]
         dict_input = {
             'hello': 'world',
@@ -119,7 +126,7 @@ class ObjectTests(unittest.TestCase):
         dict_expected = {
             'hello': 'world',
             'datetime': "2019-02-01T04:05:06Z",
-            'timedelta': "PT2M30.00S",
+            'timedelta': "PT2M30S",
         }
 
         test_cases = [
@@ -132,7 +139,7 @@ class ObjectTests(unittest.TestCase):
             (datetime.datetime(2019, 2, 1, 4, 5, 6, tzinfo=UTC()),
              False, "2019-02-01T04:05:06Z"),
             (datetime.timedelta(minutes=1, seconds=30),
-             False, "PT1M30.00S"),
+             False, "PT1M30S"),
             (list_input, True, list_expected),
             (dict_input, True, dict_expected),
             (tuple(list_input), True, tuple(list_expected)),
