@@ -117,6 +117,14 @@ def toUuid(value):
         value[:8], value[8:12], value[12:16], value[16:20],
         value[20:]])
 
+def trueFalse(value):
+    """
+    Returns a "true" or "false" string for the provided boolean
+    """
+    if value:
+        return "true"
+    return "false"
+
 def xmlSafe(value):
     """
     Convert the given string to a format that is safe for inclusion
