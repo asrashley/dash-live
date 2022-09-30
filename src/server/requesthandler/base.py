@@ -381,6 +381,7 @@ class RequestHandlerBase(webapp2.RequestHandler):
             "generateSegmentList": self.generateSegmentList,
             "generateSegmentDurations": self.generateSegmentDurations,
             "generateSegmentTimeline": lambda r: self.generateSegmentTimeline(rv, r),
+            "minBufferTime": datetime.timedelta(seconds=1.5),
             "mode": mode,
             "mpd_url": mpd_url,
             "now": now,

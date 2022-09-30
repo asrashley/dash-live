@@ -83,6 +83,8 @@ def toIsoDuration(secs):
         secs = float(secs)
     elif isinstance(secs, datetime.timedelta):
         secs = secs.total_seconds()
+    milli_secs = int((secs - math.floor(secs)) * 1000 + 0.5)
+    secs = int(math.floor(secs))
     hrs = math.floor(secs / 3600)
     rv = ['PT']
     secs %= 3600
@@ -92,7 +94,14 @@ def toIsoDuration(secs):
         rv.append('%dH' % hrs)
     if hrs or mins:
         rv.append('%dM' % mins)
-    rv.append('%0.2fS' % secs)
+    rv.append('%d' % secs)
+    if milli_secs > 0:
+        ms = '%03d' % milli_secs
+        while ms and ms[-1] == '0':
+            ms = ms[:-1]
+        rv.append('.')
+        rv.append(ms)
+    rv.append('S')
     return ''.join(rv)
 
 
