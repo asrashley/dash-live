@@ -40,7 +40,7 @@ class AdaptationSet(ObjectWithFields):
         'maxSegmentDuration': 1,
         'startNumber': 1,
         'timescale': 1,
-        'segmentAlignment': "true",  # TODO: replace with a boolean
+        'segmentAlignment': True,
     }
 
     def __init__(self, **kwargs):

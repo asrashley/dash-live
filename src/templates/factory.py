@@ -58,6 +58,7 @@ class TemplateFactory(object):
         self.templates.filters['sizeFormat'] = tags.sizeFormat
         self.templates.filters['toHtmlString'] = tags.toHtmlString
         self.templates.filters['toJson'] = tags.toJson
+        self.templates.filters['trueFalse'] = tags.trueFalse
         self.templates.filters['uuid'] = tags.toUuid
         self.templates.filters['xmlSafe'] = tags.xmlSafe
         self.templates.filters['default'] = tags.default
