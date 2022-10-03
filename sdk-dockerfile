@@ -41,6 +41,7 @@ COPY src/mpeg/*.py $HOME/dash-live/src/mpeg/
 COPY src/mpeg/dash/*.py $HOME/dash-live/src/mpeg/dash/
 COPY src/scte35/*.py $HOME/dash-live/src/scte35/
 COPY src/server/*.py $HOME/dash-live/src/server/
+COPY src/server/events/*.py $HOME/dash-live/src/server/events/
 COPY src/server/requesthandler/*.py $HOME/dash-live/src/server/requesthandler/
 COPY src/templates/*.py $HOME/dash-live/src/templates/
 COPY src/testcase/*.py $HOME/dash-live/src/testcase/
