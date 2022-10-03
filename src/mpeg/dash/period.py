@@ -22,8 +22,10 @@
 
 import datetime
 
-from objects import ListOf, ObjectWithFields
-from adaptation_set import AdaptationSet
+from utils.list_of import ListOf
+from utils.object_with_fields import ObjectWithFields
+
+from .adaptation_set import AdaptationSet
 
 class Period(ObjectWithFields):
     OBJECT_FIELDS = {
@@ -41,9 +43,15 @@ class Period(ObjectWithFields):
         mode
         contentType
         """
-        super(AdaptationSet, self).__init__(**kwargs)
+        super(Period, self).__init__(**kwargs)
         defaults = {
             'adaptationSets': [],
             'event_streams': [],
         }
         self.apply_defaults(defaults)
+
+    def key_ids(self):
+        kids = set()
+        for adp in self.adaptationSets:
+            kids.update(adp.key_ids())
+        return kids

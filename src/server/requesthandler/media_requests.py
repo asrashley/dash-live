@@ -197,7 +197,7 @@ class LiveMedia(RequestHandlerBase):
                 src, representation.nalLengthFieldFength)
         if segment_num == 0 and representation.encrypted:
             keys = models.Key.get_kids(representation.kids)
-            drms = self.generate_drm_dict(stream)
+            drms = self.generate_drm_dict(stream, keys)
             for drm in drms.values():
                 if 'moov' in drm:
                     pssh = drm["moov"](representation, keys)

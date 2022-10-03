@@ -28,6 +28,7 @@ except ImportError:
     import StringIO
 import struct
 import sys
+import urllib
 
 from xml.etree import ElementTree
 from Crypto.Cipher import AES
@@ -146,7 +147,6 @@ class PlayReady(DrmBase):
         la_url = self.la_url
         cfgs = []
         kids = []
-        cenc_alg = 'AESCTR'
         for keypair in keys.values():
             guid_kid = PlayReady.hex_to_le_guid(keypair.KID.raw, raw=True)
             rkey = keypair.KEY.raw
@@ -155,7 +155,6 @@ class PlayReady(DrmBase):
                 'alg': keypair.ALG,
                 'checksum': self.generate_checksum(keypair),
             })
-            cenc_alg = keypair.ALG
             cfg = [
                 'kid:' + base64.b64encode(guid_kid),
                 'persist:false',
@@ -183,17 +182,7 @@ class PlayReady(DrmBase):
         context["checksum"] = self.generate_checksum(default_keypair)
         header_version = self.header_version
         if header_version is None:
-            # Choose the lowest header version that supports the features
-            # required for the supplied keys
-            if cenc_alg != 'AESCTR':
-                header_version = 4.3
-            elif len(keys) == 1:
-                if self.version >= 2.0:
-                    header_version = 4.1
-                else:
-                    header_version = 4.0
-            else:
-                header_version = 4.2
+            header_version = self.minimum_header_version(keys)
             if self.version is not None:
                 if ((header_version == 4.3 and self.version < 4.0) or
                     (header_version == 4.2 and self.version < 3.0) or
@@ -250,6 +239,38 @@ class PlayReady(DrmBase):
             objects.append(record)
         return objects
 
+    def generate_manifest_context(self, stream, keys, cgi_params, la_url=None, locations=None):
+        version = cgi_params.get('playready_version')
+        if version is not None:
+            version = float(version)
+        else:
+            header_version = self.minimum_header_version(keys)
+            version = self.minimum_playready_version(header_version)
+        if la_url is None:
+            la_url = cgi_params.get('playready_la_url')
+            if la_url is not None:
+                la_url = urllib.unquote_plus(la_url)
+            elif stream.playready_la_url is not None:
+                la_url = stream.playready_la_url
+            else:
+                la_url = self.playready_la_url
+        if locations is None:
+            locations = {'pro', 'cenc', 'moov'}
+        rv = {
+            'laurl': la_url,
+            'scheme_id': self.dash_scheme_id(version),
+            'version': version,
+        }
+        if 'pro' in locations:
+            rv['pro'] = self.generate_pro
+        # PlayReady v1.0 (PIFF) mode only allows an mspr:pro element
+        if version > 1.0:
+            if 'cenc' in locations:
+                rv['cenc'] = self.generate_pssh
+            if 'moov' in locations:
+                rv['moov'] = self.generate_pssh
+        return rv
+
     def generate_pssh(self, representation, keys):
         """Generate a PlayReady Object (PRO) inside a PSSH box"""
         pro = self.generate_pro(representation, keys)
@@ -264,19 +285,49 @@ class PlayReady(DrmBase):
             version=1, flags=0, system_id=PlayReady.RAW_SYSTEM_ID,
             key_ids=keys, data=pro)
 
-    def dash_scheme_id(self):
+    def dash_scheme_id(self, version=None):
         """
         Returns the schemeIdUri for PlayReady
         """
-        if self.version == 1.0:
+        if version is None:
+            version = self.version
+        if version == 1.0:
             return "urn:uuid:{0}".format(self.SYSTEM_ID_V10)
         return "urn:uuid:{0}".format(self.SYSTEM_ID)
+
+    def minimum_header_version(self, keys):
+        """
+        Calculate the mimimum playready header version that supports the supplied keys
+        """
+        cenc_alg = 'AESCTR'
+        for keypair in keys.values():
+            cenc_alg = keypair.ALG
+        if cenc_alg != 'AESCTR':
+            header_version = 4.3
+        elif len(keys) == 1:
+            if self.version is not None and self.version >= 2.0:
+                header_version = 4.1
+            else:
+                header_version = 4.0
+        else:
+            header_version = 4.2
+        return header_version
+
+    def minimum_playready_version(self, header_version):
+        """
+        Calculate minimum Playready version based upon the header version
+        """
+        if header_version == 4.3:
+            return 4.0
+        if header_version == 4.2:
+            return 3.0
+        return 2.0
 
     @classmethod
     def is_supported_scheme_id(cls, uri):
         if not uri.startswith("urn:uuid:"):
             return False
-        return uri[9:].lower() in [cls.SYSTEM_ID, cls.SYSTEM_ID_V10]
+        return uri[9:].lower() in {cls.SYSTEM_ID, cls.SYSTEM_ID_V10}
 
 
 if __name__ == "__main__":

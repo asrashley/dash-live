@@ -37,6 +37,7 @@ from webapp2_extras import securecookie
 from webapp2_extras import security
 
 from mpeg.dash.adaptation_set import AdaptationSet
+from mpeg.dash.period import Period
 from drm.clearkey import ClearKey
 from drm.playready import PlayReady
 from drm.marlin import Marlin
@@ -44,7 +45,7 @@ from server import manifests
 from server import models
 from server import settings
 from server.gae import on_production_server
-from server.events import EventFactory
+from server.events.factory import EventFactory
 from server.requesthandler.exceptions import CsrfFailureException
 from server.routes import routes
 from templates.factory import TemplateFactory
@@ -183,81 +184,37 @@ class RequestHandlerBase(webapp2.RequestHandler):
         value = self.request.params.get(param, str(default)).lower()
         return value in ["1", "true"]
 
-    def generate_clearkey_license_url(self):
-        laurl = urlparse.urljoin(
-            self.request.host_url, self.uri_for('clearkey'))
-        if self.is_https_request():
-            laurl = laurl.replace('http://', 'https://')
-        return laurl
-
-    def generate_drm_dict(self, stream):
+    def generate_drm_dict(self, stream, keys):
         if isinstance(stream, basestring):
             stream = models.Stream.query(models.Stream.prefix == stream).get()
-        marlin_la_url = None
-        playready_la_url = None
-        playready_version = None
-        if stream is not None:
-            marlin_la_url = self.request.params.get('marlin_la_url')
-            if marlin_la_url is None:
-                marlin_la_url = stream.marlin_la_url
-            else:
-                marlin_la_url = urllib.unquote_plus(marlin_la_url)
-            playready_la_url = self.request.params.get('playready_la_url')
-            if playready_la_url is None:
-                playready_la_url = stream.playready_la_url
-            else:
-                playready_la_url = urllib.unquote_plus(playready_la_url)
-            playready_version = self.request.params.get('playready_version')
-            if playready_version is not None:
-                playready_version = float(playready_version)
         templates = TemplateFactory.get_singleton()
-        mspr = PlayReady(templates, la_url=playready_la_url, version=playready_version)
-        ck = ClearKey(templates)
-        marlin = Marlin(templates)
-        rv = {
-            'playready': {
-                'cenc': mspr.generate_pssh,
-                'laurl': playready_la_url,
-                'pro': mspr.generate_pro,
-                'moov': mspr.generate_pssh,
-                'scheme_id': mspr.dash_scheme_id(),
-                'version': playready_version,
-            },
-            'marlin': {
-                'MarlinContentIds': True,
-                'laurl': marlin_la_url,
-                'scheme_id': marlin.dash_scheme_id(),
-            },
-            'clearkey': {
-                'scheme_id': ck.dash_scheme_id(),
-                'laurl': self.generate_clearkey_license_url(),
-                'cenc': ck.generate_pssh,
-                'moov': ck.generate_pssh,
-            }
-        }
-        if playready_version == 1.0:
-            # PlayReady v1.0 (PIFF) mode only allows an mspr:pro element
-            rv['playready']['cenc'] = None
-            rv['playready']['moov'] = None
-        drms = self.request.params.get('drm')
-        if drms is None or drms == 'all':
-            return rv
-        d = {}
+        drms = self.request.params.get('drm', 'all')
+        rv = {}
         for name in drms.split(','):
-            try:
-                if '-' in name:
-                    parts = name.split('-')
-                    name = parts[0]
-                    d[name] = utils.objects.pick_items(
-                        rv[name],
-                        ['MarlinContentIds', 'laurl', 'scheme_id', 'version'])
-                    for p in parts[1:]:
-                        d[name][p] = rv[name][p]
-                else:
-                    d[name] = rv[name]
-            except KeyError:
-                pass
-        return d
+            if '-' in name:
+                parts = name.split('-')
+                drm_name = parts[0]
+                locations = set(parts[1:])
+            else:
+                drm_name = name
+                locations = None
+            if drm_name in {'all', 'playready'}:
+                mspr = PlayReady(templates)
+                rv['playready'] = mspr.generate_manifest_context(
+                    stream, keys, self.request.params, locations=locations)
+            if drm_name in {'all', 'marlin'}:
+                marlin = Marlin(templates)
+                rv['marlin'] = marlin.generate_manifest_context(
+                    stream, keys, self.request.params, locations=locations)
+            if drm_name in {'all', 'clearkey'}:
+                ck = ClearKey(templates)
+                ck_laurl = urlparse.urljoin(
+                    self.request.host_url, self.uri_for('clearkey'))
+                if self.is_https_request():
+                    ck_laurl = ck_laurl.replace('http://', 'https://')
+                rv['clearkey'] = ck.generate_manifest_context(
+                    stream, keys, self.request.params, la_url=ck_laurl, locations=locations)
+        return rv
 
     def generateSegmentList(self, representation):
         # TODO: support live profile
@@ -392,12 +349,7 @@ class RequestHandlerBase(webapp2.RequestHandler):
             "suggestedPresentationDelay": 30,
             "timeShiftBufferDepth": ts_buffer_depth,
         }
-        period = {
-            "start": datetime.timedelta(0),
-            "id": "p0",
-            "adaptationSets": [],
-            "event_streams": [],
-        }
+        period = Period(start=datetime.timedelta(0), id="p0")
         rv["availabilityStartTime"] = avail_start
         rv["elapsedTime"] = elapsedTime
         audio, video = self.calculate_audio_video_context(stream, mode, encrypted)
@@ -462,8 +414,8 @@ class RequestHandlerBase(webapp2.RequestHandler):
                 # configurable
                 video.event_streams.append(ev_stream)
             else:
-                period['event_streams'].append(ev_stream)
-        period["adaptationSets"].append(video)
+                period.event_streams.append(ev_stream)
+        period.adaptationSets.append(video)
 
         for idx, rep in enumerate(audio.representations):
             audio_adp = audio.clone()
@@ -477,7 +429,7 @@ class RequestHandlerBase(webapp2.RequestHandler):
                 audio_adp.role = 'main'
             else:
                 audio_adp.role = 'alternate'
-            period["adaptationSets"].append(audio_adp)
+            period.adaptationSets.append(audio_adp)
 
         rv["periods"].append(period)
         kids = set()
@@ -494,11 +446,11 @@ class RequestHandlerBase(webapp2.RequestHandler):
         rv["maxSegmentDuration"] = max(video.maxSegmentDuration,
                                        audio.maxSegmentDuration)
         if encrypted:
-            rv["DRM"] = self.generate_drm_dict(stream)
             if not kids:
                 rv["keys"] = models.Key.all_as_dict()
             else:
                 rv["keys"] = models.Key.get_kids(kids)
+            rv["DRM"] = self.generate_drm_dict(stream, rv["keys"])
         try:
             timeSource = {'format': self.request.params['time']}
             if timeSource['format'] == 'xsd':

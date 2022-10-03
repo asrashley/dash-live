@@ -269,7 +269,14 @@ class DashManifestCheckMixin(object):
         context = mock.calculate_dash_params(mpd_url=mpd_filename, prefix=prefix, mode=mode)
         encrypted = kwargs.get('drm', 'none') != 'none'
         if encrypted:
-            context["DRM"] = mock.generate_drm_dict(stream)
+            kids = set()
+            for period in context['periods']:
+                kids.update(period.key_ids())
+            if not kids:
+                keys = models.Key.all_as_dict()
+            else:
+                keys = models.Key.get_kids(kids)
+            context["DRM"] = mock.generate_drm_dict(stream, keys)
         context['remote_addr'] = mock.request.remote_addr
         context['request_uri'] = mock.request.uri
         context['title'] = stream.title

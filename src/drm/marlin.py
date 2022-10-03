@@ -20,11 +20,26 @@
 #
 #############################################################################
 
+import urllib
+
 from drm.base import DrmBase
 
 
 class Marlin(DrmBase):
     MPD_SYSTEM_ID = '5e629af5-38da-4063-8977-97ffbd9902d4'
+
+    def generate_manifest_context(self, stream, keys, cgi_params, la_url=None, locations=None):
+        if la_url is None:
+            la_url = cgi_params.get('marlin_la_url')
+            if la_url is not None:
+                la_url = urllib.unquote_plus(la_url)
+            else:
+                la_url = stream.marlin_la_url
+        return {
+            'MarlinContentIds': True,
+            'laurl': la_url,
+            'scheme_id': self.dash_scheme_id(),
+        }
 
     def generate_pssh(self, representation, keys):
         raise RuntimeError('generate_pssh has not been implemented for Marlin')
