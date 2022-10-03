@@ -47,13 +47,12 @@ class MpegSectionTable(ObjectWithFields):
         cls.parse_payload(r, kwargs)
         r.read(32, 'crc')
         crc = Crc32Mpeg2()
-        # crc.process(map(lambda b: ord(b), r.data[kwargs['position']:r.bytepos()]))
         crc.process(memoryview(r.data[kwargs['position']:r.bytepos()]).tolist())
         kwargs['crc_valid'] = crc.final() == 0
         return kwargs
 
     def encode(self, dest=None):
-        w = BitsFieldWriter(self)
+        w = BitsFieldWriter(self, dest)
         w.write(8, 'table_id')
         w.write(1, 'section_syntax_indicator')
         w.write(1, 'private_indicator')
@@ -64,9 +63,9 @@ class MpegSectionTable(ObjectWithFields):
         # NOTE: section_length includes the CRC field
         self.section_length = 4 + ((w.bitpos() - pos - 12) // 8)
         w.overwrite(pos, 12, 'section_length')
-        data = map(lambda b: ord(b), w.toBytes())
+        data = w.toBytes()
         crc = Crc32Mpeg2()
-        crc.process(data)
+        crc.process(memoryview(data).tolist())
         w.write(32, 'crc32', value=crc.final())
         if dest is None:
             return w.toBytes()
@@ -75,13 +74,3 @@ class MpegSectionTable(ObjectWithFields):
     @abstractmethod
     def encode_fields(self, dest):
         pass
-
-    @staticmethod
-    def calculate_crc(data):
-        crc = 0xffffffff
-        for byte in data:
-            val = ord(byte)
-            crc ^= val << 24
-            for _ in range(8):
-                crc = crc << 1 if (crc & 0x80000000) == 0 else (crc << 1) ^ 0x104c11db7
-        return crc
