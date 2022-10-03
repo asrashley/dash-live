@@ -60,16 +60,16 @@ class TestDashEventGeneration(DashManifestCheckMixin, GAETestBase):
         for period in dv.manifest.periods:
             self.assertEqual(len(period.event_streams), 1)
             event_stream = period.event_streams[0]
-            self.assertEqual(event_stream.schemeIdUri, server.events.PingPong.schemeIdUri)
-            self.assertEqual(event_stream.value, server.events.PingPong.PARAMS['value'])
+            self.assertEqual(event_stream.schemeIdUri, PingPongEvents.schemeIdUri)
+            self.assertEqual(event_stream.value, PingPongEvents.PARAMS['value'])
             self.assertIsInstance(event_stream, dash_validator.EventStream)
             self.assertEqual(len(event_stream.events), 4)
             presentationTime = 256
             for idx, event in enumerate(event_stream.events):
                 self.assertEqual(event.id, idx)
                 self.assertEqual(event.presentationTime, presentationTime)
-                self.assertEqual(event.duration, server.events.PingPong.PARAMS['duration'])
-                presentationTime += server.events.PingPong.PARAMS['interval']
+                self.assertEqual(event.duration, PingPongEvents.PARAMS['duration'])
+                presentationTime += PingPongEvents.PARAMS['interval']
 
     def test_inband_ping_pong_dash_events(self):
         """
@@ -96,8 +96,8 @@ class TestDashEventGeneration(DashManifestCheckMixin, GAETestBase):
                     continue
                 self.assertEqual(len(adp.event_streams), 1)
                 event_stream = adp.event_streams[0]
-                self.assertEqual(event_stream.schemeIdUri, server.events.PingPong.schemeIdUri)
-                self.assertEqual(event_stream.value, server.events.PingPong.PARAMS['value'])
+                self.assertEqual(event_stream.schemeIdUri, PingPongEvents.schemeIdUri)
+                self.assertEqual(event_stream.value, PingPongEvents.PARAMS['value'])
                 self.assertIsInstance(event_stream, dash_validator.InbandEventStream)
                 rep = adp.representations[0]
                 info = dv.get_representation_info(rep)
@@ -117,7 +117,7 @@ class TestDashEventGeneration(DashManifestCheckMixin, GAETestBase):
                 children=seg.validate(depth=1, all_atoms=True))
             seg_presentation_time = (
                 ev_presentation_time * info.timescale /
-                server.events.PingPong.PARAMS['timescale'])
+                PingPongEvents.PARAMS['timescale'])
             decode_time = frag.moof.traf.tfdt.base_media_decode_time
             seg_end = decode_time + seg.duration
             if seg_presentation_time < decode_time or seg_presentation_time >= seg_end:
@@ -126,18 +126,18 @@ class TestDashEventGeneration(DashManifestCheckMixin, GAETestBase):
                     emsg = frag.emsg
                 continue
             delta = seg_presentation_time - decode_time
-            delta = (delta * server.events.PingPong.PARAMS['timescale'] /
+            delta = (delta * PingPongEvents.PARAMS['timescale'] /
                      info.timescale)
             emsg = frag.emsg
-            self.assertEqual(emsg.scheme_id_uri, server.events.PingPong.schemeIdUri)
-            self.assertEqual(emsg.value, server.events.PingPong.PARAMS['value'])
+            self.assertEqual(emsg.scheme_id_uri, PingPongEvents.schemeIdUri)
+            self.assertEqual(emsg.value, PingPongEvents.PARAMS['value'])
             self.assertEqual(emsg.presentation_time_delta, delta)
             self.assertEqual(emsg.event_id, event_id)
             if (event_id & 1) == 0:
                 self.assertEqual(emsg.data, 'ping')
             else:
                 self.assertEqual(emsg.data, 'pong')
-            ev_presentation_time += server.events.PingPong.PARAMS['interval']
+            ev_presentation_time += PingPongEvents.PARAMS['interval']
             event_id += 1
 
     def test_inline_scte35_dash_events(self):
@@ -164,15 +164,15 @@ class TestDashEventGeneration(DashManifestCheckMixin, GAETestBase):
         for period in dv.manifest.periods:
             self.assertEqual(len(period.event_streams), 1)
             event_stream = period.event_streams[0]
-            self.assertEqual(event_stream.schemeIdUri, server.events.Scte35.schemeIdUri)
-            self.assertEqual(event_stream.value, server.events.Scte35.PARAMS['value'])
+            self.assertEqual(event_stream.schemeIdUri, Scte35Events.schemeIdUri)
+            self.assertEqual(event_stream.value, Scte35Events.PARAMS['value'])
             self.assertIsInstance(event_stream, dash_validator.EventStream)
             self.assertEqual(len(event_stream.events), 4)
             presentationTime = 256
             for idx, event in enumerate(event_stream.events):
                 self.assertEqual(event.id, idx)
                 self.assertEqual(event.presentationTime, presentationTime)
-                self.assertEqual(event.duration, server.events.Scte35.PARAMS['duration'])
+                self.assertEqual(event.duration, Scte35Events.PARAMS['duration'])
                 auto_return = (idx & 1) == 0
                 avail_num = idx // 2
                 expected = {
@@ -217,7 +217,7 @@ class TestDashEventGeneration(DashManifestCheckMixin, GAETestBase):
                 }
                 # print(json.dumps(event.scte35_binary_signal, indent=2))
                 self.assertObjectEqual(expected, event.scte35_binary_signal)
-                presentationTime += server.events.Scte35.PARAMS['interval']
+                presentationTime += Scte35Events.PARAMS['interval']
 
 
 if os.environ.get("TESTS"):

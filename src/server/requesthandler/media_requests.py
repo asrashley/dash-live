@@ -28,7 +28,7 @@ from google.appengine.ext import blobstore
 
 from mpeg import mp4
 from server import models
-from server.events import EventFactory
+from server.events.factory import EventFactory
 from .base import RequestHandlerBase
 from utils.date_time import UTC, scale_timedelta
 from utils.buffered_reader import BufferedReader
