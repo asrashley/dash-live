@@ -59,7 +59,7 @@ class SpliceDescriptor(ObjectWithFields):
         except KeyError:
             DescriptorClass = UnknownSpliceDescriptor
         rv['_type'] = DescriptorClass.__name__
-        DescriptorClass.parse(r, rv)
+        DescriptorClass.parse_fields(r, rv)
         return rv
 
     def encode(self, dest=None):
@@ -75,13 +75,17 @@ class SpliceDescriptor(ObjectWithFields):
             return w.toBytes()
         return w
 
+    @classmethod
+    def parse_fields(self, bit_reader, rv):
+        raise RuntimeError("parse_fields must be implemented by each Descriptor class")
+
     @abstractmethod
     def encode_fields(self, dest):
         pass
 
 class UnknownSpliceDescriptor(SpliceDescriptor):
     @classmethod
-    def parse(cls, bit_reader, kwargs):
+    def parse_fields(cls, bit_reader, kwargs):
         bit_reader.read_bytes(kwargs['length'] - 4, 'data')
 
     def encode_fields(self, dest):
@@ -94,7 +98,7 @@ class AvailDescriptor(SpliceDescriptor):
     }
 
     @classmethod
-    def parse(cls, bit_reader, kwargs):
+    def parse_fields(cls, bit_reader, kwargs):
         bit_reader.read(32, 'provider_avail_id')
 
     def encode_fields(self, dest):
@@ -189,7 +193,7 @@ class SegmentationDescriptor(SpliceDescriptor):
     }
 
     @classmethod
-    def parse(cls, r, kwargs):
+    def parse_fields(cls, r, kwargs):
         r.read(32, 'segmentation_event_id')
         r.read(1, 'segmentation_event_cancel_indicator')
         r.get(7, 'reserved')
@@ -286,7 +290,7 @@ class TimeDescriptor(SpliceDescriptor):
     }
 
     @classmethod
-    def parse(cls, r, kwargs):
+    def parse_fields(cls, r, kwargs):
         r.read(48, 'TAI_seconds')
         r.read(32, 'TAI_ns')
         r.read(16, 'UTC_offset')
@@ -305,7 +309,7 @@ class AudioDescriptor(SpliceDescriptor):
     }
 
     @classmethod
-    def parse(cls, r, kwargs):
+    def parse_fields(cls, r, kwargs):
         count = r.get(4, 'audio_count')
         r.get(4, 'reserved')
         components = []
