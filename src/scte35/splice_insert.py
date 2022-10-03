@@ -27,6 +27,10 @@ from utils.object_with_fields import ObjectWithFields
 from utils.list_of import ListOf
 
 class ElementaryComponent(ObjectWithFields):
+    OBJECT_FIELDS = {
+        'splice_time': SpliceTime,
+    }
+
     @classmethod
     def parse(cls, src):
         kwargs = {}
