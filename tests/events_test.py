@@ -34,7 +34,8 @@ from gae_base import GAETestBase
 from mpeg import MPEG_TIMEBASE, mp4
 from mixins.check_manifest import DashManifestCheckMixin
 import dash_validator
-import server.events
+from server.events.ping_pong import PingPongEvents
+from server.events.scte35_events import Scte35Events
 import scte35
 
 class TestDashEventGeneration(DashManifestCheckMixin, GAETestBase):

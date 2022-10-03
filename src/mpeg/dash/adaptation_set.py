@@ -79,6 +79,13 @@ class AdaptationSet(ObjectWithFields):
     def contentComponent(self):
         return ContentComponent(self.id, self.contentType)
 
+    def key_ids(self):
+        kids = set()
+        for rep in self.representations:
+            if rep.encrypted:
+                kids.update(rep.kids)
+        return kids
+
     def append_cgi_params(self, params):
         if not params:
             return

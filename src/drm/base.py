@@ -37,5 +37,9 @@ class DrmBase(object):
         raise RuntimeError('dash_scheme_id has not been implemented')
 
     @abstractmethod
+    def generate_manifest_context(self, stream, keys, cgi_params, la_url=None, locations=None):
+        raise RuntimeError('generate_manifest_context has not been implemented')
+
+    @abstractmethod
     def generate_pssh(self, representation, keys):
         raise RuntimeError('generate_pssh has not been implemented')

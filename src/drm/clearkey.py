@@ -32,6 +32,19 @@ class ClearKey(DrmBase):
     def dash_scheme_id(self):
         return "urn:uuid:{0}".format(self.MPD_SYSTEM_ID)
 
+    def generate_manifest_context(self, stream, keys, cgi_params, la_url=None, locations=None):
+        if locations is None:
+            locations = {'cenc', 'moov'}
+        rv = {
+            'scheme_id': self.dash_scheme_id(),
+            'laurl': la_url,
+        }
+        if 'cenc' in locations:
+            rv['cenc'] = self.generate_pssh
+        if 'moov' in locations:
+            rv['moov'] = self.generate_pssh
+        return rv
+
     def generate_pssh(self, representation, keys):
         """Generate a Clearkey PSSH box"""
         # see https://www.w3.org/TR/eme-initdata-cenc/
