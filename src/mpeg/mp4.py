@@ -915,9 +915,7 @@ class SampleEntry(Mp4Atom):
         rv = Mp4Atom.parse(src, parent, **kwargs)
         r = FieldReader(clz.classname, src, rv, debug=options.debug)
         r.skip(6)  # reserved
-        # src.read(6)  # reserved
         r.read('H', 'data_reference_index')
-        # rv["data_reference_index"] = struct.unpack('>H', src.read(2))[0]
         return rv
 
     def encode_fields(self, dest):
@@ -1907,8 +1905,8 @@ Mp4Atom.BOXES['tenc'] = TrackEncryptionBox
 class ContentProtectionSpecificBox(FullBox):
     OBJECT_FIELDS = {
         "data": Binary,
-        "key_ids": ListOf(Binary),
-        "system_id": Binary,
+        "key_ids": ListOf(HexBinary),
+        "system_id": HexBinary,
     }
     OBJECT_FIELDS.update(FullBox.OBJECT_FIELDS)
 
@@ -1935,7 +1933,7 @@ class ContentProtectionSpecificBox(FullBox):
                 value = value.replace('-', '').decode('hex')
         if len(value) != 16:
             raise ValueError(r"Invalid length: {0}".format(len(value)))
-        return Binary(value, encoding=Binary.HEX)
+        return HexBinary(value, encoding=Binary.HEX)
 
     @classmethod
     def parse(clz, src, parent, **kwargs):
