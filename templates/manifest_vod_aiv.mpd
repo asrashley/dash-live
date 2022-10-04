@@ -44,18 +44,18 @@
             audioSamplingRate="{{rep.sampleRate}}"
           {% endif %}
         >
-        {% if adp.contentType == "audio" %}
+        {%- if adp.contentType == "audio" %}
           <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
         {% endif %}
-        {% if baseURL %}
+        {%- if baseURL %}
           <BaseURL>{{baseURL|xmlSafe}}{{rep.id|xmlSafe}}.m4a</BaseURL>
-        {% else %}
+        {%- else %}
           <BaseURL>{{uri_for('dash-od-media', filename=rep.id, ext='m4a')|xmlSafe}}</BaseURL>
         {% endif %}
-        {{generateSegmentList(rep)}}
+        {{rep.generateSegmentList()}}
       </Representation>
-      {% if loop.last %}
-      {{generateSegmentDurations(rep)}}
+      {%- if loop.last %}
+      {{rep.generateSegmentDurations()}}
       {% endif %}
    {% endfor %}  {# representations #}
     </AdaptationSet>

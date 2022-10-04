@@ -198,8 +198,7 @@ class MediaHandler(RequestHandlerBase):
                     blobstore.BlobReader(mf.blob))
                 atom = mp4.Wrapper(atom_type='wrap', position=0, size=mf.info.size, parent=None,
                                    children=mp4.Mp4Atom.load(blob_reader))
-                rep = Representation.create(
-                    filename=mf.name, atoms=atom.children)
+                rep = Representation.load(filename=mf.name, atoms=atom.children)
                 mf.representation = rep
                 mf.put()
                 result = {

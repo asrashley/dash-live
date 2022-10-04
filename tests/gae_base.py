@@ -128,7 +128,7 @@ class GAETestBase(TestCaseMixin, unittest.TestCase):
                 dest.write(data)
             files.finalize(blob_filename)
             blob_key = files.blobstore.get_blob_key(blob_filename)
-            rep = Representation.create(filename, atoms)
+            rep = Representation.load(filename, atoms)
             encrypted = rid.endswith('_enc')
             self.assertEqual(encrypted, rep.encrypted)
             self.assertAlmostEqual(
@@ -150,12 +150,9 @@ class GAETestBase(TestCaseMixin, unittest.TestCase):
             if r is None:
                 continue
             if r.encrypted:
-                mspr = PlayReady(self.templates)
                 for kid in r.kids:
-                    key = binascii.b2a_hex(
-                        mspr.generate_content_key(
-                            kid.decode('hex')))
-                    keypair = models.Key(hkid=kid, hkey=key, computed=True)
+                    key = binascii.b2a_hex(PlayReady.generate_content_key(kid.raw))
+                    keypair = models.Key(hkid=kid.hex, hkey=key, computed=True)
                     keypair.put()
 
     def tearDown(self):

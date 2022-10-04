@@ -194,7 +194,7 @@ class LiveMedia(RequestHandlerBase):
             atom_type='wrap', children=mp4.Mp4Atom.load(src, options=options))
         if self.request.params.get('corrupt') is not None:
             atom.moof.traf.trun.parse_samples(
-                src, representation.nalLengthFieldFength)
+                src, representation.nalLengthFieldLength)
         if segment_num == 0 and representation.encrypted:
             keys = models.Key.get_kids(representation.kids)
             drms = self.generate_drm_dict(stream, keys)

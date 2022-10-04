@@ -77,8 +77,8 @@ class GenerateIndex(object):
         parser = IsoParser()
         atoms = parser.walk_atoms(filename)
         verbose = 2 if self.args.debug else 1
-        return Representation.create(filename=filename.replace('\\', '/'),
-                                     atoms=atoms, verbose=verbose)
+        return Representation.load(filename=filename.replace('\\', '/'),
+                                   atoms=atoms, verbose=verbose)
 
     def generate_manifest(self, filename, rep):
         print('Creating manifest ' + self.args.manifest[0])

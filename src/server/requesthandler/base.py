@@ -216,48 +216,6 @@ class RequestHandlerBase(webapp2.RequestHandler):
                     stream, keys, self.request.params, la_url=ck_laurl, locations=locations)
         return rv
 
-    def generateSegmentList(self, representation):
-        # TODO: support live profile
-        rv = ['<SegmentList timescale="%d" duration="%d">' %
-              (representation.timescale, representation.mediaDuration)]
-        first = True
-        for seg in representation.segments:
-            if first:
-                rv.append(
-                    '<Initialization range="{start:d}-{end:d}"/>'.format(start=seg.pos, end=seg.pos + seg.size - 1))
-                first = False
-            else:
-                rv.append('<SegmentURL mediaRange="{start:d}-{end:d}"/>'.format(
-                    start=seg.pos, end=seg.pos + seg.size - 1))
-        rv.append('</SegmentList>')
-        return '\n'.join(rv)
-
-    def generateSegmentDurations(self, representation):
-        # TODO: support live profile
-        def output_s_node(sn):
-            if sn["duration"] is None:
-                return
-            c = ' r="{:d}"'.format(sn["count"] - 1) if sn["count"] > 1 else ''
-            rv.append('<S {} d="{:d}"/>'.format(c, sn["duration"]))
-        rv = ['<SegmentDurations timescale="%d">' % (representation.timescale)]
-        s_node = {
-            "duration": None,
-            "count": 0,
-        }
-        for seg in representation.segments:
-            try:
-                if seg.duration != s_node["duration"]:
-                    output_s_node(s_node)
-                    s_node["count"] = 0
-                s_node["duration"] = seg.duration
-                s_node["count"] += 1
-            except AttributeError:
-                # init segment does not have a duration
-                pass
-        output_s_node(s_node)
-        rv.append('</SegmentDurations>')
-        return '\n'.join(rv)
-
     def generateSegmentTimeline(self, context, representation):
         def output_s_node(sn):
             if sn["duration"] is None:
@@ -335,8 +293,6 @@ class RequestHandlerBase(webapp2.RequestHandler):
             "abr": self.get_bool_param('abr', default=True),
             "clockDrift": clockDrift,
             "encrypted": encrypted,
-            "generateSegmentList": self.generateSegmentList,
-            "generateSegmentDurations": self.generateSegmentDurations,
             "generateSegmentTimeline": lambda r: self.generateSegmentTimeline(rv, r),
             "minBufferTime": datetime.timedelta(seconds=1.5),
             "mode": mode,

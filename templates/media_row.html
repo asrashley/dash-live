@@ -25,7 +25,7 @@
       <td class="kid">
         {% if media.representation %}
           {% if media.representation.encrypted %}
-            {% for kid in media.representation.kids %}<p>{{kid}}</p>{% endfor %}
+            {% for kid in media.representation.kids %}<p>{{kid.hex}}</p>{% endfor %}
 		  {% else %}
             <span class="bool-no ">&cross;</span>
           {% endif %}

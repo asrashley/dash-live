@@ -104,7 +104,7 @@
            >
              {%- if mode=='odvod' %}
                <BaseURL>{{adp.mediaURL.replace("$RepresentationID$", rep.id)|xmlSafe}}</BaseURL>
-               {{generateSegmentList(rep)}}
+               {{rep.generateSegmentList()}}
              {%- endif %}
            </Representation>
          {%- endfor %} {# representations #}
