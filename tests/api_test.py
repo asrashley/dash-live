@@ -23,6 +23,7 @@
 import base64
 import binascii
 import copy
+import logging
 import os
 import sys
 import unittest
@@ -549,6 +550,7 @@ class TestRestApi(GAETestBase):
         response = form.submit('submit', status=401)
 
         self.setCurrentUser(is_admin=True)
+        # print('==== get upload form ====')
         response = self.app.get(url)
         self.assertEqual(response.status_int, 200)
         upload_form = response.forms['upload-form']
@@ -557,12 +559,13 @@ class TestRestApi(GAETestBase):
             "ajax": ajax,
             "submit": "submit",
         }
+        # print('==== upload file ====')
         response = self.upload_blobstore_file(url, response.forms['upload-form'].action,
                                               form, 'file', 'bbb_v1.mp4', b'data',
                                               'video/mp4')
         if ajax:
+            # print('response', response.json)
             expected_result = {
-                'csrf': 0,
                 'name': 'bbb_v1.mp4',
             }
             for item in ['csrf', 'upload_url', 'file_html', 'key', 'blob',
@@ -574,8 +577,12 @@ class TestRestApi(GAETestBase):
         else:
             response.mustcontain('<h2>Upload complete</h2>')
 
+        if ajax:
+            url += '?ajax=1'
+        # print('==== get index ====')
         response = self.app.get(url)
         self.assertEqual(response.status_int, 200)
+        # print(response.text)
         response.mustcontain('bbb_v1.mp4')
 
     def test_delete_media_file(self):
@@ -613,6 +620,9 @@ class TestRestApi(GAETestBase):
 
 if os.environ.get("TESTS"):
     def load_tests(loader, tests, pattern):
+        logging.basicConfig()
+        # logging.getLogger().setLevel(logging.DEBUG)
+        # logging.getLogger('mp4').setLevel(logging.INFO)
         return unittest.loader.TestLoader().loadTestsFromNames(
             os.environ["TESTS"].split(','),
             TestRestApi)

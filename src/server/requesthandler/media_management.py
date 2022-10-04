@@ -77,10 +77,12 @@ class MediaHandler(RequestHandlerBase):
                 blob_info.delete()
                 return
             try:
-                context = self.outer.create_context(title='File %s uploaded' % (blob_info.filename),
-                                                    blob=blob_info.key())
-                mf = models.MediaFile.query(
-                    models.MediaFile.name == blob_info.filename).get()
+                context = self.outer.create_context(
+                    title='File %s uploaded' % (blob_info.filename),
+                    blob=blob_info.key())
+                logging.debug("File %s uploaded, key=%s",
+                              blob_info.filename, blob_info.key())
+                mf = models.MediaFile.get(name=blob_info.filename)
                 if mf:
                     mf.delete()
                 mf = models.MediaFile(
@@ -88,7 +90,7 @@ class MediaHandler(RequestHandlerBase):
                 mf.put()
                 context["mfid"] = mf.key.urlsafe()
                 result = mf.toJSON()
-                logging.debug("upload done " + context["mfid"])
+                logging.debug("upload done MediaFile.key=%s", context["mfid"])
                 if is_ajax:
                     csrf_key = self.outer.generate_csrf_cookie()
                     result['upload_url'] = blobstore.create_upload_url(

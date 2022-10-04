@@ -221,7 +221,6 @@ class GAETestBase(TestCaseMixin, unittest.TestCase):
              filename,
              message,
              "message/external-body; blob-key=\"encoded_gs_file:blablabla\"; access-type=\"X-AppEngine-BlobKey\"")]
-        # upload_files = [(field, filename, message, 'fooooo')]
         logging.debug(message)
         return self.app.post(upload_url, params=form,
                              headers=headers, upload_files=upload_files)

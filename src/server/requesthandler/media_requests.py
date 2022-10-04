@@ -76,7 +76,7 @@ class LiveMedia(RequestHandlerBase):
 
     def get(self, mode, filename, segment_num, ext):
         name = filename.lower() + '.mp4'
-        mf = models.MediaFile.query(models.MediaFile.name == name).get()
+        mf = models.MediaFile.get(name)
         if mf is None:
             self.response.write('%s not found' % filename)
             self.response.set_status(404)
@@ -88,19 +88,23 @@ class LiveMedia(RequestHandlerBase):
             self.response.set_status(404)
             return
         representation = mf.representation
+        audio = None
         try:
-            audio, video = self.calculate_audio_video_context(
-                stream, mode, representation.encrypted)
-            # dash = self.calculate_dash_params(mode=mode, stream=stream)
+            # TODO: add subtitle support
+            if mf.contentType == 'audio':
+                audio = self.calculate_audio_context(stream, mode, representation.encrypted)
+                assert audio.contentType == 'audio'
+                video = self.calculate_video_context(stream, mode, representation.encrypted,
+                                                     max_items=1)
+                assert video.contentType == 'video'
+                adp_set = audio
+            else:
+                video = self.calculate_video_context(stream, mode, representation.encrypted)
+                adp_set = video
         except ValueError as e:
             self.response.write('Invalid CGI parameters: %s' % (str(e)))
             self.response.set_status(400)
             return
-        # TODO: add subtitle support
-        if ext == 'm4a':
-            adp_set = audio
-        else:
-            adp_set = video
         if video.representations:
             ref_representation = video.representations[0]
         else:

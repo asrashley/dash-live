@@ -186,9 +186,13 @@ class TestHandlers(GAETestBase, DashManifestCheckMixin):
                 url=baseurl, encrypted=encrypted)
             mpd.validate()
             head = self.app.head(baseurl)
+            msg = r'Expected HEAD.contentLength={0} == GET.contentLength={1} for URL {2}'.format(
+                head.headers['Content-Length'], response.headers['Content-Length'],
+                baseurl)
             self.assertEqual(
                 head.headers['Content-Length'],
-                response.headers['Content-Length'])
+                response.headers['Content-Length'],
+                msg)
         self.progress(total_tests, total_tests)
 
     @GAETestBase.mock_datetime_now(from_isodatetime("2022-10-04T12:00:00Z"))

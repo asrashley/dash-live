@@ -8,10 +8,10 @@
           <S r="10" t="0" d="960"/>
         </SegmentTimeline>
       </SegmentTemplate>
-      <Representation id="bbb_v6" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="374782">
-                  </Representation>
       <Representation id="bbb_v7" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="191821">
-                  </Representation>
+      </Representation>
+      <Representation id="bbb_v6" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="374782">
+      </Representation>
     </AdaptationSet>
     <AdaptationSet lang="eng" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
       <SegmentTemplate initialization="$RepresentationID$/init.m4a" media="$RepresentationID$/$Number$.m4a" presentationTimeOffset="0" timescale="44100">
