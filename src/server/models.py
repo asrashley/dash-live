@@ -31,11 +31,22 @@ class MediaFile(ndb.Model):
     name = ndb.StringProperty(required=True, indexed=True, verbose_name='Name')
     blob = ndb.BlobKeyProperty(indexed=False)
     rep = ndb.JsonProperty(indexed=False, required=False, default={})
+    bitrate = ndb.IntegerProperty(indexed=True, required=True, default=0)
+    contentType = ndb.StringProperty(required=False, indexed=True,
+                                     verbose_name='Content Type', default=None)
+    encrypted = ndb.BooleanProperty(default=False, indexed=True)
 
     def __init__(self, *args, **kwargs):
         super(MediaFile, self).__init__(*args, **kwargs)
         self._info = None
         self._representation = None
+
+    def _pre_put_hook(self):
+        if self._representation is not None:
+            if self.contentType is None:
+                self.contentType = self._representation.contentType
+                self.encrypted = self._representation.encrypted
+                self.bitrate = self._representation.bitrate
 
     @property
     def info(self):
@@ -60,10 +71,37 @@ class MediaFile(ndb.Model):
     representation = property(get_representation, set_representation)
 
     @classmethod
-    def all(clz):
-        list_of_keys = MediaFile.query().fetch(keys_only=True)
-        files = ndb.get_multi(list_of_keys)
-        files = [f for f in files if f is not None]
+    def all(clz, contentType=None, encrypted=None, prefix=None):
+        return clz.search()
+
+    @classmethod
+    def search(clz, contentType=None, encrypted=None, prefix=None, maxItems=None):
+        # print('MediaFile.all()', contentType, encrypted, prefix, maxItems)
+        query = clz.query()
+        if contentType is not None:
+            query = query.filter(clz.contentType == contentType)
+        if encrypted is not None:
+            query = query.filter(clz.encrypted == encrypted)
+        list_of_keys = query.order(clz.bitrate).fetch(keys_only=True)
+        # print('list_of_keys', list_of_keys)
+        fallback = False
+        if len(list_of_keys) == 0:
+            if contentType is not None or encrypted is not None:
+                # fall-back if the contentType fields have not been populated
+                list_of_keys = MediaFile.query().fetch(keys_only=True)
+                fallback = True
+        if maxItems is not None and not fallback:
+            list_of_keys = list_of_keys[:maxItems]
+        files = []
+        for mf in ndb.get_multi(list_of_keys):
+            if mf is None:
+                print('mf is none')
+                continue
+            if prefix is None or mf.name.startswith(prefix):
+                if mf.contentType is None:
+                    fallback = True
+                files.append(mf)
+        # print('list_of_keys', list_of_keys, files)
         blobs = {}
         for b in blobstore.BlobInfo.get(map(lambda f: f.blob, files)):
             if b is not None:
@@ -73,7 +111,47 @@ class MediaFile(ndb.Model):
                 f._info = blobs[f.blob]
             except KeyError:
                 pass
-        return files
+        if not fallback:
+            # print('no fallback', len(files))
+            return files
+        rv = []
+        for f in files:
+            match = True
+            rep = f.get_representation()
+            if rep is not None:
+                f.contentType = rep.contentType
+                f.encrypted = rep.encrypted
+                f.bitrate = rep.bitrate
+                f.put()
+                if contentType is not None and f.contentType != contentType:
+                    match = False
+                if encrypted is not None and f.encrypted != encrypted:
+                    match = False
+            if prefix is not None and not f.name.startswith(prefix):
+                match = False
+            # print(f.name, match, f.contentType, f.encrypted, contentType, encrypted, prefix)
+            if match:
+                rv.append(f)
+        files.sort(key=lambda f: f.bitrate)
+        if maxItems is not None:
+            rv = rv[:maxItems]
+        # print('fallback', len(rv))
+        return rv
+
+    @classmethod
+    def get(clz, name):
+        """
+        Get one entry by name from the database
+        """
+        mf = clz.query(clz.name == name).get()
+        if mf is not None and mf.contentType is None:
+            rep = mf.get_representation()
+            if rep is not None:
+                mf.contentType = rep.contentType
+                mf.encrypted = rep.encrypted
+                mf.bitrate = rep.bitrate
+                mf.put()
+        return mf
 
     def delete(self):
         blobstore.delete(self.blob)

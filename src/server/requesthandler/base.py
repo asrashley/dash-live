@@ -249,9 +249,11 @@ class RequestHandlerBase(webapp2.RequestHandler):
             "suggestedPresentationDelay": 30,
         }
         period = Period(start=datetime.timedelta(0), id="p0")
-        audio, video = self.calculate_audio_video_context(stream, mode, encrypted)
+        audio = self.calculate_audio_context(stream, mode, encrypted)
+        max_items = None
         if rv['abr'] is False:
-            video.representations = video.representations[-1:]
+            max_items = 1
+        video = self.calculate_video_context(stream, mode, encrypted, max_items=max_items)
         if video.representations:
             rv["ref_representation"] = video.representations[0]
         else:
@@ -368,20 +370,16 @@ class RequestHandlerBase(webapp2.RequestHandler):
             rv["period"] = rv["periods"][0]
         return rv
 
-    def calculate_audio_video_context(self, stream, mode, encrypted):
+    def calculate_audio_context(self, stream, mode, encrypted, max_items=None):
         audio = AdaptationSet(mode=mode, contentType='audio', id=2)
-        video = AdaptationSet(mode=mode, contentType='video', id=1)
         acodec = self.request.params.get('acodec')
-        media_files = models.MediaFile.all()
+        media_files = models.MediaFile.search(contentType='audio', prefix=stream.prefix,
+                                              maxItems=max_items)
         for mf in media_files:
             r = mf.representation
-            if r is None:
-                continue
-            if r.contentType == "video" and r.encrypted == encrypted and \
-               r.filename.startswith(stream.prefix):
-                video.representations.append(r)
-            elif r.contentType == "audio" and r.encrypted == encrypted and \
-                    r.filename.startswith(stream.prefix):
+            assert r.contentType == 'audio'
+            assert mf.contentType == 'audio'
+            if r.encrypted == encrypted:
                 if acodec is None or r.codecs.startswith(acodec):
                     audio.representations.append(r)
         # if stream is encrypted but there is no encrypted version of the audio track, fall back
@@ -389,16 +387,24 @@ class RequestHandlerBase(webapp2.RequestHandler):
         if not audio.representations and acodec:
             for mf in media_files:
                 r = mf.representation
-                if r is None:
-                    continue
-                if r.contentType == "audio" and r.filename.startswith(
-                        stream.prefix) and r.codecs.startswith(acodec):
+                if r.codecs.startswith(acodec):
                     audio.representations.append(r)
-        video.compute_av_values()
         audio.compute_av_values()
-        assert(isinstance(video.representations, list))
         assert(isinstance(audio.representations, list))
-        return audio, video
+        return audio
+
+    def calculate_video_context(self, stream, mode, encrypted, max_items=None):
+        video = AdaptationSet(mode=mode, contentType='video', id=1)
+        media_files = models.MediaFile.search(
+            contentType='video', encrypted=encrypted, prefix=stream.prefix,
+            maxItems=max_items)
+        for mf in media_files:
+            assert mf.contentType == 'video'
+            assert mf.representation.contentType == 'video'
+            video.representations.append(mf.representation)
+        video.compute_av_values()
+        assert(isinstance(video.representations, list))
+        return video
 
     def calculate_cgi_parameters(self, mode, now, avail_start, clockDrift,
                                  ts_buffer_depth, audio, video):

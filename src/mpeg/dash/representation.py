@@ -96,7 +96,9 @@ class Representation(ObjectWithFields):
         base_media_decode_time = None
         default_sample_duration = 0
         moov = None
-        rv = Representation(id=os.path.splitext(filename.lower())[0],
+        filename = os.path.basename(filename)
+        rep_id = os.path.splitext(filename)[0]
+        rv = Representation(id=rep_id.lower(),
                             filename=filename,
                             version=Representation.VERSION)
         key_ids = set()
@@ -190,7 +192,8 @@ class Representation(ObjectWithFields):
                                 avc.avcC.AVCProfileIndication,
                                 avc.avcC.profile_compatibility,
                                 avc.avcC.AVCLevelIndication)
-                            rv.nalLengthFieldLength = avc.avcC.lengthSizeMinusOne + 1
+                            rv.add_field('nalLengthFieldLength',
+                                         avc.avcC.lengthSizeMinusOne + 1)
                     elif atom.trak.mdia.hdlr.handler_type == 'soun':
                         rv.contentType = "audio"
                         rv.codecs = avc_type

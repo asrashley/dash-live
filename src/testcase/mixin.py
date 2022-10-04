@@ -231,7 +231,7 @@ class TestCaseMixin(object):
             ' '.join(hex_line),
             ' '.join(ascii_line)))
 
-    def hexdumpBuffer(self, label, data):
+    def hexdumpBuffer(self, label, data, max_length=256):
         print('==={0}==='.format(label))
         hex_line = []
         ascii_line = []
@@ -243,11 +243,15 @@ class TestCaseMixin(object):
                 self._print_line(idx - 7, hex_line, ascii_line)
                 hex_line = []
                 ascii_line = []
+            if idx == max_length:
+                break
         if hex_line:
             self._print_line(idx - 7, hex_line, ascii_line)
+        if idx < len(data):
+            print('.......')
         print('==={0}==='.format('=' * len(label)))
 
-    def assertBuffersEqual(self, a, b, name=None):
+    def assertBuffersEqual(self, a, b, name=None, max_length=256, dump=True):
         lmsg = r'Expected length {expected:d} does not match {actual:d}'
         dmsg = r'Expected 0x{expected:02x} got 0x{actual:02x} at byte position {position:d} (bit {bitpos:d})'
         if name is not None:
@@ -261,8 +265,9 @@ class TestCaseMixin(object):
                 expected=len(a), actual=len(b)))
         if a == b:
             return
-        self.hexdumpBuffer('expected', a)
-        self.hexdumpBuffer('actual', b)
+        if dump:
+            self.hexdumpBuffer('expected', a, max_length=max_length)
+            self.hexdumpBuffer('actual', b, max_length=max_length)
         for idx in range(len(a)):
             exp = ord(a[idx])
             act = ord(b[idx])
@@ -280,6 +285,10 @@ class TestCaseMixin(object):
                     actual=ord(b[idx]),
                     position=idx,
                     bitpos=bitpos))
+
+    def assertBuffersNotEqual(self, a, b, name=None, max_length=256):
+        with self.assertRaises(AssertionError):
+            self.assertBuffersEqual(a, b, name=name, dump=False)
 
     def progress(self, pos, total):
         if pos == 0:

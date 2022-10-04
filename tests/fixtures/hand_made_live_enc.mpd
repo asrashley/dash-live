@@ -26,10 +26,10 @@
         <cenc:pssh>AAAANHBzc2gBAAAAEHfv7MCyTQKs4zweUuL7SwAAAAEatFRAUyxDmZTcXFrZWEusAAAAAA==</cenc:pssh>
       </ContentProtection>
       <SegmentTemplate startNumber="1" timescale="240" duration="960" initialization="$RepresentationID$/init.m4v?drm=all" media="$RepresentationID$/$Number$.m4v?drm=all"/>
-      <Representation id="bbb_v6_enc" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="377964">
-                        </Representation>
       <Representation id="bbb_v7_enc" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="195003">
-                        </Representation>
+      </Representation>
+      <Representation id="bbb_v6_enc" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="377964">
+      </Representation>
     </AdaptationSet>
     <AdaptationSet mimeType="audio/mp4" contentType="audio" segmentAlignment="true" startWithSAP="" lang="">
       <ContentComponent id="2" contentType="audio"/>

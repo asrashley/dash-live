@@ -10,10 +10,10 @@
     <AdaptationSet mimeType="video/mp4" contentType="video" segmentAlignment="true" startWithSAP="1" maxWidth="1920" maxHeight="1080" maxFrameRate="24" par="16:9">
       <ContentComponent id="1" contentType="video"/>
       <SegmentTemplate startNumber="1" timescale="240" duration="960" initialization="$RepresentationID$/init.m4v" media="$RepresentationID$/$Number$.m4v"/>
-      <Representation id="bbb_v6" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="374782">
-                        </Representation>
       <Representation id="bbb_v7" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="191821">
-                        </Representation>
+      </Representation>
+      <Representation id="bbb_v6" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="374782">
+      </Representation>
     </AdaptationSet>
     <AdaptationSet mimeType="audio/mp4" contentType="audio" segmentAlignment="true" startWithSAP="" lang="">
       <ContentComponent id="2" contentType="audio"/>
