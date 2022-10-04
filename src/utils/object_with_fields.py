@@ -64,6 +64,10 @@ class ObjectWithFields(object):
                 setattr(self, key, value)
                 self._fields.add(key)
 
+    def add_field(self, name, value):
+        self._fields.add(name)
+        setattr(self, name, value)
+
     @property
     def classname(self):
         clz = type(self)

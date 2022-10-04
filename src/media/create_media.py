@@ -480,8 +480,8 @@ class DashMediaCreator(object):
         atoms = parser.walk_atoms(filename)
         verbose = 2 if self.options.verbose else 0
         logging.debug('Create Representation from "%s"', filename)
-        return Representation.create(filename=filename.replace('\\', '/'),
-                                     atoms=atoms, verbose=verbose)
+        return Representation.load(filename=filename.replace('\\', '/'),
+                                   atoms=atoms, verbose=verbose)
 
     def probe_media_info(self):
         info = json.loads(subprocess.check_output([

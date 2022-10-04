@@ -134,7 +134,11 @@ class Key(ndb.Model):
 
     @classmethod
     def get_kids(clz, kids):
-        kids = map(lambda k: k.lower(), kids)
+        def to_hex(kid):
+            if isinstance(kid, KeyMaterial):
+                return kid.hex
+            return kid.lower()
+        kids = map(to_hex, kids)
         if len(kids) == 1:
             q = clz.query(clz.hkid == kids[0])
         else:

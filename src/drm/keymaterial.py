@@ -67,5 +67,13 @@ class KeyMaterial(object):
 
     b64 = property(to_base64, from_base64)
 
+    def toJSON(self, pure=True):
+        if pure:
+            return self.to_hex()
+        return {
+            '_type': KeyMaterial.__name__,
+            'hex': self.to_hex(),
+        }
+
     def __len__(self):
         return self.length

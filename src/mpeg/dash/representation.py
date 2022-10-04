@@ -23,30 +23,61 @@
 import os
 import sys
 
-from segment import Segment
+from drm.keymaterial import KeyMaterial
+from utils.list_of import ListOf
+from utils.object_with_fields import ObjectWithFields
 
-class Representation(object):
+from .segment import Segment
+
+class Representation(ObjectWithFields):
+    OBJECT_FIELDS = {
+        'segments': ListOf(Segment),
+        'kids': ListOf(KeyMaterial),
+    }
+    DEFAULT_VALUES = {
+        'bitrate': None,
+        'contentType': None,
+        'codecs': None,
+        'default_kid': None,
+        'iv_size': None,
+        'encrypted': False,
+        'mediaDuration': None,
+        'max_bitrate': None,
+        'nalLengthFieldLength': None,
+        'segment_duration': None,
+        'startWithSAP': 1,
+        'timescale': 1,
+        'track_id': 1,
+        'version': 0,
+    }
+    #REQUIRED_FIELDS = {
+    #    'id': str,
+    #}
     VERSION = 2
 
-    def __init__(self, id, **kwargs):
-        self.version = 0
-        self.id = id
-        self.segments = []
-        self.startWithSAP = 1
-        self.encrypted = False
-        self.codecs = ''
-        for key, value in kwargs.iteritems():
-            object.__setattr__(self, key, value)
-        self.segments = map(self._convert_dict, self.segments)
+    def __init__(self, **kwargs):
+        super(Representation, self).__init__(**kwargs)
+        defaults = {
+            'language': 'und',
+            'kids': [],
+            'segments': [],
+            'codecs': '',
+        }
+        if self.contentType == 'video':
+            defaults.update({
+                'frameRate': None,
+                'height': None,
+                'scanType': "progressive",
+                'sar': "1:1",
+                'width': None,
+            })
+        elif self.contentType == 'audio':
+            defaults.update({
+                'sampleRate': 48000,
+                'numChannels': 1,
+            })
+        self.apply_defaults(defaults)
         self.num_segments = len(self.segments) - 1
-
-    @staticmethod
-    def _convert_dict(item):
-        if isinstance(item, dict):
-            item = Segment(**item)
-        elif isinstance(item, tuple):
-            item = Segment(*item)
-        return item
 
     def __repr__(self):
         args = []
@@ -61,27 +92,15 @@ class Representation(object):
         args = ','.join(args)
         return 'Representation(' + args + ')'
 
-    def toJSON(self, pure=False, exclude=None):
-        if exclude is None:
-            exclude = set()
-        rv = {}
-        for key, value in self.__dict__.iteritems():
-            if key == 'num_segments' or key in exclude:
-                continue
-            elif key == 'segments':
-                rv[key] = map(lambda s: s.toJSON(pure=pure), self.segments)
-            else:
-                rv[key] = value
-        return rv
-
     @classmethod
-    def create(clz, filename, atoms, verbose=0):
+    def load(clz, filename, atoms, verbose=0):
         base_media_decode_time = None
         default_sample_duration = 0
         moov = None
         rv = Representation(id=os.path.splitext(filename.lower())[0],
                             filename=filename,
                             version=Representation.VERSION)
+        key_ids = set()
         for atom in atoms:
             seg = Segment(pos=atom.position, size=atom.size)
             if atom.atom_type == 'ftyp':
@@ -104,8 +123,8 @@ class Representation(object):
                     dur += sample.duration
                 seg.duration = dur
                 try:
-                    for key in atom.pssh.key_ids:
-                        rv.kids.add(key.encode('hex'))
+                    for kid in atom.pssh.key_ids:
+                        key_ids.add(KeyMaterial(raw=kid))
                 except AttributeError:
                     pass
                 base_media_decode_time = atom.traf.tfdt.base_media_decode_time
@@ -117,7 +136,7 @@ class Representation(object):
                     if verbose > 1:
                         print('Average sample duration %d' % default_sample_duration)
                     if rv.contentType == "video" and default_sample_duration:
-                        rv.frameRate = rv.timescale / default_sample_duration
+                        rv.add_field('frameRate', rv.timescale / default_sample_duration)
             elif atom.atom_type in ['sidx', 'moov', 'mdat', 'free'] and rv.segments:
                 if verbose > 1:
                     print('Extend fragment %d with %s' % (len(rv.segments), atom.atom_type))
@@ -150,36 +169,36 @@ class Representation(object):
                         rv.encrypted = True
                         rv.default_kid = avc.sinf.schi.tenc.default_kid.encode('hex')
                         rv.iv_size = avc.sinf.schi.tenc.iv_size
-                        rv.kids = set([rv.default_kid])
+                        key_ids.add(KeyMaterial(hex=rv.default_kid))
                     if atom.trak.mdia.hdlr.handler_type == 'vide':
                         rv.contentType = "video"
                         if default_sample_duration > 0:
-                            rv.frameRate = rv.timescale / default_sample_duration
-                        rv.width = int(atom.trak.tkhd.width)
-                        rv.height = int(atom.trak.tkhd.height)
+                            rv.add_field('frameRate', rv.timescale / default_sample_duration)
+                        rv.add_field('width', int(atom.trak.tkhd.width))
+                        rv.add_field('height', int(atom.trak.tkhd.height))
                         try:
                             rv.width = avc.width
                             rv.height = avc.height
                         except AttributeError:
                             pass
                         # TODO: work out scan type
-                        rv.scanType = "progressive"
+                        rv.add_field('scanType', "progressive")
                         # TODO: work out sample aspect ratio
-                        rv.sar = "1:1"
+                        rv.add_field('sar', "1:1")
                         if avc_type is not None:
                             rv.codecs = '%s.%02x%02x%02x' % (
                                 avc_type,
                                 avc.avcC.AVCProfileIndication,
                                 avc.avcC.profile_compatibility,
                                 avc.avcC.AVCLevelIndication)
-                            rv.nalLengthFieldFength = avc.avcC.lengthSizeMinusOne + 1
+                            rv.nalLengthFieldLength = avc.avcC.lengthSizeMinusOne + 1
                     elif atom.trak.mdia.hdlr.handler_type == 'soun':
                         rv.contentType = "audio"
                         rv.codecs = avc_type
                         if avc_type == "mp4a":
                             dsi = avc.esds.descriptor("DecoderSpecificInfo")
-                            rv.sampleRate = dsi.sampling_frequency
-                            rv.numChannels = dsi.channel_configuration
+                            rv.add_field('sampleRate', dsi.sampling_frequency)
+                            rv.add_field('numChannels', dsi.channel_configuration)
                             rv.codecs = "%s.%02x.%x" % (
                                 avc_type, dsi.object_type,
                                 dsi.audio_object_type)
@@ -188,8 +207,8 @@ class Representation(object):
                                 rv.numChannels = 8
                         elif avc_type == "ec-3":
                             try:
-                                rv.sampleRate = avc.sampling_frequency
-                                rv.numChannels = 0
+                                rv.add_field('sampleRate', avc.sampling_frequency)
+                                rv.add_field('numChannels', 0)
                                 for s in avc.dec3.substreams:
                                     rv.numChannels += s.channel_count
                                     if s.lfeon:
@@ -197,7 +216,7 @@ class Representation(object):
                             except AttributeError:
                                 pass
         if rv.encrypted:
-            rv.kids = list(rv.kids)
+            rv.kids = list(key_ids)
         if verbose == 1:
             sys.stdout.write('\r\n')
         if len(rv.segments) > 2:
@@ -216,6 +235,48 @@ class Representation(object):
             rv.bitrate = int(8 * rv.timescale * file_size / rv.mediaDuration + 0.5)
         return rv
 
+    def generateSegmentDurations(self):
+        # TODO: support live profile
+        def output_s_node(sn):
+            if sn["duration"] is None:
+                return
+            c = ' r="{:d}"'.format(sn["count"] - 1) if sn["count"] > 1 else ''
+            rv.append('<S {} d="{:d}"/>'.format(c, sn["duration"]))
+        rv = ['<SegmentDurations timescale="%d">' % (self.timescale)]
+        s_node = {
+            "duration": None,
+            "count": 0,
+        }
+        for seg in self.segments:
+            try:
+                if seg.duration != s_node["duration"]:
+                    output_s_node(s_node)
+                    s_node["count"] = 0
+                s_node["duration"] = seg.duration
+                s_node["count"] += 1
+            except AttributeError:
+                # init segment does not have a duration
+                pass
+        output_s_node(s_node)
+        rv.append('</SegmentDurations>')
+        return '\n'.join(rv)
+
+    def generateSegmentList(self):
+        # TODO: support live profile
+        rv = ['<SegmentList timescale="%d" duration="%d">' %
+              (self.timescale, self.mediaDuration)]
+        first = True
+        for seg in self.segments:
+            if first:
+                rv.append(
+                    '<Initialization range="{start:d}-{end:d}"/>'.format(
+                        start=seg.pos, end=seg.pos + seg.size - 1))
+                first = False
+            else:
+                rv.append('<SegmentURL mediaRange="{start:d}-{end:d}"/>'.format(
+                    start=seg.pos, end=seg.pos + seg.size - 1))
+        rv.append('</SegmentList>')
+        return '\n'.join(rv)
 
 if __name__ == '__main__':
     import io
@@ -225,5 +286,5 @@ if __name__ == '__main__':
     src = utils.BufferedReader(io.FileIO(sys.argv[1], 'rb'))
     wrap = mp4.Wrapper(atom_type='wrap', parent=None,
                        children=mp4.Mp4Atom.load(src))
-    rep = Representation.create(filename=sys.argv[1], atoms=wrap.children)
+    rep = Representation.load(filename=sys.argv[1], atoms=wrap.children)
     print repr(rep)
