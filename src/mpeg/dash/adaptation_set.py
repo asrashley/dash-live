@@ -55,6 +55,7 @@ class AdaptationSet(ObjectWithFields):
             'representations': [],
             'event_streams': [],
         }
+        # TODO: rename lang to language
         if self.contentType == 'audio':
             defaults['mimeType'] = "audio/mp4"
             defaults['lang'] = 'und'
@@ -120,3 +121,11 @@ class AdaptationSet(ObjectWithFields):
                 [a.height for a in self.representations])
             self.maxFrameRate = max(
                 [a.frameRate for a in self.representations])
+
+    def set_reference_representation(self, ref_representation):
+        for rep in self.representations:
+            rep.set_reference_representation(ref_representation)
+
+    def set_dash_timing(self, timing):
+        for rep in self.representations:
+            rep.set_dash_timing(timing)

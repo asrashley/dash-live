@@ -76,7 +76,7 @@
              {% include "drm/template.xml" %}
              {%- if mode=='odvod' %}
                <SegmentTemplate timescale="{{adp.timescale}}">
-                 {{generateSegmentTimeline(rep)}}
+                 {{rep.generateSegmentTimeline()}}
                </SegmentTemplate>
              {%- else %}
                <SegmentTemplate

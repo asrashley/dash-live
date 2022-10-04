@@ -31,7 +31,7 @@ from mixins.view_validator import ViewsTestDashValidator
 from server import manifests, models
 from drm.playready import PlayReady
 from gae_base import GAETestBase
-from utils.date_time import UTC, toIsoDateTime
+from utils.date_time import UTC, toIsoDateTime, from_isodatetime
 from utils.objects import dict_to_cgi_params
 
 class TestHandlers(GAETestBase, DashManifestCheckMixin):
@@ -191,6 +191,7 @@ class TestHandlers(GAETestBase, DashManifestCheckMixin):
                 response.headers['Content-Length'])
         self.progress(total_tests, total_tests)
 
+    @GAETestBase.mock_datetime_now(from_isodatetime("2022-10-04T12:00:00Z"))
     def test_get_live_media_using_live_profile(self):
         """Get segments from a live stream for each DRM type (live profile)"""
         self.setup_media()
@@ -221,16 +222,17 @@ class TestHandlers(GAETestBase, DashManifestCheckMixin):
                 availabilityStartTime = toIsoDateTime(
                     now - datetime.timedelta(minutes=(1 + (test_count % 20))))
                 baseurl = self.from_uri(
-                    'dash-mpd-v2', manifest=filename, stream='bbb')
+                    'dash-mpd-v3', mode='live', manifest=filename, stream='bbb')
                 options = [
-                    'mode=live', drm_opt, 'start=' + availabilityStartTime,
+                    drm_opt,
+                    'start=' + availabilityStartTime,
                     'playready_version={0}'.format(version)
                 ]
                 baseurl += '?' + '&'.join(options)
                 # 'dash-mpd-v2' will always return a redirect to the v3 URL
-                response = self.app.get(baseurl, status=302)
+                # response = self.app.get(baseurl, status=302)
                 # Handle redirect request
-                baseurl = response.headers['Location']
+                # baseurl = response.headers['Location']
                 response = self.app.get(baseurl)
                 self.assertEqual(response.status_int, 200)
                 encrypted = drm_opt != "drm=none"
@@ -311,7 +313,7 @@ if os.environ.get("TESTS"):
     def load_tests(loader, tests, pattern):
         logging.basicConfig()
         # logging.getLogger().setLevel(logging.DEBUG)
-        # logging.getLogger('mp4').setLevel(logging.DEBUG)
+        # logging.getLogger('mp4').setLevel(logging.INFO)
         return unittest.loader.TestLoader().loadTestsFromNames(
             os.environ["TESTS"].split(','),
             TestHandlers)

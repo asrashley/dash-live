@@ -37,7 +37,7 @@
       <SegmentTemplate timescale="{{rep.timescale}}"
               initialization="{{video.initURL|xmlSafe}}"
               media="{{video.mediaURL|xmlSafe}}">
-        {{generateSegmentTimeline(rep)}}
+        {{rep.generateSegmentTimeline()}}
       </SegmentTemplate>
         {% endif %}
         <Representation
@@ -61,7 +61,7 @@
         <SegmentTemplate timescale="{{audio.timescale}}"
                          initialization="{{audio.initURL|xmlSafe}}"
                          media="{{audio.mediaURL|xmlSafe}}">
-          {{generateSegmentTimeline(rep)}}
+          {{rep.generateSegmentTimeline()}}
         </SegmentTemplate>
         <Representation
           id="{{rep.id}}"

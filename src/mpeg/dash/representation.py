@@ -20,10 +20,12 @@
 #
 #############################################################################
 
+import datetime
 import os
 import sys
 
 from drm.keymaterial import KeyMaterial
+from utils.date_time import scale_timedelta
 from utils.list_of import ListOf
 from utils.object_with_fields import ObjectWithFields
 
@@ -50,9 +52,6 @@ class Representation(ObjectWithFields):
         'track_id': 1,
         'version': 0,
     }
-    #REQUIRED_FIELDS = {
-    #    'id': str,
-    #}
     VERSION = 2
 
     def __init__(self, **kwargs):
@@ -235,6 +234,12 @@ class Representation(ObjectWithFields):
             rv.bitrate = int(8 * rv.timescale * file_size / rv.mediaDuration + 0.5)
         return rv
 
+    def set_reference_representation(self, ref_representation):
+        self.ref_representation = ref_representation
+
+    def set_dash_timing(self, timing):
+        self.timing = timing
+
     def generateSegmentDurations(self):
         # TODO: support live profile
         def output_s_node(sn):
@@ -277,6 +282,108 @@ class Representation(ObjectWithFields):
                     start=seg.pos, end=seg.pos + seg.size - 1))
         rv.append('</SegmentList>')
         return '\n'.join(rv)
+
+    def generateSegmentTimeline(self):
+        def output_s_node(sn):
+            if sn["duration"] is None:
+                return
+            r = ' r="{0:d}"'.format(sn["count"] - 1) if sn["count"] > 1 else ''
+            t = ' t="{0:d}"'.format(
+                sn["start"]) if sn["start"] is not None else ''
+            rv.append('<S {r} {t} d="{d:d}"/>'.format(r=r,
+                      t=t, d=sn["duration"]))
+
+        rv = []
+        if self.timing.mode == 'live':
+            timeline_start = (
+                self.timing.elapsedTime -
+                datetime.timedelta(seconds=self.timing.timeShiftBufferDepth))
+        else:
+            timeline_start = datetime.timedelta(seconds=0)
+        first = True
+        segment_num, origin_time = self.calculate_segment_from_timecode(
+            scale_timedelta(timeline_start, 1, 1))
+        assert segment_num < len(self.segments)
+        # seg_start_time is the time (in representation timescale units) when the segment_num
+        # segment started, relative to availabilityStartTime
+        seg_start_time = long(origin_time * self.timescale +
+                              (segment_num - 1) * self.segment_duration)
+        dur = 0
+        s_node = {
+            'duration': None,
+            'count': 0,
+            'start': None,
+        }
+        if self.timing.mode == 'live':
+            end = self.timing.timeShiftBufferDepth * self.timescale
+        else:
+            end = self.timing.mediaDuration.total_seconds() * self.timescale
+        while dur <= end:
+            seg = self.segments[segment_num]
+            if first:
+                rv.append('<SegmentTimeline>')
+                s_node['start'] = seg_start_time
+                first = False
+            elif seg.duration != s_node["duration"]:
+                output_s_node(s_node)
+                s_node["start"] = None
+                s_node["count"] = 0
+            s_node["duration"] = seg.duration
+            s_node["count"] += 1
+            dur += seg.duration
+            segment_num += 1
+            if segment_num > self.num_segments:
+                segment_num = 1
+        output_s_node(s_node)
+        rv.append('</SegmentTimeline>')
+        return '\n'.join(rv)
+
+    def calculate_segment_from_timecode(self, timecode):
+        """
+        find the correct segment for the given timecode.
+
+        :timecode: the time (in seconds) since availabilityStartTime
+            for the requested fragment.
+        returns the segment number and the time when the stream last looped
+        """
+        if timecode < 0:
+            raise ValueError("Invalid timecode: %d" % timecode)
+        # nominal_duration is the duration (in timescale units) of the reference
+        # representation. This is used to decide how many times the stream has looped
+        # since availabilityStartTime.
+        nominal_duration = self.ref_representation.segment_duration * \
+            self.ref_representation.num_segments
+        tc_scaled = long(timecode * self.ref_representation.timescale)
+        num_loops = tc_scaled / nominal_duration
+
+        # origin time is the time (in timescale units) that maps to segment 1 for
+        # all adaptation sets. It represents the most recent time of day when the
+        # content started from the beginning, relative to availabilityStartTime
+        origin_time = num_loops * nominal_duration
+
+        # print('origin_time', timecode, origin_time, num_loops,
+        #      float(nominal_duration) / float(self.ref_representation.timescale))
+        # print('segment_duration', self.ref_representation.segment_duration,
+        #      float(self.ref_representation.segment_duration) /
+        #      float(self.ref_representation.timescale))
+
+        # the difference between timecode and origin_time now needs
+        # to be mapped to the segment index of this representation
+        segment_num = (tc_scaled - origin_time) * self.timescale
+        segment_num /= self.ref_representation.timescale
+        segment_num /= self.segment_duration
+        segment_num += 1
+        # the difference between the segment durations of the reference
+        # representation and this representation can mean that this representation
+        # has already looped
+        if segment_num > self.num_segments:
+            segment_num = 1
+            origin_time += nominal_duration
+        origin_time /= self.ref_representation.timescale
+        if segment_num < 1 or segment_num > self.num_segments:
+            raise ValueError('Invalid segment number %d' % (segment_num))
+        return (segment_num, origin_time)
+
 
 if __name__ == '__main__':
     import io

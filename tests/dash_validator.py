@@ -1169,8 +1169,8 @@ class MediaSegment(DashElement):
         self.tolerance = tolerance
         self.seg_range = seg_range
         self.url = url
-        self.log.debug('%s $Number$=%d $Time$=%s tolerance=%d', url, seg_num,
-                       str(decode_time), tolerance)
+        self.log.debug('MediaSegment: url=%s $Number$=%d $Time$=%s tolerance=%d',
+                       url, seg_num, str(decode_time), tolerance)
 
     def set_info(self, info):
         self.info = info
@@ -1179,7 +1179,7 @@ class MediaSegment(DashElement):
         headers = None
         if self.seg_range is not None:
             headers = {"Range": "bytes={}".format(self.seg_range)}
-        self.log.debug('MediaSegment: %s %s', self.url, headers)
+        self.log.debug('MediaSegment: url=%s headers=%s', self.url, headers)
         response = self.http.get(self.url, headers=headers)
         if self.seg_range is None:
             if response.status_int != 200:

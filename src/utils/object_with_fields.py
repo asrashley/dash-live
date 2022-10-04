@@ -45,18 +45,18 @@ class ObjectWithFields(object):
                 assert isinstance(value, clz), r"{0}: Expected type {1}, got {2}".format(
                     key, clz.__name__, type(value).__name__)
 
-    def clone(self):
-        kwargs = {}
+    def clone(self, **kwargs):
+        args = {}
         for key in self._fields:
-            value = getattr(self, key)
+            value = getattr(kwargs, key, getattr(self, key))
             if value is not None:
                 if isinstance(value, ObjectWithFields):
                     value = value.clone()
                 elif key in self.OBJECT_FIELDS:
                     clz = self.OBJECT_FIELDS[key]
                     value = clone_object(clz, value)
-            kwargs[key] = value
-        return self.__class__(**kwargs)
+            args[key] = value
+        return self.__class__(**args)
 
     def apply_defaults(self, defaults):
         for key, value in defaults.iteritems():

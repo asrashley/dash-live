@@ -29,9 +29,11 @@ from google.appengine.ext import blobstore
 from mpeg import mp4
 from server import models
 from server.events.factory import EventFactory
-from .base import RequestHandlerBase
 from utils.date_time import UTC, scale_timedelta
 from utils.buffered_reader import BufferedReader
+
+from .base import RequestHandlerBase
+from .dash_timing import DashTiming
 
 # blobstore_handlers.BlobstoreDownloadHandler):
 class OnDemandMedia(RequestHandlerBase):
@@ -103,13 +105,16 @@ class LiveMedia(RequestHandlerBase):
             ref_representation = video.representations[0]
         else:
             ref_representation = audio.representations[0]
+        adp_set.set_reference_representation(ref_representation)
         if segment_num == 'init':
             mod_segment = segment_num = 0
         else:
             try:
                 segment_num = int(segment_num, 10)
-            except ValueError:
-                segment_num = -1
+            except ValueError as err:
+                self.response.write('Segment not found: ' + str(err))
+                self.response.set_status(404)
+                return
             for code in self.INJECTED_ERROR_CODES:
                 if self.request.params.get('%03d' % code) is not None:
                     try:
@@ -144,42 +149,38 @@ class LiveMedia(RequestHandlerBase):
                 # Media Segment and the value of the attribute @timeShiftBufferDepth
                 # for this Representation
                 now = datetime.datetime.now(tz=UTC())
-                _, elapsedTime, timeShiftBufferDepth = self.calculate_availability_start(
-                    mode, now)
+                timing = DashTiming(mode, now, ref_representation, self.request.params)
+                adp_set.set_dash_timing(timing)
                 lastFragment = adp_set.startNumber + int(scale_timedelta(
-                    elapsedTime, representation.timescale, representation.segment_duration))
+                    timing.elapsedTime, representation.timescale, representation.segment_duration))
                 firstFragment = (
                     lastFragment -
                     int(representation.timescale *
-                        timeShiftBufferDepth / representation.segment_duration) - 1)
+                        timing.timeShiftBufferDepth / representation.segment_duration) - 1)
                 firstFragment = max(adp_set.startNumber, firstFragment)
-            else:
-                firstFragment = adp_set.startNumber
-                lastFragment = firstFragment + representation.num_segments - 1
-            if segment_num < firstFragment or segment_num > lastFragment:
-                self.response.write('Segment %d not found (valid range= %d->%d)' %
-                                    (segment_num, firstFragment, lastFragment))
-                self.response.set_status(404)
-                return
-            if mode == 'live':
-                # elapsed_time is the time (in seconds) since availabilityStartTime
-                # for the requested fragment
-                elapsed_time = (
-                    (segment_num - adp_set.startNumber) * ref_representation.segment_duration /
-                    float(ref_representation.timescale))
+                logging.debug('elapsedTime=%s firstFragment=%d lastFragment=%d',
+                              timing.elapsedTime, firstFragment, lastFragment)
                 try:
-                    mod_segment, origin_time = self.calculate_segment_from_timecode(
-                        elapsed_time,
-                        representation,
-                        ref_representation)
-                except ValueError:
-                    raise
+                    timecode = ((segment_num - adp_set.startNumber) *
+                                ref_representation.segment_duration /
+                                float(ref_representation.timescale))
+                    mod_segment, origin_time = representation.calculate_segment_from_timecode(
+                        timecode)
+                except ValueError as err:
+                    logging.warning('ValueError: %s', err)
                     self.response.write('Segment %d not found (valid range= %d->%d)' %
                                         (segment_num, firstFragment, lastFragment))
                     self.response.set_status(404)
                     return
             else:
+                firstFragment = adp_set.startNumber
+                lastFragment = firstFragment + representation.num_segments - 1
                 mod_segment = 1 + segment_num - adp_set.startNumber
+            if segment_num < firstFragment or segment_num > lastFragment:
+                self.response.write('Segment %d not found (valid range= %d->%d)' %
+                                    (segment_num, firstFragment, lastFragment))
+                self.response.set_status(404)
+                return
         self.response.content_type = adp_set.mimeType
         assert mod_segment >= 0 and mod_segment <= representation.num_segments
         frag = representation.segments[mod_segment]

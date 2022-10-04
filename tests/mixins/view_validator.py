@@ -34,6 +34,7 @@ class ViewsTestDashValidator(DashValidator):
         opts = ValidatorOptions(strict=True, encrypted=encrypted)
         opts.log = logging.getLogger(__name__)
         opts.log.addFilter(HideMixinsFilter())
+        # opts.log.setLevel(logging.DEBUG)
         if debug:
             opts.log.setLevel(logging.DEBUG)
         super(ViewsTestDashValidator, self).__init__(
