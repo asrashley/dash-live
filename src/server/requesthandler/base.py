@@ -46,12 +46,14 @@ from server import models
 from server import settings
 from server.gae import on_production_server
 from server.events.factory import EventFactory
-from server.requesthandler.exceptions import CsrfFailureException
 from server.routes import routes
 from templates.factory import TemplateFactory
 import utils.objects
-from utils.timezone import UTC
 from utils.date_time import scale_timedelta, from_isodatetime, toIsoDateTime
+from utils.timezone import UTC
+
+from .dash_timing import DashTiming
+from .exceptions import CsrfFailureException
 
 class RequestHandlerBase(webapp2.RequestHandler):
     CLIENT_COOKIE_NAME = 'dash'
@@ -61,7 +63,6 @@ class RequestHandlerBase(webapp2.RequestHandler):
     CSRF_SALT_LENGTH = 8
     DEFAULT_ALLOWED_DOMAINS = re.compile(
         r'^http://(dashif\.org)|(shaka-player-demo\.appspot\.com)|(mediapm\.edgesuite\.net)')
-    DEFAULT_TIMESHIFT_BUFFER_DEPTH = 60
     INJECTED_ERROR_CODES = [404, 410, 503, 504]
     SCRIPT_TEMPLATE = r'<script src="/js/{mode}/{filename}{min}.js" type="text/javascript"></script>'
 
@@ -216,59 +217,6 @@ class RequestHandlerBase(webapp2.RequestHandler):
                     stream, keys, self.request.params, la_url=ck_laurl, locations=locations)
         return rv
 
-    def generateSegmentTimeline(self, context, representation):
-        def output_s_node(sn):
-            if sn["duration"] is None:
-                return
-            r = ' r="{0:d}"'.format(sn["count"] - 1) if sn["count"] > 1 else ''
-            t = ' t="{0:d}"'.format(
-                sn["start"]) if sn["start"] is not None else ''
-            rv.append('<S {r} {t} d="{d:d}"/>'.format(r=r,
-                      t=t, d=sn["duration"]))
-
-        rv = []
-        timeline_start = context["elapsedTime"] - \
-            datetime.timedelta(seconds=context["timeShiftBufferDepth"])
-        first = True
-        segment_num, origin_time = self.calculate_segment_from_timecode(scale_timedelta(
-            timeline_start, 1, 1), representation, context["ref_representation"])
-        assert representation.num_segments == (
-            len(representation.segments) - 1)
-        assert segment_num < len(representation.segments)
-        # seg_start_time is the time (in representation timescale units) when the segment_num
-        # segment started, relative to availabilityStartTime
-        seg_start_time = long(origin_time * representation.timescale +
-                              (segment_num - 1) * representation.segment_duration)
-        dur = 0
-        s_node = {
-            'duration': None,
-            'count': 0,
-            'start': None,
-        }
-        if context["mode"] == 'live':
-            end = context["timeShiftBufferDepth"] * representation.timescale
-        else:
-            end = context["mediaDuration"] * representation.timescale
-        while dur <= end:
-            seg = representation.segments[segment_num]
-            if first:
-                rv.append('<SegmentTimeline>')
-                s_node['start'] = seg_start_time
-                first = False
-            elif seg.duration != s_node["duration"]:
-                output_s_node(s_node)
-                s_node["start"] = None
-                s_node["count"] = 0
-            s_node["duration"] = seg.duration
-            s_node["count"] += 1
-            dur += seg.duration
-            segment_num += 1
-            if segment_num > representation.num_segments:
-                segment_num = 1
-        output_s_node(s_node)
-        rv.append('</SegmentTimeline>')
-        return '\n'.join(rv)
-
     def calculate_dash_params(self, prefix, mode, mpd_url):
         stream = models.Stream.query(models.Stream.prefix == prefix).get()
         if stream is None:
@@ -286,34 +234,34 @@ class RequestHandlerBase(webapp2.RequestHandler):
         except ValueError as err:
             logging.warning('Invalid clock drift CGI parameter: %s', err)
 
-        avail_start, elapsedTime, ts_buffer_depth = self.calculate_availability_start(
-            mode, now)
         rv = {
             "DRM": {},
             "abr": self.get_bool_param('abr', default=True),
             "clockDrift": clockDrift,
             "encrypted": encrypted,
-            "generateSegmentTimeline": lambda r: self.generateSegmentTimeline(rv, r),
             "minBufferTime": datetime.timedelta(seconds=1.5),
             "mode": mode,
             "mpd_url": mpd_url,
             "now": now,
             "periods": [],
-            "publishTime": now.replace(microsecond=0),
             "startNumber": 1,
             "stream": stream,
             "suggestedPresentationDelay": 30,
-            "timeShiftBufferDepth": ts_buffer_depth,
         }
         period = Period(start=datetime.timedelta(0), id="p0")
-        rv["availabilityStartTime"] = avail_start
-        rv["elapsedTime"] = elapsedTime
         audio, video = self.calculate_audio_video_context(stream, mode, encrypted)
         if rv['abr'] is False:
             video.representations = video.representations[-1:]
+        if video.representations:
+            rv["ref_representation"] = video.representations[0]
+        else:
+            rv["ref_representation"] = audio.representations[0]
+        timing = DashTiming(mode, now, rv["ref_representation"], self.request.params)
+        rv.update(timing.generate_manifest_context())
         cgi_params = self.calculate_cgi_parameters(
-            mode=mode, now=now, avail_start=avail_start, clockDrift=clockDrift,
-            ts_buffer_depth=ts_buffer_depth, audio=audio, video=video)
+            mode=mode, now=now, avail_start=timing.availabilityStartTime,
+            clockDrift=clockDrift, ts_buffer_depth=timing.timeShiftBufferDepth,
+            audio=audio, video=video)
         video.append_cgi_params(cgi_params['video'])
         audio.append_cgi_params(cgi_params['audio'])
         if cgi_params['manifest']:
@@ -345,22 +293,6 @@ class RequestHandlerBase(webapp2.RequestHandler):
                 audio.initURL = prefix + audio.initURL
             video.mediaURL = prefix + video.mediaURL
             audio.mediaURL = prefix + audio.mediaURL
-        if mode == 'live':
-            try:
-                rv['minimumUpdatePeriod'] = float(self.request.params.get(
-                    'mup', 2.0 * video.maxSegmentDuration))
-            except ValueError:
-                rv['minimumUpdatePeriod'] = 2.0 * video.maxSegmentDuration
-            if rv['minimumUpdatePeriod'] <= 0:
-                del rv['minimumUpdatePeriod']
-        elif mode == 'vod' or mode == 'odvod':
-            if video.representations:
-                elapsedTime = datetime.timedelta(
-                    seconds=video.representations[0].mediaDuration / video.representations[0].timescale)
-            elif audio.representations:
-                elapsedTime = datetime.timedelta(
-                    seconds=audio.representations[0].mediaDuration / audio.representations[0].timescale)
-            ts_buffer_depth = elapsedTime.seconds
         event_generators = EventFactory.create_event_generators(self.request)
         for evgen in event_generators:
             ev_stream = evgen.create_manifest_context(
@@ -371,12 +303,15 @@ class RequestHandlerBase(webapp2.RequestHandler):
                 video.event_streams.append(ev_stream)
             else:
                 period.event_streams.append(ev_stream)
+        video.set_reference_representation(rv["ref_representation"])
+        video.set_dash_timing(timing)
         period.adaptationSets.append(video)
 
         for idx, rep in enumerate(audio.representations):
-            audio_adp = audio.clone()
-            audio_adp.contentComponent.id = idx + 2
-            audio_adp.representations = [rep]
+            audio_adp = audio.clone(
+                id=(idx + 2), lang=rep.language, representations=[rep])
+            rep.set_reference_representation(rv["ref_representation"])
+            rep.set_dash_timing(timing)
             if len(audio.representations) == 1:
                 audio_adp.role = 'main'
             elif self.request.params.get('main_audio', None) == rep.id:
@@ -393,10 +328,6 @@ class RequestHandlerBase(webapp2.RequestHandler):
             if rep.encrypted:
                 kids.update(rep.kids)
         rv["kids"] = kids
-        if video.representations:
-            rv["ref_representation"] = video.representations[0]
-        else:
-            rv["ref_representation"] = audio.representations[0]
         rv["mediaDuration"] = rv["ref_representation"].mediaDuration / \
             rv["ref_representation"].timescale
         rv["maxSegmentDuration"] = max(video.maxSegmentDuration,
@@ -436,49 +367,6 @@ class RequestHandlerBase(webapp2.RequestHandler):
             rv["audio"] = audio
             rv["period"] = rv["periods"][0]
         return rv
-
-    def get_timeshift_buffer_depth(self, mode):
-        timeShiftBufferDepth = 0
-        if mode == 'live':
-            try:
-                timeShiftBufferDepth = int(self.request.params.get(
-                    'depth', str(self.DEFAULT_TIMESHIFT_BUFFER_DEPTH)), 10)
-            except ValueError:
-                timeShiftBufferDepth = self.DEFAULT_TIMESHIFT_BUFFER_DEPTH  # in seconds
-        return timeShiftBufferDepth
-
-    def calculate_availability_start(self, mode, now):
-        timeShiftBufferDepth = self.get_timeshift_buffer_depth(mode)
-        elapsedTime = datetime.timedelta(seconds=0)
-        if mode == 'live':
-            startParam = self.request.params.get('start', 'today')
-            if startParam == 'today':
-                availabilityStartTime = now.replace(
-                    hour=0, minute=0, second=0, microsecond=0)
-                if now.hour == 0 and now.minute == 0:
-                    availabilityStartTime -= datetime.timedelta(days=1)
-            elif startParam == 'now':
-                publishTime = now.replace(microsecond=0)
-                availabilityStartTime = (
-                    publishTime -
-                    datetime.timedelta(seconds=self.DEFAULT_TIMESHIFT_BUFFER_DEPTH))
-            elif startParam == 'epoch':
-                availabilityStartTime = datetime.datetime(
-                    1970, 1, 1, 0, 0, tzinfo=UTC())
-            else:
-                try:
-                    availabilityStartTime = from_isodatetime(startParam)
-                except ValueError as err:
-                    logging.warning('Failed to parse availabilityStartTime: %s', err)
-                    availabilityStartTime = now.replace(
-                        hour=0, minute=0, second=0, microsecond=0)
-            # print('availabilityStartTime', availabilityStartTime, startParam)
-            elapsedTime = now - availabilityStartTime
-            if elapsedTime.total_seconds() < timeShiftBufferDepth:
-                timeShiftBufferDepth = elapsedTime.total_seconds()
-        else:
-            availabilityStartTime = now
-        return availabilityStartTime, elapsedTime, timeShiftBufferDepth
 
     def calculate_audio_video_context(self, stream, mode, encrypted):
         audio = AdaptationSet(mode=mode, contentType='audio', id=2)
@@ -537,7 +425,7 @@ class RequestHandlerBase(webapp2.RequestHandler):
             t_cgi_params['drift'] = str(clockDrift)
             v_cgi_params['drift'] = str(clockDrift)
             a_cgi_params['drift'] = str(clockDrift)
-        if mode == 'live' and ts_buffer_depth != self.DEFAULT_TIMESHIFT_BUFFER_DEPTH:
+        if mode == 'live' and ts_buffer_depth != DashTiming.DEFAULT_TIMESHIFT_BUFFER_DEPTH:
             v_cgi_params['depth'] = str(ts_buffer_depth)
             a_cgi_params['depth'] = str(ts_buffer_depth)
         for code in self.INJECTED_ERROR_CODES:
@@ -596,48 +484,6 @@ class RequestHandlerBase(webapp2.RequestHandler):
                 self.response.headers.add_header("Access-Control-Allow-Methods", "HEAD, GET, POST")
         except KeyError:
             pass
-
-    def calculate_segment_from_timecode(
-            self, timecode, representation, ref_representation):
-        """find the correct segment for the given timecode.
-
-        :param timecode: the time (in seconds) since availabilityStartTime
-            for the requested fragment.
-        :param representation: the Representation to use
-        :param ref_representation: the Representation that is used as a stream's reference
-        returns the segment number and the time when the stream last looped
-        """
-        if timecode < 0:
-            raise ValueError("Invalid timecode: %d" % timecode)
-        # nominal_duration is the duration (in timescale units) of the reference
-        # representation. This is used to decide how many times the stream has looped
-        # since availabilityStartTime.
-        nominal_duration = ref_representation.segment_duration * \
-            ref_representation.num_segments
-        tc_scaled = long(timecode * ref_representation.timescale)
-        num_loops = tc_scaled / nominal_duration
-
-        # origin time is the time (in timescale units) that maps to segment 1 for
-        # all adaptation sets. It represents the most recent time of day when the
-        # content started from the beginning, relative to availabilityStartTime
-        origin_time = num_loops * nominal_duration
-
-        # the difference between timecode and origin_time now needs
-        # to be mapped to the segment index of this representation
-        segment_num = (tc_scaled - origin_time) * representation.timescale
-        segment_num /= ref_representation.timescale
-        segment_num /= representation.segment_duration
-        segment_num += 1
-        # the difference between the segment durations of the reference
-        # representation and this representation can mean that this representation
-        # has already looped
-        if segment_num > representation.num_segments:
-            segment_num = 1
-            origin_time += nominal_duration
-        origin_time /= ref_representation.timescale
-        if segment_num < 1 or segment_num > representation.num_segments:
-            raise ValueError('Invalid segment number %d' % (segment_num))
-        return (segment_num, origin_time)
 
     def calculate_injected_error_segments(
             self, times, now, availabilityStartTime, timeshiftBufferDepth, representation):

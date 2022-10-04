@@ -40,7 +40,7 @@
               presentationTimeOffset="{{video.presentationTimeOffset}}"
               timescale="{{video.timescale}}"
               >
-            {{generateSegmentTimeline(rep)}}
+            {{rep.generateSegmentTimeline()}}
           </SegmentTemplate>
         {% endif %}
         <Representation
@@ -69,7 +69,7 @@
           presentationTimeOffset="{{audio.presentationTimeOffset}}"
           timescale="{{audio.timescale}}"
           >
-        {{generateSegmentTimeline(rep)}}
+        {{rep.generateSegmentTimeline()}}
       </SegmentTemplate>
     <Representation
         audioSamplingRate="{{rep.sampleRate}}"
