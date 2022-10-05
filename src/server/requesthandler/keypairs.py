@@ -31,9 +31,15 @@ from drm.playready import PlayReady
 from exceptions import CsrfFailureException
 
 class KeyHandler(RequestHandlerBase):
-    """handler for adding a key pair"""
+    """
+    Provides a JSON API to add and remove encryption keys
+    """
 
     def put(self, **kwargs):
+        """
+        handler for adding a key pair
+        """
+
         if not users.is_current_user_admin():
             self.response.write('User is not an administrator')
             self.response.set_status(401)
@@ -72,9 +78,11 @@ class KeyHandler(RequestHandlerBase):
             self.response.content_type = 'application/json'
             self.response.write(json.dumps(result))
 
-    """handler for deleting a key pair"""
-
     def delete(self, kid, **kwargs):
+        """
+        handler for deleting a key pair
+        """
+
         if not users.is_current_user_admin():
             self.response.write('User is not an administrator')
             self.response.set_status(401)
