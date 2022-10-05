@@ -76,7 +76,7 @@
              {% include "drm/template.xml" %}
              {%- if mode=='odvod' %}
                <SegmentTemplate timescale="{{adp.timescale}}">
-                 {{rep.generateSegmentTimeline()}}
+                 {% include "segment/timeline.xml" %}
                </SegmentTemplate>
              {%- else %}
                <SegmentTemplate
@@ -104,7 +104,7 @@
            >
              {%- if mode=='odvod' %}
                <BaseURL>{{adp.mediaURL.replace("$RepresentationID$", rep.id)|xmlSafe}}</BaseURL>
-               {{rep.generateSegmentList()}}
+               {% include "segment/list.xml" %}
              {%- endif %}
            </Representation>
          {%- endfor %} {# representations #}

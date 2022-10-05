@@ -31,6 +31,24 @@ from utils.object_with_fields import ObjectWithFields
 
 from .segment import Segment
 
+class SegmentTimelineElement(object):
+    def __init__(self, duration=None, count=0, start=None):
+        self.duration = duration
+        self.count = count
+        self.start = start
+
+    def __repr__(self):
+        if self.start is not None:
+            return r'<S t="{0}" r="{1}" d="{2}" />'.format(
+                self.start, self.count - 1, self.duration)
+        return r'<S r="{0}" d="{1}" />'.format(
+            self.count - 1, self.duration)
+
+    @property
+    def repeat(self):
+        return self.count - 1
+
+
 class Representation(ObjectWithFields):
     OBJECT_FIELDS = {
         'segments': ListOf(Segment),
@@ -248,9 +266,8 @@ class Representation(ObjectWithFields):
         def output_s_node(sn):
             if sn["duration"] is None:
                 return
-            c = ' r="{:d}"'.format(sn["count"] - 1) if sn["count"] > 1 else ''
-            rv.append('<S {} d="{:d}"/>'.format(c, sn["duration"]))
-        rv = ['<SegmentDurations timescale="%d">' % (self.timescale)]
+            rv['segments'].append(sn)
+        rv = dict(timescale=self.timescale, segments=[])
         s_node = {
             "duration": None,
             "count": 0,
@@ -266,36 +283,35 @@ class Representation(ObjectWithFields):
                 # init segment does not have a duration
                 pass
         output_s_node(s_node)
-        rv.append('</SegmentDurations>')
-        return '\n'.join(rv)
+        return rv
 
     def generateSegmentList(self):
         # TODO: support live profile
-        rv = ['<SegmentList timescale="%d" duration="%d">' %
-              (self.timescale, self.mediaDuration)]
+        rv = {
+            'timescale': self.timescale,
+            'duration': self.mediaDuration,
+            'media': [],
+        }
         first = True
         for seg in self.segments:
             if first:
-                rv.append(
-                    '<Initialization range="{start:d}-{end:d}"/>'.format(
-                        start=seg.pos, end=seg.pos + seg.size - 1))
+                rv['init'] = {
+                    'start': seg.pos,
+                    'end': seg.pos + seg.size - 1,
+                }
                 first = False
             else:
-                rv.append('<SegmentURL mediaRange="{start:d}-{end:d}"/>'.format(
-                    start=seg.pos, end=seg.pos + seg.size - 1))
-        rv.append('</SegmentList>')
-        return '\n'.join(rv)
+                rv['media'].append({
+                    'start': seg.pos,
+                    'end': seg.pos + seg.size - 1,
+                })
+        return rv
 
     def generateSegmentTimeline(self):
         def output_s_node(sn):
-            if sn["duration"] is None:
+            if sn.duration is None:
                 return
-            r = ' r="{0:d}"'.format(sn["count"] - 1) if sn["count"] > 1 else ''
-            t = ' t="{0:d}"'.format(
-                sn["start"]) if sn["start"] is not None else ''
-            rv.append('<S {r} {t} d="{d:d}"/>'.format(r=r,
-                      t=t, d=sn["duration"]))
-
+            rv.append(sn)
         rv = []
         if self.timing.mode == 'live':
             timeline_start = (
@@ -312,11 +328,7 @@ class Representation(ObjectWithFields):
         seg_start_time = long(origin_time * self.timescale +
                               (segment_num - 1) * self.segment_duration)
         dur = 0
-        s_node = {
-            'duration': None,
-            'count': 0,
-            'start': None,
-        }
+        s_node = SegmentTimelineElement()
         if self.timing.mode == 'live':
             end = self.timing.timeShiftBufferDepth * self.timescale
         else:
@@ -324,22 +336,20 @@ class Representation(ObjectWithFields):
         while dur <= end:
             seg = self.segments[segment_num]
             if first:
-                rv.append('<SegmentTimeline>')
-                s_node['start'] = seg_start_time
+                assert seg_start_time is not None
+                s_node.start = seg_start_time
                 first = False
-            elif seg.duration != s_node["duration"]:
+            elif seg.duration != s_node.duration:
                 output_s_node(s_node)
-                s_node["start"] = None
-                s_node["count"] = 0
-            s_node["duration"] = seg.duration
-            s_node["count"] += 1
+                s_node = SegmentTimelineElement()
+            s_node.duration = seg.duration
+            s_node.count += 1
             dur += seg.duration
             segment_num += 1
             if segment_num > self.num_segments:
                 segment_num = 1
         output_s_node(s_node)
-        rv.append('</SegmentTimeline>')
-        return '\n'.join(rv)
+        return rv
 
     def calculate_segment_from_timecode(self, timecode):
         """

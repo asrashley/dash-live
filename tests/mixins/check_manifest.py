@@ -207,6 +207,7 @@ class DashManifestCheckMixin(object):
         """
         Test one manifest for validity
         """
+        response = None
         try:
             self.current_url = mpd_url
             response = self.app.get(mpd_url)
@@ -239,6 +240,10 @@ class DashManifestCheckMixin(object):
                     self.assertAlmostEqual(dv.manifest.mediaPresentationDuration.total_seconds(),
                                            self.MEDIA_DURATION, delta=1.0)
             return dv
+        except AssertionError:
+            if response is not None:
+                print(response.text)
+            raise
         finally:
             self.current_url = ''
 

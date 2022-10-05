@@ -916,6 +916,10 @@ class Representation(RepresentationBaseType):
         else:
             tolerance = info.timescale / frameRate
         self.log.debug('Generating %d MediaSegments', num_segments)
+        if timeline is not None:
+            msg = r'Expected segment segmentTimeline to have at least {} items, found {}'.format(
+                num_segments, len(timeline.segments))
+            self.assertGreaterOrEqual(len(timeline.segments), num_segments, msg)
         for idx in range(num_segments):
             url = self.format_url_template(
                 self.segmentTemplate.media, seg_num, decode_time)
