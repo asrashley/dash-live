@@ -299,18 +299,27 @@ class TestHandlers(GAETestBase, DashManifestCheckMixin):
     def test_video_corruption(self):
         self.setup_media()
         self.logoutCurrentUser()
-        media_files = models.MediaFile.all()
-        self.assertGreaterThan(len(media_files), 0)
+        video_files = models.MediaFile.search(contentType='video', maxItems=1)
+        self.assertGreaterThan(len(video_files), 0)
         for seg in range(1, 5):
             url = self.from_uri("dash-media", mode="vod",
-                                filename=media_files[0].representation.id,
-                                segment_num=seg, ext="mp4", absolute=True)
+                                filename=video_files[0].representation.id,
+                                segment_num=seg, ext="m4v", absolute=True)
             clean = self.app.get(url)
             corrupt = self.app.get(url, {'corrupt': '1,2'})
             if seg < 3:
-                self.assertNotEqual(clean.body, corrupt.body)
+                self.assertBuffersNotEqual(clean.body, corrupt.body)
             else:
-                self.assertEqual(clean.body, corrupt.body)
+                self.assertBuffersEqual(clean.body, corrupt.body)
+        audio_files = models.MediaFile.search(contentType='audio', maxItems=1)
+        self.assertGreaterThan(len(audio_files), 0)
+        for seg in range(1, 5):
+            url = self.from_uri("dash-media", mode="vod",
+                                filename=audio_files[0].representation.id,
+                                segment_num=seg, ext="m4a", absolute=True)
+            clean = self.app.get(url)
+            corrupt = self.app.get(url, {'corrupt': '1,2'})
+            self.assertBuffersEqual(clean.body, corrupt.body)
 
 
 if os.environ.get("TESTS"):

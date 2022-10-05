@@ -197,7 +197,7 @@ class LiveMedia(RequestHandlerBase):
             options.iv_size = representation.iv_size
         atom = mp4.Wrapper(
             atom_type='wrap', children=mp4.Mp4Atom.load(src, options=options))
-        if self.request.params.get('corrupt') is not None:
+        if adp_set.contentType == 'video' and self.request.params.get('corrupt') is not None:
             atom.moof.traf.trun.parse_samples(
                 src, representation.nalLengthFieldLength)
         if segment_num == 0 and representation.encrypted:
@@ -233,7 +233,7 @@ class LiveMedia(RequestHandlerBase):
                 del atom.sidx
             except AttributeError:
                 pass
-        if segment_num > 0 and self.response.content_type == 'video/mp4':
+        if segment_num > 0 and adp_set.contentType == 'video':
             event_generators = EventFactory.create_event_generators(self.request)
             if event_generators:
                 logging.debug('creating emsg boxes')
@@ -252,9 +252,9 @@ class LiveMedia(RequestHandlerBase):
         self.add_allowed_origins()
         data = io.BytesIO()
         atom.encode(data)
-        if self.request.params.get('corrupt') is not None:
+        if mf.contentType == 'video' and self.request.params.get('corrupt') is not None:
             try:
-                self.apply_corruption(representation, segment_num, atom, data)
+                self.apply_video_corruption(representation, segment_num, atom, data)
             except ValueError as e:
                 self.response.write('Invalid CGI parameter %s: %s' % (
                     self.request.params.get('corrupt'), str(e)))
@@ -272,7 +272,7 @@ class LiveMedia(RequestHandlerBase):
         self.response.headers.add_header('Accept-Ranges', 'bytes')
         self.response.out.write(data)
 
-    def apply_corruption(self, representation, segment_num, atom, dest):
+    def apply_video_corruption(self, representation, segment_num, atom, dest):
         try:
             corrupt_frames = int(self.request.params.get('frames', '4'), 10)
         except ValueError:
