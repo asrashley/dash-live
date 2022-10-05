@@ -33,14 +33,15 @@ from drm.playready import PlayReady
 from mpeg import mp4
 from mpeg.dash.representation import Representation
 from server import models
-from server.requesthandler.base import RequestHandlerBase
-from server.requesthandler.exceptions import CsrfFailureException
 from templates.factory import TemplateFactory
 from templates.tags import dateTimeFormat
 from utils.buffered_reader import BufferedReader
 from utils.objects import flatten
 
-class MediaHandler(RequestHandlerBase):
+from .base import HTMLHandlerBase
+from .exceptions import CsrfFailureException
+
+class MediaHandler(HTMLHandlerBase):
     class UploadHandler(blobstore_handlers.BlobstoreUploadHandler):
         def post(self, *args, **kwargs):
             is_ajax = self.request.get("ajax", "0") == "1"

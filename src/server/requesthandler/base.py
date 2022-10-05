@@ -64,7 +64,6 @@ class RequestHandlerBase(webapp2.RequestHandler):
     DEFAULT_ALLOWED_DOMAINS = re.compile(
         r'^http://(dashif\.org)|(shaka-player-demo\.appspot\.com)|(mediapm\.edgesuite\.net)')
     INJECTED_ERROR_CODES = [404, 410, 503, 504]
-    SCRIPT_TEMPLATE = r'<script src="/js/{mode}/{filename}{min}.js" type="text/javascript"></script>'
 
     def create_context(self, **kwargs):
         route = routes[self.request.route.name]
@@ -72,7 +71,6 @@ class RequestHandlerBase(webapp2.RequestHandler):
             "title": kwargs.get('title', route.title),
             "uri_for": self.uri_for,
             "on_production_server": on_production_server,
-            "import_script": self.import_script,
             "http_protocol": self.request.host_url.split(':')[0]
         }
         context.update(kwargs)
@@ -573,7 +571,23 @@ class RequestHandlerBase(webapp2.RequestHandler):
             return True
         return self.request.headers.get('X-HTTP-Scheme', 'http') == 'https'
 
+
+class HTMLHandlerBase(RequestHandlerBase):
+    """
+    Base class for all HTML pages
+    """
+
+    SCRIPT_TEMPLATE = r'<script src="/js/{mode}/{filename}{minify}.js" type="text/javascript"></script>'
+
+    def create_context(self, **kwargs):
+        context = super(HTMLHandlerBase, self).create_context(**kwargs)
+        context.update({
+            'routes': routes,
+            'import_script': self.import_script,
+        })
+        return context
+
     def import_script(self, filename):
         mode = 'dev' if settings.DEBUG else 'prod'
-        min = '' if settings.DEBUG else '.min'
-        return self.SCRIPT_TEMPLATE.format(mode=mode, filename=filename, min=min)
+        minify = '' if settings.DEBUG else '.min'
+        return self.SCRIPT_TEMPLATE.format(mode=mode, filename=filename, minify=minify)

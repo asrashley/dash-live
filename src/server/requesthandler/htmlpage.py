@@ -24,39 +24,41 @@ import datetime
 import urllib
 import urlparse
 
-from server import manifests, models, cgi_options, routes
+from server import manifests, models, cgi_options, routes, settings
 from drm.playready import PlayReady
 from templates.factory import TemplateFactory
 
-from .base import RequestHandlerBase
+from .base import HTMLHandlerBase
 
-class MainPage(RequestHandlerBase):
-    """handler for main index page"""
+class MainPage(HTMLHandlerBase):
+    """
+    handler for main index page
+    """
 
     def get(self, **kwargs):
         context = self.create_context(**kwargs)
-        context["headers"] = []
-        context['routes'] = routes
-        context['audio_fields'] = [
-            'id', 'codecs', 'bitrate', 'sampleRate', 'numChannels',
-            'language', 'encrypted']
-        context['video_fields'] = [
-            'id', 'codecs', 'bitrate', 'width', 'height', 'encrypted']
-        context['video_representations'] = []
-        context['audio_representations'] = []
+        context.update({
+            'audio_fields': [
+                'id', 'codecs', 'bitrate', 'sampleRate', 'numChannels',
+                'language', 'encrypted'
+            ],
+            'audio_representations': [],
+            'keys': models.Key.all_as_dict(),
+            'rows': [],
+            'streams': models.Stream.all(),
+            'video_fields': [
+                'id', 'codecs', 'bitrate', 'width', 'height', 'encrypted'
+            ],
+            'video_representations': [],
+        })
         for mf in models.MediaFile.all():
             r = mf.representation
-            if r is None:
-                continue
             if r.contentType == "video":
                 context['video_representations'].append(r)
             elif r.contentType == "audio":
                 context['audio_representations'].append(r)
         context['video_representations'].sort(key=lambda r: r.filename)
         context['audio_representations'].sort(key=lambda r: r.filename)
-        context['streams'] = models.Stream.all()
-        context['keys'] = models.Key.all_as_dict()
-        context['rows'] = []
         filenames = manifests.manifest.keys()
         filenames.sort(key=lambda name: manifests.manifest[name].title)
         for name in filenames:
@@ -84,20 +86,18 @@ class MainPage(RequestHandlerBase):
         self.response.write(template.render(context))
 
 
-class CgiOptionsPage(RequestHandlerBase):
+class CgiOptionsPage(HTMLHandlerBase):
     """
     handler for page that describes each CGI option
     """
 
     def get(self, **kwargs):
         context = self.create_context(**kwargs)
-        context["headers"] = []
-        context['routes'] = routes
         template = TemplateFactory.get_template('cgi_options.html')
         self.response.write(template.render(context))
 
 
-class VideoPlayer(RequestHandlerBase):
+class VideoPlayer(HTMLHandlerBase):
     """Responds with an HTML page that contains a video element to play the specified MPD"""
 
     def get(self, **kwargs):
