@@ -262,7 +262,7 @@ class LiveMedia(RequestHandlerBase):
                 return
         data = data.getvalue()[8:]  # [8:] is to skip the fake "wrap" box
         try:
-            start, end = self.get_http_range(frag.size)
+            start, end = self.get_http_range(len(data))
             if start is not None:
                 data = data[start:end + 1]
         except (ValueError) as ve:
