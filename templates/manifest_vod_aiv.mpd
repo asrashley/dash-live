@@ -52,9 +52,10 @@
         {%- else %}
           <BaseURL>{{uri_for('dash-od-media', filename=rep.id, ext='m4a')|xmlSafe}}</BaseURL>
         {% endif %}
-        {{rep.generateSegmentList()}}
+        {% include "segment/list.xml" %}
       </Representation>
       {%- if loop.last %}
+      {% include "segment/durations.xml" %}
       {{rep.generateSegmentDurations()}}
       {% endif %}
    {% endfor %}  {# representations #}

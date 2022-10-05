@@ -1,0 +1,10 @@
+{% set segDurations = rep.generateSegmentDurations() %}
+<SegmentDurations timescale="%d">
+  {%- for seg in segDurations.segments %}
+  <S d="{{seg.duration}}"
+     {%- if seg.count > 1 %}
+     r="{{seg.count - 1}}"
+     {%- endif %}
+  />
+  {%- endfor %}
+</SegmentDurations>

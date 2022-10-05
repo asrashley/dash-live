@@ -1,0 +1,7 @@
+{% set segList = rep.generateSegmentList() %}
+<SegmentList timescale="{{segList.timescale}}" duration="{{segList.duration}}">
+  <Initialization range="{{segList.init.start}}-{{segList.init.end}}" />
+  {%- for seg in segList.media %}
+  <SegmentURL mediaRange="{{seg.start}}-{{seg.end}}"/>
+  {%- endfor %}
+</SegmentList>

@@ -31,9 +31,11 @@ COPY static/js/*.js $HOME/dash-live/static/js/
 COPY lib/*.py $HOME/dash-live/lib/
 COPY *.py $HOME/dash-live/
 COPY *.yaml $HOME/dash-live/
-COPY templates/* $HOME/dash-live/templates/
-COPY templates/drm/* $HOME/dash-live/templates/drm/
-COPY templates/events/* $HOME/dash-live/templates/events/
+COPY templates/*.mpd $HOME/dash-live/templates/
+COPY templates/*.html $HOME/dash-live/templates/
+COPY templates/drm/*.xml $HOME/dash-live/templates/drm/
+COPY templates/events/*.xml $HOME/dash-live/templates/events/
+COPY templates/segment/*.xml $HOME/dash-live/templates/segment/
 COPY static/css/* $HOME/dash-live/static/css/
 COPY runserver.sh $HOME/dash-live/
 COPY src/drm/*.py $HOME/dash-live/src/drm/
