@@ -24,7 +24,7 @@ import datetime
 import urllib
 import urlparse
 
-from server import manifests, models, cgi_options, routes, settings
+from server import manifests, models, cgi_options
 from drm.playready import PlayReady
 from templates.factory import TemplateFactory
 

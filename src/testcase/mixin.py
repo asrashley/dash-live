@@ -339,16 +339,16 @@ class TestCaseMixin(object):
 
 
 class HideMixinsFilter(logging.Filter):
-    """A logging.Filter that hides mixins.py in log messages.
+    """A logging.Filter that hides mixin.py in log messages.
     Using the HideMixinsFilter in a logging adapter will cause the filename and line numbers
     in log messages to be set to the caller of mixins functions, rather than just seeing
     the line number in mixings.py that calls logger.error
     """
 
     def filter(self, record):
-        if record.filename.endswith('mixins.py'):
+        if record.filename.endswith('mixin.py'):
             # Replace the log record with the function & line number that called
-            # mixins.py
+            # mixin.py
             record.filename, record.lineno, record.funcName = self.find_caller()
         return True
 
@@ -363,7 +363,7 @@ class HideMixinsFilter(logging.Filter):
             co = f.f_code
             filename = os.path.normcase(co.co_filename)
             basename = os.path.basename(co.co_filename)
-            if filename == logging._srcfile or basename == 'mixins.py':
+            if filename == logging._srcfile or basename == 'mixin.py':
                 f = f.f_back
                 continue
             rv = (basename, f.f_lineno, co.co_name)
