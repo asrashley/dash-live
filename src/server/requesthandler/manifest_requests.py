@@ -26,7 +26,6 @@ import logging
 
 from .base import RequestHandlerBase
 from server import manifests, cgi_options
-from server.routes import routes
 from templates.factory import TemplateFactory
 from utils.date_time import from_isodatetime
 from utils.objects import dict_to_cgi_params
@@ -54,7 +53,6 @@ class ServeManifest(RequestHandlerBase):
             return
         context = self.create_context(**kwargs)
         context["headers"] = []
-        context['routes'] = routes
         self.response.content_type = 'application/dash+xml'
         try:
             dash = self.calculate_dash_params(
