@@ -25,6 +25,8 @@ from mpeg import MPEG_TIMEBASE
 from scte35 import descriptors
 from scte35.binarysignal import BinarySignal, SapType
 from scte35.splice_insert import SpliceInsert
+from utils.objects import merge
+
 from .repeating_event_base import RepeatingEventBase
 
 class Scte35Events(RepeatingEventBase):
@@ -33,10 +35,10 @@ class Scte35Events(RepeatingEventBase):
     and end.
     """
     schemeIdUri = "urn:scte:scte35:2014:xml+bin"
-    PARAMS = {
+    PARAMS = merge(RepeatingEventBase.PARAMS, {
         "program_id": 1620,
-    }
-    PARAMS.update(RepeatingEventBase.PARAMS)
+        "value": "",  # DVB-DASH states that value should be absent
+    })
 
     PREFIX = 'scte35'
 

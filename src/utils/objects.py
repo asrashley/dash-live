@@ -149,3 +149,13 @@ def dict_to_cgi_params(params):
     for k, v in params.iteritems():
         lst.append('%s=%s' % (k, v))
     return '?' + '&'.join(lst)
+
+def merge(*items):
+    """
+    Produce a dictionary that merges all of the dictionaries
+    passed to merge()
+    """
+    rv = {}
+    for item in items:
+        rv.update(item)
+    return rv
