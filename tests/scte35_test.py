@@ -48,7 +48,7 @@ from utils.buffered_reader import BufferedReader
 class Scte35Tests(TestCaseMixin, unittest.TestCase):
     dash_timebase = 10000000
     test_cases = [{
-        # section 14.2 splice_insert example from SCTE-35
+        'name': 'section 14.2 splice_insert example from SCTE-35',
         'input': r'/DAvAAAAAAAA///wFAVIAACPf+/+c2nALv4AUsz1AAAAAAAKAAhDVUVJAAABNWLbowo=',
         'expected': {
             'table_id': 0xFC,
@@ -88,7 +88,7 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
             'crc_valid': True,
         }
     }, {
-        # section 14.3 time_signal example from SCTE-35
+        'name': 'section 14.3 time_signal example from SCTE-35',
         'input': r'/DAvAAAAAAAA///wBQb+dGKQoAAZAhdDVUVJSAAAjn+fCAgAAAAALKChijUCAKnMZ1g=',
         'expected': {
             'table_id': 0xFC,
@@ -126,7 +126,8 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
         }
     }, {
         # DASH test stream
-        # <Event duration="2399838222" id="400063803" presentationTime="6937146800000">
+        # duration="2399838222" id="400063803" presentationTime="6937146800000"
+        'name': 'DASH 400063803',
         'input': r'/DAlAAAAAA4QAP/wFAVCaTagf+/+iWAjMP4BSZFQxhQCAwAAQ6Xd5w==',
         'expected': {
             'table_id': 0xFC,
@@ -153,7 +154,120 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
         }
     }, {
         # DASH test stream
-        # <Event duration="299838222" id="4093099307" presentationTime="6937446800000">
+        # duration="299838222" id="325059779" presentationTime="6937746800000"
+        'name': 'DASH 325059779',
+        'input': r'/DAlAAAAAA4QAP/wFAUDin0Jf+/+ibKI8P4AKS0wBhQDCAAAq6YflA==',
+        'expected': {
+            'table_id': 0xFC,
+            'private_indicator': False,
+            'protocol_version': 0,
+            'encrypted_packet': False,
+            'cw_index': 0,
+            'pts_adjustment': 3600,
+            'splice_insert': {
+                'splice_event_id': 0x38A7D09,
+                'unique_program_id': 0x614,
+                'program_splice_flag': True,
+                'splice_immediate_flag': False,
+                'avail_num': 3,
+                'avails_expected': 8,
+                'break_duration': {
+                    'auto_return': True,
+                    'duration': int(round(299838222.0 * MPEG_TIMEBASE / dash_timebase))
+                },
+                'splice_time': {
+                    'pts': 2310179056,
+                },
+            },
+        }
+    }, {
+        # DASH test stream
+        # duration="299838222" id="3116305481" presentationTime="6938046800000"
+        'name': 'DASH 3116305481',
+        'input': r'/DAlAAAAAA4QAP/wFAUDin0Kf+/+idu70P4AKS0wBhQECAAAqX1jjQ==',
+        'expected': {
+            'table_id': 0xFC,
+            'private_indicator': False,
+            'protocol_version': 0,
+            'encrypted_packet': False,
+            'cw_index': 0,
+            'pts_adjustment': 3600,
+            'splice_insert': {
+                'splice_event_id': 0x38A7D0A,
+                'unique_program_id': 0x614,
+                'program_splice_flag': True,
+                'splice_immediate_flag': False,
+                'avail_num': 4,
+                'avails_expected': 8,
+                'break_duration': {
+                    'auto_return': True,
+                    'duration': int(round(299838222.0 * MPEG_TIMEBASE / dash_timebase))
+                },
+                'splice_time': {
+                    'pts': 2312879056,
+                },
+            },
+        }
+    }, {
+        # DASH test stream
+        # duration="299838222" id="176443115" presentationTime="6938346800000"
+        'name': 'DASH 176443115',
+        'input': r'/DAlAAAAAA4QAP/wFAUDjfWzf+/+igTusP4AKS0wBhQFCAAAUfpPSg==',
+        'expected': {
+            'table_id': 0xFC,
+            'private_indicator': False,
+            'protocol_version': 0,
+            'encrypted_packet': False,
+            'cw_index': 0,
+            'pts_adjustment': 3600,
+            'splice_insert': {
+                'splice_event_id': 0x38DF5B3,
+                'unique_program_id': 0x614,
+                'program_splice_flag': True,
+                'splice_immediate_flag': False,
+                'avail_num': 5,
+                'avails_expected': 8,
+                'break_duration': {
+                    'auto_return': True,
+                    'duration': int(round(299838222.0 * MPEG_TIMEBASE / dash_timebase))
+                },
+                'splice_time': {
+                    'pts': 2315579056,
+                },
+            },
+        }
+    }, {
+        # DASH test stream
+        # duration="299838222" id="1340092364" presentationTime="6938646800000"
+        'name': 'DASH 1340092364',
+        'input': r'/DAlAAAAAA4QAP/wFAUDjfogf+/+ii4hkP4AKS0wBhQGCAAAmZLEyA==',
+        'expected': {
+            'table_id': 0xFC,
+            'private_indicator': False,
+            'protocol_version': 0,
+            'encrypted_packet': False,
+            'cw_index': 0,
+            'pts_adjustment': 3600,
+            'splice_insert': {
+                'splice_event_id': 0x38DFA20,
+                'unique_program_id': 0x614,
+                'program_splice_flag': True,
+                'splice_immediate_flag': False,
+                'avail_num': 6,
+                'avails_expected': 8,
+                'break_duration': {
+                    'auto_return': True,
+                    'duration': int(round(299838222.0 * MPEG_TIMEBASE / dash_timebase))
+                },
+                'splice_time': {
+                    'pts': 2318279056,
+                },
+            },
+        }
+    }, {
+        # DASH test stream
+        # duration="299838222" id="4093099307" presentationTime="6937446800000"
+        'name': 'DASH 4093099307',
         'input': r'/DAlAAAAAA4QAP/wFAUDin0Gf+/+iYlWEP4AKS0wBhQCCAAATqxqgQ==',
         'expected': {
             'table_id': 0xFC,
@@ -178,7 +292,8 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
         }
     }, {
         # DASH test stream
-        # <Event duration="2399838222" id="3231984362" presentationTime="6947106800000">
+        # duration="2399838222" id="3231984362" presentationTime="6947106800000"
+        'name': 'DASH 3231984362',
         'input': r'/DAlAAAAAA4QAP/wFAVCaTavf+/+jrfvcP4BSZFQxlQDAwAA/xNaEQ==',
         'expected': {
             'table_id': 0xFC,
@@ -203,7 +318,8 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
         }
     }, {
         # DASH test stream
-        # <Event duration="599838222" id="1505300925" presentationTime="6948306800000">
+        # duration="599838222" id="1505300925" presentationTime="6948306800000"
+        'name': 'DASH 1505300925',
         'input': r'/DAlAAAAAA4QAP/wFAUDin0Yf+/+j1y68P4AUmAQBlQGBwAAh0Grdg==',
         'expected': {
             'table_id': 0xFC,
@@ -228,7 +344,8 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
         }
     }, {
         # DASH test stream
-        # <Event duration="599838222" id="1182175218" presentationTime="6948906800000">
+        # duration="599838222" id="1182175218" presentationTime="6948906800000"
+        'name': 'DASH 1182175218',
         'input': r'/DAlAAAAAA4QAP/wFAUDjwlrf+/+j68gsP4AUmAQBlQHBwAAA123CQ==',
         'expected': {
             'table_id': 0xFC,
@@ -264,15 +381,16 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
 
     def test_parsing_splice_info_section(self):
         for idx, tc in enumerate(self.test_cases):
-            # print('test_case', idx + 1)
+            # print('test_case', idx + 1, tc['name'])
             data = base64.b64decode(tc['input'])
             src = BufferedReader(None, data=data)
             splice_kwargs = BinarySignal.parse(src, size=len(data))
             self.assertIn('crc', tc['expected'])
-            self.assertObjectEqual(tc['expected'], splice_kwargs)
+            msg = r'{0:d}: {1}'.format(idx, tc['name'])
+            self.assertObjectEqual(tc['expected'], splice_kwargs, msg)
             splice = BinarySignal(**splice_kwargs)
             encoded = splice.encode()
-            self.assertBuffersEqual(data, encoded)
+            self.assertBuffersEqual(data, encoded, msg)
 
     @mock.patch('mpeg.section_table.Crc32Mpeg2', new=PureCrc32Mpeg2)
     def test_parsing_splice_info_section_with_pure_python_crc(self):
