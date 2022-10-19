@@ -68,6 +68,9 @@ class Mp4Atom(ObjectWithFields):
     }
     DEFAULT_EXCLUDE = {'options', 'parent'}
 
+    # list of box names required for parsing
+    REQUIRED_PEERS = None
+
     BOXES = {}  # map from box fourcc to class
     DESCRIPTORS = {}  # map from descriptor tag to class
     BOX_TYPES = {}  # reverse map from class name to class
@@ -237,6 +240,7 @@ class Mp4Atom(ObjectWithFields):
         else:
             options.log.debug('%sLoad start=%d end=%d (%d)', prefix,
                               cursor, end, end - cursor)
+        deferred_boxes = []
         while end is None or cursor < end:
             assert cursor is not None
             if src.tell() != cursor:
@@ -264,6 +268,19 @@ class Mp4Atom(ObjectWithFields):
                         p = src.tell()
                         encoded = src.read(sz)
                         src.seek(p)
+            if Box.REQUIRED_PEERS is not None:
+                required = set(Box.REQUIRED_PEERS)
+                for atom_name in Box.REQUIRED_PEERS:
+                    if parent.find_child(atom_name) is not None:
+                        required.remove(atom_name)
+                if required:
+                    options.log.debug(
+                        'Defer parsing of "%s" as %s needs to be parsed',
+                        hdr['atom_type'], list(required))
+                    deferred_boxes.append(dict(Box=Box, initial_data=hdr,
+                                               index=len(rv)))
+                    cursor += hdr['size']
+                    continue
             kwargs = Box.parse(src, parent, options=options, initial_data=hdr)
             kwargs['parent'] = parent
             kwargs['options'] = options
@@ -282,6 +299,28 @@ class Mp4Atom(ObjectWithFields):
                 if options.strict:
                     raise ValueError(msg)
             cursor += atom.size
+        if not deferred_boxes:
+            return rv
+        cur_pos = src.tell()
+        for item in deferred_boxes:
+            options.log.debug('Parsing deferred box: "%s"',
+                              item['initial_data']['atom_type'])
+            hdr = item['initial_data']
+            Box = item['Box']
+            src.seek(hdr['position'] + hdr['header_size'])
+            kwargs = Box.parse(
+                src, parent, options=options, initial_data=hdr)
+            kwargs['parent'] = parent
+            kwargs['options'] = options
+            new_atom = Box(**kwargs)
+            new_atom.payload_start = src.tell()
+            if atom.parse_children:
+                options.log.debug('Parse %s children', new_atom.atom_type)
+                Mp4Atom.load(src, new_atom, options)
+            options.log.debug('finished parsing of deferred "%s"',
+                              new_atom.atom_type)
+            rv.insert(item['index'], new_atom)
+        src.seek(cur_pos)
         return rv
 
     @classmethod
@@ -1677,6 +1716,7 @@ class CencSampleEncryptionBox(FullBox):
         "samples": ListOf(CencSampleAuxiliaryData),
     }
     OBJECT_FIELDS.update(FullBox.OBJECT_FIELDS)
+    REQUIRED_PEERS = ['saiz']
 
     @classmethod
     def parse(clz, src, parent, **kwargs):
@@ -1698,7 +1738,11 @@ class CencSampleEncryptionBox(FullBox):
         num_entries = struct.unpack('>I', src.read(4))[0]
         rv["sample_count"] = num_entries
         rv["samples"] = []
-        saiz = parent.saiz
+        saiz = parent.find_child('saiz')
+        if saiz is None:
+            kwargs['options'].log.error('Failed to find saiz box')
+            kwargs['error'] = 'Failed to find required saiz box'
+            return rv
         for i in range(num_entries):
             size = saiz.sample_info_sizes[i] if saiz.sample_info_sizes else saiz.default_sample_info_size
             if size:
