@@ -29,6 +29,7 @@ import math
 import os
 import re
 import time
+import traceback
 import urlparse
 import xml.etree.ElementTree as ET
 
@@ -36,7 +37,7 @@ from drm.playready import PlayReady
 from testcase.mixin import HideMixinsFilter, TestCaseMixin
 from mpeg import MPEG_TIMEBASE, mp4
 import scte35
-from utils.date_time import from_isodatetime, scale_timedelta, UTC
+from utils.date_time import from_isodatetime, scale_timedelta, toIsoDateTime, UTC
 from utils.binary import Binary
 from utils.buffered_reader import BufferedReader
 
@@ -44,9 +45,12 @@ class ValidatorOptions(object):
     """
     Options that can be passed to the DASH validator
     """
-    def __init__(self, strict=True, encrypted=False):
+    def __init__(self, strict=True, encrypted=False, save=False, iv_size=None):
         self.strict = strict
         self.encrypted = encrypted
+        self.save = save
+        self.iv_size = iv_size
+        self.start_time = RelaxedDateTime.now(UTC())
 
 
 class RelaxedDateTime(datetime.datetime):
@@ -102,6 +106,7 @@ class DashElement(TestCaseMixin):
         'scte35': "http://www.scte.org/schemas/35/2016",
         'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
         'prh': 'http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader',
+        '': 'urn:mpeg:dash:schema:mpd:2011',
     }
 
     attributes = []
@@ -198,6 +203,36 @@ class DashElement(TestCaseMixin):
                 raise AssertionError(msg)
             self.log.warning('%s', msg)
 
+    def output_filename(self, default, filename=None, makedirs=False):
+        if filename is None:
+            filename = self.url
+        if filename.startswith('http:'):
+            parts = urlparse.urlsplit(filename)
+            head, tail = os.path.split(parts.path)
+            if tail and tail[0] != '.':
+                filename = tail
+            else:
+                filename = default
+        else:
+            head, tail = os.path.split(filename)
+            if tail:
+                filename = tail
+        if '?' in filename:
+            filename = filename.split('?')[0]
+        if '#' in filename:
+            filename = filename.split('#')[0]
+        root, ext = os.path.splitext(filename)
+        print('root,etx', root, ext)
+        now = self.options.start_time.replace(microsecond=0)
+        dest = os.path.join(self.options.dest,
+                            toIsoDateTime(now).replace(':', '-'))
+        filename = ''.join([root, ext])
+        self.log.debug('dest=%s, filename=%s', dest, filename)
+        if makedirs:
+            if not os.path.exists(dest):
+                os.makedirs(dest)
+        return os.path.join(dest, filename)
+
 
 class DashValidator(DashElement):
     __metaclass__ = ABCMeta
@@ -238,6 +273,8 @@ class DashValidator(DashElement):
     def validate(self, depth=-1):
         if self.xml is None:
             self.load()
+        if self.options.save:
+            self.save_manifest()
         if self.mode == 'live' and self.prev_manifest is not None:
             if self.prev_manifest.availabilityStartTime != self.manifest.availabilityStartTime:
                 raise ValidationException('availabilityStartTime has changed from {:s} to {:s}'.format(
@@ -252,32 +289,12 @@ class DashValidator(DashElement):
         self.manifest.validate(depth=depth)
 
     def save_manifest(self, filename=None):
-        now = RelaxedDateTime.now(UTC())
-        if filename is None:
-            filename = self.url
-        if filename.startswith('http:'):
-            parts = urlparse.urlsplit(filename)
-            head, tail = os.path.split(parts.path)
-            if tail and tail[0] != '.':
-                filename = tail
-            else:
-                filename = 'manifest.mpd'
-        else:
-            head, tail = os.path.split(filename)
-            if tail:
-                filename = tail
         if self.options.dest:
-            if not os.path.exists(self.options.dest):
-                os.makedirs(self.options.dest)
-            root, ext = os.path.splitext(filename)
-            filename = r'{}-{}{}'.format(root, now.isoformat(), ext)
-            ET.ElementTree(
-                self.manifest.element).write(
-                os.path.join(
-                    self.options.dest,
-                    filename))
+            filename = self.output_filename(
+                'manifest.mpd', filename, makedirs=True)
+            ET.ElementTree(self.xml).write(filename, xml_declaration=True)
         else:
-            print(ET.tostring(self.manifest.element))
+            print(ET.tostring(self.xml))
 
     def sleep(self):
         self.assertEqual(self.mode, 'live')
@@ -533,7 +550,7 @@ class Period(DashElement):
 class SegmentBaseType(DashElement):
     attributes = [
         ('timescale', int, 1),
-        ('presentationTimeOffset', int, None),
+        ('presentationTimeOffset', int, 0),
         ('indexRange', str, None),
         ('indexRangeExact', bool, False),
         ('availabilityTimeOffset', float, None),
@@ -822,6 +839,7 @@ class AdaptationSet(RepresentationBaseType):
 class Representation(RepresentationBaseType):
     attributes = RepresentationBaseType.attributes + [
         ('bandwidth', int, None),
+        ('id', str, None),
         ('qualityRanking', int, None),
         ('dependencyId', str, None),
     ]
@@ -884,8 +902,9 @@ class Representation(RepresentationBaseType):
                 num_segments = min(num_segments, 25)
             now = datetime.datetime.now(tz=UTC())
             elapsed_time = now - self.mpd.availabilityStartTime
-            last_fragment = self.segmentTemplate.startNumber + int(scale_timedelta(
-                elapsed_time, self.segmentTemplate.timescale, seg_duration))
+            elapsed_tc = scale_timedelta(elapsed_time, self.segmentTemplate.timescale, 1)
+            elapsed_tc -= self.segmentTemplate.presentationTimeOffset
+            last_fragment = self.segmentTemplate.startNumber + int(elapsed_tc // seg_duration)
             # first_fragment = last_fragment - math.floor(
             #    self.mpd.timeShiftBufferDepth.total_seconds() * self.segmentTemplate.timescale /
             #    seg_duration)
@@ -991,6 +1010,7 @@ class Representation(RepresentationBaseType):
 
     def validate(self, depth=-1):
         self.assertIsNotNone(self.bandwidth)
+        self.assertIsNotNone(self.id)
         info = self.validator.get_representation_info(self)
         if getattr(info, "moov", None) is None:
             info.moov = self.init_segment.validate(depth - 1)
@@ -1118,6 +1138,12 @@ class InitSegment(DashElement):
             headers = {"Range": "bytes={}".format(self.seg_range)}
         self.log.debug('GET: %s %s', self.url, headers)
         response = self.http.get(self.url, headers=headers)
+        if self.options.save:
+            default = 'init-{0}-{1}'.format(self.parent.id, self.parent.bandwidth)
+            filename = self.output_filename(default, makedirs=True)
+            self.log.debug('saving init segment: %s', filename)
+            with open(filename, 'wb') as dest:
+                dest.write(response.body)
         src = BufferedReader(None, data=response.body)
         atoms = mp4.Mp4Atom.load(src)
         self.assertGreaterThan(len(atoms), 1)
@@ -1193,6 +1219,13 @@ class MediaSegment(DashElement):
                 raise MissingSegmentException(self.url, response)
         if self.parent.mimeType is not None:
             self.assertStartsWith(response.headers['content-type'], self.parent.mimeType)
+        if self.options.save:
+            default = 'media-{0}-{1}-{2}'.format(self.parent.id, self.parent.bandwidth,
+                                                 self.seg_num)
+            filename = self.output_filename(default)
+            self.log.debug('saving media segment: %s', filename)
+            with open(filename, 'wb') as dest:
+                dest.write(response.body)
         src = BufferedReader(None, data=response.body)
         options = {"strict": True}
         self.assertEqual(self.options.encrypted, self.info.encrypted)
@@ -1353,7 +1386,9 @@ if __name__ == "__main__":
                             duration.total_seconds() *
                             timescale /
                             seg_dur))
-            return RepresentationInfo(encrypted=False, timescale=timescale,
+            return RepresentationInfo(encrypted=self.options.encrypted,
+                                      iv_size=self.options.ivsize,
+                                      timescale=timescale,
                                       num_segments=num_segments)
 
         def set_representation_info(self, representation, info):
@@ -1363,18 +1398,23 @@ if __name__ == "__main__":
         description='DASH live manifest validator')
     parser.add_argument('--strict', action='store_true', dest='strict',
                         help='Abort if an error is detected')
-    parser.add_argument(
-        '-d',
-        '--dest',
-        help='directory to store results',
-        required=False)
-    parser.add_argument(
-        '-s',
-        '--save',
-        help='save all fragments into <dest>',
-        action='store_true')
-    parser.add_argument('-v', '--verbose', action='count',
-                        help='increase verbosity', default=0)
+    parser.add_argument('--encrypted', action='store_true', dest='encrypted',
+                        help='Stream is encrypted')
+    parser.add_argument('-s', '--save',
+                        help='save all fragments into <dest>',
+                        action='store_true')
+    parser.add_argument('-d', '--dest',
+                        help='directory to store results',
+                        required=False)
+    parser.add_argument('--ivsize',
+                        help='IV size (in bits or bytes)',
+                        type=int,
+                        default=64,
+                        required=False)
+    parser.add_argument('-v', '--verbose',
+                        action='count',
+                        help='increase verbosity',
+                        default=0)
     parser.add_argument(
         'manifest',
         help='URL or filename of manifest to validate')
@@ -1392,21 +1432,21 @@ if __name__ == "__main__":
         bdv.save_manifest()
     done = False
     while not done:
+        if bdv.manifest.mpd_type != 'dynamic':
+            done = True
         try:
             bdv.validate()
-            if bdv.manifest.mpd_type != 'dynamic':
-                done = True
-            else:
+            if bdv.manifest.mpd_type == 'dynamic' and not done:
                 bdv.sleep()
                 bdv.load()
         except (AssertionError, ValidationException) as err:
             logging.error(err)
+            traceback.print_exc()
             if args.dest:
                 bdv.save_manifest()
-                now = RelaxedDateTime.now(UTC())
-                filename = r'error-{}.txt'.format(now.isoformat())
-                filename = os.path.join(args.dest, filename)
-                with open(filename, 'w') as err_file:
+                filename = bdv.output_filename('error.txt', makedirs=True)
+                with open(filename, 'wt') as err_file:
                     err_file.write(str(err) + '\n')
+                    traceback.print_exc(file=err_file)
             if args.strict:
                 raise
