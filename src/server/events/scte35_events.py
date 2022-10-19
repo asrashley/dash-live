@@ -63,14 +63,21 @@ class Scte35Events(RepeatingEventBase):
         duration = self.duration * MPEG_TIMEBASE / self.timescale
         # auto_return is True for the OUT and False for the IN
         auto_return = (event_id & 1) == 0
-        avail_num = event_id // 2
+        if self.count > 0:
+            avail_num = 1 + (event_id // 2)
+            avails_expected = 1 + (self.count // 2)
+        else:
+            avails_expected = avail_num = 0
 
+        # According to ETSI TS 103 752-1 V1.1.1 the Placement Opportunity
+        # and Advertisement segmentation_descriptors may be of type
+        # "Provider" or "Distributor"
         segmentation_descriptor = descriptors.SegmentationDescriptor(
             segmentation_event_id=avail_num,
             segmentation_duration=0,
-            segmentation_type=(descriptors.SegmentationTypeId.PROVIDER_PLACEMENT_OP_START +
-                               (event_id & 1)),
-        )
+            segmentation_type=(
+                descriptors.SegmentationTypeId.PROVIDER_PLACEMENT_OP_START +
+                (event_id & 1)))
         splice = BinarySignal(
             sap_type=SapType.CLOSED_GOP_NO_LEADING_PICTURES,
             splice_insert=SpliceInsert(
@@ -78,7 +85,7 @@ class Scte35Events(RepeatingEventBase):
                 splice_time={
                     "pts": pts
                 },
-                avails_expected=avail_num,
+                avails_expected=avails_expected,
                 splice_event_id=event_id,
                 program_splice_flag=True,
                 avail_num=avail_num,

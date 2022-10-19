@@ -175,7 +175,7 @@ class TestDashEventGeneration(DashManifestCheckMixin, GAETestBase):
                 self.assertEqual(event.presentationTime, presentationTime)
                 self.assertEqual(event.duration, Scte35Events.PARAMS['duration'])
                 auto_return = (idx & 1) == 0
-                avail_num = idx // 2
+                avail_num = 1 + (idx // 2)
                 expected = {
                     'table_id': 0xFC,
                     'private_indicator': False,
