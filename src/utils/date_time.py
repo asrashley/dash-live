@@ -42,7 +42,7 @@ date_hacks = [
 date_time_re = re.compile(r''.join([
     r'^(?P<year>\d+)-(?P<month>\d+)-(?P<day>\d+)',
     r'T(?P<hour>\d+):(?P<minute>\d+):(?P<second>[\d.]+)',
-    r'(?P<tzinfo>(Z|([+-]\d+:\d+)))$'
+    r'(?P<tzinfo>(Z|([+-]\d+:\d+)))?$'
 ]))
 
 duration_re = re.compile(r''.join([
@@ -142,6 +142,8 @@ def parse_date(date, format=None):
 
 
 def parse_timezone(value):
+    if value is None:
+        return None
     if value.upper() == 'Z':
         return UTC()
     return FixedOffsetTimeZone(value)
