@@ -53,12 +53,12 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
 
     @property
     def moov(self):
-        """An unencrypted video fragment"""
+        """An unencrypted video fragment init segment"""
         return self._get_media('_moov', "moov.mp4")
 
     @property
     def enc_moov(self):
-        """An encrypted video fragment"""
+        """An encrypted video fragment init segment"""
         return self._get_media('_enc_moov', "enc-moov.mp4")
 
     def _get_media(self, name, filename):
@@ -488,6 +488,42 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         self.assertEqual(emsg.event_duration, new_emsg[0].event_duration)
         self.assertEqual(emsg.event_id, new_emsg[0].event_id)
         self.assertEqual(emsg.data, new_emsg[0].data)
+
+    def test_parse_senc_box_before_saiz_box(self):
+        options = mp4.Options(iv_size=8, strict=True, cache_encoded=True)
+        filename = os.path.join(self.fixtures, "bbb_v6_enc.mp4")
+        src = BufferedReader(io.FileIO(filename, 'rb'))
+        segments = mp4.Mp4Atom.load(src, options=options)
+        del src
+        for seg in segments:
+            if seg.atom_type != 'moof':
+                continue
+            traf = seg.traf
+            before = len(traf.children)
+            pos = traf.index('senc')
+            senc = traf.children[pos]
+            traf.remove_child(pos)
+            pos = traf.index('saiz')
+            traf.insert_child(pos, senc)
+            self.assertGreaterThan(traf.index('saiz'), traf.index('senc'))
+            self.assertEqual(before, len(traf.children))
+            new_moof_data = seg.encode()
+            src = BufferedReader(None, data=new_moof_data)
+            new_moof = mp4.Mp4Atom.load(src, options=options)[0]
+            expected = seg.toJSON()
+            actual = new_moof.toJSON()
+            # expected box ordering is [mfhd, traf]
+            self.assertEqual(expected['children'][0]['atom_type'], 'mfhd')
+            self.assertEqual(expected['children'][1]['atom_type'], 'traf')
+            expected_traf = expected['children'][1]
+            # expected box ordering is [tfhd, tfdt, senc, saiz, saio, trun]
+            for index, atom_type in enumerate([
+                    'tfhd', 'tfdt', 'senc', 'saiz', 'saio', 'trun']):
+                self.assertEqual(
+                    expected_traf['children'][index]['atom_type'], atom_type)
+            # the newly encoded traf will start at position zero
+            expected_traf['children'][0]["base_data_offset"] = 0
+            self.assertObjectEqual(expected, actual)
 
 
 if os.environ.get("TESTS"):
