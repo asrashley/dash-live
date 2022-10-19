@@ -37,6 +37,8 @@ class DateTimeTests(unittest.TestCase):
             ('PT01:45:19', datetime.timedelta(hours=1, minutes=45, seconds=19)),
             ('P0Y0M0DT0H0M20S', datetime.timedelta(seconds=20)),
             ('P0Y0M0DT0H18M28.976S', datetime.timedelta(minutes=18, seconds=28.976)),
+            ('2022-10-18T14:22:24',
+             datetime.datetime(2022, 10, 18, 14, 22, 24, tzinfo=None)),
         ]
         for test in tests:
             tc = from_isodatetime(test[0])
