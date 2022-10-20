@@ -68,20 +68,19 @@ class ObjectWithFields(object):
         self._fields.add(name)
         setattr(self, name, value)
 
-    @property
-    def classname(self):
-        clz = type(self)
+    @classmethod
+    def classname(clz):
         if clz.__module__.startswith('__'):
             return clz.__name__
         return clz.__module__ + '.' + clz.__name__
 
     def __repr__(self, exclude=None):
-        # print('ObjectWithFields repr', self.classname)
+        # print('ObjectWithFields repr', self.classname())
         if exclude is None:
             exclude = self.DEFAULT_EXCLUDE
         fields = self._field_repr(exclude)
         fields = ','.join(fields)
-        return '{name}({fields})'.format(name=self.classname, fields=fields)
+        return '{name}({fields})'.format(name=self.classname(), fields=fields)
 
     def toJSON(self, exclude=None, pure=False):
         if exclude is None:
@@ -103,7 +102,7 @@ class ObjectWithFields(object):
 
     def _to_json(self, exclude):
         rv = {
-            '_type': self.classname,
+            '_type': self.classname(),
         }
         for k in self._fields:
             if k[0] == '_' or k in exclude:
@@ -117,9 +116,9 @@ class ObjectWithFields(object):
             return value
         if key and self.OBJECT_FIELDS and key in self.OBJECT_FIELDS:
             clz = self.OBJECT_FIELDS[key]
-            # print('_convert_value_to_json check clz', self.classname, key, clz)
+            # print('_convert_value_to_json check clz', self.classname(), key, clz)
             if isinstance(clz, ListOf):
-                # print('_convert_value_to_json listOf', self.classname, key, clz.clazz)
+                # print('_convert_value_to_json listOf', self.classname(), key, clz.clazz)
                 return map(flatten, value)
         return flatten(value)
 
@@ -128,9 +127,9 @@ class ObjectWithFields(object):
             self._fields.add(key)
             if key in self.OBJECT_FIELDS:
                 clz = self.OBJECT_FIELDS[key]
-                # print('object_from', self.classname, key, clz)
+                # print('object_from', self.classname(), key, clz)
                 value = object_from(clz, value)
-                # print('value', self.classname, key, type(value))
+                # print('value', self.classname(), key, type(value))
                 object.__setattr__(self, key, value)
             else:
                 object.__setattr__(self, key, value)

@@ -417,7 +417,7 @@ class Mp4Atom(ObjectWithFields):
             assert len(self.atom_type) == 4
             fourcc = self.atom_type
         self.options.log.debug('%s: encode %s pos=%d', self._fullname,
-                               self.classname, self.position)
+                               self.classname(), self.position)
         if self._encoded is not None:
             self.options.log.debug('%s: Using pre-encoded data length=%d',
                                    self._fullname, len(self._encoded))
@@ -529,7 +529,7 @@ class FileTypeBox(Mp4Atom):
     @classmethod
     def parse(clz, src, *args, **kwargs):
         rv = Mp4Atom.parse(src, *args, **kwargs)
-        r = FieldReader(clz.classname, src, rv)
+        r = FieldReader(clz.classname(), src, rv)
         r.read(4, 'major_brand')
         r.read('I', 'minor_version')
         size = rv["size"] - rv["header_size"] - 8
@@ -574,9 +574,9 @@ class Descriptor(ObjectWithFields):
             "parent": None,
         })
         if self.parent:
-            self._fullname = r'{0}.{1}'.format(self.parent._fullname, self.classname)
+            self._fullname = r'{0}.{1}'.format(self.parent._fullname, self.classname())
         else:
-            self._fullname = self.classname
+            self._fullname = self.classname()
 
     @classmethod
     def load(clz, src, parent, options=None, **kwargs):
@@ -659,11 +659,11 @@ class Descriptor(ObjectWithFields):
         if self._encoded is not None:
             if self.options.log.isEnabledFor(logging.DEBUG):
                 self.options.log.debug(
-                    r'%s: using pre-encoded data size=%d', self.classname, len(self._encoded))
+                    r'%s: using pre-encoded data size=%d', self.classname(), len(self._encoded))
                 for child in self.children:
                     self.options.log.debug(
                         r'%s: skipping descriptor %s size=%d',
-                        self.classname, child._fullname, child.size)
+                        self.classname(), child._fullname, child.size)
             payload = self._encoded
         else:
             payload = io.BytesIO()
@@ -679,7 +679,7 @@ class Descriptor(ObjectWithFields):
             self.size = len(payload)
         elif self.size != len(payload):
             self.options.log.warning("Descriptor %s should be %d bytes but encoded %d",
-                                     self.classname, self.size, len(payload))
+                                     self.classname(), self.size, len(payload))
             self.size = len(payload)
         d.write('B', 'tag')
         sizes = []
@@ -696,7 +696,7 @@ class Descriptor(ObjectWithFields):
             d.write(None, 'payload', payload)
         self.options.log.debug(
             'descriptor "%s" produced %d bytes (%d .. %d)',
-            self.classname, len(payload), start, dest.tell())
+            self.classname(), len(payload), start, dest.tell())
 
     @abstractmethod
     def encode_fields(self, dest):
@@ -720,7 +720,7 @@ class Descriptor(ObjectWithFields):
     def dump(self, indent=''):
         f = '{}{}: {:d} -> {:d} [header {:d} bytes] [{:d} bytes]'
         print(f.format(indent,
-                       self.classname,
+                       self.classname(),
                        self.position,
                        self.position + self.size + self.header_size,
                        self.header_size,
@@ -756,7 +756,7 @@ class ESDescriptor(Descriptor):
 
     @classmethod
     def parse_payload(clz, src, rv, options, **kwargs):
-        r = FieldReader(clz.classname, src, rv, debug=options.debug)
+        r = FieldReader(clz.classname(), src, rv, debug=options.debug)
         r.read('H', 'es_id')
         b = r.get('B', 'flags')
         rv["stream_dependence_flag"] = (b & 0x80) == 0x80
@@ -801,13 +801,13 @@ Mp4Atom.DESCRIPTORS[0x03] = ESDescriptor
 class DecoderConfigDescriptor(Descriptor):
     @classmethod
     def parse_payload(clz, src, rv, **kwargs):
-        r = FieldReader(clz.classname, src, rv)
+        r = FieldReader(clz.classname(), src, rv)
         r.read('B', "object_type")
         b = r.get('B', "stream_type")
         rv["stream_type"] = (b >> 2)
         rv["unknown_flag"] = (b & 0x01) == 0x01
         rv["upstream"] = (b & 0x02) == 0x02
-        r.read('0I', "buffer_size")
+        r.read('3I', "buffer_size")
         r.read('I', "max_bitrate")
         r.read('I', "avg_bitrate")
         return rv
@@ -821,7 +821,7 @@ class DecoderConfigDescriptor(Descriptor):
         if self.upstream:
             b |= 0x02
         w.write('B', 'stream_type', b)
-        w.write('0I', 'buffer_size')
+        w.write('3I', 'buffer_size')
         w.write('I', "max_bitrate")
         w.write('I', "avg_bitrate")
 
@@ -840,7 +840,7 @@ class DecoderSpecificInfo(Descriptor):
     @classmethod
     def parse_payload(clz, src, rv, parent, **kwargs):
         rv["object_type"] = parent.object_type
-        r = BitsFieldReader(clz.classname, src, rv, rv["size"])
+        r = BitsFieldReader(clz.classname(), src, rv, rv["size"])
         if rv["object_type"] == 0x40:  # Audio ISO/IEC 14496-3 subpart 1
             r.read(5, "audio_object_type")
             r.read(4, "sampling_frequency_index")
@@ -907,10 +907,9 @@ class FullBox(Mp4Atom):
     @classmethod
     def parse(clz, src, parent, options, **kwargs):
         rv = Mp4Atom.parse(src, parent, options=options, **kwargs)
-        r = FieldReader(clz.classname, src, rv, debug=options.debug)
+        r = FieldReader(clz.classname(), src, rv, debug=options.debug)
         r.read("B", "version")
-        f = '\000' + r.get(3, "flags")
-        rv["flags"] = struct.unpack('>I', f)[0]
+        r.read('3I', "flags")
         return rv
 
     def encode_fields(self, dest):
@@ -952,7 +951,7 @@ class SampleEntry(Mp4Atom):
     @classmethod
     def parse(clz, src, parent, options, **kwargs):
         rv = Mp4Atom.parse(src, parent, **kwargs)
-        r = FieldReader(clz.classname, src, rv, debug=options.debug)
+        r = FieldReader(clz.classname(), src, rv, debug=options.debug)
         r.skip(6)  # reserved
         r.read('H', 'data_reference_index')
         return rv
@@ -967,7 +966,7 @@ class VisualSampleEntry(SampleEntry):
     @classmethod
     def parse(clz, src, parent, options, **kwargs):
         rv = SampleEntry.parse(src, parent, options, **kwargs)
-        r = FieldReader(clz.classname, src, rv, debug=options.debug)
+        r = FieldReader(clz.classname(), src, rv, debug=options.debug)
         r.read('H', "version")
         r.read('H', "revision")
         r.read('I', "vendor")
@@ -1032,7 +1031,7 @@ class AVCConfigurationBox(Mp4Atom):
     @classmethod
     def parse(clz, src, parent, options, **kwargs):
         rv = Mp4Atom.parse(src, parent, options=options, **kwargs)
-        r = FieldReader(clz.classname, src, rv, debug=options.debug)
+        r = FieldReader(clz.classname(), src, rv, debug=options.debug)
         r.read('B', "configurationVersion")
         r.read('B', "AVCProfileIndication")
         r.read('B', "profile_compatibility")
@@ -1171,7 +1170,7 @@ class EC3SpecificBox(Mp4Atom):
     @classmethod
     def parse(clz, src, parent, **kwargs):
         rv = Mp4Atom.parse(src, parent, **kwargs)
-        r = BitsFieldReader(clz.classname, src, rv, size=None)
+        r = BitsFieldReader(clz.classname(), src, rv, size=None)
         r.read(13, "data_rate")
         num_ind_sub = r.get(3, "num_ind_sub") + 1
         rv["substreams"] = []
@@ -1221,7 +1220,7 @@ class MP4AudioSampleEntry(Mp4Atom):
     @classmethod
     def parse(clz, src, parent, **kwargs):
         rv = Mp4Atom.parse(src, parent, **kwargs)
-        r = FieldReader(clz.classname, src, rv)
+        r = FieldReader(clz.classname(), src, rv)
         r.get(6, 'reserved')  # (8)[6] reserved
         r.read('H', "data_reference_index")
         r.get(8 + 4 + 4, 'reserved')  # (8)[6] reserved
@@ -1275,7 +1274,7 @@ class ESDescriptorBox(FullBox):
             if src.tell() != (d.position + d.size + d.header_size):
                 options.log.warning(
                     "Expected descriptor %s to be %d bytes, but read %d bytes",
-                    d.classname, d.size + d.header_size,
+                    d.classname(), d.size + d.header_size,
                     src.tell() - d.position)
                 src.seek(d.position + d.size + d.header_size)
         rv["descriptors"] = descriptors
@@ -1346,7 +1345,7 @@ class TrackFragmentHeaderBox(FullBox):
         rv["default_sample_duration"] = 0
         rv["default_sample_size"] = 0
         rv["default_sample_flags"] = 0
-        r = FieldReader(clz.classname, src, rv)
+        r = FieldReader(clz.classname(), src, rv)
         r.read('I', 'track_id')
         if rv["flags"] & clz.base_data_offset_present:
             r.read('Q', 'base_data_offset')
@@ -1394,7 +1393,7 @@ class TrackHeaderBox(FullBox):
     @classmethod
     def parse(clz, src, parent, **kwargs):
         rv = FullBox.parse(src, parent, **kwargs)
-        r = FieldReader(clz.classname, src, rv)
+        r = FieldReader(clz.classname(), src, rv)
         rv["is_enabled"] = (rv["flags"] & clz.Track_enabled) == clz.Track_enabled
         rv["in_movie"] = (rv["flags"] & clz.Track_in_movie) == clz.Track_in_movie
         rv["in_preview"] = (rv["flags"] & clz.Track_in_preview) == clz.Track_in_preview
@@ -1658,10 +1657,10 @@ class CencSubSample(ObjectWithFields):
 
     @classmethod
     def parse(clz, src):
-        rv = {
-            'clear': struct.unpack('>H', src.read(2))[0],
-            'encrypted': struct.unpack('>I', src.read(4))[0],
-        }
+        rv = {}
+        r = FieldReader(clz.classname(), src, rv)
+        r.read('H', 'clear')
+        r.read('I', 'encrypted')
         return rv
 
     def encode(self, dest):
@@ -1690,7 +1689,8 @@ class CencSampleAuxiliaryData(ObjectWithFields):
             "iv_size": iv_size,
             "size": size,
         }
-        rv["initialization_vector"] = src.read(iv_size)
+        r = FieldReader(clz.classname(), src, rv)
+        r.read(iv_size, "initialization_vector")
         rv["subsamples"] = []
         if subsample_encryption and size >= (iv_size + 2):
             subsample_count = struct.unpack('>H', src.read(2))[0]
@@ -1721,13 +1721,13 @@ class CencSampleEncryptionBox(FullBox):
     @classmethod
     def parse(clz, src, parent, **kwargs):
         rv = FullBox.parse(src, parent, **kwargs)
+        r = FieldReader(clz.classname(), src, rv)
         if rv["flags"] & 0x01:
-            f = '\000' + src.read(3)
-            rv["algorithm_id"] = struct.unpack('>I', f)[0]
-            rv["iv_size"] = struct.unpack('B', src.read(1))[0]
+            r.read('3I', 'algorithm_id')
+            r.read('B', 'iv_size')
             if rv["iv_size"] == 0:
                 rv["iv_size"] = 8
-            rv["kid"] = src.read(16)
+            r.read(16, 'kid')
         else:
             try:
                 moov = parent.find_atom("moov")
@@ -1735,7 +1735,7 @@ class CencSampleEncryptionBox(FullBox):
                 rv["iv_size"] = tenc.iv_size
             except AttributeError:
                 rv["iv_size"] = kwargs["options"].iv_size
-        num_entries = struct.unpack('>I', src.read(4))[0]
+        num_entries = r.get('I', 'num_entries')
         rv["sample_count"] = num_entries
         rv["samples"] = []
         saiz = parent.find_child('saiz')
@@ -1931,15 +1931,15 @@ class TrackEncryptionBox(FullBox):
     @classmethod
     def parse(clz, src, parent, **kwargs):
         rv = FullBox.parse(src, parent, **kwargs)
-        r = FieldReader(clz.classname, src, rv)
-        r.read('0I', "is_encrypted")
+        r = FieldReader(clz.classname(), src, rv)
+        r.read('3I', "is_encrypted")
         r.read('B', "iv_size")
         r.read(16, "default_kid")
         return rv
 
     def encode_box_fields(self, dest):
         w = FieldWriter(self, dest)
-        w.write('0I', "is_encrypted")
+        w.write('3I', "is_encrypted")
         w.write('B', "iv_size")
         w.write(16, "default_kid")
 
@@ -1982,7 +1982,7 @@ class ContentProtectionSpecificBox(FullBox):
     @classmethod
     def parse(clz, src, parent, **kwargs):
         rv = FullBox.parse(src, parent, **kwargs)
-        r = FieldReader(clz.classname, src, rv)
+        r = FieldReader(clz.classname(), src, rv)
         r.read(16, "system_id")
         rv["key_ids"] = []
         if rv["version"] > 0:
@@ -2022,10 +2022,10 @@ class SegmentReference(ObjectWithFields):
     @classmethod
     def parse(clz, src, parent, **kwargs):
         rv = {}
-        r = BitsFieldReader(clz.classname, src, rv, size=12)
-        r.read(1, 'reference_type')
-        r.read(31, 'referenced_size')
-        r.read(32, 'subsegment_duration')
+        r = BitsFieldReader(clz.classname(), src, rv, size=12)
+        r.read(1, 'ref_type')
+        r.read(31, 'ref_size')
+        r.read(32, 'duration')
         r.read(1, 'starts_with_SAP')
         r.read(3, 'SAP_type')
         r.read(28, 'SAP_delta_time')
@@ -2033,7 +2033,7 @@ class SegmentReference(ObjectWithFields):
 
     def _to_json(self, exclude):
         fields = {
-            '_type': self.classname
+            '_type': self.classname()
         }
         exclude.add('parent')
         for k, v in self.__dict__.iteritems():
@@ -2061,7 +2061,7 @@ class SegmentIndexBox(FullBox):
     @classmethod
     def parse(clz, src, parent, **kwargs):
         rv = FullBox.parse(src, parent, **kwargs)
-        r = FieldReader(clz.classname, src, rv)
+        r = FieldReader(clz.classname(), src, rv)
         r.read('I', 'reference_id')
         r.read('I', 'timescale')
         sz = 'I' if rv['version'] == 0 else 'Q'
@@ -2094,7 +2094,7 @@ class EventMessageBox(FullBox):
     @classmethod
     def parse(clz, src, parent, **kwargs):
         rv = FullBox.parse(src, parent, **kwargs)
-        r = FieldReader(clz.classname, src, rv)
+        r = FieldReader(clz.classname(), src, rv)
         if rv['version'] == 0:
             r.read('S0', 'scheme_id_uri')
             r.read('S0', 'value')

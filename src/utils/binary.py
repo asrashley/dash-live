@@ -51,9 +51,8 @@ class Binary(object):
             encoding = clz.BASE64
         return Binary(data=data, encoding=encoding)
 
-    @property
-    def classname(self):
-        clz = type(self)
+    @classmethod
+    def classname(clz):
         if clz.__module__.startswith('__'):
             return clz.__name__
         return clz.__module__ + '.' + clz.__name__
