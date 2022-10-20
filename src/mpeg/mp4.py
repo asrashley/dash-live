@@ -2043,9 +2043,9 @@ class SegmentReference(ObjectWithFields):
 
     def encode(self, dest):
         w = FieldWriter(self, dest)
-        w.writebits(1, 'reference_type')
-        w.writebits(31, 'referenced_size')
-        w.writebits(32, 'subsegment_duration')
+        w.writebits(1, 'ref_type')
+        w.writebits(31, 'ref_size')
+        w.writebits(32, 'duration')
         w.writebits(1, 'starts_with_SAP')
         w.writebits(3, 'SAP_type')
         w.writebits(28, 'SAP_delta_time')

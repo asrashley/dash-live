@@ -534,6 +534,9 @@ class RequestHandlerBase(webapp2.RequestHandler):
             timeout -= 1
         return -1
 
+    def has_http_range(self):
+        return 'range' in self.request.headers
+
     def get_http_range(self, content_length):
         try:
             http_range = self.request.headers['range'].lower().strip()
