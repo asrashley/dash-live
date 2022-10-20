@@ -123,7 +123,7 @@ class DashElement(TestCaseMixin):
         else:
             assert options is not None
             self.options = options
-        # self.log = logging.getLogger(self.classname)
+        # self.log = logging.getLogger(self.classname())
         #    log.addFilter(mixins.HideMixinsFilter())
         self.log = ContextAdapter(self.options.log, self)
         self.log.setLevel = self.options.log.setLevel
@@ -156,7 +156,7 @@ class DashElement(TestCaseMixin):
                     val = conv(val)
                 except (ValueError) as err:
                     self.log.error('Attribute "%s@%s" has invalid value "%s": %s',
-                                   self.classname, name, val, err)
+                                   self.classname(), name, val, err)
                     print(ET.tostring(elt))
                     raise
             elif dflt == DashElement.Parent:
@@ -188,7 +188,7 @@ class DashElement(TestCaseMixin):
         raise Exception("Not implemented")
 
     def unique_id(self):
-        rv = [self.classname, self.ID]
+        rv = [self.classname(), self.ID]
         p = self.parent
         while p is not None:
             rv.append(p.ID)
