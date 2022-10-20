@@ -57,7 +57,7 @@ class FieldWriter(object):
         if isinstance(value, Binary):
             value = value.data
         if isinstance(size, basestring):
-            if size == '0I':
+            if size == '3I':
                 value = struct.pack('>I', value)[1:]
             elif size == 'S0':
                 value += '\0'

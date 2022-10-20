@@ -222,7 +222,6 @@ class DashElement(TestCaseMixin):
         if '#' in filename:
             filename = filename.split('#')[0]
         root, ext = os.path.splitext(filename)
-        print('root,etx', root, ext)
         now = self.options.start_time.replace(microsecond=0)
         dest = os.path.join(self.options.dest,
                             toIsoDateTime(now).replace(':', '-'))
@@ -547,11 +546,41 @@ class Period(DashElement):
             evs.validate(depth - 1)
 
 
+class HttpRange(object):
+    def __init__(self, start, end=None):
+        if end is None:
+            start, end = start.split('-')
+        self.start = int(start)
+        self.end = int(end)
+
+    def __str__(self):
+        return '{0}-{1}'.format(self.start, self.end)
+
+
+class SegmentReference(DashElement):
+    REPR_FMT = 'SegmentReference(url={sourceURL}, duration={duration}, decode_time={decode_time}, mediaRange={mediaRange}'
+
+    def __init__(self, parent, url, start, end, decode_time, duration):
+        super(SegmentReference, self).__init__(elt=None, url=url,
+                                               parent=parent)
+        self.sourceURL = url
+        self.media = url
+        self.mediaRange = HttpRange(start, end)
+        self.decode_time = decode_time
+        self.duration = duration
+
+    def validate(self, depth=-1):
+        self.assertGreaterThan(self.duration, 0)
+
+    def __repr__(self):
+        return self.REPR_FMT.format(**self.__dict__)
+
+
 class SegmentBaseType(DashElement):
     attributes = [
         ('timescale', int, 1),
         ('presentationTimeOffset', int, 0),
-        ('indexRange', str, None),
+        ('indexRange', HttpRange, None),
         ('indexRangeExact', bool, False),
         ('availabilityTimeOffset', float, None),
         ('availabilityTimeComplete', bool, None),
@@ -564,11 +593,42 @@ class SegmentBaseType(DashElement):
         self.representationIndex = map(lambda i: URLType(i, self),
                                        elt.findall('./dash:RepresentationIndex', self.xmlNamespaces))
 
+    def load_segment_index(self, url):
+        self.assertIsNotNone(self.indexRange)
+        headers = {"Range": "bytes={}".format(self.indexRange)}
+        self.log.debug('GET: %s %s', url, headers)
+        response = self.http.get(url, headers=headers)
+        # 206 = partial content
+        self.assertEqual(response.status_int, 206)
+        if self.options.save:
+            default = 'index-{0}-{1}'.format(self.parent.id, self.parent.bandwidth)
+            filename = self.output_filename(default, makedirs=True)
+            self.log.debug('saving index segment: %s', filename)
+            with open(filename, 'wb') as dest:
+                dest.write(response.body)
+        src = BufferedReader(None, data=response.body)
+        opts = mp4.Options(strict=self.options.strict)
+        atoms = mp4.Mp4Atom.load(src, options=opts)
+        self.assertEqual(len(atoms), 1)
+        self.assertEqual(atoms[0].atom_type, 'sidx')
+        sidx = atoms[0]
+        self.timescale = sidx.timescale
+        start = self.indexRange.end + 1
+        rv = []
+        decode_time = sidx.earliest_presentation_time
+        for ref in sidx.references:
+            end = start + ref.ref_size - 1
+            rv.append(SegmentReference(
+                parent=self, url=url, start=start, end=end,
+                duration=ref.duration, decode_time=decode_time))
+            start = end + 1
+            decode_time += ref.duration
+        return rv
 
 class URLType(DashElement):
     attributes = [
         ("sourceURL", str, None),
-        ("range", str, None),
+        ("range", HttpRange, None),
     ]
 
     def __init__(self, elt, parent):
@@ -710,9 +770,9 @@ class SegmentListType(MultipleSegmentBaseType):
 class SegmentURL(DashElement):
     attributes = [
         ('media', str, None),
-        ('mediaRange', str, None),
+        ('mediaRange', HttpRange, None),
         ('index', str, None),
-        ('indexRange', str, None),
+        ('indexRange', HttpRange, None),
     ]
 
     def __init__(self, template, parent):
@@ -851,10 +911,17 @@ class Representation(RepresentationBaseType):
         if self.segmentTemplate is None:
             self.assertEqual(self.mode, 'odvod')
         self.assertIsNotNone(self.baseurl)
-        if self.mode != "odvod":
-            self.generate_segments_live_profile()
-        else:
+        if self.mode == "odvod":
+            segmentBase = rep.findall('./dash:SegmentBase', self.xmlNamespaces)
+            self.assertLessThan(len(segmentBase), 2)
+            if len(segmentBase):
+                self.segmentBase = MultipleSegmentBaseType(
+                    segmentBase[0], self)
+            else:
+                self.segmentBase = None
             self.generate_segments_on_demand_profile()
+        else:
+            self.generate_segments_live_profile()
         self.assertIsNotNone(self.init_segment)
         self.assertIsNotNone(self.media_segments)
         self.assertGreaterThan(len(self.media_segments), 0,
@@ -966,6 +1033,14 @@ class Representation(RepresentationBaseType):
         decode_time = None
         if info.segments:
             decode_time = 0
+        if self.segmentBase and self.segmentBase.initializationList:
+            url = self.baseurl
+            if self.segmentBase.initializationList[0].sourceURL is not None:
+                url = self.segmentBase.initializationList[0].sourceURL
+            url = self.format_url_template(url)
+            self.init_segment = InitSegment(
+                self, url, info,
+                self.segmentBase.initializationList[0].range)
         seg_list = []
         for sl in self.segmentList:
             if sl.initializationList:
@@ -977,6 +1052,9 @@ class Representation(RepresentationBaseType):
                 self.init_segment = InitSegment(
                     self, url, info, sl.initializationList[0].range)
             seg_list += sl.segmentURLs
+        if not seg_list and self.segmentBase and self.segmentBase.indexRange:
+            seg_list = self.segmentBase.load_segment_index(self.baseurl)
+            decode_time = seg_list[0].decode_time
         frameRate = 24
         if self.frameRate is not None:
             frameRate = self.frameRate.value
@@ -1002,8 +1080,10 @@ class Representation(RepresentationBaseType):
                 tol = tolerance * 2
             else:
                 tol = tolerance
-            ms = MediaSegment(self, url, info, seg_num=seg_num, decode_time=decode_time,
-                              tolerance=tol, seg_range=item.mediaRange)
+            dt = getattr(item, 'decode_time', decode_time)
+            ms = MediaSegment(self, url, info, seg_num=seg_num,
+                              decode_time=dt, tolerance=tol,
+                              seg_range=item.mediaRange)
             self.media_segments.append(ms)
             if info.segments:
                 decode_time += info.segments[idx + 1]['duration']
@@ -1218,7 +1298,9 @@ class MediaSegment(DashElement):
             if response.status_int != 206:
                 raise MissingSegmentException(self.url, response)
         if self.parent.mimeType is not None:
-            self.assertStartsWith(response.headers['content-type'], self.parent.mimeType)
+            if self.options.strict:
+                self.assertStartsWith(response.headers['content-type'],
+                                      self.parent.mimeType)
         if self.options.save:
             default = 'media-{0}-{1}-{2}'.format(self.parent.id, self.parent.bandwidth,
                                                  self.seg_num)
@@ -1371,15 +1453,18 @@ if __name__ == "__main__":
                 return self.representations[rep.unique_id()]
             except KeyError:
                 pass
-            timescale = rep.segmentTemplate.timescale
+            if rep.mode == 'odvod':
+                timescale = rep.segmentBase.timescale
+            else:
+                timescale = rep.segmentTemplate.timescale
             num_segments = None
-            if rep.segmentTemplate.segmentTimeline is not None:
+            if rep.segmentTemplate and rep.segmentTemplate.segmentTimeline is not None:
                 num_segments = len(rep.segmentTemplate.segmentTimeline.segments)
             else:
                 duration = rep.parent.parent.duration
                 if duration is None:
                     duration = rep.mpd.mediaPresentationDuration
-                if duration is not None:
+                if duration is not None and rep.segmentTemplate:
                     seg_dur = rep.segmentTemplate.duration
                     num_segments = int(
                         math.floor(
@@ -1426,6 +1511,10 @@ if __name__ == "__main__":
     args.log.addFilter(HideMixinsFilter())
     if args.verbose > 0:
         args.log.setLevel(logging.DEBUG)
+        logging.getLogger('mp4').setLevel(logging.DEBUG)
+        logging.getLogger('fio').setLevel(logging.DEBUG)
+    if args.ivsize > 16:
+        args.ivsize = args.ivsize // 8
     bdv = BasicDashValidator(args.manifest, args)
     bdv.load()
     if args.dest:
