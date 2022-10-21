@@ -517,10 +517,10 @@ class TestRestApi(GAETestBase):
         return s
 
     def test_upload_media_file(self):
-        self.upload_media_file(0)
+        self.upload_media_file(ajax=0)
 
     def test_upload_media_file_using_ajax(self):
-        self.upload_media_file(1)
+        self.upload_media_file(ajax=1)
 
     def upload_media_file(self, ajax):
         url = self.from_uri('media-index', absolute=True)
