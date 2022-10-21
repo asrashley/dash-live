@@ -41,7 +41,7 @@ class FormParser(HTMLParser):
 
     def handle_data(self, data):
         pass
-                                                    
+
 class Routes(object):
     def __init__(self, base_url):
         self.base_url = base_url
@@ -137,11 +137,14 @@ class MediaManagement(object):
         self.csrf_tokens.update(js['csrf_tokens'])
         for f in js['files']:
             self.files[f['name']] = f
+            self.log.debug('File %s', f['name'])
         for k in js['keys']:
             kid = k['kid']
+            self.log.debug('KID %s: computed=%s', kid, k['computed'])
             self.keys[kid] = k
         for s in js['streams']:
             self.streams[s['prefix']] = s
+            self.log.debug('Stream %s: %s', s['prefix'], s['title'])
         self.upload_url = js['upload_url']
         return True
 
@@ -175,7 +178,7 @@ class MediaManagement(object):
             'computed': js['computed'],
         }
         return True
-        
+
     def add_stream(self, prefix, title, marlin_la_url='', playready_la_url=''):
         if prefix in self.streams:
             return True
@@ -276,26 +279,29 @@ class MediaManagement(object):
                 self.files[name]['representation'] = js['representation']
                 return True
         return False
-        
-        
-if __name__ == "__main__":
-    ap = argparse.ArgumentParser(description='dashlive database population')
-    ap.add_argument('--debug', action="store_true")
-    ap.add_argument('--host', help='HTTP address of host to populate',
-                    default="http://localhost:9080/" )
-    ap.add_argument('jsonfile', help='JSON file', nargs='+', default=None)
-    args = ap.parse_args()
-    mm_log = logging.getLogger('MediaManagement')
-    ch = logging.StreamHandler()
-    ch.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s: %(message)s'))
-    mm_log.addHandler(ch)
-    if args.debug:
-        logging.getLogger().setLevel(logging.DEBUG)
-        mm_log.setLevel(logging.DEBUG)
-    else:
-        mm_log.setLevel(logging.INFO)
-    mm = MediaManagement(args.host)
-    for jsonfile in args.jsonfile:
-        mm.populate_database(jsonfile)
-                
 
+
+    @classmethod
+    def main(cls):
+        ap = argparse.ArgumentParser(description='dashlive database population')
+        ap.add_argument('--debug', action="store_true")
+        ap.add_argument('--host', help='HTTP address of host to populate',
+                        default="http://localhost:9080/" )
+        ap.add_argument('jsonfile', help='JSON file', nargs='+', default=None)
+        args = ap.parse_args()
+        mm_log = logging.getLogger('MediaManagement')
+        ch = logging.StreamHandler()
+        ch.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s: %(message)s'))
+        mm_log.addHandler(ch)
+        if args.debug:
+            logging.getLogger().setLevel(logging.DEBUG)
+            mm_log.setLevel(logging.DEBUG)
+        else:
+            mm_log.setLevel(logging.INFO)
+        mm = MediaManagement(args.host)
+        for jsonfile in args.jsonfile:
+            mm.populate_database(jsonfile)
+
+
+if __name__ == "__main__":
+    MediaManagement.main()
