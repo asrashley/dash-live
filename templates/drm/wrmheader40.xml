@@ -5,8 +5,8 @@
       <ALGID>AESCTR</ALGID>
     </PROTECTINFO>
     <KID>{{default_kid|base64}}</KID>
-    {% if checksum %}<CHECKSUM>{{checksum|base64}}</CHECKSUM>{% endif %}
+    {%- if checksum %}<CHECKSUM>{{checksum|base64}}</CHECKSUM>{% endif %}
     <LA_URL>{{la_url|xmlSafe}}</LA_URL>
-    <CUSTOMATTRIBUTES><IIS_DRM_VERSION>8.0.1907.32</IIS_DRM_VERSION></CUSTOMATTRIBUTES>
+    {%- include "drm/custom_attributes.xml" -%}
   </DATA>
 </WRMHEADER>

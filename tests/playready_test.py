@@ -45,6 +45,29 @@ from key_stub import KeyStub
 from mixins.view_validator import ViewsTestDashValidator
 
 class PlayreadyTests(GAETestBase, unittest.TestCase):
+    custom_attributes = [dict(tag='IIS_DRM_VERSION', value='8.0.1907.32')]
+
+    expected_pro = ''.join([
+        r'VAMAAAEAAQBKAzwAVwBSAE0ASABFAEEARABFAFIAIAB4AG0AbABuAHMAPQAi',
+        r'AGgAdAB0AHAAOgAvAC8AcwBjAGgAZQBtAGEAcwAuAG0AaQBjAHIAbwBzAG8A',
+        r'ZgB0AC4AYwBvAG0ALwBEAFIATQAvADIAMAAwADcALwAwADMALwBQAGwAYQB5',
+        r'AFIAZQBhAGQAeQBIAGUAYQBkAGUAcgAiACAAdgBlAHIAcwBpAG8AbgA9ACIA',
+        r'NAAuADAALgAwAC4AMAAiAD4APABEAEEAVABBAD4APABQAFIATwBUAEUAQwBU',
+        r'AEkATgBGAE8APgA8AEsARQBZAEwARQBOAD4AMQA2ADwALwBLAEUAWQBMAEUA',
+        r'TgA+ADwAQQBMAEcASQBEAD4AQQBFAFMAQwBUAFIAPAAvAEEATABHAEkARAA+',
+        r'ADwALwBQAFIATwBUAEUAQwBUAEkATgBGAE8APgA8AEsASQBEAD4AUQBGAFMA',
+        r'MABHAGkAeABUAG0AVQBPAFUAMwBGAHgAYQAyAFYAaABMAHIAQQA9AD0APAAv',
+        r'AEsASQBEAD4APABDAEgARQBDAEsAUwBVAE0APgBYAHkANgBqAEsARwA0AFAA',
+        r'SgBTAFkAPQA8AC8AQwBIAEUAQwBLAFMAVQBNAD4APABMAEEAXwBVAFIATAA+',
+        r'AGgAdAB0AHAAcwA6AC8ALwBhAG0AcwBzAGEAbQBwAGwAZQBzAC4AawBlAHkA',
+        r'ZABlAGwAaQB2AGUAcgB5AC4AbQBlAGQAaQBhAHMAZQByAHYAaQBjAGUAcwAu',
+        r'AHcAaQBuAGQAbwB3AHMALgBuAGUAdAAvAFAAbABhAHkAUgBlAGEAZAB5AC8A',
+        r'PAAvAEwAQQBfAFUAUgBMAD4APABDAFUAUwBUAE8ATQBBAFQAVABSAEkAQgBV',
+        r'AFQARQBTAD4APABJAEkAUwBfAEQAUgBNAF8AVgBFAFIAUwBJAE8ATgA+ADgA',
+        r'LgAwAC4AMQA5ADAANwAuADMAMgA8AC8ASQBJAFMAXwBEAFIATQBfAFYARQBS',
+        r'AFMASQBPAE4APgA8AC8AQwBVAFMAVABPAE0AQQBUAFQAUgBJAEIAVQBUAEUA',
+        r'UwA+ADwALwBEAEEAVABBAD4APAAvAFcAUgBNAEgARQBBAEQARQBSAD4A'])
+
     def setUp(self):
         super(PlayreadyTests, self).setUp()
         self.templates = TemplateFactory()
@@ -115,6 +138,31 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
             r'<DATA><PROTECTINFO><KEYLEN>16</KEYLEN><ALGID>AESCTR</ALGID></PROTECTINFO>',
             r'<KID>QFS0GixTmUOU3Fxa2VhLrA==</KID><CHECKSUM>Xy6jKG4PJSY=</CHECKSUM>',
             r'<LA_URL>https://amssamples.keydelivery.mediaservices.windows.net/PlayReady/</LA_URL>',
+            r'</DATA></WRMHEADER>'])
+        expected_wrm = expected_wrm.encode('utf-16')
+        self.maxDiff = None
+        mspr = PlayReady(
+            self.templates,
+            la_url=self.la_url,
+            version=2.0,
+            header_version=4.0)
+        representation = Representation(
+            id='V1', default_kid=self.keys.keys()[0])
+        mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
+            'Xy6jKG4PJSY=')
+        wrm = mspr.generate_wrmheader(representation, self.keys, None)
+        self.assertEqual(expected_wrm.decode('utf-16'), wrm.decode('utf-16'))
+        if ord(expected_wrm[0]) == 0xFF and ord(expected_wrm[1]) == 0xFE:
+            # remove UTF-16 byte order mark
+            expected_wrm = expected_wrm[2:]
+        self.assertBuffersEqual(expected_wrm, wrm, name="WRMHEADER")
+
+    def test_wrm_generation_with_custom_attrs(self):
+        expected_wrm = ''.join([
+            r'<WRMHEADER xmlns="http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader" version="4.0.0.0">',
+            r'<DATA><PROTECTINFO><KEYLEN>16</KEYLEN><ALGID>AESCTR</ALGID></PROTECTINFO>',
+            r'<KID>QFS0GixTmUOU3Fxa2VhLrA==</KID><CHECKSUM>Xy6jKG4PJSY=</CHECKSUM>',
+            r'<LA_URL>https://amssamples.keydelivery.mediaservices.windows.net/PlayReady/</LA_URL>',
             r'<CUSTOMATTRIBUTES><IIS_DRM_VERSION>8.0.1907.32</IIS_DRM_VERSION>',
             r'</CUSTOMATTRIBUTES></DATA></WRMHEADER>'])
         expected_wrm = expected_wrm.encode('utf-16')
@@ -128,33 +176,41 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
             id='V1', default_kid=self.keys.keys()[0])
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
-        wrm = mspr.generate_wrmheader(representation, self.keys)
+        wrm = mspr.generate_wrmheader(representation, self.keys, self.custom_attributes)
         self.assertEqual(expected_wrm.decode('utf-16'), wrm.decode('utf-16'))
         if ord(expected_wrm[0]) == 0xFF and ord(expected_wrm[1]) == 0xFE:
             # remove UTF-16 byte order mark
             expected_wrm = expected_wrm[2:]
         self.assertEqual(expected_wrm, wrm)
 
-    expected_pro = ''.join([
-        r'VAMAAAEAAQBKAzwAVwBSAE0ASABFAEEARABFAFIAIAB4AG0AbABuAHMAPQAi',
-        r'AGgAdAB0AHAAOgAvAC8AcwBjAGgAZQBtAGEAcwAuAG0AaQBjAHIAbwBzAG8A',
-        r'ZgB0AC4AYwBvAG0ALwBEAFIATQAvADIAMAAwADcALwAwADMALwBQAGwAYQB5',
-        r'AFIAZQBhAGQAeQBIAGUAYQBkAGUAcgAiACAAdgBlAHIAcwBpAG8AbgA9ACIA',
-        r'NAAuADAALgAwAC4AMAAiAD4APABEAEEAVABBAD4APABQAFIATwBUAEUAQwBU',
-        r'AEkATgBGAE8APgA8AEsARQBZAEwARQBOAD4AMQA2ADwALwBLAEUAWQBMAEUA',
-        r'TgA+ADwAQQBMAEcASQBEAD4AQQBFAFMAQwBUAFIAPAAvAEEATABHAEkARAA+',
-        r'ADwALwBQAFIATwBUAEUAQwBUAEkATgBGAE8APgA8AEsASQBEAD4AUQBGAFMA',
-        r'MABHAGkAeABUAG0AVQBPAFUAMwBGAHgAYQAyAFYAaABMAHIAQQA9AD0APAAv',
-        r'AEsASQBEAD4APABDAEgARQBDAEsAUwBVAE0APgBYAHkANgBqAEsARwA0AFAA',
-        r'SgBTAFkAPQA8AC8AQwBIAEUAQwBLAFMAVQBNAD4APABMAEEAXwBVAFIATAA+',
-        r'AGgAdAB0AHAAcwA6AC8ALwBhAG0AcwBzAGEAbQBwAGwAZQBzAC4AawBlAHkA',
-        r'ZABlAGwAaQB2AGUAcgB5AC4AbQBlAGQAaQBhAHMAZQByAHYAaQBjAGUAcwAu',
-        r'AHcAaQBuAGQAbwB3AHMALgBuAGUAdAAvAFAAbABhAHkAUgBlAGEAZAB5AC8A',
-        r'PAAvAEwAQQBfAFUAUgBMAD4APABDAFUAUwBUAE8ATQBBAFQAVABSAEkAQgBV',
-        r'AFQARQBTAD4APABJAEkAUwBfAEQAUgBNAF8AVgBFAFIAUwBJAE8ATgA+ADgA',
-        r'LgAwAC4AMQA5ADAANwAuADMAMgA8AC8ASQBJAFMAXwBEAFIATQBfAFYARQBS',
-        r'AFMASQBPAE4APgA8AC8AQwBVAFMAVABPAE0AQQBUAFQAUgBJAEIAVQBUAEUA',
-        r'UwA+ADwALwBEAEEAVABBAD4APAAvAFcAUgBNAEgARQBBAEQARQBSAD4A'])
+    def test_wrm_generation_with_sorted_custom_attrs(self):
+        expected_wrm = ''.join([
+            r'<WRMHEADER xmlns="http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader" version="4.0.0.0">',
+            r'<DATA><PROTECTINFO><KEYLEN>16</KEYLEN><ALGID>AESCTR</ALGID></PROTECTINFO>',
+            r'<KID>QFS0GixTmUOU3Fxa2VhLrA==</KID><CHECKSUM>Xy6jKG4PJSY=</CHECKSUM>',
+            r'<LA_URL>https://amssamples.keydelivery.mediaservices.windows.net/PlayReady/</LA_URL>',
+            r'<CUSTOMATTRIBUTES><MyNode BarAttribute="Bar" FooAttribute="Foo"></MyNode></CUSTOMATTRIBUTES>',
+            r'</DATA></WRMHEADER>'])
+        expected_wrm = expected_wrm.encode('utf-16')
+        self.maxDiff = None
+        mspr = PlayReady(
+            self.templates,
+            la_url=self.la_url,
+            version=2.0,
+            header_version=4.0)
+        representation = Representation(
+            id='V1', default_kid=self.keys.keys()[0])
+        mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
+            'Xy6jKG4PJSY=')
+        custom_attributes = [
+            dict(tag='MyNode', value='', attributes=dict(FooAttribute="Foo", BarAttribute="Bar"))
+        ]
+        wrm = mspr.generate_wrmheader(representation, self.keys, custom_attributes)
+        self.assertEqual(expected_wrm.decode('utf-16'), wrm.decode('utf-16'))
+        if ord(expected_wrm[0]) == 0xFF and ord(expected_wrm[1]) == 0xFE:
+            # remove UTF-16 byte order mark
+            expected_wrm = expected_wrm[2:]
+        self.assertEqual(expected_wrm, wrm)
 
     def test_pro_generation(self):
         self.maxDiff = None
@@ -167,8 +223,9 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
             id='V1', default_kid=self.keys.keys()[0])
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
-        pro = base64.b64encode(mspr.generate_pro(representation, self.keys))
-        self.assertEqual(pro, self.expected_pro)
+        pro = mspr.generate_pro(representation, self.keys, self.custom_attributes)
+        self.assertBuffersEqual(base64.b64decode(self.expected_pro), pro,
+                                name="PlayReady Object")
 
     def test_parsing_pro_v4_0(self):
         """
@@ -216,7 +273,7 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
                                         kids=self.keys.keys())
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
-        pssh = mspr.generate_pssh(representation, self.keys).encode()
+        pssh = mspr.generate_pssh(representation, self.keys, self.custom_attributes).encode()
         self.check_generated_pssh_v4_0(self.keys, mspr, pssh)
 
     def check_generated_pssh_v4_0(self, keys, mspr, pssh):
@@ -426,10 +483,10 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
             'Xy6jKG4PJSY=')
 
         # check v4.0 (as defined in PlayReady v1.0)
-        pssh = mspr.generate_pssh(representation, self.keys).encode()
+        pssh = mspr.generate_pssh(representation, self.keys, self.custom_attributes).encode()
         self.check_generated_pssh_v4_0(self.keys, mspr, pssh)
         mspr.version = None
-        pssh = mspr.generate_pssh(representation, self.keys).encode()
+        pssh = mspr.generate_pssh(representation, self.keys, self.custom_attributes).encode()
         self.check_generated_pssh_v4_0(self.keys, mspr, pssh)
 
         # check v4.1 (as defined in PlayReady v2.0)

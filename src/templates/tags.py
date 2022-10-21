@@ -131,3 +131,19 @@ def xmlSafe(value):
     in an XML document.
     """
     return value.replace('&', '&amp;')
+
+def sortedAttributes(value):
+    """
+    Output the provided dictionary as a key="value" string with the
+    keys sorted alphabetically
+    """
+    if not isinstance(value, dict):
+        return ''
+    keys = value.keys()
+    if not keys:
+        return ''
+    keys.sort()
+    rv = ['']
+    for k in keys:
+        rv.append('{0}="{1}"'.format(k, value[k]))
+    return ' '.join(rv)

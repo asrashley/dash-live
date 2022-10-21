@@ -62,6 +62,7 @@ class TemplateFactory(object):
         self.templates.filters['uuid'] = tags.toUuid
         self.templates.filters['xmlSafe'] = tags.xmlSafe
         self.templates.filters['default'] = tags.default
+        self.templates.filters['sortedAttributes'] = tags.sortedAttributes
 
     def get_template_by_name(self, name):
         return self.templates.get_template(name)

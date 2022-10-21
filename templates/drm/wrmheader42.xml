@@ -9,5 +9,6 @@
       </KIDS>
     </PROTECTINFO>
     <LA_URL>{{la_url|xmlSafe}}</LA_URL>
+    {%- include "drm/custom_attributes.xml" -%}
   </DATA>
 </WRMHEADER>
