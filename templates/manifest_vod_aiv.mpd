@@ -34,6 +34,7 @@
         <Representation
           bandwidth="{{rep.bitrate}}"
           codecs="{{rep.codecs}}"
+          mimeType="{{adp.mimeType}}"
           id="{{rep.id}}"
           {% if adp.contentType == "video" %}
             frameRate="{{rep.frameRate}}"
@@ -48,15 +49,14 @@
           <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
         {% endif %}
         {%- if baseURL %}
-          <BaseURL>{{baseURL|xmlSafe}}{{rep.id|xmlSafe}}.m4a</BaseURL>
+          <BaseURL>{{baseURL|xmlSafe}}{{rep.id|xmlSafe}}.{{adp.fileSuffix}}</BaseURL>
         {%- else %}
-          <BaseURL>{{uri_for('dash-od-media', filename=rep.id, ext='m4a')|xmlSafe}}</BaseURL>
+          <BaseURL>{{uri_for('dash-od-media', filename=rep.id, ext=adp.fileSuffix)|xmlSafe}}</BaseURL>
         {% endif %}
         {% include "segment/list.xml" %}
       </Representation>
       {%- if loop.last %}
       {% include "segment/durations.xml" %}
-      {{rep.generateSegmentDurations()}}
       {% endif %}
    {% endfor %}  {# representations #}
     </AdaptationSet>

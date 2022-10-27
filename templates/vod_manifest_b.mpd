@@ -5,7 +5,7 @@
  </ProgramInformation>
  <Period start="PT0S" duration="{{mediaDuration|isoDuration}}">
  {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
-  <AdaptationSet>
+  <AdaptationSet mimeType="video/mp4">
    <ContentComponent id="1" contentType="video"/>
    {% for rep in video.representations %}
    {% if loop.first %}{% include "drm/template.xml" %}{% endif %}
@@ -18,7 +18,7 @@
    </Representation>
    {% endfor %}
   </AdaptationSet>
-  <AdaptationSet>
+  <AdaptationSet mimeType="audio/mp4">
      <ContentComponent id="1" contentType="audio" lang="eng"/>
      {% for rep in audio.representations %}
        {% if loop.first %}{% include "drm/template.xml" %}{% endif %}

@@ -75,6 +75,7 @@
         audioSamplingRate="{{rep.sampleRate}}"
         bandwidth="{{rep.bitrate}}"
         codecs="{{rep.codecs}}"
+        mimeType="audio/mp4"
         id="{{rep.id}}" />
       </AdaptationSet>
   {% endfor %}

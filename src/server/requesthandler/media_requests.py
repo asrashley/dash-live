@@ -44,6 +44,8 @@ class OnDemandMedia(RequestHandlerBase):
         name = name.lower()
         mf = models.MediaFile.query(models.MediaFile.name == name).get()
         if mf is None:
+            logging.debug('MediaFile "%s" not found. Request: "%s.%s"',
+                          name, filename, ext)
             self.response.write('%s not found' % (name))
             self.response.set_status(404)
             return
@@ -57,7 +59,8 @@ class OnDemandMedia(RequestHandlerBase):
         try:
             start, end = self.get_http_range(blob_info.size)
         except ValueError as ve:
-            self.response.write(str(ve))
+            self.response.set_status(400)
+            self.response.write('Invalid HTTP range "{0}"'.format(ve))
             return
         if start is None:
             self.response.write('HTTP range must be specified')
@@ -77,11 +80,15 @@ class LiveMedia(RequestHandlerBase):
     def get(self, mode, filename, segment_num, ext):
         name = filename.lower() + '.mp4'
         mf = models.MediaFile.get(name)
+        logging.debug('LiveMedia.get: %s %s %s', filename, segment_num, ext)
         if mf is None:
+            logging.debug('MediaFile "%s" not found. Request: "%s.%s"',
+                          name, filename, ext)
             self.response.write('%s not found' % filename)
             self.response.set_status(404)
             return
         stream_name = filename.split('_')[0]
+        logging.debug('stream="%s"', stream_name)
         stream = models.Stream.query(models.Stream.prefix == stream_name).get()
         if stream is None:
             self.response.write('%s not found' % stream_name)

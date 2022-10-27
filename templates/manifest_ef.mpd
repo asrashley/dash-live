@@ -26,7 +26,15 @@
                    startWithSAP="1" segmentAlignment="true">
       {% include "drm/template.xml" %}
       {% endif %}
-      <Representation bandwidth="{{rep.bitrate}}" id="{{rep.id}}" frameRate="{{rep.frameRate}}" width="{{rep.width}}" sar="{{rep.sar}}" height="{{rep.height}}" scanType="{{rep.scanType}}">
+      <Representation
+          bandwidth="{{rep.bitrate}}"
+          id="{{rep.id}}"
+          frameRate="{{rep.frameRate}}"
+          mimeType="video/mp4"
+          width="{{rep.width}}"
+          sar="{{rep.sar}}"
+          height="{{rep.height}}"
+          scanType="{{rep.scanType}}">
         <SegmentTemplate startNumber="{{startNumber}}" duration="{{rep.segment_duration}}" initialization="{{video.initURL|xmlSafe}}" media="{{video.mediaURL|xmlSafe}}" timescale="{{video.timescale}}"/>
       </Representation>
 	  {% if loop.last %}</AdaptationSet>{% endif %}
@@ -39,9 +47,11 @@
                      lang="{{rep.language|default('und')}}">
         {% include "drm/template.xml" %}
         <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
-        <Representation bandwidth="{{rep.bitrate}}"
-                        id="{{rep.id}}"
-                        audioSamplingRate="{{rep.sampleRate}}">
+        <Representation
+            bandwidth="{{rep.bitrate}}"
+            id="{{rep.id}}"
+            mimeType="audio/mp4"
+            audioSamplingRate="{{rep.sampleRate}}">
           <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="{{rep.numChannels}}"/>
           <SegmentTemplate startNumber="{{startNumber}}"
                            duration="{{rep.segment_duration}}"

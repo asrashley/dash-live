@@ -34,7 +34,17 @@ type="dynamic"
             media="{{video.mediaURL|xmlSafe}}"
             duration="{{rep.segment_duration}}"/>
       {% endif %}
-      <Representation id="{{rep.id}}" codecs="{{rep.codecs}}" width="{{rep.width}}" height="{{rep.height}}" startWithSAP="{{rep.startWithSAP}}" bandwidth="{{rep.bitrate}}" frameRate="{{rep.frameRate}}" sar="{{rep.sar}}" scanType="{{rep.scanType}}" />
+      <Representation
+          id="{{rep.id}}"
+          codecs="{{rep.codecs}}"
+          width="{{rep.width}}"
+          height="{{rep.height}}"
+          mimeType="video/mp4"
+          startWithSAP="{{rep.startWithSAP}}"
+          bandwidth="{{rep.bitrate}}"
+          frameRate="{{rep.frameRate}}"
+          sar="{{rep.sar}}"
+          scanType="{{rep.scanType}}" />
     {% endfor %}
     </AdaptationSet>
       {% for rep in audio.representations %}

@@ -881,6 +881,7 @@ class AdaptationSet(RepresentationBaseType):
             self.assertIsNotNone(self.default_KID,
                                  'default_KID cannot be missing for protected stream: {}'.format(self.baseurl))
         self.assertIn(self.contentType, ['video', 'audio', None])
+        self.assertIsNotNone(self.mimeType, 'mimeType is a mandatory attribute')
         if not self.options.encrypted:
             self.assertEqual(len(self.contentProtection), 0)
         if depth == 0:
@@ -1089,8 +1090,9 @@ class Representation(RepresentationBaseType):
                 decode_time += info.segments[idx + 1]['duration']
 
     def validate(self, depth=-1):
-        self.assertIsNotNone(self.bandwidth)
-        self.assertIsNotNone(self.id)
+        self.assertIsNotNone(self.bandwidth, 'bandwidth is a mandatory attribute')
+        self.assertIsNotNone(self.id, 'id is a mandatory attribute')
+        self.assertIsNotNone(self.mimeType, 'mimeType is a mandatory attribute')
         info = self.validator.get_representation_info(self)
         if getattr(info, "moov", None) is None:
             info.moov = self.init_segment.validate(depth - 1)
@@ -1213,11 +1215,17 @@ class InitSegment(DashElement):
         self.url = url
 
     def validate(self, depth=-1):
-        headers = None
         if self.seg_range is not None:
             headers = {"Range": "bytes={}".format(self.seg_range)}
+            expected_status = 206
+        else:
+            headers = None
+            expected_status = 200
         self.log.debug('GET: %s %s', self.url, headers)
         response = self.http.get(self.url, headers=headers)
+        self.assertEqual(response.status_int, expected_status,
+                         'Failed to load init segment: {0:d}: {1}\n{2}'.format(
+                             response.status_int, response.body, self.url))
         if self.options.save:
             default = 'init-{0}-{1}'.format(self.parent.id, self.parent.bandwidth)
             filename = self.output_filename(default, makedirs=True)

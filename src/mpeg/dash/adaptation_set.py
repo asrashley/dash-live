@@ -74,6 +74,7 @@ class AdaptationSet(ObjectWithFields):
         else:
             defaults['initURL'] = r'$RepresentationID$/init.' + suffix
             defaults['mediaURL'] = r'$RepresentationID$/$Number$.' + suffix
+        defaults['fileSuffix'] = suffix
         self.apply_defaults(defaults)
 
     @property
