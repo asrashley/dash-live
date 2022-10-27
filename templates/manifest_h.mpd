@@ -19,8 +19,8 @@
      {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
    <UTCTiming schemeIdUri="urn:mpeg:dash:utc:ntp:2014" value="0.europe.pool.ntp.org 1.europe.pool.ntp.org 2.europe.pool.ntp.org 3.europe.pool.ntp.org"/>
   <Period start="PT0S">
-       {% for rep in video.representations %}
-         {% if loop.first %}
+       {%- for rep in video.representations %}
+         {%- if loop.first %}
       <AdaptationSet mimeType="video/mp4" startWithSAP="{{rep.startWithSAP}}" segmentAlignment="true">
            {% include "drm/template.xml" %}
             <SegmentTemplate
@@ -31,14 +31,23 @@
                 duration="{{rep.segment_duration}}"
                 startNumber="{{startNumber}}"/>
           {% endif %}
-      <Representation id="{{rep.id}}" codecs="{{rep.codecs}}" width="{{rep.width}}" height="{{rep.height}}" bandwidth="{{rep.bitrate}}" frameRate="{{rep.frameRate}}" sar="{{rep.sar}}" scanType="{{rep.scanType}}" />
-          {% if loop.last %}
+          <Representation
+              id="{{rep.id}}"
+              mimeType="video/mp4"
+              codecs="{{rep.codecs}}"
+              width="{{rep.width}}"
+              height="{{rep.height}}"
+              bandwidth="{{rep.bitrate}}"
+              frameRate="{{rep.frameRate}}"
+              sar="{{rep.sar}}"
+              scanType="{{rep.scanType}}" />
+          {%- if loop.last %}
         </AdaptationSet>
           {% endif %}
-       {% endfor %}
-       {% for rep in audio.representations %}
-         {% if loop.first %}{% include "drm/template.xml" %}{% endif %}
-         {% if rep.role=="main" %}
+       {%- endfor %}
+       {%- for rep in audio.representations %}
+         {%- if loop.first %}{% include "drm/template.xml" %}{% endif %}
+         {%- if rep.role=="main" %}
       <AdaptationSet mimeType="audio/mp4" lang="{{rep.language}}" segmentAlignment="true" startWithSAP="{{rep.startWithSAP}}">
           <SegmentTemplate
               presentationTimeOffset="{{audio.presentationTimeOffset}}"
@@ -47,9 +56,14 @@
               media="{{audio.mediaURL|xmlSafe}}"
               duration="{{rep.segment_duration}}"
               startNumber="{{startNumber}}"/>
-                <Representation id="{{rep.id}}" codecs="{{rep.codecs}}" audioSamplingRate="{{rep.sampleRate}}" bandwidth="{{rep.bitrate}}" />
+          <Representation
+              id="{{rep.id}}"
+              mimeType="audio/mp4"
+              codecs="{{rep.codecs}}"
+              audioSamplingRate="{{rep.sampleRate}}"
+              bandwidth="{{rep.bitrate}}" />
       </AdaptationSet>
         {% endif %}
-       {% endfor %}
+       {%- endfor %}
   </Period>
 </MPD>

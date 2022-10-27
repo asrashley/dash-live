@@ -4,21 +4,22 @@
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  profiles="urn:mpeg:dash:profile:isoff-live:2011"
  minBufferTime="PT9S"
-  {% if mode=='live' %}
+  {%- if mode=='live' %}
     type="dynamic"
     availabilityStartTime="{{availabilityStartTime|isoDateTime}}"
     timeShiftBufferDepth="{{timeShiftBufferDepth|isoDuration}}"
     {% if minimumUpdatePeriod %}minimumUpdatePeriod="{{minimumUpdatePeriod|isoDuration}}"{% endif %}
-  {% else %}
+  {%- else %}
     type="static"
     mediaPresentationDuration="{{mediaDuration|isoDuration}}"
-  {% endif %}
+  {%- endif %}
 
 >
- {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
+ {%- if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
     <UTCTiming schemeIdUri="urn:mpeg:dash:utc:direct:2014" value="{{now|isoDateTime}}"/>
   <Period>
     <AdaptationSet
+        mimeType="video/mp4"
         segmentAlignment="true"
         bitstreamSwitching="true">
       {% for rep in video.representations %}
@@ -32,11 +33,20 @@
             startNumber="{{startNumber}}" >
         </SegmentTemplate>
         {% endif %}
-      <Representation id="{{rep.id}}" mimeType="video/mp4" codecs="{{rep.codecs}}"  width="{{rep.width}}" height="{{rep.height}}" startWithSAP="{{rep.startWithSAP}}" bandwidth="{{rep.bitrate}}" />
+        <Representation
+            id="{{rep.id}}"
+            mimeType="video/mp4"
+            codecs="{{rep.codecs}}"
+            width="{{rep.width}}"
+            height="{{rep.height}}"
+            startWithSAP="{{rep.startWithSAP}}"
+            bandwidth="{{rep.bitrate}}" />
     {% endfor %}
     </AdaptationSet>
-    <AdaptationSet lang="und"
-         segmentAlignment="true">
+    <AdaptationSet
+        lang="und"
+        mimeType="audio/mp4"
+        segmentAlignment="true">
        {% for rep in audio.representations %}
          {% if loop.first %}
            {% include "drm/template.xml" %}
@@ -48,7 +58,13 @@
           startNumber="{{startNumber}}" />
           {% endif %}
       {% if rep.role=="main" %}
-      <Representation id="{{rep.id}}" mimeType="audio/mp4" codecs="{{rep.codecs}}"  audioSamplingRate="{{rep.sampleRate}}" startWithSAP="{{rep.startWithSAP}}" bandwidth="{{rep.bitrate}}">
+      <Representation
+          id="{{rep.id}}"
+          mimeType="audio/mp4"
+          codecs="{{rep.codecs}}"
+          audioSamplingRate="{{rep.sampleRate}}"
+          startWithSAP="{{rep.startWithSAP}}"
+          bandwidth="{{rep.bitrate}}">
       </Representation>
       {% endif %}
       {% endfor %}

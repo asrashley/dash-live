@@ -37,10 +37,11 @@ class ServeManifest(RequestHandlerBase):
         self.get(**kwargs)
 
     def get(self, mode, stream, manifest, **kwargs):
+        logging.debug('ServeManifest: mode=%s stream=%s manifest=%s', mode, stream, manifest)
         try:
             mft = manifests.manifest[manifest]
-        except KeyError:
-            logging.debug('Unknown manifest: %s', manifest)
+        except KeyError as err:
+            logging.debug('Unknown manifest: %s (%s)', manifest, err)
             self.response.write('%s not found' % (manifest))
             self.response.set_status(404)
             return
