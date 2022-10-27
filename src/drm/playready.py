@@ -256,7 +256,7 @@ class PlayReady(DrmBase):
             elif stream.playready_la_url is not None:
                 la_url = stream.playready_la_url
             else:
-                la_url = self.playready_la_url
+                la_url = self.la_url
         if locations is None:
             locations = {'pro', 'cenc', 'moov'}
         rv = {
