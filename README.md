@@ -115,12 +115,14 @@ ones are in the clear. For example:
 * bbb_v7_enc.mp4
 
 These file needs to have been encoded for DASH, with a MOOV and MOOF boxes
-and each MOOF of a fixed duration. In the media directory there is a
+and each MOOF of a fixed duration. In the src/media directory there is a
 create_media.py Python script which gives an example of how to encode and
 package the media files.
 
-    test -e "BigBuckBunny.mp4" || curl -o "BigBuckBunny.mp4" "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-    python create_media.py -i "BigBuckBunny.mp4" -p bbb --kid '1ab45440532c439994dc5c5ad9584bac' -o bbb
+```sh
+test -e "BigBuckBunny.mp4" || curl -o "BigBuckBunny.mp4" "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+python create_media.py -i "BigBuckBunny.mp4" -p bbb --kid '1ab45440532c439994dc5c5ad9584bac' -o bbb
+```
 
 The media files need to be uploaded once the dash server is running. Go to
 http://localhost:9080/media to upload the media files, one at a time.
@@ -130,38 +132,42 @@ After uploading, each media file needs to be indexed, using the
 When running in development mode, the populate-db.py script can be used to
 automate the installation of streams, files and keys
 
-    python populate-db.py --host http://localhost:9080/ bbb.json
+```sh
+python populate-db.py --host http://localhost:9080/ bbb.json
+```
 
 Where bbb.json is a JSON file that looks like this:
 
-    {
-        "keys": [
-            {
-                "computed": false,
-                "key": "533a583a843436a536fbe2a5821c4b6c",
-                "kid": "c001de8e567b5fcfbc22c565ed5bda24"
-            },
-            {
-                "computed": true,
-                "kid": "1ab45440532c439994dc5c5ad9584bac"
-            }
-        ],
-        "streams": [
-            {
-                "prefix": "bbb",
-                "title": "Big Buck Bunny",
-                "marlin_la_url": "ms3://ms3.test.expressplay.com:8443/hms/ms3/rights/?b=...",
-                "playready_la_url": "https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg={cfgs}"
-            }
-        ],
-        "files": [
-            "bbb_a1.mp4", "bbb_a1_enc.mp4", "bbb_a2.mp4", "bbb_a2_enc.mp4",
-            "bbb_v1.mp4", "bbb_v1_enc.mp4", "bbb_v2.mp4", "bbb_v2_enc.mp4",
-            "bbb_v3.mp4", "bbb_v3_enc.mp4", "bbb_v4.mp4", "bbb_v4_enc.mp4",
-            "bbb_v5.mp4", "bbb_v5_enc.mp4", "bbb_v6.mp4", "bbb_v6_enc.mp4",
-            "bbb_v7.mp4", "bbb_v7_enc.mp4"
-        ]
-    }
+```json
+{
+    "keys": [
+        {
+            "computed": false,
+            "key": "533a583a843436a536fbe2a5821c4b6c",
+            "kid": "c001de8e567b5fcfbc22c565ed5bda24"
+        },
+        {
+            "computed": true,
+            "kid": "1ab45440532c439994dc5c5ad9584bac"
+        }
+    ],
+    "streams": [
+        {
+            "prefix": "bbb",
+            "title": "Big Buck Bunny",
+            "marlin_la_url": "ms3://ms3.test.expressplay.com:8443/hms/ms3/rights/?b=...",
+            "playready_la_url": "https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg={cfgs}"
+        }
+    ],
+    "files": [
+        "bbb_a1.mp4", "bbb_a1_enc.mp4", "bbb_a2.mp4", "bbb_a2_enc.mp4",
+        "bbb_v1.mp4", "bbb_v1_enc.mp4", "bbb_v2.mp4", "bbb_v2_enc.mp4",
+        "bbb_v3.mp4", "bbb_v3_enc.mp4", "bbb_v4.mp4", "bbb_v4_enc.mp4",
+        "bbb_v5.mp4", "bbb_v5_enc.mp4", "bbb_v6.mp4", "bbb_v6_enc.mp4",
+        "bbb_v7.mp4", "bbb_v7_enc.mp4"
+    ]
+}
+```
 
 The populate-db.py script will upload all of the keys, streams and
 files listed in the JSON file that don't already exist on the
