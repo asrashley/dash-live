@@ -38,6 +38,15 @@ from server.requesthandler.htmlpage import CgiOptionsPage, MainPage
 from server.requesthandler.media_management import MediaHandler
 
 class TestHtmlPageHandlers(GAETestBase):
+    def _assert_true(self, result, a, b, msg, template):
+        if not result:
+            current_url = getattr(self, "current_url")
+            if current_url is not None:
+                print(r'URL: {}'.format(current_url))
+            if msg is not None:
+                raise AssertionError(msg)
+            raise AssertionError(template.format(a, b))
+
     def test_index_page(self):
         self.setup_media()
         self.assertIsNotNone(getattr(MainPage(), 'get', None))
@@ -95,20 +104,25 @@ class TestHtmlPageHandlers(GAETestBase):
         self.assertIsNotNone(getattr(MediaHandler(), 'post', None))
         url = self.from_uri('media-index', absolute=True)
 
-        # user must be logged in to use media page
-        self.logoutCurrentUser()
-        response = self.app.get(url, status=401)
-        self.assertEqual(response.status_int, 401)
+        try:
+            self.current_url = url
 
-        # user must be logged in as admin to use media page
-        self.setCurrentUser(is_admin=False)
-        response = self.app.get(url, status=401)
-        self.assertEqual(response.status_int, 401)
+            # user must be logged in to use media page
+            self.logoutCurrentUser()
+            response = self.app.get(url, status=401)
+            self.assertEqual(response.status_int, 401)
 
-        # user must be logged in as admin to use media page
-        self.setCurrentUser(is_admin=True)
-        response = self.app.get(url)
-        self.assertEqual(response.status_int, 200)
+            # user must be logged in as admin to use media page
+            self.setCurrentUser(is_admin=False)
+            response = self.app.get(url, status=401)
+            self.assertEqual(response.status_int, 401)
+
+            # user must be logged in as admin to use media page
+            self.setCurrentUser(is_admin=True)
+            response = self.app.get(url)
+            self.assertEqual(response.status_int, 200)
+        finally:
+            self.current_url = None
 
     def test_video_playback(self):
         """
@@ -138,23 +152,29 @@ class TestHtmlPageHandlers(GAETestBase):
                     html_url = url + '?mpd={prefix}/{mpd}&{opt}'.format(
                         prefix=stream.prefix, mpd=filename, opt=opt)
                     self.progress(count, num_tests)
-                    response = self.app.get(html_url)
-                    html = response.html
-                    self.assertEqual(html.title.string, manifest.title)
-                    for script in html.find_all('script'):
-                        if script.get("src"):
-                            continue
-                        script = script.get_text()
-                        self.assertIn('var dashParameters', script)
-                        start = script.index('{')
-                        end = script.rindex('}') + 1
-                        script = json.loads(script[start:end])
-                        for field in ['title', 'prefix',
-                                      'playready_la_url', 'marlin_la_url']:
-                            self.assertEqual(
-                                script['stream'][field], getattr(
-                                    stream, field))
-                    count += 1
+                    self.current_url = html_url
+                    try:
+                        response = self.app.get(html_url)
+                        html = response.html
+                        self.assertEqual(html.title.string, manifest.title)
+                        for script in html.find_all('script'):
+                            if script.get("src"):
+                                continue
+                            text = script.get_text()
+                            if not text:
+                                text = script.string
+                            self.assertIn('var dashParameters', text)
+                            start = text.index('{')
+                            end = text.rindex('}') + 1
+                            data = json.loads(text[start:end])
+                            for field in ['title', 'prefix',
+                                          'playready_la_url', 'marlin_la_url']:
+                                self.assertEqual(
+                                    data['stream'][field], getattr(
+                                        stream, field))
+                        count += 1
+                    finally:
+                        self.current_url = None
         self.progress(num_tests, num_tests)
 
     @staticmethod
