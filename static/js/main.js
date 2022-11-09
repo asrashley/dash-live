@@ -45,7 +45,7 @@ $(document).ready(function(){
 	  } else {
 		cursor.stream = (cursor.stream+1) % pageState.streams.length;
 		$('#play-button select').val(pageState.streams[cursor.stream].directory);
-		buildManifestURL();
+		updateManifestURL();
 	  }
       break;
     case 'left':
@@ -59,7 +59,7 @@ $(document).ready(function(){
 		if (cursor.stream<0) {
 		  cursor.stream = pageState.streams.length - 1;
 		  $('#play-button select').val(pageState.streams[cursor.stream].directory);
-		  buildManifestURL();
+		  updateManifestURL();
 		}
 	  }
       break;
@@ -98,24 +98,35 @@ $(document).ready(function(){
     return params;
   }
 
-  function buildManifestURL() {
+  function calculateManifestURL(params) {
+    var manifest, url;
+
+    manifest = $('#buttons tbody .manifest.selected');
+    if (manifest.length == 0) {
+      return null;
+    }
+    url = manifest.data("uri").replace('{directory}', pageState.streams[cursor.stream].directory);
+    url = url.replace("{mode}", params.mode.slice(5));
+    delete params.mode;
+
+    return url;
+  }
+
+  function updateManifestURL() {
     var manifest, dest, url, params;
 
     dest = $('#dashurl');
-    manifest = $('#buttons tbody .manifest.selected');
-    if (manifest.length == 0) {
+    params = buildCGI();
+    url = calculateManifestURL(params);
+    if (url === null) {
       dest.text('');
       dest.attr('href','');
       $('#play-button').addClass('disabled');
       return;
     }
-    params = buildCGI();
-    url = manifest.data("uri").replace('{directory}', pageState.streams[cursor.stream].directory);
-    url = url.replace("{mode}", params.mode.slice(5));
-    delete params.mode;
     url += '?' + Object.values(params).join('&');
     dest.text(url);
-    dest.attr('href',document.location.origin+url);
+    dest.attr('href', document.location.origin + url);
     $('#play-button').removeClass('disabled');
     if(window.history && typeof(history.pushState)==="function") {
       params.mpd = 'mpd=' + $('#buttons tbody .manifest.selected').data("filename");
@@ -125,16 +136,22 @@ $(document).ready(function(){
   }
 
   function playVideo() {
-    var params;
+    var params, url;
 
     if (!$('#dashurl').attr("href")) {
       return;
     }
     params = buildCGI();
-    params.mpd = 'mpd=' +
-	  pageState.streams[cursor.stream].directory + '/' +
-	  $('#buttons tbody .manifest.selected').data("filename");
-    document.location = '/video?'+Object.values(params).join('&');
+    url = calculateManifestURL(params);
+    if (url === null) {
+      return;
+    }
+    url = url.replace(/^\/dash/, '/play');
+    url = url.replace(/\.mpd$/, '/index.html');
+    delete params.mode;
+    url += '?' + Object.values(params).join('&');
+    console.log(url);
+    document.location = url;
   }
 
   $('body').on('keydown', function(ev){
@@ -160,7 +177,7 @@ $(document).ready(function(){
       } else {
         cycleOption(active);
       }
-      buildManifestURL();
+      updateManifestURL();
       return;
     }
     switch(ev.keyCode) {
@@ -178,7 +195,7 @@ $(document).ready(function(){
         for (p in params) {
           $('#buttons select[name="'+p+'"]').val(p+'='+params[p]);
         }
-        buildManifestURL();
+        updateManifestURL();
         moveCursor('right');
       } else {
         cycleOption(active);
@@ -218,7 +235,7 @@ $(document).ready(function(){
         cell = cell.parentNode;
       }
       $(cell).addClass("selected");
-      buildManifestURL();
+      updateManifestURL();
       return false;
     });
     $('th.manifest, th.option').on('click', function(ev) {
@@ -228,7 +245,7 @@ $(document).ready(function(){
       toggleActiveRow();
     });
 	$('#buttons tbody .option select').on('change', function(ev) {
-      buildManifestURL();
+      updateManifestURL();
     });
 	$('#play-button select').on('change', function(ev) {
 	  var i, val = $(ev.target).val();
@@ -237,7 +254,7 @@ $(document).ready(function(){
 		  cursor.stream = i;
 		}
 	  }
-      buildManifestURL();
+      updateManifestURL();
     });
     $('.play-icon').on('click', playVideo);
 
@@ -287,7 +304,7 @@ $(document).ready(function(){
           $('#buttons select[name="'+p[0]+'"]').val(params[i]);
         }
       }
-      buildManifestURL();
+      updateManifestURL();
     }
     moveCursor('');
     document.body.className += ' '+navigator.platform.toLowerCase();
