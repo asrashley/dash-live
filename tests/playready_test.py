@@ -586,6 +586,22 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
             test_la_url,
             ['playready_la_url={0}'.format(urllib.quote_plus(test_la_url))])
 
+    def test_is_supported_scheme_id(self):
+        self.assertTrue(PlayReady.is_supported_scheme_id(
+            "urn:uuid:9a04f079-9840-4286-ab92-e65be0885f95"))
+        self.assertFalse(PlayReady.is_supported_scheme_id(
+            "9a04f079-9840-4286-ab92-e65be0885f95"))
+        self.assertTrue(PlayReady.is_supported_scheme_id(
+            "urn:uuid:9a04f079-9840-4286-ab92-e65be0885f95".upper()))
+        self.assertTrue(PlayReady.is_supported_scheme_id(
+            "urn:uuid:79f0049a-4098-8642-ab92-e65be0885f95"))
+        self.assertTrue(PlayReady.is_supported_scheme_id(
+            "urn:uuid:79f0049a-4098-8642-ab92-e65be0885f95".upper()))
+        self.assertFalse(PlayReady.is_supported_scheme_id(
+            "79f0049a-4098-8642-ab92-e65be0885f95"))
+        self.assertFalse(PlayReady.is_supported_scheme_id(
+            "urn:uuid:5e629af5-38da-4063-8977-97ffbd9902d4"))
+
     def check_playready_la_url_value(self, test_la_url, args):
         """
         Check the LA_URL in the PRO element is correct
