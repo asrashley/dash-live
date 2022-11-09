@@ -328,9 +328,10 @@ class PlayReady(DrmBase):
 
     @classmethod
     def is_supported_scheme_id(cls, uri):
+        uri = uri.lower()
         if not uri.startswith("urn:uuid:"):
             return False
-        return uri[9:].lower() in {cls.SYSTEM_ID, cls.SYSTEM_ID_V10}
+        return uri[9:] in {cls.SYSTEM_ID, cls.SYSTEM_ID_V10}
 
 
 if __name__ == "__main__":
