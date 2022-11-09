@@ -31,5 +31,6 @@ jobs:
         python tests/keymaterial_test.py
         python tests/marlin_test.py
         python tests/mp4_test.py
+        python tests/scte35_test.py
         python tests/segment_test.py
         python tests/utils_test.py
