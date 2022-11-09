@@ -137,7 +137,6 @@ class TestHtmlPageHandlers(GAETestBase):
         self.logoutCurrentUser()
         media_files = models.MediaFile.all()
         self.assertGreaterThan(len(media_files), 0)
-        url = self.from_uri("video", absolute=True)
         num_tests = 0
         for filename, manifest in manifests.manifest.iteritems():
             options = filter(opt_choose, manifest.get_cgi_options(simplified=True))
@@ -149,8 +148,15 @@ class TestHtmlPageHandlers(GAETestBase):
                 options = filter(opt_choose, manifest.get_cgi_options(simplified=True))
                 options = self.cgi_combinations(options)
                 for opt in options:
-                    html_url = url + '?mpd={prefix}/{mpd}&{opt}'.format(
-                        prefix=stream.prefix, mpd=filename, opt=opt)
+                    mode = 'vod'
+                    if 'mode=live' in opt:
+                        mode = 'live'
+                    elif 'mode=odvod' in opt:
+                        mode = 'odvod'
+                    html_url = self.from_uri(
+                        "video", mode=mode, stream=stream.prefix,
+                        manifest=filename[:-4], absolute=True)
+                    html_url += r'?{0}'.format(opt)
                     self.progress(count, num_tests)
                     self.current_url = html_url
                     try:
@@ -178,18 +184,22 @@ class TestHtmlPageHandlers(GAETestBase):
         self.progress(num_tests, num_tests)
 
     @staticmethod
-    def cgi_combinations(cgi_options):
+    def cgi_combinations(cgi_options, exclude=None):
         """
         convert a list of CGI options into a set of all possible combinations
         """
         indexes = [0] * len(cgi_options)
         result = set()
+        if exclude is None:
+            exclude = set()
         done = False
         while not done:
             params = {}
             mode = None
             for idx, option in enumerate(cgi_options):
                 name, values = option
+                if name in exclude:
+                    continue
                 value = values[indexes[idx]]
                 if name == 'mode':
                     mode = value[5:]

@@ -96,7 +96,7 @@ routes = {
         handler='server.requesthandler.media_management.MediaHandler',
         title='Upload blob'),
     "video": Route(
-        r'/video',
+        r'/play/<mode:(live|vod|odvod)>/<stream:\w+>/<manifest:[\w\-_]+>/index.html',
         handler='server.requesthandler.htmlpage.VideoPlayer',
         title='DASH test stream player'),
     "cgi-options": Route(

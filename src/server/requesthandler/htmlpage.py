@@ -100,7 +100,7 @@ class CgiOptionsPage(HTMLHandlerBase):
 class VideoPlayer(HTMLHandlerBase):
     """Responds with an HTML page that contains a video element to play the specified MPD"""
 
-    def get(self, **kwargs):
+    def get(self, mode, stream, manifest, **kwargs):
         def gen_errors(cgiparam):
             err_time = context['now'].replace(
                 microsecond=0) + datetime.timedelta(seconds=20)
@@ -110,24 +110,14 @@ class VideoPlayer(HTMLHandlerBase):
                 times.append(err_time.time().isoformat() + 'Z')
             params.append('%s=%s' %
                           (cgiparam, urllib.quote_plus(','.join(times))))
+        manifest += '.mpd'
         context = self.create_context(**kwargs)
         try:
-            filename = self.request.params["mpd"]
-        except KeyError:
-            self.response.write('Missing CGI parameter: mpd')
-            self.response.set_status(400)
-            return
-        stream = ''
-        if '/' in filename:
-            stream, filename = filename.split('/')
-            stream = stream.lower()
-        mode = self.request.params.get("mode", "live")
-        try:
             dash_parms = self.calculate_dash_params(
-                mpd_url=filename, mode=mode, prefix=stream)
-        except ValueError as err:
+                mpd_url=manifest, mode=mode, prefix=stream)
+        except (KeyError, ValueError) as err:
             self.response.write(err)
-            self.response.set_status(400)
+            self.response.set_status(404)
             return
         for item in {'periods', 'period', 'ref_representation', 'audio', 'video'}:
             try:
@@ -160,12 +150,8 @@ class VideoPlayer(HTMLHandlerBase):
             p = 'a%03d' % code
             if self.get_bool_param(p):
                 gen_errors(p)
-        if stream:
-            mpd_url = self.uri_for(
-                'dash-mpd-v2', stream=stream, manifest=filename)
-        else:
-            mpd_url = self.uri_for(
-                'dash-mpd-v2', stream="bbb", manifest=filename)
+        mpd_url = self.uri_for('dash-mpd-v3', stream=stream, manifest=manifest,
+                               mode=mode)
         if params:
             mpd_url += '?' + '&'.join(params)
         context['source'] = urlparse.urljoin(self.request.host_url, mpd_url)
@@ -180,6 +166,6 @@ class VideoPlayer(HTMLHandlerBase):
                     context['source']
                 ])
         context['mimeType'] = 'application/dash+xml'
-        context['title'] = manifests.manifest[filename].title
+        context['title'] = manifests.manifest[manifest].title
         template = TemplateFactory.get_template('video.html')
         self.response.write(template.render(context))
