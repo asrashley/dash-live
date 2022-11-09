@@ -53,7 +53,6 @@ class ServeManifest(RequestHandlerBase):
             self.response.set_status(404)
             return
         context = self.create_context(**kwargs)
-        context["headers"] = []
         self.response.content_type = 'application/dash+xml'
         try:
             dash = self.calculate_dash_params(
