@@ -57,6 +57,8 @@ class RepeatingEventBase(EventBase):
         return ""
 
     def create_emsg_boxes(self, segment_num, mod_segment, moof, representation, **kwargs):
+        if not self.inband:
+            return []
         # start and end time of the fragment (representation timebase)
         seg_start = moof.traf.tfdt.base_media_decode_time
         seg_end = seg_start + representation.segments[mod_segment].duration
