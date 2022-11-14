@@ -416,7 +416,7 @@ class DescriptorElement(object):
 class Descriptor(DashElement):
     attributes = [
         ('schemeIdUri', str, None),
-        ('value', str, None),
+        ('value', str, ""),
     ]
 
     def __init__(self, elt, parent):
@@ -715,6 +715,8 @@ class RepresentationBaseType(DashElement):
         self.segmentList = None
         seg_list = elt.findall('./dash:SegmentList', self.xmlNamespaces)
         self.segmentList = map(lambda s: SegmentListType(s, self), seg_list)
+        ibevs = elt.findall('./dash:InbandEventStream', self.xmlNamespaces)
+        self.event_streams = map(lambda r: InbandEventStream(r, self), ibevs)
 
 
 class SegmentTimeline(DashElement):
@@ -873,14 +875,13 @@ class AdaptationSet(RepresentationBaseType):
                 self.default_KID = cp.default_KID
                 break
         self.representations = map(lambda r: Representation(r, self), reps)
-        ibevs = adap_set.findall('./dash:InbandEventStream', self.xmlNamespaces)
-        self.event_streams = map(lambda r: InbandEventStream(r, self), ibevs)
 
     def validate(self, depth=-1):
         if len(self.contentProtection):
             self.assertIsNotNone(self.default_KID,
                                  'default_KID cannot be missing for protected stream: {}'.format(self.baseurl))
-        self.assertIn(self.contentType, ['video', 'audio', None])
+        self.assertIn(self.contentType,
+                      {'video', 'audio', 'text', 'image', 'font', 'application', None})
         self.assertIsNotNone(self.mimeType, 'mimeType is a mandatory attribute')
         if not self.options.encrypted:
             self.assertEqual(len(self.contentProtection), 0)
@@ -1325,7 +1326,9 @@ class MediaSegment(DashElement):
         self.assertGreaterThan(len(atoms), 1)
         moof = None
         for a in atoms:
-            if a.atom_type == 'moof':
+            if a.atom_type == 'emsg':
+                self.check_emsg_box(a)
+            elif a.atom_type == 'moof':
                 moof = a
                 break
             self.assertNotEqual(
@@ -1377,6 +1380,27 @@ class MediaSegment(DashElement):
         if all_atoms:
             return atoms
         return moof
+
+    def check_emsg_box(self, emsg):
+        found = False
+        for evs in self.parent.event_streams:
+            self.log.debug('Found schemeIdUri="%s", value="%s"',
+                           evs.schemeIdUri, evs.value)
+            if (evs.schemeIdUri == emsg.scheme_id_uri and
+                    evs.value == emsg.value):
+                self.assertIsInstance(evs, InbandEventStream)
+                found = True
+        for evs in self.parent.parent.event_streams:
+            self.log.debug('Found schemeIdUri="%s", value="%s"',
+                           evs.schemeIdUri, evs.value)
+            if (evs.schemeIdUri == emsg.scheme_id_uri and
+                    evs.value == emsg.value):
+                self.assertIsInstance(evs, InbandEventStream)
+                found = True
+        self.assertTrue(
+            found,
+            'Failed to find an InbandEventStream with schemeIdUri="{0}" value="{1}"'.format(
+                emsg.scheme_id_uri, emsg.value))
 
 
 if __name__ == "__main__":
