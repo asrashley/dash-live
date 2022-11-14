@@ -133,3 +133,15 @@ class BinarySignal(MpegSectionTable):
     @classmethod
     def _parse_private_command(cls, r, kwargs):
         r.read(32, 'private_identifier')
+
+
+if __name__ == "__main__":
+    import base64
+    import sys
+    from utils.buffered_reader import BufferedReader
+    for arg in sys.argv[1:]:
+        data = base64.b64decode(arg)
+        src = BufferedReader(None, data=data)
+        print('====')
+        print(BinarySignal.parse(src, size=len(data)))
+        print('====')
