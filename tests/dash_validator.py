@@ -949,7 +949,7 @@ class Representation(RepresentationBaseType):
         if self.mode == 'vod':
             self.assertIsNotNone(info.num_segments)
             num_segments = info.num_segments
-            decode_time = 0
+            decode_time = self.segmentTemplate.presentationTimeOffset
             start_number = 1
         else:
             seg_duration = self.segmentTemplate.duration
