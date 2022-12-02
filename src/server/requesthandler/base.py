@@ -338,30 +338,7 @@ class RequestHandlerBase(webapp2.RequestHandler):
             else:
                 rv["keys"] = models.Key.get_kids(kids)
             rv["DRM"] = self.generate_drm_dict(stream, rv["keys"])
-        try:
-            timeSource = {'format': self.request.params['time']}
-            if timeSource['format'] == 'xsd':
-                timeSource['method'] = 'urn:mpeg:dash:utc:http-xsdate:2014'
-            elif timeSource['format'] == 'iso':
-                timeSource['method'] = 'urn:mpeg:dash:utc:http-iso:2014'
-            elif timeSource['format'] == 'ntp':
-                timeSource['method'] = 'urn:mpeg:dash:utc:http-ntp:2014'
-            elif timeSource['format'] == 'head':
-                timeSource['method'] = 'urn:mpeg:dash:utc:http-head:2014'
-                timeSource['format'] = 'ntp'
-            else:
-                raise KeyError('Unknown time format')
-        except KeyError:
-            timeSource = {
-                'method': 'urn:mpeg:dash:utc:http-xsdate:2014',
-                          'format': 'xsd'
-            }
-        if 'url' not in timeSource:
-            timeSource['url'] = urlparse.urljoin(
-                self.request.host_url,
-                self.uri_for('time', format=timeSource['format']))
-            timeSource['url'] += utils.objects.dict_to_cgi_params(cgi_params['time'])
-        rv["timeSource"] = timeSource
+        rv["timeSource"] = self.choose_time_source_method(cgi_params, now)
         if 'periods' not in manifest_info.features:
             rv["video"] = video
             rv["audio"] = audio
@@ -472,6 +449,40 @@ class RequestHandlerBase(webapp2.RequestHandler):
             'manifest': m_cgi_params,
             'time': t_cgi_params,
         }
+
+    def choose_time_source_method(self, cgi_params, now):
+        timeSource = {
+            'format': self.request.params.get('time', 'xsd')
+        }
+        if timeSource['format'] == 'direct':
+            timeSource['method'] = 'urn:mpeg:dash:utc:direct:2014'
+            timeSource['value'] = toIsoDateTime(now)
+        elif timeSource['format'] == 'head':
+            timeSource['method'] = 'urn:mpeg:dash:utc:http-head:2014'
+        elif timeSource['format'] == 'http-ntp':
+            timeSource['method'] = 'urn:mpeg:dash:utc:http-ntp:2014'
+        elif timeSource['format'] == 'iso':
+            timeSource['method'] = 'urn:mpeg:dash:utc:http-iso:2014'
+        elif timeSource['format'] == 'ntp':
+            timeSource['method'] = 'urn:mpeg:dash:utc:ntp:2014'
+            timeSource['value'] = 'time1.google.com time2.google.com time3.google.com time4.google.com'
+        elif timeSource['format'] == 'sntp':
+            timeSource['method'] = 'urn:mpeg:dash:utc:sntp:2014'
+            timeSource['value'] = 'time1.google.com time2.google.com time3.google.com time4.google.com'
+        elif timeSource['format'] == 'xsd':
+            timeSource['method'] = 'urn:mpeg:dash:utc:http-xsdate:2014'
+        else:
+            raise ValueError(r'Unknown time format: "{0}"'.format(timeSource['format']))
+        try:
+            timeSource['value'] = self.request.params['time_value']
+        except KeyError:
+            pass
+        if 'value' not in timeSource:
+            timeSource['value'] = urlparse.urljoin(
+                self.request.host_url,
+                self.uri_for('time', format=timeSource['format']))
+            timeSource['value'] += utils.objects.dict_to_cgi_params(cgi_params['time'])
+        return timeSource
 
     def add_allowed_origins(self):
         allowed_domains = getattr(settings, 'allowed_domains', self.DEFAULT_ALLOWED_DOMAINS)

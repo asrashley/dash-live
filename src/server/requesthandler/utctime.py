@@ -49,7 +49,7 @@ class UTCTimeHandler(RequestHandlerBase):
             isocal = now.isocalendar()
             rv = '%04d-W%02d-%dT%02d:%02d:%02dZ' % (
                 isocal[0], isocal[1], isocal[2], now.hour, now.minute, now.second)
-        elif format == 'ntp':
+        elif format == 'http-ntp':
             # NTP epoch is 1st Jan 1900
             epoch = datetime.datetime(
                 year=1900, month=1, day=1, tzinfo=utils.UTC())

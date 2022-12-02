@@ -80,7 +80,7 @@ routes = {
         handler='server.requesthandler.media_management.MediaHandler',
         title='Media file management'),
     "time": Route(
-        r'/time/<format:(xsd|iso|ntp)>',
+        r'/time/<format:(head|xsd|iso|http-ntp)>',
         handler='server.requesthandler.utctime.UTCTimeHandler',
         title='Current time of day'),
     "del-stream": Route(
