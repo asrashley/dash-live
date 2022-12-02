@@ -160,9 +160,10 @@ class Mp4Atom(ObjectWithFields):
     def find_atom(self, atom_type, check_parent=True):
         if self.atom_type == atom_type:
             return self
-        for ch in self.children:
-            if ch.atom_type == atom_type:
-                return ch
+        if self.children is not None:
+            for ch in self.children:
+                if ch.atom_type == atom_type:
+                    return ch
         if check_parent and self.parent:
             return self.parent.find_atom(atom_type, True)
         raise AttributeError(atom_type)
