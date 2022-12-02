@@ -122,10 +122,11 @@ cgi_options = [
         title='UTC timing element',
         options=[
             ('None', ''),
-            ('xsd:date', 'time=xsd'),
-            ('iso datetime', 'time=iso'),
-            ('NTP', 'time=ntp'),
-            ('HTTP HEAD', 'time=head'),
+            ('direct', 'time=direct'),
+            ('http-head', 'time=head'),
+            ('http-xsdate', 'time=xsd'),
+            ('http-iso', 'time=iso'),
+            ('http-ntp', 'time=http-ntp'),
         ]
     ),
     CgiOption(

@@ -173,8 +173,15 @@
               </td>
               <td>&check;</td><td>&check;</td><td>&cross;</td>
             </tr>
-            <tr><td>time=(xsd|iso|ntp|head)</td><td>Select UTCTiming element HTTP method.</td>
-                <td>&check;</td><td>&cross;</td><td>&cross;</td>
+            <tr>
+              <td>time=(direct|head|http-ntp|iso|ntp|sntp|xsd)</td>
+              <td>Select UTCTiming element method.</td>
+              <td>&check;</td><td>&cross;</td><td>&cross;</td>
+            </tr>
+            <tr>
+              <td>time_value=&lt;string&gt;</td>
+              <td>Sets the value attribute of the UTCTiming element</td>
+              <td>&check;</td><td>&cross;</td><td>&cross;</td>
             </tr>
             <tr><td>v404=&lt;time&gt;,&lt;time&gt;,...<br/>
                 v410=&lt;time&gt;,&lt;time&gt;,...
