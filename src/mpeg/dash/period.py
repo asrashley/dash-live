@@ -28,6 +28,10 @@ from utils.object_with_fields import ObjectWithFields
 from .adaptation_set import AdaptationSet
 
 class Period(ObjectWithFields):
+    """
+    Class used to hold data about one Period
+    """
+
     OBJECT_FIELDS = {
         'adaptationSets': ListOf(AdaptationSet),
         'start': datetime.timedelta,
@@ -38,11 +42,6 @@ class Period(ObjectWithFields):
     }
 
     def __init__(self, **kwargs):
-        """
-        Required kwargs:
-        mode
-        contentType
-        """
         super(Period, self).__init__(**kwargs)
         defaults = {
             'adaptationSets': [],
