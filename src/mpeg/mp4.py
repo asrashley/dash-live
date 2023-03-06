@@ -457,10 +457,13 @@ class Mp4Atom(ObjectWithFields):
     def encode_fields(self, dest):
         pass
 
+    def atom_name(self):
+        if len(self.atom_type) != 4:
+            return 'UUID(' + self.atom_type.encode('hex') + ')'
+        return self.atom_type
+
     def dump(self, indent=''):
-        atom_type = self.atom_type
-        if len(atom_type) != 4:
-            atom_type = 'UUID(' + atom_type.encode('hex') + ')'
+        atom_type = self.atom_name()
         print('{}{}: {:d} -> {:d} [{:d} bytes]'.format(
             indent, atom_type, self.position,
             self.position + self.size, self.size))
@@ -2162,10 +2165,12 @@ class IsoParser(object):
 
     @staticmethod
     def show_atom(atom_types, as_json, atom):
-        if atom.atom_type in atom_types:
+        if atom.atom_name() in atom_types:
             if as_json:
-                print(json.dumps(atom.toJSON(pure=True),
-                                 sort_keys=True, indent=2))
+                exclude = Mp4Atom.DEFAULT_EXCLUDE.union({'atom_type'})
+                item = atom.toJSON(exclude=exclude, pure=True)
+                item['atom_type'] = atom.atom_name()
+                print(json.dumps(item, sort_keys=True, indent=2))
             else:
                 print(atom)
         elif atom.children:
