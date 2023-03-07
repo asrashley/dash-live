@@ -1345,10 +1345,27 @@ class MediaSegment(DashElement):
                 msg='Failed to find moof box before mdat box')
         self.assertIsNotNone(moof)
         try:
-            _ = moof.traf.senc
+            senc = moof.traf.senc
             self.assertNotEqual(
                 self.info.encrypted, False,
                 msg='senc box should not be found in a clear stream')
+            saio = moof.traf.find_child('saio')
+            self.assertIsNotNone(
+                saio,
+                msg='saio box is required for an encrypted stream')
+            self.assertEqual(
+                len(saio.offsets), 1,
+                msg='saio box should only have one offset entry')
+            tfhd = moof.traf.find_child('tfhd')
+            if tfhd is None:
+                base_data_offset = moof.position
+            else:
+                base_data_offset = tfhd.base_data_offset
+            self.assertEqual(
+                saio.offsets[0] + base_data_offset,
+                senc.samples[0].position,
+                msg='saio.offsets[0] should point to first CencSampleAuxiliaryData entry')
+            self.assertEqual(len(moof.traf.trun.samples), len(senc.samples))
         except AttributeError:
             self.assertNotEqual(
                 self.info.encrypted, True,
