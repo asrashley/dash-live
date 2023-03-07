@@ -502,6 +502,8 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
             before = len(traf.children)
             pos = traf.index('senc')
             senc = traf.children[pos]
+            saiz = traf.find_atom('saiz')
+            delta = senc.position - saiz.position
             traf.remove_child(pos)
             pos = traf.index('saiz')
             traf.insert_child(pos, senc)
@@ -516,13 +518,18 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
             self.assertEqual(expected['children'][0]['atom_type'], 'mfhd')
             self.assertEqual(expected['children'][1]['atom_type'], 'traf')
             expected_traf = expected['children'][1]
-            # expected box ordering is [tfhd, tfdt, senc, saiz, saio, trun]
+            # expected box ordering in traf is [tfhd, tfdt, senc, saiz, saio, trun]
             for index, atom_type in enumerate([
                     'tfhd', 'tfdt', 'senc', 'saiz', 'saio', 'trun']):
                 self.assertEqual(
                     expected_traf['children'][index]['atom_type'], atom_type)
             # the newly encoded traf will start at position zero
+            # patch the tfhd box to match this offset
+            delta += expected_traf['children'][0]["base_data_offset"]
             expected_traf['children'][0]["base_data_offset"] = 0
+            # the samples in the senc box also need patching
+            for sample in expected_traf['children'][2]['samples']:
+                sample['position'] -= delta
             self.assertObjectEqual(expected, actual)
 
 

@@ -1690,6 +1690,7 @@ class CencSampleAuxiliaryData(ObjectWithFields):
             else:
                 raise ValueError("Unable to determine IV size")
         rv = {
+            "position": src.tell(),
             "iv_size": iv_size,
             "size": size,
         }
