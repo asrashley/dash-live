@@ -1776,6 +1776,10 @@ class CencSampleEncryptionBox(FullBox):
 
 Mp4Atom.BOXES["senc"] = CencSampleEncryptionBox
 
+# Protected Interoperable File Format (PIFF) SampleEncryptionBox uses the
+# same format as the CencSampleEncryptionBox, but using a UUID box
+Mp4Atom.BOXES['a2394f525a9b4f14a2446c427c648df4'.decode('hex')] = CencSampleEncryptionBox
+
 class SampleAuxiliaryInformationOffsetsBox(FullBox):
     @classmethod
     def parse(clz, src, parent, **kwargs):
