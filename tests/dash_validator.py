@@ -732,6 +732,9 @@ class SegmentTimeline(DashElement):
             repeat = int(seg.get('r', '0')) + 1
             t = seg.get('t')
             start = int(t, 10) if t is not None else start
+            if start is None and not self.options.strict:
+                self.log.warning('start attribute is missing for first entry in SegmentTimeline');
+                start = 0
             self.assertIsNotNone(start)
             duration = int(seg.get('d'), 10)
             for r in range(repeat):
@@ -882,7 +885,10 @@ class AdaptationSet(RepresentationBaseType):
                                  'default_KID cannot be missing for protected stream: {}'.format(self.baseurl))
         self.assertIn(self.contentType,
                       {'video', 'audio', 'text', 'image', 'font', 'application', None})
-        self.assertIsNotNone(self.mimeType, 'mimeType is a mandatory attribute')
+        if self.options.strict:
+            self.assertIsNotNone(self.mimeType, 'mimeType is a mandatory attribute')
+        if self.mimeType is None:
+            self.log.warning('mimeType is a mandatory attribute');
         if not self.options.encrypted:
             self.assertEqual(len(self.contentProtection), 0)
         if depth == 0:
@@ -1093,7 +1099,10 @@ class Representation(RepresentationBaseType):
     def validate(self, depth=-1):
         self.assertIsNotNone(self.bandwidth, 'bandwidth is a mandatory attribute')
         self.assertIsNotNone(self.id, 'id is a mandatory attribute')
-        self.assertIsNotNone(self.mimeType, 'mimeType is a mandatory attribute')
+        if self.options.strict:
+            self.assertIsNotNone(self.mimeType, 'mimeType is a mandatory attribute')
+        if self.mimeType is None:
+            self.log.warning('mimeType is a mandatory attribute');
         info = self.validator.get_representation_info(self)
         if getattr(info, "moov", None) is None:
             info.moov = self.init_segment.validate(depth - 1)
