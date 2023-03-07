@@ -733,7 +733,7 @@ class SegmentTimeline(DashElement):
             t = seg.get('t')
             start = int(t, 10) if t is not None else start
             if start is None and not self.options.strict:
-                self.log.warning('start attribute is missing for first entry in SegmentTimeline');
+                self.log.warning('start attribute is missing for first entry in SegmentTimeline')
                 start = 0
             self.assertIsNotNone(start)
             duration = int(seg.get('d'), 10)
@@ -888,7 +888,7 @@ class AdaptationSet(RepresentationBaseType):
         if self.options.strict:
             self.assertIsNotNone(self.mimeType, 'mimeType is a mandatory attribute')
         if self.mimeType is None:
-            self.log.warning('mimeType is a mandatory attribute');
+            self.log.warning('mimeType is a mandatory attribute')
         if not self.options.encrypted:
             self.assertEqual(len(self.contentProtection), 0)
         if depth == 0:
@@ -1102,7 +1102,7 @@ class Representation(RepresentationBaseType):
         if self.options.strict:
             self.assertIsNotNone(self.mimeType, 'mimeType is a mandatory attribute')
         if self.mimeType is None:
-            self.log.warning('mimeType is a mandatory attribute');
+            self.log.warning('mimeType is a mandatory attribute')
         info = self.validator.get_representation_info(self)
         if getattr(info, "moov", None) is None:
             info.moov = self.init_segment.validate(depth - 1)
