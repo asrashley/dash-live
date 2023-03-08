@@ -87,6 +87,16 @@ class FieldWriter(object):
                 self.dest.tell(), v)
         return self.dest.write(value)
 
+    def overwrite(self, position, size, field, value=None):
+        if self.log:
+            self.log.debug(
+                '%s: overwrite %s size=%d pos=%d',
+                self.obj.classname(), field, size, position)
+        pos = self.dest.tell()
+        self.dest.seek(position)
+        self.write(size, field, value)
+        self.dest.seek(pos)
+
     def writebits(self, size, field, value=None):
         if self.bits is None:
             self.bits = bitstring.BitArray()
