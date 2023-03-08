@@ -502,11 +502,11 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
             before = len(traf.children)
             pos = traf.index('senc')
             senc = traf.children[pos]
-            saiz = traf.find_atom('saiz')
-            delta = senc.position - saiz.position
             traf.remove_child(pos)
             pos = traf.index('saiz')
             traf.insert_child(pos, senc)
+            # force base_data_offset to be re-calculated
+            traf.tfhd.base_data_offset = None
             self.assertGreaterThan(traf.index('saiz'), traf.index('senc'))
             self.assertEqual(before, len(traf.children))
             new_moof_data = seg.encode()
@@ -525,12 +525,60 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
                     expected_traf['children'][index]['atom_type'], atom_type)
             # the newly encoded traf will start at position zero
             # patch the tfhd box to match this offset
-            delta += expected_traf['children'][0]["base_data_offset"]
+            delta = expected_traf['children'][0]["base_data_offset"]
             expected_traf['children'][0]["base_data_offset"] = 0
             # the samples in the senc box also need patching
             for sample in expected_traf['children'][2]['samples']:
                 sample['position'] -= delta
             self.assertObjectEqual(expected, actual)
+
+    def test_insert_piff_box_before_saiz_box(self):
+        options = mp4.Options(iv_size=8, strict=True, cache_encoded=True)
+        filename = os.path.join(self.fixtures, "bbb_v6_enc.mp4")
+        src = BufferedReader(io.FileIO(filename, 'rb'))
+        segments = mp4.Mp4Atom.load(src, options=options)
+        del src
+        for seg in segments:
+            if seg.atom_type != 'moof':
+                continue
+            traf = seg.traf
+            pos = traf.index('saiz')
+            piff = mp4.PiffSampleEncryptionBox.clone_from_senc(traf.senc)
+            traf.insert_child(pos, piff)
+            # force base_data_offset to be re-calculated
+            traf.tfhd.base_data_offset = None
+            # force re-calculation of offset to first senc sample
+            traf.saio.offsets = None
+            new_moof_data = seg.encode()
+            src = BufferedReader(None, data=new_moof_data)
+            new_moof = mp4.Mp4Atom.load(src, options=options)[0]
+            # expected box ordering is [mfhd, traf]
+            self.assertEqual(new_moof.children[0].atom_type, 'mfhd')
+            self.assertEqual(new_moof.children[1].atom_type, 'traf')
+            traf = new_moof.children[1]
+            # expected box ordering in traf is [tfhd, tfdt, senc, saiz, saio, trun]
+            for index, atom_type in enumerate([
+                    'tfhd', 'tfdt', 'UUID(a2394f525a9b4f14a2446c427c648df4)',
+                    'saiz', 'saio', 'senc', 'trun']):
+                self.assertEqual(
+                    traf.children[index].atom_name(), atom_type)
+            expected = seg.toJSON()
+            actual = new_moof.toJSON()
+            expected_traf = expected['children'][1]
+            # the newly encoded traf will start at position zero
+            # patch the tfhd box to match this offset
+            expected_traf['children'][0]["base_data_offset"] = 0
+            # patch the sample position values in CencSampleEncryptionBox & PiffSampleEncryptionBox
+            for idx, child in enumerate(new_moof.traf.children):
+                if child.atom_name() not in {'senc', 'UUID(a2394f525a9b4f14a2446c427c648df4)'}:
+                    continue
+                for j, sample in enumerate(expected_traf['children'][idx]['samples']):
+                    sample['position'] = new_moof.traf.children[idx].samples[j].position
+            self.assertObjectEqual(expected, actual)
+            self.assertEqual(len(new_moof.traf.saio.offsets), 1)
+            self.assertEqual(
+                new_moof.traf.tfhd.base_data_offset + new_moof.traf.saio.offsets[0],
+                new_moof.traf.senc.samples[0].position)
 
 
 if os.environ.get("TESTS"):

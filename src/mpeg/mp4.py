@@ -285,7 +285,11 @@ class Mp4Atom(ObjectWithFields):
             kwargs = Box.parse(src, parent, options=options, initial_data=hdr)
             kwargs['parent'] = parent
             kwargs['options'] = options
-            atom = Box(**kwargs)
+            try:
+                atom = Box(**kwargs)
+            except TypeError:
+                print(kwargs)
+                raise
             atom.payload_start = src.tell()
             rv.append(atom)
             if atom.parse_children:
@@ -446,6 +450,7 @@ class Mp4Atom(ObjectWithFields):
         out.seek(self.position)
         out.write(struct.pack('>I', self.size))
         out.seek(0, 2)  # seek to end
+        self.post_encode(dest=out)
         self.options.log.debug('%s: produced %d bytes pos=(%d .. %d)',
                                self._fullname, self.size,
                                self.position, out.tell())
@@ -456,6 +461,9 @@ class Mp4Atom(ObjectWithFields):
     @abstractmethod
     def encode_fields(self, dest):
         pass
+
+    def post_encode(self, dest):
+        return
 
     def atom_name(self):
         if len(self.atom_type) != 4:
@@ -948,7 +956,16 @@ class TrackBox(BoxWithChildren):
 
 Mp4Atom.BOXES['trak'] = TrackBox
 
-for box in ['mdia', 'minf', 'mvex', 'moof', 'schi', 'sinf', 'stbl', 'traf']:
+class TrackFragmentBox(BoxWithChildren):
+    def post_encode(self, dest):
+        saio = self.find_child('saio')
+        if saio is not None:
+            saio.post_encode(dest)
+
+
+Mp4Atom.BOXES['traf'] = TrackFragmentBox
+
+for box in ['mdia', 'minf', 'mvex', 'moof', 'schi', 'sinf', 'stbl']:
     Mp4Atom.BOXES[box] = BoxWithChildren
 
 class SampleEntry(Mp4Atom):
@@ -1366,6 +1383,8 @@ class TrackFragmentHeaderBox(FullBox):
         return rv
 
     def encode_box_fields(self, dest):
+        if self.base_data_offset is None:
+            self.base_data_offset = self.find_atom('moof').position
         w = FieldWriter(self, dest)
         w.write('I', 'track_id')
         if self.flags & self.base_data_offset_present:
@@ -1707,6 +1726,7 @@ class CencSampleAuxiliaryData(ObjectWithFields):
 
     def encode(self, dest, parent):
         assert len(self.initialization_vector) == self.iv_size
+        self.position = dest.tell()
         d = FieldWriter(self, dest)
         d.write(None, 'initialization_vector')
         if ((parent.flags & self.UseSubsampleEncryption) == self.UseSubsampleEncryption and
@@ -1741,7 +1761,6 @@ class CencSampleEncryptionBox(FullBox):
             except AttributeError:
                 rv["iv_size"] = kwargs["options"].iv_size
         num_entries = r.get('I', 'num_entries')
-        rv["sample_count"] = num_entries
         rv["samples"] = []
         saiz = parent.find_child('saiz')
         if saiz is None:
@@ -1768,7 +1787,6 @@ class CencSampleEncryptionBox(FullBox):
             d.write(3, 'algorithm_id', value=alg[1:])
             d.write('B', 'iv_size')
             d.write(16, 'kid')
-        self.sample_count = len(self.samples)
         d.write('I', 'sample_count', value=len(self.samples))
         for s in self.samples:
             s.encode(dest, self)
@@ -1778,7 +1796,34 @@ Mp4Atom.BOXES["senc"] = CencSampleEncryptionBox
 
 # Protected Interoperable File Format (PIFF) SampleEncryptionBox uses the
 # same format as the CencSampleEncryptionBox, but using a UUID box
-Mp4Atom.BOXES['a2394f525a9b4f14a2446c427c648df4'.decode('hex')] = CencSampleEncryptionBox
+class PiffSampleEncryptionBox(CencSampleEncryptionBox):
+    DEFAULT_VALUES = {
+        'atom_type': 'a2394f525a9b4f14a2446c427c648df4'.decode('hex')
+    }
+
+    @classmethod
+    def clone_from_senc(clz, senc):
+        """
+        Create a PiffSampleEncryptionBox from a CencSampleEncryptionBox
+        """
+        samples = []
+        for samp in senc.samples:
+            samples.append(samp.clone())
+        kwargs = {
+            'atom_type': clz.DEFAULT_VALUES['atom_type'],
+            'version': senc.version,
+            'flags': senc.flags,
+            'iv_size': senc.iv_size,
+            'samples': samples,
+            'position': 0,
+        }
+        if senc.flags & 0x01:
+            kwargs['algorithm_id'] = senc.algorithm_id
+            kwargs['kid'] = senc.kid
+        return clz(**kwargs)
+
+
+Mp4Atom.BOXES[PiffSampleEncryptionBox.DEFAULT_VALUES['atom_type']] = PiffSampleEncryptionBox
 
 class SampleAuxiliaryInformationOffsetsBox(FullBox):
     @classmethod
@@ -1797,17 +1842,53 @@ class SampleAuxiliaryInformationOffsetsBox(FullBox):
             rv["offsets"].append(o)
         return rv
 
+    def find_first_cenc_sample(self):
+        senc = self.parent.find_child('senc')
+        if senc is None:
+            return None
+        if len(senc.samples) == 0:
+            return None
+        tfhd = self.parent.find_child('tfhd')
+        base_data_offset = None
+        if tfhd is not None:
+            base_data_offset = tfhd.base_data_offset
+        if base_data_offset is None:
+            moof = self.find_atom('moof')
+            base_data_offset = moof.position
+        return senc.samples[0].position - base_data_offset
+
     def encode_box_fields(self, dest):
         w = FieldWriter(self, dest)
         if self.flags & 0x01:
             w.write('I', 'aux_info_type')
             w.write('I', 'aux_info_type_parameter')
+        if self.offsets is None:
+            pos = self.find_first_cenc_sample()
+            if pos is not None:
+                self.offsets = [pos]
+            else:
+                self.offsets = []
         w.write('I', 'entry_count', value=len(self.offsets))
         for off in self.offsets:
             if self.version == 0:
                 w.write('I', 'offset', value=off)
             else:
                 w.write('Q', 'offset', value=off)
+
+    def post_encode(self, dest):
+        if self.offsets is not None and len(self.offsets) != 1:
+            return
+        senc = self.parent.find_child('senc')
+        if senc is None:
+            return
+        pos = self.find_first_cenc_sample()
+        if self.offsets is None or pos != self.offsets[0]:
+            self.options.log.debug('%s: SENC sample offset has changed', self._fullname)
+            self.offsets = [pos]
+            pos = dest.tell()
+            dest.seek(self.position)
+            self.encode(dest)
+            dest.seek(pos)
 
     def _to_json(self, exclude):
         exclude.add('aux_info_type')
