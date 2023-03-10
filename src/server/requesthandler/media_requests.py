@@ -75,7 +75,11 @@ class OnDemandMedia(RequestHandlerBase):
 
 # blobstore_handlers.BlobstoreDownloadHandler):
 class LiveMedia(RequestHandlerBase):
-    """Handler that returns media fragments"""
+    """
+    Handler that returns media fragments using the DASH live profile.
+    This handler can be used for both on-demand and live streams, as
+    the DASH live profile supports both use cases.
+    """
 
     def get(self, mode, filename, segment_num, ext):
         name = filename.lower() + '.mp4'
@@ -240,6 +244,8 @@ class LiveMedia(RequestHandlerBase):
                 del atom.sidx
             except AttributeError:
                 pass
+        moof_modified = False
+        traf_modified = False
         if segment_num > 0 and adp_set.contentType == 'video':
             event_generators = EventFactory.create_event_generators(self.request)
             if event_generators:
@@ -256,9 +262,26 @@ class LiveMedia(RequestHandlerBase):
                     # moof box (see DASH section 5.10.3.3)
                     for idx, emsg in enumerate(boxes):
                         atom.children.insert(moof_idx + idx, emsg)
+                        moof_modified = True
+        if representation.encrypted and segment_num > 0:
+            traf_modified = self.update_traf_if_required(atom.moof.traf)
+            moof_modified = moof_modified or traf_modified
+        if moof_modified:
+            tfhd = atom.moof.traf.find_child('tfhd')
+            if tfhd is not None:
+                # force base_data_offset to be re-calculated when the
+                # tfhd box is encoded
+                tfhd.base_data_offset = None
+        if traf_modified:
+            saio = atom.moof.traf.find_child('saio')
+            senc = atom.moof.traf.find_child('senc')
+            if saio is not None and senc is not None:
+                # force re-calculation of SAIO offset to SENC box
+                saio.offsets = None
         self.add_allowed_origins()
         data = io.BytesIO()
-        atom.encode(data)
+        for child in atom.children:
+            child.encode(data)
         if mf.contentType == 'video' and self.request.params.get('corrupt') is not None:
             try:
                 self.apply_video_corruption(representation, segment_num, atom, data)
@@ -267,7 +290,7 @@ class LiveMedia(RequestHandlerBase):
                     self.request.params.get('corrupt'), str(e)))
                 self.response.set_status(400)
                 return
-        data = data.getvalue()[8:]  # [8:] is to skip the fake "wrap" box
+        data = data.getvalue()
         try:
             start, end = self.get_http_range(len(data))
             if start is not None:
@@ -278,6 +301,16 @@ class LiveMedia(RequestHandlerBase):
             return
         self.response.headers.add_header('Accept-Ranges', 'bytes')
         self.response.out.write(data)
+
+    def update_traf_if_required(self, traf):
+        """
+        Insert DRM specific data into the traf box, if required
+        """
+        modified = False
+        for _, drm, __ in self.generate_drm_location_tuples():
+            modif = drm.update_traf_if_required(self.request.params, traf)
+            modified = modified or modif
+        return modified
 
     def apply_video_corruption(self, representation, segment_num, atom, dest):
         try:

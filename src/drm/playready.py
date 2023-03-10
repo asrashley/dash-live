@@ -300,6 +300,22 @@ class PlayReady(DrmBase):
             return "urn:uuid:{0}".format(self.SYSTEM_ID_V10)
         return "urn:uuid:{0}".format(self.SYSTEM_ID)
 
+    def update_traf_if_required(self, cgi_params, traf):
+        version = cgi_params.get('playready_version')
+        if version is not None:
+            version = float(version)
+        else:
+            version = self.version
+        if version != 1.0:
+            return False
+        senc = traf.find_child('senc')
+        if senc is None:
+            return False
+        pos = traf.index('saiz')
+        piff = mp4.PiffSampleEncryptionBox.clone_from_senc(senc)
+        traf.insert_child(pos, piff)
+        return True
+
     def minimum_header_version(self, keys):
         """
         Calculate the mimimum playready header version that supports the supplied keys

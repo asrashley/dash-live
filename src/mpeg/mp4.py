@@ -402,7 +402,7 @@ class Mp4Atom(ObjectWithFields):
                         'Failed to read atom size. pos=%d', position)
                 return None
         if atom_type == 'uuid':
-            atom_type = src.read(16)
+            atom_type = 'UUID({0})'.format(src.read(16).encode('hex'))
         return {
             "atom_type": atom_type,
             "position": position,
@@ -416,8 +416,9 @@ class Mp4Atom(ObjectWithFields):
             out = io.BytesIO()
         self.position = out.tell()
         if len(self.atom_type) > 4:
-            assert len(self.atom_type) == 16
-            fourcc = 'uuid' + self.atom_type
+            # 16 hex chars + 'UUID()' == 38
+            assert len(self.atom_type) == 38
+            fourcc = 'uuid' + self.atom_type[5:-1].decode('hex')
         else:
             assert len(self.atom_type) == 4
             fourcc = self.atom_type
@@ -466,8 +467,6 @@ class Mp4Atom(ObjectWithFields):
         return
 
     def atom_name(self):
-        if len(self.atom_type) != 4:
-            return 'UUID(' + self.atom_type.encode('hex') + ')'
         return self.atom_type
 
     def dump(self, indent=''):
@@ -1714,7 +1713,7 @@ class CencSampleAuxiliaryData(ObjectWithFields):
             "size": size,
         }
         r = FieldReader(clz.classname(), src, rv)
-        r.read(iv_size, "initialization_vector")
+        r.read(iv_size, "initialization_vector", encoder=HexBinary)
         rv["subsamples"] = []
         if subsample_encryption and size >= (iv_size + 2):
             subsample_count = struct.unpack('>H', src.read(2))[0]
@@ -1798,7 +1797,7 @@ Mp4Atom.BOXES["senc"] = CencSampleEncryptionBox
 # same format as the CencSampleEncryptionBox, but using a UUID box
 class PiffSampleEncryptionBox(CencSampleEncryptionBox):
     DEFAULT_VALUES = {
-        'atom_type': 'a2394f525a9b4f14a2446c427c648df4'.decode('hex')
+        'atom_type': 'UUID(a2394f525a9b4f14a2446c427c648df4)'
     }
 
     @classmethod
@@ -2125,6 +2124,8 @@ class SegmentReference(ObjectWithFields):
         fields = {
             '_type': self.classname()
         }
+        if exclude is None:
+            exclude = set()
         exclude.add('parent')
         for k, v in self.__dict__.iteritems():
             if k not in exclude:

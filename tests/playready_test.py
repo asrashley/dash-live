@@ -649,6 +649,36 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
                         self.assertEqual(len(la_urls), 1)
                         self.assertEqual(la_urls[0].text, test_la_url)
 
+    def test_playready_v1_piff_sample_encryption(self):
+        """
+        PiffSampleEncryptionBox is inserted when using PlayReady v1.0
+        """
+        self.setup_media()
+        self.logoutCurrentUser()
+        filename = 'hand_made.mpd'
+        baseurl = self.from_uri('dash-mpd-v3', manifest=filename, stream='bbb', mode='vod')
+        args = ['drm=playready', 'playready_version=1.0']
+        baseurl += '?' + '&'.join(args)
+        response = self.app.get(baseurl)
+        mpd = ViewsTestDashValidator(
+            http_client=self.app, mode='vod', xml=response.xml, url=baseurl,
+            encrypted=True)
+        mpd.validate()
+        self.assertEqual(len(mpd.manifest.periods), 1)
+        piff_uuid = mp4.PiffSampleEncryptionBox.DEFAULT_VALUES['atom_type']
+        for adap_set in mpd.manifest.periods[0].adaptation_sets:
+            for rep in adap_set.representations:
+                for seg in rep.media_segments:
+                    response = self.app.get(seg.url)
+                    self.assertEqual(response.status_int, 200)
+                    src = BufferedReader(None, data=response.body)
+                    atoms = mp4.Mp4Atom.load(src, options={'iv_size': 64})
+                    for a in atoms:
+                        if a.atom_type != 'moof':
+                            continue
+                        piff = a.traf.find_child(piff_uuid)
+                        self.assertIsNotNone(piff, 'PIFF UUID box is missing')
+
     def _patch_position_values(self, expected, delta):
         if 'position' in expected:
             expected['position'] += delta
