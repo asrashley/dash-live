@@ -221,6 +221,13 @@ class TestCaseMixin(object):
         self._check_true(isinstance(a, types), a, types,
                          msg, r'{} is not instance of {}')
 
+    def checkStartsWith(self, a, b, msg=None):
+        self._check_true(a.startswith(b), a, b, msg,
+                         r'{} does not start with {}')
+
+    def checkGreaterOrEqual(self, a, b, msg=None):
+        self._check_true(a >= b, a, b, msg, r'{} < {}')
+
     @staticmethod
     def _print_line(start, hex_line, ascii_line):
         if len(hex_line) < 8:
