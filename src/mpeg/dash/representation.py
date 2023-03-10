@@ -55,6 +55,7 @@ class Representation(ObjectWithFields):
         'kids': ListOf(KeyMaterial),
     }
     DEFAULT_VALUES = {
+        'accessibility': None,
         'bitrate': None,
         'contentType': None,
         'codecs': None,

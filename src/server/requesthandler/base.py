@@ -338,6 +338,12 @@ class RequestHandlerBase(webapp2.RequestHandler):
                 audio_adp.role = 'main'
             else:
                 audio_adp.role = 'alternate'
+            if self.request.params.get('ad_audio', None) == rep.id:
+                audio_adp.role = 'alternate'
+                audio_adp.accessibility = {
+                    'schemeIdUri': "urn:tva:metadata:cs:AudioPurposeCS:2007",
+                    'value': 1,  # Audio description for the visually impaired
+                }
             period.adaptationSets.append(audio_adp)
 
         rv["periods"].append(period)
