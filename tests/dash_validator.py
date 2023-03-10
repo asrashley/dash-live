@@ -51,6 +51,7 @@ class ValidatorOptions(object):
         self.save = save
         self.iv_size = iv_size
         self.start_time = RelaxedDateTime.now(UTC())
+        self.duration = None
 
 
 class RelaxedDateTime(datetime.datetime):
@@ -1576,13 +1577,17 @@ if __name__ == "__main__":
         description='DASH live manifest validator')
     parser.add_argument('--strict', action='store_true', dest='strict',
                         help='Abort if an error is detected')
-    parser.add_argument('--encrypted', action='store_true', dest='encrypted',
+    parser.add_argument('-e', '--encrypted', action='store_true', dest='encrypted',
                         help='Stream is encrypted')
     parser.add_argument('-s', '--save',
                         help='save all fragments into <dest>',
                         action='store_true')
     parser.add_argument('-d', '--dest',
                         help='directory to store results',
+                        required=False)
+    parser.add_argument('--duration',
+                        help='Maximum duration (in seconds)',
+                        type=int,
                         required=False)
     parser.add_argument('--ivsize',
                         help='IV size (in bits or bytes)',
