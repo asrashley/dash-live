@@ -68,6 +68,12 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
         r'AFMASQBPAE4APgA8AC8AQwBVAFMAVABPAE0AQQBUAFQAUgBJAEIAVQBUAEUA',
         r'UwA+ADwALwBEAEEAVABBAD4APAAvAFcAUgBNAEgARQBBAEQARQBSAD4A'])
 
+    la_url = 'https://amssamples.keydelivery.mediaservices.windows.net/PlayReady/'
+
+    namespaces = {
+        'prh': 'http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader',
+    }
+
     def setUp(self):
         super(PlayreadyTests, self).setUp()
         self.templates = TemplateFactory()
@@ -75,10 +81,6 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
         for kid, key in [
                 ("1AB45440532C439994DC5C5AD9584BAC", "ccc0f2b3b279926496a7f5d25da692f6")]:
             self.keys[kid.lower()] = KeyStub(kid, key)
-        self.la_url = 'https://amssamples.keydelivery.mediaservices.windows.net/PlayReady/'
-        self.namespaces = {
-            'prh': 'http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader',
-        }
         self.fixtures = os.path.join(os.path.dirname(__file__), "fixtures")
 
     def test_guid_generation(self):
@@ -150,7 +152,7 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
             id='V1', default_kid=self.keys.keys()[0])
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
-        wrm = mspr.generate_wrmheader(representation, self.keys, None)
+        wrm = mspr.generate_wrmheader(self.la_url, representation, self.keys, None)
         self.assertEqual(expected_wrm.decode('utf-16'), wrm.decode('utf-16'))
         if ord(expected_wrm[0]) == 0xFF and ord(expected_wrm[1]) == 0xFE:
             # remove UTF-16 byte order mark
@@ -176,7 +178,8 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
             id='V1', default_kid=self.keys.keys()[0])
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
-        wrm = mspr.generate_wrmheader(representation, self.keys, self.custom_attributes)
+        wrm = mspr.generate_wrmheader(
+            self.la_url, representation, self.keys, self.custom_attributes)
         self.assertEqual(expected_wrm.decode('utf-16'), wrm.decode('utf-16'))
         if ord(expected_wrm[0]) == 0xFF and ord(expected_wrm[1]) == 0xFE:
             # remove UTF-16 byte order mark
@@ -205,7 +208,8 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
         custom_attributes = [
             dict(tag='MyNode', value='', attributes=dict(FooAttribute="Foo", BarAttribute="Bar"))
         ]
-        wrm = mspr.generate_wrmheader(representation, self.keys, custom_attributes)
+        wrm = mspr.generate_wrmheader(
+            self.la_url, representation, self.keys, custom_attributes)
         self.assertEqual(expected_wrm.decode('utf-16'), wrm.decode('utf-16'))
         if ord(expected_wrm[0]) == 0xFF and ord(expected_wrm[1]) == 0xFE:
             # remove UTF-16 byte order mark
@@ -223,7 +227,8 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
             id='V1', default_kid=self.keys.keys()[0])
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
-        pro = mspr.generate_pro(representation, self.keys, self.custom_attributes)
+        pro = mspr.generate_pro(
+            self.la_url, representation, self.keys, self.custom_attributes)
         self.assertBuffersEqual(base64.b64decode(self.expected_pro), pro,
                                 name="PlayReady Object")
 
@@ -273,7 +278,8 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
                                         kids=self.keys.keys())
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
-        pssh = mspr.generate_pssh(representation, self.keys, self.custom_attributes).encode()
+        pssh = mspr.generate_pssh(
+            self.la_url, representation, self.keys, self.custom_attributes).encode()
         self.check_generated_pssh_v4_0(self.keys, mspr, pssh)
 
     def check_generated_pssh_v4_0(self, keys, mspr, pssh):
@@ -331,7 +337,7 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
                                         kids=self.keys.keys())
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
-        pssh = mspr.generate_pssh(representation, self.keys).encode()
+        pssh = mspr.generate_pssh(self.la_url, representation, self.keys).encode()
         self.check_generated_pssh_v4_1(self.keys, mspr, pssh)
 
     def check_generated_pssh_v4_1(self, keys, mspr, pssh):
@@ -378,7 +384,7 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
             header_version=4.2)
         representation = Representation(
             id='V1', default_kid=keys.keys()[0], kids=keys.keys())
-        pssh = mspr.generate_pssh(representation, keys).encode()
+        pssh = mspr.generate_pssh(self.la_url, representation, keys).encode()
         self.check_generated_pssh_v4_2(keys, mspr, pssh)
 
     def check_generated_pssh_v4_2(self, keys, mspr, pssh):
@@ -432,7 +438,7 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
             header_version=4.3)
         representation = Representation(
             id='V1', default_kid=keys.keys()[0], kids=keys.keys())
-        pssh = mspr.generate_pssh(representation, keys).encode()
+        pssh = mspr.generate_pssh(self.la_url, representation, keys).encode()
         self.check_generated_pssh_v4_3(keys, mspr, pssh)
 
     def check_generated_pssh_v4_3(self, keys, mspr, pssh):
@@ -483,15 +489,18 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
             'Xy6jKG4PJSY=')
 
         # check v4.0 (as defined in PlayReady v1.0)
-        pssh = mspr.generate_pssh(representation, self.keys, self.custom_attributes).encode()
+        pssh = mspr.generate_pssh(
+            self.la_url, representation, self.keys, self.custom_attributes).encode()
         self.check_generated_pssh_v4_0(self.keys, mspr, pssh)
         mspr.version = None
-        pssh = mspr.generate_pssh(representation, self.keys, self.custom_attributes).encode()
+        pssh = mspr.generate_pssh(
+            self.la_url, representation, self.keys, self.custom_attributes).encode()
         self.check_generated_pssh_v4_0(self.keys, mspr, pssh)
 
         # check v4.1 (as defined in PlayReady v2.0)
         mspr.version = 2.0
-        pssh = mspr.generate_pssh(representation, self.keys).encode()
+        pssh = mspr.generate_pssh(
+            self.la_url, representation, self.keys).encode()
         self.check_generated_pssh_v4_1(self.keys, mspr, pssh)
 
         # check v4.2 (as defined in PlayReady v3.0)
@@ -502,10 +511,12 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
                 ("db06a8feec164de292282c71e9b856ab", "3179923adf3c929892951e62f93a518a")]:
             keys[kid.lower()] = KeyStub(kid, key, alg='AESCTR')
         mspr.version = 3.0
-        pssh = mspr.generate_pssh(representation, keys).encode()
+        pssh = mspr.generate_pssh(
+            self.la_url, representation, keys).encode()
         self.check_generated_pssh_v4_2(keys, mspr, pssh)
         mspr.version = None
-        pssh = mspr.generate_pssh(representation, keys).encode()
+        pssh = mspr.generate_pssh(
+            self.la_url, representation, keys).encode()
         self.check_generated_pssh_v4_2(keys, mspr, pssh)
 
         # check v4.3 (as defined in PlayReady v4.0)
@@ -516,10 +527,12 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
                 ("db06a8feec164de292282c71e9b856ab", "3179923adf3c929892951e62f93a518a")]:
             keys[kid.lower()] = KeyStub(kid, key, alg='AESCBC')
         mspr.version = 4.0
-        pssh = mspr.generate_pssh(representation, keys).encode()
+        pssh = mspr.generate_pssh(
+            self.la_url, representation, keys).encode()
         self.check_generated_pssh_v4_3(keys, mspr, pssh)
         mspr.version = None
-        pssh = mspr.generate_pssh(representation, keys).encode()
+        pssh = mspr.generate_pssh(
+            self.la_url, representation, keys).encode()
         self.check_generated_pssh_v4_3(keys, mspr, pssh)
 
     def test_insert_pssh(self):
@@ -546,7 +559,8 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
                                         kids=self.keys.keys())
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
-        pssh = mspr.generate_pssh(representation, self.keys)
+        pssh = mspr.generate_pssh(
+            self.la_url, representation, self.keys)
         self.check_generated_pssh_v4_1(self.keys, mspr, pssh.encode())
         before = len(init_seg.moov.children)
         init_seg.moov.append_child(pssh)
@@ -618,7 +632,7 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
             encrypted=True)
         mpd.validate()
         self.assertEqual(len(mpd.manifest.periods), 1)
-        schemeIdUri = "urn:uuid:" + PlayReady.SYSTEM_ID.upper()
+        schemeIdUri = "urn:uuid:" + PlayReady.SYSTEM_ID.lower()
         pro_tag = "{{{0}}}pro".format(mpd.xmlNamespaces['mspr'])
         for adap_set in mpd.manifest.periods[0].adaptation_sets:
             for prot in adap_set.contentProtection:

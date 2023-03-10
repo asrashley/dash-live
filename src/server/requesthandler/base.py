@@ -387,7 +387,8 @@ class RequestHandlerBase(webapp2.RequestHandler):
         a_cgi_params = {}
         m_cgi_params = copy.deepcopy(dict(self.request.params))
         t_cgi_params = {}
-        param_list = ['drm', 'marlin_la_url', 'playready_la_url', 'start']
+        param_list = ['drm', 'marlin_la_url', 'playready_la_url', 'start',
+                      'playready_version']
         if self.request.params.get('events', None) is not None:
             param_list.append('events')
             event_generators = EventFactory.create_event_generators(self.request)
