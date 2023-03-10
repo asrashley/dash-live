@@ -1237,11 +1237,24 @@ class Representation(RepresentationBaseType):
         pass
 
     def format_url_template(self, url, seg_num=0, decode_time=0):
-        url = url.replace('$RepresentationID$', self.ID)
-        url = url.replace('$Bandwidth$', str(self.bandwidth))
-        url = url.replace('$Number$', str(seg_num))
-        url = url.replace('$Time$', str(decode_time))
-        url = url.replace('$$', '$')
+        """
+        Replaces the template variables according the DASH template syntax
+        """
+        def repfn(matchobj, value):
+            if isinstance(value, str):
+                return value
+            fmt = matchobj.group(1)
+            if fmt is None:
+                fmt = r'%d'
+            fmt = '{0' + fmt.replace('%', ':') + '}'
+            return fmt.format(value)
+        for name, value in [('RepresentationID', self.ID),
+                            ('Bandwidth', self.bandwidth),
+                            ('Number', seg_num),
+                            ('Time', decode_time),
+                            ('', '$')]:
+            rx = re.compile(r'\${0}(%0\d+d)?\$'.format(name))
+            url = rx.sub(lambda match: repfn(match, value), url)
         return url
 
 
