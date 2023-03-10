@@ -120,9 +120,11 @@ class DashElement(TestCaseMixin):
             self.validator = getattr(parent, "validator")
             self.options = parent.options
             self.http = parent.http
+            self.errors = parent.errors
         else:
             assert options is not None
             self.options = options
+            self.errors = []
         # self.log = logging.getLogger(self.classname())
         #    log.addFilter(mixins.HideMixinsFilter())
         self.log = ContextAdapter(self.options.log, self)
@@ -202,6 +204,7 @@ class DashElement(TestCaseMixin):
             if self.options.strict:
                 raise AssertionError(msg)
             self.log.warning('%s', msg)
+            self.errors.append(msg)
 
     def output_filename(self, default, filename=None, makedirs=False):
         if filename is None:
@@ -270,6 +273,7 @@ class DashValidator(DashElement):
         self.manifest = Manifest(self, self.url, self.mode, self.xml)
 
     def validate(self, depth=-1):
+        self.errors = []
         if self.xml is None:
             self.load()
         if self.options.save:
@@ -286,6 +290,7 @@ class DashValidator(DashElement):
                 age, 5 * self.manifest.minimumUpdatePeriod,
                 fmt.format(self.manifest.minimumUpdatePeriod, age.total_seconds()))
         self.manifest.validate(depth=depth)
+        return self.errors
 
     def save_manifest(self, filename=None):
         if self.options.dest:
@@ -296,8 +301,8 @@ class DashValidator(DashElement):
             print(ET.tostring(self.xml))
 
     def sleep(self):
-        self.assertEqual(self.mode, 'live')
-        self.assertIsNotNone(self.manifest)
+        self.checkEqual(self.mode, 'live')
+        self.checkIsNotNone(self.manifest)
         dur = max(self.manifest.minimumUpdatePeriod.seconds, 1)
         self.log.info('Wait %d seconds', dur)
         time.sleep(dur)
@@ -368,23 +373,27 @@ class Manifest(DashElement):
         return self
 
     def validate(self, depth=-1):
-        self.assertGreaterThan(len(self.periods), 0,
-                               "Manifest does not have a Period element: %s" % self.url)
+        self.checkGreaterThan(len(self.periods), 0,
+                              "Manifest does not have a Period element: %s" % self.url)
         if self.mode == "live":
-            self.assertEqual(self.mpd_type, "dynamic",
-                             "MPD@type must be dynamic for live manifest: %s" % self.url)
-            self.assertIsNotNone(self.availabilityStartTime,
-                                 "MPD@availabilityStartTime must be present for live manifest: %s" % self.url)
-            self.assertIsNotNone(self.timeShiftBufferDepth,
-                                 "MPD@timeShiftBufferDepth must be present for live manifest: %s" % self.url)
-            self.assertIsNone(self.mediaPresentationDuration,
-                              "MPD@mediaPresentationDuration must not be present for live manifest: %s" % self.url)
+            self.checkEqual(
+                self.mpd_type, "dynamic",
+                "MPD@type must be dynamic for live manifest: %s" % self.url)
+            self.checkIsNotNone(
+                self.availabilityStartTime,
+                "MPD@availabilityStartTime must be present for live manifest: %s" % self.url)
+            self.checkIsNotNone(
+                self.timeShiftBufferDepth,
+                "MPD@timeShiftBufferDepth must be present for live manifest: %s" % self.url)
+            self.checkIsNone(
+                self.mediaPresentationDuration,
+                "MPD@mediaPresentationDuration must not be present for live manifest: %s" % self.url)
         else:
             msg = r'MPD@type must be static for VOD manifest, got "{0}": {1}'.format(
                 self.mpd_type, self.url)
-            self.assertEqual(self.mpd_type, "static", msg=msg)
+            self.checkEqual(self.mpd_type, "static", msg=msg)
             if self.mediaPresentationDuration is not None:
-                self.assertGreaterThan(
+                self.checkGreaterThan(
                     self.mediaPresentationDuration,
                     datetime.timedelta(seconds=0),
                     'Invalid MPD@mediaPresentationDuration "{}": {}'.format(
@@ -393,11 +402,13 @@ class Manifest(DashElement):
                 msg = 'If MPD@mediaPresentationDuration is not present, ' +\
                       'Period@duration must be present: ' + self.url
                 for p in self.periods:
-                    self.assertIsNotNone(p.duration, msg)
-            self.assertIsNone(self.minimumUpdatePeriod,
-                              "MPD@minimumUpdatePeriod must not be present for VOD manifest: %s" % self.url)
-            self.assertIsNone(self.availabilityStartTime,
-                              "MPD@availabilityStartTime must not be present for VOD manifest: %s" % self.url)
+                    self.checkIsNotNone(p.duration, msg)
+            self.checkIsNone(
+                self.minimumUpdatePeriod,
+                "MPD@minimumUpdatePeriod must not be present for VOD manifest: %s" % self.url)
+            self.checkIsNone(
+                self.availabilityStartTime,
+                "MPD@availabilityStartTime must not be present for VOD manifest: %s" % self.url)
         if depth != 0:
             for period in self.periods:
                 period.validate(depth - 1)
@@ -426,7 +437,7 @@ class Descriptor(DashElement):
             self.children.append(DescriptorElement(child))
 
     def validate(self, depth=-1):
-        self.assertIsNotNone(self.schemeIdUri)
+        self.checkIsNotNone(self.schemeIdUri)
 
 
 class DashEvent(DashElement):
@@ -449,22 +460,22 @@ class DashEvent(DashElement):
 
     def validate(self, depth=-1):
         if self.children:
-            self.assertIsNone(self.messageData)
+            self.checkIsNone(self.messageData)
         if self.contentEncoding is not None:
-            self.assertEqual(self.contentEncoding, 'base64')
+            self.checkEqual(self.contentEncoding, 'base64')
         if self.parent.schemeIdUri == EventStreamBase.SCTE35_XML_BIN_EVENTS:
-            self.assertEqual(len(self.children), 1)
+            self.checkEqual(len(self.children), 1)
             bin_elt = self.children[0].findall('./scte35:Binary', self.xmlNamespaces)
-            self.assertIsNotNone(bin_elt)
-            self.assertEqual(len(bin_elt), 1)
+            self.checkIsNotNone(bin_elt)
+            self.checkEqual(len(bin_elt), 1)
             data = base64.b64decode(bin_elt[0].text)
             src = BufferedReader(None, data=data)
             sig = scte35.BinarySignal.parse(src, size=len(data))
             timescale = self.parent.timescale
-            self.assertIn('splice_insert', sig)
-            self.assertIn('break_duration', sig['splice_insert'])
+            self.checkIn('splice_insert', sig)
+            self.checkIn('break_duration', sig['splice_insert'])
             duration = sig['splice_insert']['break_duration']['duration']
-            self.assertAlmostEqual(self.duration / timescale, duration / MPEG_TIMEBASE)
+            self.checkAlmostEqual(self.duration / timescale, duration / MPEG_TIMEBASE)
             self.scte35_binary_signal = sig
 
 
@@ -498,7 +509,7 @@ class EventStream(EventStreamBase):
 
     def validate(self, depth=-1):
         super(EventStream, self).validate(depth)
-        self.assertNotEqual(self.schemeIdUri, self.SCTE35_INBAND_EVENTS)
+        self.checkNotEqual(self.schemeIdUri, self.SCTE35_INBAND_EVENTS)
         if depth == 0:
             return
         for event in self.events:
@@ -515,7 +526,7 @@ class InbandEventStream(EventStreamBase):
 
     def validate(self, depth=-1):
         super(InbandEventStream, self).validate(depth)
-        self.assertEqual(len(self.children), 0)
+        self.checkEqual(len(self.children), 0)
 
 class Period(DashElement):
     attributes = [
@@ -570,7 +581,7 @@ class SegmentReference(DashElement):
         self.duration = duration
 
     def validate(self, depth=-1):
-        self.assertGreaterThan(self.duration, 0)
+        self.checkGreaterThan(self.duration, 0)
 
     def __repr__(self):
         return self.REPR_FMT.format(**self.__dict__)
@@ -594,12 +605,12 @@ class SegmentBaseType(DashElement):
                                        elt.findall('./dash:RepresentationIndex', self.xmlNamespaces))
 
     def load_segment_index(self, url):
-        self.assertIsNotNone(self.indexRange)
+        self.checkIsNotNone(self.indexRange)
         headers = {"Range": "bytes={}".format(self.indexRange)}
         self.log.debug('GET: %s %s', url, headers)
         response = self.http.get(url, headers=headers)
         # 206 = partial content
-        self.assertEqual(response.status_int, 206)
+        self.checkEqual(response.status_int, 206)
         if self.options.save:
             default = 'index-{0}-{1}'.format(self.parent.id, self.parent.bandwidth)
             filename = self.output_filename(default, makedirs=True)
@@ -609,8 +620,8 @@ class SegmentBaseType(DashElement):
         src = BufferedReader(None, data=response.body)
         opts = mp4.Options(strict=self.options.strict)
         atoms = mp4.Mp4Atom.load(src, options=opts)
-        self.assertEqual(len(atoms), 1)
-        self.assertEqual(atoms[0].atom_type, 'sidx')
+        self.checkEqual(len(atoms), 1)
+        self.checkEqual(atoms[0].atom_type, 'sidx')
         sidx = atoms[0]
         self.timescale = sidx.timescale
         start = self.indexRange.end + 1
@@ -644,7 +655,7 @@ class FrameRateType(TestCaseMixin):
     def __init__(self, num, denom=1):
         if isinstance(num, basestring):
             match = self.pattern.match(num)
-            self.assertIsNotNone(match, 'Invalid frame rate "{0}", pattern is "{1}"'.format(
+            self.checkIsNotNone(match, 'Invalid frame rate "{0}", pattern is "{1}"'.format(
                 num, self.pattern.pattern))
             num = int(match.group(1), 10)
             if match.group(2):
@@ -690,7 +701,7 @@ class MultipleSegmentBaseType(SegmentBaseType):
         if self.segmentTimeline is not None:
             # 5.3.9.2.1: The attribute @duration and the element SegmentTimeline
             # shall not be present at the same time.
-            self.assertIsNone(self.duration)
+            self.checkIsNone(self.duration)
 
 
 class RepresentationBaseType(DashElement):
@@ -735,7 +746,7 @@ class SegmentTimeline(DashElement):
             if start is None and not self.options.strict:
                 self.log.warning('start attribute is missing for first entry in SegmentTimeline')
                 start = 0
-            self.assertIsNotNone(start)
+            self.checkIsNotNone(start)
             duration = int(seg.get('d'), 10)
             for r in range(repeat):
                 self.segments.append(self.SegmentEntry(start, duration))
@@ -768,8 +779,8 @@ class SegmentListType(MultipleSegmentBaseType):
 
     def validate(self, depth=-1):
         super(SegmentListType, self).validate(depth)
-        self.assertGreaterThan(len(self.segmentURLs), 0)
-        self.assertGreaterThan(len(self.segmentURLs[0].initializationList), 0)
+        self.checkGreaterThan(len(self.segmentURLs), 0)
+        self.checkGreaterThan(len(self.segmentURLs[0].initializationList), 0)
 
 
 class SegmentURL(DashElement):
@@ -784,8 +795,8 @@ class SegmentURL(DashElement):
         super(SegmentURL, self).__init__(template, parent)
 
     def validate(self, depth=-1):
-        self.assertIsNotNone(self.media)
-        self.assertIsNotNone(self.index)
+        self.checkIsNotNone(self.media)
+        self.checkIsNotNone(self.index)
 
 
 class ContentProtection(Descriptor):
@@ -799,9 +810,9 @@ class ContentProtection(Descriptor):
     def validate(self, depth=-1):
         super(ContentProtection, self).validate(depth)
         if self.schemeIdUri == "urn:mpeg:dash:mp4protection:2011":
-            self.assertEqual(self.value, "cenc")
+            self.checkEqual(self.value, "cenc")
         else:
-            self.assertStartsWith(self.schemeIdUri, "urn:uuid:")
+            self.checkStartsWith(self.schemeIdUri, "urn:uuid:")
         if depth == 0:
             return
         for child in self.children:
@@ -809,17 +820,17 @@ class ContentProtection(Descriptor):
                 data = base64.b64decode(child.text)
                 src = BufferedReader(None, data=data)
                 atoms = mp4.Mp4Atom.load(src)
-                self.assertEqual(len(atoms), 1)
-                self.assertEqual(atoms[0].atom_type, 'pssh')
+                self.checkEqual(len(atoms), 1)
+                self.checkEqual(atoms[0].atom_type, 'pssh')
                 pssh = atoms[0]
                 if PlayReady.is_supported_scheme_id(self.schemeIdUri):
-                    self.assertIsInstance(pssh.system_id, Binary)
-                    self.assertEqual(pssh.system_id.data, PlayReady.RAW_SYSTEM_ID)
-                    self.assertIsInstance(pssh.data, Binary)
+                    self.checkIsInstance(pssh.system_id, Binary)
+                    self.checkEqual(pssh.system_id.data, PlayReady.RAW_SYSTEM_ID)
+                    self.checkIsInstance(pssh.data, Binary)
                     pro = self.parse_playready_pro(pssh.data.data)
                     self.validate_playready_pro(pro)
             elif child.tag == '{urn:microsoft:playready}pro':
-                self.assertTrue(
+                self.checkTrue(
                     PlayReady.is_supported_scheme_id(
                         self.schemeIdUri))
                 data = base64.b64decode(child.text)
@@ -830,26 +841,26 @@ class ContentProtection(Descriptor):
         return PlayReady.parse_pro(BufferedReader(None, data=data))
 
     def validate_playready_pro(self, pro):
-        self.assertEqual(len(pro), 1)
+        self.checkEqual(len(pro), 1)
         xml = pro[0]['xml'].getroot()
-        self.assertEqual(
+        self.checkEqual(
             xml.tag,
             '{http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader}WRMHEADER')
-        self.assertIn(
+        self.checkIn(
             xml.attrib['version'], [
                 "4.0.0.0", "4.1.0.0", "4.2.0.0", "4.3.0.0"])
         if 'playready_version' in self.mpd.params:
             version = float(self.mpd.params['playready_version'])
             if version < 2.0:
-                self.assertEqual(xml.attrib['version'], "4.0.0.0")
-                self.assertEqual(
+                self.checkEqual(xml.attrib['version'], "4.0.0.0")
+                self.checkEqual(
                     self.schemeIdUri,
                     "urn:uuid:" +
                     PlayReady.SYSTEM_ID_V10)
             elif version < 3.0:
-                self.assertIn(xml.attrib['version'], ["4.0.0.0", "4.1.0.0"])
+                self.checkIn(xml.attrib['version'], ["4.0.0.0", "4.1.0.0"])
             elif version < 4.0:
-                self.assertIn(
+                self.checkIn(
                     xml.attrib['version'], [
                         "4.0.0.0", "4.1.0.0", "4.2.0.0"])
 
@@ -881,16 +892,18 @@ class AdaptationSet(RepresentationBaseType):
 
     def validate(self, depth=-1):
         if len(self.contentProtection):
-            self.assertIsNotNone(self.default_KID,
-                                 'default_KID cannot be missing for protected stream: {}'.format(self.baseurl))
-        self.assertIn(self.contentType,
-                      {'video', 'audio', 'text', 'image', 'font', 'application', None})
+            self.checkIsNotNone(
+                self.default_KID,
+                'default_KID cannot be missing for protected stream: {}'.format(self.baseurl))
+        self.checkIn(
+            self.contentType,
+            {'video', 'audio', 'text', 'image', 'font', 'application', None})
         if self.options.strict:
-            self.assertIsNotNone(self.mimeType, 'mimeType is a mandatory attribute')
+            self.checkIsNotNone(self.mimeType, 'mimeType is a mandatory attribute')
         if self.mimeType is None:
             self.log.warning('mimeType is a mandatory attribute')
         if not self.options.encrypted:
-            self.assertEqual(len(self.contentProtection), 0)
+            self.checkEqual(len(self.contentProtection), 0)
         if depth == 0:
             return
         for cp in self.contentProtection:
@@ -917,11 +930,11 @@ class Representation(RepresentationBaseType):
         if self.segmentTemplate is None:
             self.segmentTemplate = parent.segmentTemplate
         if self.segmentTemplate is None:
-            self.assertEqual(self.mode, 'odvod')
-        self.assertIsNotNone(self.baseurl)
+            self.checkEqual(self.mode, 'odvod')
+        self.checkIsNotNone(self.baseurl)
         if self.mode == "odvod":
             segmentBase = rep.findall('./dash:SegmentBase', self.xmlNamespaces)
-            self.assertLessThan(len(segmentBase), 2)
+            self.checkLessThan(len(segmentBase), 2)
             if len(segmentBase):
                 self.segmentBase = MultipleSegmentBaseType(
                     segmentBase[0], self)
@@ -930,50 +943,51 @@ class Representation(RepresentationBaseType):
             self.generate_segments_on_demand_profile()
         else:
             self.generate_segments_live_profile()
-        self.assertIsNotNone(self.init_segment)
-        self.assertIsNotNone(self.media_segments)
-        self.assertGreaterThan(len(self.media_segments), 0,
-                               'Failed to generate any segments for Representation %s of %s' % (
-                                   self.unique_id(), self.mpd.url))
+        self.checkIsNotNone(self.init_segment)
+        self.checkIsNotNone(self.media_segments)
+        self.checkGreaterThan(
+            len(self.media_segments), 0,
+            'Failed to generate any segments for Representation {0} of {1}'.format(
+                self.unique_id(), self.mpd.url))
 
     def init_seg_url(self):
         if self.mode == 'odvod':
             return self.format_url_template(self.baseurl)
-        self.assertIsNotNone(self.segmentTemplate)
-        self.assertIsNotNone(self.segmentTemplate.initialization)
+        self.checkIsNotNone(self.segmentTemplate)
+        self.checkIsNotNone(self.segmentTemplate.initialization)
         url = self.format_url_template(self.segmentTemplate.initialization)
         return urlparse.urljoin(self.baseurl, url)
 
     def generate_segments_live_profile(self):
-        self.assertNotEqual(self.mode, 'odvod')
-        self.assertIsNotNone(self.segmentTemplate)
+        self.checkNotEqual(self.mode, 'odvod')
+        self.checkIsNotNone(self.segmentTemplate)
         info = self.validator.get_representation_info(self)
-        self.assertIsNotNone(info)
+        self.checkIsNotNone(info)
         decode_time = getattr(info, "decode_time", None)
         start_number = getattr(info, "start_number", None)
         timeline = self.segmentTemplate.segmentTimeline
+        seg_duration = self.segmentTemplate.duration
+        if seg_duration is None:
+            self.assertIsNotNone(timeline)
+            seg_duration = timeline.duration / len(timeline.segments)
         if self.mode == 'vod':
-            self.assertIsNotNone(info.num_segments)
+            self.checkIsNotNone(info.num_segments)
             num_segments = info.num_segments
             decode_time = self.segmentTemplate.presentationTimeOffset
             start_number = 1
         else:
-            seg_duration = self.segmentTemplate.duration
-            if seg_duration is None:
-                self.assertIsNotNone(timeline)
-                seg_duration = timeline.duration / len(timeline.segments)
             if timeline is not None:
                 num_segments = len(timeline.segments)
                 if decode_time is None:
                     decode_time = timeline.segments[0].start
             else:
-                self.assertIsNotNone(self.mpd.timeShiftBufferDepth)
-                self.assertGreaterThan(self.mpd.timeShiftBufferDepth.total_seconds(),
-                                       seg_duration / self.segmentTemplate.timescale)
+                self.checkIsNotNone(self.mpd.timeShiftBufferDepth)
+                self.checkGreaterThan(self.mpd.timeShiftBufferDepth.total_seconds(),
+                                      seg_duration / self.segmentTemplate.timescale)
                 num_segments = math.floor(self.mpd.timeShiftBufferDepth.total_seconds() *
                                           self.segmentTemplate.timescale / seg_duration)
                 num_segments = int(num_segments)
-                self.assertGreaterThan(num_segments, 0)
+                self.checkGreaterThan(num_segments, 0)
                 num_segments = min(num_segments, 25)
             now = datetime.datetime.now(tz=UTC())
             elapsed_time = now - self.mpd.availabilityStartTime
@@ -993,8 +1007,8 @@ class Representation(RepresentationBaseType):
             if decode_time is None:
                 decode_time = (
                     start_number - self.segmentTemplate.startNumber) * seg_duration
-        self.assertIsNotNone(start_number)
-        self.assertIsNotNone(decode_time)
+        self.checkIsNotNone(start_number)
+        self.checkIsNotNone(decode_time)
         self.init_segment = InitSegment(self, self.init_seg_url(), info, None)
         self.media_segments = []
         seg_num = start_number
@@ -1013,7 +1027,7 @@ class Representation(RepresentationBaseType):
         if timeline is not None:
             msg = r'Expected segment segmentTimeline to have at least {} items, found {}'.format(
                 num_segments, len(timeline.segments))
-            self.assertGreaterOrEqual(len(timeline.segments), num_segments, msg)
+            self.checkGreaterOrEqual(len(timeline.segments), num_segments, msg)
         for idx in range(num_segments):
             url = self.format_url_template(
                 self.segmentTemplate.media, seg_num, decode_time)
@@ -1032,12 +1046,19 @@ class Representation(RepresentationBaseType):
                 decode_time += timeline.segments[idx].duration
             else:
                 decode_time = None
+            if self.options.duration is not None:
+                if decode_time is None:
+                    dt = seg_num * seg_duration
+                else:
+                    dt = decode_time
+                if dt >= (self.options.duration * self.segmentTemplate.timescale):
+                    return
 
     def generate_segments_on_demand_profile(self):
         self.media_segments = []
         self.init_segment = None
         info = self.validator.get_representation_info(self)
-        self.assertIsNotNone(info)
+        self.checkIsNotNone(info)
         decode_time = None
         if info.segments:
             decode_time = 0
@@ -1052,7 +1073,7 @@ class Representation(RepresentationBaseType):
         seg_list = []
         for sl in self.segmentList:
             if sl.initializationList:
-                self.assertIsNotNone(sl.initializationList[0].range)
+                self.checkIsNotNone(sl.initializationList[0].range)
                 url = self.baseurl
                 if sl.initializationList[0].sourceURL is not None:
                     url = sl.initializationList[0].sourceURL
@@ -1072,10 +1093,12 @@ class Representation(RepresentationBaseType):
             frameRate = self.parent.minFrameRate.value
         if self.segmentTemplate is not None:
             tolerance = self.segmentTemplate.timescale / frameRate
+            timescale = self.segmentTemplate.timescale
         else:
             tolerance = info.timescale / frameRate
+            timescale = info.timescale
         for idx, item in enumerate(seg_list):
-            self.assertIsNotNone(item.mediaRange)
+            self.checkIsNotNone(item.mediaRange)
             url = self.baseurl
             if item.media is not None:
                 url = item.media
@@ -1095,25 +1118,28 @@ class Representation(RepresentationBaseType):
             self.media_segments.append(ms)
             if info.segments:
                 decode_time += info.segments[idx + 1]['duration']
+            if self.options.duration is not None:
+                if decode_time >= (self.options.duration * timescale):
+                    return
 
     def validate(self, depth=-1):
-        self.assertIsNotNone(self.bandwidth, 'bandwidth is a mandatory attribute')
-        self.assertIsNotNone(self.id, 'id is a mandatory attribute')
+        self.checkIsNotNone(self.bandwidth, 'bandwidth is a mandatory attribute')
+        self.checkIsNotNone(self.id, 'id is a mandatory attribute')
         if self.options.strict:
-            self.assertIsNotNone(self.mimeType, 'mimeType is a mandatory attribute')
+            self.checkIsNotNone(self.mimeType, 'mimeType is a mandatory attribute')
         if self.mimeType is None:
             self.log.warning('mimeType is a mandatory attribute')
         info = self.validator.get_representation_info(self)
         if getattr(info, "moov", None) is None:
             info.moov = self.init_segment.validate(depth - 1)
             self.validator.set_representation_info(self, info)
-        self.assertIsNotNone(info.moov)
+        self.checkIsNotNone(info.moov)
         if self.options.encrypted:
             if self.contentProtection:
                 cp_elts = self.contentProtection
             else:
                 cp_elts = self.parent.contentProtection
-            self.assertGreaterThan(
+            self.checkGreaterThan(
                 len(cp_elts), 0,
                 msg='An encrypted stream must have ContentProtection elements')
             found = False
@@ -1121,11 +1147,11 @@ class Representation(RepresentationBaseType):
                 if (elt.schemeIdUri == "urn:mpeg:dash:mp4protection:2011" and
                         elt.value == "cenc"):
                     found = True
-            self.assertTrue(
+            self.checkTrue(
                 found, msg="DASH CENC ContentProtection element not found")
         else:
             # parent ContentProtection elements checked in parent's validate()
-            self.assertEqual(len(self.contentProtection), 0)
+            self.checkEqual(len(self.contentProtection), 0)
         if depth == 0:
             return
         if self.mode == "odvod":
@@ -1138,17 +1164,18 @@ class Representation(RepresentationBaseType):
         for seg in self.media_segments:
             seg.set_info(info)
             if seg.decode_time is None:
-                self.assertIsNotNone(next_decode_time)
+                self.checkIsNotNone(next_decode_time)
                 seg.decode_time = next_decode_time
             else:
-                self.assertEqual(next_decode_time, seg.decode_time,
-                                 '{0}: expected decode time {1} but got {2}'.format(
-                                     seg.url, next_decode_time, seg.decode_time))
+                self.checkEqual(
+                    next_decode_time, seg.decode_time,
+                    '{0}: expected decode time {1} but got {2}'.format(
+                        seg.url, next_decode_time, seg.decode_time))
             if seg.seg_range is None and seg.url in info.tested_media_segment:
                 next_decode_time = seg.next_decode_time
                 continue
             moof = seg.validate(depth - 1)
-            self.assertIsNotNone(moof)
+            self.checkIsNotNone(moof)
             if seg.seg_num is None:
                 seg.seg_num = moof.mfhd.sequence_number
             # next_seg_num = seg.seg_num + 1
@@ -1159,22 +1186,22 @@ class Representation(RepresentationBaseType):
             seg.next_decode_time = next_decode_time
 
     def check_live_profile(self):
-        self.assertIsNotNone(self.segmentTemplate)
+        self.checkIsNotNone(self.segmentTemplate)
         if self.mode == 'vod':
             return
-        self.assertEqual(self.mode, 'live')
+        self.checkEqual(self.mode, 'live')
         seg_duration = self.segmentTemplate.duration
         timeline = self.segmentTemplate.segmentTimeline
         timescale = self.segmentTemplate.timescale
         decode_time = None
         if seg_duration is None:
-            self.assertIsNotNone(timeline)
+            self.checkIsNotNone(timeline)
             seg_duration = timeline.duration / len(timeline.segments)
         if timeline is not None:
             num_segments = len(self.segmentTemplate.segmentTimeline.segments)
             decode_time = timeline.segments[0].start
         else:
-            self.assertIsNotNone(self.mpd.timeShiftBufferDepth)
+            self.checkIsNotNone(self.mpd.timeShiftBufferDepth)
             num_segments = math.floor(self.mpd.timeShiftBufferDepth.total_seconds() *
                                       timescale / seg_duration)
             num_segments = int(num_segments)
@@ -1194,7 +1221,7 @@ class Representation(RepresentationBaseType):
             first_fragment = startNumber
         if decode_time is None:
             decode_time = (first_fragment - startNumber) * seg_duration
-        self.assertIsNotNone(decode_time)
+        self.checkIsNotNone(decode_time)
         pos = self.mpd.availabilityStartTime + \
             datetime.timedelta(seconds=(decode_time / timescale))
         earliest_pos = now - self.mpd.timeShiftBufferDepth - \
@@ -1233,9 +1260,10 @@ class InitSegment(DashElement):
             expected_status = 200
         self.log.debug('GET: %s %s', self.url, headers)
         response = self.http.get(self.url, headers=headers)
-        self.assertEqual(response.status_int, expected_status,
-                         'Failed to load init segment: {0:d}: {1}\n{2}'.format(
-                             response.status_int, response.body, self.url))
+        self.checkEqual(
+            response.status_int, expected_status,
+            'Failed to load init segment: {0:d}: {1}\n{2}'.format(
+                response.status_int, response.body, self.url))
         if self.options.save:
             default = 'init-{0}-{1}'.format(self.parent.id, self.parent.bandwidth)
             filename = self.output_filename(default, makedirs=True)
@@ -1244,46 +1272,47 @@ class InitSegment(DashElement):
                 dest.write(response.body)
         src = BufferedReader(None, data=response.body)
         atoms = mp4.Mp4Atom.load(src)
-        self.assertGreaterThan(len(atoms), 1)
-        self.assertEqual(atoms[0].atom_type, 'ftyp')
+        self.checkGreaterThan(len(atoms), 1)
+        self.checkEqual(atoms[0].atom_type, 'ftyp')
         moov = None
         for atom in atoms:
             if atom.atom_type == 'moov':
                 moov = atom
                 break
-        self.assertIsNotNone(moov)
+        self.checkIsNotNone(moov)
         if not self.info.encrypted:
             return moov
         try:
             pssh = moov.pssh
-            self.assertEqual(len(pssh.system_id), 16)
+            self.checkEqual(len(pssh.system_id), 16)
             if pssh.system_id == PlayReady.RAW_SYSTEM_ID:
                 for pro in PlayReady.parse_pro(
                         BufferedReader(None, data=pssh.data)):
                     root = pro['xml'].getroot()
                     version = root.get("version")
-                    self.assertIn(
+                    self.checkIn(
                         version, [
                             "4.0.0.0", "4.1.0.0", "4.2.0.0", "4.3.0.0"])
                     if 'playready_version' not in self.mpd.params:
                         continue
                     version = float(self.mpd.params['playready_version'])
                     if version < 2.0:
-                        self.assertEqual(root.attrib['version'], "4.0.0.0")
+                        self.checkEqual(root.attrib['version'], "4.0.0.0")
                     elif version < 3.0:
-                        self.assertIn(
+                        self.checkIn(
                             root.attrib['version'], [
                                 "4.0.0.0", "4.1.0.0"])
                     elif version < 4.0:
-                        self.assertIn(
+                        self.checkIn(
                             root.attrib['version'], [
                                 "4.0.0.0", "4.1.0.0", "4.2.0.0"])
         except (AttributeError) as ae:
             if 'moov' in self.url:
                 if 'playready' in self.url or 'clearkey' in self.url:
-                    self.assertTrue('moov' not in self.url,
-                                    'PSSH box should be present in {}\n{:s}'.format(
-                                        self.url, ae))
+                    self.checkTrue(
+                        'moov' not in self.url,
+                        'PSSH box should be present in {}\n{:s}'.format(
+                            self.url, ae))
         return moov
 
 
@@ -1317,8 +1346,8 @@ class MediaSegment(DashElement):
                 raise MissingSegmentException(self.url, response)
         if self.parent.mimeType is not None:
             if self.options.strict:
-                self.assertStartsWith(response.headers['content-type'],
-                                      self.parent.mimeType)
+                self.checkStartsWith(response.headers['content-type'],
+                                     self.parent.mimeType)
         if self.options.save:
             default = 'media-{0}-{1}-{2}'.format(self.parent.id, self.parent.bandwidth,
                                                  self.seg_num)
@@ -1328,11 +1357,11 @@ class MediaSegment(DashElement):
                 dest.write(response.body)
         src = BufferedReader(None, data=response.body)
         options = {"strict": True}
-        self.assertEqual(self.options.encrypted, self.info.encrypted)
+        self.checkEqual(self.options.encrypted, self.info.encrypted)
         if self.info.encrypted:
             options["iv_size"] = self.info.iv_size
         atoms = mp4.Mp4Atom.load(src, options=options)
-        self.assertGreaterThan(len(atoms), 1)
+        self.checkGreaterThan(len(atoms), 1)
         moof = None
         for a in atoms:
             if a.atom_type == 'emsg':
@@ -1340,20 +1369,20 @@ class MediaSegment(DashElement):
             elif a.atom_type == 'moof':
                 moof = a
                 break
-            self.assertNotEqual(
+            self.checkNotEqual(
                 a.atom_type, 'mdat',
                 msg='Failed to find moof box before mdat box')
-        self.assertIsNotNone(moof)
+        self.checkIsNotNone(moof)
         try:
             senc = moof.traf.senc
-            self.assertNotEqual(
+            self.checkNotEqual(
                 self.info.encrypted, False,
                 msg='senc box should not be found in a clear stream')
             saio = moof.traf.find_child('saio')
-            self.assertIsNotNone(
+            self.checkIsNotNone(
                 saio,
                 msg='saio box is required for an encrypted stream')
-            self.assertEqual(
+            self.checkEqual(
                 len(saio.offsets), 1,
                 msg='saio box should only have one offset entry')
             tfhd = moof.traf.find_child('tfhd')
@@ -1365,15 +1394,15 @@ class MediaSegment(DashElement):
                 moof.dump()
                 print(moof.traf.tfhd)
                 print(moof.traf.saio)
-            self.assertEqual(
+            self.checkEqual(
                 senc.samples[0].position,
                 saio.offsets[0] + base_data_offset,
-                msg=(r'saio.offsets[0] should point to first CencSampleAuxiliaryData entry. '+
+                msg=(r'saio.offsets[0] should point to first CencSampleAuxiliaryData entry. ' +
                      'Expected {0}, got {1}'.format(
                          senc.samples[0].position, saio.offsets[0] + base_data_offset)))
-            self.assertEqual(len(moof.traf.trun.samples), len(senc.samples))
+            self.checkEqual(len(moof.traf.trun.samples), len(senc.samples))
         except AttributeError:
-            self.assertNotEqual(
+            self.checkNotEqual(
                 self.info.encrypted, True,
                 msg='Failed to find senc box in encrypted stream')
         if self.seg_num is not None:
@@ -1420,16 +1449,16 @@ class MediaSegment(DashElement):
                            evs.schemeIdUri, evs.value)
             if (evs.schemeIdUri == emsg.scheme_id_uri and
                     evs.value == emsg.value):
-                self.assertIsInstance(evs, InbandEventStream)
+                self.checkIsInstance(evs, InbandEventStream)
                 found = True
         for evs in self.parent.parent.event_streams:
             self.log.debug('Found schemeIdUri="%s", value="%s"',
                            evs.schemeIdUri, evs.value)
             if (evs.schemeIdUri == emsg.scheme_id_uri and
                     evs.value == emsg.value):
-                self.assertIsInstance(evs, InbandEventStream)
+                self.checkIsInstance(evs, InbandEventStream)
                 found = True
-        self.assertTrue(
+        self.checkTrue(
             found,
             'Failed to find an InbandEventStream with schemeIdUri="{0}" value="{1}"'.format(
                 emsg.scheme_id_uri, emsg.value))
@@ -1471,7 +1500,7 @@ if __name__ == "__main__":
 
         def mustcontain(self, *strings):
             for text in strings:
-                self.assertIn(text, self.response.text)
+                self.checkIn(text, self.response.text)
 
         def warning(self, fmt, *args):
             logging.getLogger(__name__).warning(fmt, *args)
@@ -1498,7 +1527,7 @@ if __name__ == "__main__":
                     data=params,
                     headers=headers))
             if status is not None:
-                self.assertEqual(rv.status_code, status)
+                self.checkEqual(rv.status_code, status)
             return rv
 
     class BasicDashValidator(DashValidator):
