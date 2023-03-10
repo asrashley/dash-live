@@ -183,12 +183,16 @@ class RequestHandlerBase(webapp2.RequestHandler):
         value = self.request.params.get(param, str(default)).lower()
         return value in ["1", "true"]
 
-    def generate_drm_dict(self, stream, keys):
-        if isinstance(stream, basestring):
-            stream = models.Stream.query(models.Stream.prefix == stream).get()
-        templates = TemplateFactory.get_singleton()
+    def generate_drm_location_tuples(self):
+        """
+        Returns list of tuples, where each entry is:
+          * DRM name,
+          * DRM implementation, and
+          * DRM data locations
+        """
         drms = self.request.params.get('drm', 'all')
-        rv = {}
+        templates = TemplateFactory.get_singleton()
+        rv = []
         for name in drms.split(','):
             if '-' in name:
                 parts = name.split('-')
@@ -198,21 +202,35 @@ class RequestHandlerBase(webapp2.RequestHandler):
                 drm_name = name
                 locations = None
             if drm_name in {'all', 'playready'}:
-                mspr = PlayReady(templates)
-                rv['playready'] = mspr.generate_manifest_context(
-                    stream, keys, self.request.params, locations=locations)
+                drm = PlayReady(templates)
+                rv.append(('playready', drm, locations,))
             if drm_name in {'all', 'marlin'}:
-                marlin = Marlin(templates)
-                rv['marlin'] = marlin.generate_manifest_context(
-                    stream, keys, self.request.params, locations=locations)
+                drm = Marlin(templates)
+                rv.append(('marlin', drm, locations,))
             if drm_name in {'all', 'clearkey'}:
-                ck = ClearKey(templates)
+                drm = ClearKey(templates)
+                rv.append(('clearkey', drm, locations,))
+        return rv
+
+    def generate_drm_dict(self, stream, keys):
+        """
+        Generate contexts for all enabled DRM systems. It returns a
+        dictionary with an entry for each DRM system.
+        """
+        if isinstance(stream, basestring):
+            stream = models.Stream.query(models.Stream.prefix == stream).get()
+        rv = {}
+        for drm_name, drm, locations in self.generate_drm_location_tuples():
+            if drm_name == 'clearkey':
                 ck_laurl = urlparse.urljoin(
                     self.request.host_url, self.uri_for('clearkey'))
                 if self.is_https_request():
                     ck_laurl = ck_laurl.replace('http://', 'https://')
-                rv['clearkey'] = ck.generate_manifest_context(
+                rv[drm_name] = drm.generate_manifest_context(
                     stream, keys, self.request.params, la_url=ck_laurl, locations=locations)
+            else:
+                rv[drm_name] = drm.generate_manifest_context(
+                    stream, keys, self.request.params, locations=locations)
         return rv
 
     def calculate_dash_params(self, prefix, mode, mpd_url):

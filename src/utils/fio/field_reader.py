@@ -36,8 +36,10 @@ class FieldReader(object):
         else:
             self.log = None
 
-    def read(self, size, field, mask=None):
+    def read(self, size, field, mask=None, encoder=None):
         self.kwargs[field] = self.get(size, field, mask)
+        if encoder is not None:
+            self.kwargs[field] = encoder(self.kwargs[field])
 
     def get(self, size, field, mask=None):
         if isinstance(size, (int, long)):

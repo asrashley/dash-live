@@ -1361,10 +1361,16 @@ class MediaSegment(DashElement):
                 base_data_offset = moof.position
             else:
                 base_data_offset = tfhd.base_data_offset
+            if (saio.offsets[0] + base_data_offset) != senc.samples[0].position:
+                moof.dump()
+                print(moof.traf.tfhd)
+                print(moof.traf.saio)
             self.assertEqual(
-                saio.offsets[0] + base_data_offset,
                 senc.samples[0].position,
-                msg='saio.offsets[0] should point to first CencSampleAuxiliaryData entry')
+                saio.offsets[0] + base_data_offset,
+                msg=(r'saio.offsets[0] should point to first CencSampleAuxiliaryData entry. '+
+                     'Expected {0}, got {1}'.format(
+                         senc.samples[0].position, saio.offsets[0] + base_data_offset)))
             self.assertEqual(len(moof.traf.trun.samples), len(senc.samples))
         except AttributeError:
             self.assertNotEqual(

@@ -40,6 +40,14 @@ class DrmBase(object):
     def generate_manifest_context(self, stream, keys, cgi_params, la_url=None, locations=None):
         raise RuntimeError('generate_manifest_context has not been implemented')
 
+    def update_traf_if_required(self, cgi_params, traf):
+        """
+        Hook to allow a DRM system to insert / modify boxes within the "traf"
+        box.
+        :returns: True if the traf has been modified
+        """
+        return False
+
     @abstractmethod
     def generate_pssh(self, representation, keys):
         raise RuntimeError('generate_pssh has not been implemented')
