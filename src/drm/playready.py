@@ -142,9 +142,8 @@ class PlayReady(DrmBase):
                 ^ sha_C_Output[i] ^ sha_C_Output[i + PlayReady.DRM_AES_KEYSIZE_128]
         return contentKey
 
-    def generate_wrmheader(self, representation, keys, custom_attributes):
+    def generate_wrmheader(self, la_url, representation, keys, custom_attributes):
         """Generate WRMHEADER XML document"""
-        la_url = self.la_url
         cfgs = []
         kids = []
         for keypair in keys.values():
@@ -208,9 +207,9 @@ class PlayReady(DrmBase):
             wrm = wrm[2:]
         return wrm
 
-    def generate_pro(self, representation, keys, custom_attributes=None):
+    def generate_pro(self, la_url, representation, keys, custom_attributes):
         """Generate PlayReady Object (PRO)"""
-        wrm = self.generate_wrmheader(representation, keys, custom_attributes)
+        wrm = self.generate_wrmheader(la_url, representation, keys, custom_attributes)
         record = struct.pack('<HH', 0x001, len(wrm)) + wrm
         pro = struct.pack('<IH', len(record) + 6, 1) + record
         return pro
@@ -265,18 +264,21 @@ class PlayReady(DrmBase):
             'version': version,
         }
         if 'pro' in locations:
-            rv['pro'] = self.generate_pro
+            rv['pro'] = lambda rep, keys, cattr=None: self.generate_pro(
+                la_url, rep, keys, cattr)
         # PlayReady v1.0 (PIFF) mode only allows an mspr:pro element
         if version > 1.0:
             if 'cenc' in locations:
-                rv['cenc'] = self.generate_pssh
+                rv['cenc'] = lambda rep, keys, cattr=None: self.generate_pssh(
+                    la_url, rep, keys, cattr)
             if 'moov' in locations:
-                rv['moov'] = self.generate_pssh
+                rv['moov'] = lambda rep, keys, cattr=None: self.generate_pssh(
+                    la_url, rep, keys, cattr)
         return rv
 
-    def generate_pssh(self, representation, keys, custom_attributes=None):
+    def generate_pssh(self, la_url, representation, keys, custom_attributes=None):
         """Generate a PlayReady Object (PRO) inside a PSSH box"""
-        pro = self.generate_pro(representation, keys, custom_attributes)
+        pro = self.generate_pro(la_url, representation, keys, custom_attributes)
         if len(keys) < 2:
             return mp4.ContentProtectionSpecificBox(
                 version=0, flags=0, system_id=PlayReady.RAW_SYSTEM_ID,
