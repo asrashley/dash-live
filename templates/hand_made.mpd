@@ -71,6 +71,11 @@
              value="{{adp.role}}"
            />
          {%- endif %}
+         {%- if adp.accessibility %}
+         <Accessibility
+             schemeIdUri="{{adp.accessibility.schemeIdUri}}"
+             value="{{adp.accessibility.value}}" />
+         {%- endif %}
          {%- for rep in adp.representations %}
            {%- if loop.first %}
              {% include "drm/template.xml" %}
