@@ -1083,6 +1083,44 @@ class WVTTSampleEntry(PlainTextSampleEntry):
 
 Mp4Atom.BOXES['wvtt'] = WVTTSampleEntry
 
+class XMLSubtitleSampleEntry(SampleEntry):
+    parse_children = True
+
+    @classmethod
+    def parse(clz, src, parent, options, **kwargs):
+        rv = SampleEntry.parse(src, parent, options, **kwargs)
+        r = FieldReader(clz.classname(), src, rv, debug=options.debug)
+        r.read('S0', 'namespace')
+        r.read('S0', 'schema_location')
+        r.read('S0', 'mime_types')
+        return rv
+
+    def encode_fields(self, dest):
+        super(XMLSubtitleSampleEntry, self).encode_fields(dest)
+        d = FieldWriter(self, dest, debug=self.options.debug)
+        d.write('S0', 'namespace')
+        d.write('S0', 'schema_location')
+        d.write('S0', 'mime_types')
+
+
+Mp4Atom.BOXES['stpp'] = XMLSubtitleSampleEntry
+
+class MimeBox(FullBox):
+    @classmethod
+    def parse(clz, src, parent, options, **kwargs):
+        rv = FullBox.parse(src, parent=parent, options=options, **kwargs)
+        rv['content_type'] = src.read(rv['size'] - rv['header_size'] - 4)
+        if rv['content_type'][-1] == '\0':
+            rv['content_type'] = rv['content_type'][:-1]
+        return rv
+
+    def encode_box_fields(self, dest):
+        d = FieldWriter(self, dest, debug=self.options.debug)
+        d.write('S0', 'content_type')
+
+
+Mp4Atom.BOXES['mime'] = MimeBox
+
 class AVCConfigurationBox(Mp4Atom):
     OBJECT_FIELDS = {
         'sps': ListOf(Binary),
@@ -1446,6 +1484,7 @@ class TrackHeaderBox(FullBox):
     Track_enabled = 0x000001
     Track_in_movie = 0x000002
     Track_in_preview = 0x000004
+    Track_size_is_aspect_ratio = 0x000008
 
     OBJECT_FIELDS = {
         "creation_time": DateTimeField,
@@ -1461,6 +1500,8 @@ class TrackHeaderBox(FullBox):
         rv["is_enabled"] = (rv["flags"] & clz.Track_enabled) == clz.Track_enabled
         rv["in_movie"] = (rv["flags"] & clz.Track_in_movie) == clz.Track_in_movie
         rv["in_preview"] = (rv["flags"] & clz.Track_in_preview) == clz.Track_in_preview
+        rv["size_is_aspect_ratio"] = (
+            (rv["flags"] & clz.Track_size_is_aspect_ratio) == clz.Track_size_is_aspect_ratio)
         if rv["version"] == 1:
             sz = 'Q'
         else:
@@ -1492,6 +1533,8 @@ class TrackHeaderBox(FullBox):
             self.flags |= self.Track_in_movie
         if self.in_preview:
             self.flags |= self.Track_in_preview
+        if self.size_is_aspect_ratio:
+            self.flags |= self.Track_size_is_aspect_ratio
         super(TrackHeaderBox, self).encode_fields(dest)
 
     def encode_box_fields(self, dest):
