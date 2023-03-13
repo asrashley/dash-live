@@ -66,7 +66,7 @@ class FieldWriter(object):
                 value = value * (1 << asz)
                 value = struct.pack('>' + format_bit_sizes[bsz + asz],
                                     int(value))
-            else:
+            elif size != 'S':
                 value = struct.pack('>' + size, value)
         elif isinstance(size, (int, long)):
             padding = size - len(value)

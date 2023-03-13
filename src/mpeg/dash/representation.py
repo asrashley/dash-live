@@ -207,7 +207,7 @@ class Representation(ObjectWithFields):
             default_sample_duration = 0
         avc = None
         avc_type = None
-        for box in ['avc1', 'avc3', 'mp4a', 'ec_3', 'encv', 'enca', 'wvtt']:
+        for box in ['avc1', 'avc3', 'mp4a', 'ec_3', 'encv', 'enca', 'stpp', 'wvtt']:
             try:
                 avc = getattr(moov.trak.mdia.minf.stbl.stsd, box)
                 avc_type = avc.atom_type
@@ -268,9 +268,23 @@ class Representation(ObjectWithFields):
                             rv.numChannels += 1
                 except AttributeError:
                     pass
-        elif moov.trak.mdia.hdlr.handler_type == 'text':
+        elif moov.trak.mdia.hdlr.handler_type in {'text', 'subt'}:
             rv.contentType = 'text'
             rv.codecs = avc_type
+            rv.mimeType = 'application/mp4'
+            if avc_type == 'wvtt':
+                rv.mimeType = 'text/vtt'
+            elif avc_type == 'stpp':
+                stpp = moov.trak.mdia.minf.stbl.stsd.stpp
+                if stpp.mime_types:
+                    rv.mimeType = stpp.mime_types
+                try:
+                    parts = stpp.mime.content_type.split(';')
+                    rv.mimeType = parts[0]
+                    if len(parts) > 1 and parts[1].startswith('codecs='):
+                        rv.codecs = parts[1][len('codecs='):]
+                except AttributeError:
+                    pass
 
     def generateSegmentDurations(self):
         # TODO: support live profile

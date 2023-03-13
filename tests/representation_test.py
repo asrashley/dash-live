@@ -55,6 +55,16 @@ class RepresentationTests(GAETestBase, unittest.TestCase):
             actual = mfile.representation.toJSON()
             self.assertObjectEqual(expected, actual)
 
+    def test_load_ebu_tt_d(self):
+        filename = os.path.join(self.fixtures, "ebuttd.mp4")
+        src = BufferedReader(io.FileIO(filename, 'rb'))
+        atoms = Mp4Atom.load(src)
+        rep = Representation.load(filename, atoms)
+        self.assertEqual(rep.contentType, 'text')
+        self.assertEqual(rep.timescale, 200)
+        self.assertEqual(rep.mimeType, 'application/ttml+xml')
+        self.assertEqual(rep.codecs, 'im1t|etd1')
+
 
 if os.environ.get("TESTS"):
     def load_tests(loader, tests, pattern):

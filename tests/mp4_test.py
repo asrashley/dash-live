@@ -580,6 +580,33 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
                 new_moof.traf.tfhd.base_data_offset + new_moof.traf.saio.offsets[0],
                 new_moof.traf.senc.samples[0].position)
 
+    def test_parse_ebu_tt_d_subs(self):
+        """Test parsing an init segment for a stream containing EBU-TT-D subtitles"""
+        # See http://rdmedia.bbc.co.uk/testcard/vod/ for source
+        with open(os.path.join(self.fixtures, "ebuttd.mp4"), "rb") as f:
+            src_data = f.read()
+        src = BufferedReader(None, data=src_data)
+        atoms = mp4.Mp4Atom.load(src)
+        self.assertEqual(len(atoms), 2)
+        self.assertEqual(atoms[1].atom_type, 'moov')
+        stpp = atoms[1].trak.mdia.minf.stbl.stsd.stpp
+        expected = ' '.join([
+            "http://www.w3.org/ns/ttml",
+            "http://www.w3.org/ns/ttml#parameter",
+            "http://www.w3.org/ns/ttml#styling",
+            "http://www.w3.org/ns/ttml#metadata",
+            "urn:ebu:tt:metadata",
+            "urn:ebu:tt:style",
+            "http://www.w3.org/ns/ttml/profile/imsc1#styling",
+            "http://www.w3.org/ns/ttml/profile/imsc1#parameter"])
+        self.assertEqual(stpp.namespace, expected)
+        self.assertEqual(
+            stpp.mime.content_type,
+            "application/ttml+xml;codecs=im1t|etd1")
+        for child in atoms[1].children:
+            self.check_create_atom(child, src_data)
+        self.check_create_atom(atoms[1], src_data)
+
 
 if os.environ.get("TESTS"):
     def load_tests(loader, tests, pattern):
