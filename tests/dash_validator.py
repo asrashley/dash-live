@@ -24,6 +24,7 @@ from abc import ABCMeta, abstractmethod
 import base64
 import collections
 import datetime
+import json
 import logging
 import math
 import os
@@ -45,13 +46,15 @@ class ValidatorOptions(object):
     """
     Options that can be passed to the DASH validator
     """
-    def __init__(self, strict=True, encrypted=False, save=False, iv_size=None):
+    def __init__(self, strict=True, encrypted=False, save=False, iv_size=None,
+                 duration=None, prefix=None):
         self.strict = strict
         self.encrypted = encrypted
         self.save = save
         self.iv_size = iv_size
         self.start_time = RelaxedDateTime.now(UTC())
-        self.duration = None
+        self.duration = duration
+        self.prefix = prefix
 
 
 class RelaxedDateTime(datetime.datetime):
@@ -122,10 +125,12 @@ class DashElement(TestCaseMixin):
             self.options = parent.options
             self.http = parent.http
             self.errors = parent.errors
+            self.filenames = parent.filenames
         else:
             assert options is not None
             self.options = options
             self.errors = []
+            self.filenames = set()
         # self.log = logging.getLogger(self.classname())
         #    log.addFilter(mixins.HideMixinsFilter())
         self.log = ContextAdapter(self.options.log, self)
@@ -207,7 +212,7 @@ class DashElement(TestCaseMixin):
             self.log.warning('%s', msg)
             self.errors.append(msg)
 
-    def output_filename(self, default, filename=None, makedirs=False):
+    def output_filename(self, default, bandwidth, prefix=None, filename=None, makedirs=False):
         if filename is None:
             filename = self.url
         if filename.startswith('http:'):
@@ -226,15 +231,28 @@ class DashElement(TestCaseMixin):
         if '#' in filename:
             filename = filename.split('#')[0]
         root, ext = os.path.splitext(filename)
+        if root == '':
+            root, ext = os.path.splitext(default)
         now = self.options.start_time.replace(microsecond=0)
         dest = os.path.join(self.options.dest,
                             toIsoDateTime(now).replace(':', '-'))
-        filename = ''.join([root, ext])
+        if prefix is not None and bandwidth is not None:
+            filename = '{0}_{1}{2}'.format(prefix, bandwidth, ext)
+        else:
+            filename = ''.join([root, ext])
         self.log.debug('dest=%s, filename=%s', dest, filename)
         if makedirs:
             if not os.path.exists(dest):
                 os.makedirs(dest)
         return os.path.join(dest, filename)
+
+    def open_file(self, filename, options):
+        self.filenames.add(filename)
+        if options.prefix:
+            fd = open(filename, 'ab')
+            fd.seek(0, os.SEEK_END)
+            return fd
+        return open(filename, 'wb')
 
 
 class DashValidator(DashElement):
@@ -274,7 +292,6 @@ class DashValidator(DashElement):
         self.manifest = Manifest(self, self.url, self.mode, self.xml)
 
     def validate(self, depth=-1):
-        self.errors = []
         if self.xml is None:
             self.load()
         if self.options.save:
@@ -291,12 +308,30 @@ class DashValidator(DashElement):
                 age, 5 * self.manifest.minimumUpdatePeriod,
                 fmt.format(self.manifest.minimumUpdatePeriod, age.total_seconds()))
         self.manifest.validate(depth=depth)
+        if self.options.save and self.options.prefix:
+            kids = set()
+            for p in self.manifest.periods:
+                for a in p.adaptation_sets:
+                    if a.default_KID is not None:
+                        kids.add(a.default_KID)
+            config = {
+                'keys': map(lambda kid: {'computed': True, 'kid': kid}, list(kids)),
+                'streams': [{
+                    'prefix': self.options.prefix,
+                    'title': self.url
+                }],
+                'files': list(self.manifest.filenames)
+            }
+            filename = self.output_filename(
+                default=None, bandwidth=None, filename='{0}.json'.format(self.options.prefix))
+            with open(filename, 'wt') as dest:
+                json.dump(config, dest, indent=2)
         return self.errors
 
     def save_manifest(self, filename=None):
         if self.options.dest:
             filename = self.output_filename(
-                'manifest.mpd', filename, makedirs=True)
+                'manifest.mpd', bandwidth=None, filename=filename, makedirs=True)
             ET.ElementTree(self.xml).write(filename, xml_declaration=True)
         else:
             print(ET.tostring(self.xml))
@@ -614,9 +649,11 @@ class SegmentBaseType(DashElement):
         self.checkEqual(response.status_int, 206)
         if self.options.save:
             default = 'index-{0}-{1}'.format(self.parent.id, self.parent.bandwidth)
-            filename = self.output_filename(default, makedirs=True)
+            filename = self.output_filename(
+                default, self.parent.bandwidth, prefix=self.options.prefix,
+                makedirs=True)
             self.log.debug('saving index segment: %s', filename)
-            with open(filename, 'wb') as dest:
+            with self.open_file(filename, self.options) as dest:
                 dest.write(response.body)
         src = BufferedReader(None, data=response.body)
         opts = mp4.Options(strict=self.options.strict)
@@ -964,8 +1001,16 @@ class Representation(RepresentationBaseType):
         self.checkIsNotNone(self.segmentTemplate)
         info = self.validator.get_representation_info(self)
         self.checkIsNotNone(info)
+        if info is None:
+            return
         decode_time = getattr(info, "decode_time", None)
         start_number = getattr(info, "start_number", None)
+        self.media_segments = []
+        self.checkIsNotNone(self.segmentTemplate)
+        if self.segmentTemplate is None:
+            self.init_segment = InitSegment(self, None, info, None)
+            return
+        self.init_segment = InitSegment(self, self.init_seg_url(), info, None)
         timeline = self.segmentTemplate.segmentTimeline
         seg_duration = self.segmentTemplate.duration
         if seg_duration is None:
@@ -1010,8 +1055,6 @@ class Representation(RepresentationBaseType):
                     start_number - self.segmentTemplate.startNumber) * seg_duration
         self.checkIsNotNone(start_number)
         self.checkIsNotNone(decode_time)
-        self.init_segment = InitSegment(self, self.init_seg_url(), info, None)
-        self.media_segments = []
         seg_num = start_number
         frameRate = 24
         if self.frameRate is not None:
@@ -1159,6 +1202,8 @@ class Representation(RepresentationBaseType):
             self.check_on_demand_profile()
         else:
             self.check_live_profile()
+        if len(self.media_segments) == 0:
+            return
         next_decode_time = self.media_segments[0].decode_time
         # next_seg_num = self.media_segments[0].seg_num
         self.log.debug('starting next_decode_time: %s', str(next_decode_time))
@@ -1266,6 +1311,9 @@ class InitSegment(DashElement):
         self.url = url
 
     def validate(self, depth=-1):
+        self.checkIsNotNone(self.url)
+        if self.url is None:
+            return
         if self.seg_range is not None:
             headers = {"Range": "bytes={}".format(self.seg_range)}
             expected_status = 206
@@ -1280,9 +1328,11 @@ class InitSegment(DashElement):
                 response.status_int, response.body, self.url))
         if self.options.save:
             default = 'init-{0}-{1}'.format(self.parent.id, self.parent.bandwidth)
-            filename = self.output_filename(default, makedirs=True)
+            filename = self.output_filename(
+                default, self.parent.bandwidth, prefix=self.options.prefix,
+                makedirs=True)
             self.log.debug('saving init segment: %s', filename)
-            with open(filename, 'wb') as dest:
+            with self.open_file(filename, self.options) as dest:
                 dest.write(response.body)
         src = BufferedReader(None, data=response.body)
         atoms = mp4.Mp4Atom.load(src)
@@ -1365,9 +1415,10 @@ class MediaSegment(DashElement):
         if self.options.save:
             default = 'media-{0}-{1}-{2}'.format(self.parent.id, self.parent.bandwidth,
                                                  self.seg_num)
-            filename = self.output_filename(default)
+            filename = self.output_filename(
+                default, self.parent.bandwidth, prefix=self.options.prefix)
             self.log.debug('saving media segment: %s', filename)
-            with open(filename, 'wb') as dest:
+            with self.open_file(filename, self.options) as dest:
                 dest.write(response.body)
         src = BufferedReader(None, data=response.body)
         options = {"strict": True}
@@ -1562,8 +1613,10 @@ if __name__ == "__main__":
                 pass
             if rep.mode == 'odvod':
                 timescale = rep.segmentBase.timescale
-            else:
+            elif rep.segmentTemplate is not None:
                 timescale = rep.segmentTemplate.timescale
+            else:
+                timescale = 1
             num_segments = None
             if rep.segmentTemplate and rep.segmentTemplate.segmentTimeline is not None:
                 num_segments = len(rep.segmentTemplate.segmentTimeline.segments)
@@ -1597,6 +1650,9 @@ if __name__ == "__main__":
                         action='store_true')
     parser.add_argument('-d', '--dest',
                         help='directory to store results',
+                        required=False)
+    parser.add_argument('-p', '--prefix',
+                        help='filename prefix to use when storing media files',
                         required=False)
     parser.add_argument('--duration',
                         help='Maximum duration (in seconds)',
