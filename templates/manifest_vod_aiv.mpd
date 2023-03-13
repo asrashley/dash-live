@@ -27,7 +27,7 @@
            maxFrameRate="{{adp.maxFrameRate}}"
            par="{{adp.par}}"
          {% elif adp.contentType == "audio" %}
-           lang="{{adp.language}}"
+           lang="{{adp.lang}}"
          {% endif %}
       >
       {% for rep in adp.representations %}

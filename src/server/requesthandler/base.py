@@ -266,6 +266,7 @@ class RequestHandlerBase(webapp2.RequestHandler):
         }
         period = Period(start=datetime.timedelta(0), id="p0")
         audio = self.calculate_audio_context(stream, mode, encrypted)
+        text = self.calculate_text_context(stream, mode, encrypted)
         max_items = None
         if rv['abr'] is False:
             max_items = 1
@@ -282,6 +283,7 @@ class RequestHandlerBase(webapp2.RequestHandler):
             audio=audio, video=video)
         video.append_cgi_params(cgi_params['video'])
         audio.append_cgi_params(cgi_params['audio'])
+        text.append_cgi_params(cgi_params['text'])
         if cgi_params['manifest']:
             locationURL = self.request.uri
             if '?' in locationURL:
@@ -309,8 +311,10 @@ class RequestHandlerBase(webapp2.RequestHandler):
                 prefix = prefix.replace('RepresentationID/init.m4v', '')
                 video.initURL = prefix + video.initURL
                 audio.initURL = prefix + audio.initURL
+                text.initURL = prefix + text.initURL
             video.mediaURL = prefix + video.mediaURL
             audio.mediaURL = prefix + audio.mediaURL
+            text.mediaURL = prefix + text.mediaURL
         event_generators = EventFactory.create_event_generators(self.request)
         for evgen in event_generators:
             ev_stream = evgen.create_manifest_context(
@@ -327,7 +331,7 @@ class RequestHandlerBase(webapp2.RequestHandler):
 
         for idx, rep in enumerate(audio.representations):
             audio_adp = audio.clone(
-                id=(idx + 2), lang=rep.language, representations=[rep])
+                id=(idx + 2), lang=rep.lang, representations=[rep])
             rep.set_reference_representation(rv["ref_representation"])
             rep.set_dash_timing(timing)
             if len(audio.representations) == 1:
@@ -345,6 +349,28 @@ class RequestHandlerBase(webapp2.RequestHandler):
                     'value': 1,  # Audio description for the visually impaired
                 }
             period.adaptationSets.append(audio_adp)
+
+        for rep in text.representations:
+            text_adp = text.clone(
+                id=(888 + len(period.adaptationSets)),
+                lang=rep.lang, representations=[rep])
+            rep.set_reference_representation(rv["ref_representation"])
+            rep.set_dash_timing(timing)
+            lang_match = (text.lang == audio.lang or
+                          text.lang == 'und' or audio.lang == 'und')
+            if len(text.representations) == 1 and lang_match:
+                text_adp.role = 'main'
+                # Subtitles for the hard of hearing in the same language as
+                # the programme
+                text_adp.accessibility = {
+                    'schemeIdUri': "urn:tva:metadata:cs:AudioPurposeCS:2007",
+                    'value': 2,
+                }
+            elif self.request.params.get('main_text', None) == rep.id:
+                text_adp.role = 'main'
+            else:
+                text_adp.role = 'alternate'
+            period.adaptationSets.append(text_adp)
 
         rv["periods"].append(period)
         kids = set()
@@ -405,12 +431,33 @@ class RequestHandlerBase(webapp2.RequestHandler):
         assert(isinstance(video.representations, list))
         return video
 
+    def calculate_text_context(self, stream, mode, encrypted, max_items=None):
+        text = AdaptationSet(mode=mode, contentType='text', id=888)
+        tcodec = self.request.params.get('tcodec')
+        media_files = models.MediaFile.search(contentType='text', prefix=stream.prefix,
+                                              maxItems=max_items)
+        for mf in media_files:
+            r = mf.representation
+            if r.encrypted == encrypted:
+                if tcodec is None or r.codecs.startswith(tcodec):
+                    text.representations.append(r)
+        # if stream is encrypted but there is no encrypted version of the text track, fall back
+        # to a clear version
+        if not text.representations:
+            for mf in media_files:
+                r = mf.representation
+                if tcodec is None or r.codecs.startswith(tcodec):
+                    text.representations.append(r)
+        text.compute_av_values()
+        return text
+
     def calculate_cgi_parameters(self, mode, now, avail_start, clockDrift,
                                  ts_buffer_depth, audio, video):
-        v_cgi_params = {}
-        a_cgi_params = {}
-        m_cgi_params = copy.deepcopy(dict(self.request.params))
-        t_cgi_params = {}
+        vid_cgi_params = {}
+        aud_cgi_params = {}
+        txt_cgi_params = {}
+        mft_cgi_params = copy.deepcopy(dict(self.request.params))
+        clk_cgi_params = {}
         param_list = ['drm', 'marlin_la_url', 'playready_la_url', 'start',
                       'playready_version']
         if self.request.params.get('events', None) is not None:
@@ -424,16 +471,19 @@ class RequestHandlerBase(webapp2.RequestHandler):
                 continue
             if param == 'start':
                 value = toIsoDateTime(avail_start)
-            v_cgi_params[param] = value
-            a_cgi_params[param] = value
-            m_cgi_params[param] = value
+            vid_cgi_params[param] = value
+            aud_cgi_params[param] = value
+            txt_cgi_params[param] = value
+            mft_cgi_params[param] = value
         if clockDrift:
-            t_cgi_params['drift'] = str(clockDrift)
-            v_cgi_params['drift'] = str(clockDrift)
-            a_cgi_params['drift'] = str(clockDrift)
+            clk_cgi_params['drift'] = str(clockDrift)
+            vid_cgi_params['drift'] = str(clockDrift)
+            aud_cgi_params['drift'] = str(clockDrift)
+            txt_cgi_params['drift'] = str(clockDrift)
         if mode == 'live' and ts_buffer_depth != DashTiming.DEFAULT_TIMESHIFT_BUFFER_DEPTH:
-            v_cgi_params['depth'] = str(ts_buffer_depth)
-            a_cgi_params['depth'] = str(ts_buffer_depth)
+            vid_cgi_params['depth'] = str(ts_buffer_depth)
+            aud_cgi_params['depth'] = str(ts_buffer_depth)
+            txt_cgi_params['depth'] = str(ts_buffer_depth)
         for code in self.INJECTED_ERROR_CODES:
             if self.request.params.get('v%03d' % code) is not None:
                 times = self.calculate_injected_error_segments(
@@ -443,7 +493,7 @@ class RequestHandlerBase(webapp2.RequestHandler):
                     ts_buffer_depth,
                     video.representations[0])
                 if times:
-                    v_cgi_params['%03d' % (code)] = times
+                    vid_cgi_params['%03d' % (code)] = times
             if self.request.params.get('a%03d' % code) is not None:
                 times = self.calculate_injected_error_segments(
                     self.request.params.get('a%03d' % code),
@@ -452,7 +502,7 @@ class RequestHandlerBase(webapp2.RequestHandler):
                     ts_buffer_depth,
                     audio.representations[0])
                 if times:
-                    a_cgi_params['%03d' % (code)] = times
+                    aud_cgi_params['%03d' % (code)] = times
         if self.request.params.get('vcorrupt') is not None:
             segs = self.calculate_injected_error_segments(
                 self.request.params.get('vcorrupt'),
@@ -461,18 +511,19 @@ class RequestHandlerBase(webapp2.RequestHandler):
                 ts_buffer_depth,
                 video.representations[0])
             if segs:
-                v_cgi_params['corrupt'] = segs
+                vid_cgi_params['corrupt'] = segs
         try:
             updateCount = int(self.request.params.get('update', '0'), 10)
-            m_cgi_params['update'] = str(updateCount + 1)
+            mft_cgi_params['update'] = str(updateCount + 1)
         except ValueError as err:
             logging.warning('Invalid update CGI parameter: %s', err)
 
         return {
-            'audio': a_cgi_params,
-            'video': v_cgi_params,
-            'manifest': m_cgi_params,
-            'time': t_cgi_params,
+            'audio': aud_cgi_params,
+            'video': vid_cgi_params,
+            'text': txt_cgi_params,
+            'manifest': mft_cgi_params,
+            'time': clk_cgi_params,
         }
 
     def choose_time_source_method(self, cgi_params, now):

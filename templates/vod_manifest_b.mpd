@@ -23,7 +23,7 @@
      {% for rep in audio.representations %}
        {% if loop.first %}{% include "drm/template.xml" %}{% endif %}
      {% if rep.role=="main" %}
-     <Representation id="{{rep.id}}" mimeType="audio/mp4" codecs="{{rep.codecs}}" sampleRate="{{rep.sampleRate}}" numChannels="{{rep.numChannels}}" lang="{{rep.language}}" startWithSAP="{{rep.startWithSAP}}" bandwidth="{{rep.bitrate}}">
+     <Representation id="{{rep.id}}" mimeType="audio/mp4" codecs="{{rep.codecs}}" sampleRate="{{rep.sampleRate}}" numChannels="{{rep.numChannels}}" lang="{{rep.lang}}" startWithSAP="{{rep.startWithSAP}}" bandwidth="{{rep.bitrate}}">
        <SegmentTemplate startNumber="1"
                         timescale="{{audio.timescale}}"
                         duration="{{rep.segment_duration}}"
