@@ -17,6 +17,9 @@
       <td class="md5-hash">
         {% if media.info %}{{media.info.md5_hash}}{% endif %}
       </td>
+      <td class="contentType">
+        {{media.contentType}}
+      </td>
       <td class="codec">
         {% if media.representation %}
         {{media.representation.codecs}}
