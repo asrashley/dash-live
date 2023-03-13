@@ -63,8 +63,10 @@ class MediaHandler(HTMLHandlerBase):
                 return
             blob_info = upload_files[0]
             logging.debug("Filename: " + blob_info.filename)
-            result["filename"] = blob_info.filename
-            media_id, ext = os.path.splitext(blob_info.filename)
+            result["filename"] = os.path.basename(blob_info.filename)
+            if result["filename"] == '':
+                result["filename"] = blob_info.filename
+            media_id, ext = os.path.splitext(result["filename"])
             try:
                 self.outer.check_csrf('upload')
             except (CsrfFailureException) as cfe:
@@ -79,15 +81,15 @@ class MediaHandler(HTMLHandlerBase):
                 return
             try:
                 context = self.outer.create_context(
-                    title='File %s uploaded' % (blob_info.filename),
+                    title='File {0} uploaded'.format(result["filename"]),
                     blob=blob_info.key())
                 logging.debug("File %s uploaded, key=%s",
                               blob_info.filename, blob_info.key())
-                mf = models.MediaFile.get(name=blob_info.filename)
+                mf = models.MediaFile.get(name=result["filename"])
                 if mf:
                     mf.delete()
                 mf = models.MediaFile(
-                    name=blob_info.filename, blob=blob_info.key())
+                    name=result["filename"], blob=blob_info.key())
                 mf.put()
                 context["mfid"] = mf.key.urlsafe()
                 result = mf.toJSON()
