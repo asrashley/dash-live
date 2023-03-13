@@ -57,7 +57,7 @@
            maxFrameRate="{{adp.maxFrameRate}}"
            par="{{adp.par}}"
          {%- endif %}
-         {%- if adp.lang %}
+         {%- if adp.lang and adp.lang != "und" %}
            lang="{{adp.lang}}"
          {%- endif %}
          >
@@ -104,7 +104,7 @@
                    sampleRate="{{rep.sampleRate}}"
                    numChannels="{{rep.numChannels}}"
                {%- endif %}
-               {%- if rep.lang %}
+               {%- if rep.lang and rep.lang != "und" %}
                    lang="{{rep.lang}}"
                {%- endif %}
                startWithSAP="{{rep.startWithSAP}}"
