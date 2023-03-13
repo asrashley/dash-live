@@ -64,6 +64,7 @@ class Representation(ObjectWithFields):
         'encrypted': False,
         'mediaDuration': None,
         'max_bitrate': None,
+        'mimeType': None,
         'nalLengthFieldLength': None,
         'segment_duration': None,
         'startWithSAP': 1,
@@ -71,12 +72,12 @@ class Representation(ObjectWithFields):
         'track_id': 1,
         'version': 0,
     }
-    VERSION = 2
+    VERSION = 3
 
     def __init__(self, **kwargs):
         super(Representation, self).__init__(**kwargs)
         defaults = {
-            'language': 'und',
+            'lang': kwargs.get('language', 'und'),
             'kids': [],
             'segments': [],
             'codecs': '',
@@ -197,7 +198,7 @@ class Representation(ObjectWithFields):
     @classmethod
     def process_moov(clz, moov, rv, key_ids):
         rv.timescale = moov.trak.mdia.mdhd.timescale
-        rv.language = moov.trak.mdia.mdhd.language
+        rv.lang = moov.trak.mdia.mdhd.language
         rv.track_id = moov.trak.tkhd.track_id
         try:
             default_sample_duration = moov.mvex.trex.default_sample_duration
@@ -221,6 +222,7 @@ class Representation(ObjectWithFields):
             key_ids.add(KeyMaterial(hex=rv.default_kid))
         if moov.trak.mdia.hdlr.handler_type == 'vide':
             rv.contentType = "video"
+            rv.mimeType = "video/mp4"
             if default_sample_duration > 0:
                 rv.add_field('frameRate', rv.timescale / default_sample_duration)
             rv.add_field('width', int(moov.trak.tkhd.width))
@@ -244,6 +246,7 @@ class Representation(ObjectWithFields):
                              avc.avcC.lengthSizeMinusOne + 1)
         elif moov.trak.mdia.hdlr.handler_type == 'soun':
             rv.contentType = "audio"
+            rv.mimeType = "audio/mp4"
             rv.codecs = avc_type
             if avc_type == "mp4a":
                 dsi = avc.esds.descriptor("DecoderSpecificInfo")

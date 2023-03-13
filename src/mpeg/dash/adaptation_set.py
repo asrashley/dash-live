@@ -55,7 +55,6 @@ class AdaptationSet(ObjectWithFields):
             'representations': [],
             'event_streams': [],
         }
-        # TODO: rename lang to language
         if self.contentType == 'audio':
             defaults['mimeType'] = "audio/mp4"
             defaults['lang'] = 'und'
@@ -66,6 +65,14 @@ class AdaptationSet(ObjectWithFields):
             defaults['startWithSAP'] = 1
             defaults['par'] = "16:9"
             suffix = 'm4v'
+        elif self.contentType == 'text':
+            defaults['lang'] = 'und'
+            defaults['role'] = 'subtitle'
+            if kwargs.get('codecs', None) == 'wvtt':
+                defaults['mimeType'] = 'text/vtt'
+            else:
+                defaults['mimeType'] = 'application/mp4'
+            suffix = 'mp4'
         else:
             defaults['mimeType'] = 'application/mp4'
             suffix = 'mp4'
@@ -107,10 +114,13 @@ class AdaptationSet(ObjectWithFields):
         self.maxSegmentDuration = max(
             [a.segment_duration for a in self.representations]) / self.timescale
 
-        if self.contentType == 'audio':
+        if self.contentType in {'audio', 'text'}:
             for rep in self.representations:
-                if rep.language:
-                    self.lang = rep.language
+                if rep.lang:
+                    self.lang = rep.lang
+                if self.contentType == 'audio':
+                    self.sampleRate = rep.sampleRate
+                    self.numChannels = rep.numChannels
         elif self.contentType == 'video':
             self.minWidth = min(
                 [a.width for a in self.representations])
