@@ -14,12 +14,12 @@
       <Representation id="bbb_v6" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="374782">
       </Representation>
     </AdaptationSet>
-    <AdaptationSet mimeType="audio/mp4" contentType="audio" segmentAlignment="true" startWithSAP="" lang="">
+    <AdaptationSet mimeType="audio/mp4" contentType="audio" segmentAlignment="true" startWithSAP="" >
       <ContentComponent id="2" contentType="audio"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
       <SegmentTemplate startNumber="1" timescale="44100" duration="176355" initialization="$RepresentationID$/init.m4a" media="$RepresentationID$/$Number$.m4a"/>
-      <Representation id="bbb_a1" mimeType="audio/mp4" codecs="mp4a.40.2" sampleRate="" numChannels="" lang="und" startWithSAP="1" bandwidth="98381">
-                        </Representation>
+      <Representation id="bbb_a1" mimeType="audio/mp4" codecs="mp4a.40.2" sampleRate="44100" numChannels="2" startWithSAP="1" bandwidth="98381">
+      </Representation>
     </AdaptationSet>
   </Period>
 </MPD>
