@@ -79,24 +79,43 @@
     </table>
     </div>
     <div class="audio-representations col">
-    <table class="table table-striped">
-      <caption>Audio Representations</caption>
-      <thead><tr>
+      <table class="table table-striped">
+        <caption>Audio Representations</caption>
+        <thead><tr>
           {% for f in audio_fields %}
           <th class="{{f}}">{% if f=="numChannels" %}channels{% else
           %}{{f}}{% endif %}</th>
           {% endfor %}
-      </tr></thead>
-      <tbody>
-        {% for repr in audio_representations %}
-        <tr>
-          {% for f in audio_fields %}
-          <td class="{{f}}">{{repr[f]|toHtmlString}}</td>
+        </tr></thead>
+        <tbody>
+          {% for repr in audio_representations %}
+          <tr>
+            {% for f in audio_fields %}
+            <td class="{{f}}">{{repr[f]|toHtmlString}}</td>
+            {% endfor %}
+          </tr>
           {% endfor %}
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+        </tbody>
+      </table>
+    </div>
+    <div class="text-representations col">
+      <table class="table table-striped">
+        <caption>Text Representations</caption>
+        <thead><tr>
+          {% for f in text_fields %}
+          <th class="{{f}}">{{f}}</th>
+          {% endfor %}
+        </tr></thead>
+        <tbody>
+          {% for repr in text_representations %}
+          <tr>
+            {% for f in text_fields %}
+            <td class="{{f}}">{{repr[f]|toHtmlString}}</td>
+            {% endfor %}
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
   </div>

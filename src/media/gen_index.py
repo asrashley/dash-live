@@ -51,7 +51,12 @@ class GenerateIndex(object):
         if self.args.manifest:
             self.generate_manifest(filename, rep)
         if self.args.split:
-            ext = 'm4a' if repr.contentType == 'audio' else 'm4v'
+            if repr.contentType == 'audio':
+                ext = 'm4a'
+            elif repr.contentType == 'video':
+                ext = 'm4v'
+            else:
+                ext = 'mp4'
             src_file = io.FileIO(filename, 'rb')
             for idx, seg in enumerate(rep.segments):
                 if idx == 0:

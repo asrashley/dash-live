@@ -56,8 +56,9 @@
            maxHeight="{{adp.maxHeight}}"
            maxFrameRate="{{adp.maxFrameRate}}"
            par="{{adp.par}}"
-         {%- elif adp.contentType == "audio" %}
-           lang="{{adp.language}}"
+         {%- endif %}
+         {%- if adp.lang %}
+           lang="{{adp.lang}}"
          {%- endif %}
          >
          {% include "events/adaptationset.xml" %}
@@ -100,9 +101,11 @@
                  width="{{rep.width}}"
                  height="{{rep.height}}"
                {%- elif adp.contentType == "audio" %}
-                   sampleRate="{{adp.sampleRate}}"
-                   numChannels="{{adp.numChannels}}"
-                   lang="{{adp.lang}}"
+                   sampleRate="{{rep.sampleRate}}"
+                   numChannels="{{rep.numChannels}}"
+               {%- endif %}
+               {%- if rep.lang %}
+                   lang="{{rep.lang}}"
                {%- endif %}
                startWithSAP="{{rep.startWithSAP}}"
                bandwidth="{{rep.bitrate}}"
