@@ -1041,6 +1041,48 @@ class EncryptedSampleEntry(VisualSampleEntry):
 
 Mp4Atom.BOXES['encv'] = EncryptedSampleEntry
 
+class WebVTTConfigurationBox(Mp4Atom):
+    @classmethod
+    def parse(clz, src, parent, options, **kwargs):
+        rv = Mp4Atom.parse(src, parent, options, **kwargs)
+        rv['config'] = src.read(rv['size'] - rv['header_size'])
+        return rv
+
+    def encode_fields(self, dest):
+        super(WebVTTConfigurationBox, self).encode_fields(dest)
+        dest.write(self.config)
+
+
+Mp4Atom.BOXES['vttC'] = WebVTTConfigurationBox
+
+class BitRateBox(Mp4Atom):
+    @classmethod
+    def parse(clz, src, parent, options, **kwargs):
+        rv = Mp4Atom.parse(src, parent, options, **kwargs)
+        r = FieldReader(clz.classname(), src, rv, debug=options.debug)
+        r.read('I', 'bufferSizeDB')
+        r.read('I', 'maxBitrate')
+        r.read('I', 'avgBitrate')
+        return rv
+
+    def encode_fields(self, dest):
+        d = FieldWriter(self, dest, debug=self.options.debug)
+        d.write('I', 'bufferSizeDB')
+        d.write('I', 'maxBitrate')
+        d.write('I', 'avgBitrate')
+
+
+Mp4Atom.BOXES['btrt'] = BitRateBox
+
+class PlainTextSampleEntry(SampleEntry):
+    pass
+
+class WVTTSampleEntry(PlainTextSampleEntry):
+    parse_children = True
+
+
+Mp4Atom.BOXES['wvtt'] = WVTTSampleEntry
+
 class AVCConfigurationBox(Mp4Atom):
     OBJECT_FIELDS = {
         'sps': ListOf(Binary),

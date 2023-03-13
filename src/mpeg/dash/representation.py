@@ -166,76 +166,8 @@ class Representation(ObjectWithFields):
                     if verbose == 1:
                         sys.stdout.write('M')
                         sys.stdout.flush()
+                    clz.process_moov(atom, rv, key_ids)
                     moov = atom
-                    rv.timescale = atom.trak.mdia.mdhd.timescale
-                    rv.language = atom.trak.mdia.mdhd.language
-                    rv.track_id = atom.trak.tkhd.track_id
-                    try:
-                        default_sample_duration = atom.mvex.trex.default_sample_duration
-                    except AttributeError:
-                        print('Warning: Unable to find default_sample_duration')
-                        default_sample_duration = 0
-                    avc = None
-                    avc_type = None
-                    for box in ['avc1', 'avc3', 'mp4a', 'ec_3', 'encv', 'enca']:
-                        try:
-                            avc = getattr(atom.trak.mdia.minf.stbl.stsd, box)
-                            avc_type = avc.atom_type
-                            break
-                        except AttributeError:
-                            pass
-                    if avc_type == 'enca' or avc_type == 'encv':
-                        avc_type = avc.sinf.frma.data_format
-                        rv.encrypted = True
-                        rv.default_kid = avc.sinf.schi.tenc.default_kid.encode('hex')
-                        rv.iv_size = avc.sinf.schi.tenc.iv_size
-                        key_ids.add(KeyMaterial(hex=rv.default_kid))
-                    if atom.trak.mdia.hdlr.handler_type == 'vide':
-                        rv.contentType = "video"
-                        if default_sample_duration > 0:
-                            rv.add_field('frameRate', rv.timescale / default_sample_duration)
-                        rv.add_field('width', int(atom.trak.tkhd.width))
-                        rv.add_field('height', int(atom.trak.tkhd.height))
-                        try:
-                            rv.width = avc.width
-                            rv.height = avc.height
-                        except AttributeError:
-                            pass
-                        # TODO: work out scan type
-                        rv.add_field('scanType', "progressive")
-                        # TODO: work out sample aspect ratio
-                        rv.add_field('sar', "1:1")
-                        if avc_type is not None:
-                            rv.codecs = '%s.%02x%02x%02x' % (
-                                avc_type,
-                                avc.avcC.AVCProfileIndication,
-                                avc.avcC.profile_compatibility,
-                                avc.avcC.AVCLevelIndication)
-                            rv.add_field('nalLengthFieldLength',
-                                         avc.avcC.lengthSizeMinusOne + 1)
-                    elif atom.trak.mdia.hdlr.handler_type == 'soun':
-                        rv.contentType = "audio"
-                        rv.codecs = avc_type
-                        if avc_type == "mp4a":
-                            dsi = avc.esds.descriptor("DecoderSpecificInfo")
-                            rv.add_field('sampleRate', dsi.sampling_frequency)
-                            rv.add_field('numChannels', dsi.channel_configuration)
-                            rv.codecs = "%s.%02x.%x" % (
-                                avc_type, dsi.object_type,
-                                dsi.audio_object_type)
-                            if rv.numChannels == 7:
-                                # 7 is a special case that means 7.1
-                                rv.numChannels = 8
-                        elif avc_type == "ec-3":
-                            try:
-                                rv.add_field('sampleRate', avc.sampling_frequency)
-                                rv.add_field('numChannels', 0)
-                                for s in avc.dec3.substreams:
-                                    rv.numChannels += s.channel_count
-                                    if s.lfeon:
-                                        rv.numChannels += 1
-                            except AttributeError:
-                                pass
         if rv.encrypted:
             rv.kids = list(key_ids)
         if verbose == 1:
@@ -261,6 +193,81 @@ class Representation(ObjectWithFields):
 
     def set_dash_timing(self, timing):
         self.timing = timing
+
+    @classmethod
+    def process_moov(clz, moov, rv, key_ids):
+        rv.timescale = moov.trak.mdia.mdhd.timescale
+        rv.language = moov.trak.mdia.mdhd.language
+        rv.track_id = moov.trak.tkhd.track_id
+        try:
+            default_sample_duration = moov.mvex.trex.default_sample_duration
+        except AttributeError:
+            print('Warning: Unable to find default_sample_duration')
+            default_sample_duration = 0
+        avc = None
+        avc_type = None
+        for box in ['avc1', 'avc3', 'mp4a', 'ec_3', 'encv', 'enca', 'wvtt']:
+            try:
+                avc = getattr(moov.trak.mdia.minf.stbl.stsd, box)
+                avc_type = avc.atom_type
+                break
+            except AttributeError:
+                pass
+        if avc_type == 'enca' or avc_type == 'encv':
+            avc_type = avc.sinf.frma.data_format
+            rv.encrypted = True
+            rv.default_kid = avc.sinf.schi.tenc.default_kid.encode('hex')
+            rv.iv_size = avc.sinf.schi.tenc.iv_size
+            key_ids.add(KeyMaterial(hex=rv.default_kid))
+        if moov.trak.mdia.hdlr.handler_type == 'vide':
+            rv.contentType = "video"
+            if default_sample_duration > 0:
+                rv.add_field('frameRate', rv.timescale / default_sample_duration)
+            rv.add_field('width', int(moov.trak.tkhd.width))
+            rv.add_field('height', int(moov.trak.tkhd.height))
+            try:
+                rv.width = avc.width
+                rv.height = avc.height
+            except AttributeError:
+                pass
+            # TODO: work out scan type
+            rv.add_field('scanType', "progressive")
+            # TODO: work out sample aspect ratio
+            rv.add_field('sar', "1:1")
+            if avc_type is not None:
+                rv.codecs = '%s.%02x%02x%02x' % (
+                    avc_type,
+                    avc.avcC.AVCProfileIndication,
+                    avc.avcC.profile_compatibility,
+                    avc.avcC.AVCLevelIndication)
+                rv.add_field('nalLengthFieldLength',
+                             avc.avcC.lengthSizeMinusOne + 1)
+        elif moov.trak.mdia.hdlr.handler_type == 'soun':
+            rv.contentType = "audio"
+            rv.codecs = avc_type
+            if avc_type == "mp4a":
+                dsi = avc.esds.descriptor("DecoderSpecificInfo")
+                rv.add_field('sampleRate', dsi.sampling_frequency)
+                rv.add_field('numChannels', dsi.channel_configuration)
+                rv.codecs = "%s.%02x.%x" % (
+                    avc_type, dsi.object_type,
+                    dsi.audio_object_type)
+                if rv.numChannels == 7:
+                    # 7 is a special case that means 7.1
+                    rv.numChannels = 8
+            elif avc_type == "ec-3":
+                try:
+                    rv.add_field('sampleRate', avc.sampling_frequency)
+                    rv.add_field('numChannels', 0)
+                    for s in avc.dec3.substreams:
+                        rv.numChannels += s.channel_count
+                        if s.lfeon:
+                            rv.numChannels += 1
+                except AttributeError:
+                    pass
+        elif moov.trak.mdia.hdlr.handler_type == 'text':
+            rv.contentType = 'text'
+            rv.codecs = avc_type
 
     def generateSegmentDurations(self):
         # TODO: support live profile
