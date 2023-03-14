@@ -83,7 +83,7 @@ class FieldWriter(object):
                 v = str(value)
             self.log.debug(
                 '%s: Write %s size=%s (%d) pos=%d value=%s',
-                self.obj.classname, field, str(size), len(value),
+                self.obj.classname(), field, str(size), len(value),
                 self.dest.tell(), v)
         return self.dest.write(value)
 
@@ -107,7 +107,7 @@ class FieldWriter(object):
         if self.log:
             self.log.debug(
                 '%s: WriteBits %s size=%d value=0x%x',
-                self.obj.classname, field, size,
+                self.obj.classname(), field, size,
                 value)
         self.bits.append(bitstring.Bits(uint=value, length=size))
 
