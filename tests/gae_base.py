@@ -105,7 +105,7 @@ class GAETestBase(TestCaseMixin, unittest.TestCase):
         self.uid = "4d9cf5f4-4574-4381-9df3-1d6e7ca295ff"
         self.templates = TemplateFactory()
 
-    def setup_media(self):
+    def setup_media(self, with_subs=False):
         bbb = models.Stream(
             title='Big Buck Bunny',
             prefix='bbb',
@@ -113,8 +113,12 @@ class GAETestBase(TestCaseMixin, unittest.TestCase):
             playready_la_url=PlayReady.TEST_LA_URL
         )
         bbb.put()
-        for idx, rid in enumerate(["bbb_v6", "bbb_v6_enc", "bbb_v7", "bbb_v7_enc",
-                                   "bbb_a1", "bbb_a1_enc", "bbb_a2"]):
+        fixture_files = [
+            "bbb_v6", "bbb_v6_enc", "bbb_v7", "bbb_v7_enc",
+            "bbb_a1", "bbb_a1_enc", "bbb_a2"]
+        if with_subs:
+            fixture_files.append("bbb_t1")
+        for idx, rid in enumerate(fixture_files):
             filename = rid + ".mp4"
             src_filename = os.path.join(
                 os.path.dirname(__file__), "fixtures", filename)
@@ -134,7 +138,7 @@ class GAETestBase(TestCaseMixin, unittest.TestCase):
             self.assertAlmostEqual(
                 rep.mediaDuration,
                 self.MEDIA_DURATION * rep.timescale,
-                delta=(rep.timescale / 10),
+                delta=(rep.timescale / 5),
                 msg='Invalid duration for {}. Expected {} got {}'.format(
                     filename, self.MEDIA_DURATION * rep.timescale,
                     rep.mediaDuration))

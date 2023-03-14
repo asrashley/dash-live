@@ -43,7 +43,7 @@ class RepresentationTests(GAETestBase, unittest.TestCase):
         self.fixtures = os.path.join(os.path.dirname(__file__), "fixtures")
 
     def test_load_representation(self):
-        self.setup_media()
+        self.setup_media(with_subs=True)
         media_files = models.MediaFile.all()
         self.assertGreaterThan(len(media_files), 0)
         for mfile in media_files:
@@ -64,6 +64,20 @@ class RepresentationTests(GAETestBase, unittest.TestCase):
         self.assertEqual(rep.timescale, 200)
         self.assertEqual(rep.mimeType, 'application/ttml+xml')
         self.assertEqual(rep.codecs, 'im1t|etd1')
+
+    def test_load_web_vtt(self):
+        filename = os.path.join(self.fixtures, "bbb_t1.mp4")
+        src = BufferedReader(io.FileIO(filename, 'rb'))
+        atoms = Mp4Atom.load(src)
+        rep = Representation.load(filename, atoms)
+        self.assertEqual(rep.contentType, 'text')
+        self.assertEqual(rep.timescale, 1000)
+        self.assertEqual(rep.mimeType, 'text/vtt')
+        self.assertEqual(rep.codecs, 'wvtt')
+        self.assertEqual(rep.mediaDuration, 39868)
+        self.assertEqual(rep.encrypted, False)
+        # 1 init segment + 3 media segments
+        self.assertEqual(len(rep.segments), 4)
 
 
 if os.environ.get("TESTS"):

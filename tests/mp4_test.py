@@ -607,6 +607,20 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
             self.check_create_atom(child, src_data)
         self.check_create_atom(atoms[1], src_data)
 
+    def test_parse_webvtt_subs(self):
+        """Test parsing a stream containing WebVTT subtitles"""
+        with open(os.path.join(self.fixtures, "bbb_t1.mp4"), "rb") as f:
+            src_data = f.read()
+        src = BufferedReader(None, data=src_data)
+        atoms = mp4.Mp4Atom.load(src)
+        self.assertEqual(len(atoms), 9)
+        self.assertEqual(atoms[2].atom_type, 'moov')
+        wvtt = atoms[2].trak.mdia.minf.stbl.stsd.wvtt
+        self.assertEqual(wvtt.vttC.config, "WEBVTT - This file has cues.")
+        for child in atoms[2].children:
+            self.check_create_atom(child, src_data)
+        self.check_create_atom(atoms[2], src_data)
+
 
 if os.environ.get("TESTS"):
     def load_tests(loader, tests, pattern):

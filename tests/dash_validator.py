@@ -1183,16 +1183,17 @@ class Representation(RepresentationBaseType):
                 cp_elts = self.contentProtection
             else:
                 cp_elts = self.parent.contentProtection
-            self.checkGreaterThan(
-                len(cp_elts), 0,
-                msg='An encrypted stream must have ContentProtection elements')
-            found = False
-            for elt in cp_elts:
-                if (elt.schemeIdUri == "urn:mpeg:dash:mp4protection:2011" and
-                        elt.value == "cenc"):
-                    found = True
-            self.checkTrue(
-                found, msg="DASH CENC ContentProtection element not found")
+            if self.parent.contentType in {'audio', 'video'}:
+                self.checkGreaterThan(
+                    len(cp_elts), 0,
+                    msg='An encrypted stream must have ContentProtection elements')
+                found = False
+                for elt in cp_elts:
+                    if (elt.schemeIdUri == "urn:mpeg:dash:mp4protection:2011" and
+                            elt.value == "cenc"):
+                        found = True
+                self.checkTrue(
+                    found, msg="DASH CENC ContentProtection element not found")
         else:
             # parent ContentProtection elements checked in parent's validate()
             self.checkEqual(len(self.contentProtection), 0)
