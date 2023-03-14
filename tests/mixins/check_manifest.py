@@ -117,7 +117,7 @@ class DashManifestCheckMixin(object):
         """
         self.check_a_manifest_using_all_options(filename, simplified=True)
 
-    def check_a_manifest_using_all_options(self, filename, simplified=False):
+    def check_a_manifest_using_all_options(self, filename, simplified=False, with_subs=False):
         """
         Exhaustive test of a manifest with every combination of options
         used by the manifest.
@@ -126,7 +126,7 @@ class DashManifestCheckMixin(object):
         """
         manifest = manifests.manifest[filename]
         options = manifest.get_cgi_options(simplified)
-        self.setup_media()
+        self.setup_media(with_subs=with_subs)
         self.logoutCurrentUser()
         media_files = models.MediaFile.all()
         self.assertGreaterThan(len(media_files), 0)

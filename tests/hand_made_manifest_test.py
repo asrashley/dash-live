@@ -28,7 +28,7 @@ from utils.date_time import from_isodatetime
 
 class HandMadeManifestTests(GAETestBase, DashManifestCheckMixin):
     def test_hand_made_manifest(self):
-        self.check_a_manifest_using_all_options('hand_made.mpd')
+        self.check_a_manifest_using_all_options('hand_made.mpd', with_subs=True)
 
     def test_legacy_vod_manifest_name(self):
         self.setup_media()

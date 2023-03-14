@@ -113,7 +113,8 @@ class Representation(ObjectWithFields):
 
     @classmethod
     def load(clz, filename, atoms, verbose=0):
-        base_media_decode_time = None
+        segment_start_time = 0
+        segment_end_time = 0
         default_sample_duration = 0
         moov = None
         filename = os.path.basename(filename)
@@ -148,7 +149,14 @@ class Representation(ObjectWithFields):
                         key_ids.add(KeyMaterial(raw=kid))
                 except AttributeError:
                     pass
-                base_media_decode_time = atom.traf.tfdt.base_media_decode_time
+                tfdt = atom.traf.find_child('tfdt')
+                if tfdt is None:
+                    segment_start_time = segment_end_time
+                else:
+                    segment_start_time = atom.traf.tfdt.base_media_decode_time
+                    segment_end_time = segment_start_time
+                for sample in atom.traf.trun.samples:
+                    segment_end_time += sample.duration
                 rv.segments.append(seg)
                 if default_sample_duration == 0:
                     for sample in atom.traf.trun.samples:
@@ -175,11 +183,11 @@ class Representation(ObjectWithFields):
             sys.stdout.write('\r\n')
         if len(rv.segments) > 2:
             # We need to exclude the last fragment when trying to estimate fragment
-            # duration, as the last one might be truncated. By using base_media_decode_time
+            # duration, as the last one might be truncated. By using segment_start_time
             # of the last fragment and dividing by number of media fragments (minus one)
             # provides the best estimate of fragment duration.
             # Note: len(rv.segments) also includes the init segment, hence the need for -2
-            seg_dur = base_media_decode_time / (len(rv.segments) - 2)
+            seg_dur = segment_start_time / (len(rv.segments) - 2)
             rv.mediaDuration = 0
             for seg in rv.segments[1:]:
                 rv.mediaDuration += seg.duration
