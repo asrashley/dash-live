@@ -266,7 +266,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
                               offset: child.position + child.size - offset]
         js = child.toJSON()
         ch2 = mp4.Mp4Atom.fromJSON(js)
-        name = 'Encoding %s (%s)' % (child.classname, child.atom_type)
+        name = 'Encoding %s (%s)' % (child.classname(), child.atom_type)
         dest = io.BytesIO()
         ch2.encode(dest)
         new_child_data = dest.getvalue()

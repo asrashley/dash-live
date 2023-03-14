@@ -56,7 +56,7 @@ class BitsFieldWriter(object):
         if self.log:
             self.log.debug(
                 '%s: write %s size=%d pos=%d value=0x%x',
-                self.obj.classname, field, size, self.bits.len, value)
+                self.obj.classname(), field, size, self.bits.len, value)
         self.bits.append(bitstring.Bits(uint=value, length=size))
 
     def write_bytes(self, field, length=None, value=None):
@@ -67,7 +67,7 @@ class BitsFieldWriter(object):
         if self.log:
             self.log.debug(
                 '%s: write_bytes %s size=%d pos=%d',
-                self.obj.classname, field, length, self.bits.len)
+                self.obj.classname(), field, length, self.bits.len)
         self.bits.append(bitstring.Bits(bytes=value, length=(8 * length)))
 
     def append_writer(self, field_writer):
@@ -79,7 +79,7 @@ class BitsFieldWriter(object):
         if self.log:
             self.log.debug(
                 '%s: overwrite %s size=%d pos=%d value=0x%x',
-                self.obj.classname, field, size, position, value)
+                self.obj.classname(), field, size, position, value)
         data = bitstring.Bits(uint=value, length=size)
         self.bits.overwrite(data, position)
 
