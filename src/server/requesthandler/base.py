@@ -458,23 +458,28 @@ class RequestHandlerBase(webapp2.RequestHandler):
         txt_cgi_params = {}
         mft_cgi_params = copy.deepcopy(dict(self.request.params))
         clk_cgi_params = {}
-        param_list = ['drm', 'marlin_la_url', 'playready_la_url', 'start',
-                      'playready_version']
+        param_includes = {'drm', 'start'}
+        param_prefixes = ['playready_', 'marlin_']
         if self.request.params.get('events', None) is not None:
-            param_list.append('events')
+            param_includes.add('events')
             event_generators = EventFactory.create_event_generators(self.request)
             for evg in event_generators:
-                param_list += evg.cgi_parameters().keys()
-        for param in param_list:
-            value = self.request.params.get(param)
-            if value is None or (param == 'drm' and value == 'none'):
+                param_prefixes.append(evg.prefix)
+        for name, value in self.request.params.iteritems():
+            if value is None or (name == 'drm' and value == 'none'):
                 continue
-            if param == 'start':
+            include = (name in param_includes)
+            for prefix in param_prefixes:
+                if name.startswith(prefix):
+                    include = True
+            if not include:
+                continue
+            if name == 'start':
                 value = toIsoDateTime(avail_start)
-            vid_cgi_params[param] = value
-            aud_cgi_params[param] = value
-            txt_cgi_params[param] = value
-            mft_cgi_params[param] = value
+            vid_cgi_params[name] = value
+            aud_cgi_params[name] = value
+            txt_cgi_params[name] = value
+            mft_cgi_params[name] = value
         if clockDrift:
             clk_cgi_params['drift'] = str(clockDrift)
             vid_cgi_params['drift'] = str(clockDrift)

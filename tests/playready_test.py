@@ -655,9 +655,25 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
         """
         self.setup_media()
         self.logoutCurrentUser()
+        args = ['drm=playready', 'playready_version=1.0']
+        self.check_piff_uuid_is_present(args)
+
+    def test_playready_piff_sample_encryption_if_flag_present(self):
+        """
+        PiffSampleEncryptionBox is inserted when playready_piff=true option is used
+        """
+        self.setup_media()
+        self.logoutCurrentUser()
+        args = ['drm=playready', 'playready_version=3.0',
+                'playready_piff=1']
+        self.check_piff_uuid_is_present(args)
+        args = ['drm=playready', 'playready_version=3.0',
+                'playready_piff=true']
+        self.check_piff_uuid_is_present(args)
+
+    def check_piff_uuid_is_present(self, args):
         filename = 'hand_made.mpd'
         baseurl = self.from_uri('dash-mpd-v3', manifest=filename, stream='bbb', mode='vod')
-        args = ['drm=playready', 'playready_version=1.0']
         baseurl += '?' + '&'.join(args)
         response = self.app.get(baseurl)
         mpd = ViewsTestDashValidator(
