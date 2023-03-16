@@ -302,11 +302,13 @@ class PlayReady(DrmBase):
 
     def update_traf_if_required(self, cgi_params, traf):
         version = cgi_params.get('playready_version')
+        piff = cgi_params.get('playready_piff', 'false')
+        piff = piff in ["1", "true"]
         if version is not None:
             version = float(version)
         else:
             version = self.version
-        if version != 1.0:
+        if version != 1.0 and not piff:
             return False
         senc = traf.find_child('senc')
         if senc is None:
