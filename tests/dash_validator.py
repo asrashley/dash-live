@@ -1429,16 +1429,19 @@ class MediaSegment(DashElement):
         atoms = mp4.Mp4Atom.load(src, options=options)
         self.checkGreaterThan(len(atoms), 1)
         moof = None
+        mdat = None
         for a in atoms:
             if a.atom_type == 'emsg':
                 self.check_emsg_box(a)
             elif a.atom_type == 'moof':
                 moof = a
-                break
-            self.checkNotEqual(
-                a.atom_type, 'mdat',
-                msg='Failed to find moof box before mdat box')
+            elif a.atom_type == 'mdat':
+                mdat = a
+                self.checkIsNotNone(
+                    moof,
+                    msg='Failed to find moof box before mdat box')
         self.checkIsNotNone(moof)
+        self.checkIsNotNone(mdat)
         try:
             senc = moof.traf.senc
             self.checkNotEqual(
@@ -1490,6 +1493,21 @@ class MediaSegment(DashElement):
                 self.decode_time,
                 delta=self.tolerance,
                 msg=msg)
+        first_sample_pos = moof.traf.tfhd.base_data_offset + moof.traf.trun.data_offset
+        last_sample_end = first_sample_pos
+        for samp in moof.traf.trun.samples:
+            last_sample_end += samp.size
+        msg = ' '.join([
+            r'trun.data_offset must point inside the MDAT box.',
+            r'trun points to {0} but first sample of MDAT is {1}'.format(
+                first_sample_pos, mdat.position + mdat.header_size),
+            r'trun last sample is {0} but end of MDAT is {1}'.format(
+                last_sample_end, mdat.position + mdat.size),
+        ])
+        self.checkGreaterThanOrEqual(first_sample_pos, mdat.position + mdat.header_size, msg)
+        self.checkLessThanOrEqual(last_sample_end, mdat.position + mdat.size, msg)
+        if self.options.strict:
+            self.checkEqual(first_sample_pos, mdat.position + mdat.header_size, msg)
         pts_values = set()
         dts = moof.traf.tfdt.base_media_decode_time
         for sample in moof.traf.trun.samples:

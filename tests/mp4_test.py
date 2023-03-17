@@ -568,12 +568,19 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
             # the newly encoded traf will start at position zero
             # patch the tfhd box to match this offset
             expected_traf['children'][0]["base_data_offset"] = 0
-            # patch the sample position values in CencSampleEncryptionBox & PiffSampleEncryptionBox
+            # patch the sample position values in:
+            #   CencSampleEncryptionBox
+            #   PiffSampleEncryptionBox
+            #   TrackFragmentRunBox
+            boxes_to_patch = {'senc', 'trun', 'UUID(a2394f525a9b4f14a2446c427c648df4)'}
             for idx, child in enumerate(new_moof.traf.children):
-                if child.atom_name() not in {'senc', 'UUID(a2394f525a9b4f14a2446c427c648df4)'}:
+                if child.atom_name() not in boxes_to_patch:
                     continue
                 for j, sample in enumerate(expected_traf['children'][idx]['samples']):
-                    sample['position'] = new_moof.traf.children[idx].samples[j].position
+                    if child.atom_type == 'trun':
+                        sample['offset'] = new_moof.traf.children[idx].samples[j].offset
+                    else:
+                        sample['position'] = new_moof.traf.children[idx].samples[j].position
             self.assertObjectEqual(expected, actual)
             self.assertEqual(len(new_moof.traf.saio.offsets), 1)
             self.assertEqual(

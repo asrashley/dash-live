@@ -410,7 +410,7 @@ class Mp4Atom(ObjectWithFields):
             "header_size": src.tell() - position,
         }
 
-    def encode(self, dest=None):
+    def encode(self, dest=None, depth=0):
         out = dest
         if out is None:
             out = io.BytesIO()
@@ -445,13 +445,14 @@ class Mp4Atom(ObjectWithFields):
         self.encode_fields(dest=out)
         if self.children:
             for child in self.children:
-                child.encode(dest=out)
+                child.encode(dest=out, depth=(depth + 1))
         self.size = out.tell() - self.position
         # replace the length field
         out.seek(self.position)
         out.write(struct.pack('>I', self.size))
         out.seek(0, 2)  # seek to end
-        self.post_encode(dest=out)
+        if depth == 0:
+            self.post_encode_all(dest=out)
         self.options.log.debug('%s: produced %d bytes pos=(%d .. %d)',
                                self._fullname, self.size,
                                self.position, out.tell())
@@ -462,6 +463,12 @@ class Mp4Atom(ObjectWithFields):
     @abstractmethod
     def encode_fields(self, dest):
         pass
+
+    def post_encode_all(self, dest):
+        if self.children is not None:
+            for child in self.children:
+                child.post_encode_all(dest)
+        self.post_encode(dest)
 
     def post_encode(self, dest):
         return
@@ -955,16 +962,7 @@ class TrackBox(BoxWithChildren):
 
 Mp4Atom.BOXES['trak'] = TrackBox
 
-class TrackFragmentBox(BoxWithChildren):
-    def post_encode(self, dest):
-        saio = self.find_child('saio')
-        if saio is not None:
-            saio.post_encode(dest)
-
-
-Mp4Atom.BOXES['traf'] = TrackFragmentBox
-
-for box in ['mdia', 'minf', 'mvex', 'moof', 'schi', 'sinf', 'stbl']:
+for box in ['mdia', 'minf', 'mvex', 'moof', 'schi', 'sinf', 'stbl', 'traf']:
     Mp4Atom.BOXES[box] = BoxWithChildren
 
 class SampleEntry(Mp4Atom):
@@ -2084,14 +2082,41 @@ class TrackFragmentRunBox(FullBox):
                 sample.nals.append(nal)
 
     def encode_box_fields(self, dest):
+        self._first_field_pos = dest.tell()
+        self.ouput_box_fields(dest)
+        for sample in self.samples:
+            sample.encode(dest)
+
+    def ouput_box_fields(self, dest):
         w = FieldWriter(self, dest)
         w.write('I', 'sample_count')
         if self.flags & self.data_offset_present:
             w.write('I', 'data_offset')
         if self.flags & self.first_sample_flags_present:
             w.write('I', 'first_sample_flags')
-        for sample in self.samples:
-            sample.encode(dest)
+
+    def post_encode(self, dest):
+        if (self.flags & self.data_offset_present) == 0:
+            return
+        pos = getattr(self, '_first_field_pos', None)
+        if pos is None:
+            return
+        try:
+            moof = self.find_atom('moof')
+        except AttributeError:
+            return
+        # assume mdat header size is 8 bytes
+        mdat_sample_start = moof.position + moof.size + 8
+        first_sample_pos = moof.traf.tfhd.base_data_offset + self.data_offset
+        if first_sample_pos != mdat_sample_start:
+            self.options.log.debug(
+                'rewriting trun data_offset from %d to %d',
+                self.data_offset, mdat_sample_start - moof.traf.tfhd.base_data_offset)
+            self.data_offset = mdat_sample_start - moof.traf.tfhd.base_data_offset
+            cur = dest.tell()
+            dest.seek(pos)
+            self.ouput_box_fields(dest)
+            dest.seek(cur)
 
 
 Mp4Atom.BOXES['trun'] = TrackFragmentRunBox
@@ -2339,9 +2364,13 @@ class IsoParser(object):
     def show_atom(atom_types, as_json, atom):
         if atom.atom_name() in atom_types:
             if as_json:
-                exclude = Mp4Atom.DEFAULT_EXCLUDE.union({'atom_type'})
+                exclude = atom.DEFAULT_EXCLUDE.union({'atom_type', 'children'})
+                if atom.atom_type == 'mdat':
+                    exclude.add('data')
                 item = atom.toJSON(exclude=exclude, pure=True)
                 item['atom_type'] = atom.atom_name()
+                if atom.children is not None:
+                    item['children'] = [a.atom_name() for a in atom.children]
                 print(json.dumps(item, sort_keys=True, indent=2))
             else:
                 print(atom)
@@ -2379,7 +2408,8 @@ class IsoParser(object):
                 if args.tree:
                     atom.dump()
                 if args.show:
-                    IsoParser.show_atom(args.show, args.json, atom)
+                    atom_types = set(args.show.split(','))
+                    IsoParser.show_atom(atom_types, args.json, atom)
 
 
 if __name__ == "__main__":
