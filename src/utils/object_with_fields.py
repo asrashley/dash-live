@@ -74,8 +74,10 @@ class ObjectWithFields(object):
             return clz.__name__
         return clz.__module__ + '.' + clz.__name__
 
-    def __repr__(self, exclude=None):
-        # print('ObjectWithFields repr', self.classname())
+    def __repr__(self):
+        return self.as_python()
+
+    def as_python(self, exclude=None):
         if exclude is None:
             exclude = self.DEFAULT_EXCLUDE
         fields = self._field_repr(exclude)

@@ -2389,22 +2389,33 @@ class IsoParser(object):
         return atoms
 
     @staticmethod
-    def show_atom(atom_types, as_json, atom):
+    def show_atom(atom, atom_types, as_json, with_children, count=0):
+        check_children = True
         if atom.atom_name() in atom_types:
-            if as_json:
+            if atom.atom_name() in with_children:
+                exclude = atom.DEFAULT_EXCLUDE.union({'atom_type'})
+                check_children = False
+            else:
                 exclude = atom.DEFAULT_EXCLUDE.union({'atom_type', 'children'})
-                if atom.atom_type == 'mdat':
-                    exclude.add('data')
+            if atom.atom_type == 'mdat' and 'mdat' not in with_children:
+                exclude.add('data')
+            if as_json:
                 item = atom.toJSON(exclude=exclude, pure=True)
                 item['atom_type'] = atom.atom_name()
-                if atom.children is not None:
+                if atom.children is not None and 'children' in exclude:
                     item['children'] = [a.atom_name() for a in atom.children]
+                if count > 0:
+                    print(',')
                 print(json.dumps(item, sort_keys=True, indent=2))
             else:
-                print(atom)
-        elif atom.children:
+                exclude.remove('atom_type')
+                print(atom.as_python(exclude))
+            count += 1
+        if check_children and atom.children is not None:
             for child in atom.children:
-                IsoParser.show_atom(atom_types, as_json, child)
+                count = IsoParser.show_atom(child, atom_types=atom_types, as_json=as_json,
+                                            with_children=with_children, count=count)
+        return count
 
     @classmethod
     def main(cls):
@@ -2430,14 +2441,27 @@ class IsoParser(object):
                 options.iv_size = args.ivsize // 8
             else:
                 options.iv_size = args.ivsize
+        if args.json:
+            print('[')
+        if args.show:
+            atom_types = set()
+            with_children = set()
+            for name in args.show.split(','):
+                if name.endswith('+'):
+                    name = name[:-1]
+                    with_children.add(name)
+                atom_types.add(name)
         for filename in args.mp4file:
             atoms = IsoParser.walk_atoms(filename, options=options)
             for atom in atoms:
                 if args.tree:
                     atom.dump()
                 if args.show:
-                    atom_types = set(args.show.split(','))
-                    IsoParser.show_atom(atom_types, args.json, atom)
+                    IsoParser.show_atom(
+                        atom, atom_types=atom_types, with_children=with_children,
+                        as_json=args.json)
+        if args.json:
+            print(']')
 
 
 if __name__ == "__main__":
