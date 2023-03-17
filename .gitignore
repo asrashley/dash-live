@@ -1,10 +1,12 @@
-settings.py
-src/server/settings.py
-runner.py
 *.sql3
 *.pyc
+.coverage
 .project
 .pydevproject
+media
+runner.py
+settings.py
+src/server/settings.py
 static/css/boilerplate.css
 static/css/fluid960.css
 static/css/helpers.css
