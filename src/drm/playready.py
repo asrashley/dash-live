@@ -316,6 +316,7 @@ class PlayReady(DrmBase):
         pos = traf.index('saiz')
         piff = mp4.PiffSampleEncryptionBox.clone_from_senc(senc)
         traf.insert_child(pos, piff)
+        traf.trun._invalidate()
         return True
 
     def minimum_header_version(self, keys):
