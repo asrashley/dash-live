@@ -1907,6 +1907,34 @@ class PiffSampleEncryptionBox(CencSampleEncryptionBox):
 
 Mp4Atom.BOXES[PiffSampleEncryptionBox.DEFAULT_VALUES['atom_type']] = PiffSampleEncryptionBox
 
+class ProtectionSchemeTypeBox(FullBox):
+    @classmethod
+    def parse(clz, src, parent, **kwargs):
+        rv = FullBox.parse(src, parent, **kwargs)
+        r = FieldReader(clz.classname(), src, rv)
+        r.read(4, 'scheme_type')
+        r.read('I', 'scheme_version')
+        if rv['flags'] & 0x000001:
+            r.read('S0', 'scheme_uri')
+        else:
+            rv['scheme_uri'] = None
+        return rv
+
+    def encode_fields(self, dest):
+        if self.scheme_uri is not None:
+            self.flags |= 0x000001
+        return super(ProtectionSchemeTypeBox, self).encode_fields(dest)
+
+    def encode_box_fields(self, dest):
+        w = FieldWriter(self, dest)
+        w.write(4, "scheme_type")
+        w.write('I', "scheme_version")
+        if self.scheme_uri is not None:
+            w.write('S0', "scheme_uri")
+
+
+Mp4Atom.BOXES['schm'] = ProtectionSchemeTypeBox
+
 class SampleAuxiliaryInformationOffsetsBox(FullBox):
     @classmethod
     def parse(clz, src, parent, **kwargs):
