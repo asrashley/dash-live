@@ -206,6 +206,8 @@ class LiveMedia(RequestHandlerBase):
         options = mp4.Options(cache_encoded=True)
         if representation.encrypted:
             options.iv_size = representation.iv_size
+        if self.request.params.get('bugs', None) is not None:
+            options.bug_compatibility = self.request.params['bugs']
         atom = mp4.Wrapper(
             atom_type='wrap', children=mp4.Mp4Atom.load(src, options=options))
         if adp_set.contentType == 'video' and self.request.params.get('corrupt') is not None:

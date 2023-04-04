@@ -458,7 +458,7 @@ class RequestHandlerBase(webapp2.RequestHandler):
         txt_cgi_params = {}
         mft_cgi_params = copy.deepcopy(dict(self.request.params))
         clk_cgi_params = {}
-        param_includes = {'drm', 'start'}
+        param_includes = {'bugs', 'drm', 'start'}
         param_prefixes = ['playready_', 'marlin_']
         if self.request.params.get('events', None) is not None:
             param_includes.add('events')

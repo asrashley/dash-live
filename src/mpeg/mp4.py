@@ -49,11 +49,20 @@ class Options(ObjectWithFields):
         "cache_encoded": False,
         "iv_size": None,
         "strict": False,
+        "bug_compatibility": None,
     }
 
     def __init__(self, **kwargs):
         super(Options, self).__init__(**kwargs)
         self.log = logging.getLogger('mp4')
+
+    def has_bug(self, name):
+        if self.bug_compatibility is None:
+            return False
+        if isinstance(self.bug_compatibility, basestring):
+            self.bug_compatibility = set(
+                map(lambda s: s.strip(), self.bug_compatibility.split(',')))
+        return name in self.bug_compatibility
 
 
 class Mp4Atom(ObjectWithFields):
@@ -1993,6 +2002,8 @@ class SampleAuxiliaryInformationOffsetsBox(FullBox):
             return
         pos = self.find_first_cenc_sample()
         if self.offsets is None or pos != self.offsets[0]:
+            if self.options.has_bug('saio'):
+                return
             self.options.log.debug('%s: SENC sample offset has changed', self._fullname)
             self.offsets = [pos]
             pos = dest.tell()

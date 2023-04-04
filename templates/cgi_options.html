@@ -53,6 +53,16 @@
             <tr><td>base=(true|false)</td><td>Include a BaseURL element?</td>
                 <td>&check;</td><td>&cross;</td><td>&cross;</td>
             </tr>
+            <tr><td>bugs=&lt;bug&gt;,&lt;bug&gt;,...</td>
+              <td>
+                <p>Produce a stream with known bugs. The value is
+                  a comma separated list of bug names:</p>
+                <ul>
+                    <li>saio - Produce invalid SAIO offsets</li>
+                </ul>
+              </td>
+                <td>&check;</td><td>&check;</td><td>&check;</td>
+            </tr>
             <tr><td>corrupt=&lt;number&gt;,&lt;number&gt;,...</td>
             <td>Cause video corruption to be generated when requesting a fragment at the given time.
                 Invalid data is placed inside NAL packets of video frames. &lt;number&gt;
