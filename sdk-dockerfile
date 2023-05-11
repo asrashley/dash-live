@@ -2,6 +2,7 @@ FROM ubuntu:18.04
 EXPOSE 9080 9081
 ENV HOME=/home/dash
 ENV GAEDATA=/home/dash/.gaedata
+ENV LOG_LEVEL="info"
 RUN apt-get update && \
     apt-get -y -q --force-yes install \
     python2.7 \
