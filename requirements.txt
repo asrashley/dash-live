@@ -5,6 +5,6 @@ pycryptodome==3.14.1
 WebTest==2.0.33
 beautifulsoup4==4.8.0
 bitstring==3.1.6
-requests==2.22.0
+requests==2.31.0
 lesscpy==0.13.0
 mock==3.0.5
