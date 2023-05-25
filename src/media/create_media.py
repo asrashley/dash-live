@@ -32,6 +32,7 @@
 # test -e "BigBuckBunny.mp4" || curl -o "BigBuckBunny.mp4" \
 #    "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
 # python create_media.py -i "BigBuckBunny.mp4" -p bbb \
+#    --font /usr/share/fonts/truetype/freefont/FreeSansBold.ttf \
 #    --kid '1ab45440532c439994dc5c5ad9584bac' -o output
 #
 # In the above example, only the Key ID (kid) is supplied but no key. When no key is supplied
@@ -160,25 +161,26 @@ class DashMediaCreator(object):
         keyframes = map(str, range(0, self.options.duration + self.options.segment_duration,
                                    self.options.segment_duration))
         keyframes = ','.join(keyframes)
-        drawtext = ':'.join([
-            'fontfile=/usr/share/fonts/truetype/freefont/FreeSansBold.ttf',
-            'fontsize=48',
-            'text="' + str(bitrate) + ' Kbps"',
-            'x=(w-tw)/2',
-            'y=h-(2*lh)',
-            'fontcolor=white',
-            'box=1',
-            'boxcolor=0x000000@0.7'])
         ffmpeg_args = [
             "ffmpeg",
             "-ss", "5",
             "-ec", "deblock",
             "-i", srcfile,
             "-vf",
-            "drawtext=" + drawtext,
             "-video_track_timescale", str(self.timescale),
             "-map", "0:v:0",
         ]
+        if self.options.font is not None:
+            drawtext = ':'.join([
+                'fontfile=' + self.options.font,
+                'fontsize=48',
+                'text=' + str(bitrate) + ' Kbps',
+                'x=(w-tw)/2',
+                'y=h-(2*lh)',
+                'fontcolor=white',
+                'box=1',
+                'boxcolor=0x000000@0.7'])
+            ffmpeg_args.append("drawtext=" + drawtext)
         if first:
             ffmpeg_args += [
                 "-map", "0:a:0",
@@ -552,6 +554,8 @@ class DashMediaCreator(object):
         ap.add_argument('--aspect', help='Aspect ratio (default=same as source)')
         ap.add_argument('--avc3', help='Use in-band (AVC3 format) init segments',
                         action="store_true")
+        ap.add_argument('--font', help='Truetype font file to use to show bitrate', type=str,
+                        dest='font', default=None)
         ap.add_argument('--frag', help='Fragment duration (in seconds)', type=int,
                         dest='segment_duration', default=4)
         ap.add_argument('--fps', help='Frames per second (0=auto)', type=int,
