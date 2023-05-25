@@ -628,6 +628,25 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
             self.check_create_atom(child, src_data)
         self.check_create_atom(atoms[2], src_data)
 
+    def test_parse_hevc_moov(self):
+        with open(os.path.join(self.fixtures, "hevc-moov.mp4"), "rb") as f:
+            src_data = f.read()
+        src = BufferedReader(None, data=src_data)
+        atoms = mp4.Mp4Atom.load(src)
+        self.assertEqual(len(atoms), 3)
+        self.assertEqual(atoms[2].atom_type, 'moov')
+        hev1 = atoms[2].trak.mdia.minf.stbl.stsd.hev1
+        self.assertEqual(hev1.width, 2048)
+        self.assertEqual(hev1.height, 872)
+        self.assertEqual(hev1.hvcC.general_level_idc, 120)
+        self.assertEqual(hev1.hvcC.general_profile_idc, 2)
+        self.assertEqual(hev1.hvcC.luma_bit_depth, 10)
+        self.assertEqual(hev1.hvcC.chroma_bit_depth, 10)
+        for child in atoms[2].children:
+            self.check_create_atom(child, src_data)
+        self.check_create_atom(atoms[2], src_data)
+
+
 
 if os.environ.get("TESTS"):
     def load_tests(loader, tests, pattern):

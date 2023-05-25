@@ -37,7 +37,7 @@ except ImportError:
     sys.path.append(os.path.join(os.path.dirname(__file__), "..", "lib"))
     import bitstring
 
-from utils.fio import FieldReader, BitsFieldReader, FieldWriter
+from utils.fio import FieldReader, BitsFieldReader, FieldWriter, BitsFieldWriter
 from utils.binary import Binary, HexBinary
 from utils.date_time import DateTimeField, from_iso_epoch, to_iso_epoch
 from utils.object_with_fields import ObjectWithFields
@@ -1042,6 +1042,12 @@ class AVC3SampleEntry(VisualSampleEntry):
 
 Mp4Atom.BOXES['avc3'] = AVC3SampleEntry
 
+class HEV1SampleEntry(VisualSampleEntry):
+    pass
+
+
+Mp4Atom.BOXES['hev1'] = HEV1SampleEntry
+
 class EncryptedSampleEntry(VisualSampleEntry):
     pass
 
@@ -1205,6 +1211,146 @@ class AVCConfigurationBox(Mp4Atom):
 
 
 Mp4Atom.BOXES['avcC'] = AVCConfigurationBox
+
+class HevcNalArray(ObjectWithFields):
+    OBJECT_FIELDS = {
+        'nal_units': ListOf(Binary),
+    }
+
+    @classmethod
+    def parse(clz, reader):
+        rv = {}
+        # r = BitsFieldReader(clz.classname(), src, rv)
+        r = reader.duplicate('HEVC NAL array', rv)
+        r.read(1, 'array_completeness')
+        r.get(1, 'reserved')
+        r.read(6, 'nal_unit_type')
+        num_nalus = r.get(16, 'num_nalus')
+        rv['nal_units'] = []
+        for i in range(num_nalus):
+            unit_length = r.get(16, 'nalUnitLength')
+            nal_unit = r.get_bytes(unit_length, 'NAL unit {0}'.format(i))
+            rv['nal_units'].append(Binary(nal_unit, encoding=Binary.BASE64))
+        return rv
+
+    def encode(self, dest):
+        w = BitsFieldWriter(self, dest)
+        w.write(1, 'array_completeness')
+        w.write(1, 'reserved', value=0)
+        w.write(6, 'nal_unit_type')
+        w.write(16, 'num_nalus', value=len(self.nal_units))
+        for nalu in self.nal_units:
+            w.write(16, 'nalUnitLength', value=len(nalu.data))
+            w.write_bytes('NAL unit', value=nalu.data)
+
+# see FFMPEG libavformat/hevc.c for HEVCDecoderConfigurationRecord
+class HEVCConfigurationBox(Mp4Atom):
+    VPS_NAL_UNIT_TYPE = 32
+    SPS_NAL_UNIT_TYPE = 33
+    PPS_NAL_UNIT_TYPE = 34
+
+    # general_profile_compatibility_flags
+    HEVCPROFILE_MAIN = 0x0002
+    HEVCPROFILE_MAIN10 = 0x0004
+    HEVCPROFILE_MAIN_STILL_PICTURE = 0x0008
+    HEVCPROFILE_REXT = 0x0010
+    HEVCPROFILE_HIGH_THROUGHPUT = 0x0020
+    HEVCPROFILE_MULTIVIEW_MAIN = 0x0040
+    HEVCPROFILE_SCALABLE_MAIN = 0x0080
+    HEVCPROFILE_3D_MAIN = 0x0100
+    HEVCPROFILE_SCREEN_EXTENDED = 0x0200
+    HEVCPROFILE_SCALABLE_REXT = 0x0400
+    HEVCPROFILE_HIGH_THROUGHPUT_SCREEN_EXTENDED = 0x0800
+
+    OBJECT_FIELDS = {
+        'arrays': ListOf(HevcNalArray),
+    }
+    OBJECT_FIELDS.update(Mp4Atom.OBJECT_FIELDS)
+
+    @classmethod
+    def parse(clz, src, parent, options, **kwargs):
+        rv = Mp4Atom.parse(src, parent, options=options, **kwargs)
+        r = BitsFieldReader(clz.classname(), src, rv, rv["size"] - rv["header_size"])
+        r.read(8, 'configuration_version')
+        if rv['configuration_version'] != 1:
+            return rv
+        r.read(2, 'general_profile_space')
+        r.read(1, 'general_tier_flag')
+        r.read(5, 'general_profile_idc')
+        r.read(32, 'general_profile_compatibility_flags')
+        r.read(48, 'general_constraint_indicator_flags')
+        r.read(8, 'general_level_idc')
+        r.get(4, 'reserved')
+        r.read(12, 'min_spatial_segmentation_idc')
+        r.get(6, 'reserved')
+        r.read(2, 'parallelismType')
+        r.get(6, 'reserved')
+        r.read(2, 'chroma_format_idc')
+        r.get(5, 'reserved')
+        rv['luma_bit_depth'] = 8 + r.get(3, 'luma_bit_depth_minus8')
+        r.get(5, 'reserved')
+        rv['chroma_bit_depth'] = 8 + r.get(3, 'chroma_bit_depth_minus8')
+        r.read(16, 'avg_framerate')
+        r.read(2, 'constant_framerate')
+        r.read(3, 'num_temporal_layers')
+        r.read(1, 'temporal_id_nested')
+        r.read(2, 'length_size_minus_one')
+        num_arrays = r.get(8, 'num_arrays')
+        rv['arrays'] = []
+        # the 'arrays' list should contain the VPS, SPS and PPS
+        for i in range(num_arrays):
+            rv['arrays'].append(HevcNalArray.parse(r))
+        return rv
+
+    def encode_fields(self, dest):
+        w = BitsFieldWriter(self)
+        w.write(8, 'configuration_version')
+        w.write(2, 'general_profile_space')
+        w.write(1, 'general_tier_flag')
+        w.write(5, 'general_profile_idc')
+        w.write(32, 'general_profile_compatibility_flags')
+        w.write(48, 'general_constraint_indicator_flags')
+        w.write(8, 'general_level_idc')
+        w.write(4, 'reserved', value=0x0F)
+        w.write(12, 'min_spatial_segmentation_idc')
+        w.write(6, 'reserved', value=0x3F)
+        w.write(2, 'parallelismType')
+        w.write(6, 'reserved', value=0x3F)
+        w.write(2, 'chroma_format_idc')
+        w.write(5, 'reserved', value=0x1F)
+        w.write(3, 'luma_bit_depth', value=(self.luma_bit_depth - 8))
+        w.write(5, 'reserved', value=0x1F)
+        w.write(3, 'chroma_bit_depth', value=(self.chroma_bit_depth - 8))
+        w.write(16, 'avg_framerate')
+        w.write(2, 'constant_framerate')
+        w.write(3, 'num_temporal_layers')
+        w.write(1, 'temporal_id_nested')
+        w.write(2, 'length_size_minus_one')
+        w.write(8, 'num_arrays', value=len(self.arrays))
+        for nal_arr in self.arrays:
+            nal_arr.encode(w)
+        dest.write(w.toBytes())
+
+    def get_vps(self):
+        """
+        Returns the VPS NAL units in this configuration box
+        """
+        return self._get_nal_unit(self.VPS_NAL_UNIT_TYPE)
+
+    def get_sps(self):
+        """
+        Returns the SPS NAL units in this configuration box
+        """
+        return self._get_nal_unit(self.SPS_NAL_UNIT_TYPE)
+
+    def _get_nal_unit(self, nal_type):
+        for nal_arr in self.arrays:
+            if nal_arr.nal_unit_type == nal_type:
+                return nal_arr.nal_units
+        return []
+
+
+Mp4Atom.BOXES['hvcC'] = HEVCConfigurationBox
 
 class AudioSampleEntry(SampleEntry):
     parse_children = True
