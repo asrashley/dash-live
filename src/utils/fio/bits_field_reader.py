@@ -94,6 +94,14 @@ class BitsFieldReader(object):
             return self.src.read('bool')
         return self.src.read('uint:%d' % size)
 
+    def get_bytes(self, length, field):
+        if self.log:
+            self.log.debug(
+                '%s: read_bytes %s size=%d pos=%s', self.name, field, length,
+                self.src.pos)
+        data = self.src.read('bytes:{0}'.format(length))
+        return data
+
     def bitpos(self):
         return self.src.bitpos
 

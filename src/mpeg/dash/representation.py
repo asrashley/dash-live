@@ -24,6 +24,8 @@ import datetime
 import os
 import sys
 
+import bitstring
+
 from drm.keymaterial import KeyMaterial
 from utils.date_time import scale_timedelta
 from utils.list_of import ListOf
@@ -73,6 +75,10 @@ class Representation(ObjectWithFields):
         'version': 0,
     }
     VERSION = 3
+    KNOWN_CODEC_BOXES = [
+        'avc1', 'avc3', 'mp4a', 'ec_3', 'encv', 'enca',
+        'hev1', 'stpp', 'wvtt',
+    ]
 
     def __init__(self, **kwargs):
         super(Representation, self).__init__(**kwargs)
@@ -101,7 +107,7 @@ class Representation(ObjectWithFields):
     def __repr__(self):
         args = []
         for key, value in self.__dict__.iteritems():
-            if key == 'num_segments':
+            if key in {'num_segments', '_fields', 'DEFAULT_EXCLUDE'}:
                 continue
             if isinstance(value, str):
                 value = '"%s"' % value
@@ -215,7 +221,7 @@ class Representation(ObjectWithFields):
             default_sample_duration = 0
         avc = None
         avc_type = None
-        for box in ['avc1', 'avc3', 'mp4a', 'ec_3', 'encv', 'enca', 'stpp', 'wvtt']:
+        for box in clz.KNOWN_CODEC_BOXES:
             try:
                 avc = getattr(moov.trak.mdia.minf.stbl.stsd, box)
                 avc_type = avc.atom_type
@@ -244,7 +250,7 @@ class Representation(ObjectWithFields):
             rv.add_field('scanType', "progressive")
             # TODO: work out sample aspect ratio
             rv.add_field('sar', "1:1")
-            if avc_type is not None:
+            if avc_type in {'avc1', 'avc3'}:
                 rv.codecs = '%s.%02x%02x%02x' % (
                     avc_type,
                     avc.avcC.AVCProfileIndication,
@@ -252,6 +258,45 @@ class Representation(ObjectWithFields):
                     avc.avcC.AVCLevelIndication)
                 rv.add_field('nalLengthFieldLength',
                              avc.avcC.lengthSizeMinusOne + 1)
+            elif avc_type in {'hev1', 'hvc1'}:
+                # According to ISO 14496-15, the codec string for hev1 and hvc1
+                # should be:
+                # * the general_profile_space, encoded as no character
+                #   (general_profile_space == 0), or 'A', 'B', 'C' for
+                #   general_profile_space 1, 2, 3, followed by the general_profile_idc
+                #   encoded as a decimal number;
+                # * the general_profile_compatibility_flags, encoded in hexadecimal
+                #   (leading zeroes may be omitted);
+                # * the general_tier_flag, encoded as 'L' (general_tier_flag==0) or
+                #   'H' (general_tier_flag==1), followed by the general_level_idc,
+                #   encoded as a decimal number;
+                # * each of the 6 bytes of the constraint flags, starting from the byte
+                #   containing the general_progressive_source_flag, each encoded as a
+                #   hexadecimal number, and the encoding of each byte separated by a
+                #   period; trailing bytes that are zero may be omitted.
+                gps = ['', 'A', 'B', 'C'][avc.hvcC.general_profile_space]
+                tier = '{0}{1}'.format(
+                    'LH'[avc.hvcC.general_tier_flag],
+                    avc.hvcC.general_level_idc)
+                gpcf = bitstring.BitArray(
+                    uint=avc.hvcC.general_profile_compatibility_flags, length=32)
+                gpcf.reverse()
+                parts = [
+                    str(avc_type),
+                    '{0}{1:d}'.format(gps, avc.hvcC.general_profile_idc),
+                    '{0:x}'.format(gpcf.uint),
+                    tier,
+                ]
+                gcif = avc.hvcC.general_constraint_indicator_flags
+                pos = 40
+                while gcif > 0:
+                    mask = 0xFF << pos
+                    parts.append(r'{:x}'.format((gcif & mask) >> pos))
+                    gcif = gcif & ~mask
+                    pos -= 8
+                rv.codecs = '.'.join(parts)
+                rv.add_field('nalLengthFieldLength',
+                             avc.hvcC.length_size_minus_one + 1)
         elif moov.trak.mdia.hdlr.handler_type == 'soun':
             rv.contentType = "audio"
             rv.mimeType = "audio/mp4"
@@ -433,10 +478,10 @@ class Representation(ObjectWithFields):
 
 if __name__ == '__main__':
     import io
-    import mp4
-    import utils
+    from mpeg import mp4
+    from utils.buffered_reader import BufferedReader
 
-    src = utils.BufferedReader(io.FileIO(sys.argv[1], 'rb'))
+    src = BufferedReader(io.FileIO(sys.argv[1], 'rb'))
     wrap = mp4.Wrapper(atom_type='wrap', parent=None,
                        children=mp4.Mp4Atom.load(src))
     rep = Representation.load(filename=sys.argv[1], atoms=wrap.children)

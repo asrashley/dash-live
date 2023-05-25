@@ -79,6 +79,26 @@ class RepresentationTests(GAETestBase, unittest.TestCase):
         # 1 init segment + 3 media segments
         self.assertEqual(len(rep.segments), 4)
 
+    def test_load_hevc(self):
+        filename = os.path.join(self.fixtures, "hevc-rep.mp4")
+        with open(filename, "rb") as f:
+            src_data = f.read()
+            src = BufferedReader(None, data=src_data)
+        atoms = Mp4Atom.load(src)
+        rep = Representation.load(filename, atoms)
+        self.assertEqual(rep.contentType, 'video')
+        self.assertEqual(rep.timescale, 600)
+        self.assertEqual(rep.frameRate, 24)
+        self.assertEqual(rep.mimeType, 'video/mp4')
+        self.assertEqual(rep.codecs, 'hev1.2.4.L93.90')
+        self.assertEqual(rep.width, 1280)
+        self.assertEqual(rep.height, 544)
+        self.assertEqual(rep.segment_duration, 1200)
+        self.assertEqual(rep.mediaDuration, 6 * 600)
+        self.assertEqual(rep.encrypted, False)
+        self.assertEqual(rep.nalLengthFieldLength, 4)
+        self.assertEqual(rep.lang, "eng")
+
 
 if os.environ.get("TESTS"):
     def load_tests(loader, tests, pattern):
