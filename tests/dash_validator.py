@@ -237,7 +237,7 @@ class DashElement(TestCaseMixin):
         dest = os.path.join(self.options.dest,
                             toIsoDateTime(now).replace(':', '-'))
         if prefix is not None and bandwidth is not None:
-            filename = '{0}_{1}{2}'.format(prefix, bandwidth, ext)
+            filename = '{0}_{1}.mp4'.format(prefix, bandwidth)
         else:
             filename = ''.join([root, ext])
         self.log.debug('dest=%s, filename=%s', dest, filename)
