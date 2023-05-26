@@ -53,9 +53,8 @@ class FieldReader(object):
         elif size == 'H':
             d = self.src.read(2)
             value = (ord(d[0]) << 8) + ord(d[1])
-        elif size == 'I':
-            d = self.src.read(4)
-            value = (ord(d[0]) << 24) + (ord(d[1]) << 16) + (ord(d[2]) << 8) + ord(d[3])
+        elif size in {'I', 'i'}:
+            value = struct.unpack('>' + size, self.src.read(4))[0]
         elif size == 'Q':
             value = struct.unpack('>Q', self.src.read(8))[0]
         elif size == '3I':

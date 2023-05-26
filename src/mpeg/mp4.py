@@ -2212,6 +2212,7 @@ class SampleAuxiliaryInformationOffsetsBox(FullBox):
 
 Mp4Atom.BOXES['saio'] = SampleAuxiliaryInformationOffsetsBox
 
+# See section 8.8.8 of ISO/IEC 14496-12
 class TrackSample(ObjectWithFields):
     REQUIRED_FIELDS = {
         'index': int,
@@ -2241,7 +2242,10 @@ class TrackSample(ObjectWithFields):
         if index == 0 and (flags & TrackFragmentRunBox.first_sample_flags_present):
             rv['flags'] = trun["first_sample_flags"]
         if flags & TrackFragmentRunBox.sample_composition_time_offsets_present:
-            rv["composition_time_offset"] = struct.unpack('>i', src.read(4))[0]
+            if trun['version']:
+                rv["composition_time_offset"] = struct.unpack('>i', src.read(4))[0]
+            else:
+                rv["composition_time_offset"] = struct.unpack('>I', src.read(4))[0]
         return rv
 
     def encode(self, dest):
@@ -2254,16 +2258,19 @@ class TrackSample(ObjectWithFields):
         if flags & TrackFragmentRunBox.sample_flags_present:
             d.write('I', 'flags')
         if flags & TrackFragmentRunBox.sample_composition_time_offsets_present:
-            d.write('I', 'composition_time_offset')
+            if self.parent.version:
+                d.write('i', 'composition_time_offset')
+            else:
+                d.write('I', 'composition_time_offset')
 
 
 class TrackFragmentRunBox(FullBox):
     data_offset_present = 0x000001
-    first_sample_flags_present = 0x000004
-    sample_duration_present = 0x000100  # each sample has its own duration?
-    sample_size_present = 0x000200  # each sample has its own size, otherwise the default is used.
-    sample_flags_present = 0x000400  # each sample has its own flags, otherwise the default is used.
-    sample_composition_time_offsets_present = 0x000800
+    first_sample_flags_present = 0x000004  # overrides default flags for the first sample only
+    sample_duration_present = 0x000100  # sample has its own duration?
+    sample_size_present = 0x000200  # sample has its own size
+    sample_flags_present = 0x000400  # sample has its own flags
+    sample_composition_time_offsets_present = 0x000800  # sample has a composition time offset
 
     OBJECT_FIELDS = {
         'samples': ListOf(TrackSample),
