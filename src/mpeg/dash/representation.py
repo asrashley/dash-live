@@ -76,7 +76,7 @@ class Representation(ObjectWithFields):
     }
     VERSION = 3
     KNOWN_CODEC_BOXES = [
-        'avc1', 'avc3', 'mp4a', 'ec_3', 'encv', 'enca',
+        'ac_3', 'avc1', 'avc3', 'mp4a', 'ec_3', 'encv', 'enca',
         'hev1', 'stpp', 'wvtt',
     ]
 
@@ -321,6 +321,13 @@ class Representation(ObjectWithFields):
                             rv.numChannels += 1
                 except AttributeError:
                     pass
+            elif avc_type == "ac-3":
+                try:
+                    rv.add_field('sampleRate', avc.dac3.sampling_frequency)
+                    rv.add_field('numChannels', avc.dac3.channel_count)
+                except AttributeError:
+                    rv.add_field('sampleRate', avc.sampling_frequency)
+                    rv.add_field('numChannels', avc.channel_count)
         elif moov.trak.mdia.hdlr.handler_type in {'text', 'subt'}:
             rv.contentType = 'text'
             rv.codecs = avc_type

@@ -99,6 +99,24 @@ class RepresentationTests(GAETestBase, unittest.TestCase):
         self.assertEqual(rep.nalLengthFieldLength, 4)
         self.assertEqual(rep.lang, "eng")
 
+    def test_load_ac3(self):
+        filename = os.path.join(self.fixtures, "ac3-rep.mp4")
+        with open(filename, "rb") as f:
+            src_data = f.read()
+            src = BufferedReader(None, data=src_data)
+        atoms = Mp4Atom.load(src)
+        rep = Representation.load(filename, atoms)
+        self.assertEqual(rep.contentType, 'audio')
+        self.assertEqual(rep.timescale, 48000)
+        self.assertEqual(rep.mimeType, 'audio/mp4')
+        self.assertEqual(rep.codecs, 'ac-3')
+        self.assertEqual(rep.segment_duration, 2 * 48000)
+        self.assertEqual(rep.mediaDuration, 288768)
+        self.assertEqual(rep.encrypted, False)
+        self.assertEqual(rep.lang, "und")
+        self.assertEqual(rep.numChannels, 6)
+        self.assertEqual(rep.sampleRate, 48000)
+
 
 if os.environ.get("TESTS"):
     def load_tests(loader, tests, pattern):
