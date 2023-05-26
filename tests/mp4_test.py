@@ -646,6 +646,82 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
             self.check_create_atom(child, src_data)
         self.check_create_atom(atoms[2], src_data)
 
+    def test_trun_with_negative_sample_composition_time_offset(self):
+        samples = [
+            mp4.TrackSample(
+                composition_time_offset=0,
+                duration=25,
+                flags=33554432,
+                index=0,
+                offset=496,
+                size=3648
+            ),
+            mp4.TrackSample(
+                composition_time_offset=100,
+                duration=25,
+                flags=16842752,
+                index=1,
+                offset=4144,
+                size=214
+            ),
+            mp4.TrackSample(
+                composition_time_offset=25,
+                duration=25,
+                flags=16842752,
+                index=2,
+                offset=4358,
+                size=217,
+            ),
+            mp4.TrackSample(
+                composition_time_offset=-50,
+                duration=25,
+                flags=16842752,
+                index=3,
+                offset=4575,
+                size=215,
+            )
+        ]
+
+        trun = mp4.TrackFragmentRunBox(
+            atom_type="trun",
+            data_offset=496,
+            first_sample_flags=33554432,
+            flags=2565,
+            header_size=8,
+            position=3001,
+            sample_count=len(samples),
+            version=1,
+            samples=samples,
+        )
+        flags = (
+            mp4.TrackFragmentHeaderBox.base_data_offset_present +
+            mp4.TrackFragmentHeaderBox.sample_description_index_present +
+            mp4.TrackFragmentHeaderBox.default_sample_duration_present +
+            mp4.TrackFragmentHeaderBox.default_sample_flags_present)
+        tfhd = mp4.TrackFragmentHeaderBox(
+            atom_type="tfhd",
+            base_data_offset=2921,
+            children=None,
+            default_sample_duration=25,
+            default_sample_flags=16842752,
+            default_sample_size=0,
+            flags=flags,
+            header_size=8,
+            position=2953,
+            sample_description_index=1,
+            track_id=1,
+            version=0,
+        )
+        traf = mp4.BoxWithChildren(
+            atom_type='traf',
+            children=[tfhd, trun],
+        )
+        dest = io.BytesIO()
+        traf.encode(dest)
+        src = BufferedReader(None, data=dest.getvalue())
+        atoms = mp4.Mp4Atom.load(src)
+        self.assertEqual(len(atoms), 1)
+        self.assertObjectEqual(traf.toJSON(), atoms[0].toJSON())
 
 
 if os.environ.get("TESTS"):
