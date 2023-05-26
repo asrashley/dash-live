@@ -69,8 +69,8 @@ cgi_options = [
         title='Audio codec',
         options=[
             ('AAC', 'acodec=mp4a'),
-            ('E-AC3', 'acodec=ec-3'),
-            ('Both AAC and E-AC3', ''),
+            ('(E)AC3', 'acodec=ec-3'),
+            ('Both AAC and (E)AC3', ''),
         ]
     ),
     CgiOption(

@@ -407,6 +407,10 @@ class RequestHandlerBase(webapp2.RequestHandler):
             if r.encrypted == encrypted:
                 if acodec is None or r.codecs.startswith(acodec):
                     audio.representations.append(r)
+                elif acodec == 'ec-3' and r.codecs == 'ac-3':
+                    # special case as CGI paramaters doesn't distinguish between
+                    # AC-3 and EAC-3
+                    audio.representations.append(r)
         # if stream is encrypted but there is no encrypted version of the audio track, fall back
         # to a clear version
         if not audio.representations and acodec:

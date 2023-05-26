@@ -1379,9 +1379,10 @@ class EC3SampleEntry(AudioSampleEntry):
     pass
 
 
+Mp4Atom.BOXES['ac-3'] = EC3SampleEntry
 Mp4Atom.BOXES['ec-3'] = EC3SampleEntry
 
-class EC3SubStream(ObjectWithFields):
+class EAC3SubStream(ObjectWithFields):
     DEFAULT_EXCLUDE = {'src'}
 
     @classmethod
@@ -1390,7 +1391,7 @@ class EC3SubStream(ObjectWithFields):
         r.read(5, 'bsid')
         r.read(5, 'bsmod')
         r.read(3, 'acmod')
-        r.kwargs['channel_count'] = EC3SpecificBox.ACMOD_NUM_CHANS[r.kwargs['acmod']]
+        r.kwargs['channel_count'] = EAC3SpecificBox.ACMOD_NUM_CHANS[r.kwargs['acmod']]
         r.read(1, 'lfeon')
         r.get(3, 'reserved')
         r.read(4, 'num_dep_sub')
@@ -1412,11 +1413,11 @@ class EC3SubStream(ObjectWithFields):
 
 
 # See section C.3.1 of ETSI TS 103 420 V1.2.1
-class EC3SpecificBox(Mp4Atom):
+class EAC3SpecificBox(Mp4Atom):
     ACMOD_NUM_CHANS = [2, 1, 2, 3, 3, 4, 4, 5]
 
     OBJECT_FIELDS = {
-        "substreams": ListOf(EC3SubStream),
+        "substreams": ListOf(EAC3SubStream),
     }
     OBJECT_FIELDS.update(Mp4Atom.OBJECT_FIELDS)
 
@@ -1428,9 +1429,9 @@ class EC3SpecificBox(Mp4Atom):
         num_ind_sub = r.get(3, "num_ind_sub") + 1
         rv["substreams"] = []
         for i in range(num_ind_sub):
-            r2 = r.duplicate("EC3SubStream", {})
-            EC3SubStream.parse(r2)
-            rv["substreams"].append(EC3SubStream(**r2.kwargs))
+            r2 = r.duplicate("EAC3SubStream", {})
+            EAC3SubStream.parse(r2)
+            rv["substreams"].append(EAC3SubStream(**r2.kwargs))
         if (r.bitpos() + 16) <= r.bitsize:
             r.get(7, 'reserved')
             r.read(1, 'flag_ec3_extension_type_a')
@@ -1451,7 +1452,51 @@ class EC3SpecificBox(Mp4Atom):
         dest.write(ba.bytes)
 
 
-Mp4Atom.BOXES['dec3'] = EC3SpecificBox
+Mp4Atom.BOXES['dec3'] = EAC3SpecificBox
+
+class AC3SpecificBox(Mp4Atom):
+    SAMPLE_RATES = [48000, 44100, 32000, 0]
+    CHANNEL_CONFIGURATIONS = [
+        (2, "1 + 1 (Ch1, Ch2)"),
+        (1, "1/0 (C)"),
+        (2, "2/0 (L, R)"),
+        (3, "3/0 (L, C, R)"),
+        (3, "2/1 (L, R, S)"),
+        (4, "3/1 (L, C, R, S)"),
+        (4, "2/2 (L, R, SL, SR)"),
+        (5, "3/2 (L, C, R, SL, SR)"),
+    ]
+
+    @classmethod
+    def parse(clz, src, parent, **kwargs):
+        rv = Mp4Atom.parse(src, parent, **kwargs)
+        r = BitsFieldReader(clz.classname(), src, rv, rv["size"] - rv["header_size"])
+        r.read(2, 'fscod')
+        r.read(5, 'bsid')
+        r.read(3, 'bsmod')
+        r.read(3, 'acmod')
+        r.read(1, 'lfe')
+        r.read(5, 'bitrate_code')
+        r.get(5, 'reserved')
+        rv['sampling_frequency'] = clz.SAMPLE_RATES[rv["fscod"]]
+        rv['channel_count'], rv['channel_configuration'] = clz.CHANNEL_CONFIGURATIONS[rv['acmod']]
+        if rv['lfe']:
+            rv['channel_count'] += 1
+        return rv
+
+    def encode_fields(self, dest):
+        w = BitsFieldWriter(self)
+        w.write(2, 'fscod')
+        w.write(5, 'bsid')
+        w.write(3, 'bsmod')
+        w.write(3, 'acmod')
+        w.write(1, 'lfe')
+        w.write(5, 'bitrate_code')
+        w.write(5, 'reserved', value=0x00)
+        dest.write(w.toBytes())
+
+
+Mp4Atom.BOXES['dac3'] = AC3SpecificBox
 
 class OriginalFormatBox(Mp4Atom):
     @classmethod
