@@ -6,10 +6,10 @@ $(document).ready(function(){
     baseurl: location.href.split('#')[0],
   };
   var cursor = { row:0, col:0, stream:0 };
-    
+
   function cycleOption(cell) {
     var sel, options, cur, i;
-    
+
     sel = cell.find('select');
     options = cell.find('option');
     cur = sel.val();
@@ -40,41 +40,41 @@ $(document).ready(function(){
       ypos = (ypos+1) % rows.length;
       break;
     case 'right':
-	  if (cursor.row < (cursor.numRows-1)) {
-		xpos = (xpos+1) % cols.length;
-	  } else {
-		cursor.stream = (cursor.stream+1) % pageState.streams.length;
-		$('#play-button select').val(pageState.streams[cursor.stream].directory);
-		updateManifestURL();
-	  }
+          if (cursor.row < (cursor.numRows-1)) {
+                xpos = (xpos+1) % cols.length;
+          } else {
+                cursor.stream = (cursor.stream+1) % pageState.streams.length;
+                $('#play-button select').val(pageState.streams[cursor.stream].directory);
+                updateManifestURL();
+          }
       break;
     case 'left':
-	  if (cursor.row < (cursor.numRows-1)) {
-		xpos -= 1;
-		if (xpos < 0) {
+          if (cursor.row < (cursor.numRows-1)) {
+                xpos -= 1;
+                if (xpos < 0) {
           xpos = cols.length - 1;
-		}
-	  } else {
-		cursor.stream--;
-		if (cursor.stream<0) {
-		  cursor.stream = pageState.streams.length - 1;
-		  $('#play-button select').val(pageState.streams[cursor.stream].directory);
-		  updateManifestURL();
-		}
-	  }
+                }
+          } else {
+                cursor.stream--;
+                if (cursor.stream<0) {
+                  cursor.stream = pageState.streams.length - 1;
+                  $('#play-button select').val(pageState.streams[cursor.stream].directory);
+                  updateManifestURL();
+                }
+          }
       break;
     }
     $('#buttons .cursor').removeClass('cursor');
     cols = $(rows[ypos]).find('td');
     $(cols[xpos % cols.length]).addClass('cursor');
     $('#buttons .active').removeClass('active');
-	if (ypos == (rows.length)-1) {
-	  $('#buttons tbody tr:last-child').addClass('active');
-	} else {
-	  $('#buttons tbody .manifest:nth-child('+(xpos+1)+'), #buttons tbody .option:nth-child('+(xpos+1)+')').addClass('active');
-	}
-    cursor.row = ypos;
-	cursor.col = xpos;
+      if (ypos == (rows.length)-1) {
+          $('#buttons tbody tr:last-child').addClass('active');
+      } else {
+          $('#buttons tbody .manifest:nth-child('+(xpos+1)+'), #buttons tbody .option:nth-child('+(xpos+1)+')').addClass('active');
+      }
+      cursor.row = ypos;
+      cursor.col = xpos;
   }
 
   function buildCGI() {
@@ -207,13 +207,13 @@ $(document).ready(function(){
       playVideo();
       break;
     case 37: /* left */
-	  moveCursor('left');
+          moveCursor('left');
       break;
     case 38: /* up */
       moveCursor('up');
       break;
     case 39: /* right */
-	  moveCursor('right');
+          moveCursor('right');
       break;
     case 40: /* down */
       moveCursor('down');
@@ -244,16 +244,16 @@ $(document).ready(function(){
       }
       toggleActiveRow();
     });
-	$('#buttons tbody .option select').on('change', function(ev) {
+    $('#buttons tbody .option select').on('change', function(ev) {
       updateManifestURL();
     });
-	$('#play-button select').on('change', function(ev) {
-	  var i, val = $(ev.target).val();
-	  for(i=0; i<pageState.streams.length; ++i) {
-		if (pageState.streams[i].directory == val) {
-		  cursor.stream = i;
-		}
-	  }
+    $('#play-button select').on('change', function(ev) {
+          var i, val = $(ev.target).val();
+          for(i=0; i<pageState.streams.length; ++i) {
+                if (pageState.streams[i].directory == val) {
+                  cursor.stream = i;
+                }
+          }
       updateManifestURL();
     });
     $('.play-icon').on('click', playVideo);
@@ -278,17 +278,17 @@ $(document).ready(function(){
         return rv;
       }
     }
-    
-      cursor.numRows = $('#buttons tbody tr').length;
-      cursor.numCols = $('#buttons tbody tr:first-child td').length;
-      pageState.streams = [];
-      $('#play-button option').each(function(idx, opt) {
-	  opt = $(opt);
-	  pageState.streams.push({title: opt.text(), directory: opt.val()});
-          if (opt.val() == $(".play-select").val()) {
-              cursor.stream = idx;
-          }
-      });
+
+    cursor.numRows = $('#buttons tbody tr').length;
+    cursor.numCols = $('#buttons tbody tr:first-child td').length;
+    pageState.streams = [];
+    $('#play-button option').each(function(idx, opt) {
+        opt = $(opt);
+        pageState.streams.push({title: opt.text(), directory: opt.val()});
+        if (opt.val() == $(".play-select").val()) {
+            cursor.stream = idx;
+        }
+    });
     if (/#/.test(document.location.href)) {
       params = document.location.href.split('#')[1];
       params = params.split('&');
