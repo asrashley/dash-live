@@ -1352,6 +1352,23 @@ class HEVCConfigurationBox(Mp4Atom):
 
 Mp4Atom.BOXES['hvcC'] = HEVCConfigurationBox
 
+class PixelAspectRatioBox(Mp4Atom):
+    @classmethod
+    def parse(clz, src, parent, options, **kwargs):
+        rv = Mp4Atom.parse(src, parent, options=options, **kwargs)
+        r = FieldReader(clz.classname(), src, rv)
+        r.read('I', 'h_spacing')
+        r.read('I', 'v_spacing')
+        return rv
+
+    def encode_fields(self, dest):
+        d = FieldWriter(self, dest)
+        d.write('I', 'h_spacing')
+        d.write('I', 'v_spacing')
+
+
+Mp4Atom.BOXES['pasp'] = PixelAspectRatioBox
+
 class AudioSampleEntry(SampleEntry):
     parse_children = True
 
