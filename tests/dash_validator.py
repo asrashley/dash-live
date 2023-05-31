@@ -1459,10 +1459,6 @@ class MediaSegment(DashElement):
                 base_data_offset = moof.position
             else:
                 base_data_offset = tfhd.base_data_offset
-            #if (saio.offsets[0] + base_data_offset) != senc.samples[0].position:
-            #    moof.dump()
-            #    print(moof.traf.tfhd)
-            #    print(moof.traf.saio)
             self.checkEqual(
                 senc.samples[0].position,
                 saio.offsets[0] + base_data_offset,
