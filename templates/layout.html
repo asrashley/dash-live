@@ -30,7 +30,7 @@
     {% block header %}
             <ul class="user">
             {% if user %}
-            <li><a class="upload" href="/media">Media</a></li>
+            <li><a class="upload" href="{{uri_for('media-index')}}">Media</a></li>
             <li><a class="logout" href="{{logout}}">Log Out</a></li>
             {% else %}
             <li><a class="login" href="{{login}}">Log In</a></li>
