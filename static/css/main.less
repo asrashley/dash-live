@@ -234,7 +234,13 @@ a {
     .totals{
         background-color: @tableHeadingBack;
         font-weight: bold;
+    }
+    .thead-light {
+        background-color: @mediumGrey;
+        & > td {
+            padding-top: 0.3em;
         }
+    }
 }
 
 .table thead > tr > th {
@@ -481,6 +487,37 @@ div.representations, div.cgi-parameters {
 }
 
 #media-management {
+  .ellipsis {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: all .2s linear;
+      white-space: nowrap;
+      padding:.5rem 1rem;
+  }
+  .ellipsis:focus, .ellipsis:hover {
+      color:transparent;
+  }
+  .ellipsis:focus:after,.ellipsis:hover:after{
+      content:attr(data-text);
+      overflow: visible;
+      text-overflow: inherit;
+      background: #fff;
+      position: absolute;
+      left:auto;
+      top:auto;
+      width: auto;
+      max-width: 20rem;
+      border: 1px solid #eaebec;
+      padding: 0 .5rem;
+      box-shadow: 0 2px 4px 0 rgba(0,0,0,.28);
+      white-space: normal;
+      word-wrap: break-word;
+      display:block;
+      color:black;
+      margin-top:-1.25rem;
+  }
+
   .placeholder {
        display: none;
   }
@@ -539,22 +576,25 @@ div.representations, div.cgi-parameters {
               margin-right: 0.1em;
           }
       }
-      .title, .title > input {
+      .title {
           width: 18em;
       }
-      .prefix, .prefix > input {
+      .title > input {
+          width: 17em;
+      }
+      .prefix {
+          width: 7em;
+      }
+      .prefix > input {
           width: 6em;
       }
       .playready_la_url, .marlin_la_url {
           font-stretch: extra-condensed;
           width: 20em;
           max-width: 20em;
-          text-overflow: ellipsis;
-          white-space: nowrap;
-          overflow: hidden;
           & > input {
-              width: 20em;
-              max-width: 20em;
+              width: 19em;
+              max-width: 19em;
           }
       }
   }
