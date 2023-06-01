@@ -36,6 +36,7 @@ from server import manifests, models
 from server.cgi_options import cgi_options
 from server.requesthandler.htmlpage import CgiOptionsPage, MainPage
 from server.requesthandler.media_management import MediaHandler
+from server.requesthandler.streams import EditStreamHandler
 
 class TestHtmlPageHandlers(GAETestBase):
     def _assert_true(self, result, a, b, msg, template):
@@ -121,6 +122,52 @@ class TestHtmlPageHandlers(GAETestBase):
             self.setCurrentUser(is_admin=True)
             response = self.app.get(url)
             self.assertEqual(response.status_int, 200)
+        finally:
+            self.current_url = None
+
+    def test_stream_edit_page(self):
+        self.setup_media()
+        self.assertIsNotNone(getattr(EditStreamHandler(), 'get', None))
+        self.assertIsNotNone(getattr(EditStreamHandler(), 'post', None))
+        stream = models.Stream.query(models.Stream.prefix == 'bbb').get()
+        url = self.from_uri(
+            'stream-edit', key=stream.key.urlsafe(), absolute=True)
+
+        try:
+            self.current_url = url
+
+            # user must be logged in to use media page
+            self.logoutCurrentUser()
+            response = self.app.get(url, status=401)
+            self.assertEqual(response.status_int, 401)
+
+            # user must be logged in as admin to use media page
+            self.setCurrentUser(is_admin=False)
+            response = self.app.get(url, status=401)
+            self.assertEqual(response.status_int, 401)
+
+            # user must be logged in as admin to use media page
+            self.setCurrentUser(is_admin=True)
+            response = self.app.get(url)
+            self.assertEqual(response.status_int, 200)
+            response.mustcontain('Title:')
+            response.mustcontain('Prefix:')
+            response.mustcontain('Marlin LA URL:')
+            response.mustcontain('PlayReady LA URL:')
+            html = response.html
+            for input_field in html.find_all('input'):
+                name = input_field.get('name')
+                if name == 'csrf_token':
+                    self.assertEqual(
+                        input_field.get('type'),
+                        'hidden')
+                    continue
+                self.assertEqual(
+                    input_field.get('id'),
+                    'stream-{0}'.format(name))
+                self.assertEqual(
+                    input_field.get('value'),
+                    getattr(stream, name))
         finally:
             self.current_url = None
 

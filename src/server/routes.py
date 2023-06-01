@@ -91,6 +91,10 @@ routes = {
         r'/stream',
         handler='server.requesthandler.streams.StreamHandler',
         title='Add stream'),
+    "stream-edit": Route(
+        r'/media/edit/<key:[\w_+=-]+>',
+        handler='server.requesthandler.streams.EditStreamHandler',
+        title='Media information'),
     "uploadBlob": Route(
         r'/blob',
         handler='server.requesthandler.media_management.MediaHandler',

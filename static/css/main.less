@@ -527,6 +527,18 @@ div.representations, div.cgi-parameters {
     text-align: center;
   }
   #streams {
+      table-layout: fixed;
+      .stream-actions {
+          width: 12em;
+          text-align: center;
+          .btn {
+              margin: 0.2em;
+              width: 5em;
+          }
+          .edit-stream {
+              margin-right: 0.1em;
+          }
+      }
       .title, .title > input {
           width: 18em;
       }
@@ -535,9 +547,14 @@ div.representations, div.cgi-parameters {
       }
       .playready_la_url, .marlin_la_url {
           font-stretch: extra-condensed;
-          width: 18em;
+          width: 20em;
+          max-width: 20em;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          overflow: hidden;
           & > input {
-              width: 18em;
+              width: 20em;
+              max-width: 20em;
           }
       }
   }
