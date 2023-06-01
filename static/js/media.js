@@ -46,7 +46,7 @@ $(document).ready(function(){
             $row.find('.btn').removeAttr("disabled");
         });
     }
-    
+
     function deleteKey(ev) {
         var kid, key, csrf;
         var $row = $(ev.target).parents('tr');
@@ -116,13 +116,44 @@ $(document).ready(function(){
             $row.find('.btn').removeAttr("disabled");
         });
     }
-    
+
     function deleteStream(ev) {
-        var id, csrf;
-        var $row = $(ev.target).parents('tr');
+        var dialog, id, title, $row;
+
+        function onClick(btnEv) {
+            var cmd;
+
+            closeDialog();
+            cmd = $(btnEv.target).data("cmd");
+            if (cmd === "yes") {
+                confirmDeleteStream($row, id);
+            }
+            return false;
+        }
+
+        $row = $(ev.target).parents('tr');
         id = $(ev.target).data("id");
+        if (!id) {
+            return;
+        }
+        title = $row.find('.title').text();
+        if (title === "" || title === undefined) {
+            title = $row.find('.prefix').text();
+        }
+        dialog = $('#dialog-box')
+        dialog.find(".modal-body").html(
+            '<p>Delete stream &quot;' + title +
+                '&quot; ?</p><div>' +
+                '<button class="btn btn-danger" style="margin:1em" data-cmd="yes">Yes Please</button>' +
+                '<button class="btn btn-secondary" data-cmd="no">Cancel</button>' +
+                '</div>');
+        dialog.find(".modal-body .btn").one('click', onClick);
+        showDialog();
+    }
+
+    function confirmDeleteStream($row, id) {
+        var csrf;
         csrf = $('#streams').data('csrf');
-        console.log('delete stream',id,csrf);
         if (!id) {
             return;
         }
@@ -155,7 +186,6 @@ $(document).ready(function(){
             return;
         }
         csrf = $('#media-files').data('csrf');
-        console.log('index blob',blobId, csrf);
         dialog = $('#dialog-box')
         dialog.find(".modal-body").html('<p>Indexing ' + encodeURIComponent(filename) +
                                         '</p><div class="error"></div>');
@@ -304,7 +334,7 @@ $(document).ready(function(){
         });
         return false;
     }
-     
+
     function showDialog() {
         var dialog = $('#dialog-box');
         dialog.addClass("dialog-active show");
@@ -323,7 +353,7 @@ $(document).ready(function(){
         $('.modal-backdrop').removeClass("show");
     }
 
-    $('#keys .add-key').click(addKey); 
+    $('#keys .add-key').click(addKey);
     $('#keys .delete-key').click(deleteKey);
     $('#streams .add-stream').click(addStream);
     $('#streams .delete-stream').click(deleteStream);
