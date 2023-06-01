@@ -254,7 +254,7 @@ class MediaManagement(object):
             return False
         mfid = self.files[name]['key']
         url = self.routes.media_info(mfid)
-        timeout = 5
+        timeout = 10
         while timeout > 0:
             self.log.debug('GET %s', url)
             result = self.session.get(url, params=params)
