@@ -553,15 +553,33 @@ div.representations, div.cgi-parameters {
     }
     .index, .delete {
       padding: 0;
-      width: 5em;
+      text-align: center;
+      width: 6.5em;
+      & > .btn {
+          width: 6em;
+      }
     }
   }
-  #keys input {
-    width: 23em;
-  }
-  #keys .computed {
-    width: 6em;
-    text-align: center;
+  #keys {
+    input {
+        width: 23em;
+    }
+    .kid, .key {
+        vertical-align: middle;
+    }
+    .computed {
+        text-align: center;
+        vertical-align: middle;
+        width: 6em;
+    }
+    .delete {
+        padding: 0.25em 0;
+        width: 6em;
+        text-align: center;
+        & > .btn {
+            width: 5em;
+        }
+    }
   }
   #streams {
       table-layout: fixed;
