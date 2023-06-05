@@ -140,7 +140,7 @@ $(document).ready(function(){
         if (title === "" || title === undefined) {
             title = $row.find('.prefix').text();
         }
-        dialog = $('#dialog-box')
+        dialog = $('#dialog-box');
         dialog.find(".modal-body").html(
             '<p>Delete stream &quot;' + title +
                 '&quot; ?</p><div>' +
@@ -186,7 +186,7 @@ $(document).ready(function(){
             return;
         }
         csrf = $('#media-files').data('csrf');
-        dialog = $('#dialog-box')
+        dialog = $('#dialog-box');
         dialog.find(".modal-body").html('<p>Indexing ' + encodeURIComponent(filename) +
                                         '</p><div class="error"></div>');
         showDialog();
@@ -276,7 +276,7 @@ $(document).ready(function(){
         form.find('input[name="ajax"]').val("1");
         data = new FormData(form[0]);
         $("#upload-form .submit").prop("disabled", true);
-        dialog = $('#dialog-box')
+        dialog = $('#dialog-box');
         dialog.find(".modal-body").html('<p>Uploading ' +
                                         encodeURIComponent(filename) +
                                         '</p><div class="error"></div>');
@@ -345,7 +345,7 @@ $(document).ready(function(){
     }
 
     function closeDialog() {
-        var dialog = $('#dialog-box')
+        var dialog = $('#dialog-box');
         dialog.removeClass("dialog-active").removeClass("show");
         dialog.css("display", "");
         $(document.body).removeClass("modal-open");
