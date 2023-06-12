@@ -77,7 +77,7 @@ class Representation(ObjectWithFields):
     VERSION = 3
     KNOWN_CODEC_BOXES = [
         'ac_3', 'avc1', 'avc3', 'mp4a', 'ec_3', 'encv', 'enca',
-        'hev1', 'stpp', 'wvtt',
+        'hev1', 'hvc1', 'stpp', 'wvtt',
     ]
 
     def __init__(self, **kwargs):

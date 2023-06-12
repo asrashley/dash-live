@@ -1048,6 +1048,12 @@ class HEV1SampleEntry(VisualSampleEntry):
 
 Mp4Atom.BOXES['hev1'] = HEV1SampleEntry
 
+class HVC1SampleEntry(VisualSampleEntry):
+    pass
+
+
+Mp4Atom.BOXES['hvc1'] = HVC1SampleEntry
+
 class EncryptedSampleEntry(VisualSampleEntry):
     pass
 
