@@ -13,4 +13,5 @@ static/css/helpers.css
 static/css/prefixer.css
 static/css/main.css
 static/css/video.css
+tests/runner.py
 virtualenv

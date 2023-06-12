@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #############################################################################
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,6 +21,6 @@
 #
 #############################################################################
 
-from binarysignal import BinarySignal
+from .binarysignal import BinarySignal
 
 __all__ = [BinarySignal]

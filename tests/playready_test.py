@@ -20,6 +20,7 @@
 #
 #############################################################################
 
+from __future__ import absolute_import
 import base64
 import binascii
 import io
@@ -40,9 +41,9 @@ from templates.factory import TemplateFactory
 from utils.binary import Binary
 from utils.buffered_reader import BufferedReader
 
-from gae_base import GAETestBase
-from key_stub import KeyStub
-from mixins.view_validator import ViewsTestDashValidator
+from tests.gae_base import GAETestBase
+from tests.key_stub import KeyStub
+from tests.mixins.view_validator import ViewsTestDashValidator
 
 class PlayreadyTests(GAETestBase, unittest.TestCase):
     custom_attributes = [dict(tag='IIS_DRM_VERSION', value='8.0.1907.32')]

@@ -1,3 +1,4 @@
+from __future__ import print_function
 #############################################################################
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -133,14 +134,14 @@ class Representation(ObjectWithFields):
             seg = Segment(pos=atom.position, size=atom.size)
             if atom.atom_type == 'ftyp':
                 if verbose > 1:
-                    print('Init seg', atom)
+                    print(('Init seg', atom))
                 elif verbose > 0:
                     sys.stdout.write('I')
                     sys.stdout.flush()
                 rv.segments.append(seg)
             elif atom.atom_type == 'moof':
                 if verbose > 1:
-                    print 'Fragment %d ' % (len(rv.segments) + 1)
+                    print('Fragment %d ' % (len(rv.segments) + 1))
                 elif verbose > 0:
                     sys.stdout.write('f')
                     sys.stdout.flush()
@@ -492,4 +493,4 @@ if __name__ == '__main__':
     wrap = mp4.Wrapper(atom_type='wrap', parent=None,
                        children=mp4.Mp4Atom.load(src))
     rep = Representation.load(filename=sys.argv[1], atoms=wrap.children)
-    print repr(rep)
+    print(repr(rep))

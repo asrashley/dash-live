@@ -1,3 +1,4 @@
+from __future__ import print_function
 #############################################################################
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -63,7 +64,7 @@ class GenerateIndex(object):
                     dst_filename = os.path.join(self.args.split[0], 'init.%s' % ext)
                 else:
                     dst_filename = os.path.join(self.args.split[0], '%05d.%s' % (idx, ext))
-                print dst_filename
+                print(dst_filename)
                 with io.FileIO(dst_filename, 'wb') as dst_file:
                     src_file.seek(seg.pos)
                     data = src_file.read(seg.size)
@@ -78,7 +79,7 @@ class GenerateIndex(object):
                 dest.write('\n')
 
     def create_representation(self, filename):
-        print filename
+        print(filename)
         parser = IsoParser()
         atoms = parser.walk_atoms(filename)
         verbose = 2 if self.args.debug else 1

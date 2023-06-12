@@ -20,6 +20,7 @@
 #
 #############################################################################
 
+from __future__ import absolute_import
 import logging
 import os
 import sys
@@ -33,7 +34,7 @@ from drm.clearkey import ClearKey
 from mpeg.dash.representation import Representation
 from templates.factory import TemplateFactory
 from testcase.mixin import TestCaseMixin
-from key_stub import KeyStub
+from tests.key_stub import KeyStub
 
 class ClearkeyTests(TestCaseMixin, unittest.TestCase):
     def setUp(self):

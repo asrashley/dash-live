@@ -22,21 +22,25 @@
 #
 #############################################################################
 
+from __future__ import print_function
+from __future__ import absolute_import
 import logging
 import os
 import subprocess
 import sys
 import unittest
 
-if not os.path.exists("runner.py"):
+if not os.path.exists("tests/runner.py"):
     rv = subprocess.call([
-        'wget', 'https://raw.githubusercontent.com/GoogleCloudPlatform/python-docs-samples/6f5f3bcb81779679a24e0964a6c57c0c7deabfac/appengine/standard/localtesting/runner.py'
+        'wget',
+        '-o', 'tests/runner.py',
+        'https://raw.githubusercontent.com/GoogleCloudPlatform/python-docs-samples/6f5f3bcb81779679a24e0964a6c57c0c7deabfac/appengine/standard/localtesting/runner.py'
     ])
     if rv:
-        print 'Failed to download runner.py'
+        print('Failed to download runner.py')
         sys.exit(1)
 
-import runner
+from tests import runner
 
 def fixup_test_filename(name):
     _, tail = os.path.split(name)

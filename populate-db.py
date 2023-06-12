@@ -1,3 +1,4 @@
+from __future__ import print_function
 import argparse
 from HTMLParser import HTMLParser
 import json

@@ -20,6 +20,7 @@
 #
 #############################################################################
 
+from __future__ import print_function
 from abc import ABCMeta, abstractmethod
 import base64
 import collections

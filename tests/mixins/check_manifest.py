@@ -1,3 +1,5 @@
+from __future__ import print_function
+from __future__ import absolute_import
 #############################################################################
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -37,7 +39,7 @@ from server import manifests, models, cgi_options
 from server.requesthandler.manifest_requests import ServeManifest
 from templates.factory import TemplateFactory
 from utils.objects import dict_to_cgi_params
-from view_validator import ViewsTestDashValidator
+from .view_validator import ViewsTestDashValidator
 
 class QName(object):
     """
