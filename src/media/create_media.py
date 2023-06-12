@@ -63,6 +63,7 @@
 #
 
 
+from __future__ import print_function
 import argparse
 import collections
 import json
@@ -257,7 +258,7 @@ class DashMediaCreator(object):
                       dest_filename, moov, prefix)
         if not os.path.exists(moov):
             raise IOError('MOOV not found: {}'.format(moov))
-        print dest_filename
+        print(dest_filename)
         with open(dest_filename, "wb") as dest:
             sys.stdout.write('I')
             sys.stdout.flush()

@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 #############################################################################
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,9 +27,9 @@ from google.appengine.api import users
 
 from server import models
 
-from base import RequestHandlerBase
+from .base import RequestHandlerBase
 from drm.playready import PlayReady
-from exceptions import CsrfFailureException
+from .exceptions import CsrfFailureException
 
 class KeyHandler(RequestHandlerBase):
     """

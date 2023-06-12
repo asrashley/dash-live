@@ -19,11 +19,12 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+from __future__ import absolute_import
 import os
 import unittest
 
-from mixins.check_manifest import DashManifestCheckMixin
-from gae_base import GAETestBase
+from tests.mixins.check_manifest import DashManifestCheckMixin
+from tests.gae_base import GAETestBase
 
 class ManifestAIVTest(GAETestBase, DashManifestCheckMixin):
     def test_vod_manifest_aiv(self):

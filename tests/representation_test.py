@@ -20,6 +20,7 @@
 #
 #############################################################################
 
+from __future__ import absolute_import
 import io
 import os
 import sys
@@ -33,9 +34,8 @@ if _src not in sys.path:
 from server import models
 from mpeg.mp4 import Mp4Atom
 from mpeg.dash.representation import Representation
+from tests.gae_base import GAETestBase
 from utils.buffered_reader import BufferedReader
-
-from gae_base import GAETestBase
 
 class RepresentationTests(GAETestBase, unittest.TestCase):
     def setUp(self):

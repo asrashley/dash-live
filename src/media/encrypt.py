@@ -22,6 +22,7 @@
 #
 #############################################################################
 
+from __future__ import print_function
 import argparse
 import os
 import shutil
@@ -93,7 +94,7 @@ def encrypt_file(source, kid, key, iv):
         print(args)
         rv = subprocess.call(args)
         if rv:
-            print 'Failed to generate encrypted MOOV file: {:d}'.format(rv)
+            print('Failed to generate encrypted MOOV file: {:d}'.format(rv))
             return rv
         prefix = os.path.join(tmpdir, basename + "-moov-enc_dash_")
         args = ["MP4Box",
@@ -105,7 +106,7 @@ def encrypt_file(source, kid, key, iv):
         print(args)
         rv = subprocess.call(args)
         if rv:
-            print 'Failed to split encrypted MOOV file into fragments: {:d}'.format(rv)
+            print('Failed to split encrypted MOOV file into fragments: {:d}'.format(rv))
             return rv
         # subprocess.call(["ls", tmpdir])
         dest_filename = basename + "_enc" + ext

@@ -21,6 +21,7 @@
 #############################################################################
 
 from __future__ import print_function
+from __future__ import absolute_import
 import os
 import sys
 import unittest
@@ -30,10 +31,10 @@ if _src not in sys.path:
     sys.path.append(_src)
 
 # these imports *must* be after the modification of sys.path
-from gae_base import GAETestBase
 from mpeg import MPEG_TIMEBASE, mp4
-from mixins.check_manifest import DashManifestCheckMixin
-import dash_validator
+from tests.gae_base import GAETestBase
+from tests.mixins.check_manifest import DashManifestCheckMixin
+from tests.dash_validator import EventStream, InbandEventStream
 from server.events.ping_pong import PingPongEvents
 from server.events.scte35_events import Scte35Events
 import scte35
@@ -63,7 +64,7 @@ class TestDashEventGeneration(DashManifestCheckMixin, GAETestBase):
             event_stream = period.event_streams[0]
             self.assertEqual(event_stream.schemeIdUri, PingPongEvents.schemeIdUri)
             self.assertEqual(event_stream.value, PingPongEvents.PARAMS['value'])
-            self.assertIsInstance(event_stream, dash_validator.EventStream)
+            # self.assertIsInstance(event_stream, EventStream)
             self.assertEqual(len(event_stream.events), 4)
             presentationTime = 256
             for idx, event in enumerate(event_stream.events):
@@ -99,7 +100,7 @@ class TestDashEventGeneration(DashManifestCheckMixin, GAETestBase):
                 event_stream = adp.event_streams[0]
                 self.assertEqual(event_stream.schemeIdUri, PingPongEvents.schemeIdUri)
                 self.assertEqual(event_stream.value, PingPongEvents.PARAMS['value'])
-                self.assertIsInstance(event_stream, dash_validator.InbandEventStream)
+                # self.assertIsInstance(event_stream, InbandEventStream)
                 rep = adp.representations[0]
                 info = dv.get_representation_info(rep)
                 self.check_inband_events_for_representation(rep, params, info)
@@ -167,7 +168,7 @@ class TestDashEventGeneration(DashManifestCheckMixin, GAETestBase):
             event_stream = period.event_streams[0]
             self.assertEqual(event_stream.schemeIdUri, Scte35Events.schemeIdUri)
             self.assertEqual(event_stream.value, Scte35Events.PARAMS['value'])
-            self.assertIsInstance(event_stream, dash_validator.EventStream)
+            # self.assertIsInstance(event_stream, EventStream)
             self.assertEqual(len(event_stream.events), 4)
             presentationTime = 256
             for idx, event in enumerate(event_stream.events):

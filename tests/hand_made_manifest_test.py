@@ -19,11 +19,12 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+from __future__ import absolute_import
 import os
 import unittest
 
-from gae_base import GAETestBase
-from mixins.check_manifest import DashManifestCheckMixin
+from tests.gae_base import GAETestBase
+from tests.mixins.check_manifest import DashManifestCheckMixin
 from utils.date_time import from_isodatetime
 
 class HandMadeManifestTests(GAETestBase, DashManifestCheckMixin):

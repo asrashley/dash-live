@@ -20,6 +20,7 @@
 #
 #############################################################################
 
+from __future__ import absolute_import
 import base64
 import binascii
 import copy
@@ -39,9 +40,9 @@ if _src not in sys.path:
 
 # these imports *must* be after the modification of sys.path
 
-from gae_base import GAETestBase
 from server import models
 from templates.tags import dateTimeFormat
+from tests.gae_base import GAETestBase
 
 class TestRestApi(GAETestBase):
     def test_add_stream(self):

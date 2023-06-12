@@ -20,17 +20,17 @@
 #
 #############################################################################
 
-from __future__ import print_function
+from __future__ import absolute_import, print_function
 import datetime
 import os
 import logging
 import unittest
 
-from mixins.check_manifest import DashManifestCheckMixin
-from mixins.view_validator import ViewsTestDashValidator
 from server import manifests, models
 from drm.playready import PlayReady
-from gae_base import GAETestBase
+from tests.gae_base import GAETestBase
+from tests.mixins.check_manifest import DashManifestCheckMixin
+from tests.mixins.view_validator import ViewsTestDashValidator
 from utils.date_time import UTC, toIsoDateTime, from_isodatetime
 from utils.objects import dict_to_cgi_params
 

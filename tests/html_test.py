@@ -20,7 +20,7 @@
 #
 #############################################################################
 
-from __future__ import print_function
+from __future__ import absolute_import, print_function
 import json
 import os
 import sys
@@ -31,12 +31,12 @@ if _src not in sys.path:
     sys.path.append(_src)
 
 # these imports *must* be after the modification of sys.path
-from gae_base import GAETestBase
 from server import manifests, models
 from server.cgi_options import cgi_options
 from server.requesthandler.htmlpage import CgiOptionsPage, MainPage
 from server.requesthandler.media_management import MediaHandler
 from server.requesthandler.streams import EditStreamHandler
+from tests.gae_base import GAETestBase
 
 class TestHtmlPageHandlers(GAETestBase):
     def _assert_true(self, result, a, b, msg, template):
