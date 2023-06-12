@@ -20,9 +20,11 @@
 #
 #############################################################################
 
+from future import standard_library
+standard_library.install_aliases()
 import logging
 import os
-import urlparse
+import urllib.parse
 
 from testcase.mixin import HideMixinsFilter
 
@@ -52,7 +54,7 @@ class ViewsTestDashValidator(DashValidator):
         except KeyError:
             pass
         url = representation.init_seg_url()
-        parts = urlparse.urlparse(url)
+        parts = urllib.parse.urlparse(url)
         # self.log.debug('match %s %s', routes.routes["dash-media"].reTemplate.pattern, parts.path)
         match = routes.routes["dash-media"].reTemplate.match(parts.path)
         if match is None:

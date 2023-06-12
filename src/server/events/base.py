@@ -20,15 +20,16 @@
 #
 #############################################################################
 
+from past.builtins import basestring
+from builtins import object
 from abc import ABCMeta, abstractmethod
 import copy
 import datetime
 
 from utils.date_time import from_isodatetime
+from future.utils import with_metaclass
 
-class EventBase(object):
-    __metaclass__ = ABCMeta
-
+class EventBase(with_metaclass(ABCMeta, object)):
     PARAMS = {
         'count': 0,
         'duration': 200,
@@ -46,17 +47,17 @@ class EventBase(object):
             all_params.update(extra_params)
         self.prefix = prefix
         self.params = set()
-        for key, dflt in all_params.iteritems():
+        for key, dflt in all_params.items():
             value = request.params.get(prefix + key, dflt)
             if isinstance(dflt, bool):
                 if isinstance(value, basestring):
                     value = value.lower() in {'true', 'yes', '1'}
-                elif isinstance(value, (int, long)):
+                elif isinstance(value, (int, int)):
                     value = (value == 1)
             elif isinstance(dflt, int):
                 value = int(value)
-            elif isinstance(dflt, long):
-                value = long(value)
+            elif isinstance(dflt, int):
+                value = int(value)
             elif isinstance(dflt, (
                     datetime.date, datetime.datetime, datetime.time,
                     datetime.timedelta)):

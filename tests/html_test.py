@@ -21,6 +21,7 @@
 #############################################################################
 
 from __future__ import absolute_import, print_function
+from builtins import filter
 import json
 import os
 import sys
@@ -58,7 +59,7 @@ class TestHtmlPageHandlers(GAETestBase):
         response.mustcontain(
             'Log In', no='href="{}"'.format(
                 self.from_uri('media-index')))
-        for filename, manifest in manifests.manifest.iteritems():
+        for filename, manifest in manifests.manifest.items():
             mpd_url = self.from_uri('dash-mpd-v3', manifest=filename, stream='placeholder',
                                     mode='live')
             mpd_url = mpd_url.replace('/placeholder/', '/{directory}/')
@@ -185,14 +186,14 @@ class TestHtmlPageHandlers(GAETestBase):
         media_files = models.MediaFile.all()
         self.assertGreaterThan(len(media_files), 0)
         num_tests = 0
-        for filename, manifest in manifests.manifest.iteritems():
-            options = filter(opt_choose, manifest.get_cgi_options(simplified=True))
+        for filename, manifest in manifests.manifest.items():
+            options = list(filter(opt_choose, manifest.get_cgi_options(simplified=True)))
             options = self.cgi_combinations(options)
             num_tests += len(options) * len(models.Stream.all())
         count = 0
-        for filename, manifest in manifests.manifest.iteritems():
+        for filename, manifest in manifests.manifest.items():
             for stream in models.Stream.all():
-                options = filter(opt_choose, manifest.get_cgi_options(simplified=True))
+                options = list(filter(opt_choose, manifest.get_cgi_options(simplified=True)))
                 options = self.cgi_combinations(options)
                 for opt in options:
                     mode = 'vod'
@@ -257,7 +258,7 @@ class TestHtmlPageHandlers(GAETestBase):
                         del params["mup"]
                     if "time" in params:
                         del params["time"]
-                cgi = '&'.join(params.values())
+                cgi = '&'.join(list(params.values()))
                 result.add(cgi)
             idx = 0
             while idx < len(cgi_options):

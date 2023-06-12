@@ -20,6 +20,7 @@
 #
 #############################################################################
 
+from builtins import object
 import base64
 import binascii
 import re

@@ -1,3 +1,4 @@
+from __future__ import division
 #############################################################################
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,6 +21,9 @@
 
 #
 #############################################################################
+from builtins import str
+from past.builtins import basestring
+from past.utils import old_div
 import datetime
 import math
 import re
@@ -56,7 +60,7 @@ def from_iso_epoch(delta):
 
 def to_iso_epoch(dt):
     delta = dt - ISO_EPOCH
-    return long(delta.total_seconds())
+    return int(delta.total_seconds())
 
 
 def toIsoDateTime(value):
@@ -85,10 +89,10 @@ def toIsoDuration(secs):
         secs = secs.total_seconds()
     milli_secs = int((secs - math.floor(secs)) * 1000 + 0.5)
     secs = int(math.floor(secs))
-    hrs = math.floor(secs / 3600)
+    hrs = math.floor(old_div(secs, 3600))
     rv = ['PT']
     secs %= 3600
-    mins = math.floor(secs / 60)
+    mins = math.floor(old_div(secs, 60))
     secs %= 60
     if hrs:
         rv.append('%dH' % hrs)
@@ -183,7 +187,7 @@ def from_isodatetime(date_time):
         if not match:
             raise ValueError(date_time)
         kwargs = {}
-        for key, value in match.groupdict().iteritems():
+        for key, value in match.groupdict().items():
             if key == 'tzinfo':
                 kwargs[key] = parse_timezone(value)
             elif key == 'second':
@@ -221,4 +225,4 @@ def scale_timedelta(delta, num, denom):
     secs = num * delta.seconds
     msecs = num * delta.microseconds
     secs += msecs / 1000000.0
-    return secs / denom
+    return old_div(secs, denom)

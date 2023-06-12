@@ -21,6 +21,9 @@ from __future__ import print_function
 #
 #############################################################################
 
+from builtins import zip
+from builtins import range
+from builtins import object
 import datetime
 import logging
 import os
@@ -77,7 +80,7 @@ class TestCaseMixin(object):
         self._assert_true(a >= b, a, b, msg, r'{} < {}')
 
     def assertObjectEqual(self, expected, actual, msg=None, strict=False):
-        for key, value in expected.iteritems():
+        for key, value in expected.items():
             if msg is None:
                 key_name = key
             else:
@@ -99,7 +102,7 @@ class TestCaseMixin(object):
                     key_name, value, actual[key])
                 self.assertEqual(value, actual[key], msg=assert_msg)
         if strict:
-            for key in actual.keys():
+            for key in list(actual.keys()):
                 self.assertIn(key, expected)
 
     def assertListEqual(self, expected, actual, msg=None):

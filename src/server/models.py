@@ -1,4 +1,5 @@
 from __future__ import print_function
+from builtins import map
 import re
 
 from google.appengine.ext import ndb
@@ -104,7 +105,7 @@ class MediaFile(ndb.Model):
                 files.append(mf)
         # print('list_of_keys', list_of_keys, files)
         blobs = {}
-        for b in blobstore.BlobInfo.get(map(lambda f: f.blob, files)):
+        for b in blobstore.BlobInfo.get([f.blob for f in files]):
             if b is not None:
                 blobs[b.key()] = b
         for f in files:
@@ -217,7 +218,7 @@ class Key(ndb.Model):
             if isinstance(kid, KeyMaterial):
                 return kid.hex
             return kid.lower()
-        kids = map(to_hex, kids)
+        kids = list(map(to_hex, kids))
         if len(kids) == 1:
             q = clz.query(clz.hkid == kids[0])
         else:

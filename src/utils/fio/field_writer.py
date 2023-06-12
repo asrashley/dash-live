@@ -20,6 +20,11 @@
 #
 #############################################################################
 
+from builtins import str
+from builtins import hex
+from builtins import map
+from past.builtins import basestring
+from builtins import object
 import logging
 import os
 import struct
@@ -62,20 +67,20 @@ class FieldWriter(object):
             elif size == 'S0':
                 value += '\0'
             elif size[0] == 'D':
-                bsz, asz = map(int, size[1:].split('.'))
+                bsz, asz = list(map(int, size[1:].split('.')))
                 value = value * (1 << asz)
                 value = struct.pack('>' + format_bit_sizes[bsz + asz],
                                     int(value))
             elif size != 'S':
                 value = struct.pack('>' + size, value)
-        elif isinstance(size, (int, long)):
+        elif isinstance(size, (int, int)):
             padding = size - len(value)
             if padding > 0:
                 value += '\0' * padding
             elif padding < 0:
                 value = value[:size]
         if self.log and self.log.isEnabledFor(logging.DEBUG):
-            if isinstance(value, (int, long)):
+            if isinstance(value, int):
                 v = '0x' + hex(value)
             elif isinstance(value, basestring):
                 v = '0x' + value.encode('hex')
@@ -85,6 +90,8 @@ class FieldWriter(object):
                 '%s: Write %s size=%s (%d) pos=%d value=%s',
                 self.obj.classname(), field, str(size), len(value),
                 self.dest.tell(), v)
+        if isinstance(value, basestring):
+            value = bytes(value)
         return self.dest.write(value)
 
     def overwrite(self, position, size, field, value=None):

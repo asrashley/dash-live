@@ -19,6 +19,7 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+from builtins import object
 import base64
 from binascii import unhexlify
 

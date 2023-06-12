@@ -20,7 +20,9 @@
 #
 #############################################################################
 
-import urllib
+from future import standard_library
+standard_library.install_aliases()
+import urllib.request, urllib.parse, urllib.error
 
 from drm.base import DrmBase
 
@@ -32,7 +34,7 @@ class Marlin(DrmBase):
         if la_url is None:
             la_url = cgi_params.get('marlin_la_url')
             if la_url is not None:
-                la_url = urllib.unquote_plus(la_url)
+                la_url = urllib.parse.unquote_plus(la_url)
             else:
                 la_url = stream.marlin_la_url
         return {

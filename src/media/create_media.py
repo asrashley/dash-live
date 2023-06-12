@@ -64,6 +64,10 @@
 
 
 from __future__ import print_function
+from builtins import map
+from builtins import str
+from builtins import range
+from builtins import object
 import argparse
 import collections
 import json
@@ -159,8 +163,8 @@ class DashMediaCreator(object):
             level = 4.0
             # buffer_size is set to 75% of VBV limit
             buffer_size = 25000
-        keyframes = map(str, range(0, self.options.duration + self.options.segment_duration,
-                                   self.options.segment_duration))
+        keyframes = list(map(str, list(range(0, self.options.duration + self.options.segment_duration,
+                                   self.options.segment_duration))))
         keyframes = ','.join(keyframes)
         ffmpeg_args = [
             "ffmpeg",
@@ -280,7 +284,7 @@ class DashMediaCreator(object):
 
     def package_all(self):
         destdir = os.path.abspath(self.options.destdir)
-        bitrates = map(lambda l: l[2], self.BITRATE_LADDER)
+        bitrates = [l[2] for l in self.BITRATE_LADDER]
         source_files = []
         nothing_to_do = True
         for idx in range(len(bitrates)):
@@ -340,7 +344,7 @@ class DashMediaCreator(object):
             "-segment-name", 'dash_$RepresentationID$_$number%03d$$Init=init$',
             "-out", "manifest",
         ]
-        mp4box_args += map(lambda f: f.source, source_files)
+        mp4box_args += [f.source for f in source_files]
         logging.debug('mp4box_args: %s', mp4box_args)
         cwd = os.getcwd()
         os.chdir(tmpdir)
@@ -394,10 +398,10 @@ class DashMediaCreator(object):
             }
         else:
             key_map = {}
-            for k, v in kid_map.iteritems():
+            for k, v in kid_map.items():
                 key_map[k] = KeyMaterial(raw=PlayReady.generate_content_key(v.raw))
                 logging.debug('Using key %s for kid %s', key_map[k].hex, v.hex)
-        for k, v in kid_map.iteritems():
+        for k, v in kid_map.items():
             item = {
                 "kid": v.hex,
                 "computed": not self.options.key

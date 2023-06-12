@@ -49,8 +49,8 @@ class ClearKey(DrmBase):
         """Generate a Clearkey PSSH box"""
         # see https://www.w3.org/TR/eme-initdata-cenc/
         if isinstance(keys, dict):
-            keys = keys.keys()
-        keys = map(lambda k: KeyMaterial(k).raw, keys)
+            keys = list(keys.keys())
+        keys = [KeyMaterial(k).raw for k in keys]
         return ContentProtectionSpecificBox(version=1, flags=0,
                                             system_id=self.RAW_PSSH_SYSTEM_ID,
                                             key_ids=keys,

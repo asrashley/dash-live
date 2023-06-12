@@ -20,6 +20,7 @@
 #
 #############################################################################
 
+from builtins import object
 class Segment(object):
     def __init__(self, pos, size, duration=None):
         self.pos = pos
