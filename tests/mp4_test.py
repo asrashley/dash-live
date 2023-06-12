@@ -723,6 +723,18 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         self.assertEqual(len(atoms), 1)
         self.assertObjectEqual(traf.toJSON(), atoms[0].toJSON())
 
+    def test_parsing_pasp_box(self):
+        data = binascii.a2b_hex('000000107061737000000663000006b2')
+        src = BufferedReader(None, data=data)
+        atoms = mp4.Mp4Atom.load(src)
+        self.assertEqual(len(atoms), 1)
+        self.assertEqual(atoms[0].atom_type, 'pasp')
+        self.assertEqual(atoms[0].h_spacing, 0x663)
+        self.assertEqual(atoms[0].v_spacing, 0x6B2)
+        dest = io.BytesIO()
+        atoms[0].encode(dest)
+        self.assertBuffersEqual(dest.getvalue(), data, name="pasp")
+
 
 if os.environ.get("TESTS"):
     def load_tests(loader, tests, pattern):
