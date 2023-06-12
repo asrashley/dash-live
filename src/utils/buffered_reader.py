@@ -20,6 +20,7 @@
 #
 #############################################################################
 
+from builtins import object
 import io
 import time
 
@@ -113,7 +114,7 @@ class BufferedReader(io.RawIOBase):
         if self.num_buffers == self.max_buffers:
             remove = None
             oldest = None
-            for k, v in self.buffers.iteritems():
+            for k, v in self.buffers.items():
                 if remove is None or v.timestamp < oldest:
                     remove = k
                     oldest = v.timestamp

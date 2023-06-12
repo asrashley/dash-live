@@ -1,3 +1,4 @@
+from __future__ import division
 #############################################################################
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,6 +21,10 @@
 #
 #############################################################################
 
+from builtins import str
+from builtins import map
+from builtins import object
+from past.utils import old_div
 import decimal
 import logging
 import struct
@@ -42,7 +47,7 @@ class FieldReader(object):
             self.kwargs[field] = encoder(self.kwargs[field])
 
     def get(self, size, field, mask=None):
-        if isinstance(size, (int, long)):
+        if isinstance(size, (int, int)):
             value = self.src.read(size)
             if self.log and self.log.isEnabledFor(logging.DEBUG):
                 self.log.debug('%s: read %s size=%d pos=%d value=0x%s', self.name, field,
@@ -75,10 +80,10 @@ class FieldReader(object):
             value = self.src.read(int(size[1:]))
             value = value.split('\0')[0]
         elif size[0] == 'D':
-            bsz, asz = map(int, size[1:].split('.'))
+            bsz, asz = list(map(int, size[1:].split('.')))
             shift = 1 << asz
-            value = decimal.Decimal(
-                self.get(format_bit_sizes[bsz + asz], field)) / shift
+            value = old_div(decimal.Decimal(
+                self.get(format_bit_sizes[bsz + asz], field)), shift)
         else:
             raise ValueError("unsupported size: " + size)
         if mask is not None:

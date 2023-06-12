@@ -20,6 +20,7 @@
 #
 #############################################################################
 
+from builtins import object
 import re
 import webapp2
 
@@ -113,11 +114,11 @@ routes = {
         title='DASH test streams'),
 }
 
-for name, r in routes.iteritems():
+for name, r in routes.items():
     r.name = name
 
 webapp_routes = []
-for name, route in routes.iteritems():
+for name, route in routes.items():
     webapp_routes.append(
         webapp2.Route(template=route.template,
                       handler=route.handler,

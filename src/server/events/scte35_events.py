@@ -1,3 +1,4 @@
+from __future__ import division
 #############################################################################
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,6 +21,7 @@
 #
 #############################################################################
 
+from past.utils import old_div
 from mpeg import MPEG_TIMEBASE
 
 from scte35 import descriptors
@@ -59,8 +61,8 @@ class Scte35Events(RepeatingEventBase):
         return splice.encode()
 
     def create_binary_signal(self, event_id, presentation_time):
-        pts = presentation_time * MPEG_TIMEBASE / self.timescale
-        duration = self.duration * MPEG_TIMEBASE / self.timescale
+        pts = old_div(presentation_time * MPEG_TIMEBASE, self.timescale)
+        duration = old_div(self.duration * MPEG_TIMEBASE, self.timescale)
         # auto_return is True for the OUT and False for the IN
         auto_return = (event_id & 1) == 0
         if self.count > 0:

@@ -21,13 +21,16 @@
 #############################################################################
 
 from __future__ import absolute_import
+from future import standard_library
+standard_library.install_aliases()
+from builtins import range
 import base64
 import binascii
 import io
 import logging
 import os
 import unittest
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import sys
 
 _src = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
@@ -150,7 +153,7 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
             version=2.0,
             header_version=4.0)
         representation = Representation(
-            id='V1', default_kid=self.keys.keys()[0])
+            id='V1', default_kid=list(self.keys.keys())[0])
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
         wrm = mspr.generate_wrmheader(self.la_url, representation, self.keys, None)
@@ -176,7 +179,7 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
             version=2.0,
             header_version=4.0)
         representation = Representation(
-            id='V1', default_kid=self.keys.keys()[0])
+            id='V1', default_kid=list(self.keys.keys())[0])
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
         wrm = mspr.generate_wrmheader(
@@ -203,7 +206,7 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
             version=2.0,
             header_version=4.0)
         representation = Representation(
-            id='V1', default_kid=self.keys.keys()[0])
+            id='V1', default_kid=list(self.keys.keys())[0])
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
         custom_attributes = [
@@ -225,7 +228,7 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
             version=2.0,
             header_version=4.0)
         representation = Representation(
-            id='V1', default_kid=self.keys.keys()[0])
+            id='V1', default_kid=list(self.keys.keys())[0])
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
         pro = mspr.generate_pro(
@@ -262,7 +265,7 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
         self.assertEqual(keylen[0].text, "16")
         kid = xml.findall('./prh:DATA/prh:KID', self.namespaces)
         self.assertEqual(len(kid), 1)
-        guid = PlayReady.hex_to_le_guid(self.keys.keys()[0], raw=False)
+        guid = PlayReady.hex_to_le_guid(list(self.keys.keys())[0], raw=False)
         self.assertEqual(
             base64.b64decode(
                 kid[0].text).encode('hex'), guid.replace(
@@ -275,8 +278,8 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
             self.templates,
             la_url=self.la_url,
             header_version=4.0)
-        representation = Representation(id='V1', default_kid=self.keys.keys()[0],
-                                        kids=self.keys.keys())
+        representation = Representation(id='V1', default_kid=list(self.keys.keys())[0],
+                                        kids=list(self.keys.keys()))
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
         pssh = mspr.generate_pssh(
@@ -321,7 +324,7 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
         kid = actual_pro[0]['xml'].findall(
             './prh:DATA/prh:KID', self.namespaces)
         self.assertEqual(len(kid), 1)
-        guid = PlayReady.hex_to_le_guid(keys.keys()[0], raw=False)
+        guid = PlayReady.hex_to_le_guid(list(keys.keys())[0], raw=False)
         self.assertEqual(
             base64.b64decode(
                 kid[0].text).encode('hex'), guid.replace(
@@ -334,8 +337,8 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
             self.templates,
             la_url=self.la_url,
             header_version=4.1)
-        representation = Representation(id='V1', default_kid=self.keys.keys()[0],
-                                        kids=self.keys.keys())
+        representation = Representation(id='V1', default_kid=list(self.keys.keys())[0],
+                                        kids=list(self.keys.keys()))
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
         pssh = mspr.generate_pssh(self.la_url, representation, self.keys).encode()
@@ -365,7 +368,7 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
         self.assertEqual(len(kid), 1)
         self.assertEqual(kid[0].get("ALGID"), "AESCTR")
         self.assertEqual(kid[0].get("CHECKSUM"), 'Xy6jKG4PJSY=')
-        guid = PlayReady.hex_to_le_guid(keys.keys()[0], raw=False)
+        guid = PlayReady.hex_to_le_guid(list(keys.keys())[0], raw=False)
         self.assertEqual(
             base64.b64decode(
                 kid[0].get("VALUE")).encode('hex'), guid.replace(
@@ -384,7 +387,7 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
             la_url=self.la_url,
             header_version=4.2)
         representation = Representation(
-            id='V1', default_kid=keys.keys()[0], kids=keys.keys())
+            id='V1', default_kid=list(keys.keys())[0], kids=list(keys.keys()))
         pssh = mspr.generate_pssh(self.la_url, representation, keys).encode()
         self.check_generated_pssh_v4_2(keys, mspr, pssh)
 
@@ -410,7 +413,7 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
         kids = actual_pro[0]['xml'].findall('./prh:DATA/prh:PROTECTINFO/prh:KIDS/prh:KID',
                                             self.namespaces)
         guid_map = {}
-        for keypair in keys.values():
+        for keypair in list(keys.values()):
             guid = PlayReady.hex_to_le_guid(keypair.KID.raw, raw=True)
             guid = base64.b64encode(guid)
             guid_map[guid] = keypair
@@ -438,7 +441,7 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
             la_url=self.la_url,
             header_version=4.3)
         representation = Representation(
-            id='V1', default_kid=keys.keys()[0], kids=keys.keys())
+            id='V1', default_kid=list(keys.keys())[0], kids=list(keys.keys()))
         pssh = mspr.generate_pssh(self.la_url, representation, keys).encode()
         self.check_generated_pssh_v4_3(keys, mspr, pssh)
 
@@ -465,7 +468,7 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
         kids = actual_pro[0]['xml'].findall('./prh:DATA/prh:PROTECTINFO/prh:KIDS/prh:KID',
                                             self.namespaces)
         guid_map = {}
-        for keypair in keys.values():
+        for keypair in list(keys.values()):
             guid = PlayReady.hex_to_le_guid(keypair.KID.raw, raw=True)
             guid = base64.b64encode(guid)
             guid_map[guid] = keypair
@@ -484,8 +487,8 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
         """
         self.assertEqual(len(self.keys), 1)
         mspr = PlayReady(self.templates, la_url=self.la_url, version=1.0)
-        representation = Representation(id='V1', default_kid=self.keys.keys()[0],
-                                        kids=self.keys.keys())
+        representation = Representation(id='V1', default_kid=list(self.keys.keys())[0],
+                                        kids=list(self.keys.keys()))
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
 
@@ -556,8 +559,8 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
             self.templates,
             la_url=self.la_url,
             header_version=4.1)
-        representation = Representation(id='A1', default_kid=self.keys.keys()[0],
-                                        kids=self.keys.keys())
+        representation = Representation(id='A1', default_kid=list(self.keys.keys())[0],
+                                        kids=list(self.keys.keys()))
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
         pssh = mspr.generate_pssh(
@@ -599,7 +602,7 @@ class PlayreadyTests(GAETestBase, unittest.TestCase):
         test_la_url = 'https://licence.url.override/'
         self.check_playready_la_url_value(
             test_la_url,
-            ['playready_la_url={0}'.format(urllib.quote_plus(test_la_url))])
+            ['playready_la_url={0}'.format(urllib.parse.quote_plus(test_la_url))])
 
     def test_is_supported_scheme_id(self):
         self.assertTrue(PlayReady.is_supported_scheme_id(

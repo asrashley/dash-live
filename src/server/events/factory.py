@@ -21,6 +21,7 @@ from __future__ import print_function
 #
 #############################################################################
 
+from builtins import object
 from .ping_pong import PingPongEvents
 from .scte35_events import Scte35Events
 

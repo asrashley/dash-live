@@ -1,3 +1,4 @@
+from __future__ import division
 #############################################################################
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,6 +21,8 @@
 #
 #############################################################################
 
+from past.utils import old_div
+from builtins import object
 from mpeg.dash.representation import Representation
 from mpeg.dash.event_stream import EventStream
 from utils.objects import dict_to_cgi_params
@@ -111,8 +114,8 @@ class AdaptationSet(ObjectWithFields):
             (self.startNumber - 1) * self.representations[0].segment_duration)
         self.minBitrate = min([a.bitrate for a in self.representations])
         self.maxBitrate = max([a.bitrate for a in self.representations])
-        self.maxSegmentDuration = max(
-            [a.segment_duration for a in self.representations]) / self.timescale
+        self.maxSegmentDuration = old_div(max(
+            [a.segment_duration for a in self.representations]), self.timescale)
 
         if self.contentType in {'audio', 'text'}:
             for rep in self.representations:

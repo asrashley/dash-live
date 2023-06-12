@@ -20,6 +20,7 @@
 #
 #############################################################################
 
+from builtins import object
 from drm.keymaterial import KeyMaterial
 
 class KeyStub(object):

@@ -21,6 +21,7 @@ from __future__ import print_function
 #
 #############################################################################
 
+from builtins import object
 from mpeg.section_table import MpegSectionTable
 from scte35.descriptors import SpliceDescriptor
 from scte35.splice_time import SpliceTime

@@ -21,8 +21,11 @@
 #############################################################################
 
 from __future__ import absolute_import
+from builtins import chr
+import io
 import logging
 import os
+import struct
 import sys
 import unittest
 
@@ -43,7 +46,7 @@ class ClearkeyTests(TestCaseMixin, unittest.TestCase):
             "0123456789012345".encode('hex'): "ccc0f2b3b279926496a7f5d25da692f6",
             "ABCDEFGHIJKLMNOP".encode('hex'): "ccc0f2b3b279926496a7f5d25da692f6",
         }
-        for kid in self.keys.keys():
+        for kid in list(self.keys.keys()):
             self.keys[kid] = KeyStub(kid, self.keys[kid])
         self.la_url = 'http://localhost:9080/clearkey'
 
@@ -60,13 +63,15 @@ class ClearkeyTests(TestCaseMixin, unittest.TestCase):
             0x49, 0x4a, 0x4b, 0x4c, 0x4d, 0x4e, 0x4f, 0x50,
             0x00, 0x00, 0x00, 0x00,
         ]
-        expected_pssh = ''.join(map(lambda a: chr(a), expected_pssh))
+        buf = io.BytesIO()
+        for item in expected_pssh:
+            buf.write(struct.pack('B', item))
         ck = ClearKey(self.templates)
         representation = Representation(
-            id='V1', default_kid=self.keys.keys()[0])
+            id='V1', default_kid=list(self.keys.keys())[0])
         keys = sorted(self.keys.keys())
         pssh = ck.generate_pssh(representation, keys).encode()
-        self.assertBuffersEqual(expected_pssh, pssh)
+        self.assertBuffersEqual(buf.getvalue(), pssh)
 
 
 if os.environ.get("TESTS"):

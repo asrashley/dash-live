@@ -1,3 +1,4 @@
+from __future__ import division
 #############################################################################
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,6 +21,9 @@
 #
 #############################################################################
 
+from builtins import str
+from builtins import object
+from past.utils import old_div
 import datetime
 import logging
 
@@ -40,7 +44,7 @@ class DashTiming(object):
             self.calculate_live_params(mode, now, representation, params)
         else:
             self.mediaDuration = datetime.timedelta(seconds=(
-                representation.mediaDuration / representation.timescale))
+                old_div(representation.mediaDuration, representation.timescale)))
 
     def calculate_live_params(self, mode, now, representation, params):
         try:
@@ -75,8 +79,8 @@ class DashTiming(object):
         if self.elapsedTime.total_seconds() < self.timeShiftBufferDepth:
             self.timeShiftBufferDepth = self.elapsedTime.total_seconds()
         minimumUpdatePeriod = 0
-        default_mup = (2.0 * representation.segment_duration /
-                       representation.timescale)
+        default_mup = (old_div(2.0 * representation.segment_duration,
+                       representation.timescale))
         try:
             minimumUpdatePeriod = float(params.get('mup', default_mup))
         except ValueError:

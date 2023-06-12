@@ -20,6 +20,9 @@
 #
 #############################################################################
 
+from builtins import chr
+from builtins import range
+from builtins import object
 from abc import abstractmethod
 import copy
 

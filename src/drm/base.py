@@ -20,14 +20,15 @@
 #
 #############################################################################
 
+from builtins import object
 from abc import ABCMeta, abstractmethod
+from future.utils import with_metaclass
 
 
-class DrmBase(object):
+class DrmBase(with_metaclass(ABCMeta, object)):
     """
     Base class for all DRM implementations
     """
-    __metaclass__ = ABCMeta
 
     def __init__(self, templates):
         self.templates = templates
