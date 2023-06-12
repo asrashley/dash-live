@@ -9,16 +9,20 @@ The principal use for this service is to test live DASH streams using
 non-live, rights cleared material. In this case, it uses Big Buck Bunny
 as the test file.
 
+**This branch is feature frozen because Python 2 is no longer supported.**
+
 Installation
 ------------
 A settings.py needs to be created that contains
 
-    from utils import on_production_server
+```python
+from utils import on_production_server
 
-    cookie_secret = 'arandomstring'
-    csrf_secret = 'arandomstring'
-    DEBUG = not on_production_server
-    allowed_domains = "*"
+cookie_secret = 'arandomstring'
+csrf_secret = 'arandomstring'
+DEBUG = not on_production_server
+allowed_domains = "*"
+```
 
 The cookie_secret and csrf_secret variables need to contain a randomly
 generated block of ascii characters. There is a gen_settings.py script
