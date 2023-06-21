@@ -16,7 +16,7 @@
  {% if event.contentEncoding %}contentEncoding="{{event.contentEncoding}}"{% endif %}
  {% if event.messageData %}messageData="{{event.messageData}}"{% endif %}
 >
-{% if event.data %}{{event.data}}{% endif %}
+{% if event.data %}{{event.data|safe}}{% endif %}
 </Event>
 {% endfor %}
 </EventStream>

@@ -3,10 +3,10 @@
   <ProgramInformation>
     <Title>Big Buck Bunny</Title>
   </ProgramInformation>
-  <Location>http://unit.test/bbb/hand_made.mpd?acodec=mp4a</Location>
+  <Location>http://unit.test/dash/live/fixtures/hand_made.mpd?acodec=mp4a</Location>
   <UTCTiming schemeIdUri="urn:mpeg:dash:utc:http-xsdate:2014" value="http://unit.test/time/xsd"/>
   <Period start="PT0S" id="p0">
-    <BaseURL>http://unit.test/dash/live/</BaseURL>
+    <BaseURL>http://unit.test/dash/live/fixtures/</BaseURL>
     <AdaptationSet mimeType="video/mp4" contentType="video" segmentAlignment="true" startWithSAP="1" maxWidth="1920" maxHeight="1080" maxFrameRate="24" par="16:9">
       <ContentComponent id="1" contentType="video"/>
       <SegmentTemplate startNumber="1" timescale="240" duration="960" initialization="$RepresentationID$/init.m4v" media="$RepresentationID$/$Number$.m4v"/>

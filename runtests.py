@@ -30,51 +30,27 @@ import subprocess
 import sys
 import unittest
 
-if not os.path.exists("tests/runner.py"):
-    rv = subprocess.call([
-        'wget',
-        '-o', 'tests/runner.py',
-        'https://raw.githubusercontent.com/GoogleCloudPlatform/python-docs-samples/6f5f3bcb81779679a24e0964a6c57c0c7deabfac/appengine/standard/localtesting/runner.py'
-    ])
-    if rv:
-        print('Failed to download runner.py')
-        sys.exit(1)
-
-_src = os.path.abspath(os.path.join(os.path.dirname(__file__), "src"))
-if _src not in sys.path:
-    sys.path.append(_src)
-
-from tests import runner
-
-def fixup_test_filename(name):
+def fixup_test_filename(name: str) -> str:
     _, tail = os.path.split(name)
-    root, ext = os.path.splitext(tail)
-    if not ext:
-        ext = '.py'
-    return root + ext
-
-try:
-    # On Windows, assume GAE SDK is installed in user's local app data directory
-    appdata = os.environ['LOCALAPPDATA']
-    gae_sdk = os.path.join(appdata,'Google','Cloud SDK','google-cloud-sdk','platform','google_appengine')
-except KeyError:
-    # On Unix, assume dev_appserver.py is in the PATH
-    dev_appserver = subprocess.check_output(["which", "dev_appserver.py"]).split('\n')[0]
-    dev_appserver = os.path.abspath(os.path.realpath(dev_appserver))
-    gae_sdk = os.path.dirname(dev_appserver)
-    # in some installations, dev_appserver.py is in the root of the GAE SDK folder
-    # in others, it is in a "bin" sub-directory
-    if gae_sdk.endswith("bin"):
-        gae_sdk = os.path.dirname(gae_sdk)
+    root, _ = os.path.splitext(tail)
+    return root
 
 FORMAT = r"%(asctime)-15s:%(levelname)s:%(filename)s@%(lineno)d: %(message)s"
 logging.basicConfig(format=FORMAT)
 logging.getLogger().setLevel(logging.ERROR)
 
-if len(sys.argv) > 2:
-    os.environ["TESTS"] = ','.join(sys.argv[2:])
-    runner.main(gae_sdk, "tests", fixup_test_filename(sys.argv[1]))
-elif len(sys.argv) > 1:
-    runner.main(gae_sdk, "tests", fixup_test_filename(sys.argv[1]))
-else:
-    runner.main(gae_sdk, "tests", "*_test.py")
+#if len(sys.argv) > 2:
+#    os.environ["TESTS"] = ','.join(sys.argv[2:])
+#    runner.main(gae_sdk, "tests", fixup_test_filename(sys.argv[1]))
+#elif len(sys.argv) > 1:
+#    runner.main(gae_sdk, "tests", fixup_test_filename(sys.argv[1]))
+#else:
+#    runner.main(gae_sdk, "tests", "*_test.py")
+
+if __name__ == "__main__":
+    argv = [fixup_test_filename(arg) for arg in sys.argv]
+    print(argv)
+    if len(argv) == 1:
+        unittest.main(module='tests')
+    else:
+        unittest.main(module='tests', argv=argv)

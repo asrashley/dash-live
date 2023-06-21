@@ -1,6 +1,4 @@
-from __future__ import print_function
-from __future__ import absolute_import
-#############################################################################
+############################################################################
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -22,45 +20,29 @@ from __future__ import absolute_import
 #
 #############################################################################
 
+from __future__ import print_function
+from __future__ import absolute_import
 from future import standard_library
 standard_library.install_aliases()
 from builtins import zip
 from builtins import object
+from contextlib import contextmanager
 import datetime
 from functools import wraps
+import io
 import os
 import re
 import sys
 import urllib.parse
-import xml.etree.ElementTree as ET
+# import xml.etree.ElementTree as ET
 
-_src = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "..", "src"))
-if _src not in sys.path:
-    sys.path.append(_src)
+import flask
+from lxml import etree as ET
 
-from server import manifests, models, cgi_options
-from server.requesthandler.manifest_requests import ServeManifest
-from templates.factory import TemplateFactory
-from utils.objects import dict_to_cgi_params
+from dashlive.server import manifests, models, cgi_options
+from dashlive.server.requesthandler.manifest_requests import ServeManifest
+from dashlive.utils.objects import dict_to_cgi_params
 from .view_validator import ViewsTestDashValidator
-
-class QName(object):
-    """
-    Back-port of python 3 features of ElementTree.QName
-    """
-
-    NAMESPACE_RE = re.compile(r'^({(?P<namespace>[^}]+)})?(?P<localname>.+)$')
-
-    def __init__(self, text):
-        self.text = text
-        match = self.NAMESPACE_RE.match(text)
-        if match is None:
-            self.namespace = None
-            self.localname = text
-        else:
-            self.namespace = match.group('namespace')
-            self.localname = match.group('localname')
 
 def add_url(method, url):
     @wraps(method)
@@ -133,16 +115,15 @@ class DashManifestCheckMixin(object):
         manifest = manifests.manifest[filename]
         options = manifest.get_cgi_options(simplified)
         self.setup_media(with_subs=with_subs)
-        self.logoutCurrentUser()
-        media_files = models.MediaFile.all()
-        self.assertGreaterThan(len(media_files), 0)
+        self.logout_user()
+        self.assertGreaterThan(models.MediaFile.count(), 0)
         # do a first pass check with no CGI options
         for mode in manifest.restrictions.get('mode', {'vod', 'live', 'odvod'}):
-            url = self.from_uri(
+            url = flask.url_for(
                 'dash-mpd-v3',
                 manifest=filename,
                 mode=mode,
-                stream='bbb')
+                stream=self.FIXTURES_PATH.name)
             self.check_manifest_url(url, mode, encrypted=False)
 
         # do the exhaustive check of every option
@@ -198,11 +179,11 @@ class DashManifestCheckMixin(object):
                 del params["time"]
         encrypted = params.get("drm", "drm=none") != "drm=none"
         cgi = list(params.values())
-        url = self.from_uri(
+        url = flask.url_for(
             'dash-mpd-v3',
             manifest=filename,
             mode=mode,
-            stream='bbb')
+            stream=self.FIXTURES_PATH.name)
         mpd_url = '{}?{}'.format(url, '&'.join(cgi))
         if mpd_url in tested:
             return
@@ -216,19 +197,21 @@ class DashManifestCheckMixin(object):
         response = None
         try:
             self.current_url = mpd_url
-            response = self.app.get(mpd_url)
-            if response.status_int == 302:
+            response = self.client.get(mpd_url)
+            if response.status_code == 302:
                 # Handle redirect request
                 mpd_url = response.headers['Location']
                 self.current_url = mpd_url
-                response = self.app.get(mpd_url)
+                response = self.client.get(mpd_url)
             # print(response.text)
+            self.assertEqual(response.status_code, 200)
+            xml = ET.parse(io.BytesIO(response.get_data(as_text=False)))
             dv = ViewsTestDashValidator(
-                http_client=self.app, mode=mode, xml=response.xml,
+                http_client=self.client, mode=mode, xml=xml.getroot(),
                 url=mpd_url, encrypted=encrypted)
             dv.validate(depth=3)
             if check_head:
-                head = self.app.head(mpd_url)
+                head = self.client.head(mpd_url)
             if mode != 'live':
                 if check_head:
                     self.assertEqual(
@@ -253,31 +236,51 @@ class DashManifestCheckMixin(object):
         finally:
             self.current_url = ''
 
+    @contextmanager
+    def create_mock_request_context(self, url: str, stream: models.Stream,
+                                    method: str = 'GET'):
+        abs_url = urllib.parse.urljoin('http://unit.test/', url)
+        parsed = urllib.parse.urlparse(abs_url)
+        with self.app.test_request_context(url, method='GET') as context:
+            flask.g.stream = stream
+            flask.request.url = abs_url
+            flask.request.scheme = parsed.scheme
+            flask.request.remote_addr = '127.0.0.1'
+            flask.request.host = r'unit.test'
+            flask.request.host_url = r'http://unit.test/'
+            yield context
+        
     def check_generated_manifest_against_fixture(self, mpd_filename, mode, **kwargs):
         """
         Check a freshly generated manifest against a "known good" previous example
         """
         self.setup_media()
         self.init_xml_namespaces()
-        context = self.generate_manifest_context(
-            mpd_filename, mode=mode, prefix='bbb', **kwargs)
-        template = TemplateFactory.get_template(mpd_filename)
-        text = template.render(context)
-        # print(text)
+        url = flask.url_for(
+            "dash-mpd-v3",
+            mode=mode,
+            stream=self.FIXTURES_PATH.name,
+            manifest=mpd_filename,
+            **kwargs)
+        stream = models.Stream.get(directory=self.FIXTURES_PATH.name)
+        self.assertIsNotNone(stream)
+        # with self.app.test_request_context(url, method='GET'):
+        with self.create_mock_request_context(url, stream):
+            context = self.generate_manifest_context(
+                mpd_filename, mode=mode, stream=stream, **kwargs)
+            text = flask.render_template(mpd_filename, **context)
         encrypted = kwargs.get('drm', 'none') != 'none'
         fixture = self.fixture_filename(mpd_filename, mode, encrypted)
         expected = ET.parse(fixture).getroot()
-        actual = ET.fromstring(text)
+        actual = ET.fromstring(bytes(text, 'utf-8'))
         self.assertXmlEqual(expected, actual)
 
-    def generate_manifest_context(self, mpd_filename, mode, prefix, **kwargs):
-        url = r'http://unit.test/{0}/{1}{2}'.format(
-            prefix, mpd_filename, dict_to_cgi_params(kwargs))
-        request = MockRequest(url)
-        mock = MockServeManifest(request)
-        stream = models.Stream.query(models.Stream.prefix == prefix).get()
-        self.assertIsNotNone(stream)
-        context = mock.calculate_dash_params(mpd_url=mpd_filename, prefix=prefix, mode=mode)
+    def generate_manifest_context(self, mpd_filename, mode, stream, **kwargs):
+        #url = r'http://unit.test/{0}/{1}{2}'.format(
+        #    directory, mpd_filename, dict_to_cgi_params(kwargs))
+        #request = MockRequest(url)
+        mock = MockServeManifest(flask.request)
+        context = mock.calculate_dash_params(mpd_url=mpd_filename, mode=mode)
         encrypted = kwargs.get('drm', 'none') != 'none'
         if encrypted:
             kids = set()
@@ -289,7 +292,7 @@ class DashManifestCheckMixin(object):
                 keys = models.Key.get_kids(kids)
             context["DRM"] = mock.generate_drm_dict(stream, keys)
         context['remote_addr'] = mock.request.remote_addr
-        context['request_uri'] = mock.request.uri
+        context['request_uri'] = mock.request.url
         context['title'] = stream.title
         return context
 
@@ -328,7 +331,7 @@ class DashManifestCheckMixin(object):
         self.assertEqual(expected, actual, msg=msg)
 
     def assertXmlEqual(self, expected, actual, index=0, msg=None, strict=False):
-        tag = QName(expected.tag)
+        tag = ET.QName(expected.tag)
         if msg is None:
             prefix = tag.localname
         else:

@@ -48,10 +48,10 @@
      {%- for adp in period.adaptationSets %}
        <AdaptationSet
          mimeType="{{adp.mimeType}}"
-         contentType="{{adp.contentType}}"
+         contentType="{{adp.content_type}}"
          segmentAlignment="{{adp.segmentAlignment|trueFalse}}"
          startWithSAP="{{adp.startWithSAP}}"
-         {%- if adp.contentType == "video" %}
+         {%- if adp.content_type == "video" %}
            maxWidth="{{adp.maxWidth}}"
            maxHeight="{{adp.maxHeight}}"
            maxFrameRate="{{adp.maxFrameRate}}"
@@ -97,10 +97,10 @@
                id="{{rep.id}}"
                mimeType="{{adp.mimeType}}"
                codecs="{{rep.codecs}}"
-               {%- if adp.contentType == "video" %}
+               {%- if adp.content_type == "video" %}
                  width="{{rep.width}}"
                  height="{{rep.height}}"
-               {%- elif adp.contentType == "audio" %}
+               {%- elif adp.content_type == "audio" %}
                    sampleRate="{{rep.sampleRate}}"
                    numChannels="{{rep.numChannels}}"
                {%- endif %}

@@ -1,7 +1,7 @@
 Simulated MPEG DASH service
 ===========================
 
-A Google App Engine project that provides an end point for multiple MPEG DASH
+A Python application that provides an end point for multiple MPEG DASH
 manifests. These manifests are dynamically generated from templates of various
 vendor's packaging output.
 
@@ -9,13 +9,13 @@ The principal use for this service is to test live DASH streams using
 non-live, rights cleared material. In this case, it uses Big Buck Bunny
 as the test file.
 
-**This branch is feature frozen because Python 2 is no longer supported.**
-
 Installation
 ------------
+Python 3.11 or greater is required by this application.
+
 A settings.py needs to be created that contains
 
-```python
+```python3
 from utils import on_production_server
 
 cookie_secret = 'arandomstring'
@@ -93,8 +93,8 @@ Media Files
 -----------
 The application expects there to be at least one video and one audio
 MP4 file for each available stream. Each file belonging to a stream
-must have the same filename prefix followed by an underscore. When the
-stream is parsed by the server it will auto-detect if the stream is
+must be uploaded and associated with that stream. When the
+file is parsed by the server it will auto-detect if the file is
 encrypted. It is recommended however to choose a naming convention
 that makes it easier to tell which streams are encrypted and which
 ones are in the clear. For example:

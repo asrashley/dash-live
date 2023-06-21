@@ -20,11 +20,10 @@
 #
 #############################################################################
 
-from builtins import object
-from drm.keymaterial import KeyMaterial
+from dashlive.drm.keymaterial import KeyMaterial
 
-class KeyStub(object):
-    def __init__(self, kid, key, alg=None):
+class KeyStub:
+    def __init__(self, kid: str, key: str, alg: str = None) -> None:
         self.KID = KeyMaterial(hex=kid)
         self.KEY = KeyMaterial(hex=key)
         self.ALG = 'AESCTR' if alg is None else alg

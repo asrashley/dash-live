@@ -9,28 +9,29 @@
 	    <title>{% block title %}{{ title }}{% endblock %}</title>
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="shortcut icon" href="{{url_for('static', filename='favicon.ico')}}">
         {% if on_production_server %}
             <link href='{{http_protocol}}://fonts.googleapis.com/css?family=Comfortaa:700' rel='stylesheet' type='text/css'>
         {% else %}
-            <link href='/css/comfortaa.css' rel='stylesheet' type='text/css'>
+            <link href="{{url_for('static', filename='css/comfortaa.css')}}"
+                  rel='stylesheet' type='text/css'>
         {% endif %}
         {% block firstscript %}{% endblock %}
-        <link rel="stylesheet" href="/css/bootstrap.min.css" />
+        <link rel="stylesheet" href="{{url_for('static', filename='css/bootstrap.min.css')}}" />
         {% block stylesheet %}
-        <link rel="stylesheet" href="/css/main.css" />
+        <link rel="stylesheet" href="{{url_for('static', filename='css/main.css')}}" />
         {% endblock %}
-        <script src="/js/modernizr-3.5.0-custom.js"></script>
+        <script
+          src="{{url_for('static', filename='js/modernizr-3.5.0-custom.js')}}">
+        </script>
         {% block extraheaders %}{% endblock %}
     </head>
     <body>
-        <!--[if lt IE 7]>
-            <p class="chromeframe">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> or <a href="http://www.google.com/chromeframe/?redirect=true">activate Google Chrome Frame</a> to improve your experience.</p>
-        <![endif]-->
         <header>
     {% block header %}
             <ul class="user">
-            {% if user %}
-            <li><a class="upload" href="{{uri_for('media-index')}}">Media</a></li>
+            {% if current_user.is_authenticated %}
+            <li><a class="upload" href="{{url_for('media-list')}}">Media</a></li>
             <li><a class="logout" href="{{logout}}">Log Out</a></li>
             {% else %}
             <li><a class="login" href="{{login}}">Log In</a></li>

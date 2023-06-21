@@ -191,7 +191,7 @@ class MediaManagement(object):
             'csrf_token': self.csrf_tokens['streams']
         }
         self.log.debug('PUT %s', self.routes.stream)
-        result = self.session.put(self.routes.stream, params=params)
+        result = self.session.put(self.routes.stream, json=params)
         try:
             js = result.json()
         except ValueError:

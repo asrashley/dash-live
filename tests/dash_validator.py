@@ -23,6 +23,7 @@
 from __future__ import print_function
 from __future__ import division
 from future import standard_library
+from future.utils import with_metaclass
 standard_library.install_aliases()
 from builtins import str
 from builtins import range
@@ -33,6 +34,7 @@ from abc import ABCMeta, abstractmethod
 import base64
 import collections
 import datetime
+import io
 import json
 import logging
 import math
@@ -41,16 +43,17 @@ import re
 import time
 import traceback
 import urllib.parse
-import xml.etree.ElementTree as ET
+#import xml.etree.ElementTree as ET
 
-from drm.playready import PlayReady
-from testcase.mixin import HideMixinsFilter, TestCaseMixin
-from mpeg import MPEG_TIMEBASE, mp4
-import scte35
-from utils.date_time import from_isodatetime, scale_timedelta, toIsoDateTime, UTC
-from utils.binary import Binary
-from utils.buffered_reader import BufferedReader
-from future.utils import with_metaclass
+from lxml import etree as ET
+
+from dashlive.drm.playready import PlayReady
+from dashlive.testcase.mixin import HideMixinsFilter, TestCaseMixin
+from dashlive.mpeg import MPEG_TIMEBASE, mp4
+from dashlive import scte35
+from dashlive.utils.date_time import from_isodatetime, scale_timedelta, toIsoDateTime, UTC
+from dashlive.utils.binary import Binary
+from dashlive.utils.buffered_reader import BufferedReader
 
 class ValidatorOptions(object):
     """
@@ -83,12 +86,12 @@ class ValidationException(Exception):
 class MissingSegmentException(ValidationException):
     def __init__(self, url, response):
         msg = 'Failed to get segment: {0:d} {1} {2}'.format(
-            response.status_int, response.status, url)
+            response.status_code, response.status, url)
         super(
             MissingSegmentException, self).__init__(
             (msg, url, response.status))
         self.url = url
-        self.status = response.status_int
+        self.status = response.status_code
         self.reason = response.status
 
 
@@ -116,7 +119,6 @@ class DashElement(with_metaclass(ABCMeta, TestCaseMixin)):
         'scte35': "http://www.scte.org/schemas/35/2016",
         'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
         'prh': 'http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader',
-        '': 'urn:mpeg:dash:schema:mpd:2011',
     }
 
     attributes = []
@@ -281,11 +283,12 @@ class DashValidator(with_metaclass(ABCMeta, DashElement)):
         self.xml = xml
         if self.xml is None:
             result = self.http.get(self.url)
-            self.assertEqual(result.status_int, 200,
-                             'Failed to load manifest: {0:d} {1}'.format(
-                                 result.status_int, self.url))
+            self.assertEqual(
+                result.status_code, 200,
+                f'Failed to load manifest: {result.status_code} {self.url}')
             # print(result.text)
-            self.xml = result.xml
+            xml = ET.parse(io.BytesIO(result.get_data(as_text=False)))
+            self.xml = xml.getroot()
         if self.mode is None:
             if self.xml.get("type") == "dynamic":
                 self.mode = 'live'
@@ -648,7 +651,7 @@ class SegmentBaseType(DashElement):
         self.log.debug('GET: %s %s', url, headers)
         response = self.http.get(url, headers=headers)
         # 206 = partial content
-        self.checkEqual(response.status_int, 206)
+        self.checkEqual(response.status_code, 206)
         if self.options.save:
             default = 'index-{0}-{1}'.format(self.parent.id, self.parent.bandwidth)
             filename = self.output_filename(
@@ -1305,8 +1308,6 @@ class Representation(RepresentationBaseType):
                             ('', '$')]:
             rx = re.compile(r'\${0}(%0\d+d)?\$'.format(name))
             url = rx.sub(lambda match: repfn(match, value), url)
-        if isinstance(url, unicode):
-            url = url.encode('utf-8')
         return url
 
 
@@ -1329,10 +1330,11 @@ class InitSegment(DashElement):
             expected_status = 200
         self.log.debug('GET: %s %s', self.url, headers)
         response = self.http.get(self.url, headers=headers)
+        if response.status_code != expected_status:
+            print(response.text)
         self.checkEqual(
-            response.status_int, expected_status,
-            'Failed to load init segment: {0:d}: {1}\n{2}'.format(
-                response.status_int, response.body, self.url))
+            response.status_code, expected_status,
+            msg=f'Failed to load init segment: {response.status_code}: {self.url}')
         if self.options.save:
             default = 'init-{0}-{1}'.format(self.parent.id, self.parent.bandwidth)
             filename = self.output_filename(
@@ -1341,7 +1343,7 @@ class InitSegment(DashElement):
             self.log.debug('saving init segment: %s', filename)
             with self.open_file(filename, self.options) as dest:
                 dest.write(response.body)
-        src = BufferedReader(None, data=response.body)
+        src = BufferedReader(None, data=response.get_data(as_text=False))
         atoms = mp4.Mp4Atom.load(src)
         self.checkGreaterThan(len(atoms), 1)
         self.checkEqual(atoms[0].atom_type, 'ftyp')
@@ -1358,7 +1360,7 @@ class InitSegment(DashElement):
             self.checkEqual(len(pssh.system_id), 16)
             if pssh.system_id == PlayReady.RAW_SYSTEM_ID:
                 for pro in PlayReady.parse_pro(
-                        BufferedReader(None, data=pssh.data)):
+                        BufferedReader(None, data=pssh.data.data)):
                     root = pro['xml'].getroot()
                     version = root.get("version")
                     self.checkIn(
@@ -1397,8 +1399,8 @@ class MediaSegment(DashElement):
         self.tolerance = tolerance
         self.seg_range = seg_range
         self.url = url
-        self.log.debug('MediaSegment: url=%s $Number$=%d $Time$=%s tolerance=%d',
-                       url, seg_num, str(decode_time), tolerance)
+        self.log.debug('MediaSegment: url=%s $Number$=%s $Time$=%s tolerance=%d',
+                       url, str(seg_num), str(decode_time), tolerance)
 
     def set_info(self, info):
         self.info = info
@@ -1410,10 +1412,10 @@ class MediaSegment(DashElement):
         self.log.debug('MediaSegment: url=%s headers=%s', self.url, headers)
         response = self.http.get(self.url, headers=headers)
         if self.seg_range is None:
-            if response.status_int != 200:
+            if response.status_code != 200:
                 raise MissingSegmentException(self.url, response)
         else:
-            if response.status_int != 206:
+            if response.status_code != 206:
                 raise MissingSegmentException(self.url, response)
         if self.parent.mimeType is not None:
             if self.options.strict:
@@ -1427,7 +1429,7 @@ class MediaSegment(DashElement):
             self.log.debug('saving media segment: %s', filename)
             with self.open_file(filename, self.options) as dest:
                 dest.write(response.body)
-        src = BufferedReader(None, data=response.body)
+        src = BufferedReader(None, data=response.get_data(as_text=False))
         options = {"strict": True}
         self.checkEqual(self.options.encrypted, self.info.encrypted)
         if self.info.encrypted:
@@ -1557,7 +1559,7 @@ if __name__ == "__main__":
     class HttpResponse(TestCaseMixin):
         def __init__(self, response):
             self.response = response
-            self.status_code = self.status_int = response.status_code
+            self.status_int = self.status_code = response.status_code
             self._xml = None
             self.headers = response.headers
             self.headerlist = list(response.headers.keys())

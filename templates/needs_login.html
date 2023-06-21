@@ -1,0 +1,15 @@
+{% extends 'layout.html' %}
+
+
+{% block content %}
+<div class="container">
+  <h2>This page requires you to log in</h2>
+  <p>To be able to view this page, you need
+    to <a href="{{url_for('login')}}">login</a>
+    {%- if needs_admin -%}
+    using an account that is a member of the ADMIN group.
+    {% endif %}
+    .
+  </p>
+</div>
+{% endblock %}
