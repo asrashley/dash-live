@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xmlns:mspr="urn:microsoft:playready" xmlns:mas="urn:marlin:mas:1-0:services:schemas:mpd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:mpeg:schema:mpd:2011 DASH-MPD.xsd" profiles="urn:mpeg:profile:isoff-live:2011" publishTime="2022-09-06T09:59:02Z" minBufferTime="PT8.0S" type="static" mediaPresentationDuration="PT40S">
   <Period start="PT0S" id="p0">
-    <BaseURL>http://unit.test/dash/vod/</BaseURL>
+    <BaseURL>http://unit.test/dash/vod/fixtures/</BaseURL>
     <AdaptationSet mimeType="video/mp4" par="16:9" segmentAlignment="true" startWithSAP="1">
       <SegmentTemplate initialization="$RepresentationID$/init.m4v" media="$RepresentationID$/$Number$.m4v" presentationTimeOffset="0" timescale="240">
         <SegmentTimeline>

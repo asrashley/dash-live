@@ -80,7 +80,7 @@ $(document).ready(function(){
         var $row = $(ev.target).parents('tr');
         data = {
             'title': $row.find('input[name="title"]').val(),
-            'prefix': $row.find('input[name="prefix"]').val(),
+            'directory': $row.find('input[name="directory"]').val(),
             'marlin_la_url': $row.find('input[name="marlin_la_url"]').val(),
             'playready_la_url': $row.find('input[name="playready_la_url"]').val(),
             'csrf_token': $('#streams').data('csrf')
@@ -90,7 +90,8 @@ $(document).ready(function(){
         $.ajax({
             url: '/stream',
             method: 'PUT',
-            data: data,
+            contentType: "application/json; charset=utf-8",
+            data: JSON.stringify(data),
             dataType: 'json'
         }).done(function(result) {
             var newRow;
@@ -101,14 +102,14 @@ $(document).ready(function(){
             newRow = $('#streams .placeholder').clone();
             newRow.removeClass('placeholder');
             newRow.find('.title').text(result.title);
-            newRow.find('.prefix').text(result.prefix);
+            newRow.find('.directory').text(result.directory);
             newRow.find('.marlin_la_url').text(result.marlin_la_url);
             newRow.find('.playready_la_url').text(result.playready_la_url);
             newRow.find('.delete-stream').data("id", result.id);
             $('#streams tbody').append(newRow);
             newRow.find('.delete-stream').click(deleteStream);
             $row.find('input[name="title"]').val('');
-            $row.find('input[name="prefix"]').val('');
+            $row.find('input[name="directory"]').val('');
             if (result.csrf) {
                 $('#streams').data('csrf', result.csrf);
             }
@@ -138,7 +139,7 @@ $(document).ready(function(){
         }
         title = $row.find('.title').text();
         if (title === "" || title === undefined) {
-            title = $row.find('.prefix').text();
+            title = $row.find('.directory').text();
         }
         dialog = $('#dialog-box');
         dialog.find(".modal-body").html(
@@ -191,7 +192,7 @@ $(document).ready(function(){
                                         '</p><div class="error"></div>');
         showDialog();
         $.ajax({
-            url: '/media/'+blobId+'?index=1&csrf_token='+csrf,
+            url: '/media/index/'+blobId+'?csrf_token='+csrf,
             method: 'GET',
             dataType: 'json',
         }).done(function(result) {

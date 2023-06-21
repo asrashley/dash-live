@@ -26,10 +26,9 @@ import logging
 import os
 import urllib.parse
 
-from testcase.mixin import HideMixinsFilter
-
-from dash_validator import DashValidator, RepresentationInfo, ValidatorOptions
-from server import models, routes
+from dashlive.server import models, routes
+from dashlive.testcase.mixin import HideMixinsFilter
+from tests.dash_validator import DashValidator, RepresentationInfo, ValidatorOptions
 
 class ViewsTestDashValidator(DashValidator):
     def __init__(self, http_client, mode, url, encrypted=False, xml=None, debug=False):
@@ -55,23 +54,30 @@ class ViewsTestDashValidator(DashValidator):
             pass
         url = representation.init_seg_url()
         parts = urllib.parse.urlparse(url)
-        # self.log.debug('match %s %s', routes.routes["dash-media"].reTemplate.pattern, parts.path)
+        self.log.debug('Trying to match %s using %s',
+                       parts.path,
+                       routes.routes["dash-media"].reTemplate.pattern)
         match = routes.routes["dash-media"].reTemplate.match(parts.path)
         if match is None:
-            # self.log.debug('match %s', routes.routes["dash-od-media"].reTemplate.pattern)
+            self.log.debug(
+                'Tying to match %s using %s',
+                parts.path,
+                routes.routes["dash-od-media"].reTemplate.pattern)
             match = routes.routes["dash-od-media"].reTemplate.match(parts.path)
         if match is None:
             self.log.error('match %s %s', url, parts.path)
-        self.assertIsNotNone(match)
+        self.assertIsNotNone(match, msg=f'Failed to find match for URL path "{parts.path}"')
+        directory = match.group("stream")
+        stream = models.Stream.get(directory=directory)
+        self.assertIsNotNone(stream, msg=f'Failed to find stream {directory}')
         filename = match.group("filename")
-        name = filename + '.mp4'
         # self.log.debug("get_representation_info %s %s %s", url, filename, name)
-        mf = models.MediaFile.query(models.MediaFile.name == name).get()
-        if mf is None:
-            filename = os.path.dirname(parts.path).split('/')[-1]
-            name = filename + '.mp4'
-            mf = models.MediaFile.query(models.MediaFile.name == name).get()
-        self.assertIsNotNone(mf)
+        mf = models.MediaFile.get(name=filename)
+        #if mf is None:
+        #    filename = os.path.dirname(parts.path).split('/')[-1]
+        #    name = filename + '.mp4'
+        #    mf = models.MediaFile.query(models.MediaFile.name == name).get()
+        self.assertIsNotNone(mf, msg=f'Failed to find MediaFile {filename}')
         rep = mf.representation
         info = RepresentationInfo(
             num_segments=rep.num_segments, **rep.toJSON())

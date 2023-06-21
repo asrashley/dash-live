@@ -4,8 +4,8 @@
 {% block content %}
 <h2>Upload complete</h2>
 <p>{{blob}}</p>
-<br /><p><a href="{{uri_for('media-index')}}" class="link">Back to
+<br /><p><a href="{{url_for('media-list')}}" class="link">Back to
     media index</a></p>
-<br /><p><a href="{{uri_for('media-info', mfid=mfid)}}?index=1" class="link">Generate index</a></p>
+<br /><p><a href="{{url_for('media-index', mfid=media.key)}}" class="link">Generate index</a></p>
 {% endblock %}
 
