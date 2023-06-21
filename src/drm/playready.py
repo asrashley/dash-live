@@ -26,26 +26,29 @@ standard_library.install_aliases()
 from builtins import str
 from builtins import range
 import base64
+import binascii
 import re
 import io
 import struct
 import sys
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+import urllib.parse
+import urllib.error
 
 from xml.etree import ElementTree
 from Crypto.Cipher import AES
 from Crypto.Hash import SHA256
 
-from mpeg import mp4
-from drm.base import DrmBase
-from drm.keymaterial import KeyMaterial
-from utils.buffered_reader import BufferedReader
+from dashlive.mpeg import mp4
+from dashlive.utils.buffered_reader import BufferedReader
+from .base import DrmBase
+from .keymaterial import KeyMaterial
 
 class PlayReady(DrmBase):
     MAJOR_VERSIONS = [1.0, 2.0, 3.0, 4.0]
     SYSTEM_ID = "9a04f079-9840-4286-ab92-e65be0885f95"
     SYSTEM_ID_V10 = "79f0049a-4098-8642-ab92-e65be0885f95"
-    RAW_SYSTEM_ID = "9a04f07998404286ab92e65be0885f95".decode("hex")
+    RAW_SYSTEM_ID = binascii.a2b_hex("9a04f07998404286ab92e65be0885f95")
     TEST_KEY_SEED = base64.b64decode(
         "XVBovsmzhP9gRIZxWfFta3VVRPzVEWmJsazEJ46I")
     TEST_LA_URL = "https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg={cfgs}"

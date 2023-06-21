@@ -22,11 +22,11 @@
 
 from builtins import str
 from past.builtins import basestring
-from collections import Iterable
+from collections.abc import Iterable
 import datetime
 import decimal
 
-from utils.date_time import toIsoDateTime, toIsoDuration
+from dashlive.utils.date_time import toIsoDateTime, toIsoDuration
 
 def flatten(value, convert_numbers=False, pure=True):
     """

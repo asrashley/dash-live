@@ -1,4 +1,3 @@
-from __future__ import division
 #############################################################################
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,6 +20,7 @@ from __future__ import division
 
 #
 #############################################################################
+from __future__ import division
 from builtins import str
 from past.builtins import basestring
 from past.utils import old_div
@@ -29,7 +29,7 @@ import math
 import re
 import time
 
-from utils.timezone import UTC, FixedOffsetTimeZone
+from .timezone import UTC, FixedOffsetTimeZone
 
 # time values are in seconds since midnight, Jan. 1, 1904, in UTC time
 ISO_EPOCH = datetime.datetime(year=1904, month=1, day=1, tzinfo=UTC())

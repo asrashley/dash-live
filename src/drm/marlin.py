@@ -22,10 +22,11 @@
 
 from future import standard_library
 standard_library.install_aliases()
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+import urllib.parse
+import urllib.error
 
-from drm.base import DrmBase
-
+from .base import DrmBase
 
 class Marlin(DrmBase):
     MPD_SYSTEM_ID = '5e629af5-38da-4063-8977-97ffbd9902d4'

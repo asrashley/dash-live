@@ -20,8 +20,8 @@
 #
 #############################################################################
 
-from utils.fio import BitsFieldReader, BitsFieldWriter
-from utils.object_with_fields import ObjectWithFields
+from dashlive.utils.fio import BitsFieldReader, BitsFieldWriter
+from dashlive.utils.object_with_fields import ObjectWithFields
 
 class BreakDuration(ObjectWithFields):
     @classmethod

@@ -20,9 +20,9 @@
 #
 #############################################################################
 
-from mpeg.dash.event import DashEvent
-from utils.list_of import ListOf
-from utils.object_with_fields import ObjectWithFields
+from dashlive.utils.list_of import ListOf
+from dashlive.utils.object_with_fields import ObjectWithFields
+from .event import DashEvent
 
 class EventStream(ObjectWithFields):
     OBJECT_FIELDS = {

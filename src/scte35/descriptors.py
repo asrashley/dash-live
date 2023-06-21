@@ -26,9 +26,9 @@ from builtins import object
 from abc import abstractmethod
 import copy
 
-from utils.fio import BitsFieldWriter
-from utils.binary import Binary
-from utils.object_with_fields import ObjectWithFields
+from dashlive.utils.fio import BitsFieldWriter
+from dashlive.utils.binary import Binary
+from dashlive.utils.object_with_fields import ObjectWithFields
 
 class SpliceDescriptor(ObjectWithFields):
     TAGS = {}

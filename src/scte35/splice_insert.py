@@ -21,11 +21,13 @@
 #############################################################################
 
 from builtins import range
-from scte35.break_duration import BreakDuration
-from scte35.splice_time import SpliceTime
-from utils.fio import BitsFieldReader, BitsFieldWriter
-from utils.object_with_fields import ObjectWithFields
-from utils.list_of import ListOf
+
+from dashlive.scte35.break_duration import BreakDuration
+from dashlive.utils.fio import BitsFieldReader, BitsFieldWriter
+from dashlive.utils.object_with_fields import ObjectWithFields
+from dashlive.utils.list_of import ListOf
+
+from .splice_time import SpliceTime
 
 class ElementaryComponent(ObjectWithFields):
     OBJECT_FIELDS = {

@@ -21,10 +21,12 @@
 #############################################################################
 
 from builtins import range
-from scte35.break_duration import BreakDuration
-from utils.fio import BitsFieldReader, BitsFieldWriter
-from utils.object_with_fields import ObjectWithFields
-from utils.list_of import ListOf
+
+from dashlive.utils.fio import BitsFieldReader, BitsFieldWriter
+from dashlive.utils.object_with_fields import ObjectWithFields
+from dashlive.utils.list_of import ListOf
+
+from .break_duration import BreakDuration
 
 class SpliceItem(ObjectWithFields):
     OBJECT_FIELDS = {

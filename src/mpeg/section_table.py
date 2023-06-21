@@ -21,15 +21,10 @@
 #############################################################################
 from abc import abstractmethod
 
-try:
-    from crccheck.crc import Crc32Mpeg2
-except ImportError:
-    # when running inside GAE environment, the crccheck library cannot be
-    # used as it has native code. Fall back to a pure python implementation
-    from utils.purecrc import Crc32Mpeg2
+from crccheck.crc import Crc32Mpeg2
 
-from utils.fio import BitsFieldReader, BitsFieldWriter
-from utils.object_with_fields import ObjectWithFields
+from dashlive.utils.fio import BitsFieldReader, BitsFieldWriter
+from dashlive.utils.object_with_fields import ObjectWithFields
 
 class MpegSectionTable(ObjectWithFields):
     @classmethod
