@@ -1,4 +1,3 @@
-from __future__ import division
 #############################################################################
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,13 +20,14 @@ from __future__ import division
 #
 #############################################################################
 
+from __future__ import division
 from builtins import chr
 from builtins import range
 from past.utils import old_div
 from abc import abstractmethod
 
-from mpeg.dash.event_stream import EventStream
-from mpeg import mp4
+from dashlive.mpeg.dash.event_stream import EventStream
+from dashlive.mpeg import mp4
 
 from .base import EventBase
 

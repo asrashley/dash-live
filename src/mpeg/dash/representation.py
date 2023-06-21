@@ -31,10 +31,10 @@ import sys
 
 import bitstring
 
-from drm.keymaterial import KeyMaterial
-from utils.date_time import scale_timedelta
-from utils.list_of import ListOf
-from utils.object_with_fields import ObjectWithFields
+from dashlive.drm.keymaterial import KeyMaterial
+from dashlive.utils.date_time import scale_timedelta
+from dashlive.utils.list_of import ListOf
+from dashlive.utils.object_with_fields import ObjectWithFields
 
 from .segment import Segment
 

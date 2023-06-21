@@ -25,8 +25,8 @@ import os
 
 import jinja2
 
+from dashlive.utils.date_time import toIsoDuration, toIsoDateTime
 from . import tags
-from utils.date_time import toIsoDuration, toIsoDateTime
 
 class TemplateFactory(object):
     _singleton = None

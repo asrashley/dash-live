@@ -1,4 +1,3 @@
-from __future__ import division
 #############################################################################
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,13 +20,14 @@ from __future__ import division
 #
 #############################################################################
 
+from __future__ import division
 from past.utils import old_div
-from mpeg import MPEG_TIMEBASE
 
-from scte35 import descriptors
-from scte35.binarysignal import BinarySignal, SapType
-from scte35.splice_insert import SpliceInsert
-from utils.objects import merge
+from dashlive.mpeg import MPEG_TIMEBASE
+from dashlive.scte35 import descriptors
+from dashlive.scte35.binarysignal import BinarySignal, SapType
+from dashlive.scte35.splice_insert import SpliceInsert
+from dashlive.utils.objects import merge
 
 from .repeating_event_base import RepeatingEventBase
 

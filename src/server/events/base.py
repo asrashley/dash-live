@@ -22,12 +22,12 @@
 
 from past.builtins import basestring
 from builtins import object
+from future.utils import with_metaclass
 from abc import ABCMeta, abstractmethod
 import copy
 import datetime
 
-from utils.date_time import from_isodatetime
-from future.utils import with_metaclass
+from dashlive.utils.date_time import from_isodatetime
 
 class EventBase(with_metaclass(ABCMeta, object)):
     PARAMS = {

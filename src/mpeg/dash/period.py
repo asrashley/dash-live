@@ -22,8 +22,8 @@
 
 import datetime
 
-from utils.list_of import ListOf
-from utils.object_with_fields import ObjectWithFields
+from dashlive.utils.list_of import ListOf
+from dashlive.utils.object_with_fields import ObjectWithFields
 
 from .adaptation_set import AdaptationSet
 

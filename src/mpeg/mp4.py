@@ -43,12 +43,12 @@ except ImportError:
     sys.path.append(os.path.join(os.path.dirname(__file__), "..", "lib"))
     import bitstring
 
-from utils.fio import FieldReader, BitsFieldReader, FieldWriter, BitsFieldWriter
-from utils.binary import Binary, HexBinary
-from utils.date_time import DateTimeField, from_iso_epoch, to_iso_epoch
-from utils.object_with_fields import ObjectWithFields
-from utils.list_of import ListOf
-from mpeg.nal import Nal
+from dashlive.utils.fio import FieldReader, BitsFieldReader, FieldWriter, BitsFieldWriter
+from dashlive.utils.binary import Binary, HexBinary
+from dashlive.utils.date_time import DateTimeField, from_iso_epoch, to_iso_epoch
+from dashlive.utils.object_with_fields import ObjectWithFields
+from dashlive.utils.list_of import ListOf
+from .nal import Nal
 
 class Options(ObjectWithFields):
     DEFAULT_VALUES = {

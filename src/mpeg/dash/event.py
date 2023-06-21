@@ -20,7 +20,7 @@
 #
 #############################################################################
 
-from utils.object_with_fields import ObjectWithFields
+from dashlive.utils.object_with_fields import ObjectWithFields
 
 class DashEvent(ObjectWithFields):
     DEFAULT_VALUES = {

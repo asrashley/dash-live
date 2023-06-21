@@ -20,14 +20,16 @@
 #
 #############################################################################
 
-from drm.base import DrmBase
-from drm.keymaterial import KeyMaterial
-from mpeg.mp4 import ContentProtectionSpecificBox
+import binascii
+
+from dashlive.mpeg.mp4 import ContentProtectionSpecificBox
+from .base import DrmBase
+from .keymaterial import KeyMaterial
 
 class ClearKey(DrmBase):
     MPD_SYSTEM_ID = "e2719d58-a985-b3c9-781a-b030af78d30e"
     PSSH_SYSTEM_ID = "1077efec-c0b2-4d02-ace3-3c1e52e2fb4b"
-    RAW_PSSH_SYSTEM_ID = PSSH_SYSTEM_ID.replace('-', '').decode('hex')
+    RAW_PSSH_SYSTEM_ID = binascii.a2b_hex(PSSH_SYSTEM_ID.replace('-', ''))
 
     def dash_scheme_id(self):
         return "urn:uuid:{0}".format(self.MPD_SYSTEM_ID)

@@ -23,11 +23,13 @@ from __future__ import division
 
 from past.utils import old_div
 from builtins import object
-from mpeg.dash.representation import Representation
-from mpeg.dash.event_stream import EventStream
-from utils.objects import dict_to_cgi_params
-from utils.list_of import ListOf
-from utils.object_with_fields import ObjectWithFields
+
+from dashlive.mpeg.dash.event_stream import EventStream
+from dashlive.utils.objects import dict_to_cgi_params
+from dashlive.utils.list_of import ListOf
+from dashlive.utils.object_with_fields import ObjectWithFields
+
+from .representation import Representation
 
 class ContentComponent(object):
     def __init__(self, id, contentType):

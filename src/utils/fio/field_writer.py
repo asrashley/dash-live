@@ -38,7 +38,7 @@ except ImportError:
             os.path.join(os.path.dirname(__file__), "..", "..", "lib")))
     import bitstring
 
-from utils.binary import Binary
+from dashlive.utils.binary import Binary
 
 from .sizes import format_bit_sizes
 

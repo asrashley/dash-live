@@ -21,8 +21,9 @@
 #############################################################################
 from builtins import map
 from builtins import object
-from utils.list_of import ListOf, clone_object, object_from
-from utils.objects import as_python, flatten
+
+from dashlive.utils.list_of import ListOf, clone_object, object_from
+from dashlive.utils.objects import as_python, flatten
 
 class ObjectWithFields(object):
     OBJECT_FIELDS = None
