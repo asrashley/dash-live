@@ -20,7 +20,6 @@
 #
 #############################################################################
 
-from builtins import chr
 from builtins import range
 import binascii
 import io
@@ -28,7 +27,6 @@ import json
 import os
 from pathlib import Path
 import struct
-import sys
 import unittest
 
 from dashlive.testcase.mixin import TestCaseMixin
@@ -39,7 +37,7 @@ from dashlive.utils.json_object import JsonObject
 
 class Mp4Tests(TestCaseMixin, unittest.TestCase):
     FIXTURES_PATH = Path(__file__).parent / "fixtures"
-    
+
     def setUp(self):
         self.fixtures = os.path.join(os.path.dirname(__file__), "fixtures")
         self.timescale = 240
@@ -427,7 +425,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         emsg = mp4.EventMessageBox(
             version=0,
             flags=0,
-        scheme_id_uri='urn:example:scheme:2022',
+            scheme_id_uri='urn:example:scheme:2022',
             timescale=0x1234,
             event_duration=0x3456,
             presentation_time_delta=0xabcd,
@@ -767,7 +765,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         typename = typename.replace('dashlive.mpeg.mp4.', '')
         typename = typename.replace('dashlive.', '')
         return typename
-        
+
     def update_atom(self, atom: JsonObject) -> None:
         for key, value in atom.items():
             if key == '_type':
@@ -781,7 +779,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
                   isinstance(value[0], dict)):
                 for ch in value:
                     self.update_atom(ch)
-        
+
     def check_parsing_against_fixture(self, name: str) -> None:
         filename = self.FIXTURES_PATH / f'{name}.mp4'
         with open(filename, 'rb') as src:
@@ -796,7 +794,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
                 self.update_atom(js)
                 actual.append(js)
         self.assertListEqual(expected, actual)
-        
+
 
 if os.environ.get("TESTS"):
     def load_tests(loader, tests, pattern):

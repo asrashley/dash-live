@@ -21,8 +21,6 @@
 #############################################################################
 
 from __future__ import absolute_import, print_function
-from builtins import str
-from builtins import range
 import datetime
 import io
 import os
@@ -321,7 +319,7 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
                     status = code
                 else:
                     status = 200
-                query_string={
+                query_string = {
                     f'{code}': '1,3,5',
                     'failures': 2,
                 }
@@ -342,7 +340,7 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
                 segment_num=seg,
                 ext="m4v")
             clean = self.client.get(url)
-            self.assertEqual(clean.status_code, 200) 
+            self.assertEqual(clean.status_code, 200)
             corrupt = self.client.get(url, query_string={'corrupt': '1,2'})
             self.assertEqual(corrupt.status_code, 200)
             if seg < 3:

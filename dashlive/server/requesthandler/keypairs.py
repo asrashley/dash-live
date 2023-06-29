@@ -22,10 +22,8 @@
 
 from __future__ import absolute_import
 import binascii
-import json
 
 import flask
-from flask_login import current_user
 
 from dashlive.drm.playready import PlayReady
 from dashlive.server import models
@@ -40,7 +38,7 @@ class KeyHandler(RequestHandlerBase):
     """
 
     decorators = [login_required(admin=True)]
-    
+
     def put(self, **kwargs):
         """
         handler for adding a key pair
@@ -92,7 +90,7 @@ class KeyHandler(RequestHandlerBase):
         try:
             self.check_csrf('keys', flask.request.args)
         except (ValueError, CsrfFailureException) as err:
-            return self.jsonify({'error': 'CSRF failure'}, 400)
+            return self.jsonify({'error': f'CSRF failure: {err}'}, 400)
         result = {"error": None}
         try:
             kid = models.KeyMaterial(hex=kid)

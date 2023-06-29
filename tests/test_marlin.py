@@ -24,7 +24,6 @@ from __future__ import absolute_import
 import binascii
 import logging
 import os
-import sys
 import unittest
 
 from dashlive.drm.marlin import Marlin

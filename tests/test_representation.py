@@ -21,9 +21,7 @@
 #############################################################################
 
 from __future__ import absolute_import
-import io
 import os
-import sys
 import unittest
 
 from dashlive.server import models

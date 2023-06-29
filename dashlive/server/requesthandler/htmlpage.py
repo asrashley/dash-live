@@ -24,7 +24,9 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import range
 import datetime
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+import urllib.parse
+import urllib.error
 import urllib.parse
 
 import flask
@@ -77,8 +79,11 @@ class MainPage(HTMLHandlerBase):
         filenames = list(manifests.manifest.keys())
         filenames.sort(key=lambda name: manifests.manifest[name].title)
         for name in filenames:
-            url = flask.url_for('dash-mpd-v3', manifest=name,
-                          stream='placeholder', mode='live')
+            url = flask.url_for(
+                'dash-mpd-v3',
+                manifest=name,
+                stream='placeholder',
+                mode='live')
             url = url.replace('/placeholder/', '/{directory}/')
             url = url.replace('/live/', '/{mode}/')
             context['rows'].append({
@@ -114,7 +119,7 @@ class VideoPlayer(HTMLHandlerBase):
     """Responds with an HTML page that contains a video element to play the specified MPD"""
 
     decorators = [uses_stream]
-    
+
     def get(self, mode, stream, manifest, **kwargs):
         def gen_errors(cgiparam):
             err_time = context['now'].replace(
@@ -196,7 +201,6 @@ class LoginPage(HTMLHandlerBase):
                 'csrf_token': context['csrf_token']
             })
         return flask.render_template('login.html', **context)
-        
 
     def post(self):
         if self.is_ajax():
@@ -211,9 +215,6 @@ class LoginPage(HTMLHandlerBase):
         user = models.User.get_one(username=username)
         if not user:
             user = models.User.get_one(email=username)
-        #if not user:
-        #    print(f'failed to find user:"{username}"')
-        #print(f'check password "{password}"')
         if not user or not user.check_password(password):
             context = self.create_context()
             context['error'] = "Wrong username or password"
@@ -224,19 +225,14 @@ class LoginPage(HTMLHandlerBase):
         # Notice that we are passing in the actual sqlalchemy user object here
         # access_token = create_access_token(identity=user)
         next_url = flask.request.args.get('next')
-        # TODO: check next is to an allowed location
+        # TODO: check if next is to an allowed location
         response = flask.make_response(flask.redirect(next_url or flask.url_for('home')))
-        # set_access_cookies(response, access_token)
         return response
 
 class LogoutPage(HTMLHandlerBase):
     """
     Logs user out of site
     """
-    # decorators = [jwt_required(skip_revocation_check=True)]
-        
     def get(self):
-        # unset_jwt_cookies()
         logout_user()
         return flask.redirect(flask.url_for('home'))
-        

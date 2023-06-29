@@ -25,7 +25,6 @@ from __future__ import absolute_import
 from __future__ import division
 from past.utils import old_div
 import os
-import sys
 import unittest
 
 import flask
@@ -36,7 +35,6 @@ from dashlive.server.events.scte35_events import Scte35Events
 from dashlive import scte35
 
 from .flask_base import FlaskTestBase
-from .dash_validator import EventStream, InbandEventStream
 from .mixins.check_manifest import DashManifestCheckMixin
 
 class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
@@ -117,9 +115,8 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
             frag = mp4.Wrapper(
                 atom_type='wrap',
                 children=seg.validate(depth=1, all_atoms=True))
-            seg_presentation_time = (
-                old_div(ev_presentation_time * info.timescale,
-                PingPongEvents.PARAMS['timescale']))
+            seg_presentation_time = (old_div(ev_presentation_time * info.timescale,
+                                             PingPongEvents.PARAMS['timescale']))
             decode_time = frag.moof.traf.tfdt.base_media_decode_time
             seg_end = decode_time + seg.duration
             if seg_presentation_time < decode_time or seg_presentation_time >= seg_end:

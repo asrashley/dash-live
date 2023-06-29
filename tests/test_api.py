@@ -29,15 +29,12 @@ import copy
 import io
 import logging
 import os
-import sys
 import unittest
-import urllib.request, urllib.parse, urllib.error
 
 from bs4 import BeautifulSoup
 import flask
 
 from dashlive.server import models
-from dashlive.templates.tags import dateTimeFormat
 from dashlive.utils.date_time import toIsoDateTime
 from .flask_base import FlaskTestBase
 
@@ -250,7 +247,6 @@ class TestRestApi(FlaskTestBase):
     def test_add_full_key_pair(self):
         self.assertEqual(models.Key.count(), 0)
 
-
         request = {
             'kid': '1AB45440532C439994DC5C5AD9584BAC',
             'key': 'ccc0f2b3b279926496a7f5d25da692f6',
@@ -280,7 +276,7 @@ class TestRestApi(FlaskTestBase):
         media = self.client.get(media_url)
         self.assert200(media)
         csrf_token = media.json['csrf_tokens']['kids']
-        url += f'&csrf_token={csrf_token}' 
+        url += f'&csrf_token={csrf_token}'
         response = self.client.put(url)
         self.assert200(response)
         expected_result = {
@@ -400,7 +396,7 @@ class TestRestApi(FlaskTestBase):
         self.assert200(media)
         next_csrf_token = media.json['csrf_tokens']['kids']
 
-        url = flask.url_for('del-key', kid='invalid', csrf_token=next_csrf_token) 
+        url = flask.url_for('del-key', kid='invalid', csrf_token=next_csrf_token)
         response = self.client.delete(url)
         self.assert400(response)
 
@@ -411,7 +407,7 @@ class TestRestApi(FlaskTestBase):
             hkey='ccc0f2b3b279926496a7f5d25da692f6',
             computed=False)
         keypair1.add()
-        
+
         keypair2 = models.Key(
             hkid='01020304-0506-0708-090A-AABBCCDDEEFF'.replace('-', '').lower(),
             hkey=self.to_hex(base64.b64decode('GUf166PQbx+sgBADjyBMvw==')),
@@ -554,7 +550,7 @@ class TestRestApi(FlaskTestBase):
             form = html.find("form", id='upload-form')
             self.assertEqual(form['method'], 'POST')
             upload_url = form['action']
-            content_type=form['enctype']
+            content_type = form['enctype']
         mock_file = io.BytesIO('data'.encode('ascii'))
         data = {
             'file': (mock_file, 'bbb_v1.mp4', 'video/mp4',),
@@ -590,7 +586,7 @@ class TestRestApi(FlaskTestBase):
             form = html.find("form", id='upload-form')
             self.assertEqual(form['method'], 'POST')
             upload_url = form['action']
-            content_type=form['enctype']
+            content_type = form['enctype']
             csrf_token = form.find('input', attrs={"name": "csrf_token"})['value']
         html = BeautifulSoup(response.text, 'lxml')
         form = html.find("form", id='upload-form')
@@ -637,7 +633,6 @@ class TestRestApi(FlaskTestBase):
         self.logout_user()
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 401)
-
 
         # user must be logged in as admin to use stream API
         self.login_user(is_admin=False)

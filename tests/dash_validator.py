@@ -43,7 +43,6 @@ import re
 import time
 import traceback
 import urllib.parse
-#import xml.etree.ElementTree as ET
 
 from lxml import etree as ET
 
@@ -759,8 +758,7 @@ class RepresentationBaseType(DashElement):
     def __init__(self, elt, parent):
         super(RepresentationBaseType, self).__init__(elt, parent)
         prot = elt.findall('./dash:ContentProtection', self.xmlNamespaces)
-        self.contentProtection = [ContentProtection(
-                cp, self) for cp in prot]
+        self.contentProtection = [ContentProtection(cp, self) for cp in prot]
         self.segmentTemplate = None
         templates = elt.findall('./dash:SegmentTemplate', self.xmlNamespaces)
         if len(templates):
@@ -1651,9 +1649,7 @@ if __name__ == "__main__":
                     seg_dur = rep.segmentTemplate.duration
                     num_segments = int(
                         math.floor(
-                            old_div(duration.total_seconds() *
-                            timescale,
-                            seg_dur)))
+                            old_div(duration.total_seconds() * timescale, seg_dur)))
             return RepresentationInfo(encrypted=self.options.encrypted,
                                       iv_size=self.options.ivsize,
                                       timescale=timescale,

@@ -7,7 +7,6 @@ from dashlive.drm.keymaterial import KeyMaterial
 
 from .db import db
 from .mixin import ModelMixin
-from .session import DatabaseSession
 
 def kid_validator(prop, value):
     if not re.match(r'^[0-9a-f-]+$', value, re.IGNORECASE):
@@ -17,7 +16,7 @@ def kid_validator(prop, value):
 class Key(db.Model, ModelMixin):
     __plural__ = 'Keys'
     __tablename__ = 'Key'
-    
+
     pk = sa.Column(sa.Integer, primary_key=True)
     hkid = sa.Column(sa.String(34), nullable=False, unique=True, index=True)
     hkey = sa.Column(sa.String(34), nullable=False)

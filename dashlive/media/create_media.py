@@ -163,8 +163,11 @@ class DashMediaCreator(object):
             level = 4.0
             # buffer_size is set to 75% of VBV limit
             buffer_size = 25000
-        keyframes = list(map(str, list(range(0, self.options.duration + self.options.segment_duration,
-                                   self.options.segment_duration))))
+        keyframes = list(
+            map(
+                str, list(
+                    range(0, self.options.duration + self.options.segment_duration,
+                          self.options.segment_duration))))
         keyframes = ','.join(keyframes)
         ffmpeg_args = [
             "ffmpeg",
@@ -284,7 +287,7 @@ class DashMediaCreator(object):
 
     def package_all(self):
         destdir = os.path.abspath(self.options.destdir)
-        bitrates = [l[2] for l in self.BITRATE_LADDER]
+        bitrates = [br[2] for br in self.BITRATE_LADDER]
         source_files = []
         nothing_to_do = True
         for idx in range(len(bitrates)):

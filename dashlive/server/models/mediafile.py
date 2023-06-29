@@ -1,9 +1,7 @@
 from __future__ import print_function
-from builtins import map
 import contextlib
 from pathlib import Path
 from typing import cast, List, Optional
-import re
 
 import flask
 import sqlalchemy as sa
@@ -11,20 +9,18 @@ import sqlalchemy_jsonfield  # type: ignore
 from sqlalchemy.event import listen  # type: ignore
 from sqlalchemy.orm import relationship  # type: ignore
 
-from dashlive.drm.keymaterial import KeyMaterial
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.utils.date_time import toIsoDateTime
 from dashlive.utils.json_object import JsonObject
 from .db import db
 from .mixin import ModelMixin
-from .session import DatabaseSession
 from .stream import Stream
 
 class MediaFile(db.Model, ModelMixin):
     """representation of one MP4 file"""
     __plural__ = 'MediaFiles'
     __tablename__ = 'MediaFile'
-    
+
     pk = sa.Column('pk', sa.Integer, primary_key=True)
     name = sa.Column('name', sa.String(200), nullable=False, unique=True, index=True)
     stream_pk = sa.Column(
@@ -77,7 +73,7 @@ class MediaFile(db.Model, ModelMixin):
 
     @classmethod
     def search(clz, content_type: Optional[str] = None,
-               encrypted:Optional[bool] = None,
+               encrypted: Optional[bool] = None,
                stream: Optional[Stream] = None,
                max_items: Optional[int] = None) -> List["MediaFile"]:
         # print('MediaFile.all()', contentType, encrypted, prefix, maxItems)
@@ -100,12 +96,7 @@ class MediaFile(db.Model, ModelMixin):
         """
         return cast(Optional[MediaFile], clz.get_one(**kwargs))
 
-    @classmethod
-    def empty_database(clz):
-        list_of_keys = MediaFile.query().fetch(keys_only=True)
-        ndb.delete_multi(list_of_keys)
-
-    def toJSON(self, convert_date: bool=True, pure: bool=False) -> JsonObject:
+    def toJSON(self, convert_date: bool = True, pure: bool = False) -> JsonObject:
         blob = self.blob.to_dict(
             only={"created", "size", "sha1_hash",
                   "content_type", "filename"})
@@ -133,5 +124,6 @@ class MediaFile(db.Model, ModelMixin):
 # pylint: disable=unused-argument
 def before_mediafile_save(mapper, connect, mediafile):
     mediafile._pre_put_hook()
+
 
 listen(MediaFile, 'before_insert', before_mediafile_save)

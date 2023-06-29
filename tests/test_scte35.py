@@ -24,12 +24,9 @@ from __future__ import division
 from past.utils import old_div
 import base64
 import copy
-# import json
 import logging
 import os
-import sys
 import unittest
-from unittest import mock
 
 from crccheck.crc import Crc32Mpeg2
 

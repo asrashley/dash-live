@@ -39,7 +39,7 @@ class ServeManifest(RequestHandlerBase):
     """handler for generating MPD files"""
 
     decorators = [uses_stream]
-    
+
     def head(self, **kwargs):
         return self.get(**kwargs)
 
@@ -97,10 +97,11 @@ class ServeManifest(RequestHandlerBase):
                     tm2 = (tm + datetime.timedelta(
                         seconds=context['minimumUpdatePeriod']))
                 if context['now'] >= tm and context['now'] <= tm2:
-                    if (code < 500 or
-                        self.increment_error_counter('manifest', code) <= num_failures):
-                        return flask.make_response(
-                            f'Synthetic {code} for manifest', code)
+                    if (code >= 500 and
+                            self.increment_error_counter('manifest', code) > num_failures):
+                        self.reset_error_counter('manifest', code)
+                    else:
+                        return flask.make_response(f'Synthetic {code} for manifest', code)
         return None
 
 
@@ -110,7 +111,7 @@ class LegacyManifestUrl(ServeManifest):
         'enc.mpd': ('hand_made.mpd', {'drm': 'all'}),
         'manifest_vod.mpd': ('hand_made.mpd', {'mode': 'vod'}),
     }
-    
+
     decorators = []
 
     def head(self, manifest, **kwargs):
@@ -125,7 +126,7 @@ class LegacyManifestUrl(ServeManifest):
                 search = Stream.search(max_items=1)
                 if search:
                     stream = search[0]
-            if stream is None :
+            if stream is None:
                 return flask.make_response('Not found', 404)
             mode = flask.request.args.get("mode", "vod")
             url = flask.url_for(

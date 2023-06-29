@@ -125,7 +125,7 @@ class Representation(ObjectWithFields):
         return 'Representation(' + args + ')'
 
     @classmethod
-    def load(clz, filename: str, atoms: List[Mp4Atom], verbose:int = 0) -> "Representation":
+    def load(clz, filename: str, atoms: List[Mp4Atom], verbose: int = 0) -> "Representation":
         segment_start_time = 0
         segment_end_time = 0
         default_sample_duration = 0
@@ -276,7 +276,7 @@ class Representation(ObjectWithFields):
                 avc.avcC.profile_compatibility,
                 avc.avcC.AVCLevelIndication)
             self.add_field('nalLengthFieldLength',
-                         avc.avcC.lengthSizeMinusOne + 1)
+                           avc.avcC.lengthSizeMinusOne + 1)
         elif avc_type in {'hev1', 'hvc1'}:
             # According to ISO 14496-15, the codec string for hev1 and hvc1
             # should be:
@@ -315,7 +315,7 @@ class Representation(ObjectWithFields):
                 pos -= 8
             self.codecs = '.'.join(parts)
             self.add_field('nalLengthFieldLength',
-                         avc.hvcC.length_size_minus_one + 1)
+                           avc.hvcC.length_size_minus_one + 1)
 
     def process_audio_moov(self, avc: Mp4Atom, avc_type: Optional[str]) -> None:
         self.content_type = "audio"
@@ -433,7 +433,7 @@ class Representation(ObjectWithFields):
         # seg_start_time is the time (in representation timescale units) when the segment_num
         # segment started, relative to availabilityStartTime
         seg_start_time = int(origin_time * self.timescale +
-                              (segment_num - 1) * self.segment_duration)
+                             (segment_num - 1) * self.segment_duration)
         dur = 0
         s_node = SegmentTimelineElement()
         if self.timing.mode == 'live':
@@ -506,7 +506,6 @@ class Representation(ObjectWithFields):
 
 
 if __name__ == '__main__':
-    import io
     from mpeg import mp4
     from utils.buffered_reader import BufferedReader
 

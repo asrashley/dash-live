@@ -311,7 +311,7 @@ class TestCaseMixin(object):
     @staticmethod
     def to_hex(data: bytes) -> str:
         return str(binascii.b2a_hex(data), 'ascii')
-    
+
     @staticmethod
     def to_base64(data: bytes) -> str:
         return str(binascii.b2a_base64(data, newline=False), 'ascii')

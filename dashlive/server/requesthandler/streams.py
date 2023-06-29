@@ -20,11 +20,9 @@
 #
 #############################################################################
 
-import json
 import logging
 
 import flask
-from flask_login import current_user, login_required
 
 from dashlive.server import models
 
@@ -67,7 +65,6 @@ class StreamHandler(RequestHandlerBase):
         csrf_key = self.generate_csrf_cookie()
         result["csrf"] = self.generate_csrf_token('streams', csrf_key)
         return self.jsonify(result)
-
 
     def delete(self, spk, **kwargs):
         """
@@ -128,7 +125,7 @@ class EditStreamHandler(HTMLHandlerBase):
             context['error'] = "csrf check failed"
         if context['error'] is not None:
             return flask.render_template('edit-stream.html', **context)
-        db.session.commit()
+        models.db.session.commit()
         return flask.redirect(flask.url_for('media-list'))
 
     def create_context(self, **kwargs):

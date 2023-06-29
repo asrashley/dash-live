@@ -25,7 +25,6 @@ from pathlib import Path
 from typing import Optional
 
 from flask import Flask  # type: ignore
-# from flask_jwt_extended import JWTManager
 from flask_login import LoginManager
 
 from dashlive.server import models
@@ -41,7 +40,6 @@ login_manager = LoginManager()
 def create_app(config: Optional[JsonObject] = None,
                create_default_user: bool = True) -> Flask:
     logging.basicConfig()
-    # logging.getLogger().setLevel(logging.DEBUG)
     srcdir = Path(__file__).parent.resolve()
     basedir = srcdir.parent.parent
     template_folder = basedir / "templates"
@@ -50,8 +48,6 @@ def create_app(config: Optional[JsonObject] = None,
     if not template_folder.exists():
         template_folder = srcdir / "templates"
         static_folder = srcdir / "static"
-    # print(f'template_folder="{template_folder}"')
-    # print(f'static_folder="{static_folder}"')
     app = Flask(
         __name__,
         template_folder=str(template_folder),
@@ -65,24 +61,17 @@ def create_app(config: Optional[JsonObject] = None,
     if config is not None:
         app.config.update(config)
     app.secret_key = cookie_secret
-    # jwt = JWTManager(app)
     models.db.init_app(app)
     login_manager.init_app(app)
 
-    #@jwt.user_identity_loader
-    #def user_identity_lookup(user):
-    #    return user.username
-
-    # @jwt.user_lookup_loader
     @login_manager.user_loader
     def user_lookup_callback(username):
-        # subject = jwt_data["sub"]
         return models.User.get_one(username=username)
 
     with app.app_context():
         models.db.create_all()
         if create_default_user:
             models.User.check_if_empty(default_admin_username, default_admin_password)
-        
+
     app.register_blueprint(custom_tags)
     return app

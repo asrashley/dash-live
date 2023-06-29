@@ -24,7 +24,6 @@ import base64
 from binascii import a2b_hex
 import logging
 import os
-import sys
 import unittest
 
 from dashlive.drm.keymaterial import KeyMaterial

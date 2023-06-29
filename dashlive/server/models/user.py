@@ -7,7 +7,6 @@ from passlib.context import CryptContext  # type: ignore
 from sqlalchemy import (  # type: ignore
     Boolean, Column, DateTime, String, Integer, func,
 )
-from sqlalchemy.engine import Engine  # type: ignore
 from sqlalchemy.orm import relationship  # type: ignore
 
 from dashlive.utils.json_object import JsonObject
@@ -69,11 +68,11 @@ class User(db.Model, ModelMixin):  # type: ignore
     @property
     def is_authenticated(self) -> bool:
         return True
-    
+
     @property
     def is_anonymous(self) -> bool:
         return self.is_member_of(Group.GUEST)
-    
+
     def set_password(self, password: str) -> None:
         """
         Set the password of this user.
@@ -128,8 +127,8 @@ class User(db.Model, ModelMixin):  # type: ignore
         """
         groups: List[Group] = []
         for group in cast(List[Group], list(Group)):
-            if (self.groups_mask & group.value or
-                (self.is_admin and group.value <= Group.HOSTS.value)):
+            if (self.groups_mask & group.value or (
+                    self.is_admin and group.value <= Group.HOSTS.value)):
                 groups.append(group)
         return groups
 
