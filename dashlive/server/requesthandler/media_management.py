@@ -25,11 +25,8 @@ import datetime
 import hashlib
 import logging
 from pathlib import Path
-import json
-import os
 
 import flask
-from flask_login import current_user
 from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
 
@@ -37,11 +34,6 @@ from dashlive.drm.playready import PlayReady
 from dashlive.mpeg import mp4
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.server import models
-from dashlive.templates.tags import dateTimeFormat
-from dashlive.utils.buffered_reader import BufferedReader
-from dashlive.utils.date_time import toIsoDateTime
-from dashlive.utils.json_object import JsonObject
-from dashlive.utils.objects import flatten
 
 from .base import HTMLHandlerBase, RequestHandlerBase
 from .decorators import uses_media_file, current_media_file, login_required
@@ -53,18 +45,12 @@ class UploadHandler(RequestHandlerBase):
     def post(self, *args, **kwargs):
         if 'file' not in flask.request.files:
             return self.return_error('File not specified')
-        #result = {"error": "Unknown"}
         if len(flask.request.files) == 0:
             return self.return_error('No files uploaded')
         blob_info = flask.request.files['file']
         logging.debug("Filename: " + blob_info.filename)
         if blob_info.filename == '':
             return self.return_error('Filename not specified')
-        #result["filename"] = os.path.basename(blob_info.filename)
-        #if result["filename"] == '':
-        #    return self.return_error('Filename not specified')
-        #result["filename"] = blob_info.filename
-        #media_id, ext = os.path.splitext(result["filename"])
         try:
             self.check_csrf('upload', flask.request.form)
         except (CsrfFailureException) as cfe:
@@ -76,16 +62,8 @@ class UploadHandler(RequestHandlerBase):
             return self.return_error('stream not specified')
         stream = models.Stream.get(pk=flask.request.form['stream'])
         if not stream:
-            return self.return_error(f'Unknown stream')
-        # try:
+            return self.return_error('Unknown stream')
         return self.save_file(blob_info, stream)
-        #except (KeyError) as err:
-        #    print(err)
-        #    if self.is_ajax():
-        #        result["error"] = '{:s} not found: {:s}'.format(
-        #            media_id, e)
-        #        return self.jsonify(result, status=404)
-        #    return flask.make_response(f'Not found: {err}', 404)
 
     def return_error(self, error: str) -> flask.Response:
         if self.is_ajax():
@@ -126,7 +104,7 @@ class UploadHandler(RequestHandlerBase):
         models.db.session.commit()
         result = mf.toJSON()
         result['blob']['created'] = datetime.datetime.now()
-        logging.debug("upload done %s", abs_filename) 
+        logging.debug("upload done %s", abs_filename)
         context = self.create_context(
             title=f'File {filename.name} uploaded',
             media=result)
@@ -138,7 +116,7 @@ class UploadHandler(RequestHandlerBase):
             result["file_html"] = flask.render_template('media_row.html', **context)
             return self.jsonify(result)
         return flask.render_template('upload-done.html', **context)
-        
+
 
 class MediaList(HTMLHandlerBase):
     """
@@ -146,7 +124,7 @@ class MediaList(HTMLHandlerBase):
     database.
     """
     decorators = [login_required(admin=True, html=True)]
-    
+
     def get(self, **kwargs):
         context = self.create_context(**kwargs)
         context['upload_url'] = flask.url_for('uploadBlob')
@@ -154,7 +132,7 @@ class MediaList(HTMLHandlerBase):
             context['upload_url'] = context['upload_url'].replace(
                 'http://', 'https://')
         context['files'] = models.MediaFile.all(order_by=[models.MediaFile.name])
-        context['keys'] =  models.Key.all(order_by=[models.Key.hkid])
+        context['keys'] = models.Key.all(order_by=[models.Key.hkid])
         context['streams'] = [s.to_dict() for s in models.Stream.all()]
         csrf_key = self.generate_csrf_cookie()
         context['csrf_tokens'] = {
@@ -186,7 +164,7 @@ class MediaInfo(HTMLHandlerBase):
     View handler that provides details about one media file
     """
     decorators = [uses_media_file, login_required(admin=True, html=True)]
-    
+
     def get(self, mfid: int) -> flask.Response:
         result = {"error": None}
         mf = current_media_file
@@ -205,11 +183,7 @@ class MediaInfo(HTMLHandlerBase):
         """
         handler for deleting a media blob
         """
-        #if not mfid:
-        #    self.response.write('MediaFile ID missing')
-        #    self.response.set_status(400)
-        #    return
-        result = { "error": None }
+        result = {"error": None}
         status = 200
         try:
             self.check_csrf('files', flask.request.args)
@@ -228,14 +202,14 @@ class MediaInfo(HTMLHandlerBase):
         csrf_key = self.generate_csrf_cookie()
         result["csrf"] = self.generate_csrf_token('files', csrf_key)
         return self.jsonify(result, status=status)
-    
+
 class MediaIndex(HTMLHandlerBase):
     """
     View handler that indexes a file to find its fragments and
     media information
     """
     decorators = [uses_media_file, login_required(admin=True)]
-    
+
     def get(self, mfid: str) -> flask.Response:
         result = {"error": None}
         status = 200
@@ -263,4 +237,3 @@ class MediaIndex(HTMLHandlerBase):
         csrf_key = self.generate_csrf_cookie()
         result["csrf"] = self.generate_csrf_token('files', csrf_key)
         return self.jsonify(result, status=status)
-

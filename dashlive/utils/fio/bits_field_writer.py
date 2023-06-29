@@ -89,7 +89,7 @@ class BitsFieldWriter(object):
 
     def bytepos(self):
         bitpos = self.bitpos()
-        assert((bitpos & 8) == 0)
+        assert ((bitpos & 8) == 0)
         return bitpos // 8
 
     def toBytes(self):

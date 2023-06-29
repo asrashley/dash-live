@@ -169,8 +169,6 @@ class PlayReady(DrmBase):
         cfgs = ','.join(cfgs)
         if la_url is None:
             la_url = self.TEST_LA_URL
-        #print(representation.toJSON())
-        #print('keys', type(keys), keys)
         default_keypair = keys[representation.default_kid.lower()]
         default_key = default_keypair.KEY.raw
         default_kid = PlayReady.hex_to_le_guid(

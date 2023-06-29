@@ -23,7 +23,6 @@
 from future import standard_library
 standard_library.install_aliases()
 import logging
-import os
 import urllib.parse
 
 from dashlive.server import models, routes
@@ -71,12 +70,7 @@ class ViewsTestDashValidator(DashValidator):
         stream = models.Stream.get(directory=directory)
         self.assertIsNotNone(stream, msg=f'Failed to find stream {directory}')
         filename = match.group("filename")
-        # self.log.debug("get_representation_info %s %s %s", url, filename, name)
         mf = models.MediaFile.get(name=filename)
-        #if mf is None:
-        #    filename = os.path.dirname(parts.path).split('/')[-1]
-        #    name = filename + '.mp4'
-        #    mf = models.MediaFile.query(models.MediaFile.name == name).get()
         self.assertIsNotNone(mf, msg=f'Failed to find MediaFile {filename}')
         rep = mf.representation
         info = RepresentationInfo(

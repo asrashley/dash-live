@@ -7,7 +7,8 @@ from werkzeug.local import LocalProxy  # type: ignore
 
 from dashlive.server.models import MediaFile, Stream
 
-AJAX_CONTENT_TYPES = { r'application/json', r'text/javascript'}
+AJAX_CONTENT_TYPES = {r'application/json', r'text/javascript'}
+
 def is_ajax() -> bool:
     # print('content_type', flask.request.content_type, flask.request.url)
     return (
@@ -38,7 +39,7 @@ def login_required(html=False, admin=False):
             return func(*args, **kwargs)
         return decorated_function
     return decorator
-    
+
 def uses_media_file(func):
     """
     Decorator that fetches MediaFile from database.
@@ -60,7 +61,7 @@ def uses_media_file(func):
                 return flask.make_response(f'Stream {sdir} not found', 404)
             mf = MediaFile.get(stream_pk=stream.pk, name=filename.lower())
             if not mf:
-                mf = MediaFile.get(stream_pk=stream.pk, name=filename.lower()+'.mp4')
+                mf = MediaFile.get(stream_pk=stream.pk, name=f'{filename.lower()}.mp4')
             if not mf:
                 # print(f'MediaFile {sdir}/{filename} not found')
                 return flask.make_response(f'MediaFile {sdir}/{filename} not found', 404)
@@ -76,6 +77,7 @@ def uses_media_file(func):
         flask.g.mediafile = mf
         return func(*args, **kwargs)
     return decorated_function
+
 
 current_media_file = cast(MediaFile, LocalProxy(lambda: flask.g.mediafile))
 
@@ -98,9 +100,10 @@ def uses_stream(func):
             stream = Stream.get(directory=sid)
         if not stream:
             # print(f'Stream not found')
-            return flask.make_response(f'Stream not found', 404)
+            return flask.make_response(f'Stream {spk} not found', 404)
         flask.g.stream = stream
         return func(*args, **kwargs)
     return decorated_function
+
 
 current_stream = cast(Stream, LocalProxy(lambda: flask.g.stream))

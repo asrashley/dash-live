@@ -25,7 +25,7 @@ from abc import abstractmethod
 from builtins import chr
 from builtins import range
 from past.utils import old_div
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from dashlive.mpeg.dash.event_stream import EventStream
 from dashlive.mpeg import mp4
@@ -93,18 +93,15 @@ class RepeatingEventBase(EventBase):
         if seg_start > presentation_time:
             event_id = ((seg_start - presentation_time) //
                         self.interval)
-        assert(event_id >= 0)
+        assert (event_id >= 0)
         presentation_time += event_id * self.interval
-        # print('event id={0} start={1} end={2}'.format(
-        #    event_id, presentation_time,
-        #    presentation_time + self.duration))
         retval = []
         while presentation_time < seg_end:
             if presentation_time < seg_start:
                 event_id += 1
                 presentation_time += self.interval
                 continue
-            assert(presentation_time >= seg_start)
+            assert (presentation_time >= seg_start)
             data = self.get_emsg_event_payload(
                 event_id, presentation_time)
             kwargs = {
@@ -127,8 +124,6 @@ class RepeatingEventBase(EventBase):
             if self.count > 0 and event_id >= self.count:
                 break
             presentation_time += self.interval
-            # print('next ev id={} start={}'.format(
-            #    event_id, presentation_time))
         return retval
 
     @abstractmethod

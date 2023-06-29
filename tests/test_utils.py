@@ -5,8 +5,6 @@ from builtins import object
 import io
 
 import datetime
-import os
-import sys
 import unittest
 
 from dashlive.utils.date_time import from_isodatetime, toIsoDuration, UTC

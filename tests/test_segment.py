@@ -20,10 +20,8 @@
 #
 #############################################################################
 
-import io
 import logging
 import os
-import sys
 import unittest
 
 from dashlive.mpeg.dash.representation import Representation

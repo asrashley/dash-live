@@ -23,7 +23,6 @@
 import binascii
 from builtins import map
 import base64
-import json
 
 import flask
 

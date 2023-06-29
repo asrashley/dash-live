@@ -24,26 +24,16 @@ from __future__ import print_function
 from __future__ import division
 from future import standard_library
 standard_library.install_aliases()
-import binascii
 from builtins import str
 from past.utils import old_div
-import base64
 import binascii
 import ctypes
-import hashlib
-import http.cookiejar
-import io
 import logging
 import multiprocessing
-import os
 from pathlib import Path
 import shutil
 import tempfile
 from typing import Optional
-import unittest
-import urllib.request, urllib.parse, urllib.error
-import uuid
-import sys
 
 from bs4 import BeautifulSoup
 import flask
@@ -53,7 +43,7 @@ from dashlive.drm.playready import PlayReady
 from dashlive.mpeg import mp4
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.testcase.mixin import TestCaseMixin
-from dashlive.server import routes, models
+from dashlive.server import models
 from dashlive.server.app import create_app
 
 class FlaskTestBase(TestCaseMixin, TestCase):
@@ -66,10 +56,10 @@ class FlaskTestBase(TestCaseMixin, TestCase):
     STD_USER = 'user'
     STD_EMAIL = 'user@dashlive.unit.test'
     STD_PASSWORD = r'pa55word'
-    STREAM_TITLE = 'Big Buck Bunny' 
+    STREAM_TITLE = 'Big Buck Bunny'
 
     _temp_dir = multiprocessing.Array(ctypes.c_char, 1024)
-        
+
     def create_app(self):
         FORMAT = r"%(asctime)-15s:%(levelname)s:%(filename)s@%(lineno)d: %(message)s"
         logging.basicConfig(format=FORMAT)
@@ -181,7 +171,7 @@ class FlaskTestBase(TestCaseMixin, TestCase):
             self._temp_dir.value = bytes(tmpdir, 'utf-8')
             self.app.config['UPLOAD_FOLDER'] = tmpdir
         return tmpdir
-        
+
     def tearDown(self):
         self.logout_user()
         if hasattr(TestCaseMixin, "_orig_assert_true"):
@@ -191,7 +181,7 @@ class FlaskTestBase(TestCaseMixin, TestCase):
             shutil.rmtree(self._temp_dir.value, ignore_errors=True)
         models.db.session.remove()
         models.db.drop_all()
-                        
+
     def login_user(self, username: Optional[str] = None,
                    password: Optional[str] = None,
                    is_admin: bool = False,
@@ -215,13 +205,13 @@ class FlaskTestBase(TestCaseMixin, TestCase):
             return self.client.post(
                 login_url,
                 json={
-                'username': username,
-                'password': password,
-                'rememberme': rememberme,
-                'csrf_token': csrf_token
+                    'username': username,
+                    'password': password,
+                    'rememberme': rememberme,
+                    'csrf_token': csrf_token
                 },
                 content_type='application/json')
-        html = BeautifulSoup(response.text, 'lxml')
+        html = BeautifulSoup(resp.text, 'lxml')
         csrf_token = html.find(name='csrf_token')['value']
         return self.client.post(
             login_url,
@@ -242,4 +232,3 @@ class FlaskTestBase(TestCaseMixin, TestCase):
             return
         self.assertEqual(response.status_code, 200)
         self.assertIn('This page requires you to log in', response.text)
-        

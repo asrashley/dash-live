@@ -29,7 +29,6 @@ from past.utils import old_div
 from typing import Any, Dict, List, Optional
 
 import base64
-import binascii
 import copy
 import datetime
 import hashlib
@@ -38,7 +37,9 @@ import logging
 import os
 import re
 import secrets
-import urllib.request, urllib.parse, urllib.error
+import urllib.request
+import urllib.parse
+import urllib.error
 import urllib.parse
 
 import flask  # type: ignore
@@ -109,12 +110,14 @@ class RequestHandlerBase(MethodView):
             csrf_key = None
         if csrf_key is None:
             csrf_key = secrets.token_urlsafe(models.Token.CSRF_KEY_LENGTH)
+
             @flask.after_this_request
             def set_csrf_cookie(response):
                 response.set_cookie(
                     self.CSRF_COOKIE_NAME, csrf_key, httponly=True,
                     max_age=self.CSRF_EXPIRY)
                 return response
+
         return csrf_key
 
     def generate_csrf_token(self, service: str, csrf_key: str) -> str:
@@ -160,10 +163,12 @@ class RequestHandlerBase(MethodView):
                 f"{self.CSRF_COOKIE_NAME} cookie not present")
         if not csrf_key:
             logging.debug("csrf deserialize failed")
+
             @flask.after_this_request
             def clear_csrf_cookie(response):
                 response.delete_cookie(self.CSRF_COOKIE_NAME)
                 return response
+
             raise CsrfFailureException("csrf cookie not valid")
         logging.debug(f'check_csrf csrf_key: "{csrf_key}"')
         try:
@@ -415,8 +420,8 @@ class RequestHandlerBase(MethodView):
             if rep.encrypted:
                 kids.update(rep.kids)
         rv["kids"] = kids
-        rv["mediaDuration"] = old_div(rv["ref_representation"].mediaDuration, \
-            rv["ref_representation"].timescale)
+        rv["mediaDuration"] = old_div(rv["ref_representation"].mediaDuration,
+                                      rv["ref_representation"].timescale)
         rv["maxSegmentDuration"] = max(video.maxSegmentDuration,
                                        audio.maxSegmentDuration)
         if encrypted:
@@ -456,7 +461,7 @@ class RequestHandlerBase(MethodView):
                 if r.codecs.startswith(acodec):
                     audio.representations.append(r)
         audio.compute_av_values()
-        assert(isinstance(audio.representations, list))
+        assert isinstance(audio.representations, list)
         return audio
 
     def calculate_video_context(self, stream: models.Stream, mode: str,
@@ -470,7 +475,7 @@ class RequestHandlerBase(MethodView):
             assert mf.representation.content_type == 'video'
             video.representations.append(mf.representation)
         video.compute_av_values()
-        assert(isinstance(video.representations, list))
+        assert isinstance(video.representations, list)
         return video
 
     def calculate_text_context(self, stream, mode, encrypted, max_items=None):

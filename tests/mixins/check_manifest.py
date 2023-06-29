@@ -31,17 +31,14 @@ import datetime
 from functools import wraps
 import io
 import os
-import re
-import sys
 import urllib.parse
-# import xml.etree.ElementTree as ET
 
 import flask
 from lxml import etree as ET
 
 from dashlive.server import manifests, models, cgi_options
 from dashlive.server.requesthandler.manifest_requests import ServeManifest
-from dashlive.utils.objects import dict_to_cgi_params
+
 from .view_validator import ViewsTestDashValidator
 
 def add_url(method, url):
@@ -53,25 +50,6 @@ def add_url(method, url):
             print(url)
             raise
     return tst_fn
-
-class MockRequest(object):
-    class MockRoute(object):
-        def __init__(self):
-            self.name = "dash-mpd-v3"
-
-    def __init__(self, url, headers=None):
-        if headers is None:
-            headers = {}
-        self.uri = url
-        parsed = urllib.parse.urlparse(url)
-        self.scheme = parsed.scheme
-        self.host_url = r'{0}://{1}'.format(parsed.scheme, parsed.netloc)
-        self.params = {}
-        for key, values in urllib.parse.parse_qs(parsed.query).items():
-            self.params[key] = values[0]
-        self.remote_addr = '127.0.0.1'
-        self.headers = headers
-        self.route = self.MockRoute()
 
 class MockServeManifest(ServeManifest):
     def __init__(self, request, **kwargs):
@@ -249,7 +227,7 @@ class DashManifestCheckMixin(object):
             flask.request.host = r'unit.test'
             flask.request.host_url = r'http://unit.test/'
             yield context
-        
+
     def check_generated_manifest_against_fixture(self, mpd_filename, mode, **kwargs):
         """
         Check a freshly generated manifest against a "known good" previous example
@@ -276,9 +254,6 @@ class DashManifestCheckMixin(object):
         self.assertXmlEqual(expected, actual)
 
     def generate_manifest_context(self, mpd_filename, mode, stream, **kwargs):
-        #url = r'http://unit.test/{0}/{1}{2}'.format(
-        #    directory, mpd_filename, dict_to_cgi_params(kwargs))
-        #request = MockRequest(url)
         mock = MockServeManifest(flask.request)
         context = mock.calculate_dash_params(mpd_url=mpd_filename, mode=mode)
         encrypted = kwargs.get('drm', 'none') != 'none'

@@ -183,7 +183,7 @@ class Mp4Atom(with_metaclass(ABCMeta, ObjectWithFields)):
         return fields
 
     def find_atom(self, atom_type: Union[bytes, str],
-                  check_parent: bool=True) -> Optional["Mp4Atom"]:
+                  check_parent: bool = True) -> Optional["Mp4Atom"]:
         if isinstance(atom_type, bytes):
             atom_type = str(atom_type, 'ascii')
         if self.atom_type == atom_type:
@@ -2599,7 +2599,7 @@ class EventMessageBox(FullBox):
         'data': Binary,
     }
     OBJECT_FIELDS.update(FullBox.OBJECT_FIELDS)
-    
+
     @classmethod
     def parse(clz, src, parent, **kwargs):
         rv = FullBox.parse(src, parent, **kwargs)

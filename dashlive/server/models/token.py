@@ -5,12 +5,11 @@ Database table for storing refresh tokens and expired access tokens
 from datetime import datetime
 from enum import IntEnum
 import hashlib
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 from sqlalchemy import (  # type: ignore
     Boolean, Column, DateTime, String, Integer,  # type: ignore
     ForeignKey, func)  # type: ignore
-from sqlalchemy.engine import Engine  # type: ignore
 from sqlalchemy.orm import relationship  # type: ignore
 from sqlalchemy.orm.exc import NoResultFound  # type: ignore
 
@@ -38,7 +37,7 @@ class Token(db.Model, ModelMixin):
     CSRF_KEY_LENGTH = 32
     CSRF_SALT_LENGTH = 8
     MAX_TOKEN_LNGTH = max(36, 2 + CSRF_SALT_LENGTH + (3 * hashlib.sha1().digest_size // 2))
-    
+
     pk = Column(Integer, primary_key=True)
     jti = Column(String(MAX_TOKEN_LNGTH), nullable=False)
     token_type = Column(Integer, nullable=False)
@@ -51,7 +50,7 @@ class Token(db.Model, ModelMixin):
     @classmethod
     def get(cls, **kwargs) -> Optional["Token"]:
         return cls.get_one(**kwargs)
-    
+
     @classmethod
     def add(cls, decoded_token: Dict, identity_claim: str, revoked: bool,
             session: DatabaseSession) -> None:

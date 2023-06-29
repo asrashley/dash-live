@@ -30,8 +30,9 @@ import io
 import logging
 import os
 import unittest
-import urllib.request, urllib.parse, urllib.error
-import sys
+import urllib.request
+import urllib.parse
+import urllib.error
 
 import flask
 from lxml import etree
@@ -572,14 +573,12 @@ class PlayreadyTests(FlaskTestBase):
         self._patch_position_values(expected, -8)
         actual = new_init_seg.toJSON()
         self.maxDiff = None
-        #self.assertListEqual(expected['children'], actual['children'])
         self.assertEqual(len(expected['children']), len(actual['children']))
         for atom in expected['children']:
             if atom['atom_type'] == 'pssh':
-                atom_type['header_size'] = 8
+                atom['header_size'] = 8
         for exp, act in zip(expected['children'], actual['children']):
             self.assertObjectEqual(exp, act, msg=exp["atom_type"])
-        # self.assertEqual(expected, actual)
 
     def test_playready_la_url(self):
         """

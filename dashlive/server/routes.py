@@ -23,7 +23,7 @@
 from builtins import object
 import importlib
 import re
-from typing import Optional, List
+from typing import Optional
 
 from flask import Flask, request  # type: ignore
 from werkzeug.routing import BaseConverter  # type: ignore
@@ -53,13 +53,13 @@ class Route(object):
             ptype = match.group('ptype')
             # print(f'ptype "{ptype}"')
             if ptype is None:
-                return f'(?P<{name}>\w+)'
+                return f'(?P<{name}>\\w+)'
             if ptype == 'int':
-                return f'(?P<{name}>\d+)'
+                return f'(?P<{name}>\\d+)'
             if ptype.startswith('regex'):
                 regex = ptype[7:-2]
                 return f'(?P<{name}>{regex})'
-            return f'(?P<{name}>\w+)'
+            return f'(?P<{name}>\\w+)'
         reTemplate = re.sub(r'<(?:(?P<ptype>[^:>]+):)?([^>]+?)>', matchfn, template)
         # print('reTemplate', self.title, reTemplate)
         self.reTemplate = re.compile(reTemplate)
@@ -91,7 +91,8 @@ routes = {
         handler='manifest_requests.ServeManifest',
         title='DASH test stream'),
     "dash-media": Route(
-        r'/dash/<regex("(live|vod)"):mode>/<stream>/<filename>/<regex("(\d+|init)"):segment_num>.<regex("(mp4|m4v|m4a|m4s)"):ext>',
+        r'/dash/<regex("(live|vod)"):mode>/<stream>/<filename>/' +
+        r'<regex("(\d+|init)"):segment_num>.<regex("(mp4|m4v|m4a|m4s)"):ext>',
         handler='media_requests.LiveMedia',
         title="DASH fragment"),
     "dash-od-media": Route(

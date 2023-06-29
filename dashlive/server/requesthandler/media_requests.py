@@ -51,7 +51,6 @@ class OnDemandMedia(RequestHandlerBase):
     decorators = [uses_stream, uses_media_file]
 
     def get(self, stream, filename, ext):
-        mf = current_media_file
         try:
             start, end, status, headers = self.get_http_range(current_media_file.blob.size)
         except ValueError as ve:
@@ -81,7 +80,8 @@ class LiveMedia(RequestHandlerBase):
 
     decorators = [uses_stream, uses_media_file]
 
-    def get(self, mode:str, stream: str, filename: str, segment_num: str, ext: str) -> flask.Response:
+    def get(self, mode: str, stream: str, filename: str,
+            segment_num: str, ext: str) -> flask.Response:
         logging.debug('LiveMedia.get: %s %s %s %s', stream, filename, segment_num, ext)
         representation = current_media_file.representation
         audio = None
@@ -130,7 +130,7 @@ class LiveMedia(RequestHandlerBase):
                             continue
                         # Only fail 5xx errors "num_failures" times
                         if (code >= 500 and
-                            self.increment_error_counter('media', code) > num_failures):
+                                self.increment_error_counter('media', code) > num_failures):
                             self.reset_error_counter('media', code)
                             continue
                         msg = f'Synthetic {code} for segment {segment_num}'
@@ -330,4 +330,3 @@ class LiveMedia(RequestHandlerBase):
                             corrupt_frames -= 1
                             if corrupt_frames <= 0:
                                 break
-

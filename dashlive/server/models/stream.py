@@ -1,17 +1,11 @@
 from __future__ import print_function
-from builtins import map
 from typing import cast, List, Optional
-import re
 
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship  # type: ignore
 
-from dashlive.drm.keymaterial import KeyMaterial
-from dashlive.mpeg.dash.representation import Representation
-from dashlive.utils.date_time import toIsoDateTime
 from .db import db
 from .mixin import ModelMixin
-from .session import DatabaseSession
 
 class Stream(db.Model, ModelMixin):
     """
@@ -19,7 +13,7 @@ class Stream(db.Model, ModelMixin):
     """
     __plural__ = 'Streams'
     __tablename__ = 'Stream'
-    
+
     pk = sa.Column(sa.Integer, primary_key=True)
     title = sa.Column(sa.String())
     directory = sa.Column(sa.String(32), unique=True, index=True)

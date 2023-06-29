@@ -24,7 +24,6 @@ from __future__ import absolute_import, print_function
 from builtins import filter
 import json
 import os
-import sys
 import unittest
 
 from bs4 import BeautifulSoup
