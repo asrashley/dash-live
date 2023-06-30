@@ -7,12 +7,10 @@ from werkzeug.local import LocalProxy  # type: ignore
 
 from dashlive.server.models import MediaFile, Stream
 
-AJAX_CONTENT_TYPES = {r'application/json', r'text/javascript'}
-
 def is_ajax() -> bool:
     # print('content_type', flask.request.content_type, flask.request.url)
     return (
-        flask.request.content_type in AJAX_CONTENT_TYPES or
+        flask.request.is_json or
         flask.request.form.get("ajax", "0") == "1" or
         flask.request.args.get("ajax", "0") == "1")
 
