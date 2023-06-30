@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import random
+import string
 import os
 
 TEMPLATE="""from server.gae import on_production_server
@@ -15,9 +16,7 @@ allowed_domains = "*"
 """
 
 def make_random_string(length: int) -> str:
-    chars = map(chr,
-                range(ord('0'), ord('Z')) +
-                range(ord('a'), ord('z')))
+    chars = string.ascii_letters + string.digits + r'!#$%&()+,-./:<=>?@[\]^_`{|}~'
     rv = []
     for i in range(length):
         rv.append(random.choice(chars))
@@ -29,6 +28,6 @@ jwt = make_random_string(20)
 password = make_random_string(10)
 
 if not os.path.exists("dashlive/server/settings.py"):
-    with open('dashlive/server/settings.py', 'wt') as out:
+    with open('dashlive/server/settings.py', 'wt', encoding='ascii') as out:
         out.write(TEMPLATE.format(**locals()))
 
