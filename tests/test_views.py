@@ -129,9 +129,12 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
                 dv.validate(depth=3)
                 if option == 'now':
                     start_time = dv.manifest.publishTime - dv.manifest.timeShiftBufferDepth
-                self.assertEqual(dv.manifest.availabilityStartTime, start_time,
-                    msg=msg.format(option, start_time.isoformat(),
-                    dv.manifest.availabilityStartTime.isoformat()))
+                self.assertEqual(
+                    dv.manifest.availabilityStartTime,
+                    start_time,
+                    msg=msg.format(
+                        option, start_time.isoformat(),
+                        dv.manifest.availabilityStartTime.isoformat()))
                 with unittest.mock.patch.object(logging, 'warning', mocked_log):
                     head = self.client.head(baseurl)
                     self.assertEqual(

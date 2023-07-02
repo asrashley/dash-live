@@ -22,7 +22,6 @@
 
 from builtins import object
 import re
-from typing import Optional
 
 class Route(object):
     def __init__(self, template: str, handler: str, title: str,
@@ -61,6 +60,7 @@ class Route(object):
             rv += f', parent="{self.parent}"'
         rv += ')'
         return rv
+
 
 routes = {
     "del-key": Route(
