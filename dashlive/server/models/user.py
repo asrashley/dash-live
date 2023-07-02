@@ -128,8 +128,8 @@ class User(db.Model, ModelMixin):  # type: ignore
         groups: List[Group] = []
         for group in cast(List[Group], list(Group)):
             if (self.groups_mask & group.value or (
-                    self.is_admin and group.value <= Group.HOSTS.value)):
-                groups.append(group)
+                    self.is_admin and group.value <= Group.EDITOR.value)):
+                groups.append(group.name)
         return groups
 
     def set_groups(self, groups: List[Union[Group, str]]) -> None:

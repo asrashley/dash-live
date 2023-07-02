@@ -611,7 +611,7 @@ class TestRestApi(FlaskTestBase):
                 self.assertIn(item, response.json)
                 expected_result[item] = response.json[item]
             self.assertNotEqual(response.json['csrf'], csrf_token)
-            self.assertObjectEqual(response.json, expected_result)
+            self.assertObjectEqual(expected_result, response.json)
         else:
             self.assertIn('File bbb_v1.mp4 uploaded', response.text)
 

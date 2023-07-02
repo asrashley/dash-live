@@ -27,7 +27,8 @@ class MediaFile(db.Model, ModelMixin):
         'stream', sa.Integer, sa.ForeignKey('Stream.pk'),
         nullable=False)
     stream = relationship('Stream', back_populates='media_files')
-    blob_pk = sa.Column('blob', sa.Integer, sa.ForeignKey('Blob.pk'), nullable=False)
+    blob_pk = sa.Column('blob', sa.Integer, sa.ForeignKey('Blob.pk'),
+                        nullable=False, unique=True)
     blob = relationship('Blob', back_populates='mediafile',
                         cascade='all, delete')
     rep = sa.Column(
@@ -38,9 +39,9 @@ class MediaFile(db.Model, ModelMixin):
         ),
         nullable=True,
         default={})
-    bitrate = sa.Column(sa.Integer, default=0, index=True)
+    bitrate = sa.Column(sa.Integer, default=0, index=True, nullable=False)
     content_type = sa.Column(sa.String(64), nullable=True, index=True)
-    encrypted = sa.Column(sa.Boolean, default=False, index=True)
+    encrypted = sa.Column(sa.Boolean, default=False, index=True, nullable=False)
 
     _representation = None
 
@@ -97,12 +98,10 @@ class MediaFile(db.Model, ModelMixin):
         return cast(Optional[MediaFile], clz.get_one(**kwargs))
 
     def toJSON(self, convert_date: bool = True, pure: bool = False) -> JsonObject:
-        blob = self.blob.to_dict(
-            only={"created", "size", "sha1_hash",
-                  "content_type", "filename"})
+        blob = self.blob.to_dict(exclude={'rep', 'blob', 'stream_pk'})
         if convert_date or pure:
             blob["created"] = toIsoDateTime(blob["created"])
-        retval = self.to_dict(exclude={'rep'})
+        retval = self.to_dict()
         retval['blob'] = blob
         retval['representation'] = self.representation
         if retval['representation'] is not None:
@@ -120,6 +119,9 @@ class MediaFile(db.Model, ModelMixin):
         abs_path = self.absolute_path(self.stream.directory)
         return self.blob.open_file(abs_path, start=start, end=end, buffer_size=buffer_size)
 
+    def delete_file(self) -> None:
+        abs_path = self.absolute_path(self.stream.directory)
+        self.blob.delete_file(abs_path)
 
 # pylint: disable=unused-argument
 def before_mediafile_save(mapper, connect, mediafile):
