@@ -1,14 +1,8 @@
 from future import standard_library
 standard_library.install_aliases()
-from builtins import range
-from builtins import object
-import io
-
-import datetime
 import unittest
 
 from dashlive.server.routes import Route
-
 
 class RoutesTests(unittest.TestCase):
     def test_re_template(self):
@@ -46,6 +40,7 @@ class RoutesTests(unittest.TestCase):
         for template, expected in test_cases:
             route = Route(template, 'handler', 'title')
             self.assertEqual(route.formatTemplate, expected)
+
 
 if __name__ == "__main__":
     unittest.main()

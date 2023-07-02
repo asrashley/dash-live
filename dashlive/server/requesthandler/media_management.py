@@ -21,7 +21,6 @@
 #############################################################################
 
 from builtins import str
-import datetime
 import hashlib
 import logging
 from pathlib import Path
