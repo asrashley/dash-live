@@ -6,7 +6,7 @@
     <head>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-	    <title>{% block title %}{{ title }}{% endblock %}</title>
+            <title>{% block title %}{{ title }}{% endblock %}</title>
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="shortcut icon" href="{{url_for('static', filename='favicon.ico')}}">
@@ -39,24 +39,34 @@
             </ul>
             <div id="logo"><a href="/">DASH test streams</a></div>
         <div class="info">
-        	<nav class="breadcrumbs">
-        	{% if breadcrumbs %}
-        	{% for bc in breadcrumbs %}
-        	<p class="breadcrumb"><a href="{{bc.href}}" title="{{ bc.title }}">{{ bc.title }}</a></p>
-        	{% endfor %}
-        	{% endif %}
-        	<p class="title">{% if title_link %}<a href="{{title_link}}">{% endif %}{{ title }}{% if title_link %}</a>{% endif %}</p>
-        	</nav>
-        	</div>
-	{% endblock %}
+                <nav class="breadcrumbs">
+                {% if breadcrumbs %}
+                {% for bc in breadcrumbs %}
+                <span class="breadcrumb">
+                  <a href="{{bc.href}}" title="{{ bc.title }}">{{bc.title }}</a>
+                </span>
+                {% endfor %}
+                {% endif %}
+                <span class="title">
+                  {%- if title_link -%}
+                  <a href="{{title_link}}">
+                    {% endif %}
+                    {{ title }}
+                    {%- if title_link -%}
+                  </a>
+                  {% endif %}
+                </span>
+                </nav>
+                </div>
+        {% endblock %}
         </header>
         <div id="content" class="container_16">
     {% block content %}
     <h1>{{ title }}</h1>
     <p>Welcome to {{ title }}</p>
-	{% endblock %}
-	</div>
-	{% block scripts %}
-	{% endblock %}
+        {% endblock %}
+        </div>
+        {% block scripts %}
+        {% endblock %}
     </body>
 </html>
