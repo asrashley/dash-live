@@ -4,9 +4,7 @@ on: [push]
 
 jobs:
   build:
-
-    runs-on: ubuntu-20.04
-
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3
     - name: Set up Python 3.11
@@ -18,7 +16,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
         pip install -r dev-requirements.txt
-   - name: Lint with flake8
+    - name: Lint with flake8
       run: |
         pip install flake8
         # stop the build if there are Python syntax errors or undefined names
