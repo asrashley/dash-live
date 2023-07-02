@@ -82,18 +82,20 @@ class UploadHandler(RequestHandlerBase):
         if not upload_folder.exists():
             upload_folder.mkdir(parents=True)
         abs_filename = upload_folder / filename
-        mf = models.MediaFile.get(name=filename.name)
+        mf = models.MediaFile.get(name=filename.stem)
         if mf:
+            mf.delete_file()
             mf.delete()
-        blob = models.Blob.get_one(filename=str(filename))
+        blob = models.Blob.get_one(filename=filename.name)
         if blob:
+            blob.delete_file(upload_folder)
             blob.delete()
         file_upload.save(abs_filename)
         blob = models.Blob(
-            filename=str(abs_filename),
+            filename=filename.name,
             size=abs_filename.stat().st_size,
             content_type=file_upload.mimetype)
-        with open(abs_filename, 'rb') as src:
+        with abs_filename.open('rb') as src:
             digest = hashlib.file_digest(src, 'sha1')
             blob.sha1_hash = digest.hexdigest()
         models.db.session.add(blob)
@@ -102,8 +104,9 @@ class UploadHandler(RequestHandlerBase):
             content_type=file_upload.mimetype)
         models.db.session.add(mf)
         models.db.session.commit()
+        mf = models.MediaFile.get(name=filename.stem, stream=stream)
         result = mf.toJSON()
-        result['blob']['created'] = datetime.datetime.now()
+        # result['blob']['created'] = datetime.datetime.now()
         logging.debug("upload done %s", abs_filename)
         context = self.create_context(
             title=f'File {filename.name} uploaded',
@@ -133,7 +136,7 @@ class MediaList(HTMLHandlerBase):
                 'http://', 'https://')
         context['files'] = models.MediaFile.all(order_by=[models.MediaFile.name])
         context['keys'] = models.Key.all(order_by=[models.Key.hkid])
-        context['streams'] = [s.to_dict() for s in models.Stream.all()]
+        context['streams'] = [s.to_dict(with_collections=True) for s in models.Stream.all()]
         csrf_key = self.generate_csrf_cookie()
         context['csrf_tokens'] = {
             'files': self.generate_csrf_token('files', csrf_key),

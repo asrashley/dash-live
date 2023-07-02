@@ -27,7 +27,7 @@ class Blob(db.Model, ModelMixin):
         nullable=False,
         server_default=sa.func.now())
     size = sa.Column(sa.Integer, nullable=False)
-    sha1_hash = sa.Column(sa.String(42), unique=True, nullable=False)
+    sha1_hash = sa.Column(sa.String(42), nullable=False)
     content_type = sa.Column(sa.String(64), nullable=False)
     auto_delete = sa.Column(sa.Boolean, default=True, nullable=False)
     mediafile = relationship("MediaFile", back_populates="blob")
@@ -55,9 +55,7 @@ class Blob(db.Model, ModelMixin):
             handle.seek(start, SEEK_SET)
         return contextlib.closing(handle)
 
-
-@sa.event.listens_for(Blob, 'after_delete')
-def after_blob_delete(mapper, connection, blob):
-    if blob.auto_delete:
-        file_path = Path(blob.filename)
-        file_path.unlink(missing_ok=True)
+    def delete_file(self, media_directory: Path) -> None:
+        if self.auto_delete:
+            file_path = media_directory / self.filename
+            file_path.unlink(missing_ok=True)

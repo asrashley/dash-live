@@ -89,6 +89,7 @@ class TestCaseMixin(object):
                 self.assertIsNotNone(
                     actual, f'{key_name}: {actual} should not be None')
             if isinstance(value, dict):
+                self.assertIn(key, actual, f'{key_name}: key "{key}" missing')
                 self.assertObjectEqual(value, actual[key], msg=key_name, strict=strict)
             elif isinstance(value, list):
                 self.assertListEqual(value, actual[key], msg=key_name)

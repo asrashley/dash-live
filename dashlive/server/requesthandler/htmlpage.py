@@ -220,14 +220,29 @@ class LoginPage(HTMLHandlerBase):
             context['error'] = "Wrong username or password"
             csrf_key = self.generate_csrf_cookie()
             context['csrf_token'] = self.generate_csrf_token('login', csrf_key)
+            if self.is_ajax():
+                result = {}
+                for field in ['error', 'csrf_token']:
+                    result[field] = context[field]
+                return self.jsonify(result)
             return flask.render_template('login.html', **context)
         login_user(user, remember=True)
+        if self.is_ajax():
+            csrf_key = self.generate_csrf_cookie()
+            result = {
+                'success': True,
+                'csrf_token': self.generate_csrf_token('login', csrf_key),
+                'user': user.to_dict(only={'email', 'username', 'pk', 'last_login'})
+            }
+            result['user']['groups'] = user.get_groups()
+            return self.jsonify(result)
         # Notice that we are passing in the actual sqlalchemy user object here
         # access_token = create_access_token(identity=user)
         next_url = flask.request.args.get('next')
         # TODO: check if next is to an allowed location
         response = flask.make_response(flask.redirect(next_url or flask.url_for('home')))
         return response
+
 
 class LogoutPage(HTMLHandlerBase):
     """

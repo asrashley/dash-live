@@ -93,3 +93,8 @@ class ModelMixin:
         db.session.add(self)
         if commit:
             db.session.commit()
+
+    def delete(self, commit=False) -> None:
+        db.session.delete(self)
+        if commit:
+            db.session.commit()
