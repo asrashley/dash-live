@@ -107,8 +107,10 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
             # availabilityStartTime
             ('', ref_today, ref_yesterday),
         ]
-        msg = r'When start="%s" is used, expected MPD@availabilityStartTime to be %s but was %s'
+        msg = r'When start="{}" is used, expected MPD@availabilityStartTime to be {} but was {}'
         for option, now, start_time in testcases:
+            def mocked_log(*args):
+                self.assertEqual(option, '2019-09-invalid-iso-datetime')
             with self.mock_datetime_now(now):
                 baseurl = flask.url_for(
                     'dash-mpd-v3',
@@ -117,8 +119,9 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
                     mode='live')
                 if option:
                     baseurl += '?start=' + option
-                response = self.client.get(baseurl)
-                self.assertEqual(response.status_code, 200)
+                with unittest.mock.patch.object(logging, 'warning', mocked_log):
+                    response = self.client.get(baseurl)
+                    self.assertEqual(response.status_code, 200)
                 xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
                 dv = ViewsTestDashValidator(
                     http_client=self.client, mode='live', xml=xml.getroot(),
@@ -127,12 +130,13 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
                 if option == 'now':
                     start_time = dv.manifest.publishTime - dv.manifest.timeShiftBufferDepth
                 self.assertEqual(dv.manifest.availabilityStartTime, start_time,
-                                 msg=msg % (option, start_time.isoformat(),
-                                            dv.manifest.availabilityStartTime.isoformat()))
-                head = self.client.head(baseurl)
-                self.assertEqual(
-                    head.headers['Content-Length'],
-                    response.headers['Content-Length'])
+                    msg=msg.format(option, start_time.isoformat(),
+                    dv.manifest.availabilityStartTime.isoformat()))
+                with unittest.mock.patch.object(logging, 'warning', mocked_log):
+                    head = self.client.head(baseurl)
+                    self.assertEqual(
+                        head.headers['Content-Length'],
+                        response.headers['Content-Length'])
 
     def test_create_manifest_error(self):
         self.setup_media()
