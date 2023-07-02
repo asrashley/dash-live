@@ -21,21 +21,56 @@
 #############################################################################
 
 import logging
+import importlib
 from pathlib import Path
 from typing import Optional
 
-from flask import Flask  # type: ignore
+from flask import Flask, request  # type: ignore
 from flask_login import LoginManager
+from werkzeug.routing import BaseConverter  # type: ignore
 
 from dashlive.server import models
 from dashlive.templates.tags import custom_tags
 from dashlive.utils.json_object import JsonObject
-from .routes import add_routes
+from .routes import routes
 from .settings import (
     cookie_secret, jwt_secret, default_admin_username, default_admin_password,
 )
 
 login_manager = LoginManager()
+
+class RegexConverter(BaseConverter):
+    """
+    Utility class to allow a regex to be used in a route path
+    """
+    def __init__(self, url_map, *items):
+        super().__init__(url_map)
+        self.regex = items[0]
+
+def no_api_cache(response):
+    """
+    Make sure all API calls return no caching directives
+    """
+    if (request.is_json or
+            request.args.get('ajax', '0') == '1'):
+        response.cache_control.max_age = 0
+        response.cache_control.no_cache = True
+        response.cache_control.no_store = True
+        response.cache_control.must_revalidate = True
+    return response
+
+def add_routes(app: Flask) -> None:
+    app.url_map.converters['regex'] = RegexConverter
+    app.after_request(no_api_cache)
+    for name, route in routes.items():
+        full_path = f'dashlive.server.requesthandler.{route.handler}'
+        pos = full_path.rindex('.')
+        module_name = full_path[:pos]
+        handler_name = full_path[pos + 1:]
+        module = importlib.import_module(module_name)
+        view_func = getattr(module, handler_name).as_view(name)
+        app.add_url_rule(route.template, endpoint=name,
+                         view_func=view_func)
 
 def create_app(config: Optional[JsonObject] = None,
                create_default_user: bool = True) -> Flask:
