@@ -297,7 +297,9 @@ class TestCaseMixin(object):
         with self.assertRaises(AssertionError):
             self.assertBuffersEqual(a, b, name=name, dump=False)
 
-    def progress(self, pos, total):
+    def progress(self, pos: int, total: int) -> None:
+        if os.environ.get('CI') is not None:
+            return
         if pos == 0:
             sys.stdout.write('\n')
         sys.stdout.write(
