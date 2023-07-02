@@ -21,31 +21,20 @@
 #############################################################################
 
 from builtins import object
-import importlib
 import re
 from typing import Optional
 
-from flask import Flask, request  # type: ignore
-from werkzeug.routing import BaseConverter  # type: ignore
-
-class RegexConverter(BaseConverter):
-    """
-    Utility class to allow a regex to be used in a route path
-    """
-    def __init__(self, url_map, *items):
-        super().__init__(url_map)
-        self.regex = items[0]
-
 class Route(object):
     def __init__(self, template: str, handler: str, title: str,
-                 parent: Optional["Route"] = None) -> None:
+                 parent: str = None) -> None:
+        self.name = ''
         self.template = template
         self.handler = handler
         self.title = title
         self.parent = parent
         # convert Flask's template syntax in to the Python string.format() syntax
         self.formatTemplate = re.sub(
-            r':[^>]*>', '}', template.replace('<', '{'))
+            r'<([^:>]+:)?(?P<name>[^>]+)>', r'{\g<name>}', template)
 
         # convert Flask's template syntax in to the Python regex format
         def matchfn(match) -> str:
@@ -64,6 +53,14 @@ class Route(object):
         # print('reTemplate', self.title, reTemplate)
         self.reTemplate = re.compile(reTemplate)
 
+    def __str__(self) -> str:
+        rv = f'Route(name="{self.name}", title="{self.title}"'
+        rv += f', template="{self.template}"'
+        rv += f', re_template="{self.reTemplate.pattern}"'
+        if self.parent:
+            rv += f', parent="{self.parent}"'
+        rv += ')'
+        return rv
 
 routes = {
     "del-key": Route(
@@ -126,7 +123,8 @@ routes = {
     "stream-edit": Route(
         r'/media/edit/<int:spk>',
         handler='streams.EditStreamHandler',
-        title='Media information'),
+        title='Edit Stream',
+        parent='media-list'),
     "uploadBlob": Route(
         r'/blob',
         handler='media_management.UploadHandler',
@@ -153,28 +151,5 @@ routes = {
         title='DASH test streams'),
 }
 
-def no_api_cache(response):
-    """
-    Make sure all API calls return no caching directives
-    """
-    if request.path.startswith('/api/'):
-        response.cache_control.max_age = 0
-        response.cache_control.no_cache = True
-        response.cache_control.no_store = True
-        response.cache_control.must_revalidate = True
-    return response
-
-
-def add_routes(app: Flask) -> None:
-    app.url_map.converters['regex'] = RegexConverter
-    app.after_request(no_api_cache)
-    for name, route in routes.items():
-        route.name = name
-        full_path = f'dashlive.server.requesthandler.{route.handler}'
-        pos = full_path.rindex('.')
-        module_name = full_path[:pos]
-        handler_name = full_path[pos + 1:]
-        module = importlib.import_module(module_name)
-        view_func = getattr(module, handler_name).as_view(name)
-        app.add_url_rule(route.template, endpoint=name,
-                         view_func=view_func)
+for name in routes.keys():
+    routes[name].name = name
