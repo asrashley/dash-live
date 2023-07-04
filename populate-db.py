@@ -7,11 +7,36 @@ import os
 import ssl
 import sys
 import time
+from typing import Dict, List, Optional
 import urllib
 
 import requests
 
 from dashlive.server.routes import routes
+from dashlive.utils.json_object import JsonObject
+
+class DashStream:
+    def __init__(self, pk: int, title: str, directory: str,
+                 blob: Optional[JsonObject] = None,
+                 marlin_la_url: Optional[str] = None,
+                 playready_la_url: Optional[str] = None,
+                 media_files: Optional[List[JsonObject]] = None,
+                 keys: Optional[List[JsonObject]] = None,
+                 upload_url: Optional[str] = None,
+                 csrf_tokens: Optional[JsonObject] = None) -> None:
+        self.pk = pk
+        self.title = title
+        self.directory = directory
+        self.blob = blob
+        self.marlin_la_url = marlin_la_url
+        self.playready_la_url = playready_la_url
+        self.upload_url = upload_url
+        self.media_files = {}
+        if media_files is not None:
+            for mf in media_files:
+                if isinstance(mf, dict):
+                    self.media_files[mf['name']] = mf
+
 
 class MediaManagement:
     def __init__(self, url: str, username: str, password: str) -> None:
@@ -20,11 +45,9 @@ class MediaManagement:
         self.password = password
         self.session = requests.Session()
         self._has_logged_in = False
-        self.files = {}
         self.csrf_tokens = {}
-        self.upload_url = None
         self.keys = {}
-        self.streams = {}
+        self.streams: Dict[str, DashStream] = {}
         self.log = logging.getLogger('MediaManagement')
 
     def url_for(self, name, **kwargs) -> str:
@@ -34,9 +57,12 @@ class MediaManagement:
         # print('path', path)
         return urllib.parse.urljoin(self.base_url, path)
 
-    def populate_database(self, jsonfile):
+    def populate_database(self, jsonfile: str) -> None:
         with open(jsonfile, 'r') as js:
             config = json.load(js)
+        if 'files' in config:
+            config = self.convert_v1_json_data(config)
+        js_dir = Path(jsonfile).parent
         self.login()
         self.get_media_info()
         for k in config['keys']:
@@ -47,52 +73,56 @@ class MediaManagement:
         directory = None
         for s in config['streams']:
             directory = s.get('directory')
-            if 'prefix' in s:
-                directory = s['prefix']
-                s['directory'] = directory
-                del s['prefix']
             if directory not in self.streams:
                 self.log.info(f'Add stream directory="{directory}" title="{s["title"]}"')
                 if not self.add_stream(**s):
                     self.log.error(f'Failed to add stream {directory}: {s["title"]}')
-            directory = s['directory']
-        if directory is None and config['files']:
-            prefix = name.split('_')[0]
-            if prefix not in self.streams:
-                s = {
-                    'title': name,
-                    'directory': prefix
-                }
-                if not self.add_stream(**s):
-                    self.log.error(f'Failed to add stream {s.directory}: {s.title}')
-                    return False
-                directory = prefix
-        self.get_media_info()
-        for name in config['files']:
-            name = Path(name)
-            if name.stem not in self.files:
-                filename = name
-                if not os.path.exists(filename):
-                    # d = os.path.dirname(jsonfile)
-                    js_dir = Path(jsonfile).parent
-                    filename = js_dir / filename
-                    if not filename.exists():
-                        self.log.warning("%s not found", name)
-                        continue
-                self.log.info('Add file %s', filename.name)
-                try:
-                    stream = self.streams[directory]
-                except KeyError:
-                    self.log.error(f'Unknown stream "{directory}"')
-                    continue
-                if not self.upload_file(stream['pk'], filename):
-                    self.log.error('Failed to add file %s', name)
-                    continue
-                time.sleep(2) # allow time for DB to sync
-            if self.files[name.stem]['representation'] is None:
-                self.log.info('Index file %s', name)
-                if not self.index_file(name):
-                    self.log.error('Failed to index file %s', name)
+            s_info = self.get_stream_info(directory)
+            if s_info is None:
+                continue
+            for name in s['files']:
+                self.upload_file_and_index(js_dir, s_info, name)
+
+    def convert_v1_json_data(self, v1json : JsonObject) -> JsonObject:
+        """
+        Converts v1 JSON Schema to current JSON Schema
+        """
+        files = set(v1json['files'])
+        output = {
+            'streams': [],
+            'keys': v1json['keys']
+        }
+        if 'streams' not in v1json:
+            v1json['streams'] = []
+            file_prefixes = set()
+            for filename in files:
+                prefix = name.split('_')[0]
+                if prefix not in file_prefixes:
+                    v1json['streams'].append({
+                        'title': filename,
+                        'prefix': prefix
+                    })
+                    file_prefixes.add(prefix)
+        for stream in v1json['streams']:
+            new_st = {
+                'directory': stream['prefix'],
+                'title': stream.get('title', stream['prefix']),
+                'files': []
+            }
+            try:
+                new_st["marlin_la_url"] = stream["marlin_la_url"]
+            except KeyError:
+                pass
+            try:
+                new_st["playready_la_url"] = stream["playready_la_url"]
+            except KeyError:
+                pass
+            for filename in list(files):
+                if filename.startswith(stream['prefix']):
+                    new_st['files'].append(filename)
+                    files.remove(filename)
+            output['streams'].append(new_st)
+        return output
 
     def login(self):
         if self._has_logged_in:
@@ -122,7 +152,7 @@ class MediaManagement:
             self._has_logged_in = True
         return self._has_logged_in
 
-    def get_media_info(self):
+    def get_media_info(self) -> bool:
         self.login()
         url = self.url_for('media-list')
         self.log.debug('GET %s', url)
@@ -133,22 +163,36 @@ class MediaManagement:
             return False
         js = result.json()
         self.csrf_tokens.update(js['csrf_tokens'])
-        self.files = {}
-        self.upload_url = None
         self.keys = {}
         self.streams = {}
-        for f in js['files']:
-            self.files[f['name']] = f
-            self.log.debug('File %s', f['name'])
+        #for f in js['files']:
+        #    self.files[f['name']] = f
+        #    self.log.debug('File %s', f['name'])
         for k in js['keys']:
             kid = k['kid']
             self.log.debug('KID %s: computed=%s', kid, k['computed'])
             self.keys[kid] = k
         for s in js['streams']:
-            self.streams[s['directory']] = s
+            self.streams[s['directory']] = DashStream(**s)
             self.log.debug('Stream %s: %s', s['directory'], s['title'])
-        self.upload_url = urllib.parse.urljoin(self.base_url, js['upload_url'])
+        # self.upload_url = urllib.parse.urljoin(self.base_url, js['upload_url'])
         return True
+
+    def get_stream_info(self, directory: str) -> Optional[DashStream]:
+        if directory not in self.streams:
+            self.get_media_info()
+        if directory not in self.streams:
+            self.log.error('Failed to find information for stream "%s"', directory)
+            return None
+        url = self.url_for('stream-edit', spk=self.streams[directory].pk, ajax=1)
+        self.log.debug('GET %s', url)
+        result = self.session.get(url, params={'ajax': 1})
+        if result.status_code != 200:
+            self.log.warning('HTTP status %d', result.status_code)
+            self.log.debug('HTTP headers %s', str(result.headers))
+            return None
+        js = result.json()
+        return DashStream(**js)
 
     def add_key(self, kid, computed, key=None):
         if kid in self.keys:
@@ -182,9 +226,12 @@ class MediaManagement:
         }
         return True
 
-    def add_stream(self, directory, title, marlin_la_url='', playready_la_url=''):
-        if directory in self.streams:
-            return True
+    def add_stream(self, directory: str, title: str, marlin_la_url: str = '',
+                   playready_la_url: str = '', **kwargs) -> Optional[DashStream]:
+        try:
+            return self.streams[directory]
+        except KeyError:
+            pass
         params = {
             'title': title,
             'directory': directory,
@@ -192,33 +239,54 @@ class MediaManagement:
             'playready_la_url': playready_la_url,
             'csrf_token': self.csrf_tokens['streams']
         }
-        url = self.url_for('stream')
+        url = self.url_for('stream-add')
         self.log.debug('PUT %s', url)
         result = self.session.put(url, json=params)
         if result.status_code != 200:
             self.log.warning('HTTP status %d', result.status_code)
             self.log.debug('HTTP headers %s', str(result.headers))
-            return False
+            return None
         js = result.json()
         if 'csrf' in js:
             self.csrf_tokens['streams'] = js['csrf']
         if 'error' in js:
             self.log.error(js['error'])
+            return None
+        self.streams[js['directory']] = DashStream(
+            title=js['title'],
+            directory=js['directory'],
+            pk=js['pk'],
+            blob=js['blob'])
+        return self.streams[js['directory']]
+
+    def upload_file_and_index(self, js_dir: Path, stream: DashStream, name: str) -> bool:
+        name = Path(name)
+        if name.stem in stream.media_files:
+            return True
+        filename = name
+        if not filename.exists():
+            filename = js_dir / filename
+        if not filename.exists():
+            self.log.warning("%s not found", name)
             return False
-        self.streams[js['directory']] = {
-            'title': js['title'],
-            'directory': js['directory'],
-            'pk': js['pk'],
-            'blob': js['blob'],
-        }
+        self.log.info('Add file %s', filename.name)
+        if not self.upload_file(stream, filename):
+            self.log.error('Failed to add file %s', name)
+            return False
+        time.sleep(2) # allow time for DB to sync
+        if stream.media_files[name.stem]['representation'] is None:
+            self.log.info('Index file %s', name)
+            if not self.index_file(stream, name):
+                self.log.error('Failed to index file %s', name)
+                return False
         return True
 
-    def upload_file(self, stream_pk: int, filename: Path) -> bool:
-        if filename.stem in self.files:
+    def upload_file(self, stream: DashStream, filename: Path) -> bool:
+        if filename.stem in stream.media_files:
             return True
         params = {
             'ajax': 1,
-            'stream': stream_pk,
+            'stream': stream.pk,
             'submit': 'Submit',
             'csrf_token': self.csrf_tokens['upload']
         }
@@ -226,8 +294,9 @@ class MediaManagement:
         files = [
             ('file', (str(filename.name), filename.open('rb'), 'video/mp4')),
         ]
-        self.log.debug('POST %s', self.upload_url)
-        result = self.session.post(self.upload_url, data=params, files=files)
+        self.log.debug('POST %s', stream.upload_url)
+        upload_url = urllib.parse.urljoin(self.base_url, stream.upload_url)
+        result = self.session.post(upload_url, data=params, files=files)
         if result.status_code != 200:
             self.log.warning('HTTP status %d', result.status_code)
             self.log.debug('HTTP headers %s', str(result.headers))
@@ -236,23 +305,23 @@ class MediaManagement:
         if 'csrf' in js:
             self.csrf_tokens['upload'] = js['csrf']
         if 'upload_url' in js:
-            self.upload_url = urllib.parse.urljoin(self.base_url, js['upload_url'])
+            stream.upload_url = js['upload_url']
         if 'error' in js:
             self.log.warning('Error: %s', js['error'])
             return False
         js['representation'] = None
-        self.files[filename.stem] = js
+        stream.media_files[filename.stem] = js
         return True
 
-    def index_file(self, name: Path) -> bool:
+    def index_file(self, stream: DashStream, name: Path) -> bool:
         params = {
             'ajax': 1,
             'csrf_token': self.csrf_tokens['files']
         }
-        if name.stem not in self.files:
-            print('File {} not found'.format(name))
+        if name.stem not in stream.media_files:
+            self.log.warning('File "%s" not found', name)
             return False
-        mfid = self.files[name.stem]['pk']
+        mfid = stream.media_files[name.stem]['pk']
         url = self.url_for('media-index', mfid=mfid)
         timeout = 10
         while timeout > 0:
@@ -265,19 +334,17 @@ class MediaManagement:
             if 'csrf' in js:
                 self.csrf_tokens['files'] = js['csrf']
                 params['csrf_token'] = js['csrf']
-            if result.status_code != 200 or 'error' in js:
-                self.log.warning('HTTP status %d', result.status_code)
-                self.log.debug('HTTP headers %s', str(result.headers))
-                if 'error' in js:
-                    self.log.error('%s', str(js['error']))
-                if result.status_code == 404 and timeout > 0:
-                    timeout -= 1
-                    time.sleep(2)
-                else:
-                    return False
-            else:
-                self.files[name.stem]['representation'] = js['representation']
+            if result.status_code == 200 and 'error' not in js:
+                stream.media_files[name.stem]['representation'] = js['representation']
                 return True
+            self.log.warning('HTTP status %d', result.status_code)
+            self.log.debug('HTTP headers %s', str(result.headers))
+            if 'error' in js:
+                self.log.error('%s', str(js['error']))
+            if result.status_code != 404 or timeout == 0:
+                return False
+            timeout -= 1
+            time.sleep(2)
         return False
 
 

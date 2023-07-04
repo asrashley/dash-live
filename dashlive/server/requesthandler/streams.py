@@ -33,7 +33,7 @@ from .exceptions import CsrfFailureException
 
 class StreamHandler(HTMLHandlerBase):
     """
-    handler for adding, editing or removing a stream
+    handler for adding or removing a stream
     """
     decorators = [login_required(admin=True)]
 
@@ -41,7 +41,7 @@ class StreamHandler(HTMLHandlerBase):
 
     def get(self, error: Optional[str] = None):
         """
-        Show form to add a new stream
+        Returns an HTML form to add a new stream
         """
         context = self.create_context()
         csrf_key = self.generate_csrf_cookie()
@@ -139,31 +139,41 @@ class StreamHandler(HTMLHandlerBase):
 
 
 class EditStreamHandler(HTMLHandlerBase):
+    """
+    Handler that allows viewing and updating stream
+    """
     decorators = [uses_stream, login_required(html=True, admin=True)]
 
     def get(self, **kwargs):
+        """
+        Get information about a stream
+        """
         context = self.create_context(**kwargs)
         csrf_key = context['csrf_key']
-        result = {
+        result = current_stream.to_dict(with_collections=True, exclude={'media_files'})
+        result.update({
             'csrf_tokens': {
                 'files': self.generate_csrf_token('files', csrf_key),
                 'kids': self.generate_csrf_token('keys', csrf_key),
                 'upload': self.generate_csrf_token('upload', csrf_key),
                 'streams': csrf_key,
-            },
-            'files': [],
-        }
+            }
+        })
         kids: Dict[str, models.Key] = {}
-        for mf in models.MediaFile.search(stream=current_stream):
-            result['files'].append(mf.toJSON(convert_date=False))
+        result['media_files'] = []
+        for mf in current_stream.media_files:
+            result['media_files'].append(mf.toJSON(convert_date=False))
             for mk in mf.encryption_keys:
                 kids[mk.hkid] = mk
         result['keys'] = [kids[hkid] for hkid in sorted(kids.keys())]
         if self.is_ajax():
-            result['stream'] = context['stream']
             result['upload_url'] = context['upload_url']
             return self.jsonify(result)
-        context.update(result)
+        context.update({
+            'stream': result,
+            'csrf_tokens': result['csrf_tokens'],
+            'keys': result['keys'],
+        })
         return flask.render_template('media/stream.html', **context)
 
     def post(self, **kwargs):

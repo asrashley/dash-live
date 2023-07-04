@@ -625,7 +625,7 @@ class TestRestApi(FlaskTestBase):
         url = flask.url_for('stream-edit', spk=stream.pk, ajax=1)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json['files'][0]['name'], 'bbb_v1')
+        self.assertEqual(response.json['media_files'][0]['name'], 'bbb_v1')
 
     def test_delete_media_file(self):
         self.setup_media()
