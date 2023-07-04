@@ -6,6 +6,7 @@ import sqlalchemy as sa
 from dashlive.drm.keymaterial import KeyMaterial
 
 from .db import db
+from .mediafile_keys import mediafile_keys
 from .mixin import ModelMixin
 
 def kid_validator(prop, value):
@@ -15,13 +16,14 @@ def kid_validator(prop, value):
 
 class Key(db.Model, ModelMixin):
     __plural__ = 'Keys'
-    __tablename__ = 'Key'
 
     pk = sa.Column(sa.Integer, primary_key=True)
     hkid = sa.Column(sa.String(34), nullable=False, unique=True, index=True)
     hkey = sa.Column(sa.String(34), nullable=False)
     computed = sa.Column(sa.Boolean, nullable=False)
     halg = sa.Column(sa.String(16), nullable=True)
+    mediafiles: db.Mapped["MediaFile"] = db.relationship(  # noqa: F821
+        secondary=mediafile_keys, back_populates='encryption_keys')
 
     @property
     def KID(self):

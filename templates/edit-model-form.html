@@ -1,0 +1,30 @@
+<form
+  {% if submit_url %}action="{{submit_url}}"{% endif %}
+  id="edit-model"
+  method="POST"
+  name="edit-model"
+  >
+  {% if error %}
+    <div class="alert alert-danger" role="alert">{{error}}</div>
+  {% endif %}
+  <input type="hidden" name="csrf_token" value="{{csrf_token}}" />
+  {% for field in fields %}
+    <div class="form-group">
+      <label for="model-{{field.name}}">{{field.title}}:</label>
+      <input
+        class="form-control"
+        type="text"
+        name="{{field.name}}"
+        id="model-{{field.name}}"
+        value="{{field.value}}"
+        />
+    </div>
+  {% endfor %}
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Save Changes</button>
+    <a href="{{cancel_url}}" class="btn btn-warning">Cancel</a>
+    {% if extra_buttons %}
+    {{ extra_buttons }}
+    {% endif %}
+  </div>
+</form>

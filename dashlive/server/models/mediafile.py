@@ -7,30 +7,30 @@ import flask
 import sqlalchemy as sa
 import sqlalchemy_jsonfield  # type: ignore
 from sqlalchemy.event import listen  # type: ignore
-from sqlalchemy.orm import relationship  # type: ignore
 
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.utils.date_time import toIsoDateTime
 from dashlive.utils.json_object import JsonObject
 from .db import db
+from .key import Key
 from .mixin import ModelMixin
 from .stream import Stream
+from .mediafile_keys import mediafile_keys
 
 class MediaFile(db.Model, ModelMixin):
     """representation of one MP4 file"""
     __plural__ = 'MediaFiles'
-    __tablename__ = 'MediaFile'
 
-    pk = sa.Column('pk', sa.Integer, primary_key=True)
+    pk: db.Mapped[int] = db.Column('pk', sa.Integer, primary_key=True)
     name = sa.Column('name', sa.String(200), nullable=False, unique=True, index=True)
     stream_pk = sa.Column(
         'stream', sa.Integer, sa.ForeignKey('Stream.pk'),
         nullable=False)
-    stream = relationship('Stream', back_populates='media_files')
+    stream = db.relationship('Stream', back_populates='media_files')
     blob_pk = sa.Column('blob', sa.Integer, sa.ForeignKey('Blob.pk'),
                         nullable=False, unique=True)
-    blob = relationship('Blob', back_populates='mediafile',
-                        cascade='all, delete')
+    blob = db.relationship('Blob', back_populates='mediafile',
+                           cascade='all, delete')
     rep = sa.Column(
         'rep',
         sqlalchemy_jsonfield.JSONField(
@@ -42,6 +42,7 @@ class MediaFile(db.Model, ModelMixin):
     bitrate = sa.Column(sa.Integer, default=0, index=True, nullable=False)
     content_type = sa.Column(sa.String(64), nullable=True, index=True)
     encrypted = sa.Column(sa.Boolean, default=False, index=True, nullable=False)
+    encryption_keys: db.Mapped[Key] = db.relationship(secondary=mediafile_keys, back_populates='mediafiles')
 
     _representation = None
 
@@ -98,11 +99,13 @@ class MediaFile(db.Model, ModelMixin):
         return cast(Optional[MediaFile], clz.get_one(**kwargs))
 
     def toJSON(self, convert_date: bool = True, pure: bool = False) -> JsonObject:
-        blob = self.blob.to_dict(exclude={'rep', 'blob', 'stream_pk'})
+        blob = self.blob.to_dict(exclude={'rep', 'blob', 'stream_pk', 'encryption_keys'})
         if convert_date or pure:
             blob["created"] = toIsoDateTime(blob["created"])
         retval = self.to_dict()
         retval['blob'] = blob
+        retval['encryption_keys'] = [
+            ky.to_dict(exclude={'mediafiles'}) for ky in self.encryption_keys]
         retval['representation'] = self.representation
         if retval['representation'] is not None:
             retval['representation'] = retval['representation'].toJSON(pure=pure)

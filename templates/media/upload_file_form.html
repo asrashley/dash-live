@@ -1,0 +1,15 @@
+<form class="form" action="{{upload_url}}" method="POST" enctype="multipart/form-data" id="upload-form">
+  <input type="hidden" name="ajax" value="0" />
+  <input type="hidden" name="csrf_token"
+         value="{{csrf_tokens.upload}}" />
+  <input type="hidden" name="stream" value="{{stream.pk}}" />
+  <div class="form-group">
+      <label for="file-input">Upload File:</label>
+      <input id="file-input" type="file" name="file"
+	     accept="video/mp4,audio/mp4,.mp4" />
+  </div>
+  <div>
+    <input type="submit" name="submit" value="Upload Media"
+           class="btn btn-primary submit" />
+  </div>
+</form>

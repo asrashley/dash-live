@@ -151,19 +151,27 @@ class TestHtmlPageHandlers(FlaskTestBase):
             for field in ['Title', 'Directory', 'Marlin LA URL', 'PlayReady LA URL']:
                 self.assertIn(f'{field}:', response.text)
             html = BeautifulSoup(response.text, 'lxml')
-            for input_field in html.find_all('input'):
+            for input_field in html.find(id="edit-model").find_all('input'):
                 name = input_field.get('name')
                 if name == 'csrf_token':
                     self.assertEqual(
                         input_field.get('type'),
                         'hidden')
                     continue
+                self.assertEqual(f'model-{name}', input_field.get('id'))
+                expected = getattr(stream, name)
+                actual = input_field.get('value')
                 self.assertEqual(
-                    input_field.get('id'),
-                    'stream-{0}'.format(name))
-                self.assertEqual(
-                    input_field.get('value'),
-                    getattr(stream, name))
+                    expected, actual,
+                    msg=f'Expected field {name} to have "{expected}" but got "{actual}"')
+            for input_field in html.find(id="upload-form").find_all('input'):
+                name = input_field.get('name')
+                if name in {'csrf_token', 'stream'}:
+                    self.assertEqual(
+                        input_field.get('type'),
+                        'hidden')
+                if name == 'stream':
+                    self.assertEqual(f'{stream.pk}', input_field.get('value'))
         finally:
             self.current_url = None
 

@@ -25,9 +25,6 @@
       <td class="sha1-hash ellipsis" data-text="{{media.blob.sha1_hash}}">
         {{media.blob.sha1_hash}}
       </td>
-      <td class="directory">
-        {{media.stream.directory}}
-      </td>
       <td class="contentType">
         {{media.content_type}}
       </td>
@@ -37,12 +34,12 @@
         {% endif %}
       </td>
       <td class="kid">
-        {% if media.representation %}
-          {% if media.representation.encrypted %}
-            {% for kid in media.representation.kids %}<p>{{kid.hex}}</p>{% endfor %}
-		  {% else %}
-            <span class="bool-no ">&cross;</span>
-          {% endif %}
+        {%- if media.representation.encrypted %}
+        {%- for kid in media.encryption_keys %}
+	<p><a href="#kid-{{kid.hkid}}">{{kid.hkid}}</a></p>
+	{% endfor %}
+	{% else %}
+          <span class="bool-no ">&cross;</span>
         {% endif %}
       </td>
     </tr>

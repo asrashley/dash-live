@@ -48,7 +48,7 @@ class TestRestApi(FlaskTestBase):
             'playready_la_url': '',
             'ajax': '1',
         }
-        url = flask.url_for('stream')
+        url = flask.url_for('stream-add')
 
         # user must be logged in to use stream API
         self.logout_user()
@@ -542,12 +542,27 @@ class TestRestApi(FlaskTestBase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
+        stream = models.Stream(
+            title='upload media file test',
+            directory='test_api',
+            marlin_la_url='https://fake.domain/marlin',
+            playready_la_url='https://fake.domain/playready'
+        )
+        stream.add(commit=True)
+        stream = models.Stream.get(title='upload media file test')
+        self.assertIsNotNone(stream)
+
+        url = flask.url_for('stream-edit', spk=stream.pk, ajax=ajax)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
         if ajax:
             upload_url = response.json['upload_url']
             content_type = "multipart/form-data"
         else:
             html = BeautifulSoup(response.text, 'lxml')
             form = html.find("form", id='upload-form')
+            self.assertIsNotNone(form, msg='Failed to find form[id="upload-form"]')
             self.assertEqual(form['method'], 'POST')
             upload_url = form['action']
             content_type = form['enctype']
@@ -563,15 +578,6 @@ class TestRestApi(FlaskTestBase):
             upload_url, data=data, content_type=content_type)
         self.assert401(response)
 
-        stream = models.Stream(
-            title='upload media file test',
-            directory='test_api',
-            marlin_la_url='https://fake.domain/marlin',
-            playready_la_url='https://fake.domain/playready'
-        )
-        stream.add(commit=True)
-        stream = models.Stream.get(title='upload media file test')
-        self.assertIsNotNone(stream)
         self.login_user(is_admin=True)
         self.create_upload_folder()
         # print('==== get upload form ====')
@@ -616,7 +622,7 @@ class TestRestApi(FlaskTestBase):
             self.assertIn('File bbb_v1.mp4 uploaded', response.text)
 
         # print('==== get index ====')
-        url = flask.url_for('media-list', ajax=1)
+        url = flask.url_for('stream-edit', spk=stream.pk, ajax=1)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json['files'][0]['name'], 'bbb_v1')

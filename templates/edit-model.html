@@ -1,0 +1,14 @@
+{% extends 'layout.html' %}
+
+
+{% block content %}
+<div id="media-management" class="container">
+  {% include 'edit-model-form.html' %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <div class="modal-backdrop hidden"></div>
+  {{import_script("jquery-3.4.1")}}
+  <script src="{{url_for('static', filename='js/media.js')}}" type="text/javascript"></script>
+{% endblock %}

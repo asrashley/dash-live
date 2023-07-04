@@ -21,22 +21,61 @@
 #############################################################################
 
 import logging
+from typing import Dict, Optional
 
 import flask
 
 from dashlive.server import models
 
-from .base import HTMLHandlerBase, RequestHandlerBase
+from .base import HTMLHandlerBase
 from .decorators import login_required, uses_stream, current_stream
 from .exceptions import CsrfFailureException
 
-class StreamHandler(RequestHandlerBase):
+class StreamHandler(HTMLHandlerBase):
     """
-    handler for adding or removing a stream
+    handler for adding, editing or removing a stream
     """
     decorators = [login_required(admin=True)]
 
     FIELDS = ['title', 'directory', 'marlin_la_url', 'playready_la_url']
+
+    def get(self, error: Optional[str] = None):
+        """
+        Show form to add a new stream
+        """
+        context = self.create_context()
+        csrf_key = self.generate_csrf_cookie()
+        context.update({
+            'csrf_token': self.generate_csrf_token('streams', csrf_key),
+            "fields": [{
+                "name": "title",
+                "title": "Title",
+                "type": "text",
+                "value": flask.request.args.get("title", ""),
+            }, {
+                "name": "directory",
+                "title": "Directory",
+                "type": "text",
+                "value": flask.request.args.get("directory", ""),
+            }, {
+                "name": "marlin_la_url",
+                "title": "Marlin LA URL",
+                "type": "text",
+                "value": flask.request.args.get("marlin_la_url", ""),
+            }, {
+                "name": "playready_la_url",
+                "title": "PlayReady LA URL",
+                "type": "text",
+                "value": flask.request.args.get("playready_la_url", ""),
+            }]
+        })
+        return flask.render_template('media/add_stream.html', **context)
+
+    def post(self):
+        """
+        Adds a new stream from form submission
+        """
+        return self.put()
 
     def put(self, **kwargs):
         """
@@ -47,7 +86,9 @@ class StreamHandler(RequestHandlerBase):
         try:
             self.check_csrf('streams', params)
         except (ValueError, CsrfFailureException) as err:
-            return self.jsonify({'error': f'{err}'}, 401)
+            if self.is_ajax:
+                return self.jsonify({'error': f'{err}'}, 401)
+            return self.get(error=str(err))
         for f in self.FIELDS:
             data[f] = params.get(f)
             if data[f] == '':
@@ -60,6 +101,8 @@ class StreamHandler(RequestHandlerBase):
             models.db.session.delete(st)
         st = models.Stream(**data)
         st.add(commit=True)
+        if not self.is_ajax():
+            return flask.redirect(flask.url_for('media-list'))
         result["id"] = st.pk
         result.update(data)
         csrf_key = self.generate_csrf_cookie()
@@ -100,7 +143,28 @@ class EditStreamHandler(HTMLHandlerBase):
 
     def get(self, **kwargs):
         context = self.create_context(**kwargs)
-        return flask.render_template('edit-stream.html', **context)
+        csrf_key = context['csrf_key']
+        result = {
+            'csrf_tokens': {
+                'files': self.generate_csrf_token('files', csrf_key),
+                'kids': self.generate_csrf_token('keys', csrf_key),
+                'upload': self.generate_csrf_token('upload', csrf_key),
+                'streams': csrf_key,
+            },
+            'files': [],
+        }
+        kids: Dict[str, models.Key] = {}
+        for mf in models.MediaFile.search(stream=current_stream):
+            result['files'].append(mf.toJSON(convert_date=False))
+            for mk in mf.encryption_keys:
+                kids[mk.hkid] = mk
+        result['keys'] = [kids[hkid] for hkid in sorted(kids.keys())]
+        if self.is_ajax():
+            result['stream'] = context['stream']
+            result['upload_url'] = context['upload_url']
+            return self.jsonify(result)
+        context.update(result)
+        return flask.render_template('media/stream.html', **context)
 
     def post(self, **kwargs):
         def str_or_none(value):
@@ -112,11 +176,10 @@ class EditStreamHandler(HTMLHandlerBase):
             return value
 
         context = self.create_context(**kwargs)
-        stream = context['stream']
-        stream.title = self.request.params['title']
-        stream.prefix = self.request.params['prefix']
-        stream.marlin_la_url = str_or_none(self.request.params['marlin_la_url'])
-        stream.playready_la_url = str_or_none(self.request.params['playready_la_url'])
+        current_stream.title = flask.request.form['title']
+        current_stream.prefix = flask.request.form['prefix']
+        current_stream.marlin_la_url = str_or_none(flask.request.form['marlin_la_url'])
+        current_stream.playready_la_url = str_or_none(flask.request.form['playready_la_url'])
         try:
             self.check_csrf('streams', flask.request.form)
         except (CsrfFailureException) as cfe:
@@ -124,7 +187,7 @@ class EditStreamHandler(HTMLHandlerBase):
             logging.debug(cfe)
             context['error'] = "csrf check failed"
         if context['error'] is not None:
-            return flask.render_template('edit-stream.html', **context)
+            return flask.render_template('media/stream.html', **context)
         models.db.session.commit()
         return flask.redirect(flask.url_for('media-list'))
 
@@ -137,16 +200,12 @@ class EditStreamHandler(HTMLHandlerBase):
         context = super(EditStreamHandler, self).create_context(**kwargs)
         csrf_key = self.generate_csrf_cookie()
         context.update({
-            'csrf_tokens': {
-                'streams': self.generate_csrf_token('streams', csrf_key),
-            },
-            "error": None,
-            "stream": None,
-            "fields": [],
-        })
-        context.update({
-            'error': None,
+            'csrf_key': csrf_key,
+            'csrf_token': self.generate_csrf_token('streams', csrf_key),
             'stream': current_stream,
+            'model': current_stream,
+            'submit_url': flask.url_for('stream-edit', spk=current_stream.pk),
+            'upload_url': flask.url_for('upload-blob', spk=current_stream.pk),
             "fields": [{
                 "name": "title",
                 "title": "Title",
@@ -170,3 +229,17 @@ class EditStreamHandler(HTMLHandlerBase):
             }],
         })
         return context
+
+class DeleteStreamHandler(HTMLHandlerBase):
+    decorators = [uses_stream, login_required(html=True, admin=True)]
+
+    def get(self, spk: str, **kwargs) -> flask.Response:
+        try:
+            self.check_csrf('streams', flask.request.args)
+        except (CsrfFailureException) as cfe:
+            logging.debug("csrf check failed")
+            logging.debug(cfe)
+            url = flask.url_for('stream-edit', spk=spk)
+            return flask.redirect(url)
+        context = self.create_context(**kwargs)
+        return flask.render_template('media/confirm_delete.html', **context)

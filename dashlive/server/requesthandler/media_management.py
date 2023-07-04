@@ -35,13 +35,16 @@ from dashlive.mpeg.dash.representation import Representation
 from dashlive.server import models
 
 from .base import HTMLHandlerBase, RequestHandlerBase
-from .decorators import uses_media_file, current_media_file, login_required
+from .decorators import (
+    uses_media_file, current_media_file, login_required,
+    uses_stream, current_stream
+)
 from .exceptions import CsrfFailureException
 
 class UploadHandler(RequestHandlerBase):
-    decorators = [login_required(admin=True)]
+    decorators = [uses_stream, login_required(admin=True)]
 
-    def post(self, *args, **kwargs):
+    def post(self, spk, **kwargs):
         if 'file' not in flask.request.files:
             return self.return_error('File not specified')
         if len(flask.request.files) == 0:
@@ -57,19 +60,14 @@ class UploadHandler(RequestHandlerBase):
             logging.debug(cfe)
             # TODO: check if uploaded file needs to be deleted
             return self.return_error(str(cfe))
-        if 'stream' not in flask.request.form:
-            return self.return_error('stream not specified')
-        stream = models.Stream.get(pk=flask.request.form['stream'])
-        if not stream:
-            return self.return_error('Unknown stream')
-        return self.save_file(blob_info, stream)
+        return self.save_file(blob_info, current_stream)
 
     def return_error(self, error: str) -> flask.Response:
         if self.is_ajax():
             result = {"error": error}
             return self.jsonify(result)
         flask.flash(error)
-        print(error)
+        logging.warning('Upload error: %s', error)
         return flask.redirect(flask.url_for("media-list"))
 
     def save_file(self, file_upload: FileStorage,
@@ -112,10 +110,10 @@ class UploadHandler(RequestHandlerBase):
             media=result)
         if self.is_ajax():
             csrf_key = self.generate_csrf_cookie()
-            result['upload_url'] = flask.url_for('uploadBlob')
+            result['upload_url'] = flask.url_for('upload-blob', spk=stream.pk)
             result['csrf'] = self.generate_csrf_token(
                 "upload", csrf_key)
-            result["file_html"] = flask.render_template('media_row.html', **context)
+            result["file_html"] = flask.render_template('media/media_row.html', **context)
             return self.jsonify(result)
         return flask.render_template('upload-done.html', **context)
 
@@ -129,11 +127,6 @@ class MediaList(HTMLHandlerBase):
 
     def get(self, **kwargs):
         context = self.create_context(**kwargs)
-        context['upload_url'] = flask.url_for('uploadBlob')
-        if self.is_https_request():
-            context['upload_url'] = context['upload_url'].replace(
-                'http://', 'https://')
-        context['files'] = models.MediaFile.all(order_by=[models.MediaFile.name])
         context['keys'] = models.Key.all(order_by=[models.Key.hkid])
         context['streams'] = [s.to_dict(with_collections=True) for s in models.Stream.all()]
         csrf_key = self.generate_csrf_cookie()
@@ -155,11 +148,10 @@ class MediaList(HTMLHandlerBase):
             result = {
                 'keys': [k.toJSON(pure=True) for k in context['keys']]
             }
-            for item in ['csrf_tokens', 'files',
-                         'streams', 'upload_url']:
+            for item in ['csrf_tokens', 'streams']:
                 result[item] = context[item]
             return self.jsonify(result)
-        return flask.render_template('media.html', **context)
+        return flask.render_template('media/index.html', **context)
 
 class MediaInfo(HTMLHandlerBase):
     """
@@ -228,6 +220,15 @@ class MediaIndex(HTMLHandlerBase):
                     parent=None, children=mp4.Mp4Atom.load(src))
             rep = Representation.load(filename=mf.name, atoms=atom.children)
             mf.representation = rep
+            mf.encryption_keys = []
+            for kid in rep.kids:
+                key_model = models.Key.get(hkid=kid.hex)
+                if key_model is None:
+                    key = models.KeyMaterial(
+                        raw=PlayReady.generate_content_key(kid.raw))
+                    key_model = models.Key(hkid=kid.hex, hkey=key.hex, computed=True)
+                    key_model.add()
+                mf.encryption_keys.append(key_model)
             mf.content_type = rep.content_type
             mf.bitrate = rep.bitrate
             mf.encrypted = rep.encrypted

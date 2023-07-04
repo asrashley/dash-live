@@ -19,13 +19,13 @@
         <a href="{{url_for('stream-edit', spk=stream.pk)}}"
            class="btn btn-success btn-sm edit-stream"
            data-id="{{stream.pk}}">Edit</a>
-        <button
-          class="btn btn-danger btn-sm delete-stream"
-          data-id="{{stream.pk}}"
-          >Delete</button>
       </td>
-      <td class="title">{{stream.title}}</td>
-      <td class="directory">{{stream.directory}}</td>
+      <td class="title">
+	<a href="{{url_for('stream-edit', spk=stream.pk)}}">{{stream.title}}</a>
+      </td>
+      <td class="directory">
+	<a href="{{url_for('stream-edit', spk=stream.pk)}}">{{stream.directory}}</a>
+      </td>
       <td class="marlin_la_url ellipsis"
           data-text="{{stream.marlin_la_url|default(drm.marlin.laurl)}}">
         {{stream.marlin_la_url|default(drm.marlin.laurl)}}
@@ -50,7 +50,7 @@
   <tfoot>
     <tr  class="thead-light">
       <td class="stream-actions">
-        <button class="btn btn-success add-stream">Add</button>
+        <a href="{{url_for('stream-add')}}" class="btn btn-success add-stream">Add</a>
       </td>
       <td class="title"><input type="text" name="title" placeholder="(stream title)"/></td>
       <td class="directory"><input type="text" name="directory" placeholder="(file directory)"/></td>
@@ -131,9 +131,6 @@
     <tr><td class="error" colspan="3"></td></tr>
     </tfoot>
   </table>
-  <div class="form-container">
-    {% include "upload_form.html" %}
-  </div>
 </div>
 
 {% include "dialogbox.html" %}
