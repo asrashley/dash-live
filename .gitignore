@@ -3,7 +3,7 @@
 .coverage
 .project
 .pydevproject
-media
+./media
 runner.py
 settings.py
 src/server/settings.py
