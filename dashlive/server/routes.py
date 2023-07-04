@@ -116,7 +116,7 @@ routes = {
         r'/stream/<int:spk>',
         handler='streams.StreamHandler',
         title='Delete stream'),
-    "stream": Route(
+    "stream-add": Route(
         r'/stream',
         handler='streams.StreamHandler',
         title='Add stream'),
@@ -125,10 +125,16 @@ routes = {
         handler='streams.EditStreamHandler',
         title='Edit Stream',
         parent='media-list'),
-    "uploadBlob": Route(
-        r'/blob',
+    "stream-delete": Route(
+        r'/media/delete/<int:spk>',
+        handler='streams.DeleteStreamHandler',
+        title='Delete Stream',
+        parent='media-list'),
+    "upload-blob": Route(
+        r'/media/<int:spk>/blob',
         handler='media_management.UploadHandler',
-        title='Upload blob'),
+        title='Upload blob',
+        parent='media-list'),
     "video": Route(
         r'/play/<regex("(live|vod|odvod)"):mode>/<stream>/<manifest>/index.html',
         handler='htmlpage.VideoPlayer',

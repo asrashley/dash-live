@@ -119,7 +119,7 @@ $(document).ready(function(){
     }
 
     function deleteStream(ev) {
-        var dialog, id, title, $row;
+        var dialog, id, title, $row, csrf, input;
 
         function onClick(btnEv) {
             var cmd;
@@ -127,20 +127,33 @@ $(document).ready(function(){
             closeDialog();
             cmd = $(btnEv.target).data("cmd");
             if (cmd === "yes") {
-                confirmDeleteStream($row, id);
+                confirmDeleteStream($row, id, csrf);
             }
             return false;
         }
 
-        $row = $(ev.target).parents('tr');
         id = $(ev.target).data("id");
         if (!id) {
             return;
         }
-        title = $row.find('.title').text();
-        if (title === "" || title === undefined) {
-            title = $row.find('.directory').text();
-        }
+	ev.preventDefault();
+        csrf = $('#streams').data('csrf');
+	if (!csrf) {
+            input = $('#edit-model input[name="csrf_token"]');
+	    if (!input) {
+		return;
+	    }
+	    csrf = input[0].value;
+	}
+        $row = $(ev.target).parents('tr');
+	if ($row.length) {
+            title = $row.find('.title').text();
+            if (title === "" || title === undefined) {
+		title = $row.find('.directory').text();
+            }
+	} else {
+	    title = ev.target.innerText.slice(7, -1);
+	}
         dialog = $('#dialog-box');
         dialog.find(".modal-body").html(
             '<p>Delete stream &quot;' + title +
@@ -152,9 +165,7 @@ $(document).ready(function(){
         showDialog();
     }
 
-    function confirmDeleteStream($row, id) {
-        var csrf;
-        csrf = $('#streams').data('csrf');
+    function confirmDeleteStream($row, id, csrf) {
         if (!id) {
             return;
         }
@@ -166,9 +177,11 @@ $(document).ready(function(){
         }).done(function(result) {
             if(result.error) {
                 $('#streams .error').text(result.error);
-            } else {
+            } else if ($row && $row.length) {
                 $row.remove();
-            }
+            } else {
+		window.location = '/media';
+	    }
             if (result.csrf) {
                 $('#streams').data('csrf', result.csrf);
             }
@@ -358,6 +371,7 @@ $(document).ready(function(){
     $('#keys .delete-key').click(deleteKey);
     $('#streams .add-stream').click(addStream);
     $('#streams .delete-stream').click(deleteStream);
+    $('#edit-model .delete-stream').click(deleteStream);
     $('#media-files .delete-file').click(deleteFile);
     $('#media-files .btn-index').click(indexFile);
     $("#upload-form .submit").click(uploadFile);
