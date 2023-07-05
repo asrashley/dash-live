@@ -56,7 +56,7 @@ from dashlive.server import models
 from dashlive.server import settings
 from dashlive.server.gae import on_production_server
 from dashlive.server.events.factory import EventFactory
-from dashlive.server.routes import routes
+from dashlive.server.routes import routes, Route
 from dashlive.utils import objects
 from dashlive.utils.date_time import scale_timedelta, from_isodatetime, toIsoDateTime
 from dashlive.utils.timezone import UTC
@@ -700,6 +700,31 @@ class RequestHandlerBase(MethodView):
 
     def is_ajax(self) -> bool:
         return is_ajax()
+
+    def get_next_url(self) -> Optional[str]:
+        """
+        Returns unquoted "next" URL if present in the request
+        """
+        next: Optional[str] = None
+        # TODO: check "next" is a URL within this app
+        try:
+            next = flask.request.args['next']
+            if next is not None:
+                next = urllib.parse.unquote_plus(next)
+            if next == "":
+                next = None
+        except KeyError:
+            pass
+        return next
+
+    def get_next_url_with_fallback(self, route_name: str, **kwargs) -> str:
+        """
+        Checks for a "next" parameter in the request
+        """
+        next = self.get_next_url()
+        if next is None:
+            next = flask.url_for(route_name, **kwargs)
+        return next
 
     def jsonify(self, data: Any, status: Optional[int] = None,
                 headers: Optional[Dict] = None) -> flask.Response:

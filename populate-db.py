@@ -154,7 +154,7 @@ class MediaManagement:
 
     def get_media_info(self) -> bool:
         self.login()
-        url = self.url_for('media-list')
+        url = self.url_for('list-streams')
         self.log.debug('GET %s', url)
         result = self.session.get(url, params={'ajax': 1})
         if result.status_code != 200:
@@ -239,7 +239,7 @@ class MediaManagement:
             'playready_la_url': playready_la_url,
             'csrf_token': self.csrf_tokens['streams']
         }
-        url = self.url_for('stream-add')
+        url = self.url_for('add-stream')
         self.log.debug('PUT %s', url)
         result = self.session.put(url, json=params)
         if result.status_code != 200:

@@ -57,8 +57,13 @@ class KeyHandler(RequestHandlerBase):
                 'hkey': flask.request.args.get('hkey'),
                 'computed': flask.request.args.get('computed', True),
             }
+        cancel_url = self.get_next_url_with_fallback('list-streams')
+        submit_url = flask.url_for(
+            flask.request.endpoint, kpk=kpk, next=self.get_next_url())
         context.update({
             'csrf_token': self.generate_csrf_token('keys', csrf_key),
+            'cancel_url': cancel_url,
+            'submit_url': submit_url,
             'model': mdk,
             "fields": [{
                 "name": "hkid",
@@ -119,7 +124,7 @@ class KeyHandler(RequestHandlerBase):
         if new_key:
             model.add()
         models.db.session.commit()
-        return flask.redirect(flask.url_for('media-list'))
+        return flask.redirect(self.get_next_url_with_fallback('list-streams'))
 
     def put(self, **kwargs):
         """
@@ -174,9 +179,10 @@ class DeleteKeyHandler(RequestHandlerBase):
         """
         context = self.create_context()
         csrf_key = self.generate_csrf_cookie()
+        cancel_url = self.get_next_url_with_fallback('edit-key', kpk=current_keypair.pk)
         context.update({
             'model': current_keypair.to_dict(),
-            'cancel_url': flask.url_for('key-edit', kpk=current_keypair.pk),
+            'cancel_url': cancel_url,
             'submit_url': flask.request.url,
             'csrf_token': self.generate_csrf_token('keys', csrf_key),
         })
@@ -190,7 +196,7 @@ class DeleteKeyHandler(RequestHandlerBase):
             return flask.make_response(f'CSRF failure: {err}', 400)
         models.db.session.delete(current_keypair)
         models.db.session.commit()
-        return flask.redirect(flask.url_for('media-list'))
+        return flask.redirect(flask.url_for('list-streams'))
 
     def delete(self, kpk: int, **kwargs) -> flask.Response:
         """
