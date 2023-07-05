@@ -9,8 +9,10 @@
   {% endif %}
   <input type="hidden" name="csrf_token" value="{{csrf_token}}" />
   {% for field in fields %}
-    <div class="form-group">
-      <label for="model-{{field.name}}">{{field.title}}:</label>
+  <div class="form-group">
+    {% if field.type != "hidden" %}
+    <label for="model-{{field.name}}">{{field.title}}:</label>
+    {% endif %}
       <input
         class="form-control"
         type="{{field.type}}"
