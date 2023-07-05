@@ -15,7 +15,7 @@ class Stream(db.Model, ModelMixin):
     __tablename__ = 'Stream'
 
     pk = sa.Column(sa.Integer, primary_key=True)
-    title = sa.Column(sa.String())
+    title = sa.Column(sa.String(120))
     directory = sa.Column(sa.String(32), unique=True, index=True)
     marlin_la_url = sa.Column(sa.String(), nullable=True)
     playready_la_url = sa.Column(sa.String(), nullable=True)
