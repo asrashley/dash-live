@@ -1,0 +1,11 @@
+<nav class="breadcrumbs" aria-label="breadcrumb">
+  <ol class="breadcrumb">
+  {% for bc in breadcrumbs %}
+  <li class="breadcrumb-item {{bc.active}}">
+    {%- if bc.href %}<a href="{{bc.href}}" title="{{bc.title}}">{% endif %}
+    {{bc.title}}
+    {%- if bc.href %}</a>{% endif %}
+  </li>
+  {% endfor %}
+  </ol>
+</nav>

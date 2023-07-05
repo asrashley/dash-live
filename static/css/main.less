@@ -13,74 +13,58 @@
 @tableHeadingBack: #999;
 @tableHeadingBackDark: #777;
 
-@logoSize: 3rem;
-
 body {
     font-family: "Lucida Grande", Helvetica, Arial, sans-serif;
     margin: 0;
-    padding: 0.5em 1em 0;
-	.gradientH4(#335363, #f7f7f7, 15, #f7f7f7, 85, #335363);
+    padding: 0xs;
 }
 
-
 header {
-	width: 100%;
-	height: @logoSize;
-	padding: 0;
-	margin-bottom: 1em;
-	font-size: 1.25em;
-	font-size: 1.25rem;
-	position: relative;
-	.user {
-	  display:block;
-	  position: absolute;
-	  right: 1em;
-	  z-index: 10;
-	  border: 1px solid #777;
-	  background-color: #ddd;
-    padding: 0.2em 0.5em;
-    box-shadow: 0 1px 0 0 rgba(255,255,255,0.4), 0 0 4px 0 #377ad0;
-    > li {
-      display: inline-block;
-      margin-left: 1em;
-      a:hover {
-        background-color:#335363; 
-      }
+    height: 6rem;
+    font-size: 1.25rem;
+    margin-bottom: 1em;
+    padding: 0;
+    width: 100%;
+    position: relative;
+    .user {
+	display:block;
+	position: absolute;
+	right: 1em;
+	z-index: 10;
+	border: 1px solid #777;
+	background-color: #ddd;
+	padding: 0.2em 0.5em;
+	box-shadow: 0 1px 0 0 rgba(255,255,255,0.4), 0 0 4px 0 #377ad0;
+	> li {
+	    display: inline-block;
+	    margin-left: 1em;
+	    a:hover {
+		background-color:#335363; 
+	    }
+	}
     }
+    .title {
+	color: @blue;
+	padding: 0;
+	text-align: left;
+	border-radius: 0.2em;
+	&:before {
+	    content: ">";
 	}
-	#logo {
-		width: 50%;
-		font-family: 'Comfortaa', cursive;
-		display: inline-block;
-		font-size: @logoSize;
-		line-height: @logoSize;
-		color: @blue;
-        position: absolute;
-        left: 0;
-	}
-	.info {
-        position: absolute;
-        left: 47%;
-        height: 100%;
-        width: 50%;
-	}
-	nav.breadcrumbs {
-	   position: absolute;
-	   bottom: 0.2em;
-	}
+    }
+    .navbar > .navbar-brand,
+    .navbar > .navbar-brand:hover {
+	color: @blue;
+    }
+    .breadcrumbs {
 	.breadcrumb {
-		color: white;
-		font-size: 0.9em;
+	    margin-bottom: 0;
+	    margin-top: 0;
 	}
-	.title {
-		color: @blue;
-		padding: 0;
-		text-align: left;
-		border-radius: 0.2em;
-		&:before {
-			content: ">";
-		}
-	}
+	border-bottom: 2px solid @darkBlue;
+	font-size: 1.1rem;
+	line-height: 1rem;
+    }
 }
 
 a {

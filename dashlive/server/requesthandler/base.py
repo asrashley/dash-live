@@ -81,13 +81,18 @@ class RequestHandlerBase(MethodView):
             "http_protocol": flask.request.scheme,
         }
         context.update(kwargs)
-        p = route.parent
-        context["breadcrumbs"] = []
+        context["breadcrumbs"] = [{
+            'title': route.page_title(),
+            'active': 'active'
+        }]
+        p: Optional[str] = route.parent
         while p:
-            p = routes[p]
-            context["breadcrumbs"].insert(0, {"title": p.title,
-                                              "href": flask.url_for(p.name)})
-            p = p.parent
+            rt: Route = routes[p]
+            context["breadcrumbs"].insert(0, {
+                "title": rt.page_title(),
+                "href": flask.url_for(rt.name)
+            })
+            p = rt.parent
         if current_user.is_authenticated:
             context['logout'] = flask.url_for('logout')
             context["is_current_user_admin"] = current_user.is_admin
