@@ -31,9 +31,6 @@ import flask
 
 from dashlive.server import manifests, models
 from dashlive.server.cgi_options import cgi_options
-from dashlive.server.requesthandler.htmlpage import CgiOptionsPage, MainPage
-from dashlive.server.requesthandler.media_management import MediaList
-from dashlive.server.requesthandler.streams import EditStreamHandler
 
 from .flask_base import FlaskTestBase
 
@@ -49,7 +46,6 @@ class TestHtmlPageHandlers(FlaskTestBase):
 
     def test_index_page(self):
         self.setup_media()
-        self.assertIsNotNone(getattr(MainPage(), 'get', None))
         url = flask.url_for('home')
         # self.logout_user()
         response = self.client.get(url)
@@ -76,7 +72,6 @@ class TestHtmlPageHandlers(FlaskTestBase):
         self.assertIn('Log Out', response.text)
 
     def test_cgi_options_page(self):
-        self.assertIsNotNone(getattr(CgiOptionsPage(), 'get', None))
         url = flask.url_for('cgi-options', absolute=True)
         self.logout_user()
         response = self.client.get(url)
@@ -121,8 +116,6 @@ class TestHtmlPageHandlers(FlaskTestBase):
 
     def test_stream_edit_page(self):
         self.setup_media()
-        self.assertIsNotNone(getattr(EditStreamHandler(), 'get', None))
-        self.assertIsNotNone(getattr(EditStreamHandler(), 'post', None))
         stream = models.Stream.get(title='Big Buck Bunny')
         url = flask.url_for('stream-edit', spk=stream.pk)
 
