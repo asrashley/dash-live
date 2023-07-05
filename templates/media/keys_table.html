@@ -12,7 +12,11 @@
     {% for keypair in keys %}
     <tr>
       <td class="delete">
-        <a href="{{url_for('key-edit', kpk=keypair.pk)}}" class="btn btn-success delete-key">Edit</a>
+	{% if next %}
+        <a href="{{url_for('edit-key', kpk=keypair.pk, next=next)}}" class="btn btn-primary">Edit</a>
+        {% else %}
+        <a href="{{url_for('edit-key', kpk=keypair.pk)}}" class="btn btn-primary">Edit</a>
+        {% endif %}
       </td>
       <td class="kid">
 	<a name="kid-{{keypair.KID.hex}}">{{keypair.KID.hex}}</a>

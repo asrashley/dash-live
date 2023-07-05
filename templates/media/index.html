@@ -3,11 +3,12 @@
 
 {% block content %}
 <div id="media-management" class="container">
+  <h1>Available DASH streams</h1>
   <table class="table table-striped" id="streams" data-csrf="{{csrf_tokens.streams}}">
     <caption>Streams</caption>
     <thead><tr>
         <th class="stream-actions">
-          <a href="{{url_for('stream-add')}}" class="btn btn-success add-stream">Add</a>
+          <a href="{{url_for('add-stream')}}" class="btn btn-success add-stream">Add</a>
 	</th>
         <th class="title">Title</th>
         <th class="directory">Directory</th>

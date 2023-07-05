@@ -71,10 +71,11 @@ routes = {
         r'/key/<int:kpk>/delete',
         handler='keypairs.DeleteKeyHandler',
         title='delete key pairs'),
-    "key-edit": Route(
+    "edit-key": Route(
         r'/key/<int:kpk>',
         handler='keypairs.KeyHandler',
-        title='Edit key pairs'),
+        title='Edit key pairs',
+        parent='list-streams'),
     "key": Route(
         r'/key',
         handler='keypairs.KeyHandler',
@@ -112,37 +113,33 @@ routes = {
         r'/media/<int:mfid>',
         handler='media_management.MediaInfo',
         title='Media information'),
-    "media-list": Route(
+    'list-streams': Route(
         r'/media',
-        handler='media_management.MediaList',
-        title='Media file management'),
+        handler='streams.ListStreams',
+        title='Available DASH streams'),
     "time": Route(
         r'/time/<regex("(head|xsd|iso|http-ntp)"):format>',
         handler='utctime.UTCTimeHandler',
         title='Current time of day'),
-    "del-stream": Route(
-        r'/stream/<int:spk>',
-        handler='streams.StreamHandler',
-        title='Delete stream'),
-    "stream-add": Route(
+    "delete-stream": Route(
+        r'/stream/delete/<int:spk>',
+        handler='streams.DeleteStream',
+        title='Delete stream',
+        parent='list-streams'),
+    "add-stream": Route(
         r'/stream',
-        handler='streams.StreamHandler',
+        handler='streams.AddStream',
         title='Add stream'),
     "stream-edit": Route(
         r'/media/edit/<int:spk>',
-        handler='streams.EditStreamHandler',
+        handler='streams.EditStream',
         title='Edit Stream',
-        parent='media-list'),
-    "stream-delete": Route(
-        r'/media/delete/<int:spk>',
-        handler='streams.DeleteStreamHandler',
-        title='Delete Stream',
-        parent='media-list'),
+        parent='list-streams'),
     "upload-blob": Route(
         r'/media/<int:spk>/blob',
         handler='media_management.UploadHandler',
         title='Upload blob',
-        parent='media-list'),
+        parent='list-streams'),
     "video": Route(
         r'/play/<regex("(live|vod|odvod)"):mode>/<stream>/<manifest>/index.html',
         handler='htmlpage.VideoPlayer',

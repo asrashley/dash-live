@@ -57,7 +57,7 @@ class TestHtmlPageHandlers(FlaskTestBase):
         html = BeautifulSoup(response.text, 'lxml')
         self.assertIsNotNone(html)
         self.assertIn('Log In', response.text)
-        media_list_url = flask.url_for('media-list')
+        media_list_url = flask.url_for('list-streams')
         self.assertNotIn(f'href="{media_list_url}"', response.text)
         for filename, manifest in manifests.manifest.items():
             mpd_url = flask.url_for(
@@ -84,7 +84,7 @@ class TestHtmlPageHandlers(FlaskTestBase):
         html = BeautifulSoup(response.text, 'lxml')
         self.assertIsNotNone(html)
         self.assertIn('Log In', response.text)
-        media_list_url = flask.url_for('media-list')
+        media_list_url = flask.url_for('list-streams')
         self.assertNotIn(f'href="{media_list_url}"', response.text)
         for option in cgi_options:
             if option.name == 'drmloc':
@@ -93,8 +93,7 @@ class TestHtmlPageHandlers(FlaskTestBase):
 
     def test_media_page(self):
         self.setup_media()
-        self.assertIsNotNone(getattr(MediaList, 'get', None))
-        url = flask.url_for('media-list')
+        url = flask.url_for('list-streams')
 
         try:
             self.current_url = url

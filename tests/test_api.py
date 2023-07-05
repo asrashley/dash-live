@@ -48,7 +48,7 @@ class TestRestApi(FlaskTestBase):
             'playready_la_url': '',
             'ajax': '1',
         }
-        url = flask.url_for('stream-add')
+        url = flask.url_for('add-stream')
 
         # user must be logged in to use stream API
         self.logout_user()
@@ -69,7 +69,7 @@ class TestRestApi(FlaskTestBase):
         self.assertTrue("error" in response.json)
         self.assertIn("csrf_token not present", response.json["error"])
 
-        media_url = flask.url_for('media-list', ajax=1)
+        media_url = flask.url_for('list-streams', ajax=1)
         media = self.client.get(media_url)
         request['csrf_token'] = media.json['csrf_tokens']['streams']
 
@@ -93,7 +93,7 @@ class TestRestApi(FlaskTestBase):
                 'Field {0}: expected "{1}" got "{2}"'.format(k, getattr(streams[0], k),
                                                              expected_result[k]))
 
-        url = flask.url_for('media-list')
+        url = flask.url_for('list-streams')
         response = self.client.get(url)
         self.assertIn(expected_result['title'], response.text)
         self.assertIn(expected_result['directory'], response.text)
@@ -164,7 +164,7 @@ class TestRestApi(FlaskTestBase):
         response = self.client.get(url)
         self.assert401(response)
 
-        media_url = flask.url_for('media-list', ajax=1)
+        media_url = flask.url_for('list-streams', ajax=1)
         media = self.client.get(media_url)
         self.assert200(media)
         self.assertIn("csrf_tokens", media.json)
@@ -192,7 +192,7 @@ class TestRestApi(FlaskTestBase):
         bbb = models.Stream.get(title='Big Buck Bunny')
         tears = models.Stream.get(title='Tears of Steel')
 
-        url = flask.url_for('del-stream', spk=tears.pk)
+        url = flask.url_for('delete-stream', spk=tears.pk, ajax=1)
 
         # user must be logged in to use stream API
         self.logout_user()
@@ -216,20 +216,22 @@ class TestRestApi(FlaskTestBase):
         self.assertIn("CSRF failure", response.json["error"])
         self.assertEqual(models.Stream.count(), 2)
 
-        media_url = flask.url_for('media-list', ajax=1)
+        media_url = flask.url_for('list-streams', ajax=1)
         media = self.client.get(media_url)
         self.assert200(media)
         csrf_token = media.json['csrf_tokens']['streams']
-        csrf_url = url + '?csrf_token=' + csrf_token
+        csrf_url = url + '&csrf_token=' + csrf_token
 
         response = self.client.delete(csrf_url)
+        self.assert200(response)
+        self.assertNotIn("error", response.json)
         self.assertEqual(models.Stream.count(), 1)
         next_csrf_token = response.json["csrf"]
 
         # try to re-use a CSRF token
         reuse_url = flask.url_for(
-            'del-stream',
-            spk=tears.pk,
+            'delete-stream',
+            spk=bbb.pk,
             csrf_token=csrf_token)
         response = self.client.delete(reuse_url)
         self.assert200(response)
@@ -238,7 +240,7 @@ class TestRestApi(FlaskTestBase):
 
         # try to delete a stream that does not exist
         url = flask.url_for(
-            'del-stream',
+            'delete-stream',
             spk=79879823798720987,
             csrf_token=next_csrf_token)
         response = self.client.delete(url)
@@ -272,7 +274,7 @@ class TestRestApi(FlaskTestBase):
         self.assertIn("error", response.json)
         self.assertIn("CSRF", response.json["error"])
 
-        media_url = flask.url_for('media-list', ajax=1)
+        media_url = flask.url_for('list-streams', ajax=1)
         media = self.client.get(media_url)
         self.assert200(media)
         csrf_token = media.json['csrf_tokens']['kids']
@@ -293,7 +295,7 @@ class TestRestApi(FlaskTestBase):
         self.assertEqual(keys[0].hkey, expected_result['key'])
         self.assertEqual(keys[0].computed, False)
 
-        url = flask.url_for('media-list', ajax=1)
+        url = flask.url_for('list-streams', ajax=1)
         response = self.client.get(url)
         self.assert200(response)
         del expected_result['csrf']
@@ -311,7 +313,7 @@ class TestRestApi(FlaskTestBase):
         self.assertIn("error", response.json)
         self.assertIn("CSRF", response.json["error"])
 
-        media_url = flask.url_for('media-list', ajax=1)
+        media_url = flask.url_for('list-streams', ajax=1)
         media = self.client.get(media_url)
         self.assert200(media)
         csrf_token = media.json['csrf_tokens']['kids']
@@ -368,7 +370,7 @@ class TestRestApi(FlaskTestBase):
         response = self.client.delete(url)
         self.assert400(response)
 
-        media_url = flask.url_for('media-list', ajax=1)
+        media_url = flask.url_for('list-streams', ajax=1)
         media = self.client.get(media_url)
         self.assert200(media)
         csrf_token = media.json['csrf_tokens']['kids']
@@ -527,7 +529,7 @@ class TestRestApi(FlaskTestBase):
         self.upload_media_file(ajax=1)
 
     def upload_media_file(self, ajax):
-        url = flask.url_for('media-list', ajax=ajax)
+        url = flask.url_for('list-streams', ajax=ajax)
 
         # not logged in, should return authentication error
         self.logout_user()
@@ -654,7 +656,7 @@ class TestRestApi(FlaskTestBase):
         response = self.client.delete(url)
         self.assertEqual(response.json['error'], "csrf_token not present")
 
-        media_url = flask.url_for('media-list', ajax=1)
+        media_url = flask.url_for('list-streams', ajax=1)
         media = self.client.get(media_url)
         self.assert200(media)
         self.assertIn("csrf_tokens", media.json)

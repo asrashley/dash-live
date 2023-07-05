@@ -69,7 +69,7 @@ class UploadHandler(RequestHandlerBase):
             return self.jsonify(result)
         flask.flash(error)
         logging.warning('Upload error: %s', error)
-        return flask.redirect(flask.url_for("media-list"))
+        return flask.redirect(flask.url_for('list-streams'))
 
     def save_file(self, file_upload: FileStorage,
                   stream: models.Stream) -> flask.Response:
@@ -118,41 +118,6 @@ class UploadHandler(RequestHandlerBase):
             return self.jsonify(result)
         return flask.render_template('upload-done.html', **context)
 
-
-class MediaList(HTMLHandlerBase):
-    """
-    View handler that provides a list of all media in the
-    database.
-    """
-    decorators = [login_required(admin=True, html=True)]
-
-    def get(self, **kwargs):
-        context = self.create_context(**kwargs)
-        context['keys'] = models.Key.all(order_by=[models.Key.hkid])
-        context['streams'] = [s.to_dict(with_collections=True) for s in models.Stream.all()]
-        csrf_key = self.generate_csrf_cookie()
-        context['csrf_tokens'] = {
-            'files': self.generate_csrf_token('files', csrf_key),
-            'kids': self.generate_csrf_token('keys', csrf_key),
-            'streams': self.generate_csrf_token('streams', csrf_key),
-            'upload': self.generate_csrf_token('upload', csrf_key),
-        }
-        context['drm'] = {
-            'playready': {
-                'laurl': PlayReady.TEST_LA_URL
-            },
-            'marlin': {
-                'laurl': ''
-            }
-        }
-        if self.is_ajax():
-            result = {
-                'keys': [k.toJSON(pure=True) for k in context['keys']]
-            }
-            for item in ['csrf_tokens', 'streams']:
-                result[item] = context[item]
-            return self.jsonify(result)
-        return flask.render_template('media/index.html', **context)
 
 class MediaInfo(HTMLHandlerBase):
     """
