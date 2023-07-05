@@ -21,6 +21,7 @@
 #############################################################################
 
 from builtins import str
+import datetime
 import hashlib
 import logging
 from pathlib import Path
@@ -103,7 +104,7 @@ class UploadHandler(RequestHandlerBase):
         models.db.session.commit()
         mf = models.MediaFile.get(name=filename.stem, stream=stream)
         result = mf.toJSON()
-        # result['blob']['created'] = datetime.datetime.now()
+        result['blob']['created'] = datetime.datetime.now()
         logging.debug("upload done %s", abs_filename)
         context = self.create_context(
             title=f'File {filename.name} uploaded',
@@ -111,7 +112,7 @@ class UploadHandler(RequestHandlerBase):
         if self.is_ajax():
             csrf_key = self.generate_csrf_cookie()
             result['upload_url'] = flask.url_for('upload-blob', spk=stream.pk)
-            result['csrf'] = self.generate_csrf_token(
+            result['csrf_token'] = self.generate_csrf_token(
                 "upload", csrf_key)
             result["file_html"] = flask.render_template('media/media_row.html', **context)
             return self.jsonify(result)

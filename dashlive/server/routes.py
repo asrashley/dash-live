@@ -63,10 +63,14 @@ class Route(object):
 
 
 routes = {
-    "del-key": Route(
-        r'/key/<kid>',
-        handler='keypairs.KeyHandler',
+    "key-delete": Route(
+        r'/key/<int:kpk>/delete',
+        handler='keypairs.DeleteKeyHandler',
         title='delete key pairs'),
+    "key-edit": Route(
+        r'/key/<int:kpk>',
+        handler='keypairs.KeyHandler',
+        title='Edit key pairs'),
     "key": Route(
         r'/key',
         handler='keypairs.KeyHandler',

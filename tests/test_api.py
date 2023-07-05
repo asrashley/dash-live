@@ -335,19 +335,19 @@ class TestRestApi(FlaskTestBase):
         self.assertEqual(models.Key.count(), 0)
 
         kid = '1AB45440532C439994DC5C5AD9584BAC'.lower()
-        keypair = models.Key(
+        key1 = models.Key(
             hkid=kid,
             hkey='ccc0f2b3b279926496a7f5d25da692f6',
             computed=False)
-        keypair.add()
-        keypair = models.Key(
+        key1.add()
+        key2 = models.Key(
             hkid='01020304-0506-0708-090A-AABBCCDDEEFF'.replace('-', '').lower(),
             hkey=self.to_hex(base64.b64decode('GUf166PQbx+sgBADjyBMvw==')),
             computed=True)
-        keypair.add(commit=True)
+        key2.add(commit=True)
         self.assertEqual(models.Key.count(), 2)
 
-        url = flask.url_for('del-key', kid=kid)
+        url = flask.url_for('key-delete', kpk=key1.pk)
 
         # user must be logged in to use keys API
         self.logout_user()
@@ -373,22 +373,23 @@ class TestRestApi(FlaskTestBase):
         self.assert200(media)
         csrf_token = media.json['csrf_tokens']['kids']
 
-        csrf_url = flask.url_for('del-key', kid=kid, csrf_token=csrf_token)
+        csrf_url = flask.url_for('key-delete', kpk=key1.pk, csrf_token=csrf_token)
         response = self.client.delete(csrf_url)
         self.assert200(response)
         keys = list(models.Key.all())
         self.assertEqual(len(keys), 1)
-        self.assertEqual(keys[0].hkid, keypair.hkid)
-        self.assertEqual(keys[0].hkey, keypair.hkey)
-        self.assertEqual(keys[0].computed, keypair.computed)
+        self.assertEqual(key2.hkid, keys[0].hkid)
+        self.assertEqual(key2.hkey, keys[0].hkey)
+        self.assertEqual(key2.computed, keys[0].computed)
         next_csrf_token = response.json["csrf"]
 
         # try to re-use a CSRF token
+        csrf_url = flask.url_for('key-delete', kpk=key2.pk, csrf_token=csrf_token)
         response = self.client.delete(csrf_url)
         self.assert400(response)
 
         # try to delete a key that does not exist
-        url = flask.url_for('del-key', kid=kid, csrf_token=next_csrf_token)
+        url = flask.url_for('key-delete', kpk=key1.pk, csrf_token=next_csrf_token)
         response = self.client.delete(url)
         self.assert404(response)
 
@@ -396,9 +397,10 @@ class TestRestApi(FlaskTestBase):
         self.assert200(media)
         next_csrf_token = media.json['csrf_tokens']['kids']
 
-        url = flask.url_for('del-key', kid='invalid', csrf_token=next_csrf_token)
+        url = flask.url_for('key-delete', kpk='12345', csrf_token=next_csrf_token)
+        url = url.replace('12345', 'invalid')
         response = self.client.delete(url)
-        self.assert400(response)
+        self.assert404(response)
 
     def test_clearkey(self):
         self.assertEqual(models.Key.count(), 0)
@@ -611,12 +613,12 @@ class TestRestApi(FlaskTestBase):
             expected_result = {
                 'name': 'bbb_v1',
             }
-            for item in ['pk', 'bitrate', 'content_type', 'csrf', 'upload_url',
+            for item in ['pk', 'bitrate', 'content_type', 'csrf_token', 'upload_url',
                          'file_html', 'stream', 'blob', 'representation',
                          'encrypted']:
                 self.assertIn(item, response.json)
                 expected_result[item] = response.json[item]
-            self.assertNotEqual(response.json['csrf'], csrf_token)
+            self.assertNotEqual(response.json['csrf_token'], csrf_token)
             self.assertObjectEqual(expected_result, response.json)
         else:
             self.assertIn('File bbb_v1.mp4 uploaded', response.text)

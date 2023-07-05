@@ -169,11 +169,8 @@ class EditStreamHandler(HTMLHandlerBase):
         if self.is_ajax():
             result['upload_url'] = context['upload_url']
             return self.jsonify(result)
-        context.update({
-            'stream': result,
-            'csrf_tokens': result['csrf_tokens'],
-            'keys': result['keys'],
-        })
+        context.update(result)
+        context['stream'] = result
         return flask.render_template('media/stream.html', **context)
 
     def post(self, **kwargs):

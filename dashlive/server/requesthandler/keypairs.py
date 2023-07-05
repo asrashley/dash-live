@@ -21,23 +21,105 @@
 #############################################################################
 
 from __future__ import absolute_import
-import binascii
+from typing import Optional
 
 import flask
 
 from dashlive.drm.playready import PlayReady
+from dashlive.drm.keymaterial import KeyMaterial
 from dashlive.server import models
 
 from .base import RequestHandlerBase
-from .decorators import login_required
+from .decorators import login_required, uses_keypair, current_keypair
 from .exceptions import CsrfFailureException
 
 class KeyHandler(RequestHandlerBase):
     """
-    Provides a JSON API to add and remove encryption keys
+    Handler to add, edit and remove encryption keys
     """
-
     decorators = [login_required(admin=True)]
+
+    def get(self, kpk: Optional[int] = None) -> flask.Response:
+        """
+        Returns an HTML form for editing a key
+        """
+        context = self.create_context()
+        csrf_key = self.generate_csrf_cookie()
+        model: Optional[models.Key] = None
+        if kpk:
+            model = models.Key.get(pk=kpk)
+        if model is not None:
+            mdk = model.to_dict()
+        else:
+            mdk = {
+                'pk': kpk,
+                'hkid': flask.request.args.get('hkid'),
+                'hkey': flask.request.args.get('hkey'),
+                'computed': flask.request.args.get('computed', True),
+            }
+        context.update({
+            'csrf_token': self.generate_csrf_token('keys', csrf_key),
+            'model': mdk,
+            "fields": [{
+                "name": "hkid",
+                "title": "KID (in hex)",
+                "type": "text",
+                "value": mdk['hkid'],
+                "minlength": KeyMaterial.length * 2,
+                "maxlength": KeyMaterial.length * 2,
+                "pattern": f'[A-Fa-f0-9]{{{KeyMaterial.length * 2}}}',
+                "placeholder": f'{KeyMaterial.length * 2} hexadecimal digits',
+                "spellcheck": False,
+                "disabled": model is not None
+            }, {
+                "name": "hkey",
+                "title": "Key (in hex)",
+                "type": "text",
+                "minlength": KeyMaterial.length * 2,
+                "maxlength": KeyMaterial.length * 2,
+                "pattern": f'[A-Fa-f0-9]{{{KeyMaterial.length * 2}}}',
+                "spellcheck": False,
+                "placeholder": f'{KeyMaterial.length * 2} hexadecimal digits',
+                "value": mdk['hkey']
+            }, {
+                "name": "computed",
+                "title": "Key auto-computed ?",
+                "type": "checkbox",
+                "value": mdk['computed'],
+            }, {
+                "name": "new_key",
+                "title": "Adding a new key",
+                "type": "hidden",
+                "value": '1' if model is None else '0',
+            }]
+        })
+        return flask.render_template('media/edit_key.html', **context)
+
+    def post(self, kpk: Optional[int] = None) -> flask.Response:
+        """
+        Saves changes submitted by HTML form
+        """
+        try:
+            self.check_csrf('keys', flask.request.form)
+        except (ValueError, CsrfFailureException) as err:
+            return flask.response({'error': f'CSRF failure: {err}'}, 400)
+        model: Optional[models.Key] = None
+        if kpk:
+            model = models.Key.get(pk=kpk)
+            if model is None:
+                return flask.response(f'Unknown key {kpk}', 404)
+
+        if model is None:
+            model = models.Key()
+        new_key = flask.request.form['new_key'] == '1'
+        if new_key:
+            model.hkid = flask.request.form['hkid']
+        model.hkey = flask.request.form['hkey']
+        model.computed = flask.request.form.get('computed', 'off') == 'on'
+        if new_key:
+            model.add()
+        models.db.session.commit()
+        return flask.redirect(flask.url_for('media-list'))
 
     def put(self, **kwargs):
         """
@@ -80,29 +162,49 @@ class KeyHandler(RequestHandlerBase):
         result["csrf"] = self.generate_csrf_token('keys', csrf_key)
         return self.jsonify(result)
 
-    def delete(self, kid, **kwargs):
-        """
-        handler for deleting a key pair
-        """
+class DeleteKeyHandler(RequestHandlerBase):
+    """
+    Handler used by HTML pages to delete encryption keys
+    """
+    decorators = [uses_keypair, login_required(admin=True)]
 
-        if not kid:
-            return self.jsonify({'error': 'KID missing'}, 400)
+    def get(self, kpk: int) -> flask.Response:
+        """
+        Returns HTML form to confirm deletion of key pair
+        """
+        context = self.create_context()
+        csrf_key = self.generate_csrf_cookie()
+        context.update({
+            'model': current_keypair.to_dict(),
+            'cancel_url': flask.url_for('key-edit', kpk=current_keypair.pk),
+            'submit_url': flask.request.url,
+            'csrf_token': self.generate_csrf_token('keys', csrf_key),
+        })
+        context['model']['title'] = f'Keypair {current_keypair.hkid}'
+        return flask.render_template('delete_model_confirm.html', **context)
+
+    def post(self, kpk: int) -> flask.Response:
+        try:
+            self.check_csrf('keys', flask.request.form)
+        except (ValueError, CsrfFailureException) as err:
+            return flask.make_response(f'CSRF failure: {err}', 400)
+        models.db.session.delete(current_keypair)
+        models.db.session.commit()
+        return flask.redirect(flask.url_for('media-list'))
+
+    def delete(self, kpk: int, **kwargs) -> flask.Response:
+        """
+        AJAX handler for deleting a key pair
+        """
         try:
             self.check_csrf('keys', flask.request.args)
         except (ValueError, CsrfFailureException) as err:
             return self.jsonify({'error': f'CSRF failure: {err}'}, 400)
         result = {"error": None}
-        try:
-            kid = models.KeyMaterial(hex=kid)
-        except (binascii.Error) as err:
-            return self.jsonify({'error': f'{err}'}, 400)
-        keypair = models.Key.get(hkid=kid.hex)
-        if not keypair:
-            return self.jsonify_no_content(404)
         result = {
-            "deleted": kid.hex,
+            "deleted": current_keypair.KID.hex,
         }
-        models.db.session.delete(keypair)
+        models.db.session.delete(current_keypair)
         models.db.session.commit()
         csrf_key = self.generate_csrf_cookie()
         result["csrf"] = self.generate_csrf_token('keys', csrf_key)
