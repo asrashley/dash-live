@@ -46,36 +46,9 @@ class MainPage(HTMLHandlerBase):
     def get(self, **kwargs):
         context = self.create_context(**kwargs)
         context.update({
-            'audio_fields': [
-                'id', 'mimeType', 'codecs', 'bitrate', 'sampleRate', 'numChannels',
-                'lang', 'encrypted'
-            ],
-            'audio_representations': [],
-            'keys': models.Key.all_as_dict(),
             'rows': [],
             'streams': models.Stream.all(),
-            'video_fields': [
-                'id', 'mimeType', 'codecs', 'bitrate', 'width', 'height', 'encrypted'
-            ],
-            'video_representations': [],
-            'text_fields': [
-                'id', 'mimeType', 'codecs', 'bitrate', 'lang', 'encrypted'
-            ],
-            'text_representations': [],
         })
-        for mf in models.MediaFile.all():
-            r = mf.representation
-            if r is None:
-                continue
-            if r.content_type == "video":
-                context['video_representations'].append(r)
-            elif r.content_type == "audio":
-                context['audio_representations'].append(r)
-            elif r.content_type == "text":
-                context['text_representations'].append(r)
-        context['video_representations'].sort(key=lambda r: r.filename)
-        context['audio_representations'].sort(key=lambda r: r.filename)
-        context['text_representations'].sort(key=lambda r: r.filename)
         filenames = list(manifests.manifest.keys())
         filenames.sort(key=lambda name: manifests.manifest[name].title)
         for name in filenames:
