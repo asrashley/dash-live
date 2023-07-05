@@ -42,7 +42,7 @@ class MediaFile(db.Model, ModelMixin):
     bitrate = sa.Column(sa.Integer, default=0, index=True, nullable=False)
     content_type = sa.Column(sa.String(64), nullable=True, index=True)
     encrypted = sa.Column(sa.Boolean, default=False, index=True, nullable=False)
-    encryption_keys: db.Mapped[Key] = db.relationship(secondary=mediafile_keys, back_populates='mediafiles')
+    encryption_keys: db.Mapped[List[Key]] = db.relationship(secondary=mediafile_keys, back_populates='mediafiles')
 
     _representation = None
 

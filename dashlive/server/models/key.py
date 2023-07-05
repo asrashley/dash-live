@@ -22,7 +22,7 @@ class Key(db.Model, ModelMixin):
     hkey = sa.Column(sa.String(34), nullable=False)
     computed = sa.Column(sa.Boolean, nullable=False)
     halg = sa.Column(sa.String(16), nullable=True)
-    mediafiles: db.Mapped["MediaFile"] = db.relationship(  # noqa: F821
+    mediafiles: db.Mapped[List["MediaFile"]] = db.relationship(  # noqa: F821
         secondary=mediafile_keys, back_populates='encryption_keys')
 
     @property
