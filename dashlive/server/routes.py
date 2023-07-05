@@ -52,6 +52,10 @@ class Route(object):
         # print('reTemplate', self.title, reTemplate)
         self.reTemplate = re.compile(reTemplate)
 
+    def page_title(self) -> str:
+        parts = self.name.split('-')
+        return ' '.join(parts).title()
+
     def __str__(self) -> str:
         rv = f'Route(name="{self.name}", title="{self.title}"'
         rv += f', template="{self.template}"'
@@ -163,3 +167,5 @@ routes = {
 
 for name in routes.keys():
     routes[name].name = name
+    if name != 'home' and routes[name].parent is None:
+        routes[name].parent = 'home'
