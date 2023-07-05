@@ -1,0 +1,22 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="container edit-model">
+  {% if model.pk %}
+  <h2>Editing key pair &quot;{{model.hkid}}&quot;</h2>
+  {% else %}
+  <h2>Add key pair</h2>
+  {% endif %}
+  <div class="form-group">
+    {% set extra_buttons %}
+    {% if model.pk %}
+    <a href="{{url_for('key-delete', kpk=model.pk)}}"
+      class="btn btn-danger delete-stream"
+       data-id="{{model.pk}}">Delete &quot;{{model.hkid}}&quot;</a>
+    {% endif %}
+    {% endset %}
+  </div>
+  {% set cancel_url = url_for('media-list') %}
+  {% include 'edit-model-form.html' %}
+</div>
+{% endblock %}

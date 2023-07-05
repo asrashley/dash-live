@@ -5,7 +5,7 @@ import flask  # type: ignore
 from flask_login import current_user
 from werkzeug.local import LocalProxy  # type: ignore
 
-from dashlive.server.models import MediaFile, Stream
+from dashlive.server.models import Key, MediaFile, Stream
 
 def is_ajax() -> bool:
     # print('content_type', flask.request.content_type, flask.request.url)
@@ -105,3 +105,24 @@ def uses_stream(func):
 
 
 current_stream = cast(Stream, LocalProxy(lambda: flask.g.stream))
+
+def uses_keypair(func):
+    """
+    Decorator that fetches Key from database.
+    It will automatically return a 404 error if not found
+    """
+    @wraps(func)
+    def decorated_function(*args, **kwargs):
+        keypair: Optional[Key] = None
+        kpk = kwargs.get('kpk', None)
+        if not kpk:
+            return flask.make_response('Key primary key missing', 404)
+        keypair = Key.get(pk=kpk)
+        if not keypair:
+            return flask.make_response(f'Key {kpk} not found', 404)
+        flask.g.keypair = keypair
+        return func(*args, **kwargs)
+    return decorated_function
+
+
+current_keypair = cast(Key, LocalProxy(lambda: flask.g.keypair))
