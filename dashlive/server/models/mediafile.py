@@ -14,7 +14,6 @@ from dashlive.utils.json_object import JsonObject
 from .db import db
 from .key import Key
 from .mixin import ModelMixin
-from .stream import Stream
 from .mediafile_keys import mediafile_keys
 
 class MediaFile(db.Model, ModelMixin):
@@ -76,7 +75,7 @@ class MediaFile(db.Model, ModelMixin):
     @classmethod
     def search(clz, content_type: Optional[str] = None,
                encrypted: Optional[bool] = None,
-               stream: Optional[Stream] = None,
+               stream: Optional["Stream"] = None,  # noqa: F821
                max_items: Optional[int] = None) -> List["MediaFile"]:
         # print('MediaFile.all()', contentType, encrypted, prefix, maxItems)
         query = db.select(MediaFile)

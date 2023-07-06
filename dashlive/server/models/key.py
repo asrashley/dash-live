@@ -4,6 +4,7 @@ from typing import cast, Dict, List, Optional, Union
 import sqlalchemy as sa
 
 from dashlive.drm.keymaterial import KeyMaterial
+from dashlive.utils.json_object import JsonObject
 
 from .db import db
 from .mediafile_keys import mediafile_keys
@@ -26,15 +27,15 @@ class Key(db.Model, ModelMixin):
         secondary=mediafile_keys, back_populates='encryption_keys')
 
     @property
-    def KID(self):
+    def KID(self) -> KeyMaterial:
         return KeyMaterial(self.hkid)
 
     @property
-    def KEY(self):
+    def KEY(self) -> KeyMaterial:
         return KeyMaterial(self.hkey)
 
     @property
-    def ALG(self):
+    def ALG(self) -> str:
         if self.halg is None:
             return "AESCTR"
         return self.halg
@@ -78,3 +79,31 @@ class Key(db.Model, ModelMixin):
             'alg': self.ALG,
             'computed': self.computed,
         }
+
+    def get_fields(self) -> Dict[str, JsonObject]:
+        return [{
+            "name": "hkid",
+            "title": "KID (in hex)",
+            "type": "text",
+            "value": self.hkid,
+            "minlength": KeyMaterial.length * 2,
+            "maxlength": KeyMaterial.length * 2,
+            "pattern": f'[A-Fa-f0-9]{{{KeyMaterial.length * 2}}}',
+            "placeholder": f'{KeyMaterial.length * 2} hexadecimal digits',
+            "spellcheck": False,
+        }, {
+            "name": "hkey",
+            "title": "Key (in hex)",
+            "type": "text",
+            "minlength": KeyMaterial.length * 2,
+            "maxlength": KeyMaterial.length * 2,
+            "pattern": f'[A-Fa-f0-9]{{{KeyMaterial.length * 2}}}',
+            "spellcheck": False,
+            "placeholder": f'{KeyMaterial.length * 2} hexadecimal digits',
+            "value": self.hkey,
+        }, {
+            "name": "computed",
+            "title": "Key is auto-computed?",
+            "type": "checkbox",
+            "value": self.computed,
+        }]

@@ -46,17 +46,12 @@ class KeyHandler(RequestHandlerBase):
         context = self.create_context()
         csrf_key = self.generate_csrf_cookie()
         model: Optional[models.Key] = None
+        new_key = False
         if kpk:
             model = models.Key.get(pk=kpk)
-        if model is not None:
-            mdk = model.to_dict()
-        else:
-            mdk = {
-                'pk': kpk,
-                'hkid': flask.request.args.get('hkid'),
-                'hkey': flask.request.args.get('hkey'),
-                'computed': flask.request.args.get('computed', True),
-            }
+        if model is None:
+            model = models.Key(computed=True)
+            new_key = True
         cancel_url = self.get_next_url_with_fallback('list-streams')
         submit_url = flask.url_for(
             flask.request.endpoint, kpk=kpk, next=self.get_next_url())
@@ -64,39 +59,23 @@ class KeyHandler(RequestHandlerBase):
             'csrf_token': self.generate_csrf_token('keys', csrf_key),
             'cancel_url': cancel_url,
             'submit_url': submit_url,
-            'model': mdk,
-            "fields": [{
-                "name": "hkid",
-                "title": "KID (in hex)",
-                "type": "text",
-                "value": mdk['hkid'],
-                "minlength": KeyMaterial.length * 2,
-                "maxlength": KeyMaterial.length * 2,
-                "pattern": f'[A-Fa-f0-9]{{{KeyMaterial.length * 2}}}',
-                "placeholder": f'{KeyMaterial.length * 2} hexadecimal digits',
-                "spellcheck": False,
-                "disabled": model is not None
-            }, {
-                "name": "hkey",
-                "title": "Key (in hex)",
-                "type": "text",
-                "minlength": KeyMaterial.length * 2,
-                "maxlength": KeyMaterial.length * 2,
-                "pattern": f'[A-Fa-f0-9]{{{KeyMaterial.length * 2}}}',
-                "spellcheck": False,
-                "placeholder": f'{KeyMaterial.length * 2} hexadecimal digits',
-                "value": mdk['hkey']
-            }, {
-                "name": "computed",
-                "title": "Key auto-computed ?",
-                "type": "checkbox",
-                "value": mdk['computed'],
-            }, {
-                "name": "new_key",
-                "title": "Adding a new key",
-                "type": "hidden",
-                "value": '1' if model is None else '0',
-            }]
+            'model': model.to_dict(),
+            "fields": model.get_fields()
+        })
+        for field in context['fields']:
+            name = field['name']
+            if name == 'hkid' and not new_key:
+                field['disabled'] = True
+                continue
+            if name in flask.request.args:
+                field['value'] = flask.request.args[name]
+            elif name in flask.request.form:
+                field['value'] = flask.request.form[name]
+        context['fields'].append({
+            "name": "new_key",
+            "title": "Adding a new key",
+            "type": "hidden",
+            "value": '1' if new_key else '0',
         })
         return flask.render_template('media/edit_key.html', **context)
 
@@ -117,9 +96,13 @@ class KeyHandler(RequestHandlerBase):
         if model is None:
             model = models.Key()
         new_key = flask.request.form['new_key'] == '1'
-        if new_key:
-            model.hkid = flask.request.form['hkid']
-        model.hkey = flask.request.form['hkey']
+        try:
+            if new_key:
+                model.hkid = KeyMaterial(hex=flask.request.form['hkid']).hex
+            model.hkey = KeyMaterial(hex=flask.request.form['hkey']).hex
+        except (ValueError) as err:
+            flask.flash(f'Invalid values: {err}', 'error')
+            return self.get(kpk)
         model.computed = flask.request.form.get('computed', 'off') == 'on'
         if new_key:
             model.add()
@@ -130,7 +113,6 @@ class KeyHandler(RequestHandlerBase):
         """
         handler for adding a key pair
         """
-
         # TODO: support JSON payload
         kid = flask.request.args.get('kid')
         key = flask.request.args.get('key')
@@ -166,6 +148,7 @@ class KeyHandler(RequestHandlerBase):
         csrf_key = self.generate_csrf_cookie()
         result["csrf"] = self.generate_csrf_token('keys', csrf_key)
         return self.jsonify(result)
+
 
 class DeleteKeyHandler(RequestHandlerBase):
     """

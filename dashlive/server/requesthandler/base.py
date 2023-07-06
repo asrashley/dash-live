@@ -218,9 +218,13 @@ class RequestHandlerBase(MethodView):
             raise CsrfFailureException("signatures do not match")
         return True
 
-    def get_bool_param(self, param: str, default: bool = False) -> bool:
-        value = flask.request.args.get(param, str(default)).lower()
-        return value in {"1", "true"}
+    def get_bool_param(self, param: str, default: Optional[bool] = False) -> bool:
+        value = flask.request.args.get(param)
+        if value is None:
+            value = flask.request.form.get(param)
+        if value is None:
+            return default
+        return value.lower() in {"1", "true", "on"}
 
     def generate_drm_location_tuples(self):
         """
