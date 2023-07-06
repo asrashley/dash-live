@@ -107,7 +107,7 @@ routes = {
         title="DASH media file"),
     "media-index": Route(
         r'/media/index/<mfid>',
-        handler='media_management.MediaIndex',
+        handler='media_management.IndexMediaFile',
         title='Media information'),
     "media-info": Route(
         r'/media/<int:mfid>',
