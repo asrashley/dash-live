@@ -164,7 +164,8 @@ class MediaInfo(HTMLHandlerBase):
         result["csrf"] = self.generate_csrf_token('files', csrf_key)
         return self.jsonify(result, status=status)
 
-class MediaIndex(HTMLHandlerBase):
+
+class IndexMediaFile(HTMLHandlerBase):
     """
     View handler that indexes a file to find its fragments and
     media information
