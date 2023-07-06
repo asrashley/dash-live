@@ -116,6 +116,7 @@ class UploadHandler(RequestHandlerBase):
                 "upload", csrf_key)
             result["file_html"] = flask.render_template('media/media_row.html', **context)
             return self.jsonify(result)
+        flask.flash(f'Uploaded file {filename.stem}', 'success')
         return flask.render_template('upload-done.html', **context)
 
 

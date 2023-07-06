@@ -114,6 +114,7 @@ class AddStream(HTMLHandlerBase):
         except (ValueError, CsrfFailureException) as err:
             if self.is_ajax:
                 return self.jsonify({'error': f'{err}'}, 401)
+            flask.flash(f'CSRF error: {err}', 'error')
             return self.get(error=str(err))
         for f in models.Stream.get_column_names(with_collections=False):
             data[f] = params.get(f)
@@ -128,6 +129,7 @@ class AddStream(HTMLHandlerBase):
         st = models.Stream(**data)
         st.add(commit=True)
         if not self.is_ajax():
+            flask.flash(f'Added new stream "{data["title"]}"', 'success')
             return flask.redirect(flask.url_for('list-streams'))
         result["id"] = st.pk
         result.update(data)

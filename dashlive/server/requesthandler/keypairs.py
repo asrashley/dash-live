@@ -107,6 +107,7 @@ class KeyHandler(RequestHandlerBase):
         if new_key:
             model.add()
         models.db.session.commit()
+        flask.flash(f'Saved changes to keypair {model.hkid}', 'success')
         return flask.redirect(self.get_next_url_with_fallback('list-streams'))
 
     def put(self, **kwargs):
@@ -173,12 +174,16 @@ class DeleteKeyHandler(RequestHandlerBase):
         return flask.render_template('delete_model_confirm.html', **context)
 
     def post(self, kpk: int) -> flask.Response:
+        """
+        Confirms key deletion by HTML form submission
+        """
         try:
             self.check_csrf('keys', flask.request.form)
         except (ValueError, CsrfFailureException) as err:
             return flask.make_response(f'CSRF failure: {err}', 400)
         models.db.session.delete(current_keypair)
         models.db.session.commit()
+        flask.flash(f'Deleted keypair {current_keypair.hkid}', 'success')
         return flask.redirect(flask.url_for('list-streams'))
 
     def delete(self, kpk: int, **kwargs) -> flask.Response:
