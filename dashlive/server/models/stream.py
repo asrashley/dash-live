@@ -4,7 +4,9 @@ from typing import cast, List, Optional
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship  # type: ignore
 
+from dashlive.utils.json_object import JsonObject
 from .db import db
+from .mediafile import MediaFile
 from .mixin import ModelMixin
 
 class Stream(db.Model, ModelMixin):
@@ -42,3 +44,41 @@ class Stream(db.Model, ModelMixin):
             'marlin_la_url': self.marlin_la_url,
             'playready_la_url': self.playready_la_url,
         }
+
+    def get_fields(self, **kwargs) -> List[JsonObject]:
+        def str_or_none(value):
+            if value is None:
+                return ''
+            return value
+
+        has_media_files = False
+        if self.pk:
+            has_media_files = MediaFile.count(stream=self) > 0
+        return [{
+            "name": "title",
+            "title": "Title",
+            "type": "text",
+            "maxlength": 100,
+            "value": kwargs.get("title", self.title),
+        }, {
+            "name": "directory",
+            "title": "Directory",
+            "type": "text",
+            "pattern": "[A-Za-z0-9]+",
+            "minlength": 3,
+            "maxlength": 30,
+            "disabled": has_media_files,
+            "value": kwargs.get("directory", self.directory),
+        }, {
+            "name": "marlin_la_url",
+            "title": "Marlin LA URL",
+            "type": "url",
+            "pattern": "((ms3[hsa]*)|(https?))://.*",
+            "value": str_or_none(kwargs.get("marlin_la_url", self.marlin_la_url)),
+        }, {
+            "name": "playready_la_url",
+            "title": "PlayReady LA URL",
+            "type": "url",
+            "pattern": "https?://.*",
+            "value": str_or_none(kwargs.get("playready_la_url", self.playready_la_url)),
+        }]

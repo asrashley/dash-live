@@ -98,3 +98,12 @@ class ModelMixin:
         db.session.delete(self)
         if commit:
             db.session.commit()
+
+    @classmethod
+    def get_column_names(cls, with_collections: bool = True) -> List[str]:
+        names: List[str] = []
+        for prop in class_mapper(cls).iterate_properties:
+            if not with_collections and not isinstance(prop, ColumnProperty):
+                continue
+            names.append(prop.key)
+        return names

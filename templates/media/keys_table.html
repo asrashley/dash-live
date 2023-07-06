@@ -2,7 +2,11 @@
   <caption>Keys</caption>
   <thead><tr>
       <th class="key-actions">
+	{% if next %}
+        <a href="{{url_for('key', next=next)}}"class="btn btn-success add-key">Add</a>
+        {% else %}
         <a href="{{url_for('key')}}"class="btn btn-success add-key">Add</a>
+        {% endif %}
       </th>
       <th class="kid">KID</th>
       <th class="key">Key</th>
