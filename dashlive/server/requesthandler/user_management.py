@@ -60,12 +60,19 @@ class LoginPage(HTMLHandlerBase):
     def post(self):
         if self.is_ajax():
             data = flask.request.json
-            self.check_csrf('login', data)
+            try:
+                self.check_csrf('login', data)
+            except (ValueError, CsrfFailureException) as err:
+                return self.jsonify({'error': str(err)}, 400)
             username = data.get("username", None)
             password = data.get("password", None)
             rememberme = data.get("rememberme", False)
         else:
-            self.check_csrf('login', flask.request.form)
+            try:
+                self.check_csrf('login', flask.request.form)
+            except (ValueError, CsrfFailureException) as err:
+                flask.flash(f'CSRF failure: {err}', 'error')
+                return self.get()
             username = flask.request.form.get("username", None)
             password = flask.request.form.get("password", None)
             rememberme = flask.request.form.get("rememberme", '') == 'on'
@@ -94,8 +101,9 @@ class LoginPage(HTMLHandlerBase):
             }
             result['user']['groups'] = user.get_groups()
             return self.jsonify(result)
-        # Notice that we are passing in the actual sqlalchemy user object here
-        # access_token = create_access_token(identity=user)
+        if user.must_change:
+            flask.flash('You must change your password', 'info')
+            return flask.redirect(flask.url_for('change-password'))
         next_url = flask.request.args.get('next')
         # TODO: check if next is to an allowed location
         response = flask.make_response(flask.redirect(next_url or flask.url_for('home')))
@@ -158,6 +166,9 @@ class EditUser(HTMLHandlerBase):
             'group_names': models.Group.names(),
             'model': decorate_user(user),
         })
+        if not current_user.is_admin:
+            # a user is not allowed to modify their username
+            context['fields'][0]['disabled'] = True
         context['fields'].append({
             'name': 'new_item',
             'type': 'hidden',
@@ -179,8 +190,7 @@ class EditUser(HTMLHandlerBase):
             return flask.redirect(flask.url_for('home'))
         user.username = flask.request.form['username']
         user.email = flask.request.form['email']
-        user.must_change = self.get_bool_param(
-            'must_change', user.must_change)
+        user.must_change = self.get_bool_param('must_change', False)
         if flask.request.form['new_item'] == '1':
             if not flask.request.form['password']:
                 return self.get(upk, error='A password must be provided', **flask.request.form)
