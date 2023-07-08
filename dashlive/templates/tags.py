@@ -25,10 +25,28 @@ import base64
 import binascii
 import json
 
-from flask import Blueprint
+from flask import Blueprint, current_app, url_for
 
 from dashlive.utils.objects import flatten_iterable
 from dashlive.utils.date_time import parse_date, toIsoDuration, toIsoDateTime
+
+class ScriptTag:
+    SCRIPT_TEMPLATE = r'<script src="{js_filename}" type="text/javascript"></script>'
+
+    def __init__(self, filename: str, dev: bool) -> None:
+        self.filename = filename
+        self.dev = dev
+
+    def __str__(self) -> str:
+        return self.__html__()
+
+    def __html__(self) -> str:
+        mode = 'dev' if self.dev else 'prod'
+        minify = '' if self.dev else '.min'
+        js_filename = url_for(
+            'static', filename=f'js/{mode}/{self.filename}{minify}.js')
+        return self.SCRIPT_TEMPLATE.format(js_filename=js_filename)
+
 
 custom_tags = Blueprint('custom_tags', __name__)
 
@@ -179,3 +197,8 @@ def isoDateTime(value):
 @custom_tags.app_template_filter()
 def isoDuration(value):
     return toIsoDuration(value)
+
+@custom_tags.app_template_global()
+def import_script(filename: str) -> ScriptTag:
+    debug = current_app.config['DEBUG']
+    return ScriptTag(filename, debug)
