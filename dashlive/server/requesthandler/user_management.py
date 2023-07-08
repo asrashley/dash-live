@@ -143,12 +143,18 @@ class EditUser(HTMLHandlerBase):
         csrf_key = self.generate_csrf_cookie()
         user = self.get_model()
         new_item = not user.pk
+        if current_user.is_admin:
+            cancel_url = flask.url_for('list-users')
+        else:
+            cancel_url = flask.url_for('home')
         context.update({
             'error': error,
             'form_id': 'add-user' if new_item else 'edit-user',
-            'cancel_url': flask.url_for('list-users'),
+            'cancel_url': cancel_url,
             'csrf_token': self.generate_csrf_token('users', csrf_key),
-            'fields': user.get_fields(with_confirm_password=True, **kwargs),
+            'fields': user.get_fields(
+                with_confirm_password=True, with_must_change=current_user.is_admin,
+                **kwargs),
             'group_names': models.Group.names(),
             'model': decorate_user(user),
         })
@@ -168,6 +174,9 @@ class EditUser(HTMLHandlerBase):
         except (ValueError, CsrfFailureException) as err:
             return flask.make_response({'error': f'CSRF failure: {err}'}, 400)
         user = self.get_model()
+        if not current_user.is_admin and user.pk != current_user.pk:
+            flask.flash('Only an admin user can modify other users', 'error')
+            return flask.redirect(flask.url_for('home'))
         user.username = flask.request.form['username']
         user.email = flask.request.form['email']
         user.must_change = self.get_bool_param(
@@ -197,6 +206,8 @@ class EditUser(HTMLHandlerBase):
         else:
             models.db.session.commit()
             flask.flash(f'Saved changes to "{user.username}"', 'success')
+        if not current_user.is_admin:
+            return flask.redirect(flask.url_for('home'))
         return flask.redirect(flask.url_for('list-users'))
 
     def get_model(self) -> models.User:
@@ -211,6 +222,13 @@ class AddUser(EditUser):
 
     def get_model(self) -> models.User:
         return models.User(groups_mask=models.Group.USER.value)
+
+
+class EditSelf(EditUser):
+    decorators = [login_required(admin=False)]
+
+    def get_model(self) -> models.User:
+        return current_user
 
 
 class DeleteUser(DeleteModelBase):

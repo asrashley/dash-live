@@ -2,14 +2,18 @@
 
 {% block card_header %}
 {%- if model.pk %}
+{%- if model.pk == current_user.pk %}
+Editing my account
+{% else %}
 Editing user &quot;{{model.username}}&quot;
+{% endif %}
 {%- else %}
 Adding new user
 {% endif %}
 {% endblock %}
 
 {% block extra_buttons %}
-{% if model.pk %}
+{% if model.pk and current_user.is_admin %}
 <a href="{{url_for('delete-user', upk=model.pk)}}"
    class="btn btn-danger delete-stream"
    data-id="{{model.pk}}">Delete &quot;{{model.username}}&quot;</a>
@@ -17,6 +21,7 @@ Adding new user
 {% endblock %}
 
 {% block extra_inputs %}
+{% if current_user.is_admin %}
 <fieldset class="form-group">
   <div class="row">
     <legend class="col-form-label col-sm-2 pt-0">Groups:</legend>
@@ -36,4 +41,5 @@ Adding new user
     </div>
   </div>
 </fieldset>
+{% endif %}
 {% endblock %}
