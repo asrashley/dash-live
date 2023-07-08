@@ -220,6 +220,7 @@ class EditStream(HTMLHandlerBase):
 
 class DeleteStream(DeleteModelBase):
     MODEL_NAME = 'stream'
+    CSRF_TOKEN_NAME = 'streams'
     decorators = [uses_stream, login_required(html=True, admin=True)]
 
     def get_model_dict(self) -> JsonObject:

@@ -802,7 +802,7 @@ class DeleteModelBase(HTMLHandlerBase):
             'model_name': self.MODEL_NAME,
             'cancel_url': self.get_cancel_url(),
             'submit_url': flask.request.url,
-            'csrf_token': self.generate_csrf_token(self.MODEL_NAME, csrf_key),
+            'csrf_token': self.generate_csrf_token(self.CSRF_TOKEN_NAME, csrf_key),
         })
         return flask.render_template('delete_model_confirm.html', **context)
 
@@ -811,7 +811,7 @@ class DeleteModelBase(HTMLHandlerBase):
         Deletes a model, in response to a submitted confirm form
         """
         try:
-            self.check_csrf(self.MODEL_NAME, flask.request.form)
+            self.check_csrf(self.CSRF_TOKEN_NAME, flask.request.form)
         except (ValueError, CsrfFailureException) as err:
             return flask.make_response(f'CSRF failure: {err}', 400)
         model = self.get_model_dict()
@@ -826,7 +826,7 @@ class DeleteModelBase(HTMLHandlerBase):
         """
         result = {"error": None}
         try:
-            self.check_csrf(self.MODEL_NAME, flask.request.args)
+            self.check_csrf(self.CSRF_TOKEN_NAME, flask.request.args)
         except (ValueError, CsrfFailureException) as err:
             result = {
                 "error": f'CSRF failure: {err}'
@@ -834,7 +834,7 @@ class DeleteModelBase(HTMLHandlerBase):
         if result['error'] is None:
             result = self.delete_model()
         csrf_key = self.generate_csrf_cookie()
-        result["csrf"] = self.generate_csrf_token(self.MODEL_NAME, csrf_key)
+        result["csrf"] = self.generate_csrf_token(self.CSRF_TOKEN_NAME, csrf_key)
         return self.jsonify(result)
 
     @abstractmethod
