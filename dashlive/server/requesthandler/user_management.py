@@ -21,6 +21,7 @@
 #############################################################################
 
 from __future__ import absolute_import
+import datetime
 from typing import List, Optional
 
 import flask
@@ -92,6 +93,8 @@ class LoginPage(HTMLHandlerBase):
                 return self.jsonify(result)
             return flask.render_template('users/login.html', **context)
         login_user(user, remember=rememberme)
+        user.last_login = datetime.datetime.now()
+        models.db.session.commit()
         if self.is_ajax():
             csrf_key = self.generate_csrf_cookie()
             result = {
