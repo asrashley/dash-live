@@ -9,29 +9,7 @@
   {% endif %}
   <input type="hidden" name="csrf_token" value="{{csrf_token}}" />
   {% for field in fields %}
-  <div class="form-group">
-    {% if field.type != "hidden" %}
-    <label for="model-{{field.name}}">{{field.title}}:</label>
-    {% endif %}
-      <input
-        class="form-control"
-        type="{{field.type}}"
-        name="{{field.name}}"
-        id="model-{{field.name}}"
-	title="{{model.title}}"
-	{%- if field.type == 'checkbox' %}
-          {%- if field.value %}checked{% endif %}
-	{% else %}
-          {%- if field.value %}value="{{field.value}}"{% endif %}
-	{% endif %}
-	{%- if field.minlength %}minlength="{{field.minlength}}"{% endif %}
-	{%- if field.maxlength %}maxlength="{{field.maxlength}}"{% endif %}
-	{%- if field.pattern %}pattern="{{field.pattern}}"{% endif %}
-	{%- if field.placeholder %}placeholder="{{field.placeholder}}"{% endif %}
-	{%- if field.spellcheck %}pattern="{{field.spellcheck}}"{% endif %}
-	{%- if field.disabled %}disabled{% endif %}
-        />
-    </div>
+  {% include 'input-field.html' %}
   {% endfor %}
   <div class="form-actions">
     <button type="submit" class="btn btn-primary">Save Changes</button>

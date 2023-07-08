@@ -5,7 +5,7 @@ import flask  # type: ignore
 from flask_login import current_user
 from werkzeug.local import LocalProxy  # type: ignore
 
-from dashlive.server.models import Key, MediaFile, Stream
+from dashlive.server.models import Key, MediaFile, Stream, User
 
 def is_ajax() -> bool:
     # print('content_type', flask.request.content_type, flask.request.url)
@@ -126,3 +126,26 @@ def uses_keypair(func):
 
 
 current_keypair = cast(Key, LocalProxy(lambda: flask.g.keypair))
+
+
+def modifies_user_model(func):
+    """
+    Decorator that fetches User from database by its primary key.
+    It is used for views that edit users, rather than for user login.
+    It will automatically return a 404 error if not found
+    """
+    @wraps(func)
+    def decorated_function(*args, **kwargs):
+        user: Optional[User] = None
+        upk = kwargs.get('upk', None)
+        if not upk:
+            return flask.make_response('User primary key missing', 404)
+        user = User.get(pk=upk)
+        if not user:
+            return flask.make_response(f'User {upk} not found', 404)
+        flask.g.modify_user = user
+        return func(*args, **kwargs)
+    return decorated_function
+
+
+modifying_user = cast(User, LocalProxy(lambda: flask.g.modify_user))

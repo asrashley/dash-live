@@ -1,0 +1,39 @@
+{% extends 'edit-model.html' %}
+
+{% block card_header %}
+{%- if model.pk %}
+Editing user &quot;{{model.username}}&quot;
+{%- else %}
+Adding new user
+{% endif %}
+{% endblock %}
+
+{% block extra_buttons %}
+{% if model.pk %}
+<a href="{{url_for('delete-user', upk=model.pk)}}"
+   class="btn btn-danger delete-stream"
+   data-id="{{model.pk}}">Delete &quot;{{model.username}}&quot;</a>
+{% endif %}
+{% endblock %}
+
+{% block extra_inputs %}
+<fieldset class="form-group">
+  <div class="row">
+    <legend class="col-form-label col-sm-2 pt-0">Groups:</legend>
+    <div class="col-sm-10">
+      {% for group in group_names %}
+      <div class="form-check form-check-inline">
+	<input
+	  class="form-check-input"
+	  type="checkbox"
+	  id="id-group-{{ group }}"
+	  name="{{ group | lower }}_group"
+	  {%- if model.groups[group] %}checked{% endif %}
+	  >
+	<label class="form-check-label" for="id-group-{{ group }}">{{ group | title }}</label>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</fieldset>
+{% endblock %}

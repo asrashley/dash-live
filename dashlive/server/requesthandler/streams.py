@@ -28,8 +28,9 @@ import flask
 
 from dashlive.drm.playready import PlayReady
 from dashlive.server import models
+from dashlive.utils.json_object import JsonObject
 
-from .base import HTMLHandlerBase
+from .base import HTMLHandlerBase, DeleteModelBase
 from .decorators import login_required, uses_stream, current_stream
 from .exceptions import CsrfFailureException
 
@@ -74,7 +75,7 @@ class ListStreams(HTMLHandlerBase):
 
 class AddStream(HTMLHandlerBase):
     """
-    handler for adding or removing a stream
+    handler for adding a stream
     """
     decorators = [login_required(admin=True)]
 
@@ -217,63 +218,26 @@ class EditStream(HTMLHandlerBase):
         })
         return context
 
-class DeleteStream(HTMLHandlerBase):
+class DeleteStream(DeleteModelBase):
+    MODEL_NAME = 'stream'
     decorators = [uses_stream, login_required(html=True, admin=True)]
 
-    def get(self, spk: int) -> flask.Response:
-        """
-        Returns HTML form to confirm if stream should be deleted
-        """
-        context = self.create_context()
-        csrf_key = self.generate_csrf_cookie()
-        cancel_url = self.get_next_url_with_fallback('stream-edit', spk=current_stream.pk)
-        context.update({
-            'model': current_stream.to_dict(),
-            'model_name': 'stream',
-            'cancel_url': cancel_url,
-            'submit_url': flask.request.url,
-            'csrf_token': self.generate_csrf_token('streams', csrf_key),
-        })
-        return flask.render_template('delete_model_confirm.html', **context)
+    def get_model_dict(self) -> JsonObject:
+        return current_stream.to_dict(with_collections=False)
 
-    def post(self, spk: int) -> flask.Response:
-        """
-        Deletes a stream, in response to a submitted confirm form
-        """
-        try:
-            self.check_csrf('streams', flask.request.form)
-        except (ValueError, CsrfFailureException) as err:
-            return flask.make_response(f'CSRF failure: {err}', 400)
+    def get_cancel_url(self) -> str:
+        return self.get_next_url_with_fallback(
+            'stream-edit', spk=current_stream.pk)
+
+    def delete_model(self) -> JsonObject:
+        result = {
+            "deleted": current_stream.pk,
+            "title": current_stream.title,
+            "directory": current_stream.directory
+        }
         models.db.session.delete(current_stream)
         models.db.session.commit()
-        flask.flash(f'Deleted stream {current_stream.title}', 'success')
-        return flask.redirect(flask.url_for('list-streams'))
+        return result
 
-    def delete(self, spk: int, **kwargs) -> flask.Response:
-        """
-        handler for deleting a stream
-        """
-        result = {"error": None}
-        try:
-            self.check_csrf('streams', flask.request.args)
-        except (ValueError, CsrfFailureException) as err:
-            result = {
-                "error": f'CSRF failure: {err}'
-            }
-        if result['error'] is None:
-            stream = models.Stream.get(pk=spk)
-            if not stream:
-                return self.jsonify_no_content(404)
-            result = {
-                "deleted": stream.pk,
-                "title": stream.title,
-                "directory": stream.directory
-            }
-            # TODO: investigate using sqlachemy events to delete mp4 files
-            for mf in stream.media_files:
-                mf.delete_file()
-            models.db.session.delete(stream)
-            models.db.session.commit()
-        csrf_key = self.generate_csrf_cookie()
-        result["csrf"] = self.generate_csrf_token('streams', csrf_key)
-        return self.jsonify(result)
+    def get_next_url(self) -> str:
+        return flask.url_for('list-streams')
