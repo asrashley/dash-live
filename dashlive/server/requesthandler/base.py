@@ -770,38 +770,18 @@ class RequestHandlerBase(MethodView):
         key = f'error-{usage}-{code:06d}'
         flask.session[key] = None
 
-class ScriptTag:
-    def __init__(self, tag: str) -> None:
-        self.tag = tag
-
-    def __str__(self) -> str:
-        return self.tag
-
-    def __html__(self) -> str:
-        return self.tag
 
 class HTMLHandlerBase(RequestHandlerBase):
     """
     Base class for all HTML pages
     """
 
-    SCRIPT_TEMPLATE = r'<script src="{js_filename}" type="text/javascript"></script>'
-
     def create_context(self, **kwargs):
         context = super(HTMLHandlerBase, self).create_context(**kwargs)
         context.update({
             'routes': routes,
-            'import_script': self.import_script,
         })
         return context
-
-    def import_script(self, filename):
-        mode = 'dev' if settings.DEBUG else 'prod'
-        minify = '' if settings.DEBUG else '.min'
-        js_filename = flask.url_for(
-            'static', filename=f'js/{mode}/{filename}{minify}.js')
-        return ScriptTag(
-            self.SCRIPT_TEMPLATE.format(js_filename=js_filename))
 
 
 class DeleteModelBase(HTMLHandlerBase):
