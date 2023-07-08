@@ -175,7 +175,8 @@ class User(db.Model, ModelMixin):  # type: ignore
             db.session.add(admin)
             db.session.commit()
 
-    def get_fields(self, with_confirm_password: bool = False, **kwargs) -> List[JsonObject]:
+    def get_fields(self, with_must_change: bool = True,
+                   with_confirm_password: bool = False, **kwargs) -> List[JsonObject]:
         fields = [{
             "name": "username",
             "title": "Username",
@@ -202,12 +203,14 @@ class User(db.Model, ModelMixin):  # type: ignore
             "maxlength": 250,
             "placeholder": 'email address',
             "spellcheck": False,
-        }, {
-            "name": "must_change",
-            "title": "Must change password?",
-            "type": "checkbox",
-            "value": kwargs.get('must_change', self.must_change),
         }]
+        if with_must_change:
+            fields.append({
+                "name": "must_change",
+                "title": "Must change password?",
+                "type": "checkbox",
+                "value": kwargs.get('must_change', self.must_change),
+            })
         if with_confirm_password:
             fields.insert(2, {
                 "name": "confirm_password",

@@ -168,6 +168,10 @@ routes = {
         r'/users/<int:upk>',
         handler='user_management.EditUser',
         title='Edit User'),
+    "change-password": Route(
+        r'/users/me',
+        handler='user_management.EditSelf',
+        title='Account Settings'),
     "delete-user": Route(
         r'/users/<int:upk>/delete',
         handler='user_management.DeleteUser',
