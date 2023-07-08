@@ -80,7 +80,7 @@ class Key(db.Model, ModelMixin):
             'computed': self.computed,
         }
 
-    def get_fields(self) -> Dict[str, JsonObject]:
+    def get_fields(self) -> List[JsonObject]:
         return [{
             "name": "hkid",
             "title": "KID (in hex)",

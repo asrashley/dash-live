@@ -100,10 +100,13 @@ class ModelMixin:
             db.session.commit()
 
     @classmethod
-    def get_column_names(cls, with_collections: bool = True) -> List[str]:
+    def get_column_names(cls, with_collections: bool = True,
+                         exclude: Optional[AbstractSet[str]] = None) -> List[str]:
         names: List[str] = []
         for prop in class_mapper(cls).iterate_properties:
             if not with_collections and not isinstance(prop, ColumnProperty):
+                continue
+            if exclude is not None and prop.key in exclude:
                 continue
             names.append(prop.key)
         return names

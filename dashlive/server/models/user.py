@@ -42,6 +42,20 @@ class User(db.Model, ModelMixin):  # type: ignore
     reset_token = Column(String(__RESET_TOKEN_LENGTH * 2), nullable=True)
     tokens = relationship("Token", back_populates="user", lazy='dynamic')
 
+    @classmethod
+    def get(cls, **kwargs) -> Optional["User"]:
+        """
+        Get one user, or None if not found
+        """
+        return cast("User", cls.get_one(**kwargs))
+
+    @classmethod
+    def all(cls, **kwargs) -> List["User"]:
+        """
+        Return all users
+        """
+        return cast(List["User"], cls.get_all(**kwargs))
+
     def to_dict(self, exclude: Optional[AbstractSet[str]] = None,
                 only: Optional[AbstractSet[str]] = None,
                 with_collections: bool = False) -> JsonObject:
@@ -121,11 +135,11 @@ class User(db.Model, ModelMixin):  # type: ignore
         return ((self.groups_mask & group.value) == group.value or
                 self.is_admin)
 
-    def get_groups(self) -> List[Group]:
+    def get_groups(self) -> List[str]:
         """
-        get the list of groups assigned to this user
+        get the list of group names assigned to this user
         """
-        groups: List[Group] = []
+        groups: List[str] = []
         for group in cast(List[Group], list(Group)):
             if (self.groups_mask & group.value or (
                     self.is_admin and group.value <= Group.EDITOR.value)):
@@ -160,3 +174,48 @@ class User(db.Model, ModelMixin):  # type: ignore
             print(f'Adding default user account username="{default_username}"')
             db.session.add(admin)
             db.session.commit()
+
+    def get_fields(self, with_confirm_password: bool = False, **kwargs) -> List[JsonObject]:
+        fields = [{
+            "name": "username",
+            "title": "Username",
+            "type": "text",
+            "value": kwargs.get('username', self.username),
+            "minlength": 5,
+            "maxlength": 31,
+            "pattern": r'[A-Za-z0-9._-]+',
+            "placeholder": 'user name',
+            "spellcheck": False,
+        }, {
+            "name": "password",
+            "title": "Password",
+            "type": "password",
+            "value": kwargs.get('password', ''),
+            "placeholder": '*****',
+            "minlength": 5,
+            "maxlength": 31,
+        }, {
+            "name": "email",
+            "title": "Email address",
+            "type": "email",
+            "value": kwargs.get('email', self.email),
+            "maxlength": 250,
+            "placeholder": 'email address',
+            "spellcheck": False,
+        }, {
+            "name": "must_change",
+            "title": "Must change password?",
+            "type": "checkbox",
+            "value": kwargs.get('must_change', self.must_change),
+        }]
+        if with_confirm_password:
+            fields.insert(2, {
+                "name": "confirm_password",
+                "title": "Confirm Password",
+                "type": "password",
+                "value": kwargs.get('confirm_password', ''),
+                "placeholder": '*****',
+                "minlength": 5,
+                "maxlength": 31,
+            })
+        return fields

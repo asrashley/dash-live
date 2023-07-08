@@ -1,0 +1,25 @@
+<div class="form-group row">
+  {% if field.type != "hidden" %}
+  <label class="col-sm-2 col-form-label" for="model-{{field.name}}">
+    {{ field.title }}:
+  </label>
+  <div class="col-sm-10">
+  {% endif %}
+  <input class="form-control" type="{{field.type}}" name="{{field.name}}"
+    id="model-{{field.name}}" title="{{model.title}}"
+    {%- if field.type == 'checkbox' %}
+    {%- if field.value %} checked{% endif %}
+    {% else %}
+    {%- if field.value %} value="{{field.value}}"{% endif %}
+    {% endif %}
+    {%- if field.minlength %} minlength="{{field.minlength}}"{% endif %}
+    {%- if field.maxlength %} maxlength="{{field.maxlength}}"{% endif %}
+    {%- if field.pattern %} pattern="{{field.pattern}}"{% endif %}
+    {%- if field.placeholder %} placeholder="{{field.placeholder}}"{% endif %}
+    {%- if field.spellcheck %} pattern="{{field.spellcheck}}"{% endif %}
+    {%- if field.disabled %} disabled{% endif %}
+    />
+  {% if field.type != "hidden" %}
+  </div>
+  {% endif %}
+</div>

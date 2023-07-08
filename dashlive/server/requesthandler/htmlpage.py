@@ -30,7 +30,6 @@ import urllib.error
 import urllib.parse
 
 import flask
-from flask_login import login_user, logout_user
 
 from dashlive.server import manifests, models, cgi_options
 from dashlive.drm.playready import PlayReady
@@ -158,69 +157,3 @@ class VideoPlayer(HTMLHandlerBase):
         context['mimeType'] = 'application/dash+xml'
         context['title'] = manifests.manifest[manifest].title
         return flask.render_template('video.html', **context)
-
-
-class LoginPage(HTMLHandlerBase):
-    """
-    handler for logging into the site
-    """
-
-    def get(self):
-        context = self.create_context()
-        csrf_key = self.generate_csrf_cookie()
-        context['csrf_token'] = self.generate_csrf_token('login', csrf_key)
-        if self.is_ajax():
-            return self.jsonify({
-                'csrf_token': context['csrf_token']
-            })
-        return flask.render_template('login.html', **context)
-
-    def post(self):
-        if self.is_ajax():
-            data = flask.request.json
-            self.check_csrf('login', data)
-            username = data.get("username", None)
-            password = data.get("password", None)
-        else:
-            self.check_csrf('login', flask.request.form)
-            username = flask.request.form.get("username", None)
-            password = flask.request.form.get("password", None)
-        user = models.User.get_one(username=username)
-        if not user:
-            user = models.User.get_one(email=username)
-        if not user or not user.check_password(password):
-            context = self.create_context()
-            context['error'] = "Wrong username or password"
-            csrf_key = self.generate_csrf_cookie()
-            context['csrf_token'] = self.generate_csrf_token('login', csrf_key)
-            if self.is_ajax():
-                result = {}
-                for field in ['error', 'csrf_token']:
-                    result[field] = context[field]
-                return self.jsonify(result)
-            return flask.render_template('login.html', **context)
-        login_user(user, remember=True)
-        if self.is_ajax():
-            csrf_key = self.generate_csrf_cookie()
-            result = {
-                'success': True,
-                'csrf_token': self.generate_csrf_token('login', csrf_key),
-                'user': user.to_dict(only={'email', 'username', 'pk', 'last_login'})
-            }
-            result['user']['groups'] = user.get_groups()
-            return self.jsonify(result)
-        # Notice that we are passing in the actual sqlalchemy user object here
-        # access_token = create_access_token(identity=user)
-        next_url = flask.request.args.get('next')
-        # TODO: check if next is to an allowed location
-        response = flask.make_response(flask.redirect(next_url or flask.url_for('home')))
-        return response
-
-
-class LogoutPage(HTMLHandlerBase):
-    """
-    Logs user out of site
-    """
-    def get(self):
-        logout_user()
-        return flask.redirect(flask.url_for('home'))

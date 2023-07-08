@@ -150,12 +150,28 @@ routes = {
         title='Manifest and Media CGI options'),
     "login": Route(
         r'/login',
-        handler='htmlpage.LoginPage',
+        handler='user_management.LoginPage',
         title='Log into site'),
     "logout": Route(
         r'/logout',
-        handler='htmlpage.LogoutPage',
+        handler='user_management.LogoutPage',
         title='Log out of site'),
+    "list-users": Route(
+        r'/users',
+        handler='user_management.ListUsers',
+        title='Users'),
+    "add-user": Route(
+        r'/users/',
+        handler='user_management.AddUser',
+        title='Add User'),
+    "edit-user": Route(
+        r'/users/<int:upk>',
+        handler='user_management.EditUser',
+        title='Edit User'),
+    "delete-user": Route(
+        r'/users/<int:upk>/delete',
+        handler='user_management.DeleteUser',
+        title='Delete User'),
     "home": Route(
         r'/',
         handler='htmlpage.MainPage',

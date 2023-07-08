@@ -23,6 +23,7 @@
 from __future__ import division
 from future import standard_library
 standard_library.install_aliases()
+from abc import abstractmethod
 from builtins import str
 from past.builtins import basestring
 from past.utils import old_div
@@ -59,6 +60,7 @@ from dashlive.server.events.factory import EventFactory
 from dashlive.server.routes import routes, Route
 from dashlive.utils import objects
 from dashlive.utils.date_time import scale_timedelta, from_isodatetime, toIsoDateTime
+from dashlive.utils.json_object import JsonObject
 from dashlive.utils.timezone import UTC
 
 from .dash_timing import DashTiming
@@ -800,3 +802,73 @@ class HTMLHandlerBase(RequestHandlerBase):
             'static', filename=f'js/{mode}/{filename}{minify}.js')
         return ScriptTag(
             self.SCRIPT_TEMPLATE.format(js_filename=js_filename))
+
+
+class DeleteModelBase(HTMLHandlerBase):
+    """
+    Base class for deleting a model from the database
+    """
+
+    MODEL_NAME: str = ''
+
+    def get(self, **kwargs) -> flask.Response:
+        """
+        Returns HTML form to confirm if stream should be deleted
+        """
+        context = self.create_context()
+        csrf_key = self.generate_csrf_cookie()
+        context.update({
+            'model': self.get_model_dict(),
+            'model_name': self.MODEL_NAME,
+            'cancel_url': self.get_cancel_url(),
+            'submit_url': flask.request.url,
+            'csrf_token': self.generate_csrf_token(self.MODEL_NAME, csrf_key),
+        })
+        return flask.render_template('delete_model_confirm.html', **context)
+
+    def post(self, **kwargs) -> flask.Response:
+        """
+        Deletes a model, in response to a submitted confirm form
+        """
+        try:
+            self.check_csrf(self.MODEL_NAME, flask.request.form)
+        except (ValueError, CsrfFailureException) as err:
+            return flask.make_response(f'CSRF failure: {err}', 400)
+        model = self.get_model_dict()
+        result = self.delete_model()
+        if not result.get('error'):
+            flask.flash(f'Deleted {self.MODEL_NAME.lower()} {model["title"]}', 'success')
+        return flask.redirect(self.get_next_url())
+
+    def delete(self, **kwargs) -> flask.Response:
+        """
+        handler for deleting a stream
+        """
+        result = {"error": None}
+        try:
+            self.check_csrf(self.MODEL_NAME, flask.request.args)
+        except (ValueError, CsrfFailureException) as err:
+            result = {
+                "error": f'CSRF failure: {err}'
+            }
+        if result['error'] is None:
+            result = self.delete_model()
+        csrf_key = self.generate_csrf_cookie()
+        result["csrf"] = self.generate_csrf_token(self.MODEL_NAME, csrf_key)
+        return self.jsonify(result)
+
+    @abstractmethod
+    def get_model_dict(self) -> JsonObject:
+        pass
+
+    @abstractmethod
+    def get_next_url(self) -> str:
+        pass
+
+    @abstractmethod
+    def get_cancel_url(self) -> str:
+        pass
+
+    @abstractmethod
+    def delete_model(self) -> JsonObject:
+        pass
