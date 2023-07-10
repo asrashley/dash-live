@@ -322,7 +322,7 @@ class MediaManagement:
             self.log.warning('File "%s" not found', name)
             return False
         mfid = stream.media_files[name.stem]['pk']
-        url = self.url_for('media-index', mfid=mfid)
+        url = self.url_for('index-media-file', mfid=mfid)
         timeout = 10
         while timeout > 0:
             self.log.debug('GET %s', url)

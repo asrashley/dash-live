@@ -145,7 +145,7 @@ class TestRestApi(FlaskTestBase):
         self.setup_media()
         media_file = models.MediaFile.search(max_items=1)[0]
 
-        url = flask.url_for('media-index', mfid=media_file.pk, index=1)
+        url = flask.url_for('index-media-file', mfid=media_file.pk, index=1)
 
         # user must be logged in to use stream API
         self.logout_user()
