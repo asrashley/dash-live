@@ -233,3 +233,41 @@ class IndexMediaFile(HTMLHandlerBase):
         csrf_key = self.generate_csrf_cookie()
         result["csrf"] = self.generate_csrf_token('files', csrf_key)
         return self.jsonify(result, status=status)
+
+
+class MediaSegmentList(HTMLHandlerBase):
+    decorators = [uses_media_file, uses_stream, login_required(admin=True, html=True)]
+
+    def get(self, spk: int, mfid: int) -> flask.Response:
+        context = self.create_context()
+        start = 0
+        segments = []
+        for seg in current_media_file.representation.segments:
+            item = {
+                'start': start,
+                'start_time': datetime.timedelta(
+                    seconds=(start / float(current_media_file.representation.timescale))),
+                'size': seg.size,
+                'position': seg.pos,
+                'duration': seg.duration,
+            }
+            if segments:
+                if seg.duration is None:
+                    item['duration'] = current_media_file.representation.segment_duration
+                item['duration_time'] = datetime.timedelta(
+                    seconds=(item['duration'] / float(current_media_file.representation.timescale)))
+                start += item['duration']
+            else:
+                item.update({
+                    'duration': '',
+                    'duration_time': '',
+                    'start': '',
+                    'start_time': '',
+                })
+            segments.append(item)
+        context.update({
+            'stream': current_stream,
+            'mediafile': current_media_file,
+            'segments': segments,
+        })
+        return flask.render_template('media/segment_list.html', **context)
