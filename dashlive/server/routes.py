@@ -105,7 +105,7 @@ routes = {
         r'/dash/vod/<stream>/<regex("[\w-]+"):filename>.<regex("(mp4|m4v|m4a|m4s)"):ext>',
         handler='media_requests.OnDemandMedia',
         title="DASH media file"),
-    "media-index": Route(
+    "index-media-file": Route(
         r'/media/index/<mfid>',
         handler='media_management.IndexMediaFile',
         title='Media information'),
