@@ -25,6 +25,7 @@ import datetime
 import hashlib
 import logging
 from pathlib import Path
+from typing import Dict, List
 
 import flask
 from werkzeug.utils import secure_filename
@@ -34,6 +35,7 @@ from dashlive.drm.playready import PlayReady
 from dashlive.mpeg import mp4
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.server import models
+from dashlive.server.routes import Route
 
 from .base import HTMLHandlerBase, RequestHandlerBase
 from .decorators import (
@@ -109,6 +111,7 @@ class UploadHandler(RequestHandlerBase):
         context = self.create_context(
             title=f'File {filename.name} uploaded',
             media=result)
+        context['stream'] = current_stream
         if self.is_ajax():
             csrf_key = self.generate_csrf_cookie()
             result['upload_url'] = flask.url_for('upload-blob', spk=stream.pk)
@@ -124,22 +127,44 @@ class MediaInfo(HTMLHandlerBase):
     """
     View handler that provides details about one media file
     """
-    decorators = [uses_media_file, login_required(admin=True, html=True)]
+    decorators = [uses_media_file, uses_stream, login_required(admin=True, html=True)]
 
-    def get(self, mfid: int) -> flask.Response:
-        result = {"error": None}
+    def get(self, spk: int, mfid: int) -> flask.Response:
         mf = current_media_file
-        result = {
-            "representation": mf.rep,
-            "name": mf.name,
-            "key": mf.pk,
-            "blob": mf.blob.to_dict(exclude={'mediafile'}),
-        }
         csrf_key = self.generate_csrf_cookie()
-        result["csrf"] = self.generate_csrf_token('files', csrf_key)
-        return self.jsonify(result)
+        csrf_token = self.generate_csrf_token('files', csrf_key)
+        if self.is_ajax():
+            result = {
+                "representation": mf.rep,
+                "name": mf.name,
+                "key": mf.pk,
+                "blob": mf.blob.to_dict(exclude={'mediafile'}),
+                "csrf_token": csrf_token,
+            }
+            return self.jsonify(result)
+        context = self.create_context()
+        context.update({
+            'stream': current_stream,
+            'mediafile': mf,
+            "csrf_token": csrf_token,
+            "duration": None,
+            "segment_duration": None,
+        })
+        if mf.representation:
+            context['duration'] = datetime.timedelta(seconds=(
+                mf.representation.mediaDuration / float(mf.representation.timescale)))
+            context['segment_duration'] = datetime.timedelta(seconds=(
+                mf.representation.segment_duration / float(mf.representation.timescale)))
+        return flask.render_template('media/media_info.html', **context)
 
-    @uses_media_file
+    def get_breadcrumbs(self, route: Route) -> List[Dict[str, str]]:
+        breadcrumbs = super(MediaInfo, self).get_breadcrumbs(route)
+        breadcrumbs.insert(-1, {
+            'title': current_stream.directory,
+            'href': flask.url_for('edit-stream', spk=current_stream.pk),
+        })
+        return breadcrumbs
+
     def delete(self, mfid, **kwargs):
         """
         handler for deleting a media blob

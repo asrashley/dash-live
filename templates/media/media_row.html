@@ -14,7 +14,7 @@
         {% endif %}
       </td>
       <td class="filename">
-        <a href="{{url_for('media-info', mfid=media.pk)}}">{{media.name}}</a>
+        <a href="{{url_for('media-info', spk=stream.pk, mfid=media.pk)}}">{{media.name}}</a>
       </td>
       <td class="filesize">
         {{media.blob.size|sizeFormat}}

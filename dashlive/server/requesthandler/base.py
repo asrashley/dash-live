@@ -81,20 +81,9 @@ class RequestHandlerBase(MethodView):
             "title": kwargs.get('title', route.title),
             "on_production_server": on_production_server,
             "http_protocol": flask.request.scheme,
+            "breadcrumbs": self.get_breadcrumbs(route),
         }
         context.update(kwargs)
-        context["breadcrumbs"] = [{
-            'title': route.page_title(),
-            'active': 'active'
-        }]
-        p: Optional[str] = route.parent
-        while p:
-            rt: Route = routes[p]
-            context["breadcrumbs"].insert(0, {
-                "title": rt.page_title(),
-                "href": flask.url_for(rt.name)
-            })
-            p = rt.parent
         if current_user.is_authenticated:
             context['logout'] = flask.url_for('logout')
             context["is_current_user_admin"] = current_user.is_admin
@@ -106,6 +95,21 @@ class RequestHandlerBase(MethodView):
             context['request_uri'] = context['request_uri'].replace(
                 'http://', 'https://')
         return context
+
+    def get_breadcrumbs(self, route: Route) -> List[Dict[str, str]]:
+        breadcrumbs = [{
+            'title': route.page_title(),
+            'active': 'active'
+        }]
+        p: Optional[str] = route.parent
+        while p:
+            rt: Route = routes[p]
+            breadcrumbs.insert(0, {
+                "title": rt.page_title(),
+                "href": flask.url_for(rt.name)
+            })
+            p = rt.parent
+        return breadcrumbs
 
     def generate_csrf_cookie(self) -> str:
         """

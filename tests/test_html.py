@@ -117,7 +117,7 @@ class TestHtmlPageHandlers(FlaskTestBase):
     def test_stream_edit_page(self):
         self.setup_media()
         stream = models.Stream.get(title='Big Buck Bunny')
-        url = flask.url_for('stream-edit', spk=stream.pk)
+        url = flask.url_for('edit-stream', spk=stream.pk)
 
         try:
             self.current_url = url

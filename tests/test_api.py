@@ -104,7 +104,8 @@ class TestRestApi(FlaskTestBase):
         """
         self.setup_media()
         media_file = models.MediaFile.search(max_items=1)[0]
-        url = flask.url_for('media-info', mfid=media_file.pk, ajax=1)
+        url = flask.url_for(
+            'media-info', spk=media_file.stream_pk, mfid=media_file.pk, ajax=1)
 
         # user must be logged in to use stream API
         self.logout_user()
@@ -134,7 +135,8 @@ class TestRestApi(FlaskTestBase):
         }
         self.assertObjectEqual(expected, actual)
         mfid = 9794759347593487
-        url = flask.url_for('media-info', mfid=mfid, ajax=1)
+        url = flask.url_for(
+            'media-info', spk=media_file.stream_pk, mfid=mfid, ajax=1)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
 
@@ -556,7 +558,7 @@ class TestRestApi(FlaskTestBase):
         stream = models.Stream.get(title='upload media file test')
         self.assertIsNotNone(stream)
 
-        url = flask.url_for('stream-edit', spk=stream.pk, ajax=ajax)
+        url = flask.url_for('edit-stream', spk=stream.pk, ajax=ajax)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
@@ -626,7 +628,7 @@ class TestRestApi(FlaskTestBase):
             self.assertIn('File bbb_v1.mp4 uploaded', response.text)
 
         # print('==== get index ====')
-        url = flask.url_for('stream-edit', spk=stream.pk, ajax=1)
+        url = flask.url_for('edit-stream', spk=stream.pk, ajax=1)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json['media_files'][0]['name'], 'bbb_v1')
@@ -638,7 +640,8 @@ class TestRestApi(FlaskTestBase):
         media_file = models.MediaFile.search(max_items=1)[0]
         self.assertIsNotNone(media_file)
         mfid = media_file.pk
-        url = flask.url_for('media-info', mfid=media_file.pk, ajax=1)
+        url = flask.url_for(
+            'media-info', spk=media_file.stream_pk, mfid=media_file.pk, ajax=1)
         # user must be logged in to use stream API
         self.logout_user()
         response = self.client.delete(url)

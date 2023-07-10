@@ -110,11 +110,12 @@ routes = {
         handler='media_management.IndexMediaFile',
         title='Media information'),
     "media-info": Route(
-        r'/media/<int:mfid>',
+        r'/stream/<int:spk>/<int:mfid>',
         handler='media_management.MediaInfo',
-        title='Media information'),
+        title='Media information',
+        parent='list-streams'),
     'list-streams': Route(
-        r'/media',
+        r'/streams',
         handler='streams.ListStreams',
         title='Available DASH streams'),
     "time": Route(
@@ -122,16 +123,16 @@ routes = {
         handler='utctime.UTCTimeHandler',
         title='Current time of day'),
     "delete-stream": Route(
-        r'/stream/delete/<int:spk>',
+        r'/stream/<int:spk>/delete',
         handler='streams.DeleteStream',
         title='Delete stream',
         parent='list-streams'),
     "add-stream": Route(
-        r'/stream',
+        r'/streams/add',
         handler='streams.AddStream',
         title='Add stream'),
-    "stream-edit": Route(
-        r'/media/edit/<int:spk>',
+    "edit-stream": Route(
+        r'/stream/<int:spk>',
         handler='streams.EditStream',
         title='Edit Stream',
         parent='list-streams'),
