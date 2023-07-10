@@ -70,15 +70,15 @@ def default(value, default_value):
     return default_value
 
 @custom_tags.app_template_filter()
-def sizeFormat(value, binary=True):
-    units = ['G', 'M', 'K', '']
+def sizeFormat(value, binary=True, units: str = 'B'):
+    prefix = ['G', 'M', 'K', '']
     mult = 1024 if binary else 1000
-    while value > mult and units:
-        units.pop()
+    while value > mult and prefix:
+        prefix.pop()
         value = value // mult
-    if not units:
-        units = 'T'
-    return '{:d}{}B'.format(value, units[-1])
+    if not prefix:
+        prefix = 'T'
+    return f'{value} {prefix[-1]}{units}'
 
 @custom_tags.app_template_filter(name='base64')
 def toBase64(value):
@@ -197,6 +197,12 @@ def isoDateTime(value):
 @custom_tags.app_template_filter()
 def isoDuration(value):
     return toIsoDuration(value)
+
+@custom_tags.app_template_filter()
+def length(value):
+    if value is None:
+        return 0
+    return str(len(value))
 
 @custom_tags.app_template_global()
 def import_script(filename: str) -> ScriptTag:

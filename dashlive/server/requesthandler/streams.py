@@ -173,7 +173,7 @@ class EditStream(HTMLHandlerBase):
         context.update(result)
         context['stream'] = result
         context['next'] = urllib.parse.quote_plus(
-            flask.url_for('stream-edit', spk=current_stream.pk))
+            flask.url_for('edit-stream', spk=current_stream.pk))
         return flask.render_template('media/stream.html', **context)
 
     def post(self, **kwargs):
@@ -212,7 +212,7 @@ class EditStream(HTMLHandlerBase):
             'csrf_token': self.generate_csrf_token('streams', csrf_key),
             'stream': current_stream,
             'model': current_stream,
-            'submit_url': flask.url_for('stream-edit', spk=current_stream.pk),
+            'submit_url': flask.url_for('edit-stream', spk=current_stream.pk),
             'upload_url': flask.url_for('upload-blob', spk=current_stream.pk),
             "fields": current_stream.get_fields(),
         })
@@ -228,7 +228,7 @@ class DeleteStream(DeleteModelBase):
 
     def get_cancel_url(self) -> str:
         return self.get_next_url_with_fallback(
-            'stream-edit', spk=current_stream.pk)
+            'edit-stream', spk=current_stream.pk)
 
     def delete_model(self) -> JsonObject:
         result = {

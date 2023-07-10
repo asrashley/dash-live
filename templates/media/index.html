@@ -19,15 +19,15 @@
     {% for stream in streams %}
     <tr>
       <td class="stream-actions">
-        <a href="{{url_for('stream-edit', spk=stream.pk)}}"
+        <a href="{{url_for('edit-stream', spk=stream.pk)}}"
            class="btn btn-success btn-sm edit-stream"
            data-id="{{stream.pk}}">Edit</a>
       </td>
       <td class="title">
-	<a href="{{url_for('stream-edit', spk=stream.pk)}}">{{stream.title}}</a>
+	<a href="{{url_for('edit-stream', spk=stream.pk)}}">{{stream.title}}</a>
       </td>
       <td class="directory">
-	<a href="{{url_for('stream-edit', spk=stream.pk)}}">{{stream.directory}}</a>
+	<a href="{{url_for('edit-stream', spk=stream.pk)}}">{{stream.directory}}</a>
       </td>
       <td class="marlin_la_url ellipsis"
           data-text="{{stream.marlin_la_url|default(drm.marlin.laurl)}}">
