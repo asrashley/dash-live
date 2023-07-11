@@ -13,7 +13,7 @@
         <button class="btn btn-danger btn-sm delete-file" data-key="{{media.pk}}">Delete</button>
         {% endif %}
       </td>
-      <td class="filename">
+      <td class="filename text-primary">
         <a href="{{url_for('media-info', spk=stream.pk, mfid=media.pk)}}">{{media.name}}</a>
       </td>
       <td class="filesize">
