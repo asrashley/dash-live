@@ -13,8 +13,6 @@
 {% include "dialogbox.html" %}
 {% endblock %}
 
-{% block scripts %}
-  <div class="modal-backdrop hidden"></div>
-  {{import_script("jquery-3.4.1")}}
-  <script src="{{url_for('static', filename='js/media.js')}}" type="text/javascript"></script>
+{% block extrascripts %}
+<script src="{{url_for('static', filename='js/media.js')}}" type="text/javascript"></script>
 {% endblock %}
