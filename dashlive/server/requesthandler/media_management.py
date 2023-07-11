@@ -25,7 +25,7 @@ import datetime
 import hashlib
 import logging
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Union
 
 import flask
 from werkzeug.utils import secure_filename
@@ -36,6 +36,8 @@ from dashlive.mpeg import mp4
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.server import models
 from dashlive.server.routes import Route
+from dashlive.utils.buffered_reader import BufferedReader
+from dashlive.utils.json_object import JsonObject
 
 from .base import HTMLHandlerBase, RequestHandlerBase
 from .decorators import (
@@ -265,9 +267,117 @@ class MediaSegmentList(HTMLHandlerBase):
                     'start_time': '',
                 })
             segments.append(item)
+        if self.is_ajax():
+            return self.jsonify({
+                'stream': current_stream.to_dict(with_collections=False),
+                'mediafile': current_media_file.to_dict(
+                    with_collections=False, exclude={'representation', 'rep'}),
+                'segments': segments,
+            })
         context.update({
             'stream': current_stream,
             'mediafile': current_media_file,
             'segments': segments,
         })
         return flask.render_template('media/segment_list.html', **context)
+
+
+class MediaSegmentInfo(HTMLHandlerBase):
+    decorators = [uses_media_file, uses_stream, login_required(admin=True, html=True)]
+
+    def get(self, spk: int, mfid: int, segnum: int) -> flask.Response:
+        context = self.create_context()
+        frag = current_media_file.representation.segments[int(segnum)]
+        options = mp4.Options(cache_encoded=True)
+        if current_media_file.representation.encrypted:
+            options.iv_size = current_media_file.representation.iv_size
+        with current_media_file.open_file(start=frag.pos, buffer_size=16384) as reader:
+            src = BufferedReader(
+                reader, offset=frag.pos, size=frag.size, buffersize=16384)
+            atom = mp4.Wrapper(
+                atom_type='wrap', children=mp4.Mp4Atom.load(src, options=options))
+        exclude = {'parent', '_type', 'options'}
+        atoms = [ch.toJSON(exclude=exclude) for ch in atom.children]
+        for ch in atoms:
+            self.filter_atom(ch)
+        if self.is_ajax():
+            return self.jsonify({
+                'segmentNumber': segnum,
+                'atoms': atoms,
+                'media': current_media_file.to_dict(
+                    pure=True, with_collections=False, exclude={'stream', 'blob', 'representation', 'rep'}),
+                'stream': current_stream.to_dict(
+                    pure=True, with_collections=False, exclude={'media_files'}),
+            })
+
+        def value_has_children(obj) -> bool:
+            if not obj:
+                return False
+            if not isinstance(obj, list):
+                return False
+            if not isinstance(obj[0], dict):
+                return False
+            if '_type' in obj[0]:
+                return True
+            return False
+
+        context['next_id_value'] = 1
+
+        def create_id() -> str:
+            rv = f'id{context["next_id_value"]}'
+            context['next_id_value'] += 1
+            return rv
+
+        context.update({
+            'segnum': segnum,
+            'atoms': atoms,
+            'mediafile': current_media_file,
+            'stream': current_stream,
+            'value_has_children': value_has_children,
+            'create_id': create_id,
+            'object_name': self.object_name,
+        })
+        return flask.render_template('media/segment_info.html', **context)
+
+    @staticmethod
+    def object_name(obj: Union[str, JsonObject]) -> str:
+        if isinstance(obj, str):
+            return obj.split('.')[-1]
+        if 'atom_type' in obj:
+            return obj['atom_type']
+        return obj['_type'].split('.')[-1]
+
+    def filter_object(self, obj: JsonObject) -> None:
+        if 'children' in obj:
+            if obj['children'] is None:
+                del obj['children']
+            else:
+                for ch in obj['children']:
+                    self.filter_object(ch)
+        if 'data' not in obj:
+            return
+        if obj['data'] is None:
+            del obj['data']
+            return
+        if isinstance(obj['data'], dict):
+            try:
+                obj['data'] = obj['data']['b64']
+            except KeyError:
+                obj['data'] = obj['data']['hx']
+        if len(obj['data']) > 63:
+            obj['data'] = '...'
+
+    def filter_atom(self, atom: JsonObject) -> None:
+        self.filter_object(atom)
+        if 'children' in atom:
+            if atom['children'] is None:
+                del atom['children']
+            else:
+                for ch in atom['children']:
+                    self.filter_atom(ch)
+        if 'descriptors' in atom:
+            if atom['descriptors'] is None:
+                del atom['descriptors']
+            else:
+                for dsc in atom['descriptors']:
+                    self.filter_object(dsc)

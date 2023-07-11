@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+
+{% macro show_atom(atom, depth, path) -%}
+{% set aid = create_id() %}
+<div class="card">
+  <div class="card-header" id="head-{{ aid }}">
+    <h2 class="mb-0">
+      <a name="{{ path }}"></a>
+      <button
+        class="btn btn-link collapsed atom-name" type="button"
+        data-toggle="collapse"
+        data-path="{{ path }}"
+        data-target="#body-{{ aid }}"
+        aria-expanded="false" aria-controls="collapseThree">
+        {{ object_name(atom) }} ({{ object_name(atom._type) }})
+      </button>
+    </h2>
+  </div>
+  <div id="body-{{ aid }}" class="collapse" aria-labelledby="head-{{ aid }}">
+    <div class="card-body">
+      {% for key, value in atom | dictsort %}
+      {%- if key != 'children' and key != '_type' and key != 'atom_type' %}
+      <div class="row">
+        <div class="col-sm-2 atom-field-name">{{ key }}</div>
+        <div class="col-sm-10">
+          {%- if key == '_type' %}
+            {{ object_name(value) }}
+          {%- elif value._type %}
+            {{ show_atom(value, depth + 1, path ~ "." ~ key) }}
+          {%- elif value_has_children(value) %}
+            {% for ch in value %}
+              {{ show_atom(ch, depth + 1, path ~ "." ~ key ~ "[" ~ loop.index0 ~ "]") }}
+            {% endfor %}
+          {% else %}
+            {{ value }}
+          {% endif -%}
+        </div>
+      </div>
+      {% endif -%}
+      {% endfor %}
+      {% if atom.children %}
+      <div class="row">
+        <div class="col-sm-12">
+          {% for ch in atom.children %}
+          {{ show_atom(ch, depth + 1, path ~ "." ~ ch.atom_type) }}
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{%- endmacro %}
+
+{% block content %}
+<div class="container media-info">
+  <div class="card" id="atom-list">
+    <div class="card-header">
+      Segment {{ segnum }} in fille &quot;{{ mediafile.blob.filename }}&quot;
+      <a class="btn btn-primary float-right"
+         href="{{ url_for('list-media-segments', spk=stream.pk, mfid=mediafile.pk) }}">Back</a>
+    </div>
+    <div class="card-body">
+      {% for atom in atoms %}
+      {{ show_atom(atom, 0, atom.atom_type) }}
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extrascripts %}
+<script src="{{ url_for('static', filename='js/segments.js') }}" type="text/javascript"></script>
+{% endblock %}
