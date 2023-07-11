@@ -109,10 +109,15 @@ routes = {
         r'/media/index/<mfid>',
         handler='media_management.IndexMediaFile',
         title='Media information'),
+    "view-media-segment": Route(
+        r'/stream/<int:spk>/<int:mfid>/segment/<int:segnum>',
+        handler='media_management.MediaSegmentInfo',
+        title='Media Segment',
+        parent='list-streams'),
     "list-media-segments": Route(
         r'/stream/<int:spk>/<int:mfid>/segments',
         handler='media_management.MediaSegmentList',
-        title='Media information',
+        title='Media Segments',
         parent='list-streams'),
     "media-info": Route(
         r'/stream/<int:spk>/<int:mfid>',

@@ -23,11 +23,14 @@
 	  {% for seg in segments %}
 	  <tr>
 	    <td class="text-right seg-num">
+	      <a class="text-primary"
+		href="{{ url_for('view-media-segment', spk=stream.pk, mfid=mediafile.pk, segnum=loop.index0) }}">
 	      {%- if loop.first %}
 	      init
 	      {%- else %}
 	      {{ loop.index0 }}
 	      {%- endif %}
+	      </a>
 	    </td>
 	    <td class="text-right start">{{ seg.start }}</td>
 	    <td class="text-right start">{{ seg.start_time }}</td>
