@@ -1,4 +1,4 @@
-$(window).load(function(){
+$(document).ready(function(){
   'use strict';
   var statusEvents=['stalled','loadedmetadata', 'error', 'canplay', 'canplaythrough',
                     'playing', 'ended', 'pause', 'resize', 'loadstart', 'seeking', 'seeked'];

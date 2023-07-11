@@ -65,8 +65,6 @@
   </p>
 {% endblock %}
 
-{% block scripts %}
-  {{import_script("jquery-3.4.1")}}
-  {{import_script("bootstrap.bundle")}}
+{% block extrascripts %}
   <script src="{{url_for('static', filename='js/main.js')}}" type="text/javascript"></script>
 {% endblock %}
