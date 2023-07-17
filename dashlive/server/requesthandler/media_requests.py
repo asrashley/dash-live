@@ -180,10 +180,9 @@ class LiveMedia(RequestHandlerBase):
                 lastFragment = firstFragment + representation.num_segments - 1
                 mod_segment = 1 + segment_num - adp_set.startNumber
             if segment_num < firstFragment or segment_num > lastFragment:
-                self.response.write('Segment %d not found (valid range= %d->%d)' %
-                                    (segment_num, firstFragment, lastFragment))
-                self.response.set_status(404)
-                return
+                return flask.make_response(
+                    f'Segment {segment_num} not found (valid range= {firstFragment}->{lastFragment})',
+                    404)
         assert mod_segment >= 0 and mod_segment <= representation.num_segments
         frag = representation.segments[mod_segment]
         options = mp4.Options(cache_encoded=True)
