@@ -65,7 +65,7 @@ class ServeManifest(RequestHandlerBase):
             response = self.check_for_synthetic_manifest_error(context)
             if response is not None:
                 return response
-        body = flask.render_template(manifest, **context)
+        body = flask.render_template(f'manifests/{manifest}', **context)
         headers = {
             'Content-Type': 'application/dash+xml',
             'Accept-Ranges': 'none',

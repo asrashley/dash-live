@@ -246,7 +246,7 @@ class DashManifestCheckMixin(object):
         with self.create_mock_request_context(url, stream):
             context = self.generate_manifest_context(
                 mpd_filename, mode=mode, stream=stream, **kwargs)
-            text = flask.render_template(mpd_filename, **context)
+            text = flask.render_template(f'manifests/{mpd_filename}', **context)
         encrypted = kwargs.get('drm', 'none') != 'none'
         fixture = self.fixture_filename(mpd_filename, mode, encrypted)
         expected = ET.parse(fixture).getroot()
