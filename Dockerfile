@@ -18,7 +18,7 @@ COPY static/js/prod/* $HOME/dash-live/static/js/prod/
 COPY static/js/dev/* $HOME/dash-live/static/js/dev/
 COPY static/js/*.js $HOME/dash-live/static/js/
 COPY lib/*.py $HOME/dash-live/lib/
-COPY templates/*.mpd $HOME/dash-live/templates/
+COPY templates/manifests/*.mpd $HOME/dash-live/templates/manifets/
 COPY templates/*.html $HOME/dash-live/templates/
 COPY templates/drm/*.xml $HOME/dash-live/templates/drm/
 COPY templates/events/*.xml $HOME/dash-live/templates/events/
