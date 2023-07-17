@@ -23,7 +23,10 @@
 import datetime
 import struct
 
-from dashlive import utils
+import flask
+
+from dashlive.utils.date_time import toIsoDateTime
+from dashlive.utils.timezone import UTC
 
 from .base import RequestHandlerBase
 
@@ -32,17 +35,19 @@ class UTCTimeHandler(RequestHandlerBase):
         self.get(format, **kwargs)
 
     def get(self, format, **kwargs):
-        now = datetime.datetime.now(tz=utils.UTC())
+        now = datetime.datetime.now(tz=UTC())
         try:
-            drift = int(self.request.params.get('drift', '0'), 10)
+            drift = int(flask.request.args.get('drift', '0'), 10)
             if drift:
                 now -= datetime.timedelta(seconds=drift)
         except ValueError:
             pass
-        self.response.content_type = 'text/plain'
+        headers = {
+            'Content-Type': 'text/plain',
+        }
         rv = ''
         if format == 'xsd':
-            rv = utils.toIsoDateTime(now)
+            rv = toIsoDateTime(now)
         elif format == 'iso':
             # This code picks an obscure option from ISO 8601, so that a simple parser
             # will fail
@@ -52,12 +57,12 @@ class UTCTimeHandler(RequestHandlerBase):
         elif format == 'http-ntp':
             # NTP epoch is 1st Jan 1900
             epoch = datetime.datetime(
-                year=1900, month=1, day=1, tzinfo=utils.UTC())
+                year=1900, month=1, day=1, tzinfo=UTC())
             seconds = (now - epoch).total_seconds()
             fraction = seconds - int(seconds)
             seconds = int(seconds) % (1 << 32)
             fraction = int(fraction * (1 << 32))
             # See RFC5905 for "NTP Timestamp format"
             rv = struct.pack('>II', seconds, fraction)
-            self.response.content_type = 'application/octet-stream'
-        self.response.write(rv)
+            headers['Content-Type'] = 'application/octet-stream'
+        return flask.make_response((rv, 200, headers))
