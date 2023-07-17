@@ -107,20 +107,18 @@ class TestRestApi(FlaskTestBase):
         url = flask.url_for(
             'media-info', spk=media_file.stream_pk, mfid=media_file.pk, ajax=1)
 
-        # user must be logged in to use stream API
         self.logout_user()
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 401)
+        self.assert200(response)
 
-        # user must be logged in as admin to use stream API
         self.login_user(is_admin=False)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 401)
+        self.assert200(response)
 
-        # user must be logged in as admin to use stream API
         self.login_user(is_admin=True)
 
         response = self.client.get(url)
+        self.assert200(response)
         actual = response.json
         info = {
             'size': media_file.blob.size,
@@ -530,23 +528,24 @@ class TestRestApi(FlaskTestBase):
     def test_upload_media_file_using_ajax(self):
         self.upload_media_file(ajax=1)
 
-    def upload_media_file(self, ajax):
+    def upload_media_file(self, ajax: int) -> None:
         url = flask.url_for('list-streams', ajax=ajax)
 
-        # not logged in, should return authentication error
         self.logout_user()
         response = self.client.get(url)
-        self.assertNotAuthorized(response, ajax)
+        self.assert200(response)
+        if ajax:
+            self.assertNotIn("upload", response.json)
 
-        # logged in as non-admin, should return authentication error
         self.login_user(is_admin=False)
         response = self.client.get(url)
-        self.assertNotAuthorized(response, ajax)
+        self.assert200(response)
+        if ajax:
+            self.assertNotIn("upload", response.json)
 
-        # logged in as admin should succeed
-        self.login_user(is_admin=True)
+        self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
+        self.assert200(response)
 
         stream = models.Stream(
             title='upload media file test',
@@ -558,7 +557,7 @@ class TestRestApi(FlaskTestBase):
         stream = models.Stream.get(title='upload media file test')
         self.assertIsNotNone(stream)
 
-        url = flask.url_for('edit-stream', spk=stream.pk, ajax=ajax)
+        url = flask.url_for('view-stream', spk=stream.pk, ajax=ajax)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
@@ -628,7 +627,7 @@ class TestRestApi(FlaskTestBase):
             self.assertIn('File bbb_v1.mp4 uploaded', response.text)
 
         # print('==== get index ====')
-        url = flask.url_for('edit-stream', spk=stream.pk, ajax=1)
+        url = flask.url_for('view-stream', spk=stream.pk, ajax=1)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json['media_files'][0]['name'], 'bbb_v1')

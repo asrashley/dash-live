@@ -27,11 +27,13 @@ from typing import Optional
 
 from flask import Flask, request  # type: ignore
 from flask_login import LoginManager
+from sqlalchemy import delete  # type: ignore
 from werkzeug.routing import BaseConverter  # type: ignore
 
 from dashlive.server import models
 from dashlive.templates.tags import custom_tags
 from dashlive.utils.json_object import JsonObject
+from .anonymous_user import AnonymousUser
 from .routes import routes
 from .settings import (
     cookie_secret, jwt_secret, default_admin_username, default_admin_password,
@@ -97,6 +99,7 @@ def create_app(config: Optional[JsonObject] = None,
         app.config.update(config)
     app.secret_key = cookie_secret
     models.db.init_app(app)
+    login_manager.anonymous_user = AnonymousUser
     login_manager.init_app(app)
 
     @login_manager.user_loader
@@ -107,6 +110,8 @@ def create_app(config: Optional[JsonObject] = None,
         models.db.create_all()
         if create_default_user:
             models.User.check_if_empty(default_admin_username, default_admin_password)
+        stmt = delete(models.Token).where(models.Token.token_type == models.TokenType.CSRF)
+        models.db.session.execute(stmt)
 
     app.register_blueprint(custom_tags)
     return app

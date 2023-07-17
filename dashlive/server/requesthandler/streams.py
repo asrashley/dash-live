@@ -25,6 +25,7 @@ from typing import Dict, Optional
 import urllib
 
 import flask
+from flask_login import current_user
 
 from dashlive.drm.playready import PlayReady
 from dashlive.server import models
@@ -39,7 +40,7 @@ class ListStreams(HTMLHandlerBase):
     View handler that provides a list of all media in the
     database.
     """
-    decorators = [login_required(admin=True, html=True)]
+    decorators = []
 
     def get(self, **kwargs):
         """
@@ -48,13 +49,15 @@ class ListStreams(HTMLHandlerBase):
         context = self.create_context(**kwargs)
         context['keys'] = models.Key.all(order_by=[models.Key.hkid])
         context['streams'] = [s.to_dict(with_collections=True) for s in models.Stream.all()]
+        context['user_can_modify'] = current_user.has_permission(models.Group.MEDIA)
         csrf_key = self.generate_csrf_cookie()
         context['csrf_tokens'] = {
             'files': self.generate_csrf_token('files', csrf_key),
             'kids': self.generate_csrf_token('keys', csrf_key),
             'streams': self.generate_csrf_token('streams', csrf_key),
-            'upload': self.generate_csrf_token('upload', csrf_key),
         }
+        if context['user_can_modify']:
+            context['upload'] = self.generate_csrf_token('upload', csrf_key),
         context['drm'] = {
             'playready': {
                 'laurl': PlayReady.TEST_LA_URL
@@ -64,8 +67,11 @@ class ListStreams(HTMLHandlerBase):
             }
         }
         if self.is_ajax():
+            exclude = set()
+            if not current_user.has_permission(models.Group.MEDIA):
+                exclude.add('key')
             result = {
-                'keys': [k.toJSON(pure=True) for k in context['keys']]
+                'keys': [k.toJSON(pure=True, exclude=exclude) for k in context['keys']]
             }
             for item in ['csrf_tokens', 'streams']:
                 result[item] = context[item]
@@ -77,7 +83,7 @@ class AddStream(HTMLHandlerBase):
     """
     handler for adding a stream
     """
-    decorators = [login_required(admin=True)]
+    decorators = [login_required(permission=models.Group.MEDIA)]
 
     def get(self, error: Optional[str] = None):
         """
@@ -143,7 +149,7 @@ class EditStream(HTMLHandlerBase):
     """
     Handler that allows viewing and updating a stream
     """
-    decorators = [uses_stream, login_required(html=True, admin=True)]
+    decorators = [uses_stream]
 
     def get(self, **kwargs):
         """
@@ -156,11 +162,12 @@ class EditStream(HTMLHandlerBase):
             'csrf_tokens': {
                 'files': self.generate_csrf_token('files', csrf_key),
                 'kids': self.generate_csrf_token('keys', csrf_key),
-                'upload': self.generate_csrf_token('upload', csrf_key),
                 'streams': csrf_key,
             },
             'media_files': [],
         })
+        if current_user.has_permission(models.Group.MEDIA):
+            result['csrf_tokens']['upload'] = self.generate_csrf_token('upload', csrf_key)
         kids: Dict[str, models.Key] = {}
         for mf in current_stream.media_files:
             result['media_files'].append(mf.toJSON(convert_date=False))
@@ -168,14 +175,21 @@ class EditStream(HTMLHandlerBase):
                 kids[mk.hkid] = mk
         result['keys'] = [kids[hkid] for hkid in sorted(kids.keys())]
         if self.is_ajax():
-            result['upload_url'] = context['upload_url']
+            exclude = set()
+            if current_user.has_permission(models.Group.MEDIA):
+                result['upload_url'] = context['upload_url']
+            else:
+                exclude.add('key')
+            result['keys'] = [k.toJSON(exclude=exclude, pure=True) for k in result['keys']]
             return self.jsonify(result)
         context.update(result)
+        context['user_can_modify'] = current_user.has_permission(models.Group.MEDIA)
         context['stream'] = result
         context['next'] = urllib.parse.quote_plus(
-            flask.url_for('edit-stream', spk=current_stream.pk))
+            flask.url_for('view-stream', spk=current_stream.pk))
         return flask.render_template('media/stream.html', **context)
 
+    @login_required(permission=models.Group.MEDIA)
     def post(self, **kwargs):
         def str_or_none(value):
             if value is None:
@@ -212,10 +226,13 @@ class EditStream(HTMLHandlerBase):
             'csrf_token': self.generate_csrf_token('streams', csrf_key),
             'stream': current_stream,
             'model': current_stream,
-            'submit_url': flask.url_for('edit-stream', spk=current_stream.pk),
+            'submit_url': flask.url_for('view-stream', spk=current_stream.pk),
             'upload_url': flask.url_for('upload-blob', spk=current_stream.pk),
             "fields": current_stream.get_fields(),
         })
+        if not current_user.has_permission(models.Group.MEDIA):
+            for fld in context['fields']:
+                fld['disabled'] = True
         return context
 
 class DeleteStream(DeleteModelBase):
@@ -228,7 +245,7 @@ class DeleteStream(DeleteModelBase):
 
     def get_cancel_url(self) -> str:
         return self.get_next_url_with_fallback(
-            'edit-stream', spk=current_stream.pk)
+            'view-stream', spk=current_stream.pk)
 
     def delete_model(self) -> JsonObject:
         result = {

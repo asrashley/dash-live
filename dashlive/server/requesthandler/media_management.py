@@ -129,7 +129,7 @@ class MediaInfo(HTMLHandlerBase):
     """
     View handler that provides details about one media file
     """
-    decorators = [uses_media_file, uses_stream, login_required(admin=True, html=True)]
+    decorators = [uses_media_file, uses_stream]
 
     def get(self, spk: int, mfid: int) -> flask.Response:
         mf = current_media_file
@@ -163,10 +163,11 @@ class MediaInfo(HTMLHandlerBase):
         breadcrumbs = super(MediaInfo, self).get_breadcrumbs(route)
         breadcrumbs.insert(-1, {
             'title': current_stream.directory,
-            'href': flask.url_for('edit-stream', spk=current_stream.pk),
+            'href': flask.url_for('view-stream', spk=current_stream.pk),
         })
         return breadcrumbs
 
+    @login_required(permission=models.Group.MEDIA, html=True)
     def delete(self, mfid, **kwargs):
         """
         handler for deleting a media blob
@@ -197,7 +198,7 @@ class IndexMediaFile(HTMLHandlerBase):
     View handler that indexes a file to find its fragments and
     media information
     """
-    decorators = [uses_media_file, login_required(admin=True)]
+    decorators = [uses_media_file, login_required(permission=models.Group.MEDIA)]
 
     def get(self, mfid: str) -> flask.Response:
         result = {"error": None}
@@ -238,7 +239,7 @@ class IndexMediaFile(HTMLHandlerBase):
 
 
 class MediaSegmentList(HTMLHandlerBase):
-    decorators = [uses_media_file, uses_stream, login_required(admin=True, html=True)]
+    decorators = [uses_media_file, uses_stream]
 
     def get(self, spk: int, mfid: int) -> flask.Response:
         context = self.create_context()
@@ -283,7 +284,7 @@ class MediaSegmentList(HTMLHandlerBase):
 
 
 class MediaSegmentInfo(HTMLHandlerBase):
-    decorators = [uses_media_file, uses_stream, login_required(admin=True, html=True)]
+    decorators = [uses_media_file, uses_stream]
 
     def get(self, spk: int, mfid: int, segnum: int) -> flask.Response:
         context = self.create_context()

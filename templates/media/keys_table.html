@@ -2,10 +2,12 @@
   <caption>Keys</caption>
   <thead><tr>
       <th class="key-actions">
+	{%- if user_can_modify %}
 	{% if next %}
         <a href="{{url_for('key', next=next)}}"class="btn btn-success add-key">Add</a>
         {% else %}
         <a href="{{url_for('key')}}"class="btn btn-success add-key">Add</a>
+        {% endif %}
         {% endif %}
       </th>
       <th class="kid">KID</th>
@@ -16,16 +18,27 @@
     {% for keypair in keys %}
     <tr>
       <td class="delete">
-	{% if next %}
-        <a href="{{url_for('edit-key', kpk=keypair.pk, next=next)}}" class="btn btn-primary">Edit</a>
+	{%- if user_can_modify %}
+	<a class="btn btn-primary"
+	{%- if next %}
+        href="{{url_for('edit-key', kpk=keypair.pk, next=next)}}">
         {% else %}
-        <a href="{{url_for('edit-key', kpk=keypair.pk)}}" class="btn btn-primary">Edit</a>
+        href="{{url_for('edit-key', kpk=keypair.pk)}}">
         {% endif %}
+	Edit
+	</a>
+        {%- endif %}
       </td>
       <td class="kid">
 	<a name="kid-{{keypair.KID.hex}}">{{keypair.KID.hex}}</a>
       </td>
-      <td class="key">{{keypair.KEY.hex}}</td>
+      <td class="key">
+	{%- if user_can_modify %}
+	{{ keypair.KEY.hex }}
+        {%- else %}
+	***
+        {%- endif %}
+      </td>
       <td class="computed">
         {% if keypair.computed %}
         <span class="bool-yes %s">&check;</span>

@@ -37,7 +37,7 @@ class KeyHandler(RequestHandlerBase):
     """
     Handler to add, edit and remove encryption keys
     """
-    decorators = [login_required(admin=True)]
+    decorators = [login_required(permission=models.Group.MEDIA)]
 
     def get(self, kpk: Optional[int] = None) -> flask.Response:
         """

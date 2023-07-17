@@ -56,9 +56,13 @@ class FlaskTestBase(TestCaseMixin, TestCase):
     STD_USER = 'user'
     STD_EMAIL = 'user@dashlive.unit.test'
     STD_PASSWORD = r'pa55word'
+    MEDIA_USER = 'media'
+    MEDIA_EMAIL = 'media@dashlive.unit.test'
+    MEDIA_PASSWORD = r'm3d!a'
     STREAM_TITLE = 'Big Buck Bunny'
 
     _temp_dir = multiprocessing.Array(ctypes.c_char, 1024)
+    current_url: Optional[str] = None
 
     def create_app(self):
         FORMAT = r"%(asctime)-15s:%(levelname)s:%(filename)s@%(lineno)d: %(message)s"
@@ -87,6 +91,14 @@ class FlaskTestBase(TestCaseMixin, TestCase):
                 must_change=False,
             )
             models.db.session.add(std_user)
+            media_user = models.User(
+                username=self.MEDIA_USER,
+                email=self.MEDIA_EMAIL,
+                password=models.User.hash_password(self.MEDIA_PASSWORD),
+                groups_mask=(models.Group.USER + models.Group.MEDIA),
+                must_change=False,
+            )
+            models.db.session.add(media_user)
             models.db.session.commit()
         return app
 

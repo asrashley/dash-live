@@ -3,12 +3,16 @@
 
 {% block content %}
 <div id="media-management" class="container">
+  {% if user_can_modify %}
   <h2>Editing &quot;{{stream.title}}&quot;</h2>
+  {% endif %}
   <div class="form-group">
     {% set extra_buttons %}
+    {% if user_can_modify %}
     <a href="{{url_for('delete-stream', spk=stream.pk)}}"
        class="btn btn-danger delete-stream"
        data-id="{{stream.pk}}">Delete &quot;{{stream.title}}&quot;</a>
+    {% endif %}
     {% endset %}
   </div>
   {% set cancel_url = url_for('list-streams') %}
@@ -17,8 +21,10 @@
     <caption>Media Files</caption>
     <thead>
       <tr>
+	{% if user_can_modify %}
 	<th class="index"></th>
 	<th class="delete"></th>
+	{% endif %}
 	<th class="filename">Name</th>
 	<th class="filesize">Size</th>
 	<th class="created">Created</th>
@@ -36,9 +42,11 @@
     </tbody>
   </table>
   {% include "media/keys_table.html" %}
+  {% if user_can_modify %}
   <div class="form-container">
     {% include "media/upload_file_form.html" %}
   </div>
+  {% endif %}
 </div>
 
 {% include "dialogbox.html" %}
