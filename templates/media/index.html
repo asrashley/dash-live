@@ -8,7 +8,9 @@
     <caption>Streams</caption>
     <thead><tr>
         <th class="stream-actions">
+	  {% if user_can_modify %}
           <a href="{{url_for('add-stream')}}" class="btn btn-success add-stream">Add</a>
+	  {% endif %}
 	</th>
         <th class="title">Title</th>
         <th class="directory">Directory</th>
@@ -19,15 +21,21 @@
     {% for stream in streams %}
     <tr>
       <td class="stream-actions">
-        <a href="{{url_for('edit-stream', spk=stream.pk)}}"
+        <a href="{{url_for('view-stream', spk=stream.pk)}}"
            class="btn btn-success btn-sm edit-stream"
-           data-id="{{stream.pk}}">Edit</a>
+           data-id="{{stream.pk}}">
+	  {%- if user_can_modify %}
+	  Edit
+	  {%- else %}
+	  View
+	  {%- endif %}
+	</a>
       </td>
       <td class="title">
-	<a href="{{url_for('edit-stream', spk=stream.pk)}}">{{stream.title}}</a>
+	<a href="{{url_for('view-stream', spk=stream.pk)}}">{{stream.title}}</a>
       </td>
       <td class="directory">
-	<a href="{{url_for('edit-stream', spk=stream.pk)}}">{{stream.directory}}</a>
+	<a href="{{url_for('view-stream', spk=stream.pk)}}">{{stream.directory}}</a>
       </td>
       <td class="marlin_la_url ellipsis"
           data-text="{{stream.marlin_la_url|default(drm.marlin.laurl)}}">

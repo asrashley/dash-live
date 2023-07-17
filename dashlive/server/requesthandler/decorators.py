@@ -5,7 +5,7 @@ import flask  # type: ignore
 from flask_login import current_user
 from werkzeug.local import LocalProxy  # type: ignore
 
-from dashlive.server.models import Key, MediaFile, Stream, User
+from dashlive.server.models import Group, Key, MediaFile, Stream, User
 
 def is_ajax() -> bool:
     # print('content_type', flask.request.content_type, flask.request.url)
@@ -14,16 +14,16 @@ def is_ajax() -> bool:
         flask.request.form.get("ajax", "0") == "1" or
         flask.request.args.get("ajax", "0") == "1")
 
-def needs_login_response(admin: bool, html: bool) -> flask.Response:
+def needs_login_response(admin: bool, html: bool, permission: Optional[Group]) -> flask.Response:
     if is_ajax():
         response = flask.json.jsonify('Not Authorized')
         response.status = 401
         return response
     if html:
-        return flask.render_template('needs_login.html', needs_admin=admin)
+        return flask.render_template('needs_login.html', needs_admin=admin, permission=permission)
     return flask.make_response('Not Authorized', 401)
 
-def login_required(html=False, admin=False):
+def login_required(html=False, admin=False, permission: Optional[Group] = None):
     """
     Decorator that requires user to be logged in
     """
@@ -31,9 +31,11 @@ def login_required(html=False, admin=False):
         @wraps(func)
         def decorated_function(*args, **kwargs):
             if not current_user.is_authenticated:
-                return needs_login_response(admin=admin, html=html)
+                return needs_login_response(admin=admin, html=html, permission=permission)
             if admin and not current_user.is_admin:
-                return needs_login_response(admin=admin, html=html)
+                return needs_login_response(admin=admin, html=html, permission=permission)
+            if permission and not current_user.has_permission(permission):
+                return needs_login_response(admin=admin, html=html, permission=permission)
             return func(*args, **kwargs)
         return decorated_function
     return decorator

@@ -1,5 +1,5 @@
 import re
-from typing import cast, Dict, List, Optional, Union
+from typing import cast, AbstractSet, Dict, List, Optional, Union
 
 import sqlalchemy as sa
 
@@ -72,13 +72,19 @@ class Key(db.Model, ModelMixin):
             rv[k.hkid.lower()] = k
         return rv
 
-    def toJSON(self, pure=False):
-        return {
+    def toJSON(self, pure: bool = False,
+               exclude: Optional[AbstractSet[str]] = None) -> JsonObject:
+        js = {
             'kid': self.hkid,
             'key': self.hkey,
             'alg': self.ALG,
             'computed': self.computed,
         }
+        if exclude is None:
+            return js
+        for ex in exclude:
+            del js[ex]
+        return js
 
     def get_fields(self) -> List[JsonObject]:
         return [{

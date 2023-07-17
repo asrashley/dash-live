@@ -85,7 +85,7 @@ class User(db.Model, ModelMixin):  # type: ignore
 
     @property
     def is_anonymous(self) -> bool:
-        return self.is_member_of(Group.GUEST)
+        return False
 
     def set_password(self, password: str) -> None:
         """
@@ -128,10 +128,12 @@ class User(db.Model, ModelMixin):  # type: ignore
         """
         return (self.groups_mask & group.value) == group.value
 
-    def has_permission(self, group: Group):
+    def has_permission(self, group: Union[Group, str]):
         """
         Check if the user has the permission associated with a group
         """
+        if isinstance(group, str):
+            group = Group[group.upper()]
         return ((self.groups_mask & group.value) == group.value or
                 self.is_admin)
 
@@ -142,7 +144,7 @@ class User(db.Model, ModelMixin):  # type: ignore
         groups: List[str] = []
         for group in cast(List[Group], list(Group)):
             if (self.groups_mask & group.value or (
-                    self.is_admin and group.value <= Group.EDITOR.value)):
+                    self.is_admin and group.value <= Group.MEDIA.value)):
                 groups.append(group.name)
         return groups
 

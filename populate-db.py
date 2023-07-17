@@ -184,7 +184,7 @@ class MediaManagement:
         if directory not in self.streams:
             self.log.error('Failed to find information for stream "%s"', directory)
             return None
-        url = self.url_for('edit-stream', spk=self.streams[directory].pk, ajax=1)
+        url = self.url_for('view-stream', spk=self.streams[directory].pk, ajax=1)
         self.log.debug('GET %s', url)
         result = self.session.get(url, params={'ajax': 1})
         if result.status_code != 200:

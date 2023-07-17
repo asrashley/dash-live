@@ -141,7 +141,7 @@ routes = {
         r'/streams/add',
         handler='streams.AddStream',
         title='Add stream'),
-    "edit-stream": Route(
+    "view-stream": Route(
         r'/stream/<int:spk>',
         handler='streams.EditStream',
         title='Edit Stream',

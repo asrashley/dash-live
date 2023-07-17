@@ -1,5 +1,6 @@
-    <tr id="{{media.name}}">
-      <td class="index">
+<tr id="{{media.name}}">
+  {% if user_can_modify %}
+  <td class="index">
         {% if media.representation %}
         <button class="btn btn-sm btn-info btn-index" data-toggle="modal" data-target="#dialog-box"
                 data-key="{{media.pk}}">Re-index</button>
@@ -7,12 +8,13 @@
         <button class="btn btn-sm btn-warning btn-index" data-toggle="modal" data-target="#dialog-box"
                 data-key="{{media.pk}}">Index</button>
         {% endif %}
-      </td>
-      <td class="delete">
-        {% if media.blob %}
-        <button class="btn btn-danger btn-sm delete-file" data-key="{{media.pk}}">Delete</button>
-        {% endif %}
-      </td>
+  </td>
+  <td class="delete">
+    {% if media.blob %}
+    <button class="btn btn-danger btn-sm delete-file" data-key="{{media.pk}}">Delete</button>
+    {% endif %}
+  </td>
+  {% endif %}
       <td class="filename text-primary">
         <a href="{{url_for('media-info', spk=stream.pk, mfid=media.pk)}}">{{media.name}}</a>
       </td>

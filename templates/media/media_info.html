@@ -5,7 +5,7 @@
   <div class="card">
     <div class="card-header">
       Media fille &quot;{{ mediafile.name }}&quot;
-      <a class="btn btn-primary float-right" href="{{ url_for('edit-stream', spk=stream.pk) }}">Back</a>
+      <a class="btn btn-primary float-right" href="{{ url_for('view-stream', spk=stream.pk) }}">Back</a>
     </div>
     <div class="card-body">
       <div class="row">
@@ -15,7 +15,7 @@
       <div class="row">
 	<div class="col-sm-3 field-title">Stream:</div>
 	<div class="col-sm-9">
-	  <a href="{{ url_for('edit-stream', spk=stream.pk) }}" class="text-primary">
+	  <a href="{{ url_for('view-stream', spk=stream.pk) }}" class="text-primary">
 	    {{ stream.directory }}
 	  </a>
 	</div>
@@ -59,6 +59,10 @@
 	  <a href="{{ url_for('list-media-segments', spk=stream.pk, mfid=mediafile.pk) }}"
 	     class="text-primary">
 	    {{ mediafile.representation.segments | length }}
+	  </a>
+	  <a href="{{ url_for('list-media-segments', spk=stream.pk, mfid=mediafile.pk) }}"
+	     class="btn btn-sm btn-primary">
+	    View segments
 	  </a>
 	</div>
       </div>

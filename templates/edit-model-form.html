@@ -12,8 +12,12 @@
   {% include 'input-field.html' %}
   {% endfor %}
   <div class="form-actions">
+    {% if current_user.has_permission('MEDIA') %}
     <button type="submit" class="btn btn-primary">Save Changes</button>
     <a href="{{cancel_url}}" class="btn btn-warning">Cancel</a>
+    {% else %}
+    <a href="{{cancel_url}}" class="btn btn-warning">Back</a>
+    {% endif %}
     {% if extra_buttons %}
     {{ extra_buttons }}
     {% endif %}

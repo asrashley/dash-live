@@ -54,7 +54,7 @@ class TestHtmlPageHandlers(FlaskTestBase):
         self.assertIsNotNone(html)
         self.assertIn('Log In', response.text)
         media_list_url = flask.url_for('list-streams')
-        self.assertNotIn(f'href="{media_list_url}"', response.text)
+        self.assertIn(f'href="{media_list_url}"', response.text)
         for filename, manifest in manifests.manifest.items():
             mpd_url = flask.url_for(
                 'dash-mpd-v3', manifest=filename, stream='placeholder',
@@ -70,6 +70,8 @@ class TestHtmlPageHandlers(FlaskTestBase):
         self.assertNotIn('Log In', response.text)
         self.assertIn(f'href="{media_list_url}"', response.text)
         self.assertIn('Log Out', response.text)
+        user_admin_url = flask.url_for('list-users')
+        self.assertIn(f'href="{user_admin_url}"', response.text)
 
     def test_cgi_options_page(self):
         url = flask.url_for('cgi-options', absolute=True)
@@ -80,7 +82,7 @@ class TestHtmlPageHandlers(FlaskTestBase):
         self.assertIsNotNone(html)
         self.assertIn('Log In', response.text)
         media_list_url = flask.url_for('list-streams')
-        self.assertNotIn(f'href="{media_list_url}"', response.text)
+        self.assertIn(f'href="{media_list_url}"', response.text)
         for option in cgi_options:
             if option.name == 'drmloc':
                 continue
@@ -93,53 +95,55 @@ class TestHtmlPageHandlers(FlaskTestBase):
         try:
             self.current_url = url
 
-            # user must be logged in to use media page
             self.logout_user()
             response = self.client.get(url)
             self.assertEqual(response.status, '200 OK')
-            self.assertIn('This page requires you to log in', response.text)
+            # user must be logged in with a media account to edit media
+            self.assertNotIn('Edit', response.text)
+            self.assertNotIn('Add', response.text)
 
-            # user must be logged in as admin to use media page
             self.login_user(is_admin=False)
             response = self.client.get(url)
             self.assertEqual(response.status, '200 OK')
-            self.assertIn('This page requires you to log in', response.text)
+            self.assertNotIn('Edit', response.text)
+            self.assertNotIn('Add', response.text)
             self.logout_user()
 
-            # user must be logged in as admin to use media page
+            # user must be logged in with a media group account to edit
             self.login_user(is_admin=True)
             response = self.client.get(url)
             self.assertEqual(response.status, '200 OK')
-            self.assertNotIn('This page requires you to log in', response.text)
+            self.assertIn('Edit', response.text)
+            self.assertIn('Add', response.text)
         finally:
             self.current_url = None
 
     def test_stream_edit_page(self):
         self.setup_media()
         stream = models.Stream.get(title='Big Buck Bunny')
-        url = flask.url_for('edit-stream', spk=stream.pk)
+        url = flask.url_for('view-stream', spk=stream.pk)
 
         try:
             self.current_url = url
 
-            # user must be logged in to use media page
             self.logout_user()
             response = self.client.get(url)
             self.assertEqual(response.status_code, 200)
-            self.assertIn('This page requires you to log in', response.text)
+            # user must be logged in to edit media
+            self.assertNotIn('Editing', response.text)
 
-            # user must be logged in as admin to use media page
             self.login_user(is_admin=False)
             response = self.client.get(url)
             self.assertEqual(response.status_code, 200)
-            self.assertIn('This page requires you to log in', response.text)
+            # user must be logged in to edit media
+            self.assertNotIn('Editing', response.text)
             self.logout_user()
 
-            # user must be logged in as admin to use media page
-            self.login_user(is_admin=True)
+            # user must be logged in with media group to edit media
+            self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)
             response = self.client.get(url)
             self.assertEqual(response.status_code, 200)
-            self.assertNotIn('This page requires you to log in', response.text)
+            self.assertIn('Editing', response.text)
             for field in ['Title', 'Directory', 'Marlin LA URL', 'PlayReady LA URL']:
                 self.assertIn(f'{field}:', response.text)
             html = BeautifulSoup(response.text, 'lxml')
