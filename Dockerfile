@@ -22,7 +22,9 @@ COPY templates/*.mpd $HOME/dash-live/templates/
 COPY templates/*.html $HOME/dash-live/templates/
 COPY templates/drm/*.xml $HOME/dash-live/templates/drm/
 COPY templates/events/*.xml $HOME/dash-live/templates/events/
+COPY templates/media/*.html $HOME/dash-live/templates/media/
 COPY templates/segment/*.xml $HOME/dash-live/templates/segment/
+COPY templates/users/*.html $HOME/dash-live/templates/users/
 COPY static/css/* $HOME/dash-live/static/css/
 COPY runserver.sh $HOME/dash-live/
 COPY dashlive/drm/*.py $HOME/dash-live/dashlive/drm/
