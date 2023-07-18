@@ -28,6 +28,7 @@ from builtins import str
 from past.utils import old_div
 import binascii
 import ctypes
+import json
 import logging
 import multiprocessing
 from pathlib import Path
@@ -72,6 +73,7 @@ class FlaskTestBase(TestCaseMixin, TestCase):
             'BLOB_FOLDER': str(self.FIXTURES_PATH.parent),
             'UPLOAD_FOLDER': '/dev/null',
             'SQLALCHEMY_DATABASE_URI': "sqlite:///:memory:",
+            'TESTING': True,
         }
         app = create_app(config=config, create_default_user=False)
         with app.app_context():
@@ -119,8 +121,6 @@ class FlaskTestBase(TestCaseMixin, TestCase):
         for idx, rid in enumerate(fixture_files):
             filename = rid + ".mp4"
             src_file = self.FIXTURES_PATH / filename
-            with src_file.open(mode="rb", buffering=16384) as src:
-                atoms = mp4.Mp4Atom.load(src)
             if '_v' in rid:
                 content_type = 'video'
             elif '_a' in rid:
@@ -134,23 +134,33 @@ class FlaskTestBase(TestCaseMixin, TestCase):
                 content_type=content_type,
                 auto_delete=False)
             blobs.append(blob)
-            rep = Representation.load(filename, atoms)
+            js_filename = self.FIXTURES_PATH / f'rep-{rid}.json'
+            if js_filename.exists():
+                with js_filename.open('rt', encoding='utf-8') as src:
+                    rep = json.load(src)
+            else:
+                with src_file.open(mode="rb", buffering=16384) as src:
+                    atoms = mp4.Mp4Atom.load(src)
+                rep = Representation.load(filename, atoms)
+                rep = rep.toJSON(pure=True)
+                with js_filename.open('wt', encoding='utf-8') as dest:
+                    json.dump(rep, dest)
             encrypted = rid.endswith('_enc')
-            self.assertEqual(encrypted, rep.encrypted)
+            self.assertEqual(encrypted, rep['encrypted'])
             self.assertAlmostEqual(
-                rep.mediaDuration,
-                self.MEDIA_DURATION * rep.timescale,
-                delta=(old_div(rep.timescale, 5)),
+                rep['mediaDuration'],
+                self.MEDIA_DURATION * rep['timescale'],
+                delta=(old_div(rep['timescale'], 5)),
                 msg='Invalid duration for {}. Expected {} got {}'.format(
-                    filename, self.MEDIA_DURATION * rep.timescale,
-                    rep.mediaDuration))
+                    filename, self.MEDIA_DURATION * rep['timescale'],
+                    rep['mediaDuration']))
             mf = models.MediaFile(
                 name=rid,
                 stream=bbb,
-                rep=rep.toJSON(pure=True),
-                bitrate=rep.bitrate,
-                content_type=rep.content_type,
-                encrypted=rep.encrypted,
+                rep=rep,
+                bitrate=rep['bitrate'],
+                content_type=rep['content_type'],
+                encrypted=rep['encrypted'],
                 blob=blob)
             media_files.append(mf)
         with self.app.app_context():
