@@ -25,6 +25,7 @@ import os
 import unittest
 
 from dashlive.mpeg.dash.representation import Representation
+from dashlive.mpeg.dash.segment import Segment
 from dashlive.mpeg import mp4
 from dashlive.utils.buffered_reader import BufferedReader
 
@@ -66,6 +67,12 @@ class SegmentTests(unittest.TestCase):
                         c.position - pos, rep.segments[idx].size, msg)
                     pos = c.position
                     idx += 1
+
+    def test_string_output(self) -> None:
+        seg = Segment(pos=0, size=123, duration=3600)
+        self.assertEqual(str(seg), '(0,123,3600)')
+        seg = Segment(pos=0, size=123)
+        self.assertEqual(str(seg), '(0,123)')
 
 
 if os.environ.get("TESTS"):

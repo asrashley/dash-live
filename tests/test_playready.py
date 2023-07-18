@@ -107,6 +107,10 @@ class PlayreadyTests(FlaskTestBase):
             raw_kid)
         base64_kid = self.to_base64(raw_kid)
         self.assertEqual(r'QFS0GixTmUOU3Fxa2VhLrA==', base64_kid)
+        with self.assertRaises(ValueError):
+            PlayReady.hex_to_le_guid(guid=b'invalid', raw=True)
+        with self.assertRaises(ValueError):
+            PlayReady.hex_to_le_guid(guid='ab012345', raw=False)
 
     def test_content_key_generation(self):
         # https://brokenpipe.wordpress.com/2016/10/06/generating-a-playready-content-key-using-a-key-seed-and-key-id/
@@ -128,6 +132,10 @@ class PlayreadyTests(FlaskTestBase):
         CEK = binascii.a2b_hex('4edb7704cdbf03617f4800bd878a6df2')
         key = PlayReady.generate_content_key(KID)
         self.assertEqual(binascii.b2a_hex(key), binascii.b2a_hex(CEK))
+        with self.assertRaises(ValueError):
+            PlayReady.generate_content_key(keyId=b'123')
+        with self.assertRaises(ValueError):
+            PlayReady.generate_content_key(keyId=kid, keySeed=b'123')
 
     def test_checksum_generation(self):
         mspr = PlayReady(la_url=self.la_url)
