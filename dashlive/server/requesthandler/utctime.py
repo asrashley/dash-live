@@ -32,7 +32,7 @@ from .base import RequestHandlerBase
 
 class UTCTimeHandler(RequestHandlerBase):
     def head(self, format, **kwargs):
-        self.get(format, **kwargs)
+        return self.get(format, **kwargs)
 
     def get(self, format, **kwargs):
         now = datetime.datetime.now(tz=UTC())
@@ -44,6 +44,7 @@ class UTCTimeHandler(RequestHandlerBase):
             pass
         headers = {
             'Content-Type': 'text/plain',
+            'Date': now.strftime(r'%a, %d %b %Y %H:%M:%S %Z'),
         }
         rv = ''
         if format == 'xsd':
