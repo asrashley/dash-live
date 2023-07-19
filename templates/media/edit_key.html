@@ -14,7 +14,7 @@
       <div class="form-group">
 	{% set extra_buttons %}
 	{% if model.pk %}
-	<a href="{{url_for('key-delete', kpk=model.pk)}}"
+	<a href="{{url_for('delete-key', kpk=model.pk)}}"
 	   class="btn btn-danger delete-stream"
 	   data-id="{{model.pk}}">Delete &quot;{{model.hkid}}&quot;</a>
 	{% endif %}

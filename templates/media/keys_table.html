@@ -3,11 +3,13 @@
   <thead><tr>
       <th class="key-actions">
 	{%- if user_can_modify %}
-	{% if next %}
-        <a href="{{url_for('key', next=next)}}"class="btn btn-success add-key">Add</a>
+	<a
+	{%- if next %}
+        href="{{url_for('add-key', next=next)}}"
         {% else %}
-        <a href="{{url_for('key')}}"class="btn btn-success add-key">Add</a>
+        href="{{url_for('add-key')}}"
         {% endif %}
+	class="btn btn-success add-key">Add</a>
         {% endif %}
       </th>
       <th class="kid">KID</th>

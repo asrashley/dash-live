@@ -254,7 +254,7 @@ class TestRestApi(FlaskTestBase):
             'key': 'ccc0f2b3b279926496a7f5d25da692f6',
             'ajax': 1,
         }
-        url = flask.url_for('key', **request)
+        url = flask.url_for('add-key', **request)
 
         # user must be logged in to use keys API
         self.logout_user()
@@ -285,7 +285,7 @@ class TestRestApi(FlaskTestBase):
             'kid': request['kid'].lower(),
             'key': request['key'].lower(),
             'computed': False,
-            'csrf': response.json["csrf"],
+            'csrf_token': response.json["csrf_token"],
         }
         self.assertEqual(expected_result, response.json)
 
@@ -298,15 +298,15 @@ class TestRestApi(FlaskTestBase):
         url = flask.url_for('list-streams', ajax=1)
         response = self.client.get(url)
         self.assert200(response)
-        del expected_result['csrf']
+        del expected_result['csrf_token']
         self.assertListEqual([expected_result], response.json['keys'])
 
     def test_add_computed_keys(self):
         self.assertEqual(models.Key.count(), 0)
         kid = '01020304-0506-0708-090A-AABBCCDDEEFF'.replace('-', '').lower()
-        flask.url_for('key', kid=kid)
+        flask.url_for('add-key', kid=kid)
         self.login_user(is_admin=True)
-        url = flask.url_for('key', kid=kid)
+        url = flask.url_for('add-key', kid=kid)
         response = self.client.put(url)
         self.assert200(response)
         # request without CSRF token should fail
@@ -324,7 +324,7 @@ class TestRestApi(FlaskTestBase):
             'kid': kid,
             'key': self.to_hex(base64.b64decode('GUf166PQbx+sgBADjyBMvw==')),
             'computed': True,
-            'csrf': response.json["csrf"],
+            'csrf_token': response.json["csrf_token"],
         }
         self.assertEqual(expected_result, response.json)
         keys = list(models.Key.all())
@@ -349,7 +349,7 @@ class TestRestApi(FlaskTestBase):
         key2.add(commit=True)
         self.assertEqual(models.Key.count(), 2)
 
-        url = flask.url_for('key-delete', kpk=key1.pk)
+        url = flask.url_for('delete-key', kpk=key1.pk)
 
         # user must be logged in to use keys API
         self.logout_user()
@@ -375,7 +375,7 @@ class TestRestApi(FlaskTestBase):
         self.assert200(media)
         csrf_token = media.json['csrf_tokens']['kids']
 
-        csrf_url = flask.url_for('key-delete', kpk=key1.pk, csrf_token=csrf_token)
+        csrf_url = flask.url_for('delete-key', kpk=key1.pk, csrf_token=csrf_token)
         response = self.client.delete(csrf_url)
         self.assert200(response)
         keys = list(models.Key.all())
@@ -386,12 +386,12 @@ class TestRestApi(FlaskTestBase):
         next_csrf_token = response.json["csrf"]
 
         # try to re-use a CSRF token
-        csrf_url = flask.url_for('key-delete', kpk=key2.pk, csrf_token=csrf_token)
+        csrf_url = flask.url_for('delete-key', kpk=key2.pk, csrf_token=csrf_token)
         response = self.client.delete(csrf_url)
         self.assert400(response)
 
         # try to delete a key that does not exist
-        url = flask.url_for('key-delete', kpk=key1.pk, csrf_token=next_csrf_token)
+        url = flask.url_for('delete-key', kpk=key1.pk, csrf_token=next_csrf_token)
         response = self.client.delete(url)
         self.assert404(response)
 
@@ -399,7 +399,7 @@ class TestRestApi(FlaskTestBase):
         self.assert200(media)
         next_csrf_token = media.json['csrf_tokens']['kids']
 
-        url = flask.url_for('key-delete', kpk='12345', csrf_token=next_csrf_token)
+        url = flask.url_for('delete-key', kpk='12345', csrf_token=next_csrf_token)
         url = url.replace('12345', 'invalid')
         response = self.client.delete(url)
         self.assert404(response)

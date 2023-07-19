@@ -67,7 +67,7 @@ class Route(object):
 
 
 routes = {
-    "key-delete": Route(
+    "delete-key": Route(
         r'/key/<int:kpk>/delete',
         handler='keypairs.DeleteKeyHandler',
         title='delete key pairs'),
@@ -76,10 +76,11 @@ routes = {
         handler='keypairs.KeyHandler',
         title='Edit key pairs',
         parent='list-streams'),
-    "key": Route(
+    "add-key": Route(
         r'/key',
         handler='keypairs.KeyHandler',
-        title='Add key pairs'),
+        title='Add key pairs',
+        parent='list-streams'),
     "clearkey": Route(
         r'/clearkey',
         handler='clearkey.ClearkeyHandler',
