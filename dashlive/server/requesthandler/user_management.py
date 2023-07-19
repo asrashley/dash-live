@@ -250,6 +250,7 @@ class DeleteUser(DeleteModelBase):
     """
 
     MODEL_NAME = 'user'
+    CSRF_TOKEN_NAME = 'users'
     decorators = [modifies_user_model, login_required(html=True, admin=True)]
 
     def get_model_dict(self) -> JsonObject:
