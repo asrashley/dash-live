@@ -7,7 +7,7 @@ import io
 import datetime
 import unittest
 
-from dashlive.utils.date_time import from_isodatetime, toIsoDuration, UTC
+from dashlive.utils.date_time import from_isodatetime, toIsoDuration, parse_date, UTC
 from dashlive.utils.buffered_reader import BufferedReader
 from dashlive.utils import objects
 
@@ -34,6 +34,7 @@ class DateTimeTests(unittest.TestCase):
             ('P0Y0M0DT0H18M28.976S', datetime.timedelta(minutes=18, seconds=28.976)),
             ('2022-10-18T14:22:24',
              datetime.datetime(2022, 10, 18, 14, 22, 24, tzinfo=None)),
+            (None, None),
         ]
         for test in tests:
             tc = from_isodatetime(test[0])
@@ -49,7 +50,7 @@ class DateTimeTests(unittest.TestCase):
         self.assertEqual(date_val.microsecond, 123000)
         self.assertTrue(date_val.isoformat().startswith(date_str[:-1]))
 
-    def test_to_isoduration(self):
+    def test_to_isoduration(self) -> None:
         tests = [
             ('PT14H0M0S', datetime.timedelta(hours=14)),
             ('PT26H0M0S', datetime.timedelta(hours=26)),
@@ -70,6 +71,28 @@ class DateTimeTests(unittest.TestCase):
         ]
         for expected, src in tests:
             self.assertEqual(expected, toIsoDuration(src))
+
+    def test_date_parse(self) -> None:
+        dates = [
+            ('2008-05-03', datetime.datetime(2008, 5, 3)),
+            ('05/30/06', datetime.datetime(2006, 5, 30)),
+            ('05/30/2006', datetime.datetime(2006, 5, 30)),
+            ('Mon Sep 27, 2010', datetime.datetime(2010, 9, 27)),
+            ('Sep 16 2007 - 23:59 ET', datetime.datetime(2007, 9, 17, 4, 59)),
+            ('October 16 2007 - 23:59 ET', datetime.datetime(2007, 10, 17, 4, 59)),
+            ('May 2, 2007 - 23:59 ET', datetime.datetime(2007, 5, 3, 4, 59)),
+            ('Sep-14', datetime.datetime(2014, 9, 1)),
+            ('09/xx/14', datetime.datetime(2014, 9, 1)),
+            ('May 14', datetime.datetime(2014, 5, 1)),
+            ('Oct 2014', datetime.datetime(2014, 10, 1)),
+            ('October 7 2014', datetime.datetime(2014, 10, 7)),
+            ('Jul 26 2013', datetime.datetime(2013, 7, 26)),
+            ('March 26 2013', datetime.datetime(2013, 3, 26))
+        ]
+        for date_str, expected in dates:
+            value = parse_date(date_str)
+            self.assertIsNotNone(value)
+            self.assertEqual(expected, value)
 
 
 class BufferedReaderTests(unittest.TestCase):
