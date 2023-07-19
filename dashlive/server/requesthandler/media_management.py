@@ -284,6 +284,10 @@ class MediaSegmentList(HTMLHandlerBase):
 
 
 class MediaSegmentInfo(HTMLHandlerBase):
+    """
+    Handler for showing details about one segment in an MP4 file
+    """
+
     decorators = [uses_media_file, uses_stream]
 
     def get(self, spk: int, mfid: int, segnum: int) -> flask.Response:
@@ -306,9 +310,9 @@ class MediaSegmentInfo(HTMLHandlerBase):
                 'segmentNumber': segnum,
                 'atoms': atoms,
                 'media': current_media_file.to_dict(
-                    pure=True, with_collections=False, exclude={'stream', 'blob', 'representation', 'rep'}),
+                    with_collections=False, exclude={'stream', 'blob', 'representation', 'rep'}),
                 'stream': current_stream.to_dict(
-                    pure=True, with_collections=False, exclude={'media_files'}),
+                    with_collections=False, exclude={'media_files'}),
             })
 
         def value_has_children(obj) -> bool:
