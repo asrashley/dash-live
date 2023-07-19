@@ -27,7 +27,6 @@ from typing import Optional
 
 from flask import Flask, request  # type: ignore
 from flask_login import LoginManager
-from sqlalchemy import delete  # type: ignore
 from werkzeug.routing import BaseConverter  # type: ignore
 
 from dashlive.server import models
@@ -110,8 +109,7 @@ def create_app(config: Optional[JsonObject] = None,
         models.db.create_all()
         if create_default_user:
             models.User.check_if_empty(default_admin_username, default_admin_password)
-        stmt = delete(models.Token).where(models.Token.token_type == models.TokenType.CSRF)
-        models.db.session.execute(stmt)
+        models.Token.prune_database(all_csrf=True)
 
     app.register_blueprint(custom_tags)
     return app
