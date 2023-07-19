@@ -34,9 +34,9 @@ import multiprocessing
 from pathlib import Path
 import shutil
 import tempfile
-from typing import Optional
+from typing import Any, Dict, Optional
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, element
 import flask
 from flask_testing import TestCase  # type: ignore
 
@@ -254,3 +254,27 @@ class FlaskTestBase(TestCaseMixin, TestCase):
             return
         self.assertEqual(response.status_code, 200)
         self.assertIn('This page requires you to log in', response.text)
+
+    def check_form(self, form: element.Tag, expected: Dict[str, Any]) -> Optional[str]:
+        """
+        Check that the supplied HTML form has the expected fields and values
+        """
+        csrf_token: Optional[str] = None
+        for input_field in form.find_all('input'):
+            name = input_field.get('name')
+            if name == 'csrf_token':
+                self.assertEqual(
+                    input_field.get('type'),
+                    'hidden')
+                csrf_token = input_field.get('value')
+                continue
+            if isinstance(expected[name], bool):
+                if expected[name] is True:
+                    msg = f'Expected "{name}" field to be checked'
+                    self.assertIsNotNone(input_field.get('checked'), msg=msg)
+                else:
+                    msg = f'Expected "{name}" field to not be checked'
+                    self.assertIsNone(input_field.get('checked'), msg=msg)
+            else:
+                self.assertEqual(expected[name], input_field.get('value'))
+        return csrf_token
