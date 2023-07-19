@@ -236,14 +236,20 @@ class TestRestApi(FlaskTestBase):
         self.assertEqual(response.status_code, 401)
         self.assertEqual(models.Stream.count(), 2)
 
-        # user must be logged in as admin to use stream API
+        # user must be logged in as media user to use stream API
+        # a conventional user should get a permission denied error
         self.login_user(is_admin=False)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 401)
+
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 401)
         self.assertEqual(models.Stream.count(), 2)
 
-        # user must be logged in as admin to use stream API
-        self.login_user(is_admin=True)
+        self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)
+
+        response = self.client.get(url)
+        self.assert200(response)
 
         # request without CSRF token should fail
         response = self.client.delete(url)
@@ -668,6 +674,37 @@ class TestRestApi(FlaskTestBase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json['media_files'][0]['name'], 'bbb_v1')
 
+    def test_edit_stream(self) -> None:
+        self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)
+        with self.app.app_context():
+            stream = models.Stream(
+                title='edit stream test',
+                directory='test_api',
+                marlin_la_url='https://fake.domain/marlin',
+                playready_la_url='https://fake.domain/playready'
+            )
+            stream.add(commit=True)
+            stream = models.Stream.get(title='edit stream test')
+            self.assertIsNotNone(stream)
+        url = flask.url_for('view-stream', spk=stream.pk, ajax=1)
+        response = self.client.get(url)
+        self.assert200(response)
+        csrf_token = response.json['csrf_tokens']['streams']
+        data = {
+            'csrf_token': csrf_token,
+            'directory': 'dir2',
+            'title': 'new title',
+            'playready_la_url': '',
+            'marlin_la_url': 'ms3ha://unit.test/sas',
+        }
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            st = models.Stream.get(pk=stream.pk)
+            self.assertIsNotNone(st)
+            self.assertEqual(st.title, 'new title')
+            self.assertEqual(st.directory, 'dir2')
+
     def test_delete_media_file(self):
         self.setup_media()
         num_files = models.MediaFile.count()
@@ -687,8 +724,8 @@ class TestRestApi(FlaskTestBase):
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 401)
 
-        # user must be logged in as admin to use stream API
-        self.login_user(is_admin=True)
+        # user must be logged in media group user to use stream API
+        self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)
 
         # request should fail due to lack of CSRF token
         response = self.client.delete(url)

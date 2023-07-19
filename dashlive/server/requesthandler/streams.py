@@ -162,7 +162,7 @@ class EditStream(HTMLHandlerBase):
             'csrf_tokens': {
                 'files': self.generate_csrf_token('files', csrf_key),
                 'kids': self.generate_csrf_token('keys', csrf_key),
-                'streams': csrf_key,
+                'streams': context['csrf_token'],
             },
             'media_files': [],
         })
@@ -213,6 +213,11 @@ class EditStream(HTMLHandlerBase):
             logging.debug(cfe)
             context['error'] = "csrf check failed"
         if context['error'] is not None:
+            context['csrf_tokens'] = {
+                'files': self.generate_csrf_token('files', context['csrf_key']),
+                'kids': self.generate_csrf_token('keys', context['csrf_key']),
+                'streams': context['csrf_token'],
+            }
             return flask.render_template('media/stream.html', **context)
         models.db.session.commit()
         flask.flash(f'Saved changes to "{current_stream.title}"', 'success')
@@ -238,7 +243,9 @@ class EditStream(HTMLHandlerBase):
 class DeleteStream(DeleteModelBase):
     MODEL_NAME = 'stream'
     CSRF_TOKEN_NAME = 'streams'
-    decorators = [uses_stream, login_required(html=True, admin=True)]
+    decorators = [
+        uses_stream,
+        login_required(html=True, permission=models.Group.MEDIA)]
 
     def get_model_dict(self) -> JsonObject:
         return current_stream.to_dict(with_collections=False)
