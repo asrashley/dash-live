@@ -203,15 +203,15 @@ class MediaManagement:
         }
         if key is not None:
             params['key'] = key
-        url = self.url_for('key')
+        url = self.url_for('add-key')
         self.log.debug('AddKey PUT %s', url)
         result = self.session.put(url, params=params)
         try:
             js = result.json()
         except ValueError:
             js = {}
-        if 'csrf' in js:
-            self.csrf_tokens['kids'] = js['csrf']
+        if 'csrf_token' in js:
+            self.csrf_tokens['kids'] = js['csrf_token']
         if result.status_code != 200 or 'error' in js:
             self.log.warning('HTTP status %d', result.status_code)
             self.log.debug('HTTP headers %s', str(result.headers))

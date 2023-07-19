@@ -41,7 +41,7 @@ class KeyHandler(RequestHandlerBase):
 
     def get(self, kpk: Optional[int] = None) -> flask.Response:
         """
-        Returns an HTML form for editing a key
+        Returns an HTML form for adding or editing a key
         """
         context = self.create_context()
         csrf_key = self.generate_csrf_cookie()
@@ -86,7 +86,7 @@ class KeyHandler(RequestHandlerBase):
         try:
             self.check_csrf('keys', flask.request.form)
         except (ValueError, CsrfFailureException) as err:
-            return flask.response({'error': f'CSRF failure: {err}'}, 400)
+            return flask.make_response((f'CSRF failure: {err}', 400))
         model: Optional[models.Key] = None
         if kpk:
             model = models.Key.get(pk=kpk)
@@ -147,7 +147,7 @@ class KeyHandler(RequestHandlerBase):
                     "computed": computed
                 }
         csrf_key = self.generate_csrf_cookie()
-        result["csrf"] = self.generate_csrf_token('keys', csrf_key)
+        result["csrf_token"] = self.generate_csrf_token('keys', csrf_key)
         return self.jsonify(result)
 
 
@@ -155,14 +155,19 @@ class DeleteKeyHandler(RequestHandlerBase):
     """
     Handler used by HTML pages to delete encryption keys
     """
-    decorators = [uses_keypair, login_required(admin=True)]
+    decorators = [uses_keypair, login_required(permission=models.Group.MEDIA)]
 
     def get(self, kpk: int) -> flask.Response:
         """
         Returns HTML form to confirm deletion of key pair
         """
-        context = self.create_context()
         csrf_key = self.generate_csrf_cookie()
+        if self.is_ajax():
+            return self.jsonify({
+                'model': current_keypair.to_dict(),
+                'csrf_token': self.generate_csrf_token('keys', csrf_key),
+            })
+        context = self.create_context()
         cancel_url = self.get_next_url_with_fallback('edit-key', kpk=current_keypair.pk)
         context.update({
             'model': current_keypair.to_dict(),
@@ -190,11 +195,11 @@ class DeleteKeyHandler(RequestHandlerBase):
         """
         AJAX handler for deleting a key pair
         """
+        # TODO: add support for JSON payload
         try:
             self.check_csrf('keys', flask.request.args)
         except (ValueError, CsrfFailureException) as err:
             return self.jsonify({'error': f'CSRF failure: {err}'}, 400)
-        result = {"error": None}
         result = {
             "deleted": current_keypair.KID.hex,
         }

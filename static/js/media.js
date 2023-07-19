@@ -39,8 +39,8 @@ $(document).ready(function(){
             newRow.find('.btn-index').click(indexFile);
             $row.find('input[name="kid"]').val('');
             $row.find('input[name="key"]').val('');
-            if (result.csrf) {
-                $('#keys').data('csrf', result.csrf);
+            if (result.csrf_token) {
+                $('#keys').data('csrf', result.csrf_token);
             }
         }).always(function() {
             $row.find('.btn').removeAttr("disabled");
