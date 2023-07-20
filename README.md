@@ -238,8 +238,34 @@ docker run --mount type=bind,source=`pwd`/tests,destination=/home/dash/dash-live
     -it --entrypoint /home/dash/dash-live/runtests.py dashlive
 ```
 
-License
-=======
+## Migrating from Python 2 version
+
+This version is incompatible with the previous Python 2
+version. Migrating the Python 2 version requires complete re-creation
+of the database and re-uploading media files.
+
+The old version of this application has a `download-db.py` script that
+can be used to extract all of the data from the old server. The
+[populate-db.py](./populate-db.py) script from this version can be
+used to take this extracted data and upload it to the new server. This
+process should preserve all of the information between versions.
+
+Using a checkout of the `python-2.7` branch to download the data from
+a running Python 2 version of this app into a `tmp` directory:
+
+```sh
+python2 download-db.py --host http://localhost:9080/ tmp
+```
+
+Using a checkout of the main branch to upload this data to a new
+server:
+
+```sh
+python3 populate-db.py --username=admin --password=mysecret \
+    --host http://localhost:5000/ tmp/downloaded.json
+```
+
+## License
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
