@@ -31,6 +31,7 @@ class DashStream:
         self.marlin_la_url = marlin_la_url
         self.playready_la_url = playready_la_url
         self.upload_url = upload_url
+        self.csrf_tokens = csrf_tokens
         self.media_files = {}
         if media_files is not None:
             for mf in media_files:
@@ -184,7 +185,7 @@ class MediaManagement:
         if directory not in self.streams:
             self.log.error('Failed to find information for stream "%s"', directory)
             return None
-        url = self.url_for('view-stream', spk=self.streams[directory].pk, ajax=1)
+        url = self.url_for('view-stream', spk=self.streams[directory].pk)
         self.log.debug('GET %s', url)
         result = self.session.get(url, params={'ajax': 1})
         if result.status_code != 200:
@@ -194,7 +195,8 @@ class MediaManagement:
         js = result.json()
         return DashStream(**js)
 
-    def add_key(self, kid, computed, key=None):
+    def add_key(self, kid: str, computed: bool,
+                key: Optional[str] = None, alg: Optional[str] = None) -> bool:
         if kid in self.keys:
             return True
         params = {
@@ -245,12 +247,13 @@ class MediaManagement:
         if result.status_code != 200:
             self.log.warning('HTTP status %d', result.status_code)
             self.log.debug('HTTP headers %s', str(result.headers))
+            self.log.error('Add stream failure: HTTP %d', result.status_code)
             return None
         js = result.json()
         if 'csrf' in js:
             self.csrf_tokens['streams'] = js['csrf']
         if 'error' in js:
-            self.log.error(js['error'])
+            self.log.error('Add stream failure: %s', js['error'])
             return None
         self.streams[js['directory']] = DashStream(
             title=js['title'],
@@ -281,6 +284,15 @@ class MediaManagement:
                 return False
         return True
 
+    def get_stream_csrf_token(self, stream: DashStream, service: str) -> str:
+        token = stream.csrf_tokens[service]
+        if token is None:
+            s_info = self.get_stream_info(stream.directory)
+            stream.csrf_tokens.update(s_info.csrf_tokens)
+            token = stream.csrf_tokens[service]
+        stream.csrf_tokens[service] = None
+        return token
+
     def upload_file(self, stream: DashStream, filename: Path) -> bool:
         if filename.stem in stream.media_files:
             return True
@@ -288,7 +300,7 @@ class MediaManagement:
             'ajax': 1,
             'stream': stream.pk,
             'submit': 'Submit',
-            'csrf_token': self.csrf_tokens['upload']
+            'csrf_token': self.get_stream_csrf_token(stream, 'upload'),
         }
         self.log.debug('Upload file: %s', params)
         files = [
@@ -302,8 +314,8 @@ class MediaManagement:
             self.log.debug('HTTP headers %s', str(result.headers))
             return False
         js = result.json()
-        if 'csrf' in js:
-            self.csrf_tokens['upload'] = js['csrf']
+        if 'csrf_token' in js:
+            stream.csrf_tokens['upload'] = js['csrf_token']
         if 'upload_url' in js:
             stream.upload_url = js['upload_url']
         if 'error' in js:
@@ -316,14 +328,14 @@ class MediaManagement:
     def index_file(self, stream: DashStream, name: Path) -> bool:
         params = {
             'ajax': 1,
-            'csrf_token': self.csrf_tokens['files']
+            'csrf_token': self.get_stream_csrf_token(stream, 'files'),
         }
         if name.stem not in stream.media_files:
             self.log.warning('File "%s" not found', name)
             return False
         mfid = stream.media_files[name.stem]['pk']
         url = self.url_for('index-media-file', mfid=mfid)
-        timeout = 10
+        timeout = 15
         while timeout > 0:
             self.log.debug('GET %s', url)
             result = self.session.get(url, params=params)
@@ -331,9 +343,9 @@ class MediaManagement:
                 js = result.json()
             except (ValueError) as err:
                 js = { 'error': str(err) }
-            if 'csrf' in js:
-                self.csrf_tokens['files'] = js['csrf']
-                params['csrf_token'] = js['csrf']
+            if 'csrf_token' in js:
+                stream.csrf_tokens['files'] = js['csrf_token']
+                params['csrf_token'] = js['csrf_token']
             if result.status_code == 200 and 'error' not in js:
                 stream.media_files[name.stem]['representation'] = js['representation']
                 return True
