@@ -255,10 +255,14 @@ class MediaManagement(object):
             return False
         mfid = self.files[name]['key']
         url = self.routes.media_info(mfid)
-        timeout = 10
+        timeout = 15
         while timeout > 0:
             self.log.debug('GET %s', url)
             result = self.session.get(url, params=params)
+            if result.status_code == 404:
+                timeout -= 1
+                time.sleep(2)
+                continue
             try:
                 js = result.json()
             except (ValueError) as err:
@@ -271,14 +275,9 @@ class MediaManagement(object):
                 self.log.debug('HTTP headers %s', str(result.headers))
                 if 'error' in js:
                     self.log.error('%s', str(js['error']))
-                if result.status_code == 404 and timeout > 0:
-                    timeout -= 1
-                    time.sleep(2)
-                else:
-                    return False
-            else:
-                self.files[name]['representation'] = js['representation']
-                return True
+                return False
+            self.files[name]['representation'] = js['representation']
+            return True
         return False
 
 
