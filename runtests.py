@@ -40,10 +40,6 @@ if not os.path.exists("tests/runner.py"):
         print('Failed to download runner.py')
         sys.exit(1)
 
-_src = os.path.abspath(os.path.join(os.path.dirname(__file__), "src"))
-if _src not in sys.path:
-    sys.path.append(_src)
-
 from tests import runner
 
 def fixup_test_filename(name):
@@ -70,7 +66,7 @@ except KeyError:
 FORMAT = r"%(asctime)-15s:%(levelname)s:%(filename)s@%(lineno)d: %(message)s"
 logging.basicConfig(format=FORMAT)
 logging.getLogger().setLevel(logging.ERROR)
-
+        
 if len(sys.argv) > 2:
     os.environ["TESTS"] = ','.join(sys.argv[2:])
     runner.main(gae_sdk, "tests", fixup_test_filename(sys.argv[1]))

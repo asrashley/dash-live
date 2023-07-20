@@ -1,3 +1,4 @@
+from __future__ import print_function
 #############################################################################
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -20,11 +21,6 @@
 #
 #############################################################################
 
-from __future__ import print_function
-from builtins import chr
-from builtins import range
-from past.builtins import basestring
-from builtins import object
 from abc import ABCMeta, abstractmethod
 import argparse
 import copy
@@ -35,7 +31,6 @@ import os
 import re
 import struct
 import sys
-from future.utils import with_metaclass
 
 try:
     import bitstring
@@ -67,11 +62,12 @@ class Options(ObjectWithFields):
             return False
         if isinstance(self.bug_compatibility, basestring):
             self.bug_compatibility = set(
-                [s.strip() for s in self.bug_compatibility.split(',')])
+                map(lambda s: s.strip(), self.bug_compatibility.split(',')))
         return name in self.bug_compatibility
 
 
-class Mp4Atom(with_metaclass(ABCMeta, ObjectWithFields)):
+class Mp4Atom(ObjectWithFields):
+    __metaclass__ = ABCMeta
     parse_children = False
     include_atom_type = False
 
@@ -103,7 +99,7 @@ class Mp4Atom(with_metaclass(ABCMeta, ObjectWithFields)):
             atom_type = kwargs["atom_type"]
         except KeyError:
             atom_type = None
-            for k, v in Mp4Atom.BOXES.items():
+            for k, v in Mp4Atom.BOXES.iteritems():
                 if v == type(self):
                     atom_type = k
                     break
@@ -350,7 +346,7 @@ class Mp4Atom(with_metaclass(ABCMeta, ObjectWithFields)):
         elif isinstance(options, dict):
             options = Options(**options)
         if isinstance(src, list):
-            return [cls.fromJSON(atom) for atom in src]
+            return map(lambda atom: cls.fromJSON(atom), src)
 
         if '_type' in src:
             name = src['_type']
@@ -432,10 +428,10 @@ class Mp4Atom(with_metaclass(ABCMeta, ObjectWithFields)):
         if len(self.atom_type) > 4:
             # 16 hex chars + 'UUID()' == 38
             assert len(self.atom_type) == 38
-            fourcc = b'uuid' + self.atom_type[5:-1].decode('hex')
+            fourcc = 'uuid' + self.atom_type[5:-1].decode('hex')
         else:
             assert len(self.atom_type) == 4
-            fourcc = bytes(self.atom_type)
+            fourcc = self.atom_type
         self.options.log.debug('%s: encode %s pos=%d', self._fullname,
                                self.classname(), self.position)
         if self._encoded is not None:
@@ -505,12 +501,12 @@ class Mp4Atom(with_metaclass(ABCMeta, ObjectWithFields)):
 
 Mp4Atom.OBJECT_FIELDS['children'] = ListOf(Mp4Atom)
 
-class WrapperIterator(object):
+class WrapperIterator:
     def __init__(self, wrapper):
         self._wrapper = wrapper
         self._current = 0
 
-    def __next__(self):
+    def next(self):
         if self._current < len(self._wrapper.children):
             rv = self._wrapper.children[self._current]
             self._current += 1
@@ -584,7 +580,9 @@ class FileTypeBox(Mp4Atom):
 
 Mp4Atom.BOXES['ftyp'] = FileTypeBox
 
-class Descriptor(with_metaclass(ABCMeta, ObjectWithFields)):
+class Descriptor(ObjectWithFields):
+    __metaclass__ = ABCMeta
+
     OBJECT_FIELDS = {
         'children': ListOf(ObjectWithFields),
         'data': Binary,
@@ -1024,12 +1022,12 @@ class VisualSampleEntry(SampleEntry):
         dest.write(struct.pack('>I', self.spatial_quality))
         dest.write(struct.pack('>H', self.width))
         dest.write(struct.pack('>H', self.height))
-        dest.write(struct.pack('>I', int(self.horizresolution * 65536.0)))
-        dest.write(struct.pack('>I', int(self.vertresolution * 65536.0)))
+        dest.write(struct.pack('>I', long(self.horizresolution * 65536.0)))
+        dest.write(struct.pack('>I', long(self.vertresolution * 65536.0)))
         dest.write(struct.pack('>I', self.entry_data_size))
         dest.write(struct.pack('>H', self.frame_count))
         c = self.compressorname + '\0' * 32
-        dest.write(c[:32].encode('ascii'))
+        dest.write(c[:32])
         dest.write(struct.pack('>H', self.bit_depth))
         dest.write(struct.pack('>H', self.colour_table))
 
@@ -1072,7 +1070,7 @@ class WebVTTConfigurationBox(Mp4Atom):
 
     def encode_fields(self, dest):
         super(WebVTTConfigurationBox, self).encode_fields(dest)
-        dest.write(bytes(self.config))
+        dest.write(self.config)
 
 
 Mp4Atom.BOXES['vttC'] = WebVTTConfigurationBox
@@ -1532,7 +1530,7 @@ class OriginalFormatBox(Mp4Atom):
         return rv
 
     def encode_fields(self, dest):
-        dest.write(bytes(self.data_format))
+        dest.write(self.data_format)
 
 
 Mp4Atom.BOXES['frma'] = OriginalFormatBox
@@ -1796,7 +1794,7 @@ class TrackFragmentDecodeTimeBox(FullBox):
         return rv
 
     def encode_fields(self, dest):
-        if self.base_media_decode_time > int(1 << 32):
+        if self.base_media_decode_time > long(1 << 32):
             self.version = 1
         else:
             self.version = 0
@@ -1875,7 +1873,7 @@ class MediaHeaderBox(FullBox):
         w.write(sz, 'modification_time', value=to_iso_epoch(self.modification_time))
         w.write('I', 'timescale')
         w.write(sz, 'duration')
-        chars = [ord(c) - 0x60 for c in list(self.language)]
+        chars = map(lambda c: ord(c) - 0x60, list(self.language))
         lang = (chars[0] << 10) + (chars[1] << 5) + chars[2]
         w.write('H', 'lang', value=lang)
         w.write('H', 'pre_defined', value=0)
@@ -2476,7 +2474,7 @@ Mp4Atom.BOXES['pssh'] = ContentProtectionSpecificBox
 
 class SegmentReference(ObjectWithFields):
     def __init__(self, **kwargs):
-        for key, value in kwargs.items():
+        for key, value in kwargs.iteritems():
             assert "src" != key
             if key not in self.__dict__:
                 setattr(self, key, value)
@@ -2500,7 +2498,7 @@ class SegmentReference(ObjectWithFields):
         if exclude is None:
             exclude = set()
         exclude.add('parent')
-        for k, v in self.__dict__.items():
+        for k, v in self.__dict__.iteritems():
             if k not in exclude:
                 fields[k] = v
         return fields
@@ -2601,7 +2599,7 @@ class EventMessageBox(FullBox):
 
 Mp4Atom.BOXES['emsg'] = EventMessageBox
 
-for clz in list(Mp4Atom.BOXES.values()):
+for clz in Mp4Atom.BOXES.values():
     Mp4Atom.BOX_TYPES[clz.__name__] = clz
     Mp4Atom.BOX_TYPES['UnknownBox'] = UnknownBox
 
@@ -2619,7 +2617,7 @@ class IsoParser(object):
                 src = filename
             atoms = Mp4Atom.load(src, options=options)
         finally:
-            if src and isinstance(filename, (str, str)):
+            if src and isinstance(filename, (str, unicode)):
                 src.close()
         return atoms
 

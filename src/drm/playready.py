@@ -21,16 +21,15 @@ from __future__ import print_function
 #
 #############################################################################
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
-from builtins import range
 import base64
 import re
-import io
+try:
+    import cStringIO as StringIO
+except ImportError:
+    import StringIO
 import struct
 import sys
-import urllib.request, urllib.parse, urllib.error
+import urllib
 
 from xml.etree import ElementTree
 from Crypto.Cipher import AES
@@ -148,7 +147,7 @@ class PlayReady(DrmBase):
         """Generate WRMHEADER XML document"""
         cfgs = []
         kids = []
-        for keypair in list(keys.values()):
+        for keypair in keys.values():
             guid_kid = PlayReady.hex_to_le_guid(keypair.KID.raw, raw=True)
             rkey = keypair.KEY.raw
             kids.append({
@@ -239,7 +238,7 @@ class PlayReady(DrmBase):
                     raise IOError("PlayReady Object too small")
                 record['PlayReadyHeader'] = prh.decode('utf-16')
                 record['xml'] = ElementTree.parse(
-                    io.StringIO(record['PlayReadyHeader']))
+                    StringIO.StringIO(record['PlayReadyHeader']))
             objects.append(record)
         return objects
 
@@ -253,7 +252,7 @@ class PlayReady(DrmBase):
         if la_url is None:
             la_url = cgi_params.get('playready_la_url')
             if la_url is not None:
-                la_url = urllib.parse.unquote_plus(la_url)
+                la_url = urllib.unquote_plus(la_url)
             elif stream.playready_la_url is not None:
                 la_url = stream.playready_la_url
             else:
@@ -286,8 +285,8 @@ class PlayReady(DrmBase):
                 version=0, flags=0, system_id=PlayReady.RAW_SYSTEM_ID,
                 key_ids=[], data=pro)
         if isinstance(keys, dict):
-            keys = list(keys.keys())
-        keys = [KeyMaterial(k).raw for k in keys]
+            keys = keys.keys()
+        keys = map(lambda k: KeyMaterial(k).raw, keys)
         return mp4.ContentProtectionSpecificBox(
             version=1, flags=0, system_id=PlayReady.RAW_SYSTEM_ID,
             key_ids=keys, data=pro)
@@ -326,7 +325,7 @@ class PlayReady(DrmBase):
         Calculate the mimimum playready header version that supports the supplied keys
         """
         cenc_alg = 'AESCTR'
-        for keypair in list(keys.values()):
+        for keypair in keys.values():
             cenc_alg = keypair.ALG
         if cenc_alg != 'AESCTR':
             header_version = 4.3

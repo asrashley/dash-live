@@ -20,7 +20,6 @@
 #
 #############################################################################
 
-from builtins import object
 from .cgi_options import cgi_options, supported_modes
 
 class DashManifest(object):
@@ -43,7 +42,7 @@ class DashManifest(object):
                     if value:
                         drmloc.append(value.split('=')[1])
         for opt in cgi_options:
-            if opt.name not in self.features and opt.name not in list(self.restrictions.keys()):
+            if opt.name not in self.features and opt.name not in self.restrictions.keys():
                 continue
             # the MSE option is exluded from the list as it does not change
             # anything in the manifest responses. drmloc is handled as part
@@ -56,7 +55,7 @@ class DashManifest(object):
                 allowed = self.restrictions[opt.name]
                 opts = ['{0}={1}'.format(opt.name, i) for i in allowed]
             else:
-                opts = [o[1] for o in opt.options]
+                opts = map(lambda o: o[1], opt.options)
 
             if opt.name == 'drm' and 'drm' in opts:
                 for d in opt.options:

@@ -22,16 +22,12 @@ from __future__ import absolute_import
 #
 #############################################################################
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import zip
-from builtins import object
 import datetime
 from functools import wraps
 import os
 import re
 import sys
-import urllib.parse
+import urlparse
 import xml.etree.ElementTree as ET
 
 _src = os.path.abspath(
@@ -81,11 +77,11 @@ class MockRequest(object):
         if headers is None:
             headers = {}
         self.uri = url
-        parsed = urllib.parse.urlparse(url)
+        parsed = urlparse.urlparse(url)
         self.scheme = parsed.scheme
         self.host_url = r'{0}://{1}'.format(parsed.scheme, parsed.netloc)
         self.params = {}
-        for key, values in urllib.parse.parse_qs(parsed.query).items():
+        for key, values in urlparse.parse_qs(parsed.query).iteritems():
             self.params[key] = values[0]
         self.remote_addr = '127.0.0.1'
         self.headers = headers
@@ -197,7 +193,7 @@ class DashManifestCheckMixin(object):
             if "time" in params:
                 del params["time"]
         encrypted = params.get("drm", "drm=none") != "drm=none"
-        cgi = list(params.values())
+        cgi = params.values()
         url = self.from_uri(
             'dash-mpd-v3',
             manifest=filename,
@@ -312,7 +308,7 @@ class DashManifestCheckMixin(object):
 
     @classmethod
     def init_xml_namespaces(clz):
-        for prefix, url in clz.xmlNamespaces.items():
+        for prefix, url in clz.xmlNamespaces.iteritems():
             ET.register_namespace(prefix, url)
 
     def assertXmlTextEqual(self, expected, actual, msg=None):
@@ -345,7 +341,7 @@ class DashManifestCheckMixin(object):
             expected.tail, actual.tail,
             msg='{0}: tail does not match'.format(prefix))
 
-        for name, exp_value in expected.attrib.items():
+        for name, exp_value in expected.attrib.iteritems():
             key_name = '{0}@{1}'.format(prefix, name)
             self.assertIn(name, actual.attrib, msg='Missing attribute {}'.format(key_name))
             act_value = actual.attrib[name]

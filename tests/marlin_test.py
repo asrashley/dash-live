@@ -46,10 +46,10 @@ class MarlinTests(TestCaseMixin, unittest.TestCase):
             "0123456789012345".encode('hex'): "ccc0f2b3b279926496a7f5d25da692f6",
             "ABCDEFGHIJKLMNOP".encode('hex'): "ccc0f2b3b279926496a7f5d25da692f6",
         }
-        for kid in list(keys.keys()):
+        for kid in keys.keys():
             keys[kid] = KeyStub(kid, keys[kid])
         representation = Representation(
-            id='V1', default_kid=list(keys.keys())[0])
+            id='V1', default_kid=keys.keys()[0])
         keys = sorted(keys.keys())
         with self.assertRaises(RuntimeError):
             _ = mar.generate_pssh(representation, keys)

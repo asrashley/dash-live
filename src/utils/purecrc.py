@@ -1,7 +1,5 @@
 # See https://gist.github.com/Lauszus/6c787a3bc26fea6e842dfb8296ebd630
 
-from builtins import range
-from builtins import object
 class Crc32Mpeg2(object):
     MPEG2_CRC32_POLY = 0x04C11DB7
 

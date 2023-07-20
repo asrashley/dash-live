@@ -20,8 +20,6 @@
 #
 #############################################################################
 
-from builtins import chr
-from builtins import range
 import binascii
 import io
 import os
@@ -153,7 +151,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
             fmt, self.segment[offset:offset + dec_time_sz])[0]
         for loop in range(3):
             origin_time = loop * self.mediaDuration
-            delta = int(origin_time * self.timescale)
+            delta = long(origin_time * self.timescale)
             self.assertGreaterOrEqual(delta, 0)
             base_media_decode_time += delta
             self.assertLess(base_media_decode_time, (1 << (8 * dec_time_sz)))
@@ -426,23 +424,18 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
                                    )
         data = emsg.encode()
         # self.hexdumpBuffer('data', data)
-        atom_data = io.BytesIO()
-        for item in [
-                b'emsg',
-                bytes(chr(0)),  # version
-                bytes(3 * chr(0)),  # flags
-                emsg.scheme_id_uri,
-                bytes(chr(0)),
-                emsg.value,
-                bytes(chr(0)),
-                struct.pack('>I', emsg.timescale),
-                struct.pack('>I', emsg.presentation_time_delta),
-                struct.pack('>I', emsg.event_duration),
-                struct.pack('>I', emsg.event_id),
-                emsg.data,
-        ]:
-            atom_data.write(item)
-        atom = atom_data.getvalue()
+        atom = ''.join([
+            'emsg',  # atom type
+            chr(0),  # version
+            3 * chr(0),  # flags
+            emsg.scheme_id_uri, chr(0),
+            emsg.value, chr(0),
+            struct.pack('>I', emsg.timescale),
+            struct.pack('>I', emsg.presentation_time_delta),
+            struct.pack('>I', emsg.event_duration),
+            struct.pack('>I', emsg.event_id),
+            emsg.data,
+        ])
         length = struct.pack('>I', len(atom) + 4)
         expected = length + atom
         self.assertBuffersEqual(expected, data, name="emsg")
@@ -470,23 +463,18 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
                                    )
         data = emsg.encode()
         # self.hexdumpBuffer('data', data)
-        atom_data = io.BytesIO()
-        for item in [
-                b'emsg',  # atom type
-                bytes(chr(1)),  # version
-                bytes(3 * chr(0)),  # flags
-                struct.pack('>I', emsg.timescale),
-                struct.pack('>Q', emsg.presentation_time),
-                struct.pack('>I', emsg.event_duration),
-                struct.pack('>I', emsg.event_id),
-                emsg.scheme_id_uri,
-                bytes(chr(0)),
-                emsg.value,
-                bytes(chr(0)),
-                emsg.data,
-        ]:
-            atom_data.write(item)
-        atom = atom_data.getvalue()
+        atom = ''.join([
+            'emsg',  # atom type
+            chr(1),  # version
+            3 * chr(0),  # flags
+            struct.pack('>I', emsg.timescale),
+            struct.pack('>Q', emsg.presentation_time),
+            struct.pack('>I', emsg.event_duration),
+            struct.pack('>I', emsg.event_id),
+            emsg.scheme_id_uri, chr(0),
+            emsg.value, chr(0),
+            emsg.data,
+        ])
         length = struct.pack('>I', len(atom) + 4)
         expected = length + atom
         self.assertBuffersEqual(expected, data, name="emsg")

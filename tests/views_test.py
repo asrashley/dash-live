@@ -21,8 +21,6 @@
 #############################################################################
 
 from __future__ import absolute_import, print_function
-from builtins import str
-from builtins import range
 import datetime
 import os
 import logging
@@ -254,7 +252,7 @@ class TestHandlers(GAETestBase, DashManifestCheckMixin):
         self.setup_media()
         media_files = models.MediaFile.all()
         self.assertGreaterThan(len(media_files), 0)
-        for filename, manifest in manifests.manifest.items():
+        for filename, manifest in manifests.manifest.iteritems():
             if 'odvod' not in manifest.supported_modes():
                 continue
             baseurl = self.from_uri(

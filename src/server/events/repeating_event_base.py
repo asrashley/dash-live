@@ -1,4 +1,3 @@
-from __future__ import division
 #############################################################################
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,9 +20,6 @@ from __future__ import division
 #
 #############################################################################
 
-from builtins import chr
-from builtins import range
-from past.utils import old_div
 from abc import abstractmethod
 
 from mpeg.dash.event_stream import EventStream
@@ -68,10 +64,10 @@ class RepeatingEventBase(EventBase):
         seg_end = seg_start + representation.segments[mod_segment].duration
 
         # convert seg_start and seg_end to event timebase
-        seg_start = (old_div(seg_start * self.timescale,
-                     representation.timescale))
-        seg_end = (old_div(seg_end * self.timescale,
-                   representation.timescale))
+        seg_start = (seg_start * self.timescale /
+                     representation.timescale)
+        seg_end = (seg_end * self.timescale /
+                   representation.timescale)
 
         # print('seg start={} end={} duration={}'.format(
         #    seg_start, seg_end, seg_end - seg_start))

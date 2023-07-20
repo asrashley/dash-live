@@ -1,4 +1,3 @@
-from __future__ import division
 #############################################################################
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,11 +20,6 @@ from __future__ import division
 #
 #############################################################################
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
-from past.builtins import basestring
-from past.utils import old_div
 import base64
 import binascii
 import copy
@@ -34,8 +28,8 @@ import hashlib
 import hmac
 import logging
 import re
-import urllib.request, urllib.parse, urllib.error
-import urllib.parse
+import urllib
+import urlparse
 import webapp2
 
 from google.appengine.api import users, memcache
@@ -122,7 +116,7 @@ class RequestHandlerBase(webapp2.RequestHandler):
         logging.debug(
             'generate_csrf User-Agent: {}'.format(self.request.headers['User-Agent']))
         sig = hmac.new(settings.csrf_secret, csrf_key, hashlib.sha1)
-        cur_url = urllib.parse.urlparse(self.request.uri, 'http')
+        cur_url = urlparse.urlparse(self.request.uri, 'http')
         salt = security.generate_random_string(length=self.CSRF_SALT_LENGTH)
         origin = '%s://%s' % (cur_url.scheme, cur_url.netloc)
         logging.debug('generate_csrf origin: {}'.format(origin))
@@ -133,7 +127,7 @@ class RequestHandlerBase(webapp2.RequestHandler):
         sig.update(self.request.headers['User-Agent'])
         sig.update(salt)
         sig = sig.digest()
-        rv = urllib.parse.quote(salt + base64.b64encode(sig))
+        rv = urllib.quote(salt + base64.b64encode(sig))
         # print('csrf', service, rv)
         return rv
 
@@ -155,7 +149,7 @@ class RequestHandlerBase(webapp2.RequestHandler):
             self.response.delete_cookie(self.CSRF_COOKIE_NAME)
             raise CsrfFailureException("csrf cookie not valid")
         try:
-            token = str(urllib.parse.unquote(self.request.params['csrf_token']))
+            token = str(urllib.unquote(self.request.params['csrf_token']))
         except KeyError:
             raise CsrfFailureException("csrf_token not present")
         try:
@@ -163,7 +157,7 @@ class RequestHandlerBase(webapp2.RequestHandler):
         except KeyError:
             logging.debug(
                 "No origin in request, using: {}".format(self.request.uri))
-            cur_url = urllib.parse.urlparse(self.request.uri, 'http')
+            cur_url = urlparse.urlparse(self.request.uri, 'http')
             origin = '%s://%s' % (cur_url.scheme, cur_url.netloc)
         logging.debug("check_csrf origin: {}".format(origin))
         if not memcache.add(key=token, value=origin,
@@ -228,7 +222,7 @@ class RequestHandlerBase(webapp2.RequestHandler):
         rv = {}
         for drm_name, drm, locations in self.generate_drm_location_tuples():
             if drm_name == 'clearkey':
-                ck_laurl = urllib.parse.urljoin(
+                ck_laurl = urlparse.urljoin(
                     self.request.host_url, self.uri_for('clearkey'))
                 if self.is_https_request():
                     ck_laurl = ck_laurl.replace('http://', 'https://')
@@ -299,10 +293,10 @@ class RequestHandlerBase(webapp2.RequestHandler):
         use_base_url = self.get_bool_param('base', True)
         if use_base_url:
             if mode == 'odvod':
-                rv["baseURL"] = urllib.parse.urljoin(
+                rv["baseURL"] = urlparse.urljoin(
                     self.request.host_url, '/dash/vod') + '/'
             else:
-                rv["baseURL"] = urllib.parse.urljoin(
+                rv["baseURL"] = urlparse.urljoin(
                     self.request.host_url, '/dash/' + mode) + '/'
             if self.is_https_request():
                 rv["baseURL"] = rv["baseURL"].replace('http://', 'https://')
@@ -384,8 +378,8 @@ class RequestHandlerBase(webapp2.RequestHandler):
             if rep.encrypted:
                 kids.update(rep.kids)
         rv["kids"] = kids
-        rv["mediaDuration"] = old_div(rv["ref_representation"].mediaDuration, \
-            rv["ref_representation"].timescale)
+        rv["mediaDuration"] = rv["ref_representation"].mediaDuration / \
+            rv["ref_representation"].timescale
         rv["maxSegmentDuration"] = max(video.maxSegmentDuration,
                                        audio.maxSegmentDuration)
         if encrypted:
@@ -475,7 +469,7 @@ class RequestHandlerBase(webapp2.RequestHandler):
             event_generators = EventFactory.create_event_generators(self.request)
             for evg in event_generators:
                 param_prefixes.append(evg.prefix)
-        for name, value in self.request.params.items():
+        for name, value in self.request.params.iteritems():
             if value is None or (name == 'drm' and value == 'none'):
                 continue
             include = (name in param_includes)
@@ -569,7 +563,7 @@ class RequestHandlerBase(webapp2.RequestHandler):
         except KeyError:
             pass
         if 'value' not in timeSource:
-            timeSource['value'] = urllib.parse.urljoin(
+            timeSource['value'] = urlparse.urljoin(
                 self.request.host_url,
                 self.uri_for('time', format=timeSource['format']))
             timeSource['value'] += utils.objects.dict_to_cgi_params(cgi_params['time'])
@@ -612,10 +606,10 @@ class RequestHandlerBase(webapp2.RequestHandler):
             if tm < earliest_available:
                 continue
             drop_delta = tm - availabilityStartTime
-            drop_seg = int(scale_timedelta(
+            drop_seg = long(scale_timedelta(
                 drop_delta, representation.timescale, representation.segment_duration))
             drops.append('%d' % drop_seg)
-        return urllib.parse.quote_plus(','.join(drops))
+        return urllib.quote_plus(','.join(drops))
 
     def increment_memcache_counter(self, segment, code):
         try:
@@ -655,9 +649,9 @@ class RequestHandlerBase(webapp2.RequestHandler):
             end = content_length - 1
         elif end == '':
             end = content_length - 1
-        if isinstance(start, basestring):
+        if isinstance(start, (str, unicode)):
             start = int(start, 10)
-        if isinstance(end, basestring):
+        if isinstance(end, (str, unicode)):
             end = int(end, 10)
         if end >= content_length or end < start:
             self.response.set_status(416)

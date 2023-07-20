@@ -1,5 +1,4 @@
 from __future__ import print_function
-from __future__ import division
 #############################################################################
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,11 +21,6 @@ from __future__ import division
 #
 #############################################################################
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
-from builtins import object
-from past.utils import old_div
 import argparse
 import fnmatch
 import io
@@ -102,13 +96,13 @@ class GenerateIndex(object):
         dest.write('<MPD xmlns="urn:mpeg:dash:schema:mpd:2011"')
         dest.write(' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"')
         dest.write(' mediaPresentationDuration="%s"' % toIsoDuration(
-            old_div(rep.mediaDuration, rep.timescale)))
+            rep.mediaDuration / rep.timescale))
         dest.write(' minBufferTime="PT10S"')
         dest.write(' profiles="urn:mpeg:dash:profile:isoff-on-demand:2011" type="static"')
         dest.write(' xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011')
         dest.write(' http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd">\n')
         dest.write(' <Period start="PT0S" duration="%s">\n' % toIsoDuration(
-            old_div(rep.mediaDuration, rep.timescale)))
+            rep.mediaDuration / rep.timescale))
         if rep.contentType == 'audio':
             ext = 'm4a'
             mimeType = 'audio/mp4'

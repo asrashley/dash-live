@@ -20,7 +20,6 @@
 #
 #############################################################################
 
-from builtins import range
 from scte35.break_duration import BreakDuration
 from utils.fio import BitsFieldReader, BitsFieldWriter
 from utils.object_with_fields import ObjectWithFields

@@ -1,4 +1,3 @@
-from builtins import object
 import struct
 
 class ParseException(Exception):

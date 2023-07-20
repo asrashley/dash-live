@@ -20,7 +20,6 @@
 #
 #############################################################################
 
-from builtins import object
 import os
 
 import jinja2

@@ -20,8 +20,6 @@
 #
 #############################################################################
 
-from builtins import str
-from past.builtins import basestring
 from collections import Iterable
 import datetime
 import decimal
@@ -50,7 +48,7 @@ def flatten(value, convert_numbers=False, pure=True):
         return toIsoDateTime(value)
     if isinstance(value, (datetime.timedelta)):
         return toIsoDuration(value)
-    if convert_numbers and isinstance(value, int):
+    if convert_numbers and isinstance(value, long):
         return '%d' % value
     if isinstance(value, decimal.Decimal):
         return float(value)
@@ -70,7 +68,7 @@ def flatten_iterable(items, convert_numbers=False):
     """
     if isinstance(items, dict):
         rv = {}
-        for key, value in items.items():
+        for key, value in items.iteritems():
             if callable(value):
                 continue
             rv[key] = flatten(value)
@@ -98,12 +96,12 @@ def as_python(value):
         value = value.toJSON()
         wrap_strings = False
     if isinstance(value, (list, tuple)):
-        items = [as_python(v) for v in list(value)]
+        items = map(lambda v: as_python(v), list(value))
         value = '[{0}]'.format(','.join(items))
     elif isinstance(value, (dict)):
         items = []
         clz = value.get('_type', None)
-        for k, v in value.items():
+        for k, v in value.iteritems():
             if k == '_type':
                 continue
             if clz is None:
@@ -148,7 +146,7 @@ def dict_to_cgi_params(params):
     if not params:
         return ''
     lst = []
-    for k, v in params.items():
+    for k, v in params.iteritems():
         lst.append('%s=%s' % (k, v))
     return '?' + '&'.join(lst)
 

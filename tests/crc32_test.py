@@ -34,7 +34,7 @@ from utils.purecrc import Crc32Mpeg2
 class Crc32Tests(TestCaseMixin, unittest.TestCase):
     def test_pure_python_crc32(self):
         crc = Crc32Mpeg2()
-        data = [ord(b) for b in b'Hi!']
+        data = map(lambda b: ord(b), b'Hi!')
         crc.process(data)
         result = crc.final()
         self.assertEqual(result, 0x6ADC4B4B)
@@ -43,11 +43,11 @@ class Crc32Tests(TestCaseMixin, unittest.TestCase):
         data = base64.b64decode(
             r'/DAvAAAAAAAA///wFAVIAACPf+/+c2nALv4AUsz1AAAAAAAKAAhDVUVJAAABNWLbowo=')
         crc = Crc32Mpeg2()
-        crc.process([ord(b) for b in data])
+        crc.process(map(lambda b: ord(b), data))
         self.assertEqual(crc.final(), 0)
 
         crc = Crc32Mpeg2()
-        crc.process([ord(b) for b in data[:-4]])
+        crc.process(map(lambda b: ord(b), data[:-4]))
         self.assertEqual(crc.final(), 0x62dba30a)
 
 

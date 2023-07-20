@@ -1,4 +1,3 @@
-from __future__ import division
 #############################################################################
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,8 +20,6 @@ from __future__ import division
 #
 #############################################################################
 
-from builtins import str
-from past.utils import old_div
 import datetime
 import io
 import logging
@@ -173,8 +170,8 @@ class LiveMedia(RequestHandlerBase):
                     timing.elapsedTime, representation.timescale, representation.segment_duration))
                 firstFragment = (
                     lastFragment -
-                    int(old_div(representation.timescale *
-                        timing.timeShiftBufferDepth, representation.segment_duration)) - 1)
+                    int(representation.timescale *
+                        timing.timeShiftBufferDepth / representation.segment_duration) - 1)
                 firstFragment = max(adp_set.startNumber, firstFragment)
                 logging.debug('elapsedTime=%s firstFragment=%d lastFragment=%d',
                               timing.elapsedTime, firstFragment, lastFragment)
@@ -219,7 +216,7 @@ class LiveMedia(RequestHandlerBase):
         if segment_num == 0 and representation.encrypted:
             keys = models.Key.get_kids(representation.kids)
             drms = self.generate_drm_dict(stream, keys)
-            for drm in list(drms.values()):
+            for drm in drms.values():
                 if 'moov' in drm:
                     pssh = drm["moov"](representation, keys)
                     atom.moov.append_child(pssh)
@@ -234,7 +231,7 @@ class LiveMedia(RequestHandlerBase):
             else:
                 # Update the baseMediaDecodeTime to take account of the number of times the
                 # stream would have looped since availabilityStartTime
-                delta = int(origin_time * representation.timescale)
+                delta = long(origin_time * representation.timescale)
                 if delta < 0:
                     raise IOError("Failure in calculating delta %s %d %d %d" % (
                         str(delta), segment_num, mod_segment, adp_set.startNumber))

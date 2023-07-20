@@ -21,20 +21,15 @@
 #############################################################################
 
 from __future__ import print_function
-from __future__ import division
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
-from past.utils import old_div
 import base64
 import binascii
-import http.cookiejar
+import cookielib
 import io
 import logging
 import md5
 import os
 import unittest
-import urllib.request, urllib.parse, urllib.error
+import urllib
 import uuid
 import sys
 
@@ -94,7 +89,7 @@ class GAETestBase(TestCaseMixin, unittest.TestCase):
         self.wsgi = webapp2.WSGIApplication(routes.webapp_routes, debug=True)
         # app.router.add(Route(r'/discover/<service_type:[\w\-_\.]+>/',
         #  handler='views.SearchHandler', parent="search", title="Search by type"))
-        self.app = webtest.TestApp(self.wsgi, cookiejar=http.cookiejar.CookieJar(), extra_environ={
+        self.app = webtest.TestApp(self.wsgi, cookiejar=cookielib.CookieJar(), extra_environ={
             'REMOTE_USER': 'test@example.com',
             'REMOTE_ADDR': '10.10.0.1',
             'HTTP_X_APPENGINE_COUNTRY': 'zz',
@@ -143,7 +138,7 @@ class GAETestBase(TestCaseMixin, unittest.TestCase):
             self.assertAlmostEqual(
                 rep.mediaDuration,
                 self.MEDIA_DURATION * rep.timescale,
-                delta=(old_div(rep.timescale, 5)),
+                delta=(rep.timescale / 5),
                 msg='Invalid duration for {}. Expected {} got {}'.format(
                     filename, self.MEDIA_DURATION * rep.timescale,
                     rep.mediaDuration))
@@ -174,7 +169,7 @@ class GAETestBase(TestCaseMixin, unittest.TestCase):
     def from_uri(self, name, absolute=False, params=None, **kwargs):
         uri = routes.routes[name].formatTemplate.format(**kwargs)
         if params is not None:
-            uri += '?' + urllib.parse.urlencode(params)
+            uri += '?' + urllib.urlencode(params)
         if absolute and not uri.startswith("http"):
             uri = 'http://testbed.example.com' + uri
         return uri
@@ -218,23 +213,18 @@ class GAETestBase(TestCaseMixin, unittest.TestCase):
             ''
         ]
         message = '\r\n'.join(message)
-        message = message.encode('ascii')
         cookies = []
-        for k, v in self.app.cookies.items():
+        for k, v in self.app.cookies.iteritems():
             cookies.append('{}={}'.format(k, v))
         headers = {
             "Cookie": '; '.join(cookies),
             "Referer": from_url,
         }
-        if isinstance(filename, unicode):
-            filename = filename.encode('ascii')
         upload_files = [
             (field,
              filename,
              message,
              "message/external-body; blob-key=\"encoded_gs_file:blablabla\"; access-type=\"X-AppEngine-BlobKey\"")]
         logging.debug(message)
-        if isinstance(upload_url, unicode):
-            upload_url = upload_url.encode('ascii')
         return self.app.post(upload_url, params=form,
                              headers=headers, upload_files=upload_files)

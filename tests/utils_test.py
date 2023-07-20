@@ -1,8 +1,7 @@
-from future import standard_library
-standard_library.install_aliases()
-from builtins import range
-from builtins import object
-import io
+try:
+    import cStringIO as StringIO
+except ImportError:
+    import StringIO
 
 import datetime
 import os
@@ -83,7 +82,7 @@ class BufferedReaderTests(unittest.TestCase):
         r = bytearray('t' * 65536)
         for i in range(len(r)):
             r[i] = i & 0xFF
-        br = BufferedReader(io.BytesIO(r), buffersize=1024)
+        br = BufferedReader(StringIO.StringIO(r), buffersize=1024)
         p = br.peek(8)
         self.assertTrue(len(p) >= 8)
         for i in range(8):

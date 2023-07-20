@@ -19,7 +19,6 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-from builtins import object
 import copy
 
 def object_from(clz, value):
@@ -59,7 +58,7 @@ class ListOf(object):
         self.clazz = clazz
 
     def __call__(self, value):
-        return [object_from(self.clazz, s) for s in value]
+        return map(lambda s: object_from(self.clazz, s), value)
 
     def __repr__(self):
         return r'ListOf({0})'.format(self.clazz.__name__)

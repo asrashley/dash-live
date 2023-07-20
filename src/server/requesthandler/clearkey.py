@@ -20,7 +20,6 @@
 #
 #############################################################################
 
-from builtins import map
 import base64
 import json
 
@@ -33,10 +32,10 @@ class ClearkeyHandler(RequestHandlerBase):
         try:
             req = json.loads(self.request.body)
             kids = req["kids"]
-            kids = list(map(self.base64url_decode, kids))
-            kids = [k.encode('hex') for k in kids]
+            kids = map(self.base64url_decode, kids)
+            kids = map(lambda k: k.encode('hex'), kids)
             keys = []
-            for kid, key in models.Key.get_kids(kids).items():
+            for kid, key in models.Key.get_kids(kids).iteritems():
                 item = {
                     "kty": "oct",
                     "kid": self.base64url_encode(key.KID.raw),

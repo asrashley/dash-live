@@ -19,8 +19,6 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-from builtins import map
-from builtins import object
 from utils.list_of import ListOf, clone_object, object_from
 from utils.objects import as_python, flatten
 
@@ -41,7 +39,7 @@ class ObjectWithFields(object):
             self._copy_args(self.DEFAULT_VALUES)
         self._copy_args(kwargs)
         if self.REQUIRED_FIELDS is not None:
-            for key, clz in self.REQUIRED_FIELDS.items():
+            for key, clz in self.REQUIRED_FIELDS.iteritems():
                 assert key in self._fields
                 value = self.__dict__[key]
                 assert isinstance(value, clz), r"{0}: Expected type {1}, got {2}".format(
@@ -61,7 +59,7 @@ class ObjectWithFields(object):
         return self.__class__(**args)
 
     def apply_defaults(self, defaults):
-        for key, value in defaults.items():
+        for key, value in defaults.iteritems():
             if key not in self._fields:
                 setattr(self, key, value)
                 self._fields.add(key)
@@ -99,7 +97,7 @@ class ObjectWithFields(object):
     def _field_repr(self, exclude):
         rv = []
         fields = self._to_json(exclude)
-        for k, v in fields.items():
+        for k, v in fields.iteritems():
             if k != '_type':
                 rv.append('{0}={1}'.format(k, as_python(v)))
         return rv
@@ -123,11 +121,11 @@ class ObjectWithFields(object):
             # print('_convert_value_to_json check clz', self.classname(), key, clz)
             if isinstance(clz, ListOf):
                 # print('_convert_value_to_json listOf', self.classname(), key, clz.clazz)
-                return list(map(flatten, value))
+                return map(flatten, value)
         return flatten(value)
 
     def _copy_args(self, args):
-        for key, value in args.items():
+        for key, value in args.iteritems():
             self._fields.add(key)
             if key in self.OBJECT_FIELDS:
                 clz = self.OBJECT_FIELDS[key]

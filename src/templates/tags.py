@@ -19,8 +19,6 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-from builtins import str
-from past.builtins import basestring
 import base64
 import json
 
@@ -67,7 +65,7 @@ def toHtmlString(item, className=None):
             rv = '<table class="%s">' % className
         else:
             rv = '<table>'
-        for key, val in item.items():
+        for key, val in item.iteritems():
             rv.append('<tr><td>%s</td><td>%s</td></tr>' % (
                 str(key), toHtmlString(val)))
         rv.append('</table>')
@@ -141,7 +139,7 @@ def sortedAttributes(value):
     """
     if not isinstance(value, dict):
         return ''
-    keys = list(value.keys())
+    keys = value.keys()
     if not keys:
         return ''
     keys.sort()

@@ -1,5 +1,4 @@
 from __future__ import print_function
-from __future__ import division
 #############################################################################
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,9 +21,6 @@ from __future__ import division
 #
 #############################################################################
 
-from builtins import str
-from past.utils import old_div
-from builtins import object
 import datetime
 import os
 import sys
@@ -111,7 +107,7 @@ class Representation(ObjectWithFields):
 
     def __repr__(self):
         args = []
-        for key, value in self.__dict__.items():
+        for key, value in self.__dict__.iteritems():
             if key in {'num_segments', '_fields', 'DEFAULT_EXCLUDE'}:
                 continue
             if isinstance(value, str):
@@ -176,7 +172,7 @@ class Representation(ObjectWithFields):
                     if verbose > 1:
                         print('Average sample duration %d' % default_sample_duration)
                     if rv.contentType == "video" and default_sample_duration:
-                        rv.add_field('frameRate', old_div(rv.timescale, default_sample_duration))
+                        rv.add_field('frameRate', rv.timescale / default_sample_duration)
             elif atom.atom_type in ['sidx', 'moov', 'mdat', 'free'] and rv.segments:
                 if verbose > 1:
                     print('Extend fragment %d with %s' % (len(rv.segments), atom.atom_type))
@@ -198,14 +194,14 @@ class Representation(ObjectWithFields):
             # of the last fragment and dividing by number of media fragments (minus one)
             # provides the best estimate of fragment duration.
             # Note: len(rv.segments) also includes the init segment, hence the need for -2
-            seg_dur = old_div(segment_start_time, (len(rv.segments) - 2))
+            seg_dur = segment_start_time / (len(rv.segments) - 2)
             rv.mediaDuration = 0
             for seg in rv.segments[1:]:
                 rv.mediaDuration += seg.duration
-            rv.max_bitrate = old_div(8 * rv.timescale * max([seg.size for seg in rv.segments]), seg_dur)
+            rv.max_bitrate = 8 * rv.timescale * max([seg.size for seg in rv.segments]) / seg_dur
             rv.segment_duration = seg_dur
             file_size = rv.segments[-1].pos + rv.segments[-1].size - rv.segments[0].pos
-            rv.bitrate = int(old_div(8 * rv.timescale * file_size, rv.mediaDuration) + 0.5)
+            rv.bitrate = int(8 * rv.timescale * file_size / rv.mediaDuration + 0.5)
         return rv
 
     def set_reference_representation(self, ref_representation):
@@ -243,7 +239,7 @@ class Representation(ObjectWithFields):
             rv.contentType = "video"
             rv.mimeType = "video/mp4"
             if default_sample_duration > 0:
-                rv.add_field('frameRate', old_div(rv.timescale, default_sample_duration))
+                rv.add_field('frameRate', rv.timescale / default_sample_duration)
             rv.add_field('width', int(moov.trak.tkhd.width))
             rv.add_field('height', int(moov.trak.tkhd.height))
             try:
@@ -415,7 +411,7 @@ class Representation(ObjectWithFields):
         assert segment_num < len(self.segments)
         # seg_start_time is the time (in representation timescale units) when the segment_num
         # segment started, relative to availabilityStartTime
-        seg_start_time = int(origin_time * self.timescale +
+        seg_start_time = long(origin_time * self.timescale +
                               (segment_num - 1) * self.segment_duration)
         dur = 0
         s_node = SegmentTimelineElement()
@@ -456,8 +452,8 @@ class Representation(ObjectWithFields):
         # since availabilityStartTime.
         nominal_duration = self.ref_representation.segment_duration * \
             self.ref_representation.num_segments
-        tc_scaled = int(timecode * self.ref_representation.timescale)
-        num_loops = old_div(tc_scaled, nominal_duration)
+        tc_scaled = long(timecode * self.ref_representation.timescale)
+        num_loops = tc_scaled / nominal_duration
 
         # origin time is the time (in timescale units) that maps to segment 1 for
         # all adaptation sets. It represents the most recent time of day when the
@@ -475,7 +471,7 @@ class Representation(ObjectWithFields):
         segment_num = (tc_scaled - origin_time) * self.timescale
         segment_num /= self.ref_representation.timescale
         segment_num /= self.segment_duration
-        segment_num = int(segment_num + 1)
+        segment_num += 1
         # the difference between the segment durations of the reference
         # representation and this representation can mean that this representation
         # has already looped

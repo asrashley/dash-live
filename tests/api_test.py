@@ -21,8 +21,6 @@
 #############################################################################
 
 from __future__ import absolute_import
-from future import standard_library
-standard_library.install_aliases()
 import base64
 import binascii
 import copy
@@ -30,7 +28,7 @@ import logging
 import os
 import sys
 import unittest
-import urllib.request, urllib.parse, urllib.error
+import urllib
 
 from google.appengine.ext import blobstore
 
@@ -56,8 +54,8 @@ class TestRestApi(GAETestBase):
             'playready_la_url': ''
         }
         params = []
-        for k, v in request.items():
-            params.append('{0}={1}'.format(k, urllib.parse.quote(v)))
+        for k, v in request.iteritems():
+            params.append('{0}={1}'.format(k, urllib.quote(v)))
         url = self.from_uri('stream', absolute=True)
         url = '{0}?{1}'.format(url, '&'.join(params))
 
@@ -92,7 +90,7 @@ class TestRestApi(GAETestBase):
 
         streams = models.Stream.all()
         self.assertEqual(len(streams), 1)
-        for k, v in request.items():
+        for k, v in request.iteritems():
             if k == 'csrf_token':
                 continue
             self.assertEqual(getattr(streams[0], k), expected_result[k],

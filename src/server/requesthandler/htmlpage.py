@@ -20,12 +20,9 @@
 #
 #############################################################################
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import range
 import datetime
-import urllib.request, urllib.parse, urllib.error
-import urllib.parse
+import urllib
+import urlparse
 
 from server import manifests, models, cgi_options
 from drm.playready import PlayReady
@@ -71,7 +68,7 @@ class MainPage(HTMLHandlerBase):
         context['video_representations'].sort(key=lambda r: r.filename)
         context['audio_representations'].sort(key=lambda r: r.filename)
         context['text_representations'].sort(key=lambda r: r.filename)
-        filenames = list(manifests.manifest.keys())
+        filenames = manifests.manifest.keys()
         filenames.sort(key=lambda name: manifests.manifest[name].title)
         for name in filenames:
             url = self.uri_for('dash-mpd-v3', manifest=name,
@@ -121,7 +118,7 @@ class VideoPlayer(HTMLHandlerBase):
                 err_time += datetime.timedelta(seconds=10)
                 times.append(err_time.time().isoformat() + 'Z')
             params.append('%s=%s' %
-                          (cgiparam, urllib.parse.quote_plus(','.join(times))))
+                          (cgiparam, urllib.quote_plus(','.join(times))))
         manifest += '.mpd'
         context = self.create_context(**kwargs)
         try:
@@ -138,7 +135,7 @@ class VideoPlayer(HTMLHandlerBase):
                 pass
         if dash_parms['encrypted']:
             keys = dash_parms['keys']
-            for kid in list(keys.keys()):
+            for kid in keys.keys():
                 item = keys[kid].toJSON()
                 item['guidKid'] = PlayReady.hex_to_le_guid(
                     keys[kid].hkid, raw=False)
@@ -146,29 +143,27 @@ class VideoPlayer(HTMLHandlerBase):
                 keys[kid] = item
         context['dash'] = dash_parms
         params = []
-        for k, v in self.request.params.items():
+        for k, v in self.request.params.iteritems():
             if k in ['mpd', 'mse']:
                 continue
-            if isinstance(v, (int, int)):
-                params.append('{0:s}={1:d}'.format(k, v))
+            if isinstance(v, (int, long)):
+                params.append('%s=%d' % (k, v))
             else:
-                params.append('{0:s}={1:s}'.format(k, urllib.parse.quote_plus(v)))
+                params.append('%s=%s' % (k, urllib.quote_plus(v)))
         if self.get_bool_param('corruption'):
             gen_errors('vcorrupt')
         for code in self.INJECTED_ERROR_CODES:
-            p = 'v{0:03d}'.format(code)
+            p = 'v%03d' % code
             if self.get_bool_param(p):
                 gen_errors(p)
-            p = 'a{0:03d}'.format(code)
+            p = 'a%03d' % code
             if self.get_bool_param(p):
                 gen_errors(p)
         mpd_url = self.uri_for('dash-mpd-v3', stream=stream, manifest=manifest,
                                mode=mode)
         if params:
             mpd_url += '?' + '&'.join(params)
-        if isinstance(mpd_url, unicode):
-            mpd_url = mpd_url.encode('ascii')
-        context['source'] = urllib.parse.urljoin(self.request.host_url, mpd_url)
+        context['source'] = urlparse.urljoin(self.request.host_url, mpd_url)
         context['drm'] = self.request.get("drm", "none")
         if self.is_https_request():
             context['source'] = context['source'].replace(

@@ -20,7 +20,6 @@
 #
 #############################################################################
 
-from builtins import object
 supported_modes = {'live', 'vod', 'odvod'}
 
 class CgiOption(object):

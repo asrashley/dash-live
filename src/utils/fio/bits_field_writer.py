@@ -20,7 +20,6 @@
 #
 #############################################################################
 
-from builtins import object
 import logging
 import os
 import sys

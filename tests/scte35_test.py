@@ -1,4 +1,3 @@
-from __future__ import division
 #############################################################################
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,7 +20,6 @@ from __future__ import division
 #
 #############################################################################
 
-from past.utils import old_div
 import base64
 import copy
 # import json
@@ -147,7 +145,7 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
                 'avails_expected': 3,
                 'break_duration': {
                     'auto_return': True,
-                    'duration': int(round(old_div(2399838222.0 * MPEG_TIMEBASE, dash_timebase)))
+                    'duration': int(round(2399838222.0 * MPEG_TIMEBASE / dash_timebase))
                 },
                 'splice_time': {
                     'pts': 2304779056,
@@ -175,7 +173,7 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
                 'avails_expected': 8,
                 'break_duration': {
                     'auto_return': True,
-                    'duration': int(round(old_div(299838222.0 * MPEG_TIMEBASE, dash_timebase)))
+                    'duration': int(round(299838222.0 * MPEG_TIMEBASE / dash_timebase))
                 },
                 'splice_time': {
                     'pts': 2310179056,
@@ -203,7 +201,7 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
                 'avails_expected': 8,
                 'break_duration': {
                     'auto_return': True,
-                    'duration': int(round(old_div(299838222.0 * MPEG_TIMEBASE, dash_timebase)))
+                    'duration': int(round(299838222.0 * MPEG_TIMEBASE / dash_timebase))
                 },
                 'splice_time': {
                     'pts': 2312879056,
@@ -231,7 +229,7 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
                 'avails_expected': 8,
                 'break_duration': {
                     'auto_return': True,
-                    'duration': int(round(old_div(299838222.0 * MPEG_TIMEBASE, dash_timebase)))
+                    'duration': int(round(299838222.0 * MPEG_TIMEBASE / dash_timebase))
                 },
                 'splice_time': {
                     'pts': 2315579056,
@@ -259,7 +257,7 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
                 'avails_expected': 8,
                 'break_duration': {
                     'auto_return': True,
-                    'duration': int(round(old_div(299838222.0 * MPEG_TIMEBASE, dash_timebase)))
+                    'duration': int(round(299838222.0 * MPEG_TIMEBASE / dash_timebase))
                 },
                 'splice_time': {
                     'pts': 2318279056,
@@ -285,7 +283,7 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
                 'avails_expected': 8,
                 'break_duration': {
                     'auto_return': True,
-                    'duration': int(round(old_div(299838222.0 * MPEG_TIMEBASE, dash_timebase)))
+                    'duration': int(round(299838222.0 * MPEG_TIMEBASE / dash_timebase))
                 },
                 'splice_time': {
                     'pts': 2307479056,
@@ -311,7 +309,7 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
                 'avails_expected': 3,
                 'break_duration': {
                     'auto_return': True,
-                    'duration': int(round(old_div(2399838222.0 * MPEG_TIMEBASE, dash_timebase)))
+                    'duration': int(round(2399838222.0 * MPEG_TIMEBASE / dash_timebase))
                 },
                 'splice_time': {
                     'pts': 2394419056,
@@ -337,7 +335,7 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
                 'avails_expected': 7,
                 'break_duration': {
                     'auto_return': True,
-                    'duration': int(round(old_div(599838222.0 * MPEG_TIMEBASE, dash_timebase)))
+                    'duration': int(round(599838222.0 * MPEG_TIMEBASE / dash_timebase))
                 },
                 'splice_time': {
                     'pts': 2405219056,
@@ -363,7 +361,7 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
                 'avails_expected': 7,
                 'break_duration': {
                     'auto_return': True,
-                    'duration': int(round(old_div(599838222.0 * MPEG_TIMEBASE, dash_timebase)))
+                    'duration': int(round(599838222.0 * MPEG_TIMEBASE / dash_timebase))
                 },
                 'splice_time': {
                     'pts': 2410619056,
@@ -377,7 +375,7 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
             if 'crc' not in tc['expected']:
                 data = base64.b64decode(tc['input'])
                 crc = PureCrc32Mpeg2()
-                crc.process([ord(b) for b in data[:-4]])
+                crc.process(map(lambda b: ord(b), data[:-4]))
                 tc['expected']['crc'] = crc.final()
                 tc['expected']['crc_valid'] = True
 
