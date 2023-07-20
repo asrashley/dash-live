@@ -1,7 +1,7 @@
 crccheck==1.1
 Jinja2==2.11.3
 MarkupSafe==1.1.1
-pycryptodome==3.14.1
+pycrypto==2.6.1
 WebTest==2.0.33
 beautifulsoup4==4.8.0
 bitstring==3.1.6
