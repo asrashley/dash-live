@@ -64,7 +64,9 @@ class MediaManagement:
         if 'files' in config:
             config = self.convert_v1_json_data(config)
         js_dir = Path(jsonfile).parent
-        self.login()
+        if not self.login():
+            print('Failed to log in to server')
+            return
         self.get_media_info()
         for k in config['keys']:
             if k['kid'] not in self.keys:
@@ -154,7 +156,8 @@ class MediaManagement:
         return self._has_logged_in
 
     def get_media_info(self) -> bool:
-        self.login()
+        if not self.login():
+            return False
         url = self.url_for('list-streams')
         self.log.debug('GET %s', url)
         result = self.session.get(url, params={'ajax': 1})
