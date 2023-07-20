@@ -47,7 +47,7 @@ from .decorators import (
 from .exceptions import CsrfFailureException
 
 class UploadHandler(RequestHandlerBase):
-    decorators = [uses_stream, login_required(admin=True)]
+    decorators = [uses_stream, login_required(permission=models.Group.MEDIA)]
 
     def post(self, spk, **kwargs):
         if 'file' not in flask.request.files:
@@ -68,11 +68,11 @@ class UploadHandler(RequestHandlerBase):
         return self.save_file(blob_info, current_stream)
 
     def return_error(self, error: str) -> flask.Response:
+        logging.warning('Upload error: %s', error)
         if self.is_ajax():
             result = {"error": error}
             return self.jsonify(result)
         flask.flash(error)
-        logging.warning('Upload error: %s', error)
         return flask.redirect(flask.url_for('list-streams'))
 
     def save_file(self, file_upload: FileStorage,
