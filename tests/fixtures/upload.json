@@ -1,0 +1,20 @@
+{
+    "keys": [{
+        "computed": false,
+        "key": "533a583a843436a536fbe2a5821c4b6c",
+        "kid": "c001de8e567b5fcfbc22c565ed5bda24"
+    }, {
+        "computed": true,
+        "kid": "1ab45440532c439994dc5c5ad9584bac"
+    }],
+    "streams": [{
+        "directory": "bbb",
+        "title": "Big Buck Bunny",
+        "marlin_la_url": "ms3://ms3.test.expressplay.com:8443/hms/ms3/rights/?b=...",
+        "playready_la_url": "https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg={cfgs}",
+	"files": [
+	    "bbb_a1.mp4", "bbb_a1_enc.mp4", "bbb_a2.mp4", "bbb_t1.mp4",
+	    "bbb_v6.mp4", "bbb_v6_enc.mp4", "bbb_v7.mp4", "bbb_v7_enc.mp4"
+	]
+    }]
+}

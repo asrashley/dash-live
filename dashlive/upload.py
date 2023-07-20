@@ -3,17 +3,43 @@ import argparse
 import json
 import logging
 from pathlib import Path
-import os
-import ssl
-import sys
 import time
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Protocol, Tuple
 import urllib
 
 import requests
 
 from dashlive.server.routes import routes
 from dashlive.utils.json_object import JsonObject
+
+class HttpResponse(Protocol):
+    status_code: int
+    headers: Dict
+    text: str
+
+    def json(self) -> JsonObject:
+        """parses body as a JSON object"""
+
+
+class HttpSession(Protocol):
+    """
+    Interface that describes the HTTP requests used by PopulateDatabase
+    """
+    def get(self, url: str, params: Optional[Dict] = None) -> HttpResponse:
+        """Make a GET request"""
+
+    def post(self, url: str,
+             data: Optional[bytes] = None,
+             files: Optional[List[Tuple]] = None,
+             params: Optional[JsonObject] = None,
+             json: Optional[JsonObject] = None) -> HttpResponse:
+        """Make a POST request"""
+
+    def put(self, url: str,
+            params: Optional[Dict] = None,
+            json: Optional[JsonObject] = None) -> HttpResponse:
+        """Make a PUT request"""
+
 
 class DashStream:
     def __init__(self, pk: int, title: str, directory: str,
@@ -23,7 +49,8 @@ class DashStream:
                  media_files: Optional[List[JsonObject]] = None,
                  keys: Optional[List[JsonObject]] = None,
                  upload_url: Optional[str] = None,
-                 csrf_tokens: Optional[JsonObject] = None) -> None:
+                 csrf_tokens: Optional[JsonObject] = None,
+                 **kwargs) -> None:
         self.pk = pk
         self.title = title
         self.directory = directory
@@ -39,17 +66,25 @@ class DashStream:
                     self.media_files[mf['name']] = mf
 
 
-class MediaManagement:
-    def __init__(self, url: str, username: str, password: str) -> None:
+class PopulateDatabase:
+    """
+    Helper class that uses a JSON file to describe a set of
+    streams, keys and files that it will upload to the server.
+    """
+    def __init__(self, url: str, username: str, password: str,
+                 session: Optional[HttpSession] = None) -> None:
         self.base_url = url
         self.username = username
         self.password = password
-        self.session = requests.Session()
+        if session:
+            self.session = session
+        else:
+            self.session = requests.Session()
         self._has_logged_in = False
         self.csrf_tokens = {}
         self.keys = {}
         self.streams: Dict[str, DashStream] = {}
-        self.log = logging.getLogger('MediaManagement')
+        self.log = logging.getLogger('PopulateDatabase')
 
     def url_for(self, name, **kwargs) -> str:
         route = routes[name]
@@ -58,7 +93,7 @@ class MediaManagement:
         # print('path', path)
         return urllib.parse.urljoin(self.base_url, path)
 
-    def populate_database(self, jsonfile: str) -> None:
+    def populate_database(self, jsonfile: str) -> bool:
         with open(jsonfile, 'r') as js:
             config = json.load(js)
         if 'files' in config:
@@ -66,13 +101,15 @@ class MediaManagement:
         js_dir = Path(jsonfile).parent
         if not self.login():
             print('Failed to log in to server')
-            return
+            return False
         self.get_media_info()
+        result = True
         for k in config['keys']:
             if k['kid'] not in self.keys:
                 self.log.info('Add key KID={kid} computed={computed}'.format(**k))
                 if not self.add_key(**k):
                     self.log.error('Failed to add key {kid}'.format(**k))
+                    result = False
         directory = None
         for s in config['streams']:
             directory = s.get('directory')
@@ -80,13 +117,17 @@ class MediaManagement:
                 self.log.info(f'Add stream directory="{directory}" title="{s["title"]}"')
                 if not self.add_stream(**s):
                     self.log.error(f'Failed to add stream {directory}: {s["title"]}')
+                    result = False
+                    continue
             s_info = self.get_stream_info(directory)
             if s_info is None:
                 continue
             for name in s['files']:
-                self.upload_file_and_index(js_dir, s_info, name)
+                if not self.upload_file_and_index(js_dir, s_info, name):
+                    result = False
+        return result
 
-    def convert_v1_json_data(self, v1json : JsonObject) -> JsonObject:
+    def convert_v1_json_data(self, v1json: JsonObject) -> JsonObject:
         """
         Converts v1 JSON Schema to current JSON Schema
         """
@@ -99,7 +140,7 @@ class MediaManagement:
             v1json['streams'] = []
             file_prefixes = set()
             for filename in files:
-                prefix = name.split('_')[0]
+                prefix = filename.split('_')[0]
                 if prefix not in file_prefixes:
                     v1json['streams'].append({
                         'title': filename,
@@ -169,9 +210,6 @@ class MediaManagement:
         self.csrf_tokens.update(js['csrf_tokens'])
         self.keys = {}
         self.streams = {}
-        #for f in js['files']:
-        #    self.files[f['name']] = f
-        #    self.log.debug('File %s', f['name'])
         for k in js['keys']:
             kid = k['kid']
             self.log.debug('KID %s: computed=%s', kid, k['computed'])
@@ -179,7 +217,6 @@ class MediaManagement:
         for s in js['streams']:
             self.streams[s['directory']] = DashStream(**s)
             self.log.debug('Stream %s: %s', s['directory'], s['title'])
-        # self.upload_url = urllib.parse.urljoin(self.base_url, js['upload_url'])
         return True
 
     def get_stream_info(self, directory: str) -> Optional[DashStream]:
@@ -253,17 +290,15 @@ class MediaManagement:
             self.log.error('Add stream failure: HTTP %d', result.status_code)
             return None
         js = result.json()
-        if 'csrf' in js:
-            self.csrf_tokens['streams'] = js['csrf']
-        if 'error' in js:
+        if 'csrf_token' in js:
+            self.csrf_tokens['streams'] = js['csrf_token']
+        if js.get('error') is not None:
             self.log.error('Add stream failure: %s', js['error'])
             return None
-        self.streams[js['directory']] = DashStream(
-            title=js['title'],
-            directory=js['directory'],
-            pk=js['pk'],
-            blob=js['blob'])
-        return self.streams[js['directory']]
+        ds = DashStream(**js)
+        self.streams[js['directory']] = ds
+        ds.csrf_tokens = {'streams': js['csrf_token']}
+        return ds
 
     def upload_file_and_index(self, js_dir: Path, stream: DashStream, name: str) -> bool:
         name = Path(name)
@@ -279,7 +314,7 @@ class MediaManagement:
         if not self.upload_file(stream, filename):
             self.log.error('Failed to add file %s', name)
             return False
-        time.sleep(2) # allow time for DB to sync
+        time.sleep(2)  # allow time for DB to sync
         if stream.media_files[name.stem]['representation'] is None:
             self.log.info('Index file %s', name)
             if not self.index_file(stream, name):
@@ -306,12 +341,15 @@ class MediaManagement:
             'csrf_token': self.get_stream_csrf_token(stream, 'upload'),
         }
         self.log.debug('Upload file: %s', params)
-        files = [
-            ('file', (str(filename.name), filename.open('rb'), 'video/mp4')),
-        ]
-        self.log.debug('POST %s', stream.upload_url)
         upload_url = urllib.parse.urljoin(self.base_url, stream.upload_url)
-        result = self.session.post(upload_url, data=params, files=files)
+        with filename.open('rb') as mp4_src:
+            files = [
+                ('file', (str(filename.name), mp4_src, 'video/mp4')),
+            ]
+            self.log.debug('POST %s', stream.upload_url)
+            result = self.session.post(
+                upload_url, data=params, files=files,
+                content_type="multipart/form-data")
         if result.status_code != 200:
             self.log.warning('HTTP status %d', result.status_code)
             self.log.debug('HTTP headers %s', str(result.headers))
@@ -345,7 +383,7 @@ class MediaManagement:
             try:
                 js = result.json()
             except (ValueError) as err:
-                js = { 'error': str(err) }
+                js = {'error': str(err)}
             if 'csrf_token' in js:
                 stream.csrf_tokens['files'] = js['csrf_token']
                 params['csrf_token'] = js['csrf_token']
@@ -362,18 +400,17 @@ class MediaManagement:
             time.sleep(2)
         return False
 
-
     @classmethod
     def main(cls):
         ap = argparse.ArgumentParser(description='dashlive database population')
         ap.add_argument('--debug', action="store_true")
         ap.add_argument('--host', help='HTTP address of host to populate',
-                        default="http://localhost:5000/" )
+                        default="http://localhost:5000/")
         ap.add_argument('--username')
         ap.add_argument('--password')
         ap.add_argument('jsonfile', help='JSON file', nargs='+', default=None)
         args = ap.parse_args()
-        mm_log = logging.getLogger('MediaManagement')
+        mm_log = logging.getLogger('PopulateDatabase')
         ch = logging.StreamHandler()
         ch.setFormatter(logging.Formatter(
             '%(asctime)s - %(levelname)s: %(funcName)s:%(lineno)d: %(message)s'))
@@ -383,10 +420,10 @@ class MediaManagement:
             mm_log.setLevel(logging.DEBUG)
         else:
             mm_log.setLevel(logging.INFO)
-        mm = MediaManagement(args.host, args.username, args.password)
+        mm = PopulateDatabase(args.host, args.username, args.password)
         for jsonfile in args.jsonfile:
             mm.populate_database(jsonfile)
 
 
 if __name__ == "__main__":
-    MediaManagement.main()
+    PopulateDatabase.main()

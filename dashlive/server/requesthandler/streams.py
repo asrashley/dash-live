@@ -129,7 +129,7 @@ class AddStream(HTMLHandlerBase):
                 data[f] = None
         if 'prefix' in params:
             data['directory'] = params['prefix']
-        result = {"error": None}
+        result = {}
         st = models.Stream.get(directory=data['directory'])
         if st:
             models.db.session.delete(st)
@@ -139,9 +139,9 @@ class AddStream(HTMLHandlerBase):
             flask.flash(f'Added new stream "{data["title"]}"', 'success')
             return flask.redirect(flask.url_for('list-streams'))
         result["id"] = st.pk
-        result.update(data)
+        result.update(st.to_dict(with_collections=True))
         csrf_key = self.generate_csrf_cookie()
-        result["csrf"] = self.generate_csrf_token('streams', csrf_key)
+        result["csrf_token"] = self.generate_csrf_token('streams', csrf_key)
         return self.jsonify(result)
 
 

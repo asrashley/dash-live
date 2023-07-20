@@ -138,34 +138,31 @@ to be indexed, using the "index" button beside each media item. The index proces
 finds each segment in the file and other information such as codecs, timescale and
 duration.
 
-The [populate-db.py](./populate-db.py) script can be used to automate the installation
+The [dashlive.upload](./dashlive/upload.py) script can be used to automate the installation
 of streams, files and keys:
 
 ```sh
-python populate-db.py --host http://localhost:8080/ bbb.json
+python -m dashlive.upload --username=admin --password=secret --host http://localhost:5000/ bbb.json
 ```
 
 Where bbb.json is a JSON file that looks like this:
 
 ```json
 {
-    "keys": [
-        {
+    "keys": [{
             "computed": false,
             "key": "533a583a843436a536fbe2a5821c4b6c",
             "kid": "c001de8e567b5fcfbc22c565ed5bda24"
-        },
-        {
+        }, {
             "computed": true,
             "kid": "1ab45440532c439994dc5c5ad9584bac"
         }
     ],
-    "streams": [
-        {
+    "streams": [{
             "directory": "bbb",
             "title": "Big Buck Bunny",
             "marlin_la_url": "ms3://ms3.test.expressplay.com:8443/hms/ms3/rights/?b=...",
-            "playready_la_url": "https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg={cfgs}"
+            "playready_la_url": "https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg={cfgs}",
 			"files": [
 				"bbb_a1.mp4", "bbb_a1_enc.mp4", "bbb_a2.mp4", "bbb_a2_enc.mp4",
 				"bbb_v1.mp4", "bbb_v1_enc.mp4", "bbb_v2.mp4", "bbb_v2_enc.mp4",
@@ -173,14 +170,13 @@ Where bbb.json is a JSON file that looks like this:
 				"bbb_v5.mp4", "bbb_v5_enc.mp4", "bbb_v6.mp4", "bbb_v6_enc.mp4",
 				"bbb_v7.mp4", "bbb_v7_enc.mp4"
 			]
-        }
-    ],
+    }]
 }
 ```
 
-The [populate-db.py](./populate-db.py) script will upload all of the keys,
-streams and files listed in the JSON file that don't already exist on the
-server.
+The [dashlive.upload](./dashlive/upload.py) script will upload all of the
+keys, streams and files listed in the JSON file that don't already exist
+on the server.
 
 If there are encrypted streams, the key IDs (KID) and encryption key
 need to be configured. The media index process will automatically add new
@@ -246,7 +242,7 @@ of the database and re-uploading media files.
 
 The old version of this application has a `download-db.py` script that
 can be used to extract all of the data from the old server. The
-[populate-db.py](./populate-db.py) script from this version can be
+[dashlive.upload](./dashlive/upload.py) script from this version can be
 used to take this extracted data and upload it to the new server. This
 process should preserve all of the information between versions.
 
@@ -261,7 +257,7 @@ Using a checkout of the main branch to upload this data to a new
 server:
 
 ```sh
-python3 populate-db.py --username=admin --password=mysecret \
+python3 -m dashlive.upload --username=admin --password=mysecret \
     --host http://localhost:5000/ tmp/downloaded.json
 ```
 

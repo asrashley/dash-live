@@ -79,7 +79,7 @@ class TestRestApi(FlaskTestBase):
         expected_result['playready_la_url'] = None
         del expected_result['csrf_token']
         del expected_result['ajax']
-        expected_result['csrf'] = response.json["csrf"]
+        expected_result['csrf_token'] = response.json["csrf_token"]
         expected_result['id'] = response.json["id"]
         self.assertObjectEqual(expected_result, response.json)
 
