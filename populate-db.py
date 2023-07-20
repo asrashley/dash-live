@@ -149,7 +149,7 @@ class MediaManagement(object):
         self.upload_url = js['upload_url']
         return True
 
-    def add_key(self, kid, computed, key=None):
+    def add_key(self, kid, computed, key=None, alg=None):
         if kid in self.keys:
             return True
         params = {
