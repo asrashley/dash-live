@@ -189,6 +189,17 @@ provide the KID. In this case, the server will auto-generate the
 encryption key using the key generation algorithm provided by
 MicroSoft PlayReady using the test key seed.
 
+The [download-db.py](./download-db.py) script can be used to extract
+all of the keys, streams and media files from a server.
+
+The following example command line will download all of the server
+data into the `tmp` directory and create a JSON script that will
+re-create all the data that has been downloaded.
+
+```sh
+python download-db.py --host http://localhost:9080/ tmp
+```
+
 Unit Tests
 ==========
 To run all unit tests, which will take quite a long time (e.g. 45
