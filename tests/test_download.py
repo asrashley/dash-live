@@ -19,8 +19,9 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-
+import json
 import logging
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 import unittest
 import urllib.parse
@@ -29,29 +30,34 @@ import flask
 
 from dashlive.utils.json_object import JsonObject
 from dashlive.management.http import HttpSession, HttpResponse
-from dashlive.management.populate import PopulateDatabase
+from dashlive.management.download import DownloadDatabase
 
 from .flask_base import FlaskTestBase
 from .http_client import ClientHttpSession
 
-class TestPopulateDatabase(FlaskTestBase):
-    def test_populate_database(self) -> None:
+class TestDownloadDatabase(FlaskTestBase):
+    def test_download_database(self) -> None:
+        self.setup_media()
         self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)
         tmpdir = self.create_upload_folder()
-        with self.app.app_context():
-            self.app.config['BLOB_FOLDER'] = tmpdir
-        pd = PopulateDatabase(
+        dd = DownloadDatabase(
             url=flask.url_for('home'),
             username=self.MEDIA_USER,
             password=self.MEDIA_PASSWORD,
             session=ClientHttpSession(self.client))
-        jsonfile = self.FIXTURES_PATH / 'upload.json'
-        result = pd.populate_database(str(jsonfile))
+        result = dd.download_database(Path(tmpdir))
         self.assertTrue(result)
-
+        jsonfile = Path(tmpdir) / dd.OUTPUT_NAME
+        self.assertTrue(jsonfile.exists(), msg=f'{jsonfile} does not exist')
+        with jsonfile.open('rt', encoding='utf-8') as src:
+            js = json.load(src)
+        jsonfile = Path(tmpdir) / 'fixtures' / 'fixtures.json'
+        self.assertTrue(jsonfile.exists(), msg=f'{jsonfile} does not exist')
+        with jsonfile.open('rt', encoding='utf-8') as src:
+            js = json.load(src)
 
 if __name__ == "__main__":
-    mm_log = logging.getLogger('PopulateDatabase')
+    mm_log = logging.getLogger('DownloadDatabase')
     ch = logging.StreamHandler()
     ch.setFormatter(logging.Formatter(
         '%(asctime)s - %(levelname)s: %(funcName)s:%(lineno)d: %(message)s'))
