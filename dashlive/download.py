@@ -20,7 +20,7 @@
 #
 #############################################################################
 
-from dashlive.management.populate import PopulateDatabase
+from dashlive.management.download import DownloadDatabase
 
 if __name__ == "__main__":
-    PopulateDatabase.main()
+    DownloadDatabase.main()

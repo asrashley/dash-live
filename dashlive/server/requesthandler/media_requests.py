@@ -56,7 +56,7 @@ class OnDemandMedia(RequestHandlerBase):
         except ValueError as ve:
             return flask.make_response(f'Invalid HTTP range "{ve}"', 400)
         if start is None:
-            return flask.make_response.write('HTTP range must be specified', 400)
+            return flask.make_response('HTTP range must be specified', 400)
         if ext == 'm4a':
             headers['Content-Type'] = 'audio/mp4'
         elif ext == 'm4v':
