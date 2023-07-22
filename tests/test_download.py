@@ -30,12 +30,22 @@ import flask
 
 from dashlive.utils.json_object import JsonObject
 from dashlive.management.http import HttpSession, HttpResponse
+from dashlive.management.base import LoginFailureException
 from dashlive.management.download import DownloadDatabase
 
 from .flask_base import FlaskTestBase
 from .http_client import ClientHttpSession
 
 class TestDownloadDatabase(FlaskTestBase):
+    def test_login_failure(self) -> None:
+        dd = DownloadDatabase(
+            url=flask.url_for('home'),
+            username='unknown',
+            password='secret',
+            session=ClientHttpSession(self.client))
+        with self.assertRaises(LoginFailureException):
+            dd.download_database(Path('/tmp'))
+
     def test_download_database(self) -> None:
         self.setup_media()
         self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)

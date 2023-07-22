@@ -33,7 +33,13 @@ from dashlive.server.routes import routes
 from dashlive.utils.json_object import JsonObject
 
 from .http import HttpResponse, HttpSession
-from .info import StreamInfo
+from .info import StreamInfo, UserInfo
+
+class LoginFailureException(Exception):
+    """
+    Exception that is thrown when login fails
+    """
+    pass
 
 class ManagementBase:
     """
@@ -48,11 +54,11 @@ class ManagementBase:
             self.session = session
         else:
             self.session = requests.Session()
-        self._has_logged_in = False
         self.csrf_tokens = {}
         self.keys = {}
         self.streams: Dict[str, StreamInfo] = {}
         self.log = logging.getLogger(self.__class__.__name__)
+        self.user: Optional[UserInfo] = None
 
     def url_for(self, name, **kwargs) -> str:
         route = routes[name]
@@ -61,8 +67,8 @@ class ManagementBase:
         # print('path', path)
         return urllib.parse.urljoin(self.base_url, path)
 
-    def login(self):
-        if self._has_logged_in:
+    def login(self) -> bool:
+        if self.user:
             return True
         login_url = self.url_for('login')
         self.log.debug('GET %s', login_url)
@@ -70,7 +76,7 @@ class ManagementBase:
         if result.status_code != 200:
             self.log.warning('HTTP status %d', result.status_code)
             self.log.debug('HTTP headers %s', str(result.headers))
-            return False
+            raise LoginFailureException(f'GET HTTP error: {result.status_code}')
         fields = {
             "username": self.username,
             "password": self.password,
@@ -82,12 +88,12 @@ class ManagementBase:
         if result.status_code != 200:
             self.log.warning('HTTP status %d', result.status_code)
             self.log.debug('HTTP headers %s', str(result.headers))
-            js = {'error': result.text}
-        else:
-            js = result.json()
-        if result.status_code == 200 and not js.get('error'):
-            self._has_logged_in = True
-        return self._has_logged_in
+            raise LoginFailureException(f'POST HTTP error: {result.status_code}')
+        js = result.json()
+        if js.get('error'):
+            raise LoginFailureException(js['error'])
+        self.user = UserInfo(**js['user'])
+        return True
 
     def get_media_info(self, with_details: bool = False) -> bool:
         if not self.login():
@@ -131,4 +137,3 @@ class ManagementBase:
             return None
         js = result.json()
         return StreamInfo(**js)
-

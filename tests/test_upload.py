@@ -28,6 +28,7 @@ import urllib.parse
 import flask
 
 from dashlive.utils.json_object import JsonObject
+from dashlive.management.base import LoginFailureException
 from dashlive.management.http import HttpSession, HttpResponse
 from dashlive.management.populate import PopulateDatabase
 
@@ -35,6 +36,26 @@ from .flask_base import FlaskTestBase
 from .http_client import ClientHttpSession
 
 class TestPopulateDatabase(FlaskTestBase):
+    def test_login_failure(self) -> None:
+        pd = PopulateDatabase(
+            url=flask.url_for('home'),
+            username='unknown',
+            password='secret',
+            session=ClientHttpSession(self.client))
+        with self.assertRaises(LoginFailureException):
+            jsonfile = self.FIXTURES_PATH / 'upload.json'
+            pd.populate_database(str(jsonfile))
+
+    def test_file_not_found(self) -> None:
+        self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)
+        pd = PopulateDatabase(
+            url=flask.url_for('home'),
+            username=self.MEDIA_USER,
+            password=self.MEDIA_PASSWORD,
+            session=ClientHttpSession(self.client))
+        with self.assertRaises(FileNotFoundError):
+            pd.populate_database('script.json')
+
     def test_populate_database(self) -> None:
         self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)
         tmpdir = self.create_upload_folder()

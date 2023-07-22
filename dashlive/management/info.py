@@ -29,6 +29,24 @@ import urllib
 
 from dashlive.utils.json_object import JsonObject
 
+class UserInfo:
+    def __init__(self, email: str, groups: List[str], last_login: str,
+                 pk: int, username: str) -> None:
+        self.email = email
+        self.groups = groups
+        self.last_login = last_login
+        self.pk = pk
+        self.username = username
+
+    def to_dict(self) -> JsonObject:
+        return {
+            'email': self.email,
+            'groups': str(self.groups),
+            'last_login': self.last_login,
+            'pk': self.pk,
+            'username': self.username
+        }
+
 class BlobInfo:
     def __init__(self, content_type: str, created: str, filename: str,
                  pk: int, sha1_hash: str, size: int, **kwargs) -> None:
