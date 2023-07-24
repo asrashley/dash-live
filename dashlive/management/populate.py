@@ -24,16 +24,12 @@ import json
 import logging
 from pathlib import Path
 import time
-from typing import Dict, List, Optional, Protocol, Tuple
+from typing import Optional
 import urllib
 
-import requests
-
-from dashlive.server.routes import routes
 from dashlive.utils.json_object import JsonObject
 
 from .base import ManagementBase
-from .http import HttpResponse, HttpSession
 from .info import StreamInfo
 
 class PopulateDatabase(ManagementBase):

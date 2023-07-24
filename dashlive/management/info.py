@@ -19,13 +19,7 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-import argparse
-import json
-import logging
-from pathlib import Path
-import time
-from typing import AbstractSet, Dict, List, Optional, Protocol, Tuple
-import urllib
+from typing import AbstractSet, Dict, List, Optional
 
 from dashlive.utils.json_object import JsonObject
 
@@ -119,7 +113,7 @@ class StreamInfo:
         for name in {'directory', 'title', 'marlin_la_url', 'playready_la_url'}:
             if only is None or name in only:
                 result[name] = getattr(self, name)
-        
+
         if only is None or 'files' in only:
             result['files'] = [mf.to_dict() for mf in self.media_files.values()]
         return result
