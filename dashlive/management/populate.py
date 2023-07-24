@@ -88,10 +88,11 @@ class PopulateDatabase(ManagementBase):
                 prefix = filename.split('_')[0]
                 if prefix not in file_prefixes:
                     v1json['streams'].append({
-                        'title': filename,
+                        'title': prefix,
                         'prefix': prefix
                     })
                     file_prefixes.add(prefix)
+            v1json['streams'].sort(key=lambda item: item['prefix'])
         for stream in v1json['streams']:
             new_st = {
                 'directory': stream['prefix'],
@@ -110,6 +111,7 @@ class PopulateDatabase(ManagementBase):
                 if filename.startswith(stream['prefix']):
                     new_st['files'].append(filename)
                     files.remove(filename)
+            new_st['files'].sort()
             output['streams'].append(new_st)
         return output
 
