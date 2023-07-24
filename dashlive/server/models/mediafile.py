@@ -36,8 +36,7 @@ class MediaFile(db.Model, ModelMixin):
             enforce_string=True,
             enforce_unicode=False
         ),
-        nullable=True,
-        default={})
+        nullable=True)
     bitrate = sa.Column(sa.Integer, default=0, index=True, nullable=False)
     content_type = sa.Column(sa.String(64), nullable=True, index=True)
     encrypted = sa.Column(sa.Boolean, default=False, index=True, nullable=False)
