@@ -66,6 +66,111 @@ class TestPopulateDatabase(FlaskTestBase):
         result = pd.populate_database(str(jsonfile))
         self.assertTrue(result)
 
+    def test_translate_v1_json_with_streams(self) -> None:
+        v1js = {
+            "keys": [{
+                "computed": False,
+                "key": "533a583a843436a536fbe2a5821c4b6c",
+                "kid": "c001de8e567b5fcfbc22c565ed5bda24"
+            }, {
+                "computed": True,
+                "kid": "1ab45440532c439994dc5c5ad9584bac"
+            }],
+            "streams": [{
+                "prefix": "bbb",
+                "title": "Big Buck Bunny",
+                "marlin_la_url": "ms3://ms3.test.expressplay.com:8443/hms/ms3/rights/?b=...",
+                "playready_la_url": "https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg={cfgs}",
+            }, {
+                "prefix": "tears",
+                "title": "Tears of Steel",
+            }],
+            "files": [
+                "bbb_a1.mp4", "bbb_a1_enc.mp4", "bbb_a2.mp4", "bbb_t1.mp4",
+                "tears_a1.mp4", "tears_v2.mp4", "tears_v1.mp4", "tears_t1.mp4"
+            ]
+        }
+        pd = PopulateDatabase(
+            url=flask.url_for('home'),
+            username=self.MEDIA_USER,
+            password=self.MEDIA_PASSWORD,
+            session=ClientHttpSession(self.client))
+        result = pd.convert_v1_json_data(v1js)
+        expected = {
+            "keys": [{
+                "computed": False,
+                "key": "533a583a843436a536fbe2a5821c4b6c",
+                "kid": "c001de8e567b5fcfbc22c565ed5bda24"
+            }, {
+                "computed": True,
+                "kid": "1ab45440532c439994dc5c5ad9584bac"
+            }],
+            "streams": [{
+                "directory": "bbb",
+                "title": "Big Buck Bunny",
+                "marlin_la_url": "ms3://ms3.test.expressplay.com:8443/hms/ms3/rights/?b=...",
+                "playready_la_url": "https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg={cfgs}",
+                "files": [
+                    "bbb_a1.mp4", "bbb_a1_enc.mp4", "bbb_a2.mp4", "bbb_t1.mp4"
+                ]
+            }, {
+                "directory": "tears",
+                "title": "Tears of Steel",
+                "files": [
+                    "tears_a1.mp4", "tears_t1.mp4", "tears_v1.mp4", "tears_v2.mp4"
+                ]
+            }]
+        }
+        self.maxDiff = None
+        self.assertDictEqual(expected, result)
+
+    def test_translate_v1_json_no_streams(self) -> None:
+        v1js = {
+            "keys": [{
+                "computed": False,
+                "key": "533a583a843436a536fbe2a5821c4b6c",
+                "kid": "c001de8e567b5fcfbc22c565ed5bda24"
+            }, {
+                "computed": True,
+                "kid": "1ab45440532c439994dc5c5ad9584bac"
+            }],
+            "files": [
+                "bbb_a1.mp4", "bbb_a1_enc.mp4", "bbb_a2.mp4", "bbb_t1.mp4",
+                "tears_a1.mp4", "tears_v2.mp4", "tears_v1.mp4", "tears_t1.mp4"
+            ]
+        }
+        pd = PopulateDatabase(
+            url=flask.url_for('home'),
+            username=self.MEDIA_USER,
+            password=self.MEDIA_PASSWORD,
+            session=ClientHttpSession(self.client))
+        result = pd.convert_v1_json_data(v1js)
+        expected = {
+            "keys": [{
+                "computed": False,
+                "key": "533a583a843436a536fbe2a5821c4b6c",
+                "kid": "c001de8e567b5fcfbc22c565ed5bda24"
+            }, {
+                "computed": True,
+                "kid": "1ab45440532c439994dc5c5ad9584bac"
+            }],
+            "streams": [{
+                "directory": "bbb",
+                "title": "bbb",
+                "files": [
+                    "bbb_a1.mp4", "bbb_a1_enc.mp4", "bbb_a2.mp4", "bbb_t1.mp4"
+                ]
+            }, {
+                "directory": "tears",
+                "title": "tears",
+                "files": [
+                    "tears_a1.mp4", "tears_t1.mp4", "tears_v1.mp4", "tears_v2.mp4"
+                ]
+            }]
+        }
+        self.maxDiff = None
+        self.assertDictEqual(expected, result)
+
 
 if __name__ == "__main__":
     mm_log = logging.getLogger('PopulateDatabase')
