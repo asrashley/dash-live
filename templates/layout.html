@@ -7,12 +7,8 @@
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="shortcut icon" href="{{url_for('static', filename='favicon.ico')}}">
-        {% if on_production_server %}
-            <link href='{{http_protocol}}://fonts.googleapis.com/css?family=Comfortaa:700' rel='stylesheet' type='text/css'>
-        {% else %}
-            <link href="{{url_for('static', filename='css/comfortaa.css')}}"
-                  rel='stylesheet' type='text/css'>
-        {% endif %}
+        <link href="{{url_for('static', filename='css/comfortaa.css')}}"
+              rel='stylesheet' type='text/css'>
         {% block firstscript %}{% endblock %}
         <link rel="stylesheet" href="{{url_for('static', filename='css/bootstrap.min.css')}}" />
         {% block stylesheet %}

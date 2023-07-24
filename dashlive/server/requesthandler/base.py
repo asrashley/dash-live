@@ -55,7 +55,6 @@ from dashlive.drm.marlin import Marlin
 from dashlive.server import manifests
 from dashlive.server import models
 from dashlive.server import settings
-from dashlive.server.gae import on_production_server
 from dashlive.server.events.factory import EventFactory
 from dashlive.server.routes import routes, Route
 from dashlive.utils import objects
@@ -79,7 +78,6 @@ class RequestHandlerBase(MethodView):
         route = routes[flask.request.endpoint]
         context = {
             "title": kwargs.get('title', route.title),
-            "on_production_server": on_production_server,
             "http_protocol": flask.request.scheme,
             "breadcrumbs": self.get_breadcrumbs(route),
         }
