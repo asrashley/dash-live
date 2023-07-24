@@ -30,11 +30,13 @@ import subprocess
 import sys
 import unittest
 
+RUNNER_SRC = 'https://raw.githubusercontent.com/GoogleCloudPlatform/python-docs-samples/main/appengine/standard/localtesting/runner.py'
+
 if not os.path.exists("tests/runner.py"):
     rv = subprocess.call([
-        'wget',
+        'curl',
         '-o', 'tests/runner.py',
-        'https://raw.githubusercontent.com/GoogleCloudPlatform/python-docs-samples/6f5f3bcb81779679a24e0964a6c57c0c7deabfac/appengine/standard/localtesting/runner.py'
+        RUNNER_SRC
     ])
     if rv:
         print('Failed to download runner.py')
