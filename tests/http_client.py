@@ -20,16 +20,11 @@
 #
 #############################################################################
 
-import logging
 from typing import Dict, List, Optional, Tuple
-import unittest
 import urllib.parse
-
-import flask
 
 from dashlive.utils.json_object import JsonObject
 from dashlive.management.http import HttpSession, HttpResponse
-from dashlive.management.populate import PopulateDatabase
 
 class HttpResponseWrapper(HttpResponse):
     def __init__(self, response):
@@ -39,7 +34,7 @@ class HttpResponseWrapper(HttpResponse):
     @property
     def text(self) -> str:
         return self.response.get_data(as_text=True)
-    
+
     @property
     def headers(self) -> Dict:
         return self.response.headers
@@ -47,7 +42,7 @@ class HttpResponseWrapper(HttpResponse):
     @property
     def content(self) -> bytes:
         return self.response.get_data(as_text=False)
-    
+
     def json(self) -> JsonObject:
         return self.response.json
 
@@ -116,5 +111,3 @@ class ClientHttpSession(HttpSession):
                 value = urllib.parse.quote_plus(value, encoding='utf-8')
             args.append(f'{key}={value}')
         return '&'.join(args)
-
-

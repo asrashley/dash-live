@@ -19,13 +19,7 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-import argparse
-import json
-import logging
-from pathlib import Path
-import time
 from typing import Dict, List, Optional, Protocol, Tuple
-import urllib
 
 from dashlive.utils.json_object import JsonObject
 
@@ -57,4 +51,3 @@ class HttpSession(Protocol):
             params: Optional[Dict] = None,
             json: Optional[JsonObject] = None) -> HttpResponse:
         """Make a PUT request"""
-

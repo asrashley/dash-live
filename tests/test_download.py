@@ -22,16 +22,13 @@
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 import unittest
-import urllib.parse
 
 import flask
 
-from dashlive.utils.json_object import JsonObject
-from dashlive.management.http import HttpSession, HttpResponse
 from dashlive.management.base import LoginFailureException
 from dashlive.management.download import DownloadDatabase
+from dashlive.server import models
 
 from .flask_base import FlaskTestBase
 from .http_client import ClientHttpSession
@@ -48,6 +45,14 @@ class TestDownloadDatabase(FlaskTestBase):
 
     def test_download_database(self) -> None:
         self.setup_media()
+        with self.app.app_context():
+            stream = models.Stream(directory='abc', title='Test Stream 2')
+            stream.add()
+            ky = models.Key(hkid='c001de8e567b5fcfbc22c565ed5bda24',
+                            hkey='533a583a843436a536fbe2a5821c4b6c',
+                            computed=False)
+            ky.add()
+            models.db.session.commit()
         self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)
         tmpdir = self.create_upload_folder()
         dd = DownloadDatabase(
@@ -61,10 +66,46 @@ class TestDownloadDatabase(FlaskTestBase):
         self.assertTrue(jsonfile.exists(), msg=f'{jsonfile} does not exist')
         with jsonfile.open('rt', encoding='utf-8') as src:
             js = json.load(src)
-        jsonfile = Path(tmpdir) / 'fixtures' / 'fixtures.json'
+        self.assertIn('keys', js)
+        self.assertEqual(len(js['keys']), 2)
+        self.assertIn('streams', js)
+        self.assertEqual(len(js['streams']), 2)
+        todo = set()
+        with self.app.app_context():
+            for st in models.Stream.all():
+                todo.add(st.directory)
+        for dirname in ['fixtures', 'abc']:
+            self.assertIn(dirname, todo)
+            todo.remove(dirname)
+            self.check_json_file(Path(tmpdir), dirname)
+
+    def check_json_file(self, tmpdir: Path, dirname: str) -> None:
+        jsonfile = tmpdir / dirname / f'{dirname}.json'
         self.assertTrue(jsonfile.exists(), msg=f'{jsonfile} does not exist')
         with jsonfile.open('rt', encoding='utf-8') as src:
             js = json.load(src)
+        expected = {
+            'keys': [],
+            'streams': [],
+        }
+        with self.app.app_context():
+            for kp in models.Key.all(order_by=[models.Key.hkid]):
+                expected['keys'].append({
+                    'alg': kp.ALG,
+                    'key': kp.KEY.hex,
+                    'kid': kp.KID.hex,
+                    'computed': kp.computed,
+                })
+            stream = models.Stream.get(directory=dirname)
+            self.assertIsNotNone(stream)
+            st = stream.to_dict(only={
+                'directory', 'marlin_la_url', 'playready_la_url', 'title'})
+            st['files'] = [f'{mf.name}.mp4' for mf in stream.media_files]
+            st['files'].sort()
+            expected['streams'] = [st]
+        self.maxDiff = None
+        self.assertDictEqual(expected, js)
+
 
 if __name__ == "__main__":
     mm_log = logging.getLogger('DownloadDatabase')

@@ -75,8 +75,8 @@ class Key(db.Model, ModelMixin):
     def toJSON(self, pure: bool = False,
                exclude: Optional[AbstractSet[str]] = None) -> JsonObject:
         js = {
-            'kid': self.hkid,
-            'key': self.hkey,
+            'kid': self.KID.hex,
+            'key': self.KEY.hex,
             'alg': self.ALG,
             'computed': self.computed,
         }

@@ -23,13 +23,8 @@
 import argparse
 import json
 import logging
-import os
 from pathlib import Path
-import ssl
-import sys
-import time
 from typing import Optional
-import urllib
 
 from dashlive.utils.json_object import JsonObject
 from .base import ManagementBase
@@ -37,6 +32,7 @@ from .info import StreamInfo
 
 class DownloadDatabase(ManagementBase):
     OUTPUT_NAME = 'downloaded.json'
+
     def download_database(self, destination: Path) -> bool:
         if not self.login():
             return False
@@ -60,24 +56,25 @@ class DownloadDatabase(ManagementBase):
         with filename.open('wt', encoding='utf-8') as dest:
             json.dump(result, dest, indent=2, sort_keys=True)
         return retval
-                
+
     def download_stream(self, stream: StreamInfo, destination: Path) -> Optional[JsonObject]:
         js = stream.to_dict(only={'directory', 'title', 'marlin_la_url', 'playready_la_url'})
         # js['files'] = [mf.blob.filename for mf in stream.media_files.values()]
         js['files'] = []
+        destdir = destination / stream.directory
+        if not destdir.exists():
+            destdir.mkdir()
+        if not destdir.exists():
+            return None
         for name, info in stream.media_files.items():
-            destdir = destination / stream.directory
-            if not destdir.exists():
-                destdir.mkdir()
-            if not destdir.exists():
-                return None
             filename = destdir / f'{name}.mp4'
             if filename.exists():
                 self.log.info('Already have file: %s', filename)
-                js['files'].append(name)
+                js['files'].append(f'{name}.mp4')
                 continue
             if self.download_file(stream, name, filename, info):
-                js['files'].append(name)
+                js['files'].append(f'{name}.mp4')
+        js['files'].sort()
         filename = destination / stream.directory / f'{stream.directory}.json'
         # TODO: only select keys used by this stream
         result = {
@@ -110,7 +107,7 @@ class DownloadDatabase(ManagementBase):
         ap = argparse.ArgumentParser(description='dashlive database download')
         ap.add_argument('--debug', action="store_true")
         ap.add_argument('--host', help='HTTP address of host',
-                        default="http://localhost:9080/" )
+                        default="http://localhost:9080/")
         ap.add_argument('dest', help='Destination directory')
         args = ap.parse_args()
         mm_log = logging.getLogger('DownloadDatabase')

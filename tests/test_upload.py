@@ -21,15 +21,11 @@
 #############################################################################
 
 import logging
-from typing import Dict, List, Optional, Tuple
 import unittest
-import urllib.parse
 
 import flask
 
-from dashlive.utils.json_object import JsonObject
 from dashlive.management.base import LoginFailureException
-from dashlive.management.http import HttpSession, HttpResponse
 from dashlive.management.populate import PopulateDatabase
 
 from .flask_base import FlaskTestBase

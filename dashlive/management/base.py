@@ -19,20 +19,15 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-import argparse
-import json
 import logging
-from pathlib import Path
-import time
-from typing import Dict, List, Optional, Protocol, Tuple
+from typing import Dict, Optional
 import urllib
 
 import requests
 
 from dashlive.server.routes import routes
-from dashlive.utils.json_object import JsonObject
 
-from .http import HttpResponse, HttpSession
+from .http import HttpSession
 from .info import StreamInfo, UserInfo
 
 class LoginFailureException(Exception):
