@@ -22,7 +22,9 @@
 
 import logging
 import importlib
+from os import environ
 from pathlib import Path
+import secrets
 from typing import Optional
 
 from flask import Flask, request  # type: ignore
@@ -34,9 +36,6 @@ from dashlive.templates.tags import custom_tags
 from dashlive.utils.json_object import JsonObject
 from .anonymous_user import AnonymousUser
 from .routes import routes
-from .settings import (
-    cookie_secret, jwt_secret, default_admin_username, default_admin_password,
-)
 
 login_manager = LoginManager()
 
@@ -89,14 +88,24 @@ def create_app(config: Optional[JsonObject] = None,
         template_folder=str(template_folder),
         static_folder=str(static_folder))
     add_routes(app)
-    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///models.db3"
-    app.config['JWT_TOKEN_LOCATION'] = ['cookies']
-    app.config['JWT_SECRET_KEY'] = jwt_secret
-    app.config['UPLOAD_FOLDER'] = str(media_folder / "blobs")
-    app.config['BLOB_FOLDER'] = str(media_folder / "blobs")
+    dash_settings = {
+        'CSRF_SECRET': secrets.token_urlsafe(16),
+        'default_admin_username': 'admin',
+        'default_admin_password': secrets.token_urlsafe(10),
+    }
+    app.config.update(
+        BLOB_FOLDER=str(media_folder / "blobs"),
+        SQLALCHEMY_DATABASE_URI="sqlite:///models.db3",
+        UPLOAD_FOLDER=str(media_folder / "blobs"),
+        DASH=dash_settings,
+        SECRET_KEY=secrets.token_urlsafe(16)
+    )
+    if config is None:
+        app.config.from_object('dashlive.server.settings')
+    if 'DASHLIVE_SETTINGS' in environ:
+        app.config.from_envvar('DASHLIVE_SETTINGS')
     if config is not None:
         app.config.update(config)
-    app.secret_key = cookie_secret
     models.db.init_app(app)
     login_manager.anonymous_user = AnonymousUser
     login_manager.init_app(app)
@@ -108,7 +117,9 @@ def create_app(config: Optional[JsonObject] = None,
     with app.app_context():
         models.db.create_all()
         if create_default_user:
-            models.User.check_if_empty(default_admin_username, default_admin_password)
+            models.User.check_if_empty(
+                app.config['DASH']['default_admin_username'],
+                app.config['DASH']['default_admin_password'])
         models.Token.prune_database(all_csrf=True)
 
     app.register_blueprint(custom_tags)

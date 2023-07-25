@@ -14,17 +14,16 @@ Python 3.11 or greater is required by this application.
 A `dashlive/server/settings.py` needs to be created that contains
 
 ```python3
-from os import environ
-cookie_secret = 'arandomstring'
-csrf_secret = 'arandomstring'
-jwt_secret = 'arandomstring'
-default_admin_username = 'admin'
-default_admin_password = r'a.password'
-allowed_domains = "*"
-DEBUG = environ.get("LOG_LEVEL", "error").lower() == 'debug'
+SECRET_KEY = 'arandomstring'
+DASH = {
+	CSRF_SECRET: 'arandomstring',
+	default_admin_username: 'admin',
+	default_admin_password: r'a.password',
+	allowed_domains = "*"
+}
 ```
 
-The `cookie_secret`, `csrf_secret` and `jwt_secret` variables need to contain
+The `FLASK_SECRET_KEY`, `CSRF_SECRET` variables need to contain
 a randomly generated block of ascii characters. There is a
 [gen_settings.py](./gen_settings.py) script that can be used to auto-generate
 settings.py
