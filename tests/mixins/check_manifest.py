@@ -181,7 +181,9 @@ class DashManifestCheckMixin(object):
                 mpd_url = response.headers['Location']
                 self.current_url = mpd_url
                 response = self.client.get(mpd_url)
-            # print(response.text)
+            self.assertIn("Access-Control-Allow-Origin", response.headers)
+            self.assertEqual(response.headers["Access-Control-Allow-Origin"], '*')
+            self.assertEqual(response.headers["Access-Control-Allow-Methods"], "HEAD, GET, POST")
             self.assertEqual(response.status_code, 200)
             xml = ET.parse(io.BytesIO(response.get_data(as_text=False)))
             dv = ViewsTestDashValidator(
