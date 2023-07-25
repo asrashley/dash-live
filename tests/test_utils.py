@@ -2,14 +2,13 @@ from future import standard_library
 standard_library.install_aliases()
 from builtins import range
 from builtins import object
-import io
-
 import datetime
+import io
 import unittest
 
 from dashlive.utils.date_time import from_isodatetime, toIsoDuration, parse_date, UTC
 from dashlive.utils.buffered_reader import BufferedReader
-from dashlive.utils import objects
+from dashlive.utils import objects, timezone
 
 
 class DateTimeTests(unittest.TestCase):
@@ -168,7 +167,7 @@ class ObjectTests(unittest.TestCase):
             actual = objects.flatten(value, pure=pure)
             self.assertEqual(expected, actual)
 
-    def test_pick_item(self):
+    def test_pick_item(self) -> None:
         src = {
             1: 'one',
             2: 'two',
@@ -182,6 +181,54 @@ class ObjectTests(unittest.TestCase):
             'five': 5,
         }
         self.assertEqual(expected, objects.pick_items(src, [1, 2, 'five', 7]))
+
+    def test_as_python(self) -> None:
+        class HasJson:
+            def __init__(self):
+                self.value = 42
+                self.hello = 'world'
+
+            def toJSON(self):
+                return dict(value=self.value, hello=self.hello)
+
+        test_cases = [
+            (None, 'None'),
+            (HasJson(), '{"value": 42, "hello": "world"}'),
+            (
+                [123, "text", 'handles " escape', None],
+                '[123, "text", \'handles " escape\', None]',
+            ),
+            (
+                datetime.datetime(2023, 7, 25, 12, 34, 56),
+                'utils.from_isodatetime("2023-07-25T12:34:56Z")'
+            ),
+            (
+                datetime.timedelta(seconds=123.4),
+                'utils.from_isodatetime("PT2M3.4S")'
+            ),
+            (
+                123.4,
+                '123.4'
+            ),
+            (
+                timezone.UTC(),
+                'UTC()'
+            ),
+            (
+                timezone.FixedOffsetTimeZone('+1:00'),
+                'FixedOffsetTimeZone("+1:00")'
+            )
+        ]
+        for value, expected in test_cases:
+            actual = objects.as_python(value)
+            self.assertEqual(expected, actual)
+
+    def test_fixed_offset_timezone(self) -> None:
+        fot = timezone.FixedOffsetTimeZone('+1:00')
+        self.assertEqual(fot.utcoffset(datetime.datetime.now()),
+                         datetime.timedelta(seconds=3600))
+        self.assertEqual(fot.dst(datetime.datetime(2020, 1, 2)),
+                         datetime.timedelta(seconds=0))
 
 
 if __name__ == "__main__":

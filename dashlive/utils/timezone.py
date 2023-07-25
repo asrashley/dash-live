@@ -59,7 +59,7 @@ class FixedOffsetTimeZone(datetime.tzinfo):
         self.__name = delta_str
 
     def __repr__(self):
-        return 'FixedOffsetTimeZone({})'.format(self.__name)
+        return f'FixedOffsetTimeZone("{self.__name}")'
 
     def utcoffset(self, dt):
         return self.__offset

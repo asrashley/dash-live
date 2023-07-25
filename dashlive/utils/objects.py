@@ -99,7 +99,7 @@ def as_python(value):
         wrap_strings = False
     if isinstance(value, (list, tuple)):
         items = [as_python(v) for v in list(value)]
-        value = '[{0}]'.format(','.join(items))
+        value = '[{0}]'.format(', '.join(items))
     elif isinstance(value, (dict)):
         items = []
         clz = value.get('_type', None)
@@ -111,9 +111,9 @@ def as_python(value):
             else:
                 items.append('{0}={1}'.format(k, as_python(v)))
         if clz is None:
-            value = '{' + ','.join(items) + '}'
+            value = '{' + ', '.join(items) + '}'
         else:
-            value = '{0}({1})'.format(clz, ','.join(items))
+            value = '{0}({1})'.format(clz, ', '.join(items))
     elif wrap_strings and isinstance(value, (basestring)):
         if '"' in value:
             value = ''.join(["'", value, "'"])
