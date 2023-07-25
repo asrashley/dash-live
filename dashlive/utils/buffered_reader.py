@@ -25,6 +25,8 @@ import io
 import time
 
 class Buffer(object):
+    __slots__ = ['pos', 'buf', 'data', 'size', 'timestamp']
+
     def __init__(self, pos, data):
         self.pos = pos
         self.buf = data
@@ -38,6 +40,9 @@ class Buffer(object):
 
 
 class BufferedReader(io.RawIOBase):
+    __slots__ = ['reader', 'buffers', 'buffersize', 'pos', 'offset', 'size',
+                 'max_buffers', 'num_buffers']
+
     def __init__(self, reader, buffersize=16384, data=None, offset=0,
                  size=None, max_buffers=30):
         super(BufferedReader, self).__init__()

@@ -26,6 +26,8 @@ import logging
 import bitstring
 
 class BitsFieldWriter(object):
+    __slots__ = ('obj', 'bits', 'log')
+
     def __init__(self, obj, dest=None):
         self.obj = obj
         if dest is None:
