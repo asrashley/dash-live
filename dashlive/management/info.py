@@ -19,18 +19,18 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+from dataclasses import dataclass
 from typing import AbstractSet, Dict, List, Optional
 
 from dashlive.utils.json_object import JsonObject
 
+@dataclass
 class UserInfo:
-    def __init__(self, email: str, groups: List[str], last_login: str,
-                 pk: int, username: str) -> None:
-        self.email = email
-        self.groups = groups
-        self.last_login = last_login
-        self.pk = pk
-        self.username = username
+    email: str
+    groups: List[str]
+    last_login: str
+    pk: int
+    username: str
 
     def to_dict(self) -> JsonObject:
         return {
@@ -41,15 +41,15 @@ class UserInfo:
             'username': self.username
         }
 
+@dataclass
 class BlobInfo:
-    def __init__(self, content_type: str, created: str, filename: str,
-                 pk: int, sha1_hash: str, size: int, **kwargs) -> None:
-        self.content_type = content_type
-        self.created = created
-        self.filename = filename
-        self.pk = pk
-        self.sha1_hash = sha1_hash
-        self.size = size
+    content_type: str
+    created: str
+    filename: str
+    pk: int
+    sha1_hash: str
+    size: int
+    auto_delete: bool
 
     def to_dict(self) -> JsonObject:
         return {
@@ -64,13 +64,16 @@ class BlobInfo:
 
 class MediaFileInfo:
     def __init__(self, bitrate: int, content_type: str, encrypted: bool,
-                 pk: int, blob: Optional[BlobInfo] = None,
+                 pk: int, blob: Optional[JsonObject] = None,
                  **kwargs) -> None:
         self.bitrate = bitrate
         self.content_type = content_type
         self.encrypted = encrypted
         self.pk = pk
-        self.blob = blob
+        if blob:
+            self.blob = BlobInfo(**blob)
+        else:
+            self.blob = None
 
     def to_dict(self) -> JsonObject:
         result = {
