@@ -20,15 +20,13 @@
 #
 #############################################################################
 
-from __future__ import absolute_import
-from future import standard_library
-standard_library.install_aliases()
 import base64
 import binascii
 import copy
 import io
 import logging
 import os
+from typing import Dict
 import unittest
 
 from bs4 import BeautifulSoup
@@ -571,6 +569,7 @@ class TestRestApi(FlaskTestBase):
         self.upload_media_file(ajax=1)
 
     def upload_media_file(self, ajax: int) -> None:
+        logging.disable(logging.CRITICAL)
         url = flask.url_for('list-streams', ajax=ajax)
 
         self.logout_user()
@@ -641,8 +640,32 @@ class TestRestApi(FlaskTestBase):
             upload_url = form['action']
             content_type = form['enctype']
             csrf_token = form.find('input', attrs={"name": "csrf_token"})['value']
-        html = BeautifulSoup(response.text, 'lxml')
-        form = html.find("form", id='upload-form')
+        # check handling for lack of file
+        data = {
+            "ajax": ajax,
+            "stream": stream.pk,
+            "submit": "submit",
+        }
+        self.assert_upload_post_fails(upload_url, content_type, ajax, data)
+
+        # check handling for lack of filename
+        data = {
+            "ajax": ajax,
+            "stream": stream.pk,
+            "submit": "submit",
+            'file': (io.BytesIO(b'data'), '', 'video/mp4'),
+        }
+        self.assert_upload_post_fails(upload_url, content_type, ajax, data)
+
+        # check handling for lack of CSRF token
+        data = {
+            "ajax": ajax,
+            "stream": stream.pk,
+            "submit": "submit",
+            'file': (io.BytesIO(b'data'), 'bbb.mp4', 'video/mp4'),
+        }
+        self.assert_upload_post_fails(upload_url, content_type, ajax, data)
+
         data = {
             "csrf_token": csrf_token,
             "ajax": ajax,
@@ -673,6 +696,18 @@ class TestRestApi(FlaskTestBase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json['media_files'][0]['name'], 'bbb_v1')
+
+    def assert_upload_post_fails(self, upload_url: str, content_type: str,
+                                 ajax: int, data: Dict) -> None:
+        response = self.client.post(
+            upload_url, data=data, content_type=content_type)
+        if ajax:
+            self.assert200(response)
+            self.assertIn('error', response.json)
+        else:
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(response.headers['Location'],
+                             flask.url_for('list-streams'))
 
     def test_edit_stream(self) -> None:
         self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)
