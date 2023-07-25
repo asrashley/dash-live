@@ -28,6 +28,8 @@ class Binary(object):
     BASE64 = 1
     HEX = 2
 
+    __slots__ = ['data', 'encoding']
+
     def __init__(self, data, encoding=BASE64, _type=None):
         if data is not None and _type is not None:
             if encoding == self.BASE64:

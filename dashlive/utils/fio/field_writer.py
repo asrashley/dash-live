@@ -26,23 +26,17 @@ from builtins import map
 from past.builtins import basestring
 from builtins import object
 import logging
-import os
 import struct
-import sys
 
-try:
-    import bitstring
-except ImportError:
-    sys.path.append(
-        os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "lib")))
-    import bitstring
+import bitstring
 
 from dashlive.utils.binary import Binary
 
 from .sizes import format_bit_sizes
 
 class FieldWriter(object):
+    __slots__ = ['obj', 'dest', 'bits', 'log']
+
     def __init__(self, obj, dest, debug=False):
         self.obj = obj
         if isinstance(dest, FieldWriter):

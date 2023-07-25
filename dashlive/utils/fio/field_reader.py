@@ -32,6 +32,8 @@ import struct
 from .sizes import format_bit_sizes
 
 class FieldReader(object):
+    __slots__ = ['name', 'src', 'kwargs', 'log']
+
     def __init__(self, name, src, kwargs, debug=False):
         self.name = name
         self.src = src

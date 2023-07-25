@@ -22,18 +22,12 @@
 
 from builtins import object
 import logging
-import os
-import sys
 
-try:
-    import bitstring
-except ImportError:
-    sys.path.append(
-        os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "..", "..", "lib")))
-    import bitstring
+import bitstring
 
 class BitsFieldReader(object):
+    __slots__ = ('name', 'debug', 'data', 'src', 'kwargs', 'bitsize', 'log')
+
     def __init__(self, name, src, kwargs, size=None, data=None, debug=False):
         self.name = name
         self.debug = debug
