@@ -4,14 +4,14 @@ import random
 import string
 import os
 
-TEMPLATE="""from os import environ
-cookie_secret = r'{cookie}'
-csrf_secret = r'{csrf}'
-jwt_secret = r'{jwt}'
-default_admin_username = 'admin'
-default_admin_password = r'{password}'
-allowed_domains = "*"
-DEBUG = environ.get("LOG_LEVEL", "error").lower() == 'debug'
+TEMPLATE="""
+SECRET_KEY = r'{cookie}'
+DASH = {
+  CSRF_SECRET: r'{csrf}',
+  default_admin_username: 'admin',
+  default_admin_password: r'{password}',
+  allowed_domains: "*"
+}
 """
 
 def make_random_string(length: int) -> str:
@@ -23,7 +23,6 @@ def make_random_string(length: int) -> str:
 
 cookie = make_random_string(20)
 csrf = make_random_string(20)
-jwt = make_random_string(20)
 password = make_random_string(10)
 
 if not os.path.exists("dashlive/server/settings.py"):

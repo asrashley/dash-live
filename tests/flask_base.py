@@ -71,7 +71,14 @@ class FlaskTestBase(TestCaseMixin, TestCase):
         logging.getLogger('dash').setLevel(logging.INFO)
         config = {
             'BLOB_FOLDER': str(self.FIXTURES_PATH.parent),
+            'DASH': {
+                'allowed_domains': '*',
+                'CSRF_SECRET': 'test.csrf.secret',
+                'default_admin_username': 'admin',
+                'default_admin_password': 'test.secret!',
+            },
             'UPLOAD_FOLDER': '/dev/null',
+            'SECRET_KEY': 'cookie.secret',
             'SQLALCHEMY_DATABASE_URI': "sqlite:///:memory:",
             'TESTING': True,
         }

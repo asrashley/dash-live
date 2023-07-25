@@ -54,7 +54,6 @@ from dashlive.drm.playready import PlayReady
 from dashlive.drm.marlin import Marlin
 from dashlive.server import manifests
 from dashlive.server import models
-from dashlive.server import settings
 from dashlive.server.events.factory import EventFactory
 from dashlive.server.routes import routes, Route
 from dashlive.utils import objects
@@ -138,8 +137,9 @@ class RequestHandlerBase(MethodView):
         # logging.debug(f'generate_csrf URL: {url}')
         # logging.debug(
         # 'generate_csrf User-Agent: "{}"'.format(flask.request.headers['User-Agent']))
+        cfg = flask.current_app.config['DASH']
         sig = hmac.new(
-            bytes(settings.csrf_secret, 'utf-8'),
+            bytes(cfg['CSRF_SECRET'], 'utf-8'),
             bytes(csrf_key, 'utf-8'),
             hashlib.sha1)
         cur_url = urllib.parse.urlparse(flask.request.url, 'http')
@@ -204,8 +204,9 @@ class RequestHandlerBase(MethodView):
         salt = token[:models.Token.CSRF_SALT_LENGTH]
         logging.debug(f'check_csrf salt: "{salt}"')
         token = token[models.Token.CSRF_SALT_LENGTH:]
+        cfg = flask.current_app.config['DASH']
         sig = hmac.new(
-            bytes(settings.csrf_secret, 'utf-8'),
+            bytes(cfg['CSRF_SECRET'], 'utf-8'),
             bytes(csrf_key, 'utf-8'),
             hashlib.sha1)
         sig.update(bytes(service, 'utf-8'))
@@ -626,17 +627,18 @@ class RequestHandlerBase(MethodView):
         return timeSource
 
     def add_allowed_origins(self, headers):
-        allowed_domains = getattr(settings, 'allowed_domains', self.DEFAULT_ALLOWED_DOMAINS)
+        cfg = flask.current_app.config['DASH']
+        allowed_domains = cfg.get('allowed_domains', self.DEFAULT_ALLOWED_DOMAINS)
         if allowed_domains == "*":
             headers["Access-Control-Allow-Origin"] = "*"
-            headers["Access-Control-Allow-Methods"] = ["HEAD, GET, POST"]
+            headers["Access-Control-Allow-Methods"] = "HEAD, GET, POST"
             return
         try:
             if isinstance(allowed_domains, str):
                 allowed_domains = re.compile(allowed_domains)
             if allowed_domains.search(flask.request.headers['Origin']):
                 headers["Access-Control-Allow-Origin"] = flask.request.headers['Origin']
-                headers["Access-Control-Allow-Methods"] = ["HEAD, GET, POST"]
+                headers["Access-Control-Allow-Methods"] = "HEAD, GET, POST"
         except KeyError:
             pass
 
