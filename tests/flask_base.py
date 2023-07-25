@@ -210,6 +210,7 @@ class FlaskTestBase(TestCaseMixin, TestCase):
             shutil.rmtree(self._temp_dir.value, ignore_errors=True)
         models.db.session.remove()
         models.db.drop_all()
+        logging.disable(logging.NOTSET)
 
     def login_user(self, username: Optional[str] = None,
                    password: Optional[str] = None,
