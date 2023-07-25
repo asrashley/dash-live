@@ -26,11 +26,13 @@ import io
 import os
 import logging
 import unittest
+from unittest.mock import patch
 
 from lxml import etree
 import flask
 
 from dashlive.server import manifests, models
+from dashlive.server.requesthandler.base import RequestHandlerBase
 from dashlive.drm.playready import PlayReady
 from dashlive.utils.date_time import UTC, toIsoDateTime, from_isodatetime
 from dashlive.utils.objects import dict_to_cgi_params
@@ -378,6 +380,42 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
                 clean.get_data(as_text=False),
                 corrupt.get_data(as_text=False),
                 name=url)
+
+    @patch.object(flask, 'request')
+    def test_wildcard_allowed_origin(self, mock_request) -> None:
+        rhb = RequestHandlerBase()
+        headers = {}
+        with self.app.app_context():
+            self.app.config['DASH']['allowed_domains'] = '*'
+            rhb.add_allowed_origins(headers)
+            self.assertEqual(headers["Access-Control-Allow-Methods"], "HEAD, GET, POST")
+            self.assertEqual(headers["Access-Control-Allow-Origin"], '*')
+
+    @patch.object(flask, 'request')
+    def test_matching_allowed_origin(self, mock_request) -> None:
+        rhb = RequestHandlerBase()
+        headers = {}
+        with self.app.app_context():
+            mock_request.headers = {
+                'Origin': 'www.unit.test',
+            }
+            self.app.config['DASH']['allowed_domains'] = 'unit.test'
+            rhb.add_allowed_origins(headers)
+            self.assertEqual(headers["Access-Control-Allow-Methods"], "HEAD, GET, POST")
+            self.assertEqual(headers["Access-Control-Allow-Origin"], 'www.unit.test')
+
+    @patch.object(flask, 'request')
+    def test_non_matching_allowed_origin(self, mock_request) -> None:
+        rhb = RequestHandlerBase()
+        headers = {}
+        with self.app.app_context():
+            mock_request.headers = {
+                'Origin': 'www.unit.test',
+            }
+            self.app.config['DASH']['allowed_domains'] = 'another.domain'
+            rhb.add_allowed_origins(headers)
+            self.assertNotIn("Access-Control-Allow-Methods", headers)
+            self.assertNotIn("Access-Control-Allow-Origin", headers)
 
 
 if os.environ.get("TESTS"):
