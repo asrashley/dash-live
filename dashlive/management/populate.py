@@ -44,9 +44,7 @@ class PopulateDatabase(ManagementBase):
         if 'files' in config:
             config = self.convert_v1_json_data(config)
         js_dir = Path(jsonfile).parent
-        if not self.login():
-            print('Failed to log in to server')
-            return False
+        self.login()
         self.get_media_info()
         result = True
         for k in config['keys']:
