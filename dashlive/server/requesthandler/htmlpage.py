@@ -31,7 +31,8 @@ import urllib.parse
 
 import flask
 
-from dashlive.server import manifests, models, cgi_options
+from dashlive.server import manifests, models
+from dashlive.server.options.cgi_options import get_cgi_options, get_dash_options
 from dashlive.drm.playready import PlayReady
 
 from .base import HTMLHandlerBase
@@ -64,7 +65,7 @@ class MainPage(HTMLHandlerBase):
                 'manifest': manifests.manifest[name],
                 'option': [],
             })
-        for idx, opt in enumerate(cgi_options.cgi_options):
+        for idx, opt in enumerate(get_cgi_options(hidden=False)):
             try:
                 row = context['rows'][idx]
                 row['option'] = opt
@@ -84,6 +85,17 @@ class CgiOptionsPage(HTMLHandlerBase):
 
     def get(self, **kwargs):
         context = self.create_context(**kwargs)
+        context['cgi_options'] = get_cgi_options()
+        if flask.request.args.get('json'):
+            names: list[str] = []
+            option_map = {}
+            for opt in get_dash_options():
+                names.append(opt.name)
+                option_map[opt.name] = opt
+            names.sort()
+            context['json'] = []
+            for name in names:
+                context['json'].append(option_map[name])
         return flask.render_template('cgi_options.html', **context)
 
 

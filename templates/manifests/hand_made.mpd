@@ -21,14 +21,10 @@
   {%- else %}
     type="static"
   {%- endif %}
-  {%- if mode=='odvod' %}
-    profiles="urn:mpeg:dash:profile:isoff-on-demand:2011"
-  {%- else %}
-    profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014"
-  {%- endif %}
   {%- if mode!='live' %}
     mediaPresentationDuration="{{mediaDuration|isoDuration}}"
   {%- endif %}
+  profiles="{{ profiles | join(',') }}"
   minBufferTime="{{minBufferTime|isoDuration}}"
 >
  <ProgramInformation>

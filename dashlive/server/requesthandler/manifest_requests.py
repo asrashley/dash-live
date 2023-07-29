@@ -27,7 +27,8 @@ from typing import Optional
 
 import flask
 
-from dashlive.server import manifests, cgi_options
+from dashlive.mpeg.dash.profiles import primary_profiles
+from dashlive.server import manifests
 from dashlive.server.models import Stream
 from dashlive.utils.date_time import from_isodatetime
 from dashlive.utils.objects import dict_to_cgi_params
@@ -50,7 +51,10 @@ class ServeManifest(RequestHandlerBase):
         except KeyError as err:
             logging.debug('Unknown manifest: %s (%s)', manifest, err)
             return flask.make_response(f'{manifest} not found', 404)
-        modes = mft.restrictions.get('mode', cgi_options.supported_modes)
+        try:
+            modes = mft.restrictions['mode']
+        except KeyError:
+            modes = primary_profiles.keys()
         if mode not in modes:
             logging.debug(
                 'Mode %s not supported with manifest %s', mode, manifest)

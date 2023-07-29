@@ -1382,8 +1382,7 @@ class InitSegment(DashElement):
                 if 'playready' in self.url or 'clearkey' in self.url:
                     self.checkTrue(
                         'moov' not in self.url,
-                        'PSSH box should be present in {}\n{:s}'.format(
-                            self.url, ae))
+                        f'PSSH box should be present in {self.url}\n{ae}')
         return moov
 
 

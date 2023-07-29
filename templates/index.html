@@ -15,15 +15,15 @@
       </thead>
     <tbody>
       {% for row in rows %}
-      <tr id="row{{loop.index0}}">
+      <tr id="row{{ loop.index0 }}">
         {% if row.manifest %}
         <td class="manifest active"
-            data-uri="{{row.url}}"
-            data-filename="{{row.filename}}"
-            data-params="{{row.manifest.restrictions|toJson|escape}}">
-          <span class="key manifest-key active">{{loop.index0}}</span>
+            data-uri="{{ row.url }}"
+            data-filename="{{ row.filename }}"
+            data-params="{{ row.manifest.restrictions|toJson | escape }}">
+          <span class="key manifest-key active">{{ loop.index0 }}</span>
           {% if row.manifest.title %}
-          <a class="manifest-title" href="{{row.url}}">{{row.manifest.title}}</a>
+          <a class="manifest-title" href="{{ row.url }}">{{ row.manifest.title }}</a>
           <img class="bool-yes" src="{{url_for('static', filename='img/tick-icon.png')}}" />
           {% endif %}
         </td>
@@ -31,12 +31,14 @@
         <td class="manifest empty" />
         {% endif %}
         <td class="option">
-          <span class="key option-key">{{loop.index0}}</span>
-          <span class="option-title">{{row.option.title}}</span>
+          <span class="key option-key">{{ loop.index0 }}</span>
+          <span class="option-title">{{ row.option.title }}</span>
           {% if row.option.name %}
           <select name="{{row.option.name}}">
             {% for opt in row.option.options %}
-            <option value="{{opt[1]}}">{{opt[0]}}</option>
+            <option value="{{opt[1]}}" {%- if loop.first %}selected{% endif -%}>
+	      {{ opt[0] }}
+	    </option>
             {% endfor %}
           </select>
           {% endif %}

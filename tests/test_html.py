@@ -20,17 +20,17 @@
 #
 #############################################################################
 
-from __future__ import absolute_import, print_function
 from builtins import filter
 import json
 import os
+from typing import Optional
 import unittest
 
 from bs4 import BeautifulSoup
 import flask
 
 from dashlive.server import manifests, models
-from dashlive.server.cgi_options import cgi_options
+from dashlive.server.options.cgi_options import get_cgi_options, get_dash_options
 
 from .flask_base import FlaskTestBase
 
@@ -74,7 +74,7 @@ class TestHtmlPageHandlers(FlaskTestBase):
         self.assertIn(f'href="{user_admin_url}"', response.text)
 
     def test_cgi_options_page(self):
-        url = flask.url_for('cgi-options', absolute=True)
+        url = flask.url_for('cgi-options')
         self.logout_user()
         response = self.client.get(url)
         self.assertEqual(response.status, '200 OK')
@@ -83,10 +83,21 @@ class TestHtmlPageHandlers(FlaskTestBase):
         self.assertIn('Log In', response.text)
         media_list_url = flask.url_for('list-streams')
         self.assertIn(f'href="{media_list_url}"', response.text)
-        for option in cgi_options:
-            if option.name == 'drmloc':
-                continue
+        for option in get_cgi_options():
             self.assertIn(option.name, response.text)
+        response = self.client.get(f'{url}?json=1')
+        self.assertEqual(response.status_code, 200)
+        html = BeautifulSoup(response.text, 'lxml')
+        self.assertIsNotNone(html)
+        for option in get_dash_options():
+            row = html.find(id=f"opt_{option.name}")
+            self.assertIsNotNone(row)
+            name = row.find(class_='short-name')
+            self.assertIsNotNone(name)
+            self.assertEqual(name.string, option.name)
+            param = row.find(class_='cgi-param')
+            self.assertIsNotNone(param)
+            self.assertEqual(param.string, str(option.cgi_name))
 
     def test_media_page(self):
         self.setup_media()
@@ -233,7 +244,7 @@ class TestHtmlPageHandlers(FlaskTestBase):
         self.progress(num_tests, num_tests)
 
     @staticmethod
-    def cgi_combinations(cgi_options, exclude=None):
+    def cgi_combinations(cgi_options: list, exclude: Optional[set] = None) -> None:
         """
         convert a list of CGI options into a set of all possible combinations
         """

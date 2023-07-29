@@ -36,7 +36,8 @@ import urllib.parse
 import flask
 from lxml import etree as ET
 
-from dashlive.server import manifests, models, cgi_options
+from dashlive.mpeg.dash.profiles import primary_profiles
+from dashlive.server import manifests, models
 from dashlive.server.requesthandler.manifest_requests import ServeManifest
 
 from .view_validator import ViewsTestDashValidator
@@ -83,7 +84,9 @@ class DashManifestCheckMixin(object):
         """
         self.check_a_manifest_using_all_options(filename, simplified=True)
 
-    def check_a_manifest_using_all_options(self, filename, simplified=False, with_subs=False):
+    def check_a_manifest_using_all_options(
+            self, filename: str, simplified: bool = False,
+            with_subs: bool = False) -> None:
         """
         Exhaustive test of a manifest with every combination of options
         used by the manifest.
@@ -143,11 +146,13 @@ class DashManifestCheckMixin(object):
                 mode = value[5:]
             elif value:
                 params[name] = value
-        self.assertIsNotNone(mode)
-        self.assertIn(mode, cgi_options.supported_modes)
+        if mode is None:
+            print('mode is None', options)
+        self.assertIsNotNone(mode, 'Failed to find operating mode')
+        self.assertIn(mode, primary_profiles)
         # remove pointless combinations of options
         mft = manifests.manifest[filename]
-        modes = mft.restrictions.get('mode', cgi_options.supported_modes)
+        modes = mft.restrictions.get('mode', primary_profiles.keys())
         if mode not in modes:
             return
         if mode != "live":
@@ -156,7 +161,21 @@ class DashManifestCheckMixin(object):
             if "time" in params:
                 del params["time"]
         encrypted = params.get("drm", "drm=none") != "drm=none"
+        if encrypted:
+            is_playready = 'all' in params['drm'] or 'playready' in params['drm']
+            if mode == 'odvod' and 'moov' in params.get("drm", ""):
+                # adding PSSH boxes into on-demand profile content is not supported
+                return
+        else:
+            is_playready = False
+        if not is_playready:
+            if 'playready_version' in params:
+                del params['playready_version']
+            if 'playready_piff' in params:
+                del params['playready_piff']
         cgi = list(params.values())
+        if len(cgi) == 0:
+            return
         url = flask.url_for(
             'dash-mpd-v3',
             manifest=filename,
