@@ -27,7 +27,7 @@ from abc import abstractmethod
 from builtins import str
 from past.builtins import basestring
 from past.utils import old_div
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import base64
 import copy
@@ -49,11 +49,11 @@ from flask_login import current_user
 
 from dashlive.mpeg.dash.adaptation_set import AdaptationSet
 from dashlive.mpeg.dash.period import Period
+from dashlive.mpeg.dash.profiles import primary_profiles, additional_profiles
 from dashlive.drm.clearkey import ClearKey
 from dashlive.drm.playready import PlayReady
 from dashlive.drm.marlin import Marlin
-from dashlive.server import manifests
-from dashlive.server import models
+from dashlive.server import manifests, models
 from dashlive.server.events.factory import EventFactory
 from dashlive.server.routes import routes, Route
 from dashlive.utils import objects
@@ -231,6 +231,14 @@ class RequestHandlerBase(MethodView):
             return default
         return value.lower() in {"1", "true", "on"}
 
+    @staticmethod
+    def drm_locations_for_drm(drm: str) -> set[str]:
+        if drm == 'playready':
+            return {'pro', 'cenc', 'moov'}
+        if drm == 'clearkey':
+            return {'cenc', 'moov'}
+        return {'cenc'}
+
     def generate_drm_location_tuples(self):
         """
         Returns list of tuples, where each entry is:
@@ -247,7 +255,7 @@ class RequestHandlerBase(MethodView):
                 locations = set(parts[1:])
             else:
                 drm_name = name
-                locations = None
+                locations = self.drm_locations_for_drm(name)
             if drm_name in {'all', 'playready'}:
                 drm = PlayReady()
                 rv.append(('playready', drm, locations,))
@@ -259,7 +267,7 @@ class RequestHandlerBase(MethodView):
                 rv.append(('clearkey', drm, locations,))
         return rv
 
-    def generate_drm_dict(self, stream, keys):
+    def generate_drm_dict(self, stream: Union[str, models.Stream], keys) -> dict:
         """
         Generate contexts for all enabled DRM systems. It returns a
         dictionary with an entry for each DRM system.
@@ -267,7 +275,8 @@ class RequestHandlerBase(MethodView):
         if isinstance(stream, basestring):
             stream = models.Stream.get(directory=stream)
         rv = {}
-        for drm_name, drm, locations in self.generate_drm_location_tuples():
+        drm_tuples = self.generate_drm_location_tuples()
+        for drm_name, drm, locations in drm_tuples:
             if drm_name == 'clearkey':
                 ck_laurl = urllib.parse.urljoin(
                     flask.request.host_url, flask.url_for('clearkey'))
@@ -309,10 +318,13 @@ class RequestHandlerBase(MethodView):
             "mpd_url": mpd_url,
             "now": now,
             "periods": [],
+            'profiles': [primary_profiles[mode]],
             "startNumber": 1,
             "stream": stream.to_dict(exclude={'media_files'}),
             "suggestedPresentationDelay": 30,
         }
+        if mode != 'odvod':
+            rv['profiles'].append(additional_profiles['dvb'])
         period = Period(start=datetime.timedelta(0), id="p0")
         audio = self.calculate_audio_context(stream, mode, encrypted)
         text = self.calculate_text_context(stream, mode, encrypted)

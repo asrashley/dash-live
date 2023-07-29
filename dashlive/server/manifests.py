@@ -21,51 +21,59 @@
 #############################################################################
 
 from builtins import object
-from .cgi_options import cgi_options, supported_modes
+
+from dashlive.mpeg.dash.profiles import primary_profiles
+from dashlive.server.options.drm_options import DrmLocation
+from dashlive.server.options.cgi_options import get_cgi_options
+
+DashCgiOption = tuple[str, list[str]]
 
 class DashManifest(object):
-    def __init__(self, title, features, restrictions=None):
+    __slots__ = ('title', 'features', 'restrictions')
+
+    def __init__(self, title, features: set[str], restrictions=None):
         self.title = title
         self.features = features
         if restrictions is None:
             restrictions = dict()
         self.restrictions = restrictions
 
-    def supported_modes(self):
-        return self.restrictions.get('mode', supported_modes)
+    def supported_modes(self) -> list[str]:
+        return self.restrictions.get('mode', primary_profiles.keys())
 
-    def get_cgi_options(self, simplified=False):
+    def get_cgi_options(self, simplified: bool = False) -> list[DashCgiOption]:
         options = []
-        drmloc = []
-        for opt in cgi_options:
-            if opt.name == 'drmloc':
-                for name, value in opt.options:
-                    if value:
-                        drmloc.append(value.split('=')[1])
-        for opt in cgi_options:
-            if opt.name not in self.features and opt.name not in list(self.restrictions.keys()):
-                continue
-            # the MSE option is exluded from the list as it does not change
-            # anything in the manifest responses. drmloc is handled as part
-            # of the drm option
-            if opt.name in {'mse', 'drmloc'}:
-                continue
-            if simplified and opt.name in {'abr', 'mup'}:
-                continue
-            if opt.name in self.restrictions:
+        try:
+            drmloc = self.restrictions['drm']
+        except KeyError:
+            drmloc = [opt[1] for opt in DrmLocation.cgi_choices]
+        only = self.features.union(set(self.restrictions.keys()))
+        exclude = {'mse', 'bugs', 'periods'}
+        if simplified:
+            exclude = exclude.union({
+                'abr', 'mup', 'playready_version', 'playready_piff', 'time'})
+        if drmloc == {'none'}:
+            exclude.add('drm')
+        for opt in get_cgi_options(only=only, exclude=exclude):
+            try:
                 allowed = self.restrictions[opt.name]
                 opts = ['{0}={1}'.format(opt.name, i) for i in allowed]
-            else:
+            except KeyError:
                 opts = [o[1] for o in opt.options]
-
-            if opt.name == 'drm' and 'drm' in opts:
+            if opt.name == 'drm':
                 for d in opt.options:
                     if d[1] == 'drm=none':
                         continue
+                    is_playready = (d[1] == 'drm=all') or ('playready' in d[1])
+                    if d[1] == 'drm=marlin-moov':
+                        continue
                     for loc in drmloc:
-                        if "pro" in loc and d[1] != 'drm=playready' and d[1] != 'drm=all':
+                        if loc is None or loc == 'none':
+                            opts.append(d[1])
+                        elif "pro" in loc and not is_playready:
                             continue
-                        opts.append(d[1] + '-' + loc)
+                        else:
+                            opts.append(d[1] + '-' + loc)
             options.append((opt.name, opts))
         return options
 

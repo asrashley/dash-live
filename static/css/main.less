@@ -364,6 +364,8 @@ a {
   font-size: 1.25rem;
   border-collapse: collapse;
   margin: 0;
+  table-layout: fixed;
+  width: auto;
   th, td {
     padding: 0.25rem 0;
     border: 1px solid #aaa;
@@ -379,12 +381,6 @@ a {
     position: absolute;
     top: 0.3rem;
     visibility: hidden;
-  }
-  .manifest {
-    padding-left: 2.5em;
-  }
-  .option {
-    padding-right: 2.5em;
   }
   .manifest-key {
     left: 0;
@@ -403,20 +399,22 @@ a {
     visibility: visible;
   }
   .manifest {
-    width: 15em;
+    padding-left: 2.5em;
     position: relative;
     text-align: left;
+    width: 35rem;
   }
   .option {
-    .option-title {
-      font-size: 1.2rem;
-    }
-    width: 32rem;
+    padding-right: 2.5em;
+    width: 35rem;
     position: relative;
     text-align: right;
     > select {
 	width: 18rem;
 	font-size: 1.2rem;
+    }
+    .option-title {
+      font-size: 1.2rem;
     }
   }
   th.manifest, th.option {
@@ -636,14 +634,25 @@ div.representations, div.cgi-parameters {
 }
 
 .cgi-params {
- li {
-   list-style-type: disc;
-   margin-left: 2em;
- }
- .pre {
-    font-family: fixed;
- }
-
+    table-layout: fixed;
+    width: auto;
+  li {
+      list-style-type: disc;
+      margin-left: 2em;
+  }
+  .pre {
+      font-family: fixed;
+  }
+  .parameter {
+      width: 20em;
+  }
+  .description {
+      width: 40em;
+  }
+  .manifest, .media, .time {
+      text-align: center;
+      width: 4em;
+  }
 }
 
 #dashurl {

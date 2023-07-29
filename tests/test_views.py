@@ -20,7 +20,6 @@
 #
 #############################################################################
 
-from __future__ import absolute_import, print_function
 import datetime
 import io
 import os
@@ -33,7 +32,7 @@ import flask
 
 from dashlive.server import manifests, models
 from dashlive.server.requesthandler.base import RequestHandlerBase
-from dashlive.drm.playready import PlayReady
+from dashlive.server.options.drm_options import DrmLocation, PlayreadyVersion
 from dashlive.utils.date_time import UTC, toIsoDateTime, from_isodatetime
 from dashlive.utils.objects import dict_to_cgi_params
 
@@ -226,49 +225,52 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
         self.setup_media()
         self.logout_user()
         filename = 'hand_made.mpd'
-        manifest = manifests.manifest[filename]
-        drm_options = None
-        for o in manifest.get_cgi_options():
-            if o[0] == 'drm':
-                drm_options = o[1]
-                break
-        self.assertIsNotNone(drm_options)
+        drm_options = ['drm=all', 'drm=marlin']
+        # add all combinations of PlayReady options
+        for choice in DrmLocation.cgi_choices:
+            if choice[1] is None:
+                drm_options.append('drm=playready')
+                continue
+            for version in PlayreadyVersion.cgi_choices:
+                # Playready version 1.0 only allows mspr:pro element
+                if version < 2.0 and choice[1] != 'pro':
+                    continue
+                drm_options.append(f'drm=playready-{choice[1]}&playready_version={version}')
+        for choice in DrmLocation.cgi_choices:
+            if choice[1] is None:
+                drm_options.append('drm=clearkey')
+                continue
+            if 'pro' in choice[1]:
+                continue
+            drm_options.append(f'drm=clearkey-{choice[1]}')
         self.assertGreaterThan(models.MediaFile.count(), 0)
-        total_tests = len(drm_options) * len(PlayReady.MAJOR_VERSIONS)
+        total_tests = len(drm_options)
         test_count = 0
         for drm_opt in drm_options:
-            for version in PlayReady.MAJOR_VERSIONS:
-                self.progress(test_count, total_tests)
-                test_count += 1
-                if ('playready' not in drm_opt and
-                    'all' not in drm_opt and
-                        version != PlayReady.MAJOR_VERSIONS[0]):
-                    # when drm_opt is not PlayReady, there is no need to test
-                    # each PlayReady version
-                    continue
-                now = datetime.datetime.now(tz=UTC())
-                availabilityStartTime = toIsoDateTime(
-                    now - datetime.timedelta(minutes=(1 + (test_count % 20))))
-                baseurl = flask.url_for(
-                    'dash-mpd-v3', mode='live', manifest=filename, stream=self.FIXTURES_PATH.name)
-                options = [
-                    drm_opt,
-                    'start=' + availabilityStartTime,
-                    'playready_version={0}'.format(version)
-                ]
-                baseurl += '?' + '&'.join(options)
-                # 'dash-mpd-v2' will always return a redirect to the v3 URL
-                # response = self.client.get(baseurl, status=302)
-                # Handle redirect request
-                # baseurl = response.headers['Location']
-                response = self.client.get(baseurl)
-                self.assertEqual(response.status_code, 200)
-                encrypted = drm_opt != "drm=none"
-                xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
-                mpd = ViewsTestDashValidator(
-                    http_client=self.client, mode="live", xml=xml.getroot(),
-                    url=baseurl, encrypted=encrypted)
-                mpd.validate()
+            self.progress(test_count, total_tests)
+            test_count += 1
+            now = datetime.datetime.now(tz=UTC())
+            availabilityStartTime = toIsoDateTime(
+                now - datetime.timedelta(minutes=(1 + (test_count % 20))))
+            baseurl = flask.url_for(
+                'dash-mpd-v3', mode='live', manifest=filename, stream=self.FIXTURES_PATH.name)
+            options = [
+                drm_opt,
+                'start=' + availabilityStartTime
+            ]
+            baseurl += '?' + '&'.join(options)
+            # 'dash-mpd-v2' will always return a redirect to the v3 URL
+            # response = self.client.get(baseurl, status=302)
+            # Handle redirect request
+            # baseurl = response.headers['Location']
+            response = self.client.get(baseurl)
+            self.assertEqual(response.status_code, 200)
+            encrypted = drm_opt != "drm=none"
+            xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
+            mpd = ViewsTestDashValidator(
+                http_client=self.client, mode="live", xml=xml.getroot(),
+                url=baseurl, encrypted=encrypted)
+            mpd.validate()
         self.progress(total_tests, total_tests)
 
     def test_get_vod_media_using_on_demand_profile(self):

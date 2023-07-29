@@ -44,9 +44,11 @@ from .decorators import (
     current_stream
 )
 
-# blobstore_handlers.BlobstoreDownloadHandler):
 class OnDemandMedia(RequestHandlerBase):
-    """Handler that returns media fragments for the on-demand profile"""
+    """
+    Handler that returns media fragments for the on-demand profile.
+    This handler does not support adding PSSH boxes into the init segment.
+    """
 
     decorators = [uses_stream, uses_media_file]
 
