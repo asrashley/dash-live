@@ -47,7 +47,6 @@ class Blob(db.Model, ModelMixin):
 
     def open_file(self, media_directory: Path,
                   start: Optional[int],
-                  end: Optional[int],
                   buffer_size: int) -> contextlib.AbstractContextManager:
         filename = media_directory / self.filename
         handle = open(filename, mode='rb', buffering=buffer_size)

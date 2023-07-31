@@ -115,10 +115,9 @@ class MediaFile(db.Model, ModelMixin):
         return Path(app.config['BLOB_FOLDER']) / stream_dir
 
     def open_file(self, start: Optional[int] = None,
-                  end: Optional[int] = None,
                   buffer_size: int = 4096) -> contextlib.AbstractContextManager:
         abs_path = self.absolute_path(self.stream.directory)
-        return self.blob.open_file(abs_path, start=start, end=end, buffer_size=buffer_size)
+        return self.blob.open_file(abs_path, start=start, buffer_size=buffer_size)
 
     def delete_file(self) -> None:
         abs_path = self.absolute_path(self.stream.directory)
