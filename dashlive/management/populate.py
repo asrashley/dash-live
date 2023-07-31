@@ -226,8 +226,7 @@ class PopulateDatabase(ManagementBase):
             ]
             self.log.debug('POST %s', stream.upload_url)
             result = self.session.post(
-                upload_url, data=params, files=files,
-                content_type="multipart/form-data")
+                upload_url, data=params, files=files)
         if result.status_code != 200:
             self.log.warning('HTTP status %d', result.status_code)
             self.log.debug('HTTP headers %s', str(result.headers))
