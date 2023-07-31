@@ -74,6 +74,7 @@ def add_routes(app: Flask) -> None:
                          view_func=view_func)
 
 def create_app(config: Optional[JsonObject] = None,
+               instance_path: Optional[str] = None,
                create_default_user: bool = True) -> Flask:
     load_dotenv(environ.get('DASHLIVE_SETTINGS', '.env'))
     logging.basicConfig()
@@ -81,12 +82,18 @@ def create_app(config: Optional[JsonObject] = None,
     basedir = srcdir.parent.parent
     template_folder = basedir / "templates"
     static_folder = basedir / "static"
-    media_folder = basedir / "media"
     if not template_folder.exists():
         template_folder = srcdir / "templates"
         static_folder = srcdir / "static"
+    if instance_path is None:
+        media_folder = basedir / "media"
+    else:
+        media_folder = Path(instance_path) / "media"
+        if not media_folder.exists():
+            media_folder.mkdir()
     app = Flask(
         __name__,
+        instance_path=instance_path,
         template_folder=str(template_folder),
         static_folder=str(static_folder))
     add_routes(app)

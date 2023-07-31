@@ -1,16 +1,19 @@
-FROM ubuntu:22.10
+FROM python:3.11 as base
 EXPOSE 5000
 ENV HOME=/home/dash
 ENV LOG_LEVEL="info"
+ENV VIRTUAL_ENV="/home/dash/.venv"
 RUN apt-get update && \
     apt-get -y -q --force-yes install \
-    python3.11 \
     less \
     vim \
     curl \
-    python3-pip
-COPY requirements.txt /tmp/requirements.txt
-RUN pip install -r /tmp/requirements.txt && rm /tmp/requirements.txt
+    python3-pip \
+    python3-venv
+COPY requirements.txt $HOME/dash-live/
+COPY deploy/create_virtenv.sh $HOME/dash-live/
+RUN chmod +x $HOME/dash-live/create_virtenv.sh
+RUN $HOME/dash-live/create_virtenv.sh
 COPY static/favicon.ico $HOME/dash-live/static/
 COPY static/fonts/* $HOME/dash-live/static/fonts/
 COPY static/img/* $HOME/dash-live/static/img/
@@ -18,7 +21,7 @@ COPY static/js/prod/* $HOME/dash-live/static/js/prod/
 COPY static/js/dev/* $HOME/dash-live/static/js/dev/
 COPY static/js/*.js $HOME/dash-live/static/js/
 COPY lib/*.py $HOME/dash-live/lib/
-COPY templates/manifests/*.mpd $HOME/dash-live/templates/manifets/
+COPY templates/manifests/*.mpd $HOME/dash-live/templates/manifests/
 COPY templates/*.html $HOME/dash-live/templates/
 COPY templates/drm/*.xml $HOME/dash-live/templates/drm/
 COPY templates/events/*.xml $HOME/dash-live/templates/events/
@@ -41,8 +44,32 @@ COPY dashlive/testcase/*.py $HOME/dash-live/dashlive/testcase/
 COPY dashlive/utils/*.py $HOME/dash-live/dashlive/utils/
 COPY dashlive/utils/fio/*.py $HOME/dash-live/dashlive/utils/fio/
 COPY *.py $HOME/dash-live/
+RUN mkdir $HOME/instance
 RUN ln -s /usr/bin/python3 /usr/bin/python
 WORKDIR /home/dash/dash-live
 RUN python ./gen-settings.py
-RUN python -m lesscpy static/css -o static/css/
+RUN echo "#!/bin/bash" > $HOME/dash-live/lesscpy.sh
+RUN echo "source $HOME/.venv/bin/activate && python -m lesscpy static/css -o static/css/" >> $HOME/dash-live/lesscpy.sh
+RUN chmod +x $HOME/dash-live/lesscpy.sh
+RUN $HOME/dash-live/lesscpy.sh
 ENTRYPOINT ["/home/dash/dash-live/runserver.sh"]
+
+FROM base as dashlive-nginx
+EXPOSE 80
+ENV SERVER_NAME="_"
+ENV USER_GID=""
+RUN apt-get -y -q --force-yes install nginx
+RUN rm /etc/nginx/sites-enabled/default
+RUN pip3 install uwsgi
+COPY deploy/application.py $HOME/dash-live/
+COPY deploy/start-uwsgi.sh $HOME/dash-live/
+COPY deploy/dashlive.conf /etc/nginx/sites-available/
+COPY deploy/dash.ini /etc/uwsgi/sites/
+RUN echo "client_max_body_size 1024M;" > /etc/nginx/conf.d/maxsize.conf
+RUN ln -s /etc/nginx/sites-available/dashlive.conf /etc/nginx/sites-enabled/dashlive.conf
+RUN chmod +x $HOME/dash-live/*.sh
+RUN chown www-data:www-data $HOME/instance
+RUN echo "server_name _;" > /etc/nginx/snippets/server_name.conf
+STOPSIGNAL SIGQUIT
+ENTRYPOINT ["/home/dash/dash-live/start-uwsgi.sh"]
+
