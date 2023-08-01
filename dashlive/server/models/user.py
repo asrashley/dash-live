@@ -1,11 +1,12 @@
 """
 Database model for a user of the app
 """
+import logging
 from typing import AbstractSet, List, Optional, Union, cast
 
 from passlib.context import CryptContext  # type: ignore
 from sqlalchemy import (  # type: ignore
-    Boolean, Column, DateTime, String, Integer, func,
+    Boolean, Column, DateTime, String, Integer,
 )
 from sqlalchemy.orm import relationship  # type: ignore
 
@@ -163,8 +164,8 @@ class User(db.Model, ModelMixin):  # type: ignore
 
     @classmethod
     def check_if_empty(cls, default_username: str, default_password: str):
-        count = db.session.execute(db.session.query(func.count(User.pk))).scalar_one()
-        print('user count', count)
+        count = cls.count()
+        logging.debug('User count: %d', count)
         if count == 0:
             admin = User(
                 username=default_username,
@@ -173,7 +174,7 @@ class User(db.Model, ModelMixin):  # type: ignore
                 groups_mask=Group.ADMIN,
             )
             admin.set_password(default_password)
-            print(f'Adding default user account username="{default_username}"')
+            logging.info('Adding default user account username="%s"', default_username)
             db.session.add(admin)
             db.session.commit()
 
