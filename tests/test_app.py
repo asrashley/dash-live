@@ -32,6 +32,7 @@ from unittest.mock import patch
 
 import flask
 
+from dashlive.server import models
 from dashlive.server.app import create_app
 from dashlive.testcase.mixin import TestCaseMixin
 
@@ -58,6 +59,14 @@ class TestAppConfig(TestCaseMixin, unittest.TestCase):
             self.assertEqual(cfg['DEFAULT_ADMIN_USERNAME'], 'default.admin')
             self.assertEqual(cfg['DEFAULT_ADMIN_PASSWORD'], 'default.password')
             self.assertEqual(cfg['ALLOWED_DOMAINS'], 'allowed.domains')
+
+    @patch.dict('dashlive.server.app.environ', config, clear=True)
+    def test_creates_default_admin_account(self) -> None:
+        flask_app = create_app(create_default_user=True)
+        with flask_app.app_context():
+            user = models.User.get(username='default.admin')
+            self.assertIsNotNone(user)
+            self.assertTrue(user.check_password('default.password'))
 
     @patch.dict('dashlive.server.app.environ', {}, clear=True)
     def test_set_config_from_file(self) -> None:
