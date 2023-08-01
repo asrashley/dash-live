@@ -72,10 +72,10 @@ class FlaskTestBase(TestCaseMixin, TestCase):
         config = {
             'BLOB_FOLDER': str(self.FIXTURES_PATH.parent),
             'DASH': {
-                'allowed_domains': '*',
+                'ALLOWED_DOMAINS': '*',
                 'CSRF_SECRET': 'test.csrf.secret',
-                'default_admin_username': 'admin',
-                'default_admin_password': 'test.secret!',
+                'DEFAULT_ADMIN_USERNAME': 'admin',
+                'DEFAULT_ADMIN_PASSWORD': 'test.secret!',
             },
             'UPLOAD_FOLDER': '/dev/null',
             'SECRET_KEY': 'cookie.secret',

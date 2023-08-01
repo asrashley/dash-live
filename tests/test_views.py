@@ -388,7 +388,7 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
         rhb = RequestHandlerBase()
         headers = {}
         with self.app.app_context():
-            self.app.config['DASH']['allowed_domains'] = '*'
+            self.app.config['DASH']['ALLOWED_DOMAINS'] = '*'
             rhb.add_allowed_origins(headers)
             self.assertEqual(headers["Access-Control-Allow-Methods"], "HEAD, GET, POST")
             self.assertEqual(headers["Access-Control-Allow-Origin"], '*')
@@ -401,7 +401,7 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
             mock_request.headers = {
                 'Origin': 'www.unit.test',
             }
-            self.app.config['DASH']['allowed_domains'] = 'unit.test'
+            self.app.config['DASH']['ALLOWED_DOMAINS'] = 'unit.test'
             rhb.add_allowed_origins(headers)
             self.assertEqual(headers["Access-Control-Allow-Methods"], "HEAD, GET, POST")
             self.assertEqual(headers["Access-Control-Allow-Origin"], 'www.unit.test')
@@ -414,7 +414,7 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
             mock_request.headers = {
                 'Origin': 'www.unit.test',
             }
-            self.app.config['DASH']['allowed_domains'] = 'another.domain'
+            self.app.config['DASH']['ALLOWED_DOMAINS'] = 'another.domain'
             rhb.add_allowed_origins(headers)
             self.assertNotIn("Access-Control-Allow-Methods", headers)
             self.assertNotIn("Access-Control-Allow-Origin", headers)

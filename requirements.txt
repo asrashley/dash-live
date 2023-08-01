@@ -19,6 +19,7 @@ mock==3.0.5
 passlib==1.7.4
 ply==3.11
 pycryptodome==3.18.0
+python-dotenv==1.0.0
 requests==2.31.0
 six==1.16.0
 soupsieve==2.4.1

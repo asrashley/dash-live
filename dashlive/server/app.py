@@ -27,6 +27,7 @@ from pathlib import Path
 import secrets
 from typing import Optional
 
+from dotenv import load_dotenv
 from flask import Flask, request  # type: ignore
 from flask_login import LoginManager
 from werkzeug.routing import BaseConverter  # type: ignore
@@ -74,6 +75,7 @@ def add_routes(app: Flask) -> None:
 
 def create_app(config: Optional[JsonObject] = None,
                create_default_user: bool = True) -> Flask:
+    load_dotenv(environ.get('DASHLIVE_SETTINGS', '.env'))
     logging.basicConfig()
     srcdir = Path(__file__).parent.resolve()
     basedir = srcdir.parent.parent
@@ -90,8 +92,8 @@ def create_app(config: Optional[JsonObject] = None,
     add_routes(app)
     dash_settings = {
         'CSRF_SECRET': secrets.token_urlsafe(16),
-        'default_admin_username': 'admin',
-        'default_admin_password': secrets.token_urlsafe(10),
+        'DEFAULT_ADMIN_USERNAME': 'admin',
+        'DEFAULT_ADMIN_PASSWORD': secrets.token_urlsafe(10),
     }
     app.config.update(
         BLOB_FOLDER=str(media_folder / "blobs"),
@@ -100,10 +102,7 @@ def create_app(config: Optional[JsonObject] = None,
         DASH=dash_settings,
         SECRET_KEY=secrets.token_urlsafe(16)
     )
-    if config is None:
-        app.config.from_object('dashlive.server.settings')
-    if 'DASHLIVE_SETTINGS' in environ:
-        app.config.from_envvar('DASHLIVE_SETTINGS')
+    app.config.from_prefixed_env()
     if config is not None:
         app.config.update(config)
     models.db.init_app(app)
@@ -118,8 +117,8 @@ def create_app(config: Optional[JsonObject] = None,
         models.db.create_all()
         if create_default_user:
             models.User.check_if_empty(
-                app.config['DASH']['default_admin_username'],
-                app.config['DASH']['default_admin_password'])
+                app.config['DASH']['DEFAULT_ADMIN_USERNAME'],
+                app.config['DASH']['DEFAULT_ADMIN_PASSWORD'])
         models.Token.prune_database(all_csrf=True)
 
     app.register_blueprint(custom_tags)

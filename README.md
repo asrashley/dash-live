@@ -11,29 +11,37 @@ non-live, rights cleared material.
 
 Python 3.11 or greater is required by this application.
 
-A `dashlive/server/settings.py` needs to be created that contains
+A `.env` needs to be created that contains
 
-```python3
-SECRET_KEY = 'arandomstring'
-DASH = {
-	CSRF_SECRET: 'arandomstring',
-	default_admin_username: 'admin',
-	default_admin_password: r'a.password',
-	allowed_domains = "*"
-}
+```bash
+FLASK_SECRET_KEY='arandomstring'
+FLASK_DASH__CSRF_SECRET='arandomstring'
+FLASK_DASH__DEFAULT_ADMIN_USERNAME='admin'
+FLASK_DASH__DEFAULT_ADMIN_PASSWORD='secret'
+FLASK_DASH__ALLOWED_DOMAINS='*'
 ```
 
-The `FLASK_SECRET_KEY`, `CSRF_SECRET` variables need to contain
+The name of the `.env` file can be changed by setting the environment
+variable `DASHLIVE_SETTINGS` to the filename to use to load the above
+settings.
+
+The `FLASK_SECRET_KEY`, `FLASK_DASH__CSRF_SECRET` variables need to contain
 a randomly generated block of ascii characters. There is a
 [gen_settings.py](./gen_settings.py) script that can be used to auto-generate
-settings.py
+the `.env` file.
 
-The `allowed_domains` setting is optional. If it is missing, a default
-list of domains that supports common JavaScript DASH libraries will be
-used. An `allowed_domains` value of "*" tells the server to allow any
-request from any domain.
+The `FLASK_DASH__ALLOWED_DOMAINS` setting is optional. It controls the HTTP
+response header `Access-Control-Allow-Origin` that is used to control which
+origins are allowed to make HTTP requests from JavaScript to this server.
 
-### Running development server directly on the host machine
+If the `FLASK_DASH__ALLOWED_DOMAINS` is missing, a default list of domains
+that supports common JavaScript DASH libraries will be used. An `allowed_domains`
+value of "*" tells the server to allow any JavaScript request from any domain.
+
+The `FLASK_DASH__DEFAULT_ADMIN_PASSWORD` setting controls the default password
+to use for the admin user account when creating a new blank database.
+
+### Running the development server directly on the host machine
 
 Create a Python virtual environment and install the dependencies:
 
@@ -56,8 +64,8 @@ It will start an HTTP server on port 9080
 
 ### Running development server using a Docker image
 
-There is a dockerfile to create a Docker image that contains
-all the required packages to run the development server.
+The [Dockerfile](./Dockerfile) can be used to create a Docker image
+that contains all the required packages to run the development server.
 
 ```sh
 docker build -t dashlive .
