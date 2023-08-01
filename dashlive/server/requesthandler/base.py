@@ -640,7 +640,7 @@ class RequestHandlerBase(MethodView):
 
     def add_allowed_origins(self, headers):
         cfg = flask.current_app.config['DASH']
-        allowed_domains = cfg.get('allowed_domains', self.DEFAULT_ALLOWED_DOMAINS)
+        allowed_domains = cfg.get('ALLOWED_DOMAINS', self.DEFAULT_ALLOWED_DOMAINS)
         if allowed_domains == "*":
             headers["Access-Control-Allow-Origin"] = "*"
             headers["Access-Control-Allow-Methods"] = "HEAD, GET, POST"

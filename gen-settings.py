@@ -5,13 +5,11 @@ import string
 import os
 
 TEMPLATE="""
-SECRET_KEY = r'{cookie}'
-DASH = {
-  CSRF_SECRET: r'{csrf}',
-  default_admin_username: 'admin',
-  default_admin_password: r'{password}',
-  allowed_domains: "*"
-}
+FLASK_SECRET_KEY='{cookie}'
+FLASK_DASH__CSRF_SECRET='{csrf}'
+FLASK_DASH__DEFAULT_ADMIN_USERNAME='admin'
+FLASK_DASH__DEFAULT_ADMIN_PASSWORD='{password}'
+FLASK_DASH__ALLOWED_DOMAINS='*'
 """
 
 def make_random_string(length: int) -> str:
@@ -25,8 +23,8 @@ cookie = make_random_string(20)
 csrf = make_random_string(20)
 password = make_random_string(10)
 
-if not os.path.exists("dashlive/server/settings.py"):
-    print(f'Creating settings.py with default admin account username="admin" password ="{password}"')
-    with open('dashlive/server/settings.py', 'wt', encoding='ascii') as out:
+if not os.path.exists(".env"):
+    print(f'Creating .env with default admin account username="admin" password ="{password}"')
+    with open('.env', 'wt', encoding='ascii') as out:
         out.write(TEMPLATE.format(**locals()))
 

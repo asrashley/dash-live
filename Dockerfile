@@ -43,7 +43,6 @@ COPY dashlive/utils/fio/*.py $HOME/dash-live/dashlive/utils/fio/
 COPY *.py $HOME/dash-live/
 RUN ln -s /usr/bin/python3 /usr/bin/python
 WORKDIR /home/dash/dash-live
-RUN ls dashlive
 RUN python ./gen-settings.py
 RUN python -m lesscpy static/css -o static/css/
 ENTRYPOINT ["/home/dash/dash-live/runserver.sh"]
