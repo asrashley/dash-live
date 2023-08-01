@@ -20,10 +20,7 @@
 #
 #############################################################################
 
-from past.builtins import basestring
-from builtins import object
-from future.utils import with_metaclass
-from abc import ABCMeta, abstractmethod
+from abc import ABC, abstractmethod
 import copy
 import datetime
 from typing import Dict, Optional
@@ -32,7 +29,7 @@ from flask import Request
 
 from dashlive.utils.date_time import from_isodatetime
 
-class EventBase(with_metaclass(ABCMeta, object)):
+class EventBase(ABC):
     PARAMS = {
         'count': 0,
         'duration': 200,
@@ -54,7 +51,7 @@ class EventBase(with_metaclass(ABCMeta, object)):
         for key, dflt in all_params.items():
             value = request.args.get(prefix + key, dflt)
             if isinstance(dflt, bool):
-                if isinstance(value, basestring):
+                if isinstance(value, str):
                     value = value.lower() in {'true', 'yes', '1'}
                 elif isinstance(value, (int, int)):
                     value = (value == 1)
@@ -76,13 +73,13 @@ class EventBase(with_metaclass(ABCMeta, object)):
         retval = {}
         for key in self.params:
             value = getattr(self, key)
-            retval['{0:s}{1:s}'.format(self.prefix, key)] = value
+            retval[f'{self.prefix}{key}'] = value
         return retval
 
     @abstractmethod
     def create_manifest_context(self, context: Dict) -> Dict:
-        return {}
+        ...
 
     @abstractmethod
     def create_emsg_boxes(self, **kwargs):
-        return None
+        ...
