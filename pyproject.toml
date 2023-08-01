@@ -4,3 +4,12 @@ testpaths = ["tests"]
 [tool.coverage.run]
 branch = true
 source = ["dashlive"]
+exclude_also = [
+    "def __repr__",
+    "if __name__ == .__main__.:",
+    ]
+omit = [
+    "*/__main__.py",
+    "dashlive/download.py",
+    "dashlive/upload.py",
+    ]
