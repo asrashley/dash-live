@@ -35,7 +35,7 @@ import datetime
 import hashlib
 import hmac
 import logging
-import os
+from os import environ
 import re
 import secrets
 import urllib.request
@@ -716,7 +716,7 @@ class RequestHandlerBase(MethodView):
     def is_https_request(self):
         if flask.request.scheme == 'https':
             return True
-        if os.environ.get('HTTPS', 'off') == 'on':
+        if environ.get('HTTPS', 'off') == 'on':
             return True
         return flask.request.headers.get('X-HTTP-Scheme', 'http') == 'https'
 
