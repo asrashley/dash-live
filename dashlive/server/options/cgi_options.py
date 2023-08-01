@@ -39,7 +39,7 @@ def get_dash_options(use: Optional[OPTION_USAGE] = None) -> list[DashOption]:
         result += video_options
     if use is None or use == 'audio':
         result += audio_options
-    if use is None or use == 'time':
+    if use in {None, 'manifest', 'time'}:
         result += time_options
     if use is None or use != 'time':
         result += drm_options
