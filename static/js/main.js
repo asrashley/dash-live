@@ -81,13 +81,18 @@ $(document).ready(function(){
     var params;
 
     params = {
-        mode: "vod"
+        mode: "mode=vod"
     };
     $('#buttons tbody .option select').each(function(idx, sel) {
-      var val = $(sel).val();
-      if (val) {
-        params[sel.name] = val;
-      }
+	var defaultVal, val;
+	val = $(sel).val();
+	defaultVal = $(sel).data('default');
+	if (sel.name === 'mode') {
+            params[sel.name] = val;
+	}
+	else if (val && !val.endsWith('=none') && val != defaultVal) {
+            params[sel.name] = val;
+	}
     });
     if (params.drmloc) {
       if (params.drm && params.drm!=="drm=none") {
@@ -108,12 +113,11 @@ $(document).ready(function(){
     url = manifest.data("uri").replace('{directory}', pageState.streams[cursor.stream].directory);
     url = url.replace("{mode}", params.mode.slice(5));
     delete params.mode;
-
     return url;
   }
 
   function updateManifestURL() {
-    var manifest, dest, url, params;
+    var manifest, dest, url, params, params_str;
 
     dest = $('#dashurl');
     params = buildCGI();
@@ -124,14 +128,17 @@ $(document).ready(function(){
       $('#play-button').addClass('disabled');
       return;
     }
-    url += '?' + Object.values(params).join('&');
+    params_str = Object.values(params).join('&');
+    if (params_str) {
+      url += '?' + params_str;
+    }
     dest.text(url);
     dest.attr('href', document.location.origin + url);
     $('#play-button').removeClass('disabled');
     if(window.history && typeof(history.pushState)==="function") {
-      params.mpd = 'mpd=' + $('#buttons tbody .manifest.selected').data("filename");
-      history.replaceState(pageState, $('#buttons tbody .manifest.selected').text(),
-                           pageState.baseurl+'#'+Object.values(params).join('&'));
+	params.mpd = 'mpd=' + $('#buttons tbody .manifest.selected').data("filename");
+	url = pageState.baseurl + '#' + Object.values(params).join('&');
+	history.replaceState(pageState, $('#buttons tbody .manifest.selected').text(), url);
     }
   }
 
@@ -150,7 +157,6 @@ $(document).ready(function(){
     url = url.replace(/\.mpd$/, '/index.html');
     delete params.mode;
     url += '?' + Object.values(params).join('&');
-    console.log(url);
     document.location = url;
   }
 

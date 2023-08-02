@@ -24,7 +24,7 @@ DrmLocation = DashOption(
     title='DRM location',
     description='Location to place DRM data',
     cgi_name='drmloc',
-    cgi_choices=[
+    cgi_choices=(
         ('All locations', None),
         ('mspr:pro element in MPD', 'pro'),
         ('dash:cenc element in MPD', 'cenc'),
@@ -32,7 +32,7 @@ DrmLocation = DashOption(
         ('mspr:pro + dash:cenc in MPD', 'pro-cenc'),
         ('mspr:pro MPD + PSSH init', 'pro-moov'),
         ('dash:cenc MPD + PSSH init', 'cenc-moov'),
-    ],
+    ),
     hidden=False)
 
 DrmSelection = DashOption(
@@ -44,7 +44,7 @@ DrmSelection = DashOption(
     html=HTML_DESCRIPTION,
     cgi_name='drm',
     cgi_type='<drm>,.. or <drm>-<location>,..',
-    cgi_choices=[None, 'all', 'clearkey', 'marlin', 'playready'],
+    cgi_choices=(None, 'all', 'clearkey', 'marlin', 'playready'),
     hidden=False)
 
 MarlinLicenseUrl = DashOption(
@@ -66,14 +66,14 @@ PlayreadyPiff = DashOption(
     title='Playready PIFF',
     description='Include PIFF sample encryption data',
     cgi_name='playready_piff',
-    cgi_choices=[True, False])
+    cgi_choices=(True, False))
 
 PlayreadyVersion = DashOption(
     name='pvn',
     title='PlayReady Version',
     description='Set the PlayReady version compatibility for this stream',
     cgi_name='playready_version',
-    cgi_choices=[1.0, 2.0, 3.0, 4.0])
+    cgi_choices=(1.0, 2.0, 3.0, 4.0))
 
 drm_options = [
     DrmLocation,

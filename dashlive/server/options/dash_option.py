@@ -49,19 +49,22 @@ class CgiOption:
             'hidden': self.hidden,
         }
 
+
+CgiChoiceType = Union[tuple[str, str], str, bool, int, None]
+
 @dataclass(slots=True, frozen=True)
 class DashOption:
     name: str
     title: str
     description: str
     cgi_name: Union[str, list[str]]
-    cgi_choices: list[Union[str, bool, int, tuple[str, str]]] = field(default_factory=list)
+    cgi_choices: Optional[tuple[CgiChoiceType, ...]] = field(default=None)
     cgi_type: Optional[str] = None
     hidden: bool = True
     html: Optional[str] = None
     usage: set[str] = field(default_factory=lambda: {'manifest', 'video', 'audio'})
 
-    def get_cgi_options(self) -> list[CgiOption]:
+    def get_cgi_options(self, omit_empty: bool = True) -> list[CgiOption]:
         """
         Convert this option into a list of CGI options
         """
@@ -72,22 +75,22 @@ class DashOption:
             names = [self.cgi_name]
         for name in names:
             ocs = []
-            for choice in self.cgi_choices:
-                if choice is None or choice == '':
-                    continue
-                if isinstance(choice, tuple):
-                    description, value = choice
-                    if value is None or value == '':
+            if self.cgi_choices is not None:
+                for choice in self.cgi_choices:
+                    if omit_empty and choice in {None, ''}:
                         continue
+                    if isinstance(choice, tuple):
+                        description, value = choice
+                    else:
+                        description = str(choice)
+                        value = choice
+                    if omit_empty and value in {None, ''}:
+                        continue
+                    if value is None:
+                        value = 'none'
                     ocs.append(OptionChoice(
                         description=description,
                         value=f'{name}={value}'))
-                else:
-                    ocs.append(OptionChoice(
-                        description=str(choice),
-                        value=f'{name}={choice}'))
-            if not ocs:
-                continue
             if self.html:
                 html = self.html
             else:

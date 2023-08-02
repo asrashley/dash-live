@@ -29,5 +29,5 @@ EventSelection = DashOption(
     html=EV_HTML,
     cgi_name='events',
     cgi_type='<format>,..',
-    cgi_choices=[None, 'ping', 'scte35'],
+    cgi_choices=(None, 'ping', 'scte35'),
     hidden=False)
