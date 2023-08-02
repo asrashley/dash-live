@@ -456,7 +456,7 @@ class RequestHandlerBase(MethodView):
             else:
                 rv["keys"] = models.Key.get_kids(kids)
             rv["DRM"] = self.generate_drm_dict(stream, rv["keys"])
-        rv["timeSource"] = self.choose_time_source_method(cgi_params, now)
+        rv["timeSource"] = self.choose_time_source_method(cgi_params, now, mode)
         if 'periods' not in manifest_info.features:
             rv["video"] = video
             rv["audio"] = audio
@@ -604,10 +604,14 @@ class RequestHandlerBase(MethodView):
             'time': clk_cgi_params,
         }
 
-    def choose_time_source_method(self, cgi_params, now):
+    def choose_time_source_method(self, cgi_params, now, mode: str) -> Optional[dict]:
+        if mode != 'live':
+            return None
         timeSource = {
-            'format': flask.request.args.get('time', 'xsd')
+            'format': flask.request.args.get('time', 'none')
         }
+        if timeSource['format'] == 'none':
+            return None
         if timeSource['format'] == 'direct':
             timeSource['method'] = 'urn:mpeg:dash:utc:direct:2014'
             timeSource['value'] = toIsoDateTime(now)

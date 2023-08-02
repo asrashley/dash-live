@@ -31,8 +31,7 @@
   <Title>{{title}}</Title>
  </ProgramInformation>
  <Location>{{request_uri|xmlSafe}}</Location>
- {%- if mode=='live' %}<UTCTiming schemeIdUri="{{timeSource.method}}"
- value="{{timeSource.value}}"/>{% endif %}
+ {%- if timeSource %}<UTCTiming schemeIdUri="{{timeSource.method}}" value="{{timeSource.value}}"/>{% endif %}
  {%- for period in periods %}
    <Period
      start="{{period.start|isoDuration}}"

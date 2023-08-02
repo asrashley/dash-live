@@ -16,8 +16,8 @@ type="dynamic"
  {% if baseURL %}<BaseURL>{{baseURL|xmlSafe}}</BaseURL>{% endif %}
  {% if locationURL %}<Location>{{locationURL|xmlSafe}}</Location>{% endif %}
  <Location>{{request_uri|xmlSafe}}</Location>
-    <UTCTiming schemeIdUri="{{timeSource.method}}" value="{{timeSource.value}}"/>
-    <Period id="0" start="PT0S"
+ {%- if timeSource %}<UTCTiming schemeIdUri="{{timeSource.method}}" value="{{timeSource.value}}"/>{% endif %}
+ <Period id="0" start="PT0S"
   {% if mode!='live' %}
   duration="{{mediaDuration|isoDuration}}"
   {% endif %}
