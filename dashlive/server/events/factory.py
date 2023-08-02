@@ -20,7 +20,6 @@
 #
 #############################################################################
 
-from __future__ import print_function
 from builtins import object
 from typing import List
 
@@ -43,10 +42,12 @@ class EventFactory(object):
             return []
         retval = []
         for name in names.split(','):
+            if name == 'none':
+                continue
             try:
                 EventClazz = cls.EVENT_TYPES[name]
             except KeyError as err:
-                print(err)
+                print(f'Unknown event class "{name}": {err}')
                 continue
             retval.append(EventClazz(request))
         return retval
