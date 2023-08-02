@@ -34,7 +34,8 @@
           <span class="key option-key">{{ loop.index0 }}</span>
           <span class="option-title">{{ row.option.title }}</span>
           {% if row.option.name %}
-          <select name="{{row.option.name}}">
+          <select name="{{row.option.name}}"
+		  data-default="{{ row.option.options[0].value }}">
             {% for opt in row.option.options %}
             <option value="{{opt[1]}}" {%- if loop.first %}selected{% endif -%}>
 	      {{ opt[0] }}

@@ -21,7 +21,7 @@ UTCMethod = DashOption(
     title='UTC timing method',
     description='Select UTCTiming element method.',
     cgi_name='time',
-    cgi_choices=[None, 'direct', 'head', 'http-ntp', 'iso', 'ntp', 'sntp', 'xsd'],
+    cgi_choices=(None, 'direct', 'head', 'http-ntp', 'iso', 'ntp', 'sntp', 'xsd'),
     hidden=False,
     usage={'manifest'})
 

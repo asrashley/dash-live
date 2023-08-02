@@ -49,6 +49,7 @@ def get_dash_options(use: Optional[OPTION_USAGE] = None) -> list[DashOption]:
 def get_cgi_options(use: Optional[OPTION_USAGE] = None,
                     only: Optional[AbstractSet[str]] = None,
                     exclude: Optional[AbstractSet[str]] = None,
+                    omit_empty: bool = False,
                     **filter) -> list[CgiOption]:
     def matches(item: DashOption) -> bool:
         if isinstance(item.cgi_name, list):
@@ -71,6 +72,6 @@ def get_cgi_options(use: Optional[OPTION_USAGE] = None,
     todo = get_dash_options(use=use)
     for item in todo:
         if matches(item):
-            result += item.get_cgi_options()
+            result += item.get_cgi_options(omit_empty=omit_empty)
     result.sort(key=lambda item: item.name)
     return result

@@ -14,7 +14,7 @@ AudioCodec = DashOption(
     title='Audio Codec',
     description='Filter audio adaptation sets by audio codec (AAC or E-AC3)',
     cgi_name='acodec',
-    cgi_choices=['mp4a', 'ec-3'],
+    cgi_choices=('mp4a', 'ec-3'),
     hidden=False,
     usage={'manifest'})
 
@@ -31,7 +31,7 @@ MainAudioTrack = DashOption(
     title='Main audio track',
     description='Select audio AdaptationSet that will be given the "main" role',
     cgi_name='main_audio',
-    cgi_choices=['mp4a', 'ec-3'],
+    cgi_choices=('mp4a', 'ec-3'),
     cgi_type='(mp4a|ec3|<id>)',
     usage={'manifest'})
 

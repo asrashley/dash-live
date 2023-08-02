@@ -16,7 +16,10 @@ AbrControl = DashOption(
     title='Adaptive bitrate',
     description='Enable or disable adaptive bitrate',
     cgi_name='abr',
-    cgi_choices=[True, False],
+    cgi_choices=(
+        ('Enabled', 1),
+        ('Disabled', 0),
+    ),
     hidden=False)
 
 AST_HTML = '''
@@ -42,7 +45,7 @@ UseBaseUrl = DashOption(
     title='Use BaseURLs',
     description='Include a BaseURL element?',
     cgi_name='base',
-    cgi_choices=[True, False],
+    cgi_choices=(True, False),
     hidden=False)
 
 Bugs = DashOption(
@@ -50,18 +53,18 @@ Bugs = DashOption(
     title='Bug compatibility',
     description='Produce a stream with known bugs. The value is a comma separated list of bug names',
     cgi_name='bugs',
-    cgi_choices=['saio'])
+    cgi_choices=('saio'))
 
 OperatingMode = DashOption(
     name='md',
     title='Operating mode',
     description='DASH operating mode',
     cgi_name='mode',
-    cgi_choices={
+    cgi_choices=(
         ('VOD live profile', 'vod'),
         ('Live stream', 'live'),
         ('VOD OnDemand profile', 'odvod'),
-    },
+    ),
     hidden=False)
 
 MSE_HTML = '''
@@ -78,11 +81,11 @@ MediaSource = DashOption(
     title='Native playback',
     description='Media Source Extension control',
     cgi_name='mse',
-    cgi_choices=[
+    cgi_choices=(
         ('Yes', 0),
         ('Use MSE/EME', 1),
         ('Use MSE (no DRM)', 2),
-    ],
+    ),
     html=MSE_HTML,
     hidden=False)
 
@@ -91,12 +94,12 @@ MinimumUpdatePeriod = DashOption(
     title='Minimum update period',
     description='Specify minimumUpdatePeriod (in seconds) or -1 to disable updates',
     cgi_name='mup',
-    cgi_choices={
+    cgi_choices=(
         ('Every 2 fragments', ''),
         ('Never', '-1'),
         ('Every fragment', '4'),
         ('Every 30 seconds', '30'),
-    },
+    ),
     cgi_type='<number>')
 
 Periods = DashOption(
@@ -105,7 +108,7 @@ Periods = DashOption(
     description='The number of Periods to include in the manifest',
     cgi_name='periods',
     cgi_type='<number>',
-    cgi_choices=[None, '2', '3'],
+    cgi_choices=(None, '2', '3'),
     hidden=False)
 
 TimeshiftBufferDepth = DashOption(

@@ -65,7 +65,7 @@ class MainPage(HTMLHandlerBase):
                 'manifest': manifests.manifest[name],
                 'option': [],
             })
-        for idx, opt in enumerate(get_cgi_options(hidden=False)):
+        for idx, opt in enumerate(get_cgi_options(hidden=False, omit_empty=False)):
             try:
                 row = context['rows'][idx]
                 row['option'] = opt
