@@ -158,6 +158,11 @@ class DashManifestCheckMixin(object):
                 del params["mup"]
             if "time" in params:
                 del params["time"]
+            if "drift" in params:
+                del params["drift"]
+        elif params.get('time', 'none') == 'none':
+            if "drift" in params:
+                del params["drift"]
         encrypted = params.get("drm", "drm=none") != "drm=none"
         if encrypted:
             is_playready = 'all' in params['drm'] or 'playready' in params['drm']

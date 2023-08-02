@@ -51,7 +51,7 @@ class DashManifest(object):
         exclude = {'mse', 'bugs', 'periods'}
         if simplified:
             exclude = exclude.union({
-                'abr', 'mup', 'playready_version', 'playready_piff', 'time'})
+                'abr', 'mup', 'playready_version', 'playready_piff', 'time', 'drift'})
         if drmloc == {'none'}:
             exclude.add('drm')
         for opt in get_cgi_options(only=only, exclude=exclude):

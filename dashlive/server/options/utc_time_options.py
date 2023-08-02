@@ -14,6 +14,7 @@ ClockDrift = DashOption(
     description='Number of seconds of delay to add to wall clock time',
     cgi_name='drift',
     cgi_type='<seconds>',
+    cgi_choices=(None, 10),
     usage={'manifest', 'time'})
 
 UTCMethod = DashOption(
