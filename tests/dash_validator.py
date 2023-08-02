@@ -20,7 +20,6 @@
 #
 #############################################################################
 
-from __future__ import print_function
 from __future__ import division
 from future import standard_library
 from future.utils import with_metaclass
@@ -172,8 +171,9 @@ class DashElement(with_metaclass(ABCMeta, TestCaseMixin)):
                 except (ValueError) as err:
                     self.log.error('Attribute "%s@%s" has invalid value "%s": %s',
                                    self.classname(), name, val, err)
-                    print(ET.tostring(elt))
-                    raise
+                    xml = ET.tostring(elt)
+                    print(f'Error parsing attribute "{name}": {xml}')
+                    raise err
             elif dflt == DashElement.Parent:
                 val = getattr(self.parent, name, None)
             else:
@@ -1328,8 +1328,8 @@ class InitSegment(DashElement):
             expected_status = 200
         self.log.debug('GET: %s %s', self.url, headers)
         response = self.http.get(self.url, headers=headers)
-        if response.status_code != expected_status:
-            print(response.text)
+        # if response.status_code != expected_status:
+        #     print(response.text)
         self.checkEqual(
             response.status_code, expected_status,
             msg=f'Failed to load init segment: {response.status_code}: {self.url}')
