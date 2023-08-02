@@ -3,7 +3,7 @@
   <ProgramInformation>
     <Title>Big Buck Bunny</Title>
   </ProgramInformation>
-  <Location>http://unit.test/dash/live/fixtures/hand_made.mpd?drm=all&amp;acodec=mp4a</Location>
+  <Location>http://unit.test/dash/live/fixtures/hand_made.mpd?drm=all&amp;acodec=mp4a&amp;time=xsd</Location>
   <UTCTiming schemeIdUri="urn:mpeg:dash:utc:http-xsdate:2014" value="http://unit.test/time/xsd"/>
   <Period start="PT0S" id="p0">
     <BaseURL>http://unit.test/dash/live/fixtures/</BaseURL>

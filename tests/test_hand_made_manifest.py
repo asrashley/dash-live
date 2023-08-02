@@ -60,13 +60,13 @@ class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
     @FlaskTestBase.mock_datetime_now(from_isodatetime("2022-09-06T15:10:02Z"))
     def test_generated_live_manifest_against_fixture(self):
         self.check_generated_manifest_against_fixture(
-            'hand_made.mpd', mode='live', acodec='mp4a')
+            'hand_made.mpd', mode='live', acodec='mp4a', time='xsd')
 
     @FlaskTestBase.mock_datetime_now(from_isodatetime("2022-09-06T15:10:00Z"))
     def test_generated_live_drm_manifest_against_fixture(self):
         self.check_generated_manifest_against_fixture(
             'hand_made.mpd', mode='live', drm='all',
-            acodec='mp4a')
+            acodec='mp4a', time='xsd')
 
 
 if os.environ.get("TESTS"):
