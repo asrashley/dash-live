@@ -20,10 +20,6 @@
 #
 #############################################################################
 
-from __future__ import print_function
-from __future__ import absolute_import
-from future import standard_library
-standard_library.install_aliases()
 from builtins import zip
 from builtins import object
 from contextlib import contextmanager
@@ -31,6 +27,7 @@ import datetime
 from functools import wraps
 import io
 import os
+import logging
 import urllib.parse
 
 import flask
@@ -48,7 +45,7 @@ def add_url(method, url):
         try:
             return method(self, *args, **kwargs)
         except AssertionError:
-            print(url)
+            print(f'URL="{url}"')
             raise
     return tst_fn
 
@@ -115,6 +112,7 @@ class DashManifestCheckMixin(object):
         tested = set([url])
         indexes = [0] * len(options)
         done = False
+        logging.debug('total_tests for "%s" = %d', filename, total_tests)
         while not done:
             self.progress(count, total_tests)
             count += 1
@@ -228,10 +226,10 @@ class DashManifestCheckMixin(object):
                     self.assertAlmostEqual(dv.manifest.mediaPresentationDuration.total_seconds(),
                                            self.MEDIA_DURATION, delta=1.0)
             return dv
-        except AssertionError:
+        except AssertionError as err:
             if response is not None:
-                print(response.text)
-            raise
+                print(f'{err}: response={response.text}')
+            raise err
         finally:
             self.current_url = ''
 
