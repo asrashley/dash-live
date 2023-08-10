@@ -20,17 +20,14 @@
 #
 #############################################################################
 
-from builtins import filter
 import json
-import os
-from typing import Optional
 import unittest
 
 from bs4 import BeautifulSoup
 import flask
 
 from dashlive.server import manifests, models
-from dashlive.server.options.cgi_options import get_cgi_options, get_dash_options
+from dashlive.server.options.repository import OptionsRepository
 
 from .flask_base import FlaskTestBase
 
@@ -83,18 +80,21 @@ class TestHtmlPageHandlers(FlaskTestBase):
         self.assertIn('Log In', response.text)
         media_list_url = flask.url_for('list-streams')
         self.assertIn(f'href="{media_list_url}"', response.text)
-        for option in get_cgi_options():
+        for option in OptionsRepository.get_cgi_options():
             self.assertIn(option.name, response.text)
         response = self.client.get(f'{url}?json=1')
         self.assertEqual(response.status_code, 200)
         html = BeautifulSoup(response.text, 'lxml')
         self.assertIsNotNone(html)
-        for option in get_dash_options():
-            row = html.find(id=f"opt_{option.name}")
+        for option in OptionsRepository.get_dash_options():
+            row = html.find(id=f"opt_{option.short_name}")
             self.assertIsNotNone(row)
             name = row.find(class_='short-name')
             self.assertIsNotNone(name)
-            self.assertEqual(name.string, option.name)
+            self.assertEqual(name.string, option.short_name)
+            name = row.find(class_='full-name')
+            self.assertIsNotNone(name)
+            self.assertEqual(name.string, option.full_name)
             param = row.find(class_='cgi-param')
             self.assertIsNotNone(param)
             self.assertEqual(param.string, str(option.cgi_name))
@@ -182,113 +182,66 @@ class TestHtmlPageHandlers(FlaskTestBase):
         finally:
             self.current_url = None
 
-    def test_video_playback(self):
+    def test_video_playback(self) -> None:
         """
         Test generating the video HTML page.
         Checks every manifest with every CGI parameter causes a valid
         HTML page that allows the video to be watched using a <video> element.
         """
-        def opt_choose(item):
-            return item[0] in {'mode', 'acodec', 'drm'}
-
+        only = {'audioCodec', 'textCodec', 'drmSelection'}
         self.setup_media()
         self.logout_user()
         self.assertGreaterThan(models.MediaFile.count(), 0)
         num_tests = 0
         for filename, manifest in manifests.manifest.items():
-            options = list(filter(opt_choose, manifest.get_cgi_options(simplified=True)))
-            options = self.cgi_combinations(options)
-            num_tests += len(options) * models.Stream.count()
+            for mode in manifest.supported_modes():
+                options = manifest.get_cgi_query_combinations(mode, simplified=True, only=only)
+                num_tests += len(options) * models.Stream.count()
         count = 0
         for filename, manifest in manifests.manifest.items():
             for stream in models.Stream.all():
-                options = list(filter(opt_choose, manifest.get_cgi_options(simplified=True)))
-                options = self.cgi_combinations(options)
-                for opt in options:
-                    mode = 'vod'
-                    if 'mode=live' in opt:
-                        mode = 'live'
-                    elif 'mode=odvod' in opt:
-                        mode = 'odvod'
-                    html_url = flask.url_for(
-                        "video",
-                        mode=mode,
-                        stream=self.FIXTURES_PATH.name,
-                        manifest=filename[:-4])
-                    html_url += r'?{0}'.format(opt)
-                    self.progress(count, num_tests)
-                    self.current_url = html_url
-                    try:
-                        response = self.client.get(html_url)
-                        self.assertEqual(response.status, '200 OK')
-                        html = BeautifulSoup(response.text, 'lxml')
-                        self.assertEqual(html.title.string, manifest.title)
-                        for script in html.find_all('script'):
-                            if script.get("src"):
-                                continue
-                            text = script.get_text()
-                            if not text:
-                                text = script.string
-                            self.assertIn('var dashParameters', text)
-                            start = text.index('{')
-                            end = text.rindex('}') + 1
-                            data = json.loads(text[start:end])
-                            for field in ['pk', 'title', 'directory',
-                                          'playready_la_url', 'marlin_la_url']:
-                                self.assertEqual(
-                                    data['stream'][field], getattr(
-                                        stream, field))
+                for mode in manifest.supported_modes():
+                    options = manifest.get_cgi_query_combinations(mode, simplified=True, only=only)
+                    for opt in options:
+                        self.progress(count, num_tests)
+                        self.check_video_html_page(filename, manifest, mode, stream, opt)
                         count += 1
-                    finally:
-                        self.current_url = None
         self.progress(num_tests, num_tests)
 
-    @staticmethod
-    def cgi_combinations(cgi_options: list, exclude: Optional[set] = None) -> None:
-        """
-        convert a list of CGI options into a set of all possible combinations
-        """
-        indexes = [0] * len(cgi_options)
-        result = set()
-        if exclude is None:
-            exclude = set()
-        done = False
-        while not done:
-            params = {}
-            mode = None
-            for idx, option in enumerate(cgi_options):
-                name, values = option
-                if name in exclude:
+    def check_video_html_page(self, filename: str, manifest, mode: str,
+                              stream: models.Stream, query: str) -> None:
+        html_url = flask.url_for(
+            "video",
+            mode=mode,
+            stream=self.FIXTURES_PATH.name,
+            manifest=filename[:-4])
+        html_url += query
+        try:
+            self.current_url = html_url
+            response = self.client.get(html_url)
+            self.assertEqual(
+                response.status_code, 200,
+                msg=f'Failed to fetch video player HTML page {html_url}')
+            html = BeautifulSoup(response.text, 'lxml')
+            self.assertEqual(html.title.string, manifest.title)
+            for script in html.find_all('script'):
+                if script.get("src"):
                     continue
-                value = values[indexes[idx]]
-                if name == 'mode':
-                    mode = value[5:]
-                if value:
-                    params[name] = value
-                if mode != "live":
-                    if "mup" in params:
-                        del params["mup"]
-                    if "time" in params:
-                        del params["time"]
-                cgi = '&'.join(list(params.values()))
-                result.add(cgi)
-            idx = 0
-            while idx < len(cgi_options):
-                indexes[idx] += 1
-                if indexes[idx] < len(cgi_options[idx][1]):
-                    break
-                indexes[idx] = 0
-                idx += 1
-            if idx == len(cgi_options):
-                done = True
-        return result
+                text = script.get_text()
+                if not text:
+                    text = script.string
+                self.assertIn('var dashParameters', text)
+                start = text.index('{')
+                end = text.rindex('}') + 1
+                data = json.loads(text[start:end])
+                for field in ['pk', 'title', 'directory',
+                              'playready_la_url', 'marlin_la_url']:
+                    self.assertEqual(
+                        data['stream'][field], getattr(
+                            stream, field))
+        finally:
+            self.current_url = None
 
-
-if os.environ.get("TESTS"):
-    def load_tests(loader, tests, pattern):
-        return unittest.loader.TestLoader().loadTestsFromNames(
-            os.environ["TESTS"].split(','),
-            TestHtmlPageHandlers)
 
 if __name__ == "__main__":
     unittest.main()

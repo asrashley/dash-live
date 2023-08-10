@@ -27,8 +27,11 @@ from .mixins.check_manifest import DashManifestCheckMixin
 from .flask_base import FlaskTestBase
 
 class ManifestEFTest(FlaskTestBase, DashManifestCheckMixin):
-    def test_manifest_ef(self):
-        self.check_a_manifest_using_major_options('manifest_ef.mpd')
+    def test_manifest_ef_vod(self):
+        self.check_a_manifest_using_major_options('manifest_ef.mpd', 'vod')
+
+    def test_manifest_ef_live(self):
+        self.check_a_manifest_using_major_options('manifest_ef.mpd', 'live')
 
 
 if os.environ.get("TESTS"):

@@ -9,7 +9,7 @@ import sqlalchemy_jsonfield  # type: ignore
 from sqlalchemy.event import listen  # type: ignore
 
 from dashlive.mpeg.dash.representation import Representation
-from dashlive.utils.date_time import toIsoDateTime
+from dashlive.utils.date_time import to_iso_datetime
 from dashlive.utils.json_object import JsonObject
 from .db import db
 from .key import Key
@@ -99,7 +99,7 @@ class MediaFile(db.Model, ModelMixin):
     def toJSON(self, convert_date: bool = True, pure: bool = False) -> JsonObject:
         blob = self.blob.to_dict(exclude={'rep', 'blob', 'stream_pk', 'encryption_keys'})
         if convert_date or pure:
-            blob["created"] = toIsoDateTime(blob["created"])
+            blob["created"] = to_iso_datetime(blob["created"])
         retval = self.to_dict()
         retval['blob'] = blob
         retval['encryption_keys'] = [

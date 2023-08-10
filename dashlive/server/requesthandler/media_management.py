@@ -301,7 +301,7 @@ class MediaSegmentInfo(HTMLHandlerBase):
                 reader, offset=frag.pos, size=frag.size, buffersize=16384)
             atom = mp4.Wrapper(
                 atom_type='wrap', children=mp4.Mp4Atom.load(src, options=options))
-        exclude = {'parent', '_type', 'options'}
+        exclude = {'parent', 'options'}
         atoms = [ch.toJSON(exclude=exclude) for ch in atom.children]
         for ch in atoms:
             self.filter_atom(ch)

@@ -20,14 +20,13 @@
 #
 #############################################################################
 
-from builtins import zip
-from builtins import object
 from contextlib import contextmanager
 import datetime
 from functools import wraps
 import io
 import os
 import logging
+from typing import AbstractSet, Optional
 import urllib.parse
 
 import flask
@@ -35,6 +34,7 @@ from lxml import etree as ET
 
 from dashlive.mpeg.dash.profiles import primary_profiles
 from dashlive.server import manifests, models
+from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.requesthandler.manifest_requests import ServeManifest
 
 from .view_validator import ViewsTestDashValidator
@@ -64,7 +64,7 @@ class MockServeManifest(ServeManifest):
             return r'{0}/clearkey/'.format(self.request.host_url)
         raise ValueError(r'Unsupported route name: {0}'.format(route))
 
-class DashManifestCheckMixin(object):
+class DashManifestCheckMixin:
     def _assert_true(self, result, a, b, msg, template):
         if not result:
             print(r'URL: {}'.format(self.current_url))
@@ -72,18 +72,23 @@ class DashManifestCheckMixin(object):
                 raise AssertionError(msg)
             raise AssertionError(template.format(a, b))
 
-    def check_a_manifest_using_major_options(self, filename):
+    def check_a_manifest_using_major_options(self, filename: str, mode: str) -> None:
         """
         Exhaustive test of a manifest with every combination of options
         used by the manifest.
         This test might be _very_ slow (i.e. expect it to take several minutes)
         if the manifest uses lots of features.
         """
-        self.check_a_manifest_using_all_options(filename, simplified=True)
+        self.check_a_manifest_using_all_options(filename, mode, simplified=True)
 
     def check_a_manifest_using_all_options(
-            self, filename: str, simplified: bool = False,
-            with_subs: bool = False) -> None:
+            self,
+            filename: str,
+            mode: str,
+            simplified: bool = False,
+            with_subs: bool = False,
+            only: Optional[AbstractSet] = None,
+            extras: Optional[list[tuple]] = None) -> None:
         """
         Exhaustive test of a manifest with every combination of options
         used by the manifest.
@@ -91,112 +96,51 @@ class DashManifestCheckMixin(object):
         if the manifest uses lots of features.
         """
         manifest = manifests.manifest[filename]
-        options = manifest.get_cgi_options(simplified)
+        self.assertIn(mode, primary_profiles)
+        modes = manifest.restrictions.get('mode', primary_profiles.keys())
+        self.assertIn(mode, modes)
         self.setup_media(with_subs=with_subs)
         self.logout_user()
         self.assertGreaterThan(models.MediaFile.count(), 0)
         # do a first pass check with no CGI options
-        for mode in manifest.restrictions.get('mode', {'vod', 'live', 'odvod'}):
-            url = flask.url_for(
-                'dash-mpd-v3',
-                manifest=filename,
-                mode=mode,
-                stream=self.FIXTURES_PATH.name)
-            self.check_manifest_url(url, mode, encrypted=False)
-
-        # do the exhaustive check of every option
-        total_tests = 1
-        count = 0
-        for param in options:
-            total_tests = total_tests * len(param[1])
-        tested = set([url])
-        indexes = [0] * len(options)
-        done = False
-        logging.debug('total_tests for "%s" = %d', filename, total_tests)
-        while not done:
-            self.progress(count, total_tests)
-            count += 1
-            self.check_manifest_using_options(filename, options, indexes, tested)
-            idx = 0
-            while idx < len(options):
-                indexes[idx] += 1
-                if indexes[idx] < len(options[idx][1]):
-                    break
-                indexes[idx] = 0
-                idx += 1
-            if idx == len(options):
-                done = True
-        self.progress(total_tests, total_tests)
-
-    def check_manifest_using_options(self, filename, options, indexes, tested):
-        """
-        Check one manifest using a specific combination of options
-        :filename: the filename of the manifest
-        :indexes: array for each option with the index for its setting
-        :tested: set of URLs that have already been tested
-        """
-        params = {}
-        mode = None
-        for idx, option in enumerate(options):
-            name, values = option
-            value = values[indexes[idx]]
-            if name == 'mode':
-                mode = value[5:]
-            elif value:
-                params[name] = value
-        if mode is None:
-            print('mode is None', options)
-        self.assertIsNotNone(mode, 'Failed to find operating mode')
-        self.assertIn(mode, primary_profiles)
-        # remove pointless combinations of options
-        mft = manifests.manifest[filename]
-        modes = mft.restrictions.get('mode', primary_profiles.keys())
-        if mode not in modes:
-            return
-        if mode != "live":
-            if "mup" in params:
-                del params["mup"]
-            if "time" in params:
-                del params["time"]
-            if "drift" in params:
-                del params["drift"]
-        elif params.get('time', 'none') == 'none':
-            if "drift" in params:
-                del params["drift"]
-        encrypted = params.get("drm", "drm=none") != "drm=none"
-        if encrypted:
-            is_playready = 'all' in params['drm'] or 'playready' in params['drm']
-            if mode == 'odvod' and 'moov' in params.get("drm", ""):
-                # adding PSSH boxes into on-demand profile content is not supported
-                return
-        else:
-            is_playready = False
-        if not is_playready:
-            if 'playready_version' in params:
-                del params['playready_version']
-            if 'playready_piff' in params:
-                del params['playready_piff']
-        cgi = list(params.values())
-        if len(cgi) == 0:
-            return
         url = flask.url_for(
             'dash-mpd-v3',
             manifest=filename,
             mode=mode,
             stream=self.FIXTURES_PATH.name)
-        mpd_url = '{}?{}'.format(url, '&'.join(cgi))
-        if mpd_url in tested:
-            return
-        tested.add(mpd_url)
-        self.check_manifest_url(mpd_url, mode, encrypted)
+        self.check_manifest_url(url, mode, encrypted=False)
 
-    def check_manifest_url(self, mpd_url, mode, encrypted, check_head=False):
+        # do the exhaustive check of every option
+        options = manifest.get_cgi_query_combinations(
+            mode=mode, simplified=simplified, only=only, extras=extras)
+        total_tests = len(options)
+        count = 0
+        logging.debug('total %s tests for "%s" = %d', mode, filename, total_tests)
+        for query in options:
+            self.progress(count, total_tests)
+            count += 1
+            self.check_manifest_using_options(mode, url, query)
+        self.progress(total_tests, total_tests)
+
+    def check_manifest_using_options(self, mode: str, url: str, query: str) -> None:
+        """
+        Check one manifest using a specific combination of options
+        :mode: operating mode
+        :filename: the filename of the manifest
+        :query: the query string
+        """
+        mpd_url = f'{url}{query}'
+        clear = ('drm=none' in query) or ('drm' not in query)
+        self.check_manifest_url(mpd_url, mode, not clear)
+
+    def check_manifest_url(self, mpd_url: str, mode: str, encrypted: bool, check_head=False):
         """
         Test one manifest for validity
         """
         response = None
         try:
             self.current_url = mpd_url
+            # print('check_manifest_url', mpd_url, mode, encrypted)
             response = self.client.get(mpd_url)
             if response.status_code == 302:
                 # Handle redirect request
@@ -262,8 +206,10 @@ class DashManifestCheckMixin(object):
             "dash-mpd-v3",
             mode=mode,
             stream=self.FIXTURES_PATH.name,
-            manifest=mpd_filename,
-            **kwargs)
+            manifest=mpd_filename)
+        options = OptionsRepository.convert_cgi_options(kwargs)
+        options.remove_unused_parameters(mode)
+        url += options.generate_cgi_parameters_string()
         stream = models.Stream.get(directory=self.FIXTURES_PATH.name)
         self.assertIsNotNone(stream)
         # with self.app.test_request_context(url, method='GET'):
@@ -277,11 +223,14 @@ class DashManifestCheckMixin(object):
         actual = ET.fromstring(bytes(text, 'utf-8'))
         self.assertXmlEqual(expected, actual)
 
-    def generate_manifest_context(self, mpd_filename, mode, stream, **kwargs):
+    def generate_manifest_context(self, mpd_filename: str, mode: str, stream, **kwargs) -> dict:
+        defaults = OptionsRepository.get_default_options()
+        options = OptionsRepository.convert_cgi_options(kwargs, defaults)
+        options.remove_unused_parameters(mode)
+        options.add_field('mode', mode)
         mock = MockServeManifest(flask.request)
-        context = mock.calculate_dash_params(mpd_url=mpd_filename, mode=mode)
-        encrypted = kwargs.get('drm', 'none') != 'none'
-        if encrypted:
+        context = mock.calculate_dash_params(mpd_url=mpd_filename, options=options)
+        if options.encrypted:
             kids = set()
             for period in context['periods']:
                 kids.update(period.key_ids())
@@ -289,7 +238,7 @@ class DashManifestCheckMixin(object):
                 keys = models.Key.all_as_dict()
             else:
                 keys = models.Key.get_kids(kids)
-            context["DRM"] = mock.generate_drm_dict(stream, keys)
+            context["DRM"] = mock.generate_drm_dict(stream, keys, options)
         context['remote_addr'] = mock.request.remote_addr
         context['request_uri'] = mock.request.url
         context['title'] = stream.title

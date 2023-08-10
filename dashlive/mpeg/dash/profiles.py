@@ -1,5 +1,8 @@
+from typing import Literal, TypeAlias
 
 supported_modes = {'live', 'vod', 'odvod'}
+
+ModeType: TypeAlias = Literal['live', 'vod', 'odvod']
 
 primary_profiles = {
     'odvod': 'urn:mpeg:dash:profile:isoff-on-demand:2011',

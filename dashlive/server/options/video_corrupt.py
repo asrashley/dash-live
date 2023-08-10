@@ -19,26 +19,32 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+
 from .dash_option import DashOption
+from .types import OptionUsage
 
 VideoCorruption = DashOption(
-    name='vcor',
+    usage=(OptionUsage.MANIFEST | OptionUsage.VIDEO),
+    short_name='vcor',
+    full_name='videoCorruption',
     title='Video corruption',
     description=(
         'Cause video corruption to be generated when requesting a fragment at the given time. ' +
         'Invalid data is placed inside NAL packets of video frames. ' +
         'Each time must be in the form HH:MM:SSZ.'),
+    from_string=DashOption.list_without_none_from_string,
     cgi_name='vcorrupt',
-    cgi_type='<time>,<time>,..',
-    hidden=True,
-    usage={'video'})
+    cgi_type='<time>,..',
+    hidden=True)
 
 CorruptionFrameCount = DashOption(
-    name='vcfc',
+    usage=(OptionUsage.MANIFEST | OptionUsage.VIDEO),
+    short_name='vcfc',
+    full_name='videoCorruptionFrameCount',
     title='Video corruption frame count',
     description=(
         'Number of frames to corrupt per segment. ' +
         'Only relevant when the corrupt CGI parameter is present.'),
+    from_string=DashOption.int_or_none_from_string,
     cgi_name='frames',
-    cgi_type='<number>',
-    usage={'video'})
+    cgi_type='<number>')

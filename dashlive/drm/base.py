@@ -20,24 +20,29 @@
 #
 #############################################################################
 
-from builtins import object
-from abc import ABCMeta, abstractmethod
-from future.utils import with_metaclass
+from abc import ABC, abstractmethod
+from typing import AbstractSet, Optional
 
-class DrmBase(with_metaclass(ABCMeta, object)):
+from dashlive.mpeg.mp4 import BoxWithChildren, ContentProtectionSpecificBox
+from dashlive.server.options.container import OptionsContainer
+
+class DrmBase(ABC):
     """
     Base class for all DRM implementations
     """
 
     @abstractmethod
-    def dash_scheme_id(self):
+    def dash_scheme_id(self) -> str:
         raise RuntimeError('dash_scheme_id has not been implemented')
 
     @abstractmethod
-    def generate_manifest_context(self, stream, keys, cgi_params, la_url=None, locations=None):
+    def generate_manifest_context(self, stream, keys, options: OptionsContainer,
+                                  la_url: Optional[str] = None,
+                                  locations: Optional[AbstractSet[str]] = None) -> dict:
         raise RuntimeError('generate_manifest_context has not been implemented')
 
-    def update_traf_if_required(self, cgi_params, traf):
+    def update_traf_if_required(self, options: OptionsContainer,
+                                traf: BoxWithChildren) -> bool:
         """
         Hook to allow a DRM system to insert / modify boxes within the "traf"
         box.
@@ -46,5 +51,5 @@ class DrmBase(with_metaclass(ABCMeta, object)):
         return False
 
     @abstractmethod
-    def generate_pssh(self, representation, keys):
+    def generate_pssh(self, representation, keys) -> ContentProtectionSpecificBox:
         raise RuntimeError('generate_pssh has not been implemented')

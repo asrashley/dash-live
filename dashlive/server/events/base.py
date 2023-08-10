@@ -20,17 +20,17 @@
 #
 #############################################################################
 
-from abc import ABC, abstractmethod
-import copy
+from abc import abstractmethod
 import datetime
-from typing import Dict, Optional
+from typing import Any
 
-from flask import Request
+from dashlive.mpeg.mp4 import EventMessageBox
+from dashlive.server.options.dash_option import DashOption
+from dashlive.server.options.types import OptionUsage
+from dashlive.utils.object_with_fields import ObjectWithFields
 
-from dashlive.utils.date_time import from_isodatetime
-
-class EventBase(ABC):
-    PARAMS = {
+class EventBase(ObjectWithFields):
+    DEFAULT_VALUES = {
         'count': 0,
         'duration': 200,
         'inband': True,
@@ -41,45 +41,60 @@ class EventBase(ABC):
         'version': 0,
     }
 
-    def __init__(self, prefix: str, request: Request,
-                 extra_params: Optional[Dict] = None) -> None:
-        all_params = copy.deepcopy(self.PARAMS)
-        if extra_params is not None:
-            all_params.update(extra_params)
-        self.prefix = prefix
-        self.params = set()
-        for key, dflt in all_params.items():
-            value = request.args.get(prefix + key, dflt)
+    @abstractmethod
+    def create_manifest_context(self, context: dict) -> dict:
+        ...
+
+    @abstractmethod
+    def create_emsg_boxes(self, **kwargs) -> list[EventMessageBox]:
+        ...
+
+    @classmethod
+    def get_dash_options(cls) -> list[DashOption]:
+        """
+        Get a list of all DASH options for this event
+        """
+        def default_to_string(val: Any) -> str:
+            return str(val)
+
+        result: list[DashOption] = []
+        for key, dflt in cls.DEFAULT_VALUES.items():
+            name = f'{cls.PREFIX}_{key}'
+            short_name = cls.PREFIX[:3] + key.title()[:4]
+            cgi_choices = None
+            to_string = default_to_string
             if isinstance(dflt, bool):
-                if isinstance(value, str):
-                    value = value.lower() in {'true', 'yes', '1'}
-                elif isinstance(value, (int, int)):
-                    value = (value == 1)
+                from_string = DashOption.bool_from_string
+                to_string = DashOption.bool_to_string
+                cgi_type = '(0|1)'
+                cgi_choices = (str(dflt), str(not dflt))
             elif isinstance(dflt, int):
-                value = int(value)
-            elif isinstance(dflt, int):
-                value = int(value)
+                from_string = DashOption.int_or_none_from_string
+                cgi_type = '<int>'
+                cgi_choices = tuple([str(dflt)])
             elif isinstance(dflt, (
                     datetime.date, datetime.datetime, datetime.time,
                     datetime.timedelta)):
-                value = from_isodatetime(value)
-            setattr(self, key, value)
-            self.params.add(key)
-
-    def cgi_parameters(self) -> Dict:
-        """
-        Get all parameters for this event generator as a dictionary
-        """
-        retval = {}
-        for key in self.params:
-            value = getattr(self, key)
-            retval[f'{self.prefix}{key}'] = value
-        return retval
-
-    @abstractmethod
-    def create_manifest_context(self, context: Dict) -> Dict:
-        ...
-
-    @abstractmethod
-    def create_emsg_boxes(self, **kwargs):
-        ...
+                from_string = DashOption.datetime_or_none_from_string
+                to_string = DashOption.datetime_or_none_to_string
+                cgi_type = '<iso-datetime>'
+                cgi_choices = tuple([str(dflt)])
+            else:
+                from_string = default_to_string
+                cgi_type = None
+                if dflt is not None:
+                    cgi_choices = tuple(str(dflt))
+            opt = DashOption(
+                usage=(OptionUsage.MANIFEST + OptionUsage.AUDIO + OptionUsage.VIDEO),
+                short_name=short_name,
+                full_name=key,
+                title=f'{cls.PREFIX.title()} {key}',
+                description='',
+                prefix=cls.PREFIX,
+                cgi_name=name,
+                cgi_type=cgi_type,
+                cgi_choices=cgi_choices,
+                from_string=from_string,
+                to_string=to_string)
+            result.append(opt)
+        return result

@@ -20,9 +20,6 @@
 #
 #############################################################################
 
-from __future__ import absolute_import
-from future import standard_library
-standard_library.install_aliases()
 import datetime
 import logging
 import os
@@ -31,7 +28,7 @@ import unittest
 
 import flask
 
-from dashlive.utils.date_time import toIsoDateTime, from_isodatetime
+from dashlive.utils.date_time import to_iso_datetime, from_isodatetime
 from dashlive.utils.timezone import UTC
 from .flask_base import FlaskTestBase
 
@@ -53,7 +50,7 @@ class TestUtcTime(FlaskTestBase):
         self.assert200(response)
         self.assertEqual(response.headers['Date'], 'Tue, 18 Jul 2023 20:10:02 UTC')
         self.assertEqual(response.headers['Content-Type'], 'text/plain')
-        self.assertEqual(response.text, toIsoDateTime(self.NOW))
+        self.assertEqual(response.text, to_iso_datetime(self.NOW))
 
     @FlaskTestBase.mock_datetime_now(NOW)
     def test_iso_request(self):

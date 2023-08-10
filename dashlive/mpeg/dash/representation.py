@@ -110,19 +110,10 @@ class Representation(ObjectWithFields):
             })
         self.apply_defaults(defaults)
         self.num_segments = len(self.segments) - 1
+        self._ref_representation: Optional[Representation] = None
 
     def __repr__(self):
-        args = []
-        for key, value in self.__dict__.items():
-            if key in {'num_segments', '_fields', 'DEFAULT_EXCLUDE'}:
-                continue
-            if isinstance(value, str):
-                value = '"%s"' % value
-            else:
-                value = str(value)
-            args.append('%s=%s' % (key, value))
-        args = ','.join(args)
-        return 'Representation(' + args + ')'
+        return self.as_python(exclude={'num_segments'})
 
     @classmethod
     def load(clz, filename: str, atoms: List[Mp4Atom], verbose: int = 0) -> "Representation":
@@ -212,8 +203,11 @@ class Representation(ObjectWithFields):
             rv.bitrate = int(old_div(8 * rv.timescale * file_size, rv.mediaDuration) + 0.5)
         return rv
 
-    def set_reference_representation(self, ref_representation):
-        self.ref_representation = ref_representation
+    def set_reference_representation(self, ref_representation: "Representation") -> None:
+        if ref_representation == self:
+            self._ref_representation = None
+        else:
+            self._ref_representation = ref_representation
 
     def set_dash_timing(self, timing):
         self.timing = timing
@@ -471,9 +465,13 @@ class Representation(ObjectWithFields):
         # nominal_duration is the duration (in timescale units) of the reference
         # representation. This is used to decide how many times the stream has looped
         # since availabilityStartTime.
-        nominal_duration = self.ref_representation.segment_duration * \
-            self.ref_representation.num_segments
-        tc_scaled = int(timecode * self.ref_representation.timescale)
+        if self._ref_representation is None:
+            ref_representation = self
+        else:
+            ref_representation = self._ref_representation
+        nominal_duration = ref_representation.segment_duration * \
+            ref_representation.num_segments
+        tc_scaled = int(timecode * ref_representation.timescale)
         num_loops = old_div(tc_scaled, nominal_duration)
 
         # origin time is the time (in timescale units) that maps to segment 1 for
@@ -482,15 +480,15 @@ class Representation(ObjectWithFields):
         origin_time = num_loops * nominal_duration
 
         # print('origin_time', timecode, origin_time, num_loops,
-        #      float(nominal_duration) / float(self.ref_representation.timescale))
-        # print('segment_duration', self.ref_representation.segment_duration,
-        #      float(self.ref_representation.segment_duration) /
-        #      float(self.ref_representation.timescale))
+        #      float(nominal_duration) / float(ref_representation.timescale))
+        # print('segment_duration', ref_representation.segment_duration,
+        #      float(ref_representation.segment_duration) /
+        #      float(ref_representation.timescale))
 
         # the difference between timecode and origin_time now needs
         # to be mapped to the segment index of this representation
         segment_num = (tc_scaled - origin_time) * self.timescale
-        segment_num /= self.ref_representation.timescale
+        segment_num /= ref_representation.timescale
         segment_num /= self.segment_duration
         segment_num = int(segment_num + 1)
         # the difference between the segment durations of the reference
@@ -499,15 +497,15 @@ class Representation(ObjectWithFields):
         if segment_num > self.num_segments:
             segment_num = 1
             origin_time += nominal_duration
-        origin_time /= self.ref_representation.timescale
+        origin_time /= ref_representation.timescale
         if segment_num < 1 or segment_num > self.num_segments:
-            raise ValueError('Invalid segment number %d' % (segment_num))
+            raise ValueError(f'Invalid segment number {segment_num}')
         return (segment_num, origin_time)
 
 
 if __name__ == '__main__':
-    from mpeg import mp4
-    from utils.buffered_reader import BufferedReader
+    from dashlive.mpeg import mp4
+    from dashlive.utils.buffered_reader import BufferedReader
 
     with open(sys.argv[1], 'rb') as src:
         wrap = mp4.Wrapper(children=mp4.Mp4Atom.load(BufferedReader(src)))

@@ -33,7 +33,7 @@ from bs4 import BeautifulSoup
 import flask
 
 from dashlive.server import models
-from dashlive.utils.date_time import toIsoDateTime
+from dashlive.utils.date_time import to_iso_datetime
 from .flask_base import FlaskTestBase
 
 class TestRestApi(FlaskTestBase):
@@ -120,7 +120,7 @@ class TestRestApi(FlaskTestBase):
         actual = response.json
         info = {
             'size': media_file.blob.size,
-            'created': toIsoDateTime(media_file.blob.created),
+            'created': to_iso_datetime(media_file.blob.created),
             'sha1_hash': media_file.blob.sha1_hash,
         }
         expected = {

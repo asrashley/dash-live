@@ -20,7 +20,6 @@
 #
 #############################################################################
 from __future__ import absolute_import
-import os
 import unittest
 
 import flask
@@ -31,8 +30,22 @@ from .flask_base import FlaskTestBase
 from .mixins.check_manifest import DashManifestCheckMixin
 
 class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
-    def test_hand_made_manifest(self):
-        self.check_a_manifest_using_all_options('hand_made.mpd', with_subs=True)
+    def test_hand_made_manifest_vod(self):
+        self.check_a_manifest_using_all_options('hand_made.mpd', 'vod', with_subs=True)
+
+    def test_hand_made_manifest_live(self):
+        self.check_a_manifest_using_all_options('hand_made.mpd', 'live', with_subs=True)
+
+    def test_hand_made_manifest_vod_abr(self):
+        self.check_a_manifest_using_all_options(
+            'hand_made.mpd', 'vod', only={'abr', 'audioCodec'})
+
+    def test_hand_made_manifest_live_abr(self):
+        self.check_a_manifest_using_all_options(
+            'hand_made.mpd', 'live', only={'abr', 'audioCodec', 'minimumupdateperiod'})
+
+    def test_hand_made_manifest_odvod(self):
+        self.check_a_manifest_using_all_options('hand_made.mpd', 'odvod', with_subs=True)
 
     def test_legacy_vod_manifest_name(self):
         self.setup_media()
@@ -68,12 +81,6 @@ class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
             'hand_made.mpd', mode='live', drm='all',
             acodec='mp4a', time='xsd')
 
-
-if os.environ.get("TESTS"):
-    def load_tests(loader, tests, pattern):
-        return unittest.loader.TestLoader().loadTestsFromNames(
-            os.environ["TESTS"].split(','),
-            HandMadeManifestTests)
 
 if __name__ == '__main__':
     unittest.main()

@@ -19,23 +19,18 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-from __future__ import absolute_import
-import os
 import unittest
 
 from .mixins.check_manifest import DashManifestCheckMixin
 from .flask_base import FlaskTestBase
 
 class ManifestITest(FlaskTestBase, DashManifestCheckMixin):
-    def test_manifest_i(self):
-        self.check_a_manifest_using_major_options('manifest_i.mpd')
+    def test_manifest_i_vod(self):
+        self.check_a_manifest_using_major_options('manifest_i.mpd', 'vod')
 
+    def test_manifest_i_live(self):
+        self.check_a_manifest_using_major_options('manifest_i.mpd', 'live')
 
-if os.environ.get("TESTS"):
-    def load_tests(loader, tests, pattern):
-        return unittest.loader.TestLoader().loadTestsFromNames(
-            os.environ["TESTS"].split(','),
-            ManifestITest)
 
 if __name__ == '__main__':
     unittest.main()

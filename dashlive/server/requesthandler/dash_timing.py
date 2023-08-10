@@ -20,75 +20,66 @@
 #
 #############################################################################
 
-from __future__ import division
-from builtins import str
-from builtins import object
 from past.utils import old_div
 import datetime
 import logging
 
-from dashlive.utils.date_time import from_isodatetime
-from dashlive.utils.timezone import UTC
+from dashlive.mpeg.dash.representation import Representation
+from dashlive.server.options.container import OptionsContainer
 
-class DashTiming(object):
+class DashTiming:
     DEFAULT_TIMESHIFT_BUFFER_DEPTH = 60  # in seconds
 
-    def __init__(self, mode, now, representation, params):
+    def __init__(self, now: datetime.datetime,
+                 representation: Representation,
+                 options: OptionsContainer) -> None:
         self.timeShiftBufferDepth = 0
-        self.mode = mode
+        self.mode = options.mode
         self.now = now
         self.availabilityStartTime = None
         self.publishTime = now.replace(microsecond=0)
         # self.elapsedTime = datetime.timedelta(seconds=0)
-        if mode == 'live':
-            self.calculate_live_params(mode, now, representation, params)
+        if options.mode == 'live':
+            self.calculate_live_params(now, representation, options)
         else:
             self.mediaDuration = datetime.timedelta(seconds=(
                 old_div(representation.mediaDuration, representation.timescale)))
 
-    def calculate_live_params(self, mode, now, representation, params):
-        try:
-            self.timeShiftBufferDepth = int(params.get(
-                'depth', str(self.DEFAULT_TIMESHIFT_BUFFER_DEPTH)), 10)
-        except ValueError:
+    def calculate_live_params(self,
+                              now: datetime.datetime,
+                              representation: Representation,
+                              options: OptionsContainer) -> None:
+        publishTime = now.replace(microsecond=0)
+        self.timeShiftBufferDepth = options.timeShiftBufferDepth
+        if not self.timeShiftBufferDepth:
             self.timeShiftBufferDepth = self.DEFAULT_TIMESHIFT_BUFFER_DEPTH
-        startParam = params.get('start', 'today')
-        if startParam == 'today':
-            self.availabilityStartTime = now.replace(
+        if options.availabilityStartTime == 'today':
+            self.availabilityStartTime = publishTime.replace(
                 hour=0, minute=0, second=0, microsecond=0)
-            if now.hour == 0 and now.minute == 0:
+            if publishTime.hour == 0 and publishTime.minute == 0:
                 self.availabilityStartTime -= datetime.timedelta(days=1)
-        elif startParam == 'now':
-            publishTime = now.replace(microsecond=0)
+        elif options.availabilityStartTime == 'now':
             self.availabilityStartTime = (
                 publishTime -
                 datetime.timedelta(seconds=self.DEFAULT_TIMESHIFT_BUFFER_DEPTH))
-        elif startParam == 'epoch':
-            self.availabilityStartTime = datetime.datetime(
-                1970, 1, 1, 0, 0, tzinfo=UTC())
         else:
-            try:
-                self.availabilityStartTime = from_isodatetime(startParam)
-            except ValueError as err:
-                logging.warning('Failed to parse availabilityStartTime: %s', err)
-                self.availabilityStartTime = now.replace(
-                    hour=0, minute=0, second=0, microsecond=0)
-                if now.hour == 0 and now.minute == 0:
-                    self.availabilityStartTime -= datetime.timedelta(days=1)
+            self.availabilityStartTime = options.availabilityStartTime
         self.elapsedTime = now - self.availabilityStartTime
+        logging.debug('calculate_live_params elapsed=%s now=%s availabilityStartTime=%s',
+                      self.elapsedTime, now, self.availabilityStartTime)
+        if self.elapsedTime.total_seconds() == 0:
+            logging.info('Elapsed time is zero, moving availabilityStartTime back one day')
+            self.elapsedTime = datetime.timedelta(days=1)
+            self.availabilityStartTime -= self.elapsedTime
         if self.elapsedTime.total_seconds() < self.timeShiftBufferDepth:
-            self.timeShiftBufferDepth = self.elapsedTime.total_seconds()
-        minimumUpdatePeriod = 0
+            self.timeShiftBufferDepth = int(self.elapsedTime.total_seconds())
         default_mup = (old_div(2.0 * representation.segment_duration,
                        representation.timescale))
-        try:
-            minimumUpdatePeriod = float(params.get('mup', default_mup))
-        except ValueError:
-            pass
-        if minimumUpdatePeriod > 0:
-            self.minimumUpdatePeriod = minimumUpdatePeriod
-        else:
+        self.minimumUpdatePeriod = options.minimumUpdatePeriod
+        if self.minimumUpdatePeriod is None:
             self.minimumUpdatePeriod = default_mup
+        elif self.minimumUpdatePeriod <= 0:
+            self.minimumUpdatePeriod = None
 
     def generate_manifest_context(self):
         if self.mode == 'live':

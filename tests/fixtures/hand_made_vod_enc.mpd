@@ -3,7 +3,7 @@
   <ProgramInformation>
     <Title>Big Buck Bunny</Title>
   </ProgramInformation>
-  <Location>http://unit.test/dash/vod/fixtures/hand_made.mpd?drm=all&amp;acodec=mp4a</Location>
+  <Location>http://unit.test/dash/vod/fixtures/hand_made.mpd?acodec=mp4a&amp;drm=all</Location>
   <Period start="PT0S" id="p0">
     <BaseURL>http://unit.test/dash/vod/fixtures/</BaseURL>
     <AdaptationSet mimeType="video/mp4" contentType="video" segmentAlignment="true" startWithSAP="1" maxWidth="1920" maxHeight="1080" maxFrameRate="24" par="16:9">

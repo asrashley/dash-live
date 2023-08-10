@@ -22,7 +22,6 @@
 
 import datetime
 import io
-import os
 import logging
 import unittest
 from unittest.mock import patch
@@ -33,7 +32,7 @@ import flask
 from dashlive.server import manifests, models
 from dashlive.server.requesthandler.base import RequestHandlerBase
 from dashlive.server.options.drm_options import DrmLocation, PlayreadyVersion
-from dashlive.utils.date_time import UTC, toIsoDateTime, from_isodatetime
+from dashlive.utils.date_time import UTC, to_iso_datetime, from_isodatetime
 from dashlive.utils.objects import dict_to_cgi_params
 
 from .flask_base import FlaskTestBase
@@ -65,7 +64,7 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
         url = baseurl + '?failures=foo'
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 400)
-        url = baseurl + '?m404=foo'
+        url = baseurl + '?merr=404=foo'
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 400)
 
@@ -82,13 +81,6 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
         self.setup_media()
         self.logout_user()
         filename = 'hand_made.mpd'
-        manifest = manifests.manifest[filename]
-        drm_options = None
-        for o in manifest.get_cgi_options():
-            if o[0] == 'drm':
-                drm_options = o[1]
-                break
-        self.assertIsNotNone(drm_options)
         self.assertGreaterThan(models.MediaFile.count(), 0)
         ref_now = self.real_datetime_class(2019, 1, 1, 4, 5, 6, tzinfo=UTC())
         ref_today = self.real_datetime_class(2019, 1, 1, tzinfo=UTC())
@@ -110,8 +102,13 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
         ]
         msg = r'When start="{}" is used, expected MPD@availabilityStartTime to be {} but was {}'
         for option, now, start_time in testcases:
-            def mocked_log(*args):
+            def mocked_warning(*args):
                 self.assertEqual(option, '2019-09-invalid-iso-datetime')
+
+            def mocked_info(*args):
+                self.assertIn('moving availabilityStartTime back one day', args[0])
+                self.assertEqual(now, ref_today)
+
             with self.mock_datetime_now(now):
                 baseurl = flask.url_for(
                     'dash-mpd-v3',
@@ -120,9 +117,13 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
                     mode='live')
                 if option:
                     baseurl += '?start=' + option
-                with unittest.mock.patch.object(logging, 'warning', mocked_log):
-                    response = self.client.get(baseurl)
-                    self.assertEqual(response.status_code, 200)
+                with unittest.mock.patch.object(logging, 'warning', mocked_warning):
+                    with unittest.mock.patch.object(logging, 'info', mocked_info):
+                        response = self.client.get(baseurl)
+                if 'invalid-iso' in option:
+                    self.assertEqual(response.status_code, 400)
+                    continue
+                self.assertEqual(response.status_code, 200)
                 xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
                 dv = ViewsTestDashValidator(
                     http_client=self.client, mode='live', xml=xml.getroot(),
@@ -136,11 +137,12 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
                     msg=msg.format(
                         option, start_time.isoformat(),
                         dv.manifest.availabilityStartTime.isoformat()))
-                with unittest.mock.patch.object(logging, 'warning', mocked_log):
-                    head = self.client.head(baseurl)
-                    self.assertEqual(
-                        head.headers['Content-Length'],
-                        response.headers['Content-Length'])
+                with unittest.mock.patch.object(logging, 'warning', mocked_warning):
+                    with unittest.mock.patch.object(logging, 'info', mocked_info):
+                        head = self.client.head(baseurl)
+                self.assertEqual(
+                    head.headers['Content-Length'],
+                    response.headers['Content-Length'])
 
     def test_create_manifest_error(self):
         self.setup_media()
@@ -156,8 +158,8 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
             mode='live')
         for code in [404, 410, 503, 504]:
             params = {
-                'm{0:03d}'.format(code): toIsoDateTime(active),
-                'start': toIsoDateTime(start),
+                'merr': '{0:3d}={1}'.format(code, to_iso_datetime(active)),
+                'start': to_iso_datetime(start),
                 'mup': '45',
             }
             url = baseurl + dict_to_cgi_params(params)
@@ -186,30 +188,27 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
         self.logout_user()
         filename = 'hand_made.mpd'
         manifest = manifests.manifest[filename]
-        drm_options = None
-        for o in manifest.get_cgi_options():
-            if o[0] == 'drm':
-                drm_options = o[1]
-                break
+        drm_options = manifest.get_cgi_query_combinations('vod', only={'drmSelection'})
         self.assertIsNotNone(drm_options)
         self.assertGreaterThan(models.MediaFile.count(), 0)
         total_tests = len(drm_options)
         test_count = 0
+        baseurl = flask.url_for(
+            'dash-mpd-v3', manifest=filename, stream=self.FIXTURES_PATH.name, mode='vod')
         for drm_opt in drm_options:
             self.progress(test_count, total_tests)
             test_count += 1
-            baseurl = flask.url_for(
-                'dash-mpd-v3', manifest=filename, stream=self.FIXTURES_PATH.name, mode='vod')
-            baseurl += '?' + drm_opt
-            response = self.client.get(baseurl)
+            mpd_url = baseurl + drm_opt
+            # print('test_get_vod_media_using_live_profile', mpd_url)
+            response = self.client.get(mpd_url)
             self.assertEqual(response.status_code, 200)
-            encrypted = drm_opt != 'drm=none'
+            encrypted = ('drm=none' not in drm_opt) and ('drm=' in drm_opt)
             xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
             mpd = ViewsTestDashValidator(
                 http_client=self.client, mode='vod', xml=xml.getroot(),
-                url=baseurl, encrypted=encrypted)
+                url=mpd_url, encrypted=encrypted)
             mpd.validate()
-            head = self.client.head(baseurl)
+            head = self.client.head(mpd_url)
             msg = r'Expected HEAD.contentLength={0} == GET.contentLength={1} for URL {2}'.format(
                 head.headers['Content-Length'], response.headers['Content-Length'],
                 baseurl)
@@ -232,8 +231,10 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
                 drm_options.append('drm=playready')
                 continue
             for version in PlayreadyVersion.cgi_choices:
+                if version is None:
+                    continue
                 # Playready version 1.0 only allows mspr:pro element
-                if version < 2.0 and choice[1] != 'pro':
+                if float(version) < 2.0 and choice[1] != 'pro':
                     continue
                 drm_options.append(f'drm=playready-{choice[1]}&playready_version={version}')
         for choice in DrmLocation.cgi_choices:
@@ -250,7 +251,7 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
             self.progress(test_count, total_tests)
             test_count += 1
             now = datetime.datetime.now(tz=UTC())
-            availabilityStartTime = toIsoDateTime(
+            availabilityStartTime = to_iso_datetime(
                 now - datetime.timedelta(minutes=(1 + (test_count % 20))))
             baseurl = flask.url_for(
                 'dash-mpd-v3', mode='live', manifest=filename, stream=self.FIXTURES_PATH.name)
@@ -267,6 +268,8 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
             self.assertEqual(response.status_code, 200)
             encrypted = drm_opt != "drm=none"
             xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
+            # print(baseurl)
+            # print(response.text)
             mpd = ViewsTestDashValidator(
                 http_client=self.client, mode="live", xml=xml.getroot(),
                 url=baseurl, encrypted=encrypted)
@@ -307,35 +310,51 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
         self.assertEqual(resp.status_code, 404)
 
     def test_injected_http_error_codes(self):
-        self.setup_media()
+        self.setup_media(with_subs=True)
         self.logout_user()
         self.assertGreaterThan(models.MediaFile.count(), 0)
-        media_files = models.MediaFile.search(max_items=1)
-        for seg in range(1, 6):
-            url = flask.url_for(
-                "dash-media",
-                mode="vod",
-                stream=self.FIXTURES_PATH.name,
-                filename=media_files[0].representation.id,
-                segment_num=seg,
-                ext="mp4")
-            response = self.client.get(url)
-            self.assertEqual(response.status_code, 200)
-            for code in [404, 410, 503, 504]:
-                # 5xx errors are only returned "failures" number of times.
-                # This means that the request for segment 5 will succeed
-                if code < 500 and seg in {1, 3, 5}:
-                    status = code
-                elif code >= 500 and seg in {1, 3}:
-                    status = code
-                else:
-                    status = 200
-                query_string = {
-                    f'{code}': '1,3,5',
-                    'failures': 2,
-                }
+        media_files = [
+            models.MediaFile.search(max_items=1, content_type='video')[0],
+            models.MediaFile.search(max_items=1, content_type='audio')[0],
+            models.MediaFile.search(max_items=1, content_type='text')[0],
+        ]
+        for mf in media_files:
+            if mf.content_type == 'video':
+                param = 'verr'
+            elif mf.content_type == 'audio':
+                param = 'aerr'
+            else:
+                param = 'terr'
+            for seg in range(1, 6):
+                if mf.content_type == 'text' and seg > 2:
+                    # text file fixture has only 2 segments
+                    continue
+                url = flask.url_for(
+                    "dash-media",
+                    mode="vod",
+                    stream=self.FIXTURES_PATH.name,
+                    filename=mf.representation.id,
+                    segment_num=seg,
+                    ext="mp4")
+                response = self.client.get(url)
+                self.assertEqual(response.status_code, 200)
+                for code in [404, 410, 503, 504]:
+                    # 5xx errors are only returned "failures" number of times.
+                    # This means that the request for segment 5 will succeed
+                    if code < 500 and seg in {1, 3, 5}:
+                        status = code
+                    elif code >= 500 and seg in {1, 3}:
+                        status = code
+                    else:
+                        status = 200
+                    query_string = {
+                        param: f'{code}=1,{code}=3,{code}=5',
+                        'failures': 2,
+                    }
                 resp = self.client.get(url, query_string=query_string)
-                self.assertEqual(resp.status_code, status)
+                self.assertEqual(
+                    resp.status_code, status,
+                    msg=f'{url}: Expected HTTP status {status} but found {resp.status_code}')
 
     def test_video_corruption(self):
         self.setup_media()
@@ -352,7 +371,7 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
                 ext="m4v")
             clean = self.client.get(url)
             self.assertEqual(clean.status_code, 200)
-            corrupt = self.client.get(url, query_string={'corrupt': '1,2'})
+            corrupt = self.client.get(url, query_string={'vcorrupt': '1,2'})
             self.assertEqual(corrupt.status_code, 200)
             if seg < 3:
                 self.assertBuffersNotEqual(
@@ -376,7 +395,7 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
                 ext="m4a")
             clean = self.client.get(url)
             self.assertEqual(clean.status_code, 200)
-            corrupt = self.client.get(url, query_string={'corrupt': '1,2'})
+            corrupt = self.client.get(url, query_string={'vcorrupt': '1,2'})
             self.assertEqual(corrupt.status_code, 200)
             self.assertBuffersEqual(
                 clean.get_data(as_text=False),
@@ -420,14 +439,7 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
             self.assertNotIn("Access-Control-Allow-Origin", headers)
 
 
-if os.environ.get("TESTS"):
-    def load_tests(loader, tests, pattern):
-        logging.basicConfig()
-        # logging.getLogger().setLevel(logging.DEBUG)
-        # logging.getLogger('mp4').setLevel(logging.INFO)
-        return unittest.loader.TestLoader().loadTestsFromNames(
-            os.environ["TESTS"].split(','),
-            TestHandlers)
-
 if __name__ == '__main__':
+    logging.basicConfig()
+    logging.getLogger().setLevel(logging.INFO)
     unittest.main()

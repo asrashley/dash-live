@@ -30,14 +30,11 @@ class PingPongEvents(RepeatingEventBase):
 
     PREFIX = "ping"
 
-    def __init__(self, request):
-        super(PingPongEvents, self).__init__(self.PREFIX + "_", request)
-
-    def get_manifest_event_payload(self, event_id, presentation_time) -> str:
+    def get_manifest_event_payload(self, event_id: int, presentation_time) -> str:
         if (event_id & 1) == 0:
             return 'ping'
         return 'pong'
 
-    def get_emsg_event_payload(self, event_id, presentation_time) -> str:
-        data = 'ping' if (event_id & 1) == 0 else 'pong'
+    def get_emsg_event_payload(self, event_id: int, presentation_time) -> bytes:
+        data = b'ping' if (event_id & 1) == 0 else b'pong'
         return data

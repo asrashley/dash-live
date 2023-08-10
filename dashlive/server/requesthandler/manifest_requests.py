@@ -30,7 +30,7 @@ import flask
 from dashlive.mpeg.dash.profiles import primary_profiles
 from dashlive.server import manifests
 from dashlive.server.models import Stream
-from dashlive.utils.date_time import from_isodatetime
+from dashlive.server.options.container import OptionsContainer
 from dashlive.utils.objects import dict_to_cgi_params
 
 from .base import RequestHandlerBase
@@ -61,14 +61,16 @@ class ServeManifest(RequestHandlerBase):
             return flask.make_response(f'{manifest} not found', 404)
         context = self.create_context(**kwargs)
         try:
-            dash = self.calculate_dash_params(mpd_url=manifest, mode=mode)
+            options = self.calculate_options(mode)
         except ValueError as e:
             return flask.make_response(f'Invalid CGI parameters: {e}', 400)
+        options.mode = mode
+        options.remove_unused_parameters(mode)
+        dash = self.calculate_dash_params(mpd_url=manifest, options=options)
         context.update(dash)
-        if mode == 'live':
-            response = self.check_for_synthetic_manifest_error(context)
-            if response is not None:
-                return response
+        response = self.check_for_synthetic_manifest_error(options, context)
+        if response is not None:
+            return response
         body = flask.render_template(f'manifests/{manifest}', **context)
         headers = {
             'Content-Type': 'application/dash+xml',
@@ -77,35 +79,27 @@ class ServeManifest(RequestHandlerBase):
         self.add_allowed_origins(headers)
         return flask.make_response((body, 200, headers))
 
-    def check_for_synthetic_manifest_error(self, context) -> Optional[flask.Response]:
-        try:
-            num_failures = int(flask.request.args.get('failures', '1'), 10)
-        except ValueError as err:
-            return flask.make_response(f'Invalid CGI parameters: {err}', 400)
-        for code in self.INJECTED_ERROR_CODES:
-            if flask.request.args.get('m%03d' % code) is None:
+    def check_for_synthetic_manifest_error(self, options: OptionsContainer,
+                                           context: dict) -> Optional[flask.Response]:
+        for item in options.manifestErrors:
+            code, pos = item
+            if isinstance(pos, int):
+                if pos != options.updateCount:
+                    continue
+            else:
+                tm = options.availabilityStartTime.replace(
+                    hour=pos.hour, minute=pos.minute, second=pos.second)
+                tm2 = tm + datetime.timedelta(seconds=options.minimumUpdatePeriod)
+                if context['now'] < tm or context['now'] > tm2:
+                    continue
+            if (
+                    code >= 500 and
+                    options.failureCount is not None and
+                    self.increment_error_counter('manifest', code) > options.failureCount
+            ):
+                self.reset_error_counter('manifest', code)
                 continue
-            dates = flask.request.args.get('m%03d' % code, "").split(',')
-            for d in dates:
-                try:
-                    tm = from_isodatetime(d)
-                except ValueError as e:
-                    return flask.make_response(
-                        f'Invalid CGI parameters: {e}', 400)
-                tm = context['availabilityStartTime'].replace(
-                    hour=tm.hour, minute=tm.minute, second=tm.second)
-                try:
-                    tm2 = (tm + datetime.timedelta(
-                        seconds=context['minimumUpdatePeriod']))
-                except KeyError:
-                    tm2 = (tm + datetime.timedelta(
-                        seconds=context['minimumUpdatePeriod']))
-                if context['now'] >= tm and context['now'] <= tm2:
-                    if (code >= 500 and
-                            self.increment_error_counter('manifest', code) > num_failures):
-                        self.reset_error_counter('manifest', code)
-                    else:
-                        return flask.make_response(f'Synthetic {code} for manifest', code)
+            return flask.make_response(f'Synthetic {code} for manifest', code)
         return None
 
 
@@ -123,7 +117,7 @@ class LegacyManifestUrl(ServeManifest):
 
     def get(self, manifest, **kwargs):
         try:
-            name, params = self.legacy_manifest_names[manifest]
+            name, init_params = self.legacy_manifest_names[manifest]
             directory = kwargs.get("stream", "bbb")
             stream = Stream.get(directory=directory)
             if stream is None:
@@ -136,6 +130,7 @@ class LegacyManifestUrl(ServeManifest):
             url = flask.url_for(
                 'dash-mpd-v3', manifest=name,
                 stream=stream.directory, mode=mode)
+            params = dict(**init_params)
             params.update(flask.request.args)
             url += dict_to_cgi_params(params)
             return flask.redirect(url)

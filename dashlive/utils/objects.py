@@ -26,7 +26,7 @@ from collections.abc import Iterable
 import datetime
 import decimal
 
-from dashlive.utils.date_time import toIsoDateTime, toIsoDuration
+from dashlive.utils.date_time import to_iso_datetime, toIsoDuration
 
 def flatten(value, convert_numbers=False, pure=True):
     """
@@ -47,11 +47,11 @@ def flatten(value, convert_numbers=False, pure=True):
     if isinstance(value, Iterable):
         return flatten_iterable(value, convert_numbers)
     if isinstance(value, (datetime.date, datetime.datetime, datetime.time)):
-        return toIsoDateTime(value)
+        return to_iso_datetime(value)
     if isinstance(value, (datetime.timedelta)):
         return toIsoDuration(value)
     if convert_numbers and isinstance(value, int):
-        return '%d' % value
+        return f'{value:d}'
     if isinstance(value, decimal.Decimal):
         return float(value)
     if isinstance(value, (list, set, tuple)):
@@ -120,7 +120,7 @@ def as_python(value):
         else:
             value = ''.join(['"', value, '"'])
     elif isinstance(value, (datetime.date, datetime.datetime, datetime.time)):
-        value = 'utils.from_isodatetime("%s")' % (toIsoDateTime(value))
+        value = 'utils.from_isodatetime("%s")' % (to_iso_datetime(value))
     elif isinstance(value, (datetime.timedelta)):
         value = 'utils.from_isodatetime("%s")' % (toIsoDuration(value))
     elif isinstance(value, decimal.Decimal):
@@ -141,15 +141,18 @@ def pick_items(src, keys):
             pass
     return rv
 
-def dict_to_cgi_params(params):
+def dict_to_cgi_params(params: dict[str, str]) -> str:
     """
     Convert dictionary into a CGI parameter string
     """
     if not params:
         return ''
+    keys = list(params.keys())
+    keys.sort()
     lst = []
-    for k, v in params.items():
-        lst.append('%s=%s' % (k, v))
+    for name in keys:
+        val = params[name]
+        lst.append(f'{name}={val}')
     return '?' + '&'.join(lst)
 
 def merge(*items):

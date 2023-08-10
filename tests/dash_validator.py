@@ -49,7 +49,7 @@ from dashlive.drm.playready import PlayReady
 from dashlive.testcase.mixin import HideMixinsFilter, TestCaseMixin
 from dashlive.mpeg import MPEG_TIMEBASE, mp4
 from dashlive import scte35
-from dashlive.utils.date_time import from_isodatetime, scale_timedelta, toIsoDateTime, UTC
+from dashlive.utils.date_time import from_isodatetime, scale_timedelta, to_iso_datetime, UTC
 from dashlive.utils.binary import Binary
 from dashlive.utils.buffered_reader import BufferedReader
 
@@ -242,7 +242,7 @@ class DashElement(with_metaclass(ABCMeta, TestCaseMixin)):
             root, ext = os.path.splitext(default)
         now = self.options.start_time.replace(microsecond=0)
         dest = os.path.join(self.options.dest,
-                            toIsoDateTime(now).replace(':', '-'))
+                            to_iso_datetime(now).replace(':', '-'))
         if prefix is not None and bandwidth is not None:
             filename = '{0}_{1}.mp4'.format(prefix, bandwidth)
         else:
@@ -985,10 +985,11 @@ class Representation(RepresentationBaseType):
             self.generate_segments_live_profile()
         self.checkIsNotNone(self.init_segment)
         self.checkIsNotNone(self.media_segments)
-        self.checkGreaterThan(
-            len(self.media_segments), 0,
-            'Failed to generate any segments for Representation {0} of {1}'.format(
-                self.unique_id(), self.mpd.url))
+        if self.mode != "live":
+            self.checkGreaterThan(
+                len(self.media_segments), 0,
+                'Failed to generate any segments for Representation {0} for MPD {1}'.format(
+                    self.unique_id(), self.mpd.url))
 
     def init_seg_url(self):
         if self.mode == 'odvod':
@@ -1029,14 +1030,19 @@ class Representation(RepresentationBaseType):
                 if decode_time is None:
                     decode_time = timeline.segments[0].start
             else:
-                self.checkIsNotNone(self.mpd.timeShiftBufferDepth)
-                self.checkGreaterThan(self.mpd.timeShiftBufferDepth.total_seconds(),
-                                      old_div(seg_duration, self.segmentTemplate.timescale))
+                self.checkIsNotNone(
+                    self.mpd.timeShiftBufferDepth,
+                    msg='MPD@timeShiftBufferDepth is required for a live stream')
                 num_segments = math.floor(old_div(self.mpd.timeShiftBufferDepth.total_seconds() *
                                           self.segmentTemplate.timescale, seg_duration))
                 num_segments = int(num_segments)
+                if num_segments == 0:
+                    self.assertEqual(self.mpd.timeShiftBufferDepth.total_seconds(), 0)
+                    return
+                self.checkGreaterThan(
+                    self.mpd.timeShiftBufferDepth.total_seconds(),
+                    old_div(seg_duration, self.segmentTemplate.timescale))
                 self.checkGreaterThan(num_segments, 0)
-                num_segments = min(num_segments, 25)
             now = datetime.datetime.now(tz=UTC())
             elapsed_time = now - self.mpd.availabilityStartTime
             elapsed_tc = scale_timedelta(elapsed_time, self.segmentTemplate.timescale, 1)
@@ -1069,6 +1075,7 @@ class Representation(RepresentationBaseType):
             tolerance = old_div(self.segmentTemplate.timescale, frameRate)
         else:
             tolerance = old_div(info.timescale, frameRate)
+        num_segments = min(num_segments, 20)
         self.log.debug('Generating %d MediaSegments', num_segments)
         if timeline is not None:
             msg = r'Expected segment segmentTimeline to have at least {} items, found {}'.format(
@@ -1185,7 +1192,7 @@ class Representation(RepresentationBaseType):
                 cp_elts = self.contentProtection
             else:
                 cp_elts = self.parent.contentProtection
-            if self.parent.contentType in {'audio', 'video'}:
+            if self.parent.contentType == 'video':
                 self.checkGreaterThan(
                     len(cp_elts), 0,
                     msg='An encrypted stream must have ContentProtection elements')

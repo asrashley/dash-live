@@ -26,12 +26,14 @@ from past.utils import old_div
 import datetime
 import io
 import logging
+from typing import Optional
 
 import flask
 
 from dashlive.mpeg import mp4
 from dashlive.server import models
 from dashlive.server.events.factory import EventFactory
+from dashlive.server.options.container import OptionsContainer
 from dashlive.utils.date_time import UTC, scale_timedelta
 from dashlive.utils.buffered_reader import BufferedReader
 
@@ -56,8 +58,10 @@ class OnDemandMedia(RequestHandlerBase):
         try:
             start, end, status, headers = self.get_http_range(current_media_file.blob.size)
         except ValueError as ve:
+            logging.warning('Invalid HTTP range: %s', ve)
             return flask.make_response(f'Invalid HTTP range "{ve}"', 400)
         if start is None:
+            logging.warning('HTTP range not specified')
             return flask.make_response('HTTP range must be specified', 400)
         if ext == 'm4a':
             headers['Content-Type'] = 'audio/mp4'
@@ -85,25 +89,26 @@ class LiveMedia(RequestHandlerBase):
     def get(self, mode: str, stream: str, filename: str,
             segment_num: str, ext: str) -> flask.Response:
         logging.debug('LiveMedia.get: %s %s %s %s', stream, filename, segment_num, ext)
+        # print('LiveMedia.get', flask.request.url)
         representation = current_media_file.representation
         audio = None
-        mf = current_media_file
         try:
-            # TODO: add subtitle support
-            if mf.content_type == 'audio':
-                audio = self.calculate_audio_context(
-                    current_stream, mode, representation.encrypted)
-                assert audio.content_type == 'audio'
-                video = self.calculate_video_context(
-                    current_stream, mode, representation.encrypted, max_items=1)
-                assert video.content_type == 'video'
-                adp_set = audio
-            else:
-                video = self.calculate_video_context(
-                    current_stream, mode, representation.encrypted)
-                adp_set = video
-        except ValueError as e:
-            return flask.make_response(f'Invalid CGI parameters: {e}', 400)
+            options = self.calculate_options(mode)
+        except ValueError as err:
+            logging.error('Invalid CGI parameters: %s', err)
+            return flask.make_response(f'Invalid CGI parameters: {err}', 400)
+        options.encrypted = representation.encrypted
+        mf = current_media_file
+        # TODO: add subtitle support
+        if mf.content_type == 'audio':
+            audio = self.calculate_audio_context(current_stream, options)
+            assert audio.content_type == 'audio'
+            video = self.calculate_video_context(current_stream, options, max_items=1)
+            assert video.content_type == 'video'
+            adp_set = audio
+        else:
+            video = self.calculate_video_context(current_stream, options)
+            adp_set = video
         if video.representations:
             ref_representation = video.representations[0]
         else:
@@ -116,30 +121,9 @@ class LiveMedia(RequestHandlerBase):
                 segment_num = int(segment_num, 10)
             except ValueError as err:
                 return flask.make_response(f'Segment not found: {err}', 404)
-            for code in self.INJECTED_ERROR_CODES:
-                err_segs = flask.request.args.get(f'{code:03d}', None)
-                if err_segs is None:
-                    continue
-                try:
-                    num_failures = int(
-                        flask.request.args.get('failures', '1'), 10)
-                except ValueError:
-                    msg = 'Invalid value "{flask.request.args["failures"]}" for failures parameter'
-                    return flask.make_response((msg, 400,))
-                try:
-                    for d in err_segs.split(','):
-                        if int(d, 10) != segment_num:
-                            continue
-                        # Only fail 5xx errors "num_failures" times
-                        if (code >= 500 and
-                                self.increment_error_counter('media', code) > num_failures):
-                            self.reset_error_counter('media', code)
-                            continue
-                        msg = f'Synthetic {code} for segment {segment_num}'
-                        return flask.make_response((msg, code,))
-                except ValueError as e:
-                    msg = f'Invalid CGI parameter value for {code} "{err_segs}": {e}'
-                    return flask.make_response((msg, 400,))
+            err = self.check_for_synthetic_http_error(mf.content_type, segment_num, options)
+            if err:
+                return err
             if mode == 'live':
                 # 5.3.9.5.3 Media Segment information
                 # For services with MPD@type='dynamic', the Segment availability
@@ -154,7 +138,7 @@ class LiveMedia(RequestHandlerBase):
                 # Media Segment and the value of the attribute @timeShiftBufferDepth
                 # for this Representation
                 now = datetime.datetime.now(tz=UTC())
-                timing = DashTiming(mode, now, ref_representation, flask.request.args)
+                timing = DashTiming(now, ref_representation, options)
                 adp_set.set_dash_timing(timing)
                 lastFragment = adp_set.startNumber + int(scale_timedelta(
                     timing.elapsedTime, representation.timescale, representation.segment_duration))
@@ -173,36 +157,37 @@ class LiveMedia(RequestHandlerBase):
                         timecode)
                 except ValueError as err:
                     logging.warning('ValueError: %s', err)
-                    self.response.write('Segment %d not found (valid range= %d->%d)' %
-                                        (segment_num, firstFragment, lastFragment))
-                    self.response.set_status(404)
-                    return
+                    msg = f'Segment {segment_num} not found (valid range= {firstFragment} -> {lastFragment})'
+                    return flask.make_response(msg, 404)
             else:
                 firstFragment = adp_set.startNumber
                 lastFragment = firstFragment + representation.num_segments - 1
                 mod_segment = 1 + segment_num - adp_set.startNumber
             if segment_num < firstFragment or segment_num > lastFragment:
+                logging.info('now=%s', now)
+                logging.info(
+                    'Request for fragment %d that is not available (%d -> %d)',
+                    segment_num, firstFragment, lastFragment)
                 return flask.make_response(
                     f'Segment {segment_num} not found (valid range= {firstFragment}->{lastFragment})',
                     404)
         assert mod_segment >= 0 and mod_segment <= representation.num_segments
         frag = representation.segments[mod_segment]
-        options = mp4.Options(cache_encoded=True)
+        mp4_options = mp4.Options(
+            cache_encoded=True, bug_compatibility=options.bugCompatibility)
         if representation.encrypted:
-            options.iv_size = representation.iv_size
-        if flask.request.args.get('bugs', None) is not None:
-            options.bug_compatibility = flask.request.args['bugs']
+            mp4_options.iv_size = representation.iv_size
         with current_media_file.open_file(start=frag.pos, buffer_size=16384) as reader:
             src = BufferedReader(
                 reader, offset=frag.pos, size=frag.size, buffersize=16384)
             atom = mp4.Wrapper(
-                atom_type='wrap', children=mp4.Mp4Atom.load(src, options=options))
-        if adp_set.content_type == 'video' and flask.request.args.get('corrupt') is not None:
+                atom_type='wrap', children=mp4.Mp4Atom.load(src, options=mp4_options))
+        if adp_set.content_type == 'video' and options.videoCorruption:
             atom.moof.traf.trun.parse_samples(
                 src, representation.nalLengthFieldLength)
         if segment_num == 0 and representation.encrypted:
             keys = models.Key.get_kids(representation.kids)
-            drms = self.generate_drm_dict(stream, keys)
+            drms = self.generate_drm_dict(stream, keys, options)
             for drm in list(drms.values()):
                 if 'moov' in drm:
                     pssh = drm["moov"](representation, keys)
@@ -236,7 +221,7 @@ class LiveMedia(RequestHandlerBase):
         moof_modified = False
         traf_modified = False
         if segment_num > 0 and adp_set.content_type == 'video':
-            event_generators = EventFactory.create_event_generators(flask.request)
+            event_generators = EventFactory.create_event_generators(options)
             if event_generators:
                 logging.debug('creating emsg boxes')
                 moof_idx = atom.index('moof')
@@ -253,7 +238,7 @@ class LiveMedia(RequestHandlerBase):
                         atom.children.insert(moof_idx + idx, emsg)
                         moof_modified = True
         if representation.encrypted and segment_num > 0:
-            traf_modified = self.update_traf_if_required(atom.moof.traf)
+            traf_modified = self.update_traf_if_required(options, atom.moof.traf)
             moof_modified = moof_modified or traf_modified
         if moof_modified:
             tfhd = atom.moof.traf.find_child('tfhd')
@@ -270,13 +255,8 @@ class LiveMedia(RequestHandlerBase):
         data = io.BytesIO()
         for child in atom.children:
             child.encode(data)
-        if mf.content_type == 'video' and flask.request.args.get('corrupt') is not None:
-            try:
-                self.apply_video_corruption(representation, segment_num, atom, data)
-            except ValueError as e:
-                corrupt = flask.request.args.get('corrupt')
-                return flask.make_response(
-                    f'Invalid CGI parameter {corrupt}: {e}', 400)
+        if mf.content_type == 'video' and options.videoCorruption:
+            self.apply_video_corruption(representation, segment_num, atom, data, options)
         data = data.getvalue()
         headers = {
             'Accept-Ranges': 'bytes',
@@ -293,41 +273,64 @@ class LiveMedia(RequestHandlerBase):
         self.add_allowed_origins(headers)
         return flask.make_response((data, status, headers))
 
-    def update_traf_if_required(self, traf):
+    def update_traf_if_required(self, options: OptionsContainer, traf: mp4.BoxWithChildren) -> bool:
         """
         Insert DRM specific data into the traf box, if required
         """
         modified = False
-        for _, drm, __ in self.generate_drm_location_tuples():
-            modif = drm.update_traf_if_required(flask.request.args, traf)
+        for _, drm, __ in self.generate_drm_location_tuples(options):
+            modif = drm.update_traf_if_required(options, traf)
             modified = modified or modif
         return modified
 
-    def apply_video_corruption(self, representation, segment_num, atom, dest):
-        try:
-            corrupt_frames = int(flask.request.args.get('frames', '4'), 10)
-        except ValueError:
+    def check_for_synthetic_http_error(
+            self, content_type: str, seg_num: int,
+            options: OptionsContainer) -> Optional[flask.Response]:
+        if content_type == 'audio':
+            errs = options.audioErrors
+        elif content_type == 'video':
+            errs = options.videoErrors
+        else:
+            errs = options.textErrors
+        for item in errs:
+            code, pos = item
+            if pos != seg_num:
+                continue
+            if (
+                    code >= 500 and
+                    options.failureCount is not None and
+                    self.increment_error_counter(content_type, code) > options.failureCount
+            ):
+                self.reset_error_counter(content_type, code)
+                continue
+            return flask.make_response(f'Synthetic {code} for {content_type}', code)
+        return None
+
+    def apply_video_corruption(self, representation, segment_num, atom, dest, options):
+        if options.videoCorruptionFrameCount is None:
             corrupt_frames = 4
-        for d in flask.request.args.get('corrupt').split(','):
-            try:
-                d = int(d, 10)
-            except ValueError:
-                continue
-            if d != segment_num:
-                continue
-            for sample in atom.moof.traf.trun.samples:
-                if corrupt_frames <= 0:
-                    break
-                for nal in sample.nals:
-                    if nal.is_ref_frame and not nal.is_idr_frame:
-                        junk = b'junk'
-                        # put junk data in the last 20% of the NAL
-                        junk_count = nal.size // (5 * len(junk))
-                        if junk_count:
-                            junk_size = len(junk) * junk_count
-                            offset = nal.position + nal.size - junk_size
-                            dest.seek(offset)
-                            dest.write(junk_count * junk)
-                            corrupt_frames -= 1
-                            if corrupt_frames <= 0:
-                                break
+        else:
+            corrupt_frames = options.videoCorruptionFrameCount
+        try:
+            segments = [int(d, 10) for d in options.videoCorruption]
+        except ValueError as err:
+            logging.warning(f'Invalid options.videoCorruption value: {err}')
+            return
+        if segment_num not in segments:
+            return
+        for sample in atom.moof.traf.trun.samples:
+            if corrupt_frames <= 0:
+                return
+            for nal in sample.nals:
+                if nal.is_ref_frame and not nal.is_idr_frame:
+                    junk = b'junk'
+                    # put junk data in the last 20% of the NAL
+                    junk_count = nal.size // (5 * len(junk))
+                    if junk_count:
+                        junk_size = len(junk) * junk_count
+                        offset = nal.position + nal.size - junk_size
+                        dest.seek(offset)
+                        dest.write(junk_count * junk)
+                    corrupt_frames -= 1
+                    if corrupt_frames <= 0:
+                        return

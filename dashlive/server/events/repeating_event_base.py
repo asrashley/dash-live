@@ -22,13 +22,10 @@
 
 from __future__ import division
 from abc import abstractmethod
-from builtins import chr
-from builtins import range
 from past.utils import old_div
-from typing import Dict, List
 
 from dashlive.mpeg.dash.event_stream import EventStream
-from dashlive.mpeg import mp4
+from dashlive.mpeg.mp4 import EventMessageBox
 
 from .base import EventBase
 
@@ -37,7 +34,7 @@ class RepeatingEventBase(EventBase):
     A base class for events that repeat at a fixed interval
     """
 
-    def create_manifest_context(self, context: Dict) -> Dict:
+    def create_manifest_context(self, context: dict) -> dict:
         stream = EventStream(
             schemeIdUri=self.schemeIdUri,
             value=self.value,
@@ -61,7 +58,8 @@ class RepeatingEventBase(EventBase):
     def get_manifest_event_payload(self, index, presentation_time) -> str:
         return ""
 
-    def create_emsg_boxes(self, segment_num, mod_segment, moof, representation, **kwargs) -> List:
+    def create_emsg_boxes(self, segment_num, mod_segment, moof,
+                          representation, **kwargs) -> list[EventMessageBox]:
         if not self.inband:
             return []
         # start and end time of the fragment (representation timebase)
@@ -119,7 +117,7 @@ class RepeatingEventBase(EventBase):
                 kwargs['presentation_time_delta'] = time_delta
             else:
                 kwargs['presentation_time'] = presentation_time
-            retval.append(mp4.EventMessageBox(**kwargs))
+            retval.append(EventMessageBox(**kwargs))
             event_id += 1
             if self.count > 0 and event_id >= self.count:
                 break
@@ -127,5 +125,5 @@ class RepeatingEventBase(EventBase):
         return retval
 
     @abstractmethod
-    def get_emsg_event_payload(self, event_id, presentation_time):
-        return chr(0)
+    def get_emsg_event_payload(self, event_id, presentation_time) -> bytes:
+        ...

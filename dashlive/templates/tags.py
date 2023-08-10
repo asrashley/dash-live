@@ -28,7 +28,7 @@ import json
 from flask import Blueprint, current_app, url_for
 
 from dashlive.utils.objects import flatten_iterable
-from dashlive.utils.date_time import parse_date, toIsoDuration, toIsoDateTime
+from dashlive.utils.date_time import parse_date, toIsoDuration, to_iso_datetime
 
 class ScriptTag:
     SCRIPT_TEMPLATE = r'<script src="{js_filename}" type="text/javascript"></script>'
@@ -192,7 +192,7 @@ def sortedAttributes(value):
 
 @custom_tags.app_template_filter()
 def isoDateTime(value):
-    return toIsoDateTime(value)
+    return to_iso_datetime(value)
 
 @custom_tags.app_template_filter()
 def isoDuration(value):
@@ -208,3 +208,13 @@ def length(value):
 def import_script(filename: str) -> ScriptTag:
     debug = current_app.config['DEBUG']
     return ScriptTag(filename, debug)
+
+@custom_tags.app_template_global()
+def sort_icon(name: str, order: str, reverse: bool) -> str:
+    if name != order:
+        return ''
+    if reverse:
+        entity = '&and;'
+    else:
+        entity = '&or;'
+    return HtmlSafeString(f'<span class="float-right sort-arrow">{entity}</span>')
