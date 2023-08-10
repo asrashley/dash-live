@@ -12,12 +12,8 @@
     {%- if suggestedPresentationDelay %}
     suggestedPresentationDelay="{{suggestedPresentationDelay|isoDuration}}"
     {%- endif %}
-    {%- if availabilityStartTime %}
     availabilityStartTime="{{availabilityStartTime|isoDateTime}}"
-    {%- endif %}
-    {%- if timeShiftBufferDepth %}
     timeShiftBufferDepth="{{timeShiftBufferDepth|isoDuration}}"
-    {%- endif %}
   {%- else %}
     type="static"
   {%- endif %}

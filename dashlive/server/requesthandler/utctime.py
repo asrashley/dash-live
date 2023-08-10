@@ -21,11 +21,12 @@
 #############################################################################
 
 import datetime
+import logging
 import struct
 
 import flask
 
-from dashlive.utils.date_time import toIsoDateTime
+from dashlive.utils.date_time import to_iso_datetime
 from dashlive.utils.timezone import UTC
 
 from .base import RequestHandlerBase
@@ -35,20 +36,21 @@ class UTCTimeHandler(RequestHandlerBase):
         return self.get(format, **kwargs)
 
     def get(self, format, **kwargs):
-        now = datetime.datetime.now(tz=UTC())
         try:
-            drift = int(flask.request.args.get('drift', '0'), 10)
-            if drift:
-                now -= datetime.timedelta(seconds=drift)
-        except ValueError:
-            pass
+            options = self.calculate_options('live')
+        except ValueError as err:
+            logging.error('Invalid CGI parameters: %s', err)
+            return flask.make_response(f'Invalid CGI parameters: {err}', 400)
+        now = datetime.datetime.now(tz=UTC())
+        if options.clockDrift:
+            now -= datetime.timedelta(seconds=options.clockDrift)
         headers = {
             'Content-Type': 'text/plain',
             'Date': now.strftime(r'%a, %d %b %Y %H:%M:%S %Z'),
         }
         rv = ''
         if format == 'xsd':
-            rv = toIsoDateTime(now)
+            rv = to_iso_datetime(now)
         elif format == 'iso':
             # This code picks an obscure option from ISO 8601, so that a simple parser
             # will fail

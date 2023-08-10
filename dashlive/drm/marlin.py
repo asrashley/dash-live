@@ -20,23 +20,23 @@
 #
 #############################################################################
 
-from future import standard_library
-standard_library.install_aliases()
-import urllib.request
-import urllib.parse
-import urllib.error
+from typing import Optional
+
+from dashlive.mpeg.mp4 import ContentProtectionSpecificBox
+from dashlive.server.options.container import OptionsContainer
 
 from .base import DrmBase
 
 class Marlin(DrmBase):
     MPD_SYSTEM_ID = '5e629af5-38da-4063-8977-97ffbd9902d4'
 
-    def generate_manifest_context(self, stream, keys, cgi_params, la_url=None, locations=None):
+    def generate_manifest_context(self, stream, keys,
+                                  options: OptionsContainer,
+                                  la_url: Optional[str] = None,
+                                  locations: Optional[str] = None) -> dict:
         if la_url is None:
-            la_url = cgi_params.get('marlin_la_url')
-            if la_url is not None:
-                la_url = urllib.parse.unquote_plus(la_url)
-            else:
+            la_url = options.marlinLicenseUrl
+            if la_url is None:
                 la_url = stream.marlin_la_url
         return {
             'MarlinContentIds': True,
@@ -44,17 +44,17 @@ class Marlin(DrmBase):
             'scheme_id': self.dash_scheme_id(),
         }
 
-    def generate_pssh(self, representation, keys):
+    def generate_pssh(self, representation, keys) -> ContentProtectionSpecificBox:
         raise RuntimeError('generate_pssh has not been implemented for Marlin')
 
-    def dash_scheme_id(self):
+    def dash_scheme_id(self) -> str:
         """
         Returns the DASH schemeIdUri for Marlin
         """
-        return "urn:uuid:{0}".format(self.MPD_SYSTEM_ID)
+        return f'urn:uuid:{self.MPD_SYSTEM_ID}'
 
     @classmethod
-    def is_supported_scheme_id(cls, uri):
+    def is_supported_scheme_id(cls, uri: str) -> bool:
         uri = uri.lower()
         if not uri.startswith("urn:uuid:"):
             return False

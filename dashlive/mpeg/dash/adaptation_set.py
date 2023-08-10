@@ -22,7 +22,8 @@
 
 from __future__ import division
 from past.utils import old_div
-from builtins import object
+import time
+from typing import Optional
 
 from dashlive.mpeg.dash.event_stream import EventStream
 from dashlive.utils.objects import dict_to_cgi_params
@@ -31,12 +32,13 @@ from dashlive.utils.object_with_fields import ObjectWithFields
 
 from .representation import Representation
 
-class ContentComponent(object):
-    def __init__(self, id, content_type):
+class ContentComponent:
+    def __init__(self, id: int, content_type: str) -> None:
         self.id = id
         self.contentType = content_type
 
 class AdaptationSet(ObjectWithFields):
+    _NEXT_ID: Optional[int] = None
     OBJECT_FIELDS = {
         'event_streams': ListOf(EventStream),
         'representations': ListOf(Representation),
@@ -48,7 +50,7 @@ class AdaptationSet(ObjectWithFields):
         'segmentAlignment': True,
     }
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         """
         Required kwargs:
         mode
@@ -56,7 +58,7 @@ class AdaptationSet(ObjectWithFields):
         """
         super(AdaptationSet, self).__init__(**kwargs)
         defaults = {
-            'id': hash(self),
+            'id': AdaptationSet.get_next_id(),
             'representations': [],
             'event_streams': [],
         }
@@ -89,6 +91,14 @@ class AdaptationSet(ObjectWithFields):
         defaults['fileSuffix'] = suffix
         self.apply_defaults(defaults)
 
+    @classmethod
+    def get_next_id(cls) -> int:
+        if cls._NEXT_ID is None:
+            cls._NEXT_ID = hash(time.time())
+        rv = cls._NEXT_ID
+        cls._NEXT_ID += 1
+        return rv
+
     @property
     def contentComponent(self):
         return ContentComponent(self.id, self.content_type)
@@ -100,7 +110,7 @@ class AdaptationSet(ObjectWithFields):
                 kids.update(rep.kids)
         return kids
 
-    def append_cgi_params(self, params):
+    def append_cgi_params(self, params: dict[str, str]) -> None:
         if not params:
             return
         qs = dict_to_cgi_params(params)
@@ -138,7 +148,8 @@ class AdaptationSet(ObjectWithFields):
             self.maxFrameRate = max(
                 [a.frameRate for a in self.representations])
 
-    def set_reference_representation(self, ref_representation):
+    def set_reference_representation(self, ref_representation: Representation) -> None:
+        assert ref_representation is not None
         for rep in self.representations:
             rep.set_reference_representation(ref_representation)
 

@@ -20,17 +20,13 @@
 #
 #############################################################################
 
-from __future__ import division
-from future import standard_library
-standard_library.install_aliases()
 from abc import abstractmethod
 from builtins import str
 from past.builtins import basestring
 from past.utils import old_div
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, TypeAlias, Union
 
 import base64
-import copy
 import datetime
 import hashlib
 import hmac
@@ -50,20 +46,26 @@ from flask_login import current_user
 from dashlive.mpeg.dash.adaptation_set import AdaptationSet
 from dashlive.mpeg.dash.period import Period
 from dashlive.mpeg.dash.profiles import primary_profiles, additional_profiles
+from dashlive.drm.base import DrmBase
 from dashlive.drm.clearkey import ClearKey
 from dashlive.drm.playready import PlayReady
 from dashlive.drm.marlin import Marlin
 from dashlive.server import manifests, models
 from dashlive.server.events.factory import EventFactory
 from dashlive.server.routes import routes, Route
+from dashlive.server.options.container import OptionsContainer
+from dashlive.server.options.repository import OptionsRepository
+from dashlive.server.options.types import OptionUsage
 from dashlive.utils import objects
-from dashlive.utils.date_time import scale_timedelta, from_isodatetime, toIsoDateTime
+from dashlive.utils.date_time import scale_timedelta, to_iso_datetime
 from dashlive.utils.json_object import JsonObject
 from dashlive.utils.timezone import UTC
 
 from .dash_timing import DashTiming
 from .decorators import current_stream, is_ajax
 from .exceptions import CsrfFailureException
+
+DrmLocationTuple: TypeAlias = tuple[str, DrmBase, set[str]]
 
 class RequestHandlerBase(MethodView):
     CLIENT_COOKIE_NAME = 'dash'
@@ -239,43 +241,36 @@ class RequestHandlerBase(MethodView):
             return {'cenc', 'moov'}
         return {'cenc'}
 
-    def generate_drm_location_tuples(self):
+    def generate_drm_location_tuples(self, options: OptionsContainer) -> list[DrmLocationTuple]:
         """
         Returns list of tuples, where each entry is:
           * DRM name,
           * DRM implementation, and
           * DRM data locations
         """
-        drms = flask.request.args.get('drm', 'all')
         rv = []
-        for name in drms.split(','):
-            if '-' in name:
-                parts = name.split('-')
-                drm_name = parts[0]
-                locations = set(parts[1:])
-            else:
-                drm_name = name
-                locations = self.drm_locations_for_drm(name)
-            if drm_name in {'all', 'playready'}:
+        for drm_name, locations in options.drmSelection:
+            assert drm_name in {'playready', 'marlin', 'clearkey'}
+            if drm_name == 'playready':
                 drm = PlayReady()
-                rv.append(('playready', drm, locations,))
-            if drm_name in {'all', 'marlin'}:
+            elif drm_name == 'marlin':
                 drm = Marlin()
-                rv.append(('marlin', drm, locations,))
-            if drm_name in {'all', 'clearkey'}:
+            elif drm_name == 'clearkey':
                 drm = ClearKey()
-                rv.append(('clearkey', drm, locations,))
+            rv.append((drm_name, drm, locations,))
         return rv
 
-    def generate_drm_dict(self, stream: Union[str, models.Stream], keys) -> dict:
+    def generate_drm_dict(self, stream: Union[str, models.Stream],
+                          keys: Union[dict, list], options: OptionsContainer) -> dict:
         """
         Generate contexts for all enabled DRM systems. It returns a
         dictionary with an entry for each DRM system.
         """
         if isinstance(stream, basestring):
             stream = models.Stream.get(directory=stream)
+            assert stream is not None
         rv = {}
-        drm_tuples = self.generate_drm_location_tuples()
+        drm_tuples = self.generate_drm_location_tuples(options)
         for drm_name, drm, locations in drm_tuples:
             if drm_name == 'clearkey':
                 ck_laurl = urllib.parse.urljoin(
@@ -283,13 +278,21 @@ class RequestHandlerBase(MethodView):
                 if self.is_https_request():
                     ck_laurl = ck_laurl.replace('http://', 'https://')
                 rv[drm_name] = drm.generate_manifest_context(
-                    stream, keys, flask.request.args, la_url=ck_laurl, locations=locations)
+                    stream, keys, options, la_url=ck_laurl, locations=locations)
             else:
                 rv[drm_name] = drm.generate_manifest_context(
-                    stream, keys, flask.request.args, locations=locations)
+                    stream, keys, options, locations=locations)
         return rv
 
-    def calculate_dash_params(self, mode: str, mpd_url: str,
+    def calculate_options(self, mode: str) -> OptionsContainer:
+        defaults = OptionsRepository.get_default_options()
+        defaults.add_field('mode', mode)
+        options = OptionsRepository.convert_cgi_options(
+            flask.request.args, defaults=defaults)
+        return options
+
+    def calculate_dash_params(self, mpd_url: str,
+                              options: OptionsContainer,
                               stream: Optional[models.Stream] = None):
         if mpd_url is None:
             raise ValueError("Unable to determin MPD URL")
@@ -298,50 +301,44 @@ class RequestHandlerBase(MethodView):
         if not bool(stream):
             raise ValueError('Stream model is not available')
         manifest_info = manifests.manifest[mpd_url]
-        encrypted = flask.request.args.get('drm', 'none').lower() != 'none'
         now = datetime.datetime.now(tz=UTC())
-        clockDrift = 0
-        try:
-            clockDrift = int(flask.request.args.get('drift', '0'), 10)
-            if clockDrift:
-                now -= datetime.timedelta(seconds=clockDrift)
-        except ValueError as err:
-            logging.warning('Invalid clock drift CGI parameter: %s', err)
-
+        if options.clockDrift:
+            now -= datetime.timedelta(seconds=options.clockDrift)
         rv = {
             "DRM": {},
-            "abr": self.get_bool_param('abr', default=True),
-            "clockDrift": clockDrift,
-            "encrypted": encrypted,
+            "abr": options.abr,
+            "clockDrift": options.clockDrift,
+            "encrypted": options.encrypted,
             "minBufferTime": datetime.timedelta(seconds=1.5),
-            "mode": mode,
+            "mode": options.mode,
             "mpd_url": mpd_url,
             "now": now,
             "periods": [],
-            'profiles': [primary_profiles[mode]],
+            'profiles': [primary_profiles[options.mode]],
             "startNumber": 1,
             "stream": stream.to_dict(exclude={'media_files'}),
             "suggestedPresentationDelay": 30,
         }
-        if mode != 'odvod':
+        if options.mode != 'odvod':
             rv['profiles'].append(additional_profiles['dvb'])
+        encrypted = options.encrypted
         period = Period(start=datetime.timedelta(0), id="p0")
-        audio = self.calculate_audio_context(stream, mode, encrypted)
-        text = self.calculate_text_context(stream, mode, encrypted)
+        audio = self.calculate_audio_context(stream, options)
+        text = self.calculate_text_context(stream, options)
         max_items = None
-        if rv['abr'] is False:
+        if options.abr is False:
             max_items = 1
-        video = self.calculate_video_context(stream, mode, encrypted, max_items=max_items)
+        video = self.calculate_video_context(stream, options, max_items=max_items)
         if video.representations:
             rv["ref_representation"] = video.representations[0]
         else:
             rv["ref_representation"] = audio.representations[0]
-        timing = DashTiming(mode, now, rv["ref_representation"], flask.request.args)
+        timing = DashTiming(now, rv["ref_representation"], options)
+        options.availabilityStartTime = timing.availabilityStartTime
+        options.timeShiftBufferDepth = timing.timeShiftBufferDepth
         rv.update(timing.generate_manifest_context())
         cgi_params = self.calculate_cgi_parameters(
-            mode=mode, now=now, avail_start=timing.availabilityStartTime,
-            clockDrift=clockDrift, ts_buffer_depth=timing.timeShiftBufferDepth,
-            audio=audio, video=video)
+            options=options, now=now, audio=audio, video=video)
         video.append_cgi_params(cgi_params['video'])
         audio.append_cgi_params(cgi_params['audio'])
         text.append_cgi_params(cgi_params['text'])
@@ -351,18 +348,17 @@ class RequestHandlerBase(MethodView):
                 locationURL = locationURL[:flask.request.url.index('?')]
             locationURL = locationURL + objects.dict_to_cgi_params(cgi_params['manifest'])
             rv["locationURL"] = locationURL
-        use_base_url = self.get_bool_param('base', True)
-        if use_base_url:
-            if mode == 'odvod':
+        if options.useBaseUrls:
+            if options.mode == 'odvod':
                 rv["baseURL"] = urllib.parse.urljoin(
                     flask.request.host_url, f'/dash/vod/{stream.directory}') + '/'
             else:
                 rv["baseURL"] = urllib.parse.urljoin(
-                    flask.request.host_url, f'/dash/{mode}/{stream.directory}') + '/'
+                    flask.request.host_url, f'/dash/{options.mode}/{stream.directory}') + '/'
             if self.is_https_request():
                 rv["baseURL"] = rv["baseURL"].replace('http://', 'https://')
         else:
-            if mode == 'odvod':
+            if options.mode == 'odvod':
                 prefix = flask.url_for(
                     'dash-od-media',
                     stream=stream.directory,
@@ -372,7 +368,7 @@ class RequestHandlerBase(MethodView):
             else:
                 prefix = flask.url_for(
                     'dash-media',
-                    mode=mode,
+                    mode=options.mode,
                     stream=stream.directory,
                     filename='RepresentationID',
                     segment_num='init',
@@ -384,7 +380,7 @@ class RequestHandlerBase(MethodView):
             video.mediaURL = prefix + video.mediaURL
             audio.mediaURL = prefix + audio.mediaURL
             text.mediaURL = prefix + text.mediaURL
-        event_generators = EventFactory.create_event_generators(flask.request)
+        event_generators = EventFactory.create_event_generators(options)
         for evgen in event_generators:
             ev_stream = evgen.create_manifest_context(context=rv)
             if evgen.inband:
@@ -404,13 +400,13 @@ class RequestHandlerBase(MethodView):
             rep.set_dash_timing(timing)
             if len(audio.representations) == 1:
                 audio_adp.role = 'main'
-            elif flask.request.args.get('main_audio', None) == rep.id:
+            elif options.mainAudio == rep.id:
                 audio_adp.role = 'main'
-            elif rep.codecs.startswith(flask.request.args.get('main_audio', 'mp4a')):
+            elif rep.codecs.startswith(options.mainAudio):
                 audio_adp.role = 'main'
             else:
                 audio_adp.role = 'alternate'
-            if flask.request.args.get('ad_audio', None) == rep.id:
+            if options.audioDescription == rep.id:
                 audio_adp.role = 'alternate'
                 audio_adp.accessibility = {
                     'schemeIdUri': "urn:tva:metadata:cs:AudioPurposeCS:2007",
@@ -434,7 +430,7 @@ class RequestHandlerBase(MethodView):
                     'schemeIdUri': "urn:tva:metadata:cs:AudioPurposeCS:2007",
                     'value': 2,
                 }
-            elif flask.request.args.get('main_text', None) == rep.id:
+            elif options.mainText == rep.id:
                 text_adp.role = 'main'
             else:
                 text_adp.role = 'alternate'
@@ -455,24 +451,25 @@ class RequestHandlerBase(MethodView):
                 rv["keys"] = models.Key.all_as_dict()
             else:
                 rv["keys"] = models.Key.get_kids(kids)
-            rv["DRM"] = self.generate_drm_dict(stream, rv["keys"])
-        rv["timeSource"] = self.choose_time_source_method(cgi_params, now, mode)
+            rv["DRM"] = self.generate_drm_dict(stream, rv["keys"], options)
+        rv["timeSource"] = self.choose_time_source_method(options, cgi_params, now)
         if 'periods' not in manifest_info.features:
             rv["video"] = video
             rv["audio"] = audio
             rv["period"] = rv["periods"][0]
         return rv
 
-    def calculate_audio_context(self, stream, mode, encrypted, max_items=None):
-        audio = AdaptationSet(mode=mode, content_type='audio', id=2)
-        acodec = flask.request.args.get('acodec')
+    def calculate_audio_context(self, stream, options: OptionsContainer,
+                                max_items: Optional[int] = None):
+        audio = AdaptationSet(mode=options.mode, content_type='audio', id=2)
         media_files = models.MediaFile.search(
             content_type='audio', stream=stream, max_items=max_items)
+        acodec = options.audioCodec
         for mf in media_files:
             r = mf.representation
             assert r.content_type == 'audio'
             assert mf.content_type == 'audio'
-            if r.encrypted == encrypted:
+            if r.encrypted == options.encrypted:
                 if acodec is None or r.codecs.startswith(acodec):
                     audio.representations.append(r)
                 elif acodec == 'ec-3' and r.codecs == 'ac-3':
@@ -490,11 +487,13 @@ class RequestHandlerBase(MethodView):
         assert isinstance(audio.representations, list)
         return audio
 
-    def calculate_video_context(self, stream: models.Stream, mode: str,
-                                encrypted: bool, max_items=None) -> List[AdaptationSet]:
-        video = AdaptationSet(mode=mode, content_type='video', id=1)
+    def calculate_video_context(self,
+                                stream: models.Stream,
+                                options: OptionsContainer,
+                                max_items: Optional[int] = None) -> List[AdaptationSet]:
+        video = AdaptationSet(mode=options.mode, content_type='video', id=1)
         media_files = models.MediaFile.search(
-            content_type='video', encrypted=encrypted, stream=stream,
+            content_type='video', encrypted=options.encrypted, stream=stream,
             max_items=max_items)
         for mf in media_files:
             assert mf.content_type == 'video'
@@ -504,97 +503,63 @@ class RequestHandlerBase(MethodView):
         assert isinstance(video.representations, list)
         return video
 
-    def calculate_text_context(self, stream, mode, encrypted, max_items=None):
-        text = AdaptationSet(mode=mode, content_type='text', id=888)
-        tcodec = flask.request.args.get('tcodec')
+    def calculate_text_context(self,
+                               stream: models.Stream,
+                               options: OptionsContainer,
+                               max_items: Optional[int] = None):
+        text = AdaptationSet(mode=options.mode, content_type='text', id=888)
         media_files = models.MediaFile.search(
             content_type='text', stream=stream, max_items=max_items)
         for mf in media_files:
             r = mf.representation
-            if r.encrypted == encrypted:
-                if tcodec is None or r.codecs.startswith(tcodec):
+            if r.encrypted == options.encrypted:
+                if options.textCodec is None or r.codecs.startswith(options.textCodec):
                     text.representations.append(r)
         # if stream is encrypted but there is no encrypted version of the text track, fall back
         # to a clear version
         if not text.representations:
             for mf in media_files:
                 r = mf.representation
-                if tcodec is None or r.codecs.startswith(tcodec):
+                if options.textCodec is None or r.codecs.startswith(options.textCodec):
                     text.representations.append(r)
         text.compute_av_values()
         return text
 
-    def calculate_cgi_parameters(self, mode, now, avail_start, clockDrift,
-                                 ts_buffer_depth, audio, video):
-        vid_cgi_params = {}
-        aud_cgi_params = {}
-        txt_cgi_params = {}
-        mft_cgi_params = copy.deepcopy(dict(flask.request.args))
-        clk_cgi_params = {}
-        param_includes = {'bugs', 'drm', 'start'}
-        param_prefixes = ['playready_', 'marlin_']
-        if flask.request.args.get('events', None) is not None:
-            param_includes.add('events')
-            event_generators = EventFactory.create_event_generators(flask.request)
-            for evg in event_generators:
-                param_prefixes.append(evg.prefix)
-        for name, value in flask.request.args.items():
-            if value is None or (name == 'drm' and value == 'none'):
-                continue
-            include = (name in param_includes)
-            for prefix in param_prefixes:
-                if name.startswith(prefix):
-                    include = True
-            if not include:
-                continue
-            if name == 'start':
-                value = toIsoDateTime(avail_start)
-            vid_cgi_params[name] = value
-            aud_cgi_params[name] = value
-            txt_cgi_params[name] = value
-            mft_cgi_params[name] = value
-        if clockDrift:
-            clk_cgi_params['drift'] = str(clockDrift)
-            vid_cgi_params['drift'] = str(clockDrift)
-            aud_cgi_params['drift'] = str(clockDrift)
-            txt_cgi_params['drift'] = str(clockDrift)
-        if mode == 'live' and ts_buffer_depth != DashTiming.DEFAULT_TIMESHIFT_BUFFER_DEPTH:
-            vid_cgi_params['depth'] = str(ts_buffer_depth)
-            aud_cgi_params['depth'] = str(ts_buffer_depth)
-            txt_cgi_params['depth'] = str(ts_buffer_depth)
-        for code in self.INJECTED_ERROR_CODES:
-            if flask.request.args.get('v%03d' % code) is not None:
-                times = self.calculate_injected_error_segments(
-                    flask.request.args.get('v%03d' % code),
-                    now,
-                    avail_start,
-                    ts_buffer_depth,
-                    video.representations[0])
-                if times:
-                    vid_cgi_params['%03d' % (code)] = times
-            if flask.request.args.get('a%03d' % code) is not None:
-                times = self.calculate_injected_error_segments(
-                    flask.request.args.get('a%03d' % code),
-                    now,
-                    avail_start,
-                    ts_buffer_depth,
-                    audio.representations[0])
-                if times:
-                    aud_cgi_params['%03d' % (code)] = times
-        if flask.request.args.get('vcorrupt') is not None:
-            segs = self.calculate_injected_error_segments(
-                flask.request.args.get('vcorrupt'),
+    def calculate_cgi_parameters(self, options: OptionsContainer,
+                                 now: datetime.datetime, audio, video) -> dict[str, dict]:
+        exclude = {'encrypted', 'mode'}
+        vid_cgi_params = options.generate_cgi_parameters(use=OptionUsage.VIDEO, exclude=exclude)
+        aud_cgi_params = options.generate_cgi_parameters(use=OptionUsage.AUDIO, exclude=exclude)
+        txt_cgi_params = options.generate_cgi_parameters(use=OptionUsage.TEXT, exclude=exclude)
+        mft_cgi_params = options.generate_cgi_parameters(exclude=exclude)
+        clk_cgi_params = options.generate_cgi_parameters(use=OptionUsage.TIME, exclude=exclude)
+        if options.videoErrors:
+            times = self.calculate_injected_error_segments(
+                options.videoErrors,
                 now,
-                avail_start,
-                ts_buffer_depth,
+                options.availabilityStartTime,
+                options.timeShiftBufferDepth,
                 video.representations[0])
-            if segs:
-                vid_cgi_params['corrupt'] = segs
-        try:
-            updateCount = int(flask.request.args.get('update', '0'), 10)
-            mft_cgi_params['update'] = str(updateCount + 1)
-        except ValueError as err:
-            logging.warning('Invalid update CGI parameter: %s', err)
+            vid_cgi_params['verr'] = times
+        if options.audioErrors:
+            times = self.calculate_injected_error_segments(
+                options.audioErrors,
+                now,
+                options.availabilityStartTime,
+                options.timeShiftBufferDepth,
+                audio.representations[0])
+            aud_cgi_params['aerr'] = times
+        if options.videoCorruption:
+            errs = [(None, tc) for tc in options.videoCorruption]
+            segs = self.calculate_injected_error_segments(
+                errs,
+                now,
+                options.availabilityStartTime,
+                options.timeShiftBufferDepth,
+                video.representations[0])
+            vid_cgi_params['vcorrupt'] = segs
+        if options.updateCount is not None:
+            mft_cgi_params['update'] = str(options.updateCount + 1)
 
         return {
             'audio': aud_cgi_params,
@@ -604,41 +569,40 @@ class RequestHandlerBase(MethodView):
             'time': clk_cgi_params,
         }
 
-    def choose_time_source_method(self, cgi_params, now, mode: str) -> Optional[dict]:
-        if mode != 'live':
+    def choose_time_source_method(self, options: OptionsContainer, cgi_params: dict,
+                                  now: datetime.datetime) -> Optional[dict]:
+        if options.mode != 'live' or options.utcMethod is None:
             return None
-        timeSource = {
-            'format': flask.request.args.get('time', 'none')
-        }
-        if timeSource['format'] == 'none':
-            return None
-        if timeSource['format'] == 'direct':
-            timeSource['method'] = 'urn:mpeg:dash:utc:direct:2014'
-            timeSource['value'] = toIsoDateTime(now)
-        elif timeSource['format'] == 'head':
-            timeSource['method'] = 'urn:mpeg:dash:utc:http-head:2014'
-        elif timeSource['format'] == 'http-ntp':
-            timeSource['method'] = 'urn:mpeg:dash:utc:http-ntp:2014'
-        elif timeSource['format'] == 'iso':
-            timeSource['method'] = 'urn:mpeg:dash:utc:http-iso:2014'
-        elif timeSource['format'] == 'ntp':
-            timeSource['method'] = 'urn:mpeg:dash:utc:ntp:2014'
-            timeSource['value'] = 'time1.google.com time2.google.com time3.google.com time4.google.com'
-        elif timeSource['format'] == 'sntp':
-            timeSource['method'] = 'urn:mpeg:dash:utc:sntp:2014'
-            timeSource['value'] = 'time1.google.com time2.google.com time3.google.com time4.google.com'
-        elif timeSource['format'] == 'xsd':
-            timeSource['method'] = 'urn:mpeg:dash:utc:http-xsdate:2014'
+        format = options.utcMethod
+        value = None
+        if format == 'direct':
+            method = 'urn:mpeg:dash:utc:direct:2014'
+            value = to_iso_datetime(now)
+        elif format == 'head':
+            method = 'urn:mpeg:dash:utc:http-head:2014'
+        elif format == 'http-ntp':
+            method = 'urn:mpeg:dash:utc:http-ntp:2014'
+        elif format == 'iso':
+            method = 'urn:mpeg:dash:utc:http-iso:2014'
+        elif format == 'ntp':
+            method = 'urn:mpeg:dash:utc:ntp:2014'
+            value = 'time1.google.com time2.google.com time3.google.com time4.google.com'
+        elif format == 'sntp':
+            method = 'urn:mpeg:dash:utc:sntp:2014'
+            value = 'time1.google.com time2.google.com time3.google.com time4.google.com'
+        elif format == 'xsd':
+            method = 'urn:mpeg:dash:utc:http-xsdate:2014'
         else:
-            raise ValueError(r'Unknown time format: "{0}"'.format(timeSource['format']))
-        try:
-            timeSource['value'] = flask.request.args['time_value']
-        except KeyError:
-            pass
-        if 'value' not in timeSource:
+            raise ValueError(r'Unknown time format: "{0}"'.format(format))
+        timeSource = {
+            'format': format,
+            'method': method,
+            'value': options.utcValue if options.utcValue is not None else value
+        }
+        if value is None:
             timeSource['value'] = urllib.parse.urljoin(
                 flask.request.host_url,
-                flask.url_for('time', format=timeSource['format']))
+                flask.url_for('time', format=format))
             timeSource['value'] += objects.dict_to_cgi_params(cgi_params['time'])
         return timeSource
 
@@ -659,29 +623,38 @@ class RequestHandlerBase(MethodView):
             pass
 
     def calculate_injected_error_segments(
-            self, times, now, availabilityStartTime, timeshiftBufferDepth, representation):
-        """Calculate a list of segment numbers for injecting errors
-
-        :param times: a string of comma separated ISO8601 times
+            self,
+            errors: list[tuple[int, str]],
+            now: datetime.datetime,
+            availabilityStartTime: datetime.datetime,
+            timeShiftBufferDepth,
+            representation) -> str:
+        """
+        Calculate a list of segment numbers for injecting errors
+        :param errors: a list of error definitions. Each definition is a tuple of an HTTP error
+                       code and either a segment number of an ISO8601 time.
         :param availabilityStartTime: datetime.datetime containing availability start time
         :param representation: the Representation to use when calculating segment numbering
         """
         drops = []
-        if not times:
-            raise ValueError(
-                'Time must be a comma separated list of ISO times')
         earliest_available = now - \
-            datetime.timedelta(seconds=timeshiftBufferDepth)
-        for d in times.split(','):
-            tm = from_isodatetime(d)
-            tm = availabilityStartTime.replace(
-                hour=tm.hour, minute=tm.minute, second=tm.second)
-            if tm < earliest_available:
-                continue
-            drop_delta = tm - availabilityStartTime
-            drop_seg = int(scale_timedelta(
-                drop_delta, representation.timescale, representation.segment_duration))
-            drops.append('%d' % drop_seg)
+            datetime.timedelta(seconds=timeShiftBufferDepth)
+        for item in errors:
+            code, pos = item
+            if isinstance(pos, int):
+                drop_seg = int(pos, 10)
+            else:
+                tm = availabilityStartTime.replace(
+                    hour=pos.hour, minute=pos.minute, second=pos.second)
+                if tm < earliest_available:
+                    continue
+                drop_delta = tm - availabilityStartTime
+                drop_seg = int(scale_timedelta(
+                    drop_delta, representation.timescale, representation.segment_duration))
+            if code is None:
+                drops.append(f'{drop_seg}')
+            else:
+                drops.append(f'{code}={drop_seg}')
         return urllib.parse.quote_plus(','.join(drops))
 
     def has_http_range(self):

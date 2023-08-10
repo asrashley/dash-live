@@ -20,10 +20,7 @@
 #
 #############################################################################
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import range
-import datetime
+import logging
 import urllib.request
 import urllib.parse
 import urllib.error
@@ -32,7 +29,8 @@ import urllib.parse
 import flask
 
 from dashlive.server import manifests, models
-from dashlive.server.options.cgi_options import get_cgi_options, get_dash_options
+from dashlive.server.options.drm_options import DrmLocation, DrmSelection
+from dashlive.server.options.repository import OptionsRepository
 from dashlive.drm.playready import PlayReady
 
 from .base import HTMLHandlerBase
@@ -65,7 +63,10 @@ class MainPage(HTMLHandlerBase):
                 'manifest': manifests.manifest[name],
                 'option': [],
             })
-        for idx, opt in enumerate(get_cgi_options(hidden=False, omit_empty=False)):
+        extras = [DrmLocation]
+        cgi_options = OptionsRepository.get_cgi_options(
+            hidden=False, omit_empty=False, extras=extras)
+        for idx, opt in enumerate(cgi_options):
             try:
                 row = context['rows'][idx]
                 row['option'] = opt
@@ -84,42 +85,43 @@ class CgiOptionsPage(HTMLHandlerBase):
     """
 
     def get(self, **kwargs):
+        def sort_fn(item) -> str:
+            value = getattr(item, sort_key)
+            if isinstance(value, list):
+                return value[0]
+            return value
+
         context = self.create_context(**kwargs)
-        context['cgi_options'] = get_cgi_options()
+        context['cgi_options'] = OptionsRepository.get_cgi_options()
         if flask.request.args.get('json'):
-            names: list[str] = []
-            option_map = {}
-            for opt in get_dash_options():
-                names.append(opt.name)
-                option_map[opt.name] = opt
-            names.sort()
+            sort_key = flask.request.args.get('sort', 'short_name')
+            sort_order = self.get_bool_param('order')
             context['json'] = []
-            for name in names:
-                context['json'].append(option_map[name])
+            for opt in OptionsRepository.get_dash_options():
+                context['json'].append(opt)
+            context['json'].sort(key=sort_fn, reverse=sort_order)
+            context['sort_key'] = sort_key
+            context['sort_order'] = sort_order
+            context['reverse_order'] = '0' if sort_order else '1'
         return flask.render_template('cgi_options.html', **context)
 
 
 class VideoPlayer(HTMLHandlerBase):
-    """Responds with an HTML page that contains a video element to play the specified MPD"""
+    """
+    Responds with an HTML page that contains a video element to play the specified MPD
+    """
 
     decorators = [uses_stream]
 
     def get(self, mode, stream, manifest, **kwargs):
-        def gen_errors(cgiparam):
-            err_time = context['now'].replace(
-                microsecond=0) + datetime.timedelta(seconds=20)
-            times = []
-            for i in range(12):
-                err_time += datetime.timedelta(seconds=10)
-                times.append(err_time.time().isoformat() + 'Z')
-            params.append('%s=%s' %
-                          (cgiparam, urllib.parse.quote_plus(','.join(times))))
         manifest += '.mpd'
         context = self.create_context(**kwargs)
         try:
-            dash_parms = self.calculate_dash_params(mpd_url=manifest, mode=mode)
-        except (KeyError, ValueError) as err:
-            return flask.make_response(f'{err}', 404)
+            options = self.calculate_options(mode)
+        except ValueError as err:
+            logging.error('Invalid CGI parameters: %s', err)
+            return flask.make_response(f'Invalid CGI parameters: {err}', 400)
+        dash_parms = self.calculate_dash_params(mpd_url=manifest, options=options)
         for item in {'periods', 'period', 'ref_representation', 'audio', 'video'}:
             try:
                 del dash_parms[item]
@@ -134,29 +136,14 @@ class VideoPlayer(HTMLHandlerBase):
                 item['b64Key'] = keys[kid].KEY.b64
                 keys[kid] = item
         context['dash'] = dash_parms
-        params = []
-        for k, v in flask.request.args.items():
-            if k in ['mpd', 'mse']:
-                continue
-            if isinstance(v, int):
-                params.append(f'{k}={v:d}')
-            else:
-                params.append('{0:s}={1:s}'.format(k, urllib.parse.quote_plus(v)))
-        if self.get_bool_param('corruption'):
-            gen_errors('vcorrupt')
-        for code in self.INJECTED_ERROR_CODES:
-            p = 'v{0:03d}'.format(code)
-            if self.get_bool_param(p):
-                gen_errors(p)
-            p = 'a{0:03d}'.format(code)
-            if self.get_bool_param(p):
-                gen_errors(p)
         mpd_url = flask.url_for(
             'dash-mpd-v3', stream=stream, manifest=manifest, mode=mode)
-        if params:
-            mpd_url += '?' + '&'.join(params)
+        mpd_url += options.generate_cgi_parameters_string()
         context['source'] = urllib.parse.urljoin(flask.request.host_url, mpd_url)
-        context['drm'] = flask.request.args.get("drm", "none")
+        if options.drmSelection:
+            context['drm'] = DrmSelection.to_string(options.drmSelection)
+        else:
+            context['drm'] = 'none'
         if self.is_https_request():
             context['source'] = context['source'].replace(
                 'http://', 'https://')

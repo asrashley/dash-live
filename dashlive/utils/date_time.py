@@ -28,6 +28,7 @@ import datetime
 import math
 import re
 import time
+from typing import Optional
 
 from .timezone import UTC, FixedOffsetTimeZone
 
@@ -63,7 +64,7 @@ def to_iso_epoch(dt):
     return int(delta.total_seconds())
 
 
-def toIsoDateTime(value):
+def to_iso_datetime(value):
     """ Convert a datetime to an ISO8601 formatted dateTime string.
 
     :param value: the dateTime to convert
@@ -152,7 +153,7 @@ def parse_timezone(value):
         return UTC()
     return FixedOffsetTimeZone(value)
 
-def from_isodatetime(date_time):
+def from_isodatetime(date_time: Optional[str]):
     """
     Convert an ISO formated date string to a datetime.datetime or datetime.timedelta
     """

@@ -28,7 +28,7 @@ from .flask_base import FlaskTestBase
 
 class ManifestBTest(FlaskTestBase, DashManifestCheckMixin):
     def test_manifest_b(self):
-        self.check_a_manifest_using_major_options('vod_manifest_b.mpd')
+        self.check_a_manifest_using_major_options('vod_manifest_b.mpd', 'vod')
 
 
 if os.environ.get("TESTS"):

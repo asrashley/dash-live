@@ -5,7 +5,11 @@
 {% endblock %}
 
 {% block content %}
-  <div class="cgi-parameters">
+<div class="cgi-parameters">
+  <span class="float-right">
+    <a class="link"
+       href="{{ url_for('cgi-options', json='1', sort='short_name') }}#json">details</a>
+  </span>
     <p class="info">There are a number of CGI parameters that can be used to modify
     manifests, media segments and time sources.</p>
         <table class="cgi-params table table-striped">
@@ -136,17 +140,32 @@
           </tbody>
         </table>
 	{% if json %}
+	<a name="json"></a>
 	<table class="cgi-json-options table table-striped table-bordered" style="width: auto">
 	  <thead>
-	    <tr>
-	      <th class="short-name">Short Name</th>
-	      <th class="cgi-param">CGI param names</th>
+	    <tr class="sort_{{ sort_key }}">
+	      <th class="short-name">
+		<a href="{{ url_for('cgi-options', json=1, sort='short_name', order=reverse_order) }}#json">
+		  Short Name {{ sort_icon('short_name', sort_key, sort_order) }}
+		</a>
+	      </th>
+	      <th class="full-name">
+		<a href="{{ url_for('cgi-options', json=1, sort='full_name', order=reverse_order) }}#json">
+		  Full Name {{ sort_icon('full_name', sort_key, sort_order) }}
+		</a>
+	      </th>
+	      <th class="cgi-param">
+		<a href="{{ url_for('cgi-options', json=1, sort='cgi_name', order=reverse_order) }}#json">
+		  CGI param names {{ sort_icon('cgi_name', sort_key, sort_order) }}
+		</a>
+	      </th>
 	    </tr>
 	  </thead>
 	  <tbody>
 	    {% for opt in json %}
-	    <tr id="opt_{{ opt.name }}">
-	      <td class="short-name">{{ opt.name }}</td>
+	    <tr id="opt_{{ opt.short_name }}">
+	      <td class="short-name">{{ opt.short_name }}</td>
+	      <td class="full-name">{{ opt.full_name }}</td>
 	      <td class="cgi-param">{{ opt.cgi_name }}</td>
 	    </tr>
 	    {% endfor %}

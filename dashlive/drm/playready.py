@@ -20,16 +20,13 @@
 #
 #############################################################################
 
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
-from builtins import range
 import base64
 import binascii
 import re
 import io
 import struct
 import sys
+from typing import AbstractSet, Optional
 import urllib.request
 import urllib.parse
 import urllib.error
@@ -40,6 +37,7 @@ from Crypto.Hash import SHA256
 from flask import render_template
 
 from dashlive.mpeg import mp4
+from dashlive.server.options.container import OptionsContainer
 from dashlive.utils.buffered_reader import BufferedReader
 from .base import DrmBase
 from .keymaterial import KeyMaterial
@@ -243,15 +241,16 @@ class PlayReady(DrmBase):
             objects.append(record)
         return objects
 
-    def generate_manifest_context(self, stream, keys, cgi_params, la_url=None, locations=None):
-        version = cgi_params.get('playready_version')
-        if version is not None:
-            version = float(version)
-        else:
+    def generate_manifest_context(
+            self, stream, keys, options: OptionsContainer,
+            la_url: Optional[str] = None,
+            locations: Optional[AbstractSet[str]] = None) -> dict:
+        version = options.playreadyVersion
+        if version is None:
             header_version = self.minimum_header_version(keys)
             version = self.minimum_playready_version(header_version)
         if la_url is None:
-            la_url = cgi_params.get('playready_la_url')
+            la_url = options.playreadyLicenseUrl
             if la_url is not None:
                 la_url = urllib.parse.unquote_plus(la_url)
             elif stream.playready_la_url is not None:
@@ -265,20 +264,22 @@ class PlayReady(DrmBase):
             'scheme_id': self.dash_scheme_id(version),
             'version': version,
         }
+        if 'moov' in locations:
+            rv['moov'] = lambda rep, keys, cattr=None: self.generate_pssh(
+                la_url, rep, keys, cattr)
         if 'pro' in locations:
             rv['pro'] = lambda rep, keys, cattr=None: self.generate_pro(
                 la_url, rep, keys, cattr)
-        # PlayReady v1.0 (PIFF) mode only allows an mspr:pro element
         if version > 1.0:
+            # PlayReady v1.0 (PIFF) mode only allows an mspr:pro element in
+            # the manifest
             if 'cenc' in locations:
                 rv['cenc'] = lambda rep, keys, cattr=None: self.generate_pssh(
                     la_url, rep, keys, cattr)
-            if 'moov' in locations:
-                rv['moov'] = lambda rep, keys, cattr=None: self.generate_pssh(
-                    la_url, rep, keys, cattr)
         return rv
 
-    def generate_pssh(self, la_url, representation, keys, custom_attributes=None):
+    def generate_pssh(self, la_url: str, representation, keys,
+                      custom_attributes=None) -> mp4.ContentProtectionSpecificBox:
         """Generate a PlayReady Object (PRO) inside a PSSH box"""
         pro = self.generate_pro(la_url, representation, keys, custom_attributes)
         if len(keys) < 2:
@@ -292,7 +293,7 @@ class PlayReady(DrmBase):
             version=1, flags=0, system_id=PlayReady.RAW_SYSTEM_ID,
             key_ids=keys, data=pro)
 
-    def dash_scheme_id(self, version=None):
+    def dash_scheme_id(self, version: Optional[float] = None) -> str:
         """
         Returns the schemeIdUri for PlayReady
         """
@@ -302,15 +303,12 @@ class PlayReady(DrmBase):
             return "urn:uuid:{0}".format(self.SYSTEM_ID_V10)
         return "urn:uuid:{0}".format(self.SYSTEM_ID)
 
-    def update_traf_if_required(self, cgi_params, traf):
-        version = cgi_params.get('playready_version')
-        piff = cgi_params.get('playready_piff', 'false')
-        piff = piff in ["1", "true"]
-        if version is not None:
-            version = float(version)
-        else:
+    def update_traf_if_required(self, options: OptionsContainer,
+                                traf: mp4.BoxWithChildren) -> bool:
+        version = options.playreadyVersion
+        if version is None:
             version = self.version
-        if version != 1.0 and not piff:
+        if version != 1.0 and not options.playreadyPiff:
             return False
         senc = traf.find_child('senc')
         if senc is None:

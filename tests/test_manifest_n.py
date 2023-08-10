@@ -28,8 +28,11 @@ from .mixins.check_manifest import DashManifestCheckMixin
 from .flask_base import FlaskTestBase
 
 class ManifestNTests(FlaskTestBase, DashManifestCheckMixin):
-    def test_manifest_n(self):
-        self.check_a_manifest_using_all_options('manifest_n.mpd')
+    def test_manifest_n_vod(self):
+        self.check_a_manifest_using_all_options('manifest_n.mpd', 'vod')
+
+    def test_manifest_n_live(self):
+        self.check_a_manifest_using_all_options('manifest_n.mpd', 'live')
 
     @FlaskTestBase.mock_datetime_now(from_isodatetime("2022-09-06T09:59:02Z"))
     def test_generated_manifest_against_fixture(self):

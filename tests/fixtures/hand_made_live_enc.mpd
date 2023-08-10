@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd" publishTime="2022-09-06T15:10:00Z" type="dynamic" minimumUpdatePeriod="PT8S" suggestedPresentationDelay="PT30S" availabilityStartTime="2022-09-06T00:00:00Z" timeShiftBufferDepth="PT1M0S" profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014" minBufferTime="PT1.5S">
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd" publishTime="2022-09-06T15:10:00Z" type="dynamic" minimumUpdatePeriod="PT8S" suggestedPresentationDelay="PT30S" availabilityStartTime="2022-09-06T00:00:00Z" timeShiftBufferDepth="PT30M0S" profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014" minBufferTime="PT1.5S">
   <ProgramInformation>
     <Title>Big Buck Bunny</Title>
   </ProgramInformation>
-  <Location>http://unit.test/dash/live/fixtures/hand_made.mpd?drm=all&amp;acodec=mp4a&amp;time=xsd</Location>
+  <Location>http://unit.test/dash/live/fixtures/hand_made.mpd?acodec=mp4a&amp;drm=all&amp;time=xsd</Location>
   <UTCTiming schemeIdUri="urn:mpeg:dash:utc:http-xsdate:2014" value="http://unit.test/time/xsd"/>
   <Period start="PT0S" id="p0">
     <BaseURL>http://unit.test/dash/live/fixtures/</BaseURL>
@@ -25,7 +25,7 @@
       <ContentProtection schemeIdUri="urn:uuid:1077efec-c0b2-4d02-ace3-3c1e52e2fb4b">
         <cenc:pssh>AAAANHBzc2gBAAAAEHfv7MCyTQKs4zweUuL7SwAAAAEatFRAUyxDmZTcXFrZWEusAAAAAA==</cenc:pssh>
       </ContentProtection>
-      <SegmentTemplate startNumber="1" timescale="240" duration="960" initialization="$RepresentationID$/init.m4v?drm=all" media="$RepresentationID$/$Number$.m4v?drm=all"/>
+      <SegmentTemplate startNumber="1" timescale="240" duration="960" initialization="$RepresentationID$/init.m4v?drm=all&amp;start=2022-09-06T00:00:00Z" media="$RepresentationID$/$Number$.m4v?drm=all&amp;start=2022-09-06T00:00:00Z"/>
       <Representation id="bbb_v7_enc" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="195003">
       </Representation>
       <Representation id="bbb_v6_enc" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="377964">
@@ -50,7 +50,7 @@
       <ContentProtection schemeIdUri="urn:uuid:1077efec-c0b2-4d02-ace3-3c1e52e2fb4b">
         <cenc:pssh>AAAANHBzc2gBAAAAEHfv7MCyTQKs4zweUuL7SwAAAAEatFRAUyxDmZTcXFrZWEusAAAAAA==</cenc:pssh>
       </ContentProtection>
-      <SegmentTemplate startNumber="1" timescale="44100" duration="176355" initialization="$RepresentationID$/init.m4a?drm=all" media="$RepresentationID$/$Number$.m4a?drm=all"/>
+      <SegmentTemplate startNumber="1" timescale="44100" duration="176355" initialization="$RepresentationID$/init.m4a?drm=all&amp;start=2022-09-06T00:00:00Z" media="$RepresentationID$/$Number$.m4a?drm=all&amp;start=2022-09-06T00:00:00Z"/>
       <Representation id="bbb_a1_enc" mimeType="audio/mp4" codecs="mp4a.40.2" sampleRate="44100" numChannels="2" startWithSAP="1" bandwidth="101243">
       </Representation>
     </AdaptationSet>

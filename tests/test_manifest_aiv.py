@@ -19,8 +19,6 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-from __future__ import absolute_import
-import os
 import unittest
 
 import flask
@@ -30,7 +28,7 @@ from .flask_base import FlaskTestBase
 
 class ManifestAIVTest(FlaskTestBase, DashManifestCheckMixin):
     def test_vod_manifest_aiv(self):
-        self.check_a_manifest_using_all_options('manifest_vod_aiv.mpd')
+        self.check_a_manifest_using_all_options('manifest_vod_aiv.mpd', 'odvod')
 
     def test_request_invalid_mode_for_manifest(self):
         baseurl = flask.url_for(
@@ -38,12 +36,6 @@ class ManifestAIVTest(FlaskTestBase, DashManifestCheckMixin):
             stream=self.FIXTURES_PATH.name, mode='live')
         self.app.get(baseurl, status=404)
 
-
-if os.environ.get("TESTS"):
-    def load_tests(loader, tests, pattern):
-        return unittest.loader.TestLoader().loadTestsFromNames(
-            os.environ["TESTS"].split(','),
-            ManifestAIVTest)
 
 if __name__ == '__main__':
     unittest.main()

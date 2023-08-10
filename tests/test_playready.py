@@ -20,10 +20,6 @@
 #
 #############################################################################
 
-from __future__ import absolute_import
-from future import standard_library
-standard_library.install_aliases()
-from builtins import range
 import base64
 import binascii
 import io
@@ -40,14 +36,16 @@ from lxml import etree
 from dashlive.drm.playready import PlayReady
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.mpeg import mp4
+from dashlive.server import manifests
 from dashlive.utils.binary import Binary
 from dashlive.utils.buffered_reader import BufferedReader
 
 from .flask_base import FlaskTestBase
 from .key_stub import KeyStub
+from .mixins.check_manifest import DashManifestCheckMixin
 from .mixins.view_validator import ViewsTestDashValidator
 
-class PlayreadyTests(FlaskTestBase):
+class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
     custom_attributes = [dict(tag='IIS_DRM_VERSION', value='8.0.1907.32')]
 
     expected_pro = ''.join([
@@ -693,6 +691,20 @@ class PlayreadyTests(FlaskTestBase):
                 'playready_piff=1', 'bugs=saio']
         with self.assertRaises(AssertionError):
             self.check_piff_uuid_is_present(args)
+
+    def test_all_playready_options(self):
+        filename = 'hand_made.mpd'
+        manifest = manifests.manifest[filename]
+        drm_opts = list(manifest.get_drm_options('vod', only={'playready'}))
+        extras = [
+            ('drm', len(drm_opts), drm_opts),
+            ('playready_la_url', 2, ['https://some.server/pr', 'http://another.addr/abc']),
+        ]
+        self.check_a_manifest_using_all_options(
+            filename,
+            mode='vod',
+            only={'playreadyPiff', 'playreadyVersion'},
+            extras=extras)
 
     def check_piff_uuid_is_present(self, args):
         filename = 'hand_made.mpd'

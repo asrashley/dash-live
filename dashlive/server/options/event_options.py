@@ -6,7 +6,10 @@
 #
 #############################################################################
 
+from dashlive.server.events.factory import EventFactory
+
 from .dash_option import DashOption
+from .types import OptionUsage
 
 EV_HTML = '''
 <p>A comma separated list of event formats:</p>
@@ -23,11 +26,17 @@ EV_HTML = '''
 '''
 
 EventSelection = DashOption(
-    name='ev',
+    usage=(OptionUsage.MANIFEST | OptionUsage.AUDIO | OptionUsage.VIDEO),
+    short_name='evs',
+    full_name='eventTypes',
     title='DASH events',
     description='A comma separated list of event formats',
+    from_string=DashOption.list_without_none_from_string,
+    to_string=lambda evs: ','.join(evs),
     html=EV_HTML,
     cgi_name='events',
     cgi_type='<format>,..',
     cgi_choices=(None, 'ping', 'scte35'),
     hidden=False)
+
+event_options = [EventSelection] + EventFactory.get_dash_options()

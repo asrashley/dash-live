@@ -7,7 +7,7 @@ from pathlib import Path
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship  # type: ignore
 
-from dashlive.utils.date_time import toIsoDateTime
+from dashlive.utils.date_time import to_iso_datetime
 from .db import db
 from .mixin import ModelMixin
 from .session import DatabaseSession
@@ -42,7 +42,7 @@ class Blob(db.Model, ModelMixin):
     def toJSON(self, pure=False):
         rv = self.to_dict()
         if pure:
-            rv['created'] = toIsoDateTime(self.created)
+            rv['created'] = to_iso_datetime(self.created)
         return rv
 
     def open_file(self, media_directory: Path,

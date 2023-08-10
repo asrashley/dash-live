@@ -39,29 +39,29 @@ class Scte35Events(RepeatingEventBase):
     and end.
     """
     schemeIdUri = "urn:scte:scte35:2014:xml+bin"
-    PARAMS = merge(RepeatingEventBase.PARAMS, {
+    DEFAULT_VALUES = merge(RepeatingEventBase.DEFAULT_VALUES, {
         "program_id": 1620,
         "value": "",  # DVB-DASH states that value should be absent
     })
 
     PREFIX = 'scte35'
 
-    def __init__(self, request):
-        super(Scte35Events, self).__init__(self.PREFIX + "_", request)
+    def __init__(self, **kwargs) -> None:
+        super(Scte35Events, self).__init__(**kwargs)
         if self.inband:
             self.version = 1
 
-    def get_manifest_event_payload(self, event_id, presentation_time):
+    def get_manifest_event_payload(self, event_id: int, presentation_time) -> str:
         splice = self.create_binary_signal(event_id, presentation_time)
         data = splice.encode()
         xml = flask.render_template('events/scte35_xml_bin_event.xml', binary=data)
         return xml
 
-    def get_emsg_event_payload(self, event_id, presentation_time):
+    def get_emsg_event_payload(self, event_id: int, presentation_time) -> bytes:
         splice = self.create_binary_signal(event_id, presentation_time)
         return splice.encode()
 
-    def create_binary_signal(self, event_id, presentation_time):
+    def create_binary_signal(self, event_id: int, presentation_time) -> BinarySignal:
         pts = old_div(presentation_time * MPEG_TIMEBASE, self.timescale)
         duration = old_div(self.duration * MPEG_TIMEBASE, self.timescale)
         # auto_return is True for the OUT and False for the IN

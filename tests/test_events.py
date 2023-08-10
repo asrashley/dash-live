@@ -61,15 +61,15 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
             self.assertEqual(len(period.event_streams), 1)
             event_stream = period.event_streams[0]
             self.assertEqual(event_stream.schemeIdUri, PingPongEvents.schemeIdUri)
-            self.assertEqual(event_stream.value, PingPongEvents.PARAMS['value'])
+            self.assertEqual(event_stream.value, PingPongEvents.DEFAULT_VALUES['value'])
             # self.assertIsInstance(event_stream, EventStream)
             self.assertEqual(len(event_stream.events), 4)
             presentationTime = 256
             for idx, event in enumerate(event_stream.events):
                 self.assertEqual(event.id, idx)
                 self.assertEqual(event.presentationTime, presentationTime)
-                self.assertEqual(event.duration, PingPongEvents.PARAMS['duration'])
-                presentationTime += PingPongEvents.PARAMS['interval']
+                self.assertEqual(event.duration, PingPongEvents.DEFAULT_VALUES['duration'])
+                presentationTime += PingPongEvents.DEFAULT_VALUES['interval']
 
     def test_inband_ping_pong_dash_events(self):
         """
@@ -97,7 +97,7 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
                 self.assertEqual(len(adp.event_streams), 1)
                 event_stream = adp.event_streams[0]
                 self.assertEqual(event_stream.schemeIdUri, PingPongEvents.schemeIdUri)
-                self.assertEqual(event_stream.value, PingPongEvents.PARAMS['value'])
+                self.assertEqual(event_stream.value, PingPongEvents.DEFAULT_VALUES['value'])
                 # self.assertIsInstance(event_stream, InbandEventStream)
                 rep = adp.representations[0]
                 info = dv.get_representation_info(rep)
@@ -116,7 +116,7 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
                 atom_type='wrap',
                 children=seg.validate(depth=1, all_atoms=True))
             seg_presentation_time = (old_div(ev_presentation_time * info.timescale,
-                                             PingPongEvents.PARAMS['timescale']))
+                                             PingPongEvents.DEFAULT_VALUES['timescale']))
             decode_time = frag.moof.traf.tfdt.base_media_decode_time
             seg_end = decode_time + seg.duration
             if seg_presentation_time < decode_time or seg_presentation_time >= seg_end:
@@ -125,18 +125,18 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
                     emsg = frag.emsg
                 continue
             delta = seg_presentation_time - decode_time
-            delta = (old_div(delta * PingPongEvents.PARAMS['timescale'],
+            delta = (old_div(delta * PingPongEvents.DEFAULT_VALUES['timescale'],
                      info.timescale))
             emsg = frag.emsg
             self.assertEqual(emsg.scheme_id_uri, PingPongEvents.schemeIdUri)
-            self.assertEqual(emsg.value, PingPongEvents.PARAMS['value'])
+            self.assertEqual(emsg.value, PingPongEvents.DEFAULT_VALUES['value'])
             self.assertEqual(emsg.presentation_time_delta, delta)
             self.assertEqual(emsg.event_id, event_id)
             if (event_id & 1) == 0:
                 self.assertEqual(emsg.data, b'ping')
             else:
                 self.assertEqual(emsg.data, b'pong')
-            ev_presentation_time += PingPongEvents.PARAMS['interval']
+            ev_presentation_time += PingPongEvents.DEFAULT_VALUES['interval']
             event_id += 1
 
     def test_inline_scte35_dash_events(self):
@@ -164,14 +164,14 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
             self.assertEqual(len(period.event_streams), 1)
             event_stream = period.event_streams[0]
             self.assertEqual(event_stream.schemeIdUri, Scte35Events.schemeIdUri)
-            self.assertEqual(event_stream.value, Scte35Events.PARAMS['value'])
+            self.assertEqual(event_stream.value, Scte35Events.DEFAULT_VALUES['value'])
             # self.assertIsInstance(event_stream, EventStream)
             self.assertEqual(len(event_stream.events), 4)
             presentationTime = 256
             for idx, event in enumerate(event_stream.events):
                 self.assertEqual(event.id, idx)
                 self.assertEqual(event.presentationTime, presentationTime)
-                self.assertEqual(event.duration, Scte35Events.PARAMS['duration'])
+                self.assertEqual(event.duration, Scte35Events.DEFAULT_VALUES['duration'])
                 auto_return = (idx & 1) == 0
                 avail_num = 1 + (idx // 2)
                 expected = {
@@ -216,7 +216,7 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
                 }
                 # print(json.dumps(event.scte35_binary_signal, indent=2))
                 self.assertObjectEqual(expected, event.scte35_binary_signal)
-                presentationTime += Scte35Events.PARAMS['interval']
+                presentationTime += Scte35Events.DEFAULT_VALUES['interval']
 
 
 if os.environ.get("TESTS"):
