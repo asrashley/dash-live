@@ -138,6 +138,7 @@ class VideoPlayer(HTMLHandlerBase):
         context['dash'] = dash_parms
         mpd_url = flask.url_for(
             'dash-mpd-v3', stream=stream, manifest=manifest, mode=mode)
+        options.remove_unused_parameters(mode)
         mpd_url += options.generate_cgi_parameters_string()
         context['source'] = urllib.parse.urljoin(flask.request.host_url, mpd_url)
         if options.drmSelection:
