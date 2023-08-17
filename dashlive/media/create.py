@@ -1,5 +1,3 @@
-#!/usr/bin/python2
-
 #############################################################################
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -62,35 +60,33 @@
 # ./configure --enable-gpl --enable-version3 --enable-nonfree --enable-libx264 --enable-libvorbis --enable-libvpx
 #
 
-
-from __future__ import print_function
-from builtins import map
-from builtins import str
-from builtins import range
-from builtins import object
 import argparse
-import collections
 import json
 import logging
 import os
 import math
+from pathlib import Path
 import shutil
 import subprocess
 import sys
 import tempfile
+from typing import NamedTuple
 
-from drm.keymaterial import KeyMaterial
-from drm.playready import PlayReady
-from mpeg import mp4
-from mpeg.dash.representation import Representation
+from dashlive.drm.keymaterial import KeyMaterial
+from dashlive.drm.playready import PlayReady
+from dashlive.mpeg import mp4
+from dashlive.mpeg.dash.representation import Representation
 
-EncodedRepresentation = collections.namedtuple('EncodedRepresentation', 'source contentType index')
+class EncodedRepresentation(NamedTuple):
+    source: Path
+    contentType: str
+    index: int
 
 class InitialisationVector(KeyMaterial):
     length = 8
 
 
-class DashMediaCreator(object):
+class DashMediaCreator:
     # each item is (width, height, bitrate)
     BITRATE_LADDER = [
         (384, 216, 230),
@@ -111,7 +107,7 @@ class DashMediaCreator(object):
     </GPACDRM>
     """
 
-    def __init__(self, options):
+    def __init__(self, options) -> None:
         self.options = options
         self.frame_segment_duration = None
         self.timescale = None
@@ -120,11 +116,11 @@ class DashMediaCreator(object):
             "keys": [],
             "streams": [
                 {
-                    "prefix": self.options.prefix,
-                    "title": ""
+                    "directory": self.options.prefix,
+                    "title": "",
+                    "files": []
                 }
-            ],
-            "files": []
+            ]
         }
 
     def encode_all(self, srcfile):
@@ -260,77 +256,70 @@ class DashMediaCreator(object):
             except KeyError:
                 pass
 
-    def create_file_from_fragments(self, dest_filename, moov, prefix):
-        logging.debug('Create file "%s" moov="%s" prefix="%s"',
-                      dest_filename, moov, prefix)
-        if not os.path.exists(moov):
-            raise IOError('MOOV not found: {}'.format(moov))
-        print(dest_filename)
-        with open(dest_filename, "wb") as dest:
-            sys.stdout.write('I')
-            sys.stdout.flush()
+    def create_file_from_fragments(self, dest_filename: Path, moov: Path, prefix: str) -> None:
+        logging.info('Create file "%s" moov="%s" prefix="%s"',
+                     dest_filename, moov, prefix)
+        if not moov.exists():
+            raise IOError(f'MOOV not found: {moov}')
+        with dest_filename.open("wb") as dest:
+            if self.options.verbose:
+                sys.stdout.write('I')
+                sys.stdout.flush()
             with open(moov, "rb") as src:
                 shutil.copyfileobj(src, dest)
             segment = 1
             while True:
-                moof = "{}{:03d}.mp4".format(prefix, segment)
+                moof = f'{prefix}{segment:03d}.mp4'
                 if not os.path.exists(moof):
                     break
-                sys.stdout.write('f')
-                sys.stdout.flush()
+                if self.options.verbose:
+                    sys.stdout.write('f')
+                    sys.stdout.flush()
                 with open(moof, "rb") as src:
                     shutil.copyfileobj(src, dest)
                 os.remove(moof)
                 segment += 1
-            sys.stdout.write('\n')
+            if self.options.verbose:
+                sys.stdout.write('\n')
         logging.info(r'Generated file %s', dest_filename)
 
-    def package_all(self):
-        destdir = os.path.abspath(self.options.destdir)
-        bitrates = [br[2] for br in self.BITRATE_LADDER]
-        source_files = []
+    def package_all(self) -> bool:
+        destdir = Path(os.path.abspath(self.options.destdir))
+        bitrates: list[int] = [br[2] for br in self.BITRATE_LADDER]
+        source_files: list[EncodedRepresentation] = []
         nothing_to_do = True
         for idx in range(len(bitrates)):
-            dest_file = os.path.join(destdir, self.destination_filename('v', idx + 1, False))
-            if not os.path.exists(dest_file):
+            dest_file = destdir / self.destination_filename('v', idx + 1, False)
+            if not dest_file.exists():
                 nothing_to_do = False
-        dest_file = os.path.join(destdir, self.destination_filename('a', 1, False))
-        if not os.path.exists(dest_file):
+        dest_file = destdir / self.destination_filename('a', 1, False)
+        if not dest_file.exists():
             nothing_to_do = False
-        dest_file = os.path.join(destdir, self.destination_filename('a', 2, False))
-        if not os.path.exists(dest_file):
+        dest_file = destdir / self.destination_filename('a', 2, False)
+        if not dest_file.exists():
             nothing_to_do = False
         if nothing_to_do:
-            return
+            return False
 
         for index, bitrate in enumerate(bitrates):
+            src_file = destdir / f'{bitrate}' / f'{self.options.prefix}.mp4#video'
             source_files.append(EncodedRepresentation(
-                source=os.path.join(
-                    destdir, str(bitrate), self.options.prefix + ".mp4#video"),
-                contentType='v',
-                index=(index + 1)))
+                source=src_file, contentType='v', index=(index + 1)))
         # Add AAC audio track
-        source_files.append(EncodedRepresentation(
-            source=os.path.join(
-                destdir, str(bitrates[0]),
-                self.options.prefix + ".mp4#trackID=2:role=main"),
-            contentType='a',
-            index=1))
+        src_file = destdir / f'{bitrates[0]}' / f'{self.options.prefix}.mp4#trackID=2:role=main'
+        source_files.append(EncodedRepresentation(source=src_file, contentType='a', index=1))
         # Add E-AC3 audio track
-        source_files.append(EncodedRepresentation(
-            source=os.path.join(
-                destdir, str(bitrates[0]),
-                self.options.prefix + ".mp4#trackID=3:role=alternate"),
-            contentType='a',
-            index=2))
+        src_file = destdir / f'{bitrates[0]}' / f'{self.options.prefix}.mp4#trackID=3:role=alternate'
+        source_files.append(EncodedRepresentation(source=src_file, contentType='a', index=2))
 
         self.package_sources(source_files)
+        return True
 
-    def package_sources(self, source_files):
-        destdir = os.path.abspath(self.options.destdir)
-        tmpdir = os.path.join(destdir, "dash")
-        if not os.path.exists(tmpdir):
-            os.makedirs(tmpdir)
+    def package_sources(self, source_files: list[EncodedRepresentation]) -> None:
+        destdir = Path(self.options.destdir).resolve(strict=True)
+        tmpdir = destdir / "dash"
+        if not tmpdir.exists():
+            tmpdir.mkdir(parents=True)
         bs_switching = 'inband' if self.options.avc3 else 'merge'
         mp4box_args = [
             "MP4Box",
@@ -347,7 +336,7 @@ class DashMediaCreator(object):
             "-segment-name", 'dash_$RepresentationID$_$number%03d$$Init=init$',
             "-out", "manifest",
         ]
-        mp4box_args += [f.source for f in source_files]
+        mp4box_args += [str(f.source) for f in source_files]
         logging.debug('mp4box_args: %s', mp4box_args)
         cwd = os.getcwd()
         os.chdir(tmpdir)
@@ -357,18 +346,18 @@ class DashMediaCreator(object):
             subprocess.call(["ls", "-lR", tmpdir])
 
         for idx, source in enumerate(source_files):
-            prefix = os.path.join(tmpdir, 'dash_{:d}_'.format(idx + 1))
+            prefix = str(tmpdir / f'dash_{idx + 1}_')
             source, contentType, num = source
             dest_file = self.destination_filename(contentType, num, False)
-            self.media_info['files'].append(dest_file)
-            dest_file = os.path.join(destdir, dest_file)
-            moov = os.path.join(tmpdir, 'manifest_set1_init.mp4')
-            if os.path.exists(prefix + 'init.mp4'):
-                moov = prefix + 'init.mp4'
-            logging.debug('Check for file: "%s"', dest_file)
-            if os.path.exists(dest_file):
-                logging.debug('File exists, skipping generation')
+            self.media_info['streams'][0]['files'].append(dest_file)
+            dest_file = destdir / dest_file
+            if dest_file.exists():
+                logging.debug('File %s exists, skipping generation', dest_file)
                 continue
+            moov = tmpdir / 'manifest_set1_init.mp4'
+            if os.path.exists(prefix + 'init.mp4'):
+                moov = Path(prefix + 'init.mp4')
+            logging.debug('Check for file: "%s"', dest_file)
             self.create_file_from_fragments(dest_file, moov, prefix)
             if os.path.exists(prefix + 'init.mp4'):
                 os.remove(moov)
@@ -386,7 +375,7 @@ class DashMediaCreator(object):
         return rv
 
     def encrypt_all(self):
-        destdir = os.path.abspath(self.options.destdir)
+        destdir = Path(self.options.destdir).resolve(strict=True)
         kids = self.create_key_ids()
         assert len(kids) > 0
         kid_map = {
@@ -404,6 +393,7 @@ class DashMediaCreator(object):
             for k, v in kid_map.items():
                 key_map[k] = KeyMaterial(raw=PlayReady.generate_content_key(v.raw))
                 logging.debug('Using key %s for kid %s', key_map[k].hex, v.hex)
+        media_keys = {}
         for k, v in kid_map.items():
             item = {
                 "kid": v.hex,
@@ -411,59 +401,66 @@ class DashMediaCreator(object):
             }
             if not item['computed']:
                 item["key"] = key_map[k].hex
+            media_keys[v.hex] = item
+        for item in media_keys.values():
             self.media_info["keys"].append(item)
+        self.media_info["keys"].sort(key=lambda item: item['kid'])
         files = []
         for idx in range(len(self.BITRATE_LADDER)):
             files.append(('v', idx + 1))
         files.append(('a', 1))
         files.append(('a', 2))
         for contentType, index in files:
-            src_file = self.destination_filename(contentType, index, False)
-            src_file = os.path.join(destdir, src_file)
+            src_file = destdir / self.destination_filename(contentType, index, False)
             dest_file = self.destination_filename(contentType, index, True)
-            self.media_info['files'].append(dest_file)
-            dest_file = os.path.join(destdir, dest_file)
-            # iv = InitialisationVector(hex='{:016x}'.format(random.getrandbits(64)))
+            self.media_info['streams'][0]['files'].append(dest_file)
             iv = InitialisationVector(raw=os.urandom(8))
             self.encrypt_representation(
-                src_file, dest_file, kid_map[contentType], key_map[contentType], iv)
+                src_file, destdir / dest_file, kid_map[contentType], key_map[contentType], iv)
 
-    def encrypt_representation(self, source, destfile, kid, key, iv):
+    def encrypt_representation(
+            self, source: Path, destfile: Path,
+            kid: KeyMaterial, key: KeyMaterial, iv: InitialisationVector) -> None:
         if os.path.exists(destfile):
+            logging.debug('File "%s" already exists, nothing to do', destfile)
             return
         try:
-            tmpdir = tempfile.mkdtemp()
+            tmpdir = Path(tempfile.mkdtemp())
             self.build_encrypted_file(source, destfile, kid, key, iv, tmpdir)
         finally:
-            try:
-                shutil.rmtree(tmpdir)
-            except (Exception) as ex:
-                print(ex)
+            shutil.rmtree(tmpdir, ignore_errors=True)
 
-    def build_encrypted_file(self, source, dest_filename, kid, key, iv, tmpdir):
+    def build_encrypted_file(
+            self, source: Path, dest_filename: Path,
+            kid: KeyMaterial, key: KeyMaterial, iv: InitialisationVector,
+            tmpdir: Path) -> None:
         representation = self.parse_representation(source)
-        basename, ext = os.path.splitext(os.path.split(source)[1])
-        moov_filename = os.path.join(tmpdir, basename + '-moov-enc.mp4')
-        xmlfile = os.path.join(tmpdir, "drm.xml")
-        with open(xmlfile, 'w') as xml:
+        basename = source.stem
+        moov_filename = tmpdir / f'{basename}-moov-enc.mp4'
+        xmlfile = tmpdir / "drm.xml"
+        with xmlfile.open('wt', encoding='utf-8') as xml:
             xml.write(self.XML_TEMPLATE.format(kid=kid.hex, key=key.hex, iv=iv.hex,
                                                iv_size=iv.length,
                                                track_id=representation.track_id))
 
         # MP4Box does not appear to be able to encrypt and fragment in one
         # stage, so first encrypt the media and then fragment it afterwards
-        args = ["MP4Box", "-crypt", xmlfile, "-out", moov_filename]
+        args = [
+            "MP4Box",
+            "-crypt", str(xmlfile),
+            "-out", str(moov_filename),
+        ]
         if self.options.framerate:
             args += ["-fps", str(self.options.framerate)]
-        args.append(source)
+        args.append(str(source))
         logging.debug('MP4Box arguments: %s', args)
         subprocess.check_call(args)
 
-        prefix = os.path.join(tmpdir, "dash_enc_")
+        prefix = str(tmpdir / "dash_enc_")
         args = [
             "MP4Box",
-            "-dash", str(self.options.segment_duration * 1000),
-            "-frag", str(self.options.segment_duration * 1000),
+            "-dash", str(self.options.segment_duration * self.timescale),
+            "-frag", str(self.options.segment_duration * self.timescale),
             "-segment-ext", "mp4",
             "-segment-name", 'dash_enc_$number%03d$$Init=init$',
             "-profile", "live",
@@ -472,19 +469,21 @@ class DashMediaCreator(object):
             "-timescale", str(self.timescale),
             "-rap",
             "-out", "manifest",
-            moov_filename,
+            str(moov_filename),
         ]
         logging.debug('MP4Box arguments: %s', args)
         cwd = os.getcwd()
-        os.chdir(tmpdir)
-        subprocess.check_call(args)
-        os.chdir(cwd)
-        moov = prefix + "init.mp4"
+        try:
+            os.chdir(tmpdir)
+            subprocess.check_call(args)
+        finally:
+            os.chdir(cwd)
+        moov = Path(prefix + "init.mp4")
         if self.options.verbose:
             subprocess.call(["ls", tmpdir])
         self.create_file_from_fragments(dest_filename, moov, prefix)
 
-    def parse_representation(self, filename):
+    def parse_representation(self, filename: str) -> Representation:
         parser = mp4.IsoParser()
         logging.debug('Parse %s', filename)
         atoms = parser.walk_atoms(filename)
@@ -555,7 +554,7 @@ class DashMediaCreator(object):
         return x
 
     @classmethod
-    def main(cls):
+    def main(cls, args: list[str]) -> int:
         ap = argparse.ArgumentParser(description='DASH encoding and packaging')
         ap.add_argument('--duration', '-d', help='Stream duration (in seconds) (0=auto)',
                         type=int, default=0)
@@ -575,7 +574,7 @@ class DashMediaCreator(object):
         ap.add_argument('-v', '--verbose', help='Verbose mode', action="store_true")
         ap.add_argument('--output', '-o', help='Output directory', dest='destdir', required=True)
         ap.add_argument('--prefix', '-p', help='Prefix for output files', required=True)
-        args = ap.parse_args()
+        args = ap.parse_args(args)
 
         logging.basicConfig()
         ch = logging.StreamHandler()
@@ -586,7 +585,7 @@ class DashMediaCreator(object):
             logging.getLogger().setLevel(logging.DEBUG)
             mp4_log.setLevel(logging.DEBUG)
 
-        dmc = DashMediaCreator(args)
+        dmc = cls(args)
         dmc.probe_media_info()
 
         if not os.path.exists(args.destdir):
@@ -596,10 +595,12 @@ class DashMediaCreator(object):
         dmc.package_all()
         if args.kid:
             dmc.encrypt_all()
-        mi = os.path.join(args.destdir, args.prefix + ".json")
-        with open(mi, 'wt') as f:
+        mi = Path(args.destdir) / f'{args.prefix}.json'
+        dmc.media_info['streams'][0]['files'].sort()
+        with mi.open('wt', encoding='utf-8') as f:
             json.dump(dmc.media_info, f, indent=2)
+        return 0
 
 
 if __name__ == "__main__":
-    DashMediaCreator.main()
+    sys.exit(DashMediaCreator.main(sys.argv))
