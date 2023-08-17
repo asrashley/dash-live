@@ -132,7 +132,7 @@ Python script which gives an example of how to encode and package the media file
 
 ```sh
 test -e "BigBuckBunny.mp4" || curl -o "BigBuckBunny.mp4" "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-python -m dashlive.media.create_media -i "BigBuckBunny.mp4" -p bbb --kid '1ab45440532c439994dc5c5ad9584bac' -o bbb
+python -m dashlive.media.create -i "BigBuckBunny.mp4" -p bbb --kid '1ab45440532c439994dc5c5ad9584bac' -o bbb
 ```
 
 The media files need to be uploaded once the dash server is running. Go to
