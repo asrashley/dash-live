@@ -134,6 +134,9 @@ $(document).ready(function(){
     }
     dest.text(url);
     dest.attr('href', document.location.origin + url);
+    dest = $('#view-manifest');
+    dest.attr('href', url.replace('/dash/', '/view/'));
+    dest.removeClass('disabled');
     $('#play-button').removeClass('disabled');
     if(window.history && typeof(history.pushState)==="function") {
 	params.mpd = 'mpd=' + $('#buttons tbody .manifest.selected').data("filename");

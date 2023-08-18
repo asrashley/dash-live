@@ -1,0 +1,29 @@
+{% extends 'layout.html' %}
+
+{% block extraheaders %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/font-awesome.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div class="display-manifest">
+<pre id="manifest-xml"> </pre>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {{import_script("jquery-3.7.0")}}
+  <script type="text/javascript">
+$(document).ready(function(){
+  'use strict';
+    function displayMpd(data) {
+      var ser;
+      ser = new XMLSerializer();
+      $('#manifest-xml').text(ser.serializeToString(data));
+    }
+    $.ajax("{{ mpd_url }}", {
+       success: displayMpd,
+       dataType: "xml"
+    });
+});
+  </script>
+{% endblock %}

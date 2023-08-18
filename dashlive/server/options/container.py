@@ -131,23 +131,33 @@ class OptionsContainer(ObjectWithFields):
         return dict_to_cgi_params(self.generate_cgi_parameters(
             use=use, exclude=exclude))
 
-    def remove_unused_parameters(self, mode: str, encrypted: Optional[bool] = None) -> None:
+    def remove_unused_parameters(self, mode: str, encrypted: Optional[bool] = None,
+                                 use: Optional[OptionUsage] = None) -> None:
         if encrypted is None:
             encrypted = self.encrypted
-        todo = []
+        todo: list[str] = []
         if mode != 'live':
-            todo += ['availabilityStartTime', 'minimumUpdatePeriod',
-                     'timeShiftBufferDepth', 'utcMethod', 'utcValue']
+            todo += {'availabilityStartTime', 'minimumUpdatePeriod',
+                     'timeShiftBufferDepth', 'utcMethod', 'utcValue'}
         if encrypted:
             drms = {item[0] for item in self.drmSelection}
             if 'playready' not in drms:
-                todo += ['playreadyLicenseUrl', 'playreadyPiff', 'playreadyVersion']
+                todo += {'playreadyLicenseUrl', 'playreadyPiff', 'playreadyVersion'}
             if 'marlin' not in drms:
                 todo.append('marlinLicenseUrl')
         else:
-            todo += ['marlinLicenseUrl', 'playreadyLicenseUrl', 'playreadyPiff',
-                     'playreadyVersion']
-
+            todo += {'marlinLicenseUrl', 'playreadyLicenseUrl', 'playreadyPiff',
+                     'playreadyVersion'}
+        if use is not None:
+            fields = set(self._fields)
+            fields.discard(set(todo))
+            for name in fields:
+                try:
+                    opt = self._parameter_map[name]
+                except KeyError:
+                    continue
+                if (opt.usage & use) == 0:
+                    todo.append(name)
         for name in todo:
             self.remove_field(name)
 
