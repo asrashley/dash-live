@@ -106,31 +106,6 @@ OperatingMode = DashOption(
     ),
     hidden=False)
 
-MSE_HTML = '''
-<p>Only relevant when using the Video Player page.</p>
-<ol>
-  <li> 0 - use native &lt;video&gt; element playback</li>
-  <li> 1 - use MSE with EME support</li>
-  <li> 2 - use MSE without EME support</li>
-</ol>
-'''
-
-MediaSource = DashOption(
-    usage=OptionUsage.HTML,
-    short_name='mse',
-    full_name='useNativePlayback',
-    title='Native playback',
-    description='Media Source Extension control',
-    from_string=DashOption.int_or_none_from_string,
-    cgi_name='mse',
-    cgi_choices=(
-        ('Yes', '0'),
-        ('Use MSE/EME', '1'),
-        ('Use MSE (no DRM)', '2'),
-    ),
-    html=MSE_HTML,
-    hidden=False)
-
 MinimumUpdatePeriod = DashOption(
     usage=OptionUsage.MANIFEST,
     short_name='mup',
@@ -186,7 +161,6 @@ manifest_options = [
     Bugs,
     FailureCount,
     ManifestHttpError,
-    MediaSource,
     MinimumUpdatePeriod,
     OperatingMode,
     Periods,

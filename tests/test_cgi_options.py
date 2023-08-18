@@ -79,7 +79,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             'depth': '60',
             'drift': '20',
             'drm': 'playready',
-            'mse': '1',
+            'player': 'shaka',
             'mup': 'none',
             'periods': '2',
             'playready_piff': '1',
@@ -102,7 +102,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             'playreadyVersion': 2.0,
             'timeShiftBufferDepth': 60,
             'useBaseUrls': True,
-            'useNativePlayback': 1,
+            'videoPlayer': 'shaka',
             'videoCorruption': ['2:03:05Z'],
             'videoCorruptionFrameCount': 3,
         }
@@ -212,10 +212,11 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             'abr': True,
             'availabilityStartTime': 'today',
             'audioCodec': 'mp4a',
-            'audioDescription': '',
+            'audioDescription': None,
             'audioErrors': [],
             'bugCompatibility': [],
             'clockDrift': None,
+            'dashjsVersion': None,
             'drmSelection': [],
             'eventTypes': [],
             'failureCount': None,
@@ -252,6 +253,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
                 'value': '',
                 'version': 0
             },
+            'shakaVersion': None,
             'textCodec': None,
             'textErrors': [],
             'timeShiftBufferDepth': 1800,
@@ -261,13 +263,41 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             'updateCount': None,
             'utcMethod': None,
             'useBaseUrls': True,
-            'useNativePlayback': 0,
+            'videoPlayer': 'native',
             'utcValue': None,
         }
         # print(OptionsRepository.get_default_options())
         actual = OptionsRepository.get_default_options().toJSON()
         self.maxDiff = None
         self.assertDictEqual(expected, actual)
+
+    def test_convert_shaka_cgi_options(self) -> None:
+        params = {
+            'player': 'shaka',
+            'shaka': '1.2.3',
+        }
+        expected = {
+            '_type': 'dashlive.server.options.container.OptionsContainer',
+            'encrypted': False,
+            'shakaVersion': '1.2.3',
+            'videoPlayer': 'shaka',
+        }
+        result = OptionsRepository.convert_cgi_options(params).toJSON()
+        self.assertDictEqual(expected, result)
+
+    def test_convert_dashjs_cgi_options(self) -> None:
+        params = {
+            'player': 'dashjs',
+            'dashjs': '1.2.3',
+        }
+        expected = {
+            '_type': 'dashlive.server.options.container.OptionsContainer',
+            'encrypted': False,
+            'dashjsVersion': '1.2.3',
+            'videoPlayer': 'dashjs',
+        }
+        result = OptionsRepository.convert_cgi_options(params).toJSON()
+        self.assertDictEqual(expected, result)
 
 
 if __name__ == "__main__":

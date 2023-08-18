@@ -28,6 +28,7 @@ import flask
 
 from dashlive.server import manifests, models
 from dashlive.server.options.repository import OptionsRepository
+from dashlive.server.options.types import OptionUsage
 
 from .flask_base import FlaskTestBase
 
@@ -188,21 +189,24 @@ class TestHtmlPageHandlers(FlaskTestBase):
         Checks every manifest with every CGI parameter causes a valid
         HTML page that allows the video to be watched using a <video> element.
         """
-        only = {'audioCodec', 'textCodec', 'drmSelection'}
+        only = {'audioCodec', 'textCodec', 'drmSelection', 'videoPlayer'}
         self.setup_media()
         self.logout_user()
         self.assertGreaterThan(models.MediaFile.count(), 0)
         num_tests = 0
+        use = OptionUsage.AUDIO + OptionUsage.VIDEO + OptionUsage.MANIFEST + OptionUsage.HTML
         for filename, manifest in manifests.manifest.items():
             for mode in manifest.supported_modes():
-                options = manifest.get_cgi_query_combinations(mode, simplified=True, only=only)
+                options = manifest.get_cgi_query_combinations(
+                    mode, simplified=True, only=only, use=use)
                 num_tests += len(options) * models.Stream.count()
         count = 0
         for filename, manifest in manifests.manifest.items():
-            for stream in models.Stream.all():
-                for mode in manifest.supported_modes():
-                    options = manifest.get_cgi_query_combinations(mode, simplified=True, only=only)
-                    for opt in options:
+            for mode in manifest.supported_modes():
+                options = manifest.get_cgi_query_combinations(
+                    mode, simplified=True, only=only, use=use)
+                for opt in options:
+                    for stream in models.Stream.all():
                         self.progress(count, num_tests)
                         self.check_video_html_page(filename, manifest, mode, stream, opt)
                         count += 1

@@ -31,6 +31,7 @@ import flask
 from dashlive.server import manifests, models
 from dashlive.server.options.drm_options import DrmLocation, DrmSelection
 from dashlive.server.options.repository import OptionsRepository
+from dashlive.server.options.player_options import ShakaVersion, DashjsVersion
 from dashlive.drm.playready import PlayReady
 
 from .base import HTMLHandlerBase
@@ -111,9 +112,13 @@ class VideoPlayer(HTMLHandlerBase):
     Responds with an HTML page that contains a video element to play the specified MPD
     """
 
+    SHAKA_CDN_TEMPLATE = r'https://ajax.googleapis.com/ajax/libs/shaka-player/{shakaVersion}/shaka-player.compiled.js'
+    DASHJS_CDN_TEMPLATE = r'https://cdn.dashjs.org/{dashjsVersion}/dash.all.min.js'
+
     decorators = [uses_stream]
 
     def get(self, mode, stream, manifest, **kwargs):
+        app_cfg = flask.current_app.config['DASH']
         manifest += '.mpd'
         context = self.create_context(**kwargs)
         try:
@@ -140,20 +145,46 @@ class VideoPlayer(HTMLHandlerBase):
             'dash-mpd-v3', stream=stream, manifest=manifest, mode=mode)
         options.remove_unused_parameters(mode)
         mpd_url += options.generate_cgi_parameters_string()
-        context['source'] = urllib.parse.urljoin(flask.request.host_url, mpd_url)
+        context.update({
+            'dashjsUrl': None,
+            'drm': None,
+            'mimeType': 'application/dash+xml',
+            'source': urllib.parse.urljoin(flask.request.host_url, mpd_url),
+            'shakaUrl': None,
+            'title': manifests.manifest[manifest].title,
+            'videoPlayer': options.videoPlayer,
+        })
         if options.drmSelection:
             context['drm'] = DrmSelection.to_string(options.drmSelection)
+        if options.videoPlayer == 'dashjs':
+            if options.dashjsVersion is None:
+                options.dashjsVersion = DashjsVersion.cgi_choices[1]
+            if options.dashjsVersion in set(DashjsVersion.cgi_choices):
+                context['dashjsUrl'] = flask.url_for(
+                    'static', filename=f'js/prod/dashjs-{options.dashjsVersion}.js')
+            else:
+                cdn_template = app_cfg.get('DASHJS_CDN_TEMPLATE', VideoPlayer.DASHJS_CDN_TEMPLATE)
+                context['dashjsUrl'] = cdn_template.format(dashjsVersion=options.dashjsVersion)
         else:
-            context['drm'] = 'none'
+            if options.shakaVersion is None:
+                options.shakaVersion = ShakaVersion.cgi_choices[1]
+            if options.shakaVersion in set(ShakaVersion.cgi_choices):
+                context['shakaUrl'] = flask.url_for(
+                    'static', filename=f'js/prod/shaka-player.{options.shakaVersion}.js')
+            else:
+                cdn_template = app_cfg.get('SHAKA_CDN_TEMPLATE', VideoPlayer.SHAKA_CDN_TEMPLATE)
+                context['shakaUrl'] = cdn_template.format(shakaVersion=options.shakaVersion)
         if self.is_https_request():
             context['source'] = context['source'].replace(
                 'http://', 'https://')
         else:
-            if "marlin" in context["drm"] and context['dash']['DRM']['marlin']['laurl']:
+            if (
+                    context["drm"] and
+                    "marlin" in context["drm"] and
+                    context['dash']['DRM']['marlin']['laurl']
+            ):
                 context['source'] = '#'.join([
                     context['dash']['DRM']['marlin']['laurl'],
                     context['source']
                 ])
-        context['mimeType'] = 'application/dash+xml'
-        context['title'] = manifests.manifest[manifest].title
         return flask.render_template('video.html', **context)
