@@ -32,6 +32,7 @@ from dashlive.server import manifests, models
 from dashlive.server.options.drm_options import DrmLocation, DrmSelection
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.options.player_options import ShakaVersion, DashjsVersion
+from dashlive.server.options.types import OptionUsage
 from dashlive.drm.playready import PlayReady
 
 from .base import HTMLHandlerBase
@@ -144,7 +145,7 @@ class VideoPlayer(HTMLHandlerBase):
         mpd_url = flask.url_for(
             'dash-mpd-v3', stream=stream, manifest=manifest, mode=mode)
         options.remove_unused_parameters(mode)
-        mpd_url += options.generate_cgi_parameters_string()
+        mpd_url += options.generate_cgi_parameters_string(use=~OptionUsage.HTML)
         context.update({
             'dashjsUrl': None,
             'drm': None,
@@ -188,3 +189,28 @@ class VideoPlayer(HTMLHandlerBase):
                     context['source']
                 ])
         return flask.render_template('video.html', **context)
+
+
+class ViewManifest(HTMLHandlerBase):
+    """
+    Responds with an HTML page that shows the contents of a manifest
+    """
+
+    decorators = [uses_stream]
+
+    def get(self, mode, stream, manifest, **kwargs):
+        app_cfg = flask.current_app.config['DASH']
+        context = self.create_context(**kwargs)
+        try:
+            options = self.calculate_options(mode)
+        except ValueError as err:
+            logging.error('Invalid CGI parameters: %s', err)
+            return flask.make_response(f'Invalid CGI parameters: {err}', 400)
+        mpd_url = flask.url_for(
+            'dash-mpd-v3', stream=stream, manifest=manifest, mode=mode)
+        options.remove_unused_parameters(mode, use=~OptionUsage.HTML)
+        mpd_url += options.generate_cgi_parameters_string()
+        context.update({
+            'mpd_url': mpd_url,
+        })
+        return flask.render_template('manifest.html', **context)
