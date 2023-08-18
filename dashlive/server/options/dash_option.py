@@ -42,7 +42,7 @@ class DashOption:
     cgi_name: Union[str, list[str]]
     cgi_choices: Optional[tuple[CgiChoiceType, ...]] = field(default=None)
     cgi_type: Optional[str] = None
-    from_string: Callable[[str], Any] = field(default_factory=lambda: str)
+    from_string: Callable[[str], Any] = field(default_factory=lambda: DashOption.string_or_none)
     to_string: Callable[[str], Any] = field(default_factory=lambda: flatten)
     prefix: str = field(default='')
     hidden: bool = True

@@ -26,6 +26,7 @@ from typing import AbstractSet, Optional
 from dashlive.mpeg.dash.profiles import primary_profiles
 from dashlive.server.options.drm_options import DrmLocation, DrmSelection
 from dashlive.server.options.repository import OptionsRepository
+from dashlive.server.options.types import OptionUsage
 
 DashCgiOption = tuple[str, list[str]]
 
@@ -46,6 +47,7 @@ class DashManifest:
             self,
             mode: str,
             simplified: bool = False,
+            use: Optional[OptionUsage] = None,
             only: Optional[AbstractSet] = None,
             extras: Optional[list[tuple]] = None) -> list[str]:
         """
@@ -53,7 +55,7 @@ class DashManifest:
         """
         defaults = OptionsRepository.get_default_options()
         drm_opts = self.get_drm_options(mode)
-        exclude = {'abr', 'useNativePlayback', 'bugCompatibility', 'drmSelection',
+        exclude = {'abr', 'bugCompatibility', 'drmSelection',
                    'mode', 'numPeriods', 'minimumUpdatePeriod'}
         if simplified:
             exclude = exclude.union({
@@ -71,7 +73,9 @@ class DashManifest:
         logging.debug('only=%s', only)
         queries: set[str] = set()
         options: list[tuple] = []
-        for dash_opt in OptionsRepository.get_dash_options(only=only, exclude=exclude):
+        if use is None:
+            use = ~OptionUsage.HTML
+        for dash_opt in OptionsRepository.get_dash_options(only=only, exclude=exclude, use=use):
             choices: list[str] = []
             for choice in dash_opt.cgi_choices:
                 if isinstance(choice, tuple):
