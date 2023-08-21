@@ -81,6 +81,7 @@ class FlaskTestBase(TestCaseMixin, TestCase):
             'SECRET_KEY': 'cookie.secret',
             'SQLALCHEMY_DATABASE_URI': "sqlite:///:memory:",
             'TESTING': True,
+            'LOG_LEVEL': 'critical',
         }
         app = create_app(config=config, create_default_user=False)
         with app.app_context():

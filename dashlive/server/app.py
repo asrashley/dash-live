@@ -112,6 +112,12 @@ def create_app(config: Optional[JsonObject] = None,
     app.config.from_prefixed_env()
     if config is not None:
         app.config.update(config)
+    log_level = app.config.get('LOG_LEVEL')
+    if log_level:
+        logging.getLogger().setLevel(log_level.upper())
+    for module in ['fio', 'mp4']:
+        log_level = app.config.get(f'{module.upper()}_LOG_LEVEL', 'warning')
+        logging.getLogger(module).setLevel(log_level.upper())
     models.db.init_app(app)
     login_manager.anonymous_user = AnonymousUser
     login_manager.init_app(app)
