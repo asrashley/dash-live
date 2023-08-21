@@ -19,7 +19,7 @@
       <ContentProtection schemeIdUri="urn:uuid:1077efec-c0b2-4d02-ace3-3c1e52e2fb4b">
         <cenc:pssh>AAAANHBzc2gBAAAAEHfv7MCyTQKs4zweUuL7SwAAAAEatFRAUyxDmZTcXFrZWEusAAAAAA==</cenc:pssh>
       </ContentProtection>
-      <SegmentTemplate initialization="$RepresentationID$/init.m4v?drm=all" media="$RepresentationID$/$Number$.m4v?drm=all" presentationTimeOffset="0" timescale="240">
+      <SegmentTemplate initialization="$RepresentationID$/init.m4v?drm=all" media="$RepresentationID$/time/$Time$.m4v?drm=all" presentationTimeOffset="0" timescale="240">
         <SegmentTimeline>
           <S r="10" t="0" d="960"/>
         </SegmentTimeline>
@@ -46,7 +46,7 @@
       <ContentProtection schemeIdUri="urn:uuid:1077efec-c0b2-4d02-ace3-3c1e52e2fb4b">
         <cenc:pssh>AAAANHBzc2gBAAAAEHfv7MCyTQKs4zweUuL7SwAAAAEatFRAUyxDmZTcXFrZWEusAAAAAA==</cenc:pssh>
       </ContentProtection>
-      <SegmentTemplate initialization="$RepresentationID$/init.m4a?drm=all" media="$RepresentationID$/$Number$.m4a?drm=all" presentationTimeOffset="0" timescale="44100">
+      <SegmentTemplate initialization="$RepresentationID$/init.m4a?drm=all" media="$RepresentationID$/time/$Time$.m4a?drm=all" presentationTimeOffset="0" timescale="44100">
         <SegmentTimeline>
           <S r="2" t="0" d="176128"/>
           <S d="177152"/>

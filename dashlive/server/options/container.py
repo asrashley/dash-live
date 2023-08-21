@@ -105,7 +105,7 @@ class OptionsContainer(ObjectWithFields):
         Any option that matches its default is excluded.
         """
         if exclude is None:
-            exclude = {'encrypted'}
+            exclude = {'encrypted', 'mode'}
         if destination is None:
             destination: dict[str, str] = {}
         for key, value in self.items():

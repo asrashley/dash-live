@@ -34,6 +34,7 @@ from lxml import etree as ET
 
 from dashlive.mpeg.dash.profiles import primary_profiles
 from dashlive.server import manifests, models
+from dashlive.server.options.container import OptionsContainer
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.requesthandler.manifest_requests import ServeManifest
 
@@ -207,7 +208,11 @@ class DashManifestCheckMixin:
             mode=mode,
             stream=self.FIXTURES_PATH.name,
             manifest=mpd_filename)
-        options = OptionsRepository.convert_cgi_options(kwargs)
+        defaults = OptionsRepository.get_default_options()
+        options = OptionsRepository.convert_cgi_options(kwargs, defaults=defaults)
+        manifest = manifests.manifest[mpd_filename]
+        options.segmentTimeline = manifest.segment_timeline
+        options.add_field('mode', mode)
         options.remove_unused_parameters(mode)
         url += options.generate_cgi_parameters_string()
         stream = models.Stream.get(directory=self.FIXTURES_PATH.name)
@@ -215,7 +220,7 @@ class DashManifestCheckMixin:
         # with self.app.test_request_context(url, method='GET'):
         with self.create_mock_request_context(url, stream):
             context = self.generate_manifest_context(
-                mpd_filename, mode=mode, stream=stream, **kwargs)
+                mpd_filename, mode=mode, stream=stream, options=options)
             text = flask.render_template(f'manifests/{mpd_filename}', **context)
         encrypted = kwargs.get('drm', 'none') != 'none'
         fixture = self.fixture_filename(mpd_filename, mode, encrypted)
@@ -223,11 +228,8 @@ class DashManifestCheckMixin:
         actual = ET.fromstring(bytes(text, 'utf-8'))
         self.assertXmlEqual(expected, actual)
 
-    def generate_manifest_context(self, mpd_filename: str, mode: str, stream, **kwargs) -> dict:
-        defaults = OptionsRepository.get_default_options()
-        options = OptionsRepository.convert_cgi_options(kwargs, defaults)
-        options.remove_unused_parameters(mode)
-        options.add_field('mode', mode)
+    def generate_manifest_context(self, mpd_filename: str, mode: str,
+                                  stream: models.Stream, options: OptionsContainer) -> dict:
         mock = MockServeManifest(flask.request)
         context = mock.calculate_dash_params(mpd_url=mpd_filename, options=options)
         if options.encrypted:

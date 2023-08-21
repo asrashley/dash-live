@@ -81,7 +81,11 @@
                    timescale="{{adp.timescale}}"
                    duration="{{rep.segment_duration}}"
                    initialization="{{adp.initURL|xmlSafe}}"
-                   media="{{adp.mediaURL|xmlSafe}}" />
+                   media="{{adp.mediaURL|xmlSafe}}">
+		 {%- if options.segmentTimeline %}
+		 {% include "segment/timeline.xml" %}
+		 {%- endif %}
+               </SegmentTemplate>
              {%- endif %}
            {%- endif %}
            <Representation

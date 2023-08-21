@@ -253,6 +253,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
                 'value': '',
                 'version': 0
             },
+            'segmentTimeline': False,
             'shakaVersion': None,
             'textCodec': None,
             'textErrors': [],

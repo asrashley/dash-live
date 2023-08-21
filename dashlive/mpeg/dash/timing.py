@@ -26,11 +26,14 @@ import logging
 
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.server.options.container import OptionsContainer
+from dashlive.utils.date_time import scale_timedelta
 
 class DashTiming:
     DEFAULT_TIMESHIFT_BUFFER_DEPTH = 60  # in seconds
 
-    def __init__(self, now: datetime.datetime,
+    def __init__(self,
+                 now: datetime.datetime,
+                 start_number: int,
                  representation: Representation,
                  options: OptionsContainer) -> None:
         self.timeShiftBufferDepth = 0
@@ -38,35 +41,43 @@ class DashTiming:
         self.now = now
         self.availabilityStartTime = None
         self.publishTime = now.replace(microsecond=0)
-        # self.elapsedTime = datetime.timedelta(seconds=0)
+        self.startNumber = start_number
         if options.mode == 'live':
             self.calculate_live_params(now, representation, options)
         else:
-            self.mediaDuration = datetime.timedelta(seconds=(
-                old_div(representation.mediaDuration, representation.timescale)))
+            self.calculate_vod_params(now, representation, options)
+
+    def calculate_vod_params(self, now, representation, options) -> None:
+        self.elapsedTime = datetime.timedelta(seconds=0)
+        self.mediaDuration = datetime.timedelta(seconds=(
+            old_div(representation.mediaDuration, representation.timescale)))
+        self.firstFragment = self.startNumber
+        self.lastFragment = (
+            self.startNumber - 1 +
+            representation.mediaDuration // representation.num_segments)
 
     def calculate_live_params(self,
                               now: datetime.datetime,
                               representation: Representation,
                               options: OptionsContainer) -> None:
-        publishTime = now.replace(microsecond=0)
         self.timeShiftBufferDepth = options.timeShiftBufferDepth
         if not self.timeShiftBufferDepth:
             self.timeShiftBufferDepth = self.DEFAULT_TIMESHIFT_BUFFER_DEPTH
         if options.availabilityStartTime == 'today':
-            self.availabilityStartTime = publishTime.replace(
+            self.availabilityStartTime = now.replace(
                 hour=0, minute=0, second=0, microsecond=0)
-            if publishTime.hour == 0 and publishTime.minute == 0:
+            if self.publishTime.hour == 0 and self.publishTime.minute == 0:
                 self.availabilityStartTime -= datetime.timedelta(days=1)
         elif options.availabilityStartTime == 'now':
             self.availabilityStartTime = (
-                publishTime -
+                self.publishTime -
                 datetime.timedelta(seconds=self.DEFAULT_TIMESHIFT_BUFFER_DEPTH))
         else:
             self.availabilityStartTime = options.availabilityStartTime
         self.elapsedTime = now - self.availabilityStartTime
-        logging.debug('calculate_live_params elapsed=%s now=%s availabilityStartTime=%s',
-                      self.elapsedTime, now, self.availabilityStartTime)
+        logging.debug('calculate_live_params elapsed=%s (%f) now=%s availabilityStartTime=%s',
+                      self.elapsedTime, self.elapsedTime.total_seconds(),
+                      now, self.availabilityStartTime)
         if self.elapsedTime.total_seconds() == 0:
             logging.info('Elapsed time is zero, moving availabilityStartTime back one day')
             self.elapsedTime = datetime.timedelta(days=1)
@@ -80,6 +91,15 @@ class DashTiming:
             self.minimumUpdatePeriod = default_mup
         elif self.minimumUpdatePeriod <= 0:
             self.minimumUpdatePeriod = None
+        self.firstAvailableTime = self.elapsedTime - datetime.timedelta(
+            seconds=self.timeShiftBufferDepth)
+        self.lastFragment = self.startNumber + int(scale_timedelta(
+            self.elapsedTime, representation.timescale, representation.segment_duration))
+        self.firstFragment = (
+            self.lastFragment -
+            int(old_div(representation.timescale *
+                        self.timeShiftBufferDepth, representation.segment_duration)) - 1)
+        self.firstFragment = max(self.startNumber, self.firstFragment)
 
     def generate_manifest_context(self):
         if self.mode == 'live':

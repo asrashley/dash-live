@@ -20,11 +20,7 @@
 #
 #############################################################################
 
-from __future__ import print_function
-from __future__ import division
-from builtins import str
 from past.utils import old_div
-from builtins import object
 import datetime
 import os
 import sys
@@ -39,14 +35,15 @@ from dashlive.utils.list_of import ListOf
 from dashlive.utils.object_with_fields import ObjectWithFields
 
 from .segment import Segment
+from .time_values import TimeValues
 
-class SegmentTimelineElement(object):
-    def __init__(self, duration=None, count=0, start=None):
+class SegmentTimelineElement:
+    def __init__(self, duration: Optional[int] = None, count: int = 0, start=None) -> None:
         self.duration = duration
         self.count = count
         self.start = start
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.start is not None:
             return r'<S t="{0}" r="{1}" d="{2}" />'.format(
                 self.start, self.count - 1, self.duration)
@@ -54,7 +51,7 @@ class SegmentTimelineElement(object):
             self.count - 1, self.duration)
 
     @property
-    def repeat(self):
+    def repeat(self) -> int:
         return self.count - 1
 
 
@@ -112,7 +109,7 @@ class Representation(ObjectWithFields):
         self.num_segments = len(self.segments) - 1
         self._ref_representation: Optional[Representation] = None
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.as_python(exclude={'num_segments'})
 
     @classmethod
@@ -209,8 +206,8 @@ class Representation(ObjectWithFields):
         else:
             self._ref_representation = ref_representation
 
-    def set_dash_timing(self, timing):
-        self.timing = timing
+    def set_dash_timing(self, timing: TimeValues) -> None:
+        self.time_vals = timing
 
     @classmethod
     def process_moov(clz, moov: Mp4Atom, rv: Mp4Atom, key_ids: Mp4Atom) -> None:
@@ -413,16 +410,17 @@ class Representation(ObjectWithFields):
             if sn.duration is None:
                 return
             rv.append(sn)
+
         rv = []
-        if self.timing.mode == 'live':
+        if self.time_vals.mode == 'live':
             timeline_start = (
-                self.timing.elapsedTime -
-                datetime.timedelta(seconds=self.timing.timeShiftBufferDepth))
+                self.time_vals.elapsedTime -
+                datetime.timedelta(seconds=self.time_vals.timeShiftBufferDepth))
         else:
             timeline_start = datetime.timedelta(seconds=0)
         first = True
         segment_num, origin_time = self.calculate_segment_from_timecode(
-            scale_timedelta(timeline_start, 1, 1))
+            timeline_start.total_seconds())
         assert segment_num < len(self.segments)
         # seg_start_time is the time (in representation timescale units) when the segment_num
         # segment started, relative to availabilityStartTime
@@ -430,10 +428,10 @@ class Representation(ObjectWithFields):
                              (segment_num - 1) * self.segment_duration)
         dur = 0
         s_node = SegmentTimelineElement()
-        if self.timing.mode == 'live':
-            end = self.timing.timeShiftBufferDepth * self.timescale
+        if self.time_vals.mode == 'live':
+            end = self.time_vals.timeShiftBufferDepth * self.timescale
         else:
-            end = self.timing.mediaDuration.total_seconds() * self.timescale
+            end = self.time_vals.mediaDuration.total_seconds() * self.timescale
         while dur <= end:
             seg = self.segments[segment_num]
             if first:
@@ -451,6 +449,19 @@ class Representation(ObjectWithFields):
                 segment_num = 1
         output_s_node(s_node)
         return rv
+
+    def timedelta_to_timescale(self, delta: datetime.timedelta) -> int:
+        """
+        Convert the given timedelta into the timescale used by this representation
+        """
+        return int(delta.total_seconds() * self.timescale)
+
+    def timescale_to_timedelta(self, timecode: int) -> datetime.timedelta:
+        """
+        Convert the given timecode (in timescale units) into a timedelta
+        """
+        seconds = float(timecode) / float(self.timescale)
+        return datetime.timedelta(seconds=seconds)
 
     def calculate_segment_from_timecode(self, timecode):
         """
@@ -497,7 +508,7 @@ class Representation(ObjectWithFields):
         if segment_num > self.num_segments:
             segment_num = 1
             origin_time += nominal_duration
-        origin_time /= ref_representation.timescale
+        origin_time = origin_time // ref_representation.timescale
         if segment_num < 1 or segment_num > self.num_segments:
             raise ValueError(f'Invalid segment number {segment_num}')
         return (segment_num, origin_time)
