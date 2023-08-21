@@ -20,12 +20,11 @@
 #
 #############################################################################
 
-from builtins import object
 import logging
 
 import bitstring
 
-class BitsFieldReader(object):
+class BitsFieldReader:
     __slots__ = ('name', 'debug', 'data', 'src', 'kwargs', 'bitsize', 'log')
 
     def __init__(self, name, src, kwargs, size=None, data=None, debug=False):
@@ -77,7 +76,7 @@ class BitsFieldReader(object):
             self.log.debug(
                 '%s: read_bytes %s size=%d pos=%s', self.name, field, length,
                 self.src.pos)
-        data = self.src.read('bytes:{0}'.format(length))
+        data = self.src.read(f'bytes:{length}')
         self.kwargs[field] = data
 
     def get(self, size, field):
@@ -94,7 +93,7 @@ class BitsFieldReader(object):
             self.log.debug(
                 '%s: read_bytes %s size=%d pos=%s', self.name, field, length,
                 self.src.pos)
-        data = self.src.read('bytes:{0}'.format(length))
+        data = self.src.read(f'bytes:{length}')
         return data
 
     def bitpos(self):

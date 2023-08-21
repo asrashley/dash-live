@@ -20,9 +20,7 @@
 #
 #############################################################################
 
-from __future__ import absolute_import
 import datetime
-from typing import List, Optional
 
 import flask
 from flask_login import current_user, login_user, logout_user
@@ -146,7 +144,7 @@ class EditUser(HTMLHandlerBase):
     """
     decorators = [modifies_user_model, login_required(admin=True)]
 
-    def get(self, upk: Optional[int] = None, error: Optional[str] = None, **kwargs) -> flask.Response:
+    def get(self, upk: int | None = None, error: str | None = None, **kwargs) -> flask.Response:
         """
         Returns an HTML form for editing a user
         """
@@ -179,7 +177,7 @@ class EditUser(HTMLHandlerBase):
         })
         return flask.render_template('users/edit_user.html', **context)
 
-    def post(self, upk: Optional[int] = None) -> flask.Response:
+    def post(self, upk: int | None = None) -> flask.Response:
         """
         Modifies a user
         """
@@ -207,7 +205,7 @@ class EditUser(HTMLHandlerBase):
             if flask.request.form['password'] != flask.request.form['confirm_password']:
                 return self.get(upk, error='Passwords do not match', **flask.request.form)
             user.set_password(flask.request.form['password'])
-        groups: List[models.Group] = []
+        groups: list[models.Group] = []
         for group in models.Group.names():
             field_name = f'{group.lower()}_group'
             if flask.request.form.get(field_name, '').lower() in {'on', '1', 'checked'}:

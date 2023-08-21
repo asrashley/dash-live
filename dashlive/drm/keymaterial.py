@@ -20,13 +20,12 @@
 #
 #############################################################################
 
-from builtins import object
 import base64
 import binascii
 import re
 
 
-class KeyMaterial(object):
+class KeyMaterial:
     length = 16
 
     def __init__(self, value=None, hex=None, b64=None, raw=None):
@@ -53,7 +52,7 @@ class KeyMaterial(object):
         else:
             raise ValueError("One of value, hex, b64 or raw must be provided")
         if len(self.raw) != self.length:
-            raise ValueError("Size {} is invalid".format(len(self.raw)))
+            raise ValueError(f"Size {len(self.raw)} is invalid")
 
     def to_hex(self):
         return str(binascii.b2a_hex(self.raw), 'ascii')

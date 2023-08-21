@@ -1,4 +1,3 @@
-from __future__ import division
 #############################################################################
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
@@ -21,17 +20,13 @@ from __future__ import division
 #
 #############################################################################
 
-from builtins import str
-from builtins import map
-from builtins import object
-from past.utils import old_div
 import decimal
 import logging
 import struct
 
 from .sizes import format_bit_sizes
 
-class FieldReader(object):
+class FieldReader:
     __slots__ = ['name', 'src', 'kwargs', 'log']
 
     def __init__(self, name, src, kwargs, debug=False):
@@ -86,8 +81,8 @@ class FieldReader(object):
         elif size[0] == 'D':
             bsz, asz = list(map(int, size[1:].split('.')))
             shift = 1 << asz
-            value = old_div(decimal.Decimal(
-                self.get(format_bit_sizes[bsz + asz], field)), shift)
+            value = decimal.Decimal(
+                self.get(format_bit_sizes[bsz + asz], field)) / decimal.Decimal(shift)
         else:
             raise ValueError("unsupported size: " + size)
         if mask is not None:

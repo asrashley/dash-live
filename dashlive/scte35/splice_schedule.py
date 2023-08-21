@@ -20,7 +20,6 @@
 #
 #############################################################################
 
-from builtins import range
 
 from dashlive.utils.fio import BitsFieldReader, BitsFieldWriter
 from dashlive.utils.object_with_fields import ObjectWithFields

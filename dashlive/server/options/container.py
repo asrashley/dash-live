@@ -45,7 +45,7 @@ class OptionsContainer(ObjectWithFields):
                  parameter_map: dict[str, DashOption],
                  defaults: Optional["OptionsContainer"],
                  **kwargs) -> None:
-        super(OptionsContainer, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self._parameter_map = parameter_map
         self._defaults = defaults
 
@@ -76,8 +76,8 @@ class OptionsContainer(ObjectWithFields):
                             destination: dict[str, str],
                             prefix: str,
                             sub_opts: dict[str, Any],
-                            use: Optional[OptionUsage],
-                            exclude: Optional[AbstractSet]) -> None:
+                            use: OptionUsage | None,
+                            exclude: AbstractSet | None) -> None:
         defaults = ObjectWithFields()
         if self._defaults is not None and prefix in self._defaults._fields:
             defaults = self._defaults[prefix]
@@ -97,9 +97,9 @@ class OptionsContainer(ObjectWithFields):
             destination[opt.cgi_name] = opt.to_string(value)
 
     def generate_cgi_parameters(self,
-                                destination: Optional[dict[str, str]] = None,
-                                use: Optional[OptionUsage] = None,
-                                exclude: Optional[AbstractSet] = None) -> dict[str, str]:
+                                destination: dict[str, str] | None = None,
+                                use: OptionUsage | None = None,
+                                exclude: AbstractSet | None = None) -> dict[str, str]:
         """
         Produces a dictionary of CGI parameters that represent these options.
         Any option that matches its default is excluded.
@@ -126,13 +126,13 @@ class OptionsContainer(ObjectWithFields):
         return destination
 
     def generate_cgi_parameters_string(self,
-                                       use: Optional[OptionUsage] = None,
-                                       exclude: Optional[AbstractSet] = None) -> str:
+                                       use: OptionUsage | None = None,
+                                       exclude: AbstractSet | None = None) -> str:
         return dict_to_cgi_params(self.generate_cgi_parameters(
             use=use, exclude=exclude))
 
-    def remove_unused_parameters(self, mode: str, encrypted: Optional[bool] = None,
-                                 use: Optional[OptionUsage] = None) -> None:
+    def remove_unused_parameters(self, mode: str, encrypted: bool | None = None,
+                                 use: OptionUsage | None = None) -> None:
         if encrypted is None:
             encrypted = self.encrypted
         todo: list[str] = []

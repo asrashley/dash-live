@@ -52,7 +52,7 @@ class OptionUsage(IntFlag):
 
 class CgiOptionChoice(NamedTuple):
     description: str
-    value: Union[str, bool, int]
+    value: str | bool | int
 
 
 @dataclass(frozen=True, slots=True)

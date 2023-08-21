@@ -20,12 +20,10 @@
 #
 #############################################################################
 
-from builtins import str
 import datetime
 import hashlib
 import logging
 from pathlib import Path
-from typing import Dict, List, Union
 
 import flask
 from werkzeug.utils import secure_filename
@@ -159,8 +157,8 @@ class MediaInfo(HTMLHandlerBase):
                 mf.representation.segment_duration / float(mf.representation.timescale)))
         return flask.render_template('media/media_info.html', **context)
 
-    def get_breadcrumbs(self, route: Route) -> List[Dict[str, str]]:
-        breadcrumbs = super(MediaInfo, self).get_breadcrumbs(route)
+    def get_breadcrumbs(self, route: Route) -> list[dict[str, str]]:
+        breadcrumbs = super().get_breadcrumbs(route)
         breadcrumbs.insert(-1, {
             'title': current_stream.directory,
             'href': flask.url_for('view-stream', spk=current_stream.pk),
@@ -345,7 +343,7 @@ class MediaSegmentInfo(HTMLHandlerBase):
         return flask.render_template('media/segment_info.html', **context)
 
     @staticmethod
-    def object_name(obj: Union[str, JsonObject]) -> str:
+    def object_name(obj: str | JsonObject) -> str:
         if isinstance(obj, str):
             return obj.split('.')[-1]
         if 'atom_type' in obj:

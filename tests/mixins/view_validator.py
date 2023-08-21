@@ -20,8 +20,6 @@
 #
 #############################################################################
 
-from future import standard_library
-standard_library.install_aliases()
 import logging
 import urllib.parse
 
@@ -36,7 +34,7 @@ class ViewsTestDashValidator(DashValidator):
         opts.log.addFilter(HideMixinsFilter())
         if debug:
             opts.log.setLevel(logging.DEBUG)
-        super(ViewsTestDashValidator, self).__init__(
+        super().__init__(
             url=url,
             http_client=http_client,
             mode=mode,

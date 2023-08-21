@@ -1,7 +1,3 @@
-from future import standard_library
-standard_library.install_aliases()
-from builtins import range
-from builtins import object
 import datetime
 import io
 import unittest
@@ -116,7 +112,7 @@ class BufferedReaderTests(unittest.TestCase):
         for i in range(8):
             self.assertEqual(p[i], i + 8)
 
-class HasTwoJson(object):
+class HasTwoJson:
     def __init__(self, result, pure):
         self.pure = pure
         self.result = result
@@ -124,7 +120,7 @@ class HasTwoJson(object):
     def toJSON(self, pure):
         if pure != self.pure:
             raise AssertionError(
-                "Wrong pure argument. Got {0} expected {1}".format(pure, self.pure))
+                f"Wrong pure argument. Got {pure} expected {self.pure}")
         return self.result
 
 class ObjectTests(unittest.TestCase):

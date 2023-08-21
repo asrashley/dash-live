@@ -20,13 +20,9 @@
 #
 #############################################################################
 
-from __future__ import division
-from builtins import str
-from past.utils import old_div
 import datetime
 import io
 import logging
-from typing import Optional
 
 import flask
 
@@ -35,7 +31,7 @@ from dashlive.mpeg.dash.timing import DashTiming
 from dashlive.server import models
 from dashlive.server.events.factory import EventFactory
 from dashlive.server.options.container import OptionsContainer
-from dashlive.utils.date_time import UTC, scale_timedelta
+from dashlive.utils.date_time import UTC
 from dashlive.utils.buffered_reader import BufferedReader
 
 from .base import RequestHandlerBase
@@ -88,8 +84,8 @@ class LiveMedia(RequestHandlerBase):
 
     def get(self, mode: str, stream: str, filename: str,
             ext: str,
-            segment_num: Optional[str] = None,
-            segment_time: Optional[int] = None) -> flask.Response:
+            segment_num: str | None = None,
+            segment_time: int | None = None) -> flask.Response:
         logging.debug('LiveMedia.get: %s %s %s %s', stream, filename, segment_num, ext)
         # print('LiveMedia.get', flask.request.url)
         representation = current_media_file.representation
@@ -170,7 +166,9 @@ class LiveMedia(RequestHandlerBase):
                     logging.debug('mod_segment=%d origin_time=%d', mod_segment, origin_time)
                 except ValueError as err:
                     logging.warning('ValueError: %s', err)
-                    msg = f'Segment {segment_num} not found (valid range= {timing.firstFragment} -> {timing.lastFragment}): {err}'
+                    msg = (f'Segment {segment_num} not found ' +
+                           f'(valid range= {timing.firstFragment} -> ' +
+                           f'{timing.lastFragment}): {err}')
                     return flask.make_response(msg, 404)
             else:
                 # firstFragment = adp_set.startNumber
@@ -218,7 +216,7 @@ class LiveMedia(RequestHandlerBase):
                 # stream would have looped since availabilityStartTime
                 delta = origin_time * representation.timescale
                 if delta < 0:
-                    msg = "Failure in calculating delta={0} segment={1} mod={2} startNumber={3}".format(
+                    msg = "Failure in calculating delta={} segment={} mod={} startNumber={}".format(
                         str(delta), segment_num, mod_segment, adp_set.startNumber)
                     return flask.make_response((msg, 500))
                 atom.moof.traf.tfdt.base_media_decode_time += delta
@@ -303,7 +301,7 @@ class LiveMedia(RequestHandlerBase):
 
     def check_for_synthetic_http_error(
             self, content_type: str, seg_num: int,
-            options: OptionsContainer) -> Optional[flask.Response]:
+            options: OptionsContainer) -> flask.Response | None:
         if content_type == 'audio':
             errs = options.audioErrors
         elif content_type == 'video':

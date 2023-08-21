@@ -20,7 +20,6 @@
 #
 #############################################################################
 
-from builtins import range
 import binascii
 import io
 import json
@@ -269,7 +268,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
                               offset: child.position + child.size - offset]
         js = child.toJSON()
         ch2 = mp4.Mp4Atom.fromJSON(js)
-        name = 'Encoding %s (%s)' % (child.classname(), child.atom_type)
+        name = 'Encoding {} ({})'.format(child.classname(), child.atom_type)
         dest = io.BytesIO()
         ch2.encode(dest)
         new_child_data = dest.getvalue()
@@ -785,7 +784,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         with open(filename, 'rb') as src:
             segments = mp4.Mp4Atom.load(BufferedReader(src))
         filename = self.FIXTURES_PATH / f'{name}.json'
-        with open(filename, 'rt') as src:
+        with open(filename) as src:
             expected = json.load(src)
         actual = []
         for atom in segments:

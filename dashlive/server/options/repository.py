@@ -21,7 +21,7 @@
 #############################################################################
 
 import logging
-from typing import AbstractSet, ClassVar, Optional
+from typing import AbstractSet, ClassVar
 
 from .audio_options import audio_options
 from .container import OptionsContainer
@@ -36,9 +36,9 @@ from .video_options import video_options
 from .utc_time_options import time_options
 
 class OptionsRepository:
-    _cgi_map: ClassVar[Optional[dict[str, DashOption]]] = None
-    _param_map: ClassVar[Optional[dict[str, DashOption]]] = None
-    _global_default_options: ClassVar[Optional[OptionsContainer]] = None
+    _cgi_map: ClassVar[dict[str, DashOption] | None] = None
+    _param_map: ClassVar[dict[str, DashOption] | None] = None
+    _global_default_options: ClassVar[OptionsContainer | None] = None
     _all_options: ClassVar[list[DashOption]] = (
         audio_options +
         drm_options +
@@ -51,9 +51,9 @@ class OptionsRepository:
 
     @classmethod
     def get_dash_options(cls,
-                         use: Optional[OptionUsage] = None,
-                         only: Optional[AbstractSet[str]] = None,
-                         exclude: Optional[AbstractSet[str]] = None) -> list[DashOption]:
+                         use: OptionUsage | None = None,
+                         only: AbstractSet[str] | None = None,
+                         exclude: AbstractSet[str] | None = None) -> list[DashOption]:
         """
         Returns a list of all the options applicable to "use", or all options
         if use is None.
@@ -74,10 +74,10 @@ class OptionsRepository:
         return result
 
     @classmethod
-    def get_cgi_options(cls, use: Optional[OptionUsage] = None,
-                        only: Optional[AbstractSet[str]] = None,
-                        exclude: Optional[AbstractSet[str]] = None,
-                        extras: Optional[DashOption] = None,
+    def get_cgi_options(cls, use: OptionUsage | None = None,
+                        only: AbstractSet[str] | None = None,
+                        exclude: AbstractSet[str] | None = None,
+                        extras: DashOption | None = None,
                         omit_empty: bool = False,
                         **filter) -> list[CgiOption]:
         """
@@ -139,7 +139,7 @@ class OptionsRepository:
         return cls._param_map
 
     @classmethod
-    def get_default_options(cls, use: Optional[OptionUsage] = None) -> OptionsContainer:
+    def get_default_options(cls, use: OptionUsage | None = None) -> OptionsContainer:
         """
         Returns a dictionary containing the global defaults for every option
         """
@@ -170,7 +170,7 @@ class OptionsRepository:
 
     @classmethod
     def convert_cgi_options(cls, params: dict[str, str],
-                            defaults: Optional[OptionsContainer] = None) -> OptionsContainer:
+                            defaults: OptionsContainer | None = None) -> OptionsContainer:
         """
         Convert a dictionary of CGI parameters to an OptionsContainer object
         """

@@ -20,10 +20,6 @@
 #
 #############################################################################
 
-from __future__ import print_function
-from builtins import zip
-from builtins import range
-from builtins import object
 import binascii
 import datetime
 import logging
@@ -31,7 +27,7 @@ import os
 import sys
 from unittest import mock
 
-class TestCaseMixin(object):
+class TestCaseMixin:
     real_datetime_class = datetime.datetime
 
     @classmethod
@@ -95,8 +91,8 @@ class TestCaseMixin(object):
                 self.assertListEqual(value, actual[key], msg=key_name)
             else:
                 self.assertIn(key, actual,
-                              '{0}: missing key {1}'.format(key_name, key))
-                assert_msg = r'{0}: expected "{1}" got "{2}"'.format(
+                              f'{key_name}: missing key {key}')
+                assert_msg = r'{}: expected "{}" got "{}"'.format(
                     key_name, value, actual[key])
                 self.assertEqual(value, actual[key], msg=assert_msg)
         if strict:
@@ -106,15 +102,15 @@ class TestCaseMixin(object):
     def assertListEqual(self, expected, actual, msg=None):
         if msg is None:
             msg = ''
-        assert_msg = '{0}: expected length {1} got {2}'.format(
+        assert_msg = '{}: expected length {} got {}'.format(
             msg, len(expected), len(actual))
         self.assertEqual(len(expected), len(actual), assert_msg)
         idx = 0
         for exp, act in zip(expected, actual):
             if isinstance(exp, list):
-                self.assertListEqual(exp, act, '{0:s}[{1:d}]'.format(msg, idx))
+                self.assertListEqual(exp, act, f'{msg:s}[{idx:d}]')
             elif isinstance(exp, dict):
-                self.assertObjectEqual(exp, act, '{0:s}[{1:d}]'.format(msg, idx))
+                self.assertObjectEqual(exp, act, f'{msg:s}[{idx:d}]')
             else:
                 assert_msg = f'{msg}[{idx}] expected "{exp}" got "{act}"'
                 self.assertEqual(exp, act, assert_msg)
@@ -233,13 +229,13 @@ class TestCaseMixin(object):
     def _print_line(start, hex_line, ascii_line):
         if len(hex_line) < 8:
             hex_line += ['   '] * (8 - len(hex_line))
-        print('{0:04d}: {1}   {2}'.format(
+        print('{:04d}: {}   {}'.format(
             start,
             ' '.join(hex_line),
             ' '.join(ascii_line)))
 
     def hexdumpBuffer(self, label, data, max_length=256):
-        print('==={0}==='.format(label))
+        print(f'==={label}===')
         hex_line = []
         ascii_line = []
         for idx, d in enumerate(data):
@@ -256,7 +252,7 @@ class TestCaseMixin(object):
             self._print_line(idx - 7, hex_line, ascii_line)
         if idx < len(data):
             print('.......')
-        print('==={0}==='.format('=' * len(label)))
+        print('==={}==='.format('=' * len(label)))
 
     def assertBuffersEqual(self, a, b, name=None, max_length=256, dump=True):
         lmsg = r'Expected length {expected:d} does not match {actual:d}'

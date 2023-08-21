@@ -2,6 +2,6 @@
 Type hint for a JSON object
 """
 
-from typing import Any, Dict
+from typing import Any, TypeAlias
 
-JsonObject = Dict[str, Any]
+JsonObject: TypeAlias = dict[str, Any]

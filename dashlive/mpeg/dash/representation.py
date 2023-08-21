@@ -20,17 +20,14 @@
 #
 #############################################################################
 
-from past.utils import old_div
 import datetime
 import os
 import sys
-from typing import List, Optional
 
 import bitstring
 
 from dashlive.drm.keymaterial import KeyMaterial
 from dashlive.mpeg.mp4 import Mp4Atom
-from dashlive.utils.date_time import scale_timedelta
 from dashlive.utils.list_of import ListOf
 from dashlive.utils.object_with_fields import ObjectWithFields
 
@@ -38,16 +35,16 @@ from .segment import Segment
 from .time_values import TimeValues
 
 class SegmentTimelineElement:
-    def __init__(self, duration: Optional[int] = None, count: int = 0, start=None) -> None:
+    def __init__(self, duration: int | None = None, count: int = 0, start=None) -> None:
         self.duration = duration
         self.count = count
         self.start = start
 
     def __repr__(self) -> str:
         if self.start is not None:
-            return r'<S t="{0}" r="{1}" d="{2}" />'.format(
+            return r'<S t="{}" r="{}" d="{}" />'.format(
                 self.start, self.count - 1, self.duration)
-        return r'<S r="{0}" d="{1}" />'.format(
+        return r'<S r="{}" d="{}" />'.format(
             self.count - 1, self.duration)
 
     @property
@@ -85,7 +82,7 @@ class Representation(ObjectWithFields):
     ]
 
     def __init__(self, **kwargs):
-        super(Representation, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         defaults = {
             'lang': kwargs.get('language', 'und'),
             'kids': [],
@@ -107,13 +104,13 @@ class Representation(ObjectWithFields):
             })
         self.apply_defaults(defaults)
         self.num_segments = len(self.segments) - 1
-        self._ref_representation: Optional[Representation] = None
+        self._ref_representation: Representation | None = None
 
     def __repr__(self) -> str:
         return self.as_python(exclude={'num_segments'})
 
     @classmethod
-    def load(clz, filename: str, atoms: List[Mp4Atom], verbose: int = 0) -> "Representation":
+    def load(clz, filename: str, atoms: list[Mp4Atom], verbose: int = 0) -> "Representation":
         segment_start_time = 0
         segment_end_time = 0
         default_sample_duration = 0
@@ -168,7 +165,7 @@ class Representation(ObjectWithFields):
                     if verbose > 1:
                         print('Average sample duration %d' % default_sample_duration)
                     if rv.content_type == "video" and default_sample_duration:
-                        rv.add_field('frameRate', old_div(rv.timescale, default_sample_duration))
+                        rv.add_field('frameRate', float(rv.timescale) / float(default_sample_duration))
             elif atom.atom_type in ['sidx', 'moov', 'mdat', 'free'] and rv.segments:
                 if verbose > 1:
                     print('Extend fragment %d with %s' % (len(rv.segments), atom.atom_type))
@@ -190,14 +187,15 @@ class Representation(ObjectWithFields):
             # of the last fragment and dividing by number of media fragments (minus one)
             # provides the best estimate of fragment duration.
             # Note: len(rv.segments) also includes the init segment, hence the need for -2
-            seg_dur = old_div(segment_start_time, (len(rv.segments) - 2))
+            seg_dur = segment_start_time // (len(rv.segments) - 2.0)
             rv.mediaDuration = 0
             for seg in rv.segments[1:]:
                 rv.mediaDuration += seg.duration
-            rv.max_bitrate = old_div(8 * rv.timescale * max([seg.size for seg in rv.segments]), seg_dur)
+            rv.max_bitrate = (8 * rv.timescale *
+                              max([seg.size for seg in rv.segments]) // seg_dur)
             rv.segment_duration = seg_dur
             file_size = rv.segments[-1].pos + rv.segments[-1].size - rv.segments[0].pos
-            rv.bitrate = int(old_div(8 * rv.timescale * file_size, rv.mediaDuration) + 0.5)
+            rv.bitrate = 8 * rv.timescale * file_size // rv.mediaDuration
         return rv
 
     def set_reference_representation(self, ref_representation: "Representation") -> None:
@@ -241,7 +239,7 @@ class Representation(ObjectWithFields):
         elif moov.trak.mdia.hdlr.handler_type in {'text', 'subt'}:
             rv.process_text_moov(avc, avc_type)
 
-    def process_video_moov(self, avc: Mp4Atom, avc_type: Optional[str],
+    def process_video_moov(self, avc: Mp4Atom, avc_type: str | None,
                            default_sample_duration: int) -> None:
         trak = avc.find_atom('trak')
         self.content_type = "video"
@@ -261,7 +259,7 @@ class Representation(ObjectWithFields):
         # TODO: work out sample aspect ratio
         self.add_field('sar', "1:1")
         if avc_type in {'avc1', 'avc3'}:
-            self.codecs = '%s.%02x%02x%02x' % (
+            self.codecs = '{}.{:02x}{:02x}{:02x}'.format(
                 avc_type,
                 avc.avcC.AVCProfileIndication,
                 avc.avcC.profile_compatibility,
@@ -285,7 +283,7 @@ class Representation(ObjectWithFields):
             #   hexadecimal number, and the encoding of each byte separated by a
             #   period; trailing bytes that are zero may be omitted.
             gps = ['', 'A', 'B', 'C'][avc.hvcC.general_profile_space]
-            tier = '{0}{1}'.format(
+            tier = '{}{}'.format(
                 'LH'[avc.hvcC.general_tier_flag],
                 avc.hvcC.general_level_idc)
             gpcf = bitstring.BitArray(
@@ -293,22 +291,22 @@ class Representation(ObjectWithFields):
             gpcf.reverse()
             parts = [
                 str(avc_type),
-                '{0}{1:d}'.format(gps, avc.hvcC.general_profile_idc),
-                '{0:x}'.format(gpcf.uint),
+                f'{gps}{avc.hvcC.general_profile_idc:d}',
+                f'{gpcf.uint:x}',
                 tier,
             ]
             gcif = avc.hvcC.general_constraint_indicator_flags
             pos = 40
             while gcif > 0:
                 mask = 0xFF << pos
-                parts.append(r'{:x}'.format((gcif & mask) >> pos))
+                parts.append(fr'{(gcif & mask) >> pos:x}')
                 gcif = gcif & ~mask
                 pos -= 8
             self.codecs = '.'.join(parts)
             self.add_field('nalLengthFieldLength',
                            avc.hvcC.length_size_minus_one + 1)
 
-    def process_audio_moov(self, avc: Mp4Atom, avc_type: Optional[str]) -> None:
+    def process_audio_moov(self, avc: Mp4Atom, avc_type: str | None) -> None:
         self.content_type = "audio"
         self.mimeType = "audio/mp4"
         self.codecs = avc_type
@@ -316,7 +314,7 @@ class Representation(ObjectWithFields):
             dsi = avc.esds.descriptor("DecoderSpecificInfo")
             self.add_field('sampleRate', dsi.sampling_frequency)
             self.add_field('numChannels', dsi.channel_configuration)
-            self.codecs = "%s.%02x.%x" % (
+            self.codecs = "{}.{:02x}.{:x}".format(
                 avc_type, dsi.object_type,
                 dsi.audio_object_type)
             if self.numChannels == 7:
@@ -340,7 +338,7 @@ class Representation(ObjectWithFields):
                 self.add_field('sampleRate', avc.sampling_frequency)
                 self.add_field('numChannels', avc.channel_count)
 
-    def process_text_moov(self, avc: Mp4Atom, avc_type: Optional[str]) -> None:
+    def process_text_moov(self, avc: Mp4Atom, avc_type: str | None) -> None:
         self.content_type = 'text'
         self.codecs = avc_type
         self.mimeType = 'application/mp4'
@@ -483,7 +481,7 @@ class Representation(ObjectWithFields):
         nominal_duration = ref_representation.segment_duration * \
             ref_representation.num_segments
         tc_scaled = int(timecode * ref_representation.timescale)
-        num_loops = old_div(tc_scaled, nominal_duration)
+        num_loops = tc_scaled // nominal_duration
 
         # origin time is the time (in timescale units) that maps to segment 1 for
         # all adaptation sets. It represents the most recent time of day when the

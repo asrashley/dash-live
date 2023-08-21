@@ -7,7 +7,6 @@
 #############################################################################
 import datetime
 import logging
-from typing import Union
 
 from dashlive.utils.timezone import UTC
 from dashlive.utils.date_time import from_isodatetime
@@ -40,7 +39,7 @@ AST_HTML = '''
 </p>
 '''
 
-def ast_from_string(value: str) -> Union[datetime.datetime, str]:
+def ast_from_string(value: str) -> datetime.datetime | str:
     if value in {'now', 'today'}:
         return value
     if value == 'epoch':

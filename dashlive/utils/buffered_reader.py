@@ -20,11 +20,10 @@
 #
 #############################################################################
 
-from builtins import object
 import io
 import time
 
-class Buffer(object):
+class Buffer:
     __slots__ = ['pos', 'buf', 'data', 'size', 'timestamp']
 
     def __init__(self, pos, data):
@@ -45,7 +44,7 @@ class BufferedReader(io.RawIOBase):
 
     def __init__(self, reader, buffersize=16384, data=None, offset=0,
                  size=None, max_buffers=30):
-        super(BufferedReader, self).__init__()
+        super().__init__()
         # print('BufferedReader', reader, buffersize, offset, size)
         self.reader = reader
         self.buffers = {}

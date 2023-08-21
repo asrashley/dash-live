@@ -39,7 +39,7 @@ class EventStream(ObjectWithFields):
     }
 
     def __init__(self, **kwargs):
-        super(EventStream, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.apply_defaults({
             'events': []
         })

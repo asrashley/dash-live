@@ -20,9 +20,6 @@
 #
 #############################################################################
 
-from __future__ import absolute_import
-from typing import Optional
-
 import flask
 
 from dashlive.drm.playready import PlayReady
@@ -39,13 +36,13 @@ class KeyHandler(RequestHandlerBase):
     """
     decorators = [login_required(permission=models.Group.MEDIA)]
 
-    def get(self, kpk: Optional[int] = None) -> flask.Response:
+    def get(self, kpk: int | None = None) -> flask.Response:
         """
         Returns an HTML form for adding or editing a key
         """
         context = self.create_context()
         csrf_key = self.generate_csrf_cookie()
-        model: Optional[models.Key] = None
+        model: models.Key | None = None
         new_key = False
         if kpk:
             model = models.Key.get(pk=kpk)
@@ -79,7 +76,7 @@ class KeyHandler(RequestHandlerBase):
         })
         return flask.render_template('media/edit_key.html', **context)
 
-    def post(self, kpk: Optional[int] = None) -> flask.Response:
+    def post(self, kpk: int | None = None) -> flask.Response:
         """
         Saves changes submitted by HTML form
         """
@@ -87,7 +84,7 @@ class KeyHandler(RequestHandlerBase):
             self.check_csrf('keys', flask.request.form)
         except (ValueError, CsrfFailureException) as err:
             return flask.make_response((f'CSRF failure: {err}', 400))
-        model: Optional[models.Key] = None
+        model: models.Key | None = None
         if kpk:
             model = models.Key.get(pk=kpk)
             if model is None:

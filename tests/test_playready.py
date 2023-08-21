@@ -76,7 +76,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
     }
 
     def setUp(self):
-        super(PlayreadyTests, self).setUp()
+        super().setUp()
         self.keys = {}
         for kid, key in [
                 ("1AB45440532C439994DC5C5AD9584BAC", "ccc0f2b3b279926496a7f5d25da692f6")]:
@@ -255,7 +255,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
                     self.expected_pro)))
         xml = e_pro[0]['xml']
         self.assertEqual(xml.getroot().get("version"),
-                         '{:02.1f}.0.0'.format(mspr.header_version))
+                         f'{mspr.header_version:02.1f}.0.0')
         algid = xml.findall(
             './prh:DATA/prh:PROTECTINFO/prh:ALGID',
             self.namespaces)
@@ -602,7 +602,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         test_la_url = 'https://licence.url.override/'
         self.check_playready_la_url_value(
             test_la_url,
-            ['playready_la_url={0}'.format(urllib.parse.quote_plus(test_la_url))])
+            [f'playready_la_url={urllib.parse.quote_plus(test_la_url)}'])
 
     def test_is_supported_scheme_id(self):
         self.assertTrue(PlayReady.is_supported_scheme_id(

@@ -20,7 +20,6 @@
 #
 #############################################################################
 
-from builtins import range
 
 from dashlive.scte35.break_duration import BreakDuration
 from dashlive.utils.fio import BitsFieldReader, BitsFieldWriter

@@ -19,13 +19,13 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-from typing import Dict, List, Optional, Protocol, Tuple
+from typing import Protocol
 
 from dashlive.utils.json_object import JsonObject
 
 class HttpResponse(Protocol):
     status_code: int
-    headers: Dict
+    headers: dict
     text: str
 
     def json(self) -> JsonObject:
@@ -36,18 +36,18 @@ class HttpSession(Protocol):
     """
     Interface that describes the HTTP requests used by PopulateDatabase
     """
-    def get(self, url: str, params: Optional[Dict] = None,
-            headers: Optional[Dict] = None) -> HttpResponse:
+    def get(self, url: str, params: dict | None = None,
+            headers: dict | None = None) -> HttpResponse:
         """Make a GET request"""
 
     def post(self, url: str,
-             data: Optional[bytes] = None,
-             files: Optional[List[Tuple]] = None,
-             params: Optional[JsonObject] = None,
-             json: Optional[JsonObject] = None) -> HttpResponse:
+             data: bytes | None = None,
+             files: list[tuple] | None = None,
+             params: JsonObject | None = None,
+             json: JsonObject | None = None) -> HttpResponse:
         """Make a POST request"""
 
     def put(self, url: str,
-            params: Optional[Dict] = None,
-            json: Optional[JsonObject] = None) -> HttpResponse:
+            params: dict | None = None,
+            json: JsonObject | None = None) -> HttpResponse:
         """Make a PUT request"""

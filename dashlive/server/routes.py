@@ -20,10 +20,9 @@
 #
 #############################################################################
 
-from builtins import object
 import re
 
-class Route(object):
+class Route:
     def __init__(self, template: str, handler: str, title: str,
                  parent: str = None) -> None:
         self.name = ''

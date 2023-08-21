@@ -24,7 +24,6 @@ import json
 import logging
 from pathlib import Path
 import time
-from typing import Optional
 import urllib
 
 from dashlive.utils.json_object import JsonObject
@@ -39,7 +38,7 @@ class PopulateDatabase(ManagementBase):
     """
 
     def populate_database(self, jsonfile: str) -> bool:
-        with open(jsonfile, 'r') as js:
+        with open(jsonfile) as js:
             config = json.load(js)
         if 'files' in config:
             config = self.convert_v1_json_data(config)
@@ -114,7 +113,7 @@ class PopulateDatabase(ManagementBase):
         return output
 
     def add_key(self, kid: str, computed: bool,
-                key: Optional[str] = None, alg: Optional[str] = None) -> bool:
+                key: str | None = None, alg: str | None = None) -> bool:
         if kid in self.keys:
             return True
         params = {
@@ -147,7 +146,7 @@ class PopulateDatabase(ManagementBase):
         return True
 
     def add_stream(self, directory: str, title: str, marlin_la_url: str = '',
-                   playready_la_url: str = '', **kwargs) -> Optional[StreamInfo]:
+                   playready_la_url: str = '', **kwargs) -> StreamInfo | None:
         try:
             return self.streams[directory]
         except KeyError:

@@ -19,7 +19,6 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-from builtins import object
 import copy
 
 def object_from(clz, value):
@@ -54,7 +53,7 @@ def clone_object(clz, value):
         return clz(value)
     return copy.deepcopy(value)
 
-class ListOf(object):
+class ListOf:
     def __init__(self, clazz):
         self.clazz = clazz
 
@@ -62,4 +61,4 @@ class ListOf(object):
         return [object_from(self.clazz, s) for s in value]
 
     def __repr__(self):
-        return r'ListOf({0})'.format(self.clazz.__name__)
+        return fr'ListOf({self.clazz.__name__})'

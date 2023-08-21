@@ -20,8 +20,6 @@
 #
 #############################################################################
 
-from builtins import str
-from past.builtins import basestring
 from collections.abc import Iterable
 import datetime
 import decimal
@@ -38,7 +36,7 @@ def flatten(value, convert_numbers=False, pure=True):
     """
     if value is None:
         return None
-    if isinstance(value, basestring):
+    if isinstance(value, str):
         if pure:
             return str(value).replace("'", "\'")
         return value
@@ -99,7 +97,7 @@ def as_python(value):
         wrap_strings = False
     if isinstance(value, (list, tuple)):
         items = [as_python(v) for v in list(value)]
-        value = '[{0}]'.format(', '.join(items))
+        value = '[{}]'.format(', '.join(items))
     elif isinstance(value, (dict)):
         items = []
         clz = value.get('_type', None)
@@ -107,14 +105,14 @@ def as_python(value):
             if k == '_type':
                 continue
             if clz is None:
-                items.append('"{0}": {1}'.format(k, as_python(v)))
+                items.append(f'"{k}": {as_python(v)}')
             else:
-                items.append('{0}={1}'.format(k, as_python(v)))
+                items.append(f'{k}={as_python(v)}')
         if clz is None:
             value = '{' + ', '.join(items) + '}'
         else:
-            value = '{0}({1})'.format(clz, ', '.join(items))
-    elif wrap_strings and isinstance(value, (basestring)):
+            value = '{}({})'.format(clz, ', '.join(items))
+    elif wrap_strings and isinstance(value, (str)):
         if '"' in value:
             value = ''.join(["'", value, "'"])
         else:

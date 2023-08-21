@@ -1,10 +1,9 @@
-from builtins import object
 import struct
 
 class ParseException(Exception):
     pass
 
-class Nal(object):
+class Nal:
     SLICE_NON_IDR = 1
     SLICE_A = 2
     SLICE_B = 3

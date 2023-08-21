@@ -20,11 +20,6 @@
 #
 #############################################################################
 
-from builtins import str
-from builtins import hex
-from builtins import map
-from past.builtins import basestring
-from builtins import object
 import logging
 import struct
 
@@ -34,7 +29,7 @@ from dashlive.utils.binary import Binary
 
 from .sizes import format_bit_sizes
 
-class FieldWriter(object):
+class FieldWriter:
     __slots__ = ['obj', 'dest', 'bits', 'log']
 
     def __init__(self, obj, dest, debug=False):
@@ -55,7 +50,7 @@ class FieldWriter(object):
             value = getattr(self.obj, field)
         if isinstance(value, Binary):
             value = value.data
-        if isinstance(size, basestring):
+        if isinstance(size, str):
             if size == '3I':
                 value = struct.pack('>I', value)[1:]
             elif size == 'S':
@@ -88,7 +83,7 @@ class FieldWriter(object):
         if self.log and self.log.isEnabledFor(logging.DEBUG):
             if isinstance(value, int):
                 v = '0x' + hex(value)
-            elif isinstance(value, basestring):
+            elif isinstance(value, str):
                 v = '0x' + value.encode('hex')
             else:
                 v = str(value)

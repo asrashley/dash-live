@@ -1,7 +1,6 @@
-from __future__ import print_function
 import contextlib
 from pathlib import Path
-from typing import cast, List, Optional
+from typing import cast, Optional
 
 import flask
 import sqlalchemy as sa
@@ -40,7 +39,7 @@ class MediaFile(db.Model, ModelMixin):
     bitrate = sa.Column(sa.Integer, default=0, index=True, nullable=False)
     content_type = sa.Column(sa.String(64), nullable=True, index=True)
     encrypted = sa.Column(sa.Boolean, default=False, index=True, nullable=False)
-    encryption_keys: db.Mapped[List[Key]] = db.relationship(secondary=mediafile_keys, back_populates='mediafiles')
+    encryption_keys: db.Mapped[list[Key]] = db.relationship(secondary=mediafile_keys, back_populates='mediafiles')
 
     _representation = None
 
@@ -68,14 +67,14 @@ class MediaFile(db.Model, ModelMixin):
     representation = property(get_representation, set_representation)
 
     @classmethod
-    def all(clz, order_by: Optional[tuple] = None) -> List["MediaFile"]:
-        return cast(List["MediaFile"], clz.get_all(order_by=order_by))
+    def all(clz, order_by: tuple | None = None) -> list["MediaFile"]:
+        return cast(list["MediaFile"], clz.get_all(order_by=order_by))
 
     @classmethod
-    def search(clz, content_type: Optional[str] = None,
-               encrypted: Optional[bool] = None,
+    def search(clz, content_type: str | None = None,
+               encrypted: bool | None = None,
                stream: Optional["Stream"] = None,  # noqa: F821
-               max_items: Optional[int] = None) -> List["MediaFile"]:
+               max_items: int | None = None) -> list["MediaFile"]:
         # print('MediaFile.all()', contentType, encrypted, prefix, maxItems)
         query = db.select(MediaFile)
         if content_type is not None:
@@ -114,7 +113,7 @@ class MediaFile(db.Model, ModelMixin):
         app = flask.current_app
         return Path(app.config['BLOB_FOLDER']) / stream_dir
 
-    def open_file(self, start: Optional[int] = None,
+    def open_file(self, start: int | None = None,
                   buffer_size: int = 4096) -> contextlib.AbstractContextManager:
         abs_path = self.absolute_path(self.stream.directory)
         return self.blob.open_file(abs_path, start=start, buffer_size=buffer_size)

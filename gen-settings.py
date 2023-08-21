@@ -25,6 +25,6 @@ password = make_random_string(10)
 
 if not os.path.exists(".env"):
     print(f'Creating .env with default admin account username="admin" password ="{password}"')
-    with open('.env', 'wt', encoding='ascii') as out:
+    with open('.env', 'w', encoding='ascii') as out:
         out.write(TEMPLATE.format(**locals()))
 

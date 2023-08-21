@@ -26,7 +26,7 @@ import re
 import io
 import struct
 import sys
-from typing import AbstractSet, Optional
+from typing import AbstractSet
 import urllib.request
 import urllib.parse
 import urllib.error
@@ -191,13 +191,13 @@ class PlayReady(DrmBase):
                     (header_version == 4.2 and self.version < 3.0) or
                         (header_version == 4.1 and self.version < 2.0)):
                     raise ValueError(
-                        '{0} WRMHEADER is not supported by PlayReady v{1}'.format(
+                        '{} WRMHEADER is not supported by PlayReady v{}'.format(
                             header_version, self.version
                         ))
         if header_version not in [4.0, 4.1, 4.2, 4.3]:
             raise ValueError(
-                "PlayReady header version {} has not been implemented".format(header_version))
-        template_name = 'drm/wrmheader{0}.xml'.format(int(header_version * 10))
+                f"PlayReady header version {header_version} has not been implemented")
+        template_name = f'drm/wrmheader{int(header_version * 10)}.xml'
         xml = render_template(template_name, **context)
         xml = re.sub(r'[\r\n]', '', xml)
         xml = re.sub(r'>\s+<', '><', xml)
@@ -219,13 +219,13 @@ class PlayReady(DrmBase):
         """Parse a PlayReady Object (PRO)"""
         data = src.read(6)
         if len(data) != 6:
-            raise IOError("PlayReady Object too small")
+            raise OSError("PlayReady Object too small")
         length, object_count = struct.unpack("<IH", data)
         objects = []
         for idx in range(object_count):
             data = src.read(4)
             if len(data) != 4:
-                raise IOError("PlayReady Object too small")
+                raise OSError("PlayReady Object too small")
             record_type, record_length = struct.unpack("<HH", data)
             record = {
                 'type': record_type,
@@ -234,7 +234,7 @@ class PlayReady(DrmBase):
             if record_type == 1:
                 prh = src.read(record_length)
                 if len(prh) != record_length:
-                    raise IOError("PlayReady Object too small")
+                    raise OSError("PlayReady Object too small")
                 record['PlayReadyHeader'] = prh.decode('utf-16')
                 record['xml'] = ElementTree.parse(
                     io.StringIO(record['PlayReadyHeader']))
@@ -243,8 +243,8 @@ class PlayReady(DrmBase):
 
     def generate_manifest_context(
             self, stream, keys, options: OptionsContainer,
-            la_url: Optional[str] = None,
-            locations: Optional[AbstractSet[str]] = None) -> dict:
+            la_url: str | None = None,
+            locations: AbstractSet[str] | None = None) -> dict:
         version = options.playreadyVersion
         if version is None:
             header_version = self.minimum_header_version(keys)
@@ -293,15 +293,15 @@ class PlayReady(DrmBase):
             version=1, flags=0, system_id=PlayReady.RAW_SYSTEM_ID,
             key_ids=keys, data=pro)
 
-    def dash_scheme_id(self, version: Optional[float] = None) -> str:
+    def dash_scheme_id(self, version: float | None = None) -> str:
         """
         Returns the schemeIdUri for PlayReady
         """
         if version is None:
             version = self.version
         if version == 1.0:
-            return "urn:uuid:{0}".format(self.SYSTEM_ID_V10)
-        return "urn:uuid:{0}".format(self.SYSTEM_ID)
+            return f"urn:uuid:{self.SYSTEM_ID_V10}"
+        return f"urn:uuid:{self.SYSTEM_ID}"
 
     def update_traf_if_required(self, options: OptionsContainer,
                                 traf: mp4.BoxWithChildren) -> bool:

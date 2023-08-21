@@ -8,7 +8,6 @@ Flask==2.3.2
 Flask-SQLAlchemy==3.0.3
 flask_jwt_extended==4.5.2
 flask-login==0.6.2
-future==0.18.3
 greenlet==2.0.2
 idna==2.8
 itsdangerous==2.1.2

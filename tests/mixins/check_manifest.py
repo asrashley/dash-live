@@ -26,7 +26,7 @@ from functools import wraps
 import io
 import os
 import logging
-from typing import AbstractSet, Optional
+from typing import AbstractSet
 import urllib.parse
 
 import flask
@@ -52,7 +52,7 @@ def add_url(method, url):
 
 class MockServeManifest(ServeManifest):
     def __init__(self, request, **kwargs):
-        super(MockServeManifest, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.request = request
 
     def is_https_request(self):
@@ -60,15 +60,15 @@ class MockServeManifest(ServeManifest):
 
     def uri_for(self, route, **kwargs):
         if route == 'time':
-            return r'{0}/time/{1}'.format(self.request.host_url, kwargs['format'])
+            return r'{}/time/{}'.format(self.request.host_url, kwargs['format'])
         if route == 'clearkey':
-            return r'{0}/clearkey/'.format(self.request.host_url)
-        raise ValueError(r'Unsupported route name: {0}'.format(route))
+            return fr'{self.request.host_url}/clearkey/'
+        raise ValueError(fr'Unsupported route name: {route}')
 
 class DashManifestCheckMixin:
     def _assert_true(self, result, a, b, msg, template):
         if not result:
-            print(r'URL: {}'.format(self.current_url))
+            print(fr'URL: {self.current_url}')
             if msg is not None:
                 raise AssertionError(msg)
             raise AssertionError(template.format(a, b))
@@ -88,8 +88,8 @@ class DashManifestCheckMixin:
             mode: str,
             simplified: bool = False,
             with_subs: bool = False,
-            only: Optional[AbstractSet] = None,
-            extras: Optional[list[tuple]] = None) -> None:
+            only: AbstractSet | None = None,
+            extras: list[tuple] | None = None) -> None:
         """
         Exhaustive test of a manifest with every combination of options
         used by the manifest.
@@ -251,7 +251,7 @@ class DashManifestCheckMixin:
         """returns absolute file path of the given fixture"""
         name, ext = os.path.splitext(mpd_name)
         enc = '_enc' if encrypted else ''
-        filename = r'{0}_{1}{2}{3}'.format(name, mode, enc, ext)
+        filename = fr'{name}_{mode}{enc}{ext}'
         return os.path.join(os.path.dirname(__file__), '..', 'fixtures', filename)
 
     xmlNamespaces = {
@@ -277,7 +277,7 @@ class DashManifestCheckMixin:
             actual = actual.strip()
             if actual == "":
                 actual = None
-        msg = r'{0}: Expected "{1}" got "{2}"'.format(msg, expected, actual)
+        msg = fr'{msg}: Expected "{expected}" got "{actual}"'
         self.assertEqual(expected, actual, msg=msg)
 
     def assertXmlEqual(self, expected, actual, index=0, msg=None, strict=False):
@@ -285,26 +285,26 @@ class DashManifestCheckMixin:
         if msg is None:
             prefix = tag.localname
         else:
-            prefix = r'{0}/{1}'.format(msg, tag.localname)
+            prefix = fr'{msg}/{tag.localname}'
         if index > 0:
-            prefix += r'[{0:d}]'.format(index)
+            prefix += fr'[{index:d}]'
         self.assertEqual(
             expected.tag, actual.tag,
-            msg=r'{0}: Expected "{1}" got "{2}"'.format(prefix, expected.tag, actual.tag))
+            msg=fr'{prefix}: Expected "{expected.tag}" got "{actual.tag}"')
         self.assertXmlTextEqual(
             expected.text, actual.text,
-            msg='{0}: text does not match'.format(prefix))
+            msg=f'{prefix}: text does not match')
         self.assertXmlTextEqual(
             expected.tail, actual.tail,
-            msg='{0}: tail does not match'.format(prefix))
+            msg=f'{prefix}: tail does not match')
 
         for name, exp_value in expected.attrib.items():
-            key_name = '{0}@{1}'.format(prefix, name)
-            self.assertIn(name, actual.attrib, msg='Missing attribute {}'.format(key_name))
+            key_name = f'{prefix}@{name}'
+            self.assertIn(name, actual.attrib, msg=f'Missing attribute {key_name}')
             act_value = actual.attrib[name]
             self.assertEqual(
                 exp_value, act_value,
-                msg='attribute {0} should be "{1}" but was "{2}"'.format(
+                msg='attribute {} should be "{}" but was "{}"'.format(
                     key_name, exp_value, act_value))
         counts = {}
         for exp, act in zip(expected, actual):

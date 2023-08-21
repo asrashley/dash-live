@@ -32,7 +32,7 @@ class ClearKey(DrmBase):
     RAW_PSSH_SYSTEM_ID = binascii.a2b_hex(PSSH_SYSTEM_ID.replace('-', ''))
 
     def dash_scheme_id(self):
-        return "urn:uuid:{0}".format(self.MPD_SYSTEM_ID)
+        return f"urn:uuid:{self.MPD_SYSTEM_ID}"
 
     def generate_manifest_context(self, stream, keys, cgi_params, la_url=None, locations=None):
         if locations is None:

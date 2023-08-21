@@ -2,7 +2,7 @@
 Database model for a user of the app
 """
 import logging
-from typing import AbstractSet, List, Optional, Union, cast
+from typing import AbstractSet, Optional, cast
 
 from passlib.context import CryptContext  # type: ignore
 from sqlalchemy import (  # type: ignore
@@ -51,14 +51,14 @@ class User(db.Model, ModelMixin):  # type: ignore
         return cast("User", cls.get_one(**kwargs))
 
     @classmethod
-    def all(cls, **kwargs) -> List["User"]:
+    def all(cls, **kwargs) -> list["User"]:
         """
         Return all users
         """
-        return cast(List["User"], cls.get_all(**kwargs))
+        return cast(list["User"], cls.get_all(**kwargs))
 
-    def to_dict(self, exclude: Optional[AbstractSet[str]] = None,
-                only: Optional[AbstractSet[str]] = None,
+    def to_dict(self, exclude: AbstractSet[str] | None = None,
+                only: AbstractSet[str] | None = None,
                 with_collections: bool = False) -> JsonObject:
         """
         Convert this model into a dictionary
@@ -129,7 +129,7 @@ class User(db.Model, ModelMixin):  # type: ignore
         """
         return (self.groups_mask & group.value) == group.value
 
-    def has_permission(self, group: Union[Group, str]):
+    def has_permission(self, group: Group | str):
         """
         Check if the user has the permission associated with a group
         """
@@ -138,18 +138,18 @@ class User(db.Model, ModelMixin):  # type: ignore
         return ((self.groups_mask & group.value) == group.value or
                 self.is_admin)
 
-    def get_groups(self) -> List[str]:
+    def get_groups(self) -> list[str]:
         """
         get the list of group names assigned to this user
         """
-        groups: List[str] = []
-        for group in cast(List[Group], list(Group)):
+        groups: list[str] = []
+        for group in cast(list[Group], list(Group)):
             if (self.groups_mask & group.value or (
                     self.is_admin and group.value <= Group.MEDIA.value)):
                 groups.append(group.name)
         return groups
 
-    def set_groups(self, groups: List[Union[Group, str]]) -> None:
+    def set_groups(self, groups: list[Group | str]) -> None:
         """
         set list of groups for this user
         """
@@ -179,7 +179,7 @@ class User(db.Model, ModelMixin):  # type: ignore
             db.session.commit()
 
     def get_fields(self, with_must_change: bool = True,
-                   with_confirm_password: bool = False, **kwargs) -> List[JsonObject]:
+                   with_confirm_password: bool = False, **kwargs) -> list[JsonObject]:
         fields = [{
             "name": "username",
             "title": "Username",

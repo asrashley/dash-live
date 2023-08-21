@@ -20,7 +20,6 @@
 #
 #############################################################################
 
-from past.utils import old_div
 import datetime
 import logging
 
@@ -50,7 +49,7 @@ class DashTiming:
     def calculate_vod_params(self, now, representation, options) -> None:
         self.elapsedTime = datetime.timedelta(seconds=0)
         self.mediaDuration = datetime.timedelta(seconds=(
-            old_div(representation.mediaDuration, representation.timescale)))
+            representation.mediaDuration / float(representation.timescale)))
         self.firstFragment = self.startNumber
         self.lastFragment = (
             self.startNumber - 1 +
@@ -84,8 +83,7 @@ class DashTiming:
             self.availabilityStartTime -= self.elapsedTime
         if self.elapsedTime.total_seconds() < self.timeShiftBufferDepth:
             self.timeShiftBufferDepth = int(self.elapsedTime.total_seconds())
-        default_mup = (old_div(2.0 * representation.segment_duration,
-                       representation.timescale))
+        default_mup = 2.0 * representation.segment_duration / representation.timescale
         self.minimumUpdatePeriod = options.minimumUpdatePeriod
         if self.minimumUpdatePeriod is None:
             self.minimumUpdatePeriod = default_mup
@@ -97,8 +95,8 @@ class DashTiming:
             self.elapsedTime, representation.timescale, representation.segment_duration))
         self.firstFragment = (
             self.lastFragment -
-            int(old_div(representation.timescale *
-                        self.timeShiftBufferDepth, representation.segment_duration)) - 1)
+            int(representation.timescale * self.timeShiftBufferDepth /
+                representation.segment_duration) - 1)
         self.firstFragment = max(self.startNumber, self.firstFragment)
 
     def generate_manifest_context(self):

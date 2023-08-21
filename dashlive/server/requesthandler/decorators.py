@@ -1,5 +1,5 @@
 from functools import wraps
-from typing import cast, Optional
+from typing import cast
 
 import flask  # type: ignore
 from flask_login import current_user
@@ -14,7 +14,7 @@ def is_ajax() -> bool:
         flask.request.form.get("ajax", "0") == "1" or
         flask.request.args.get("ajax", "0") == "1")
 
-def needs_login_response(admin: bool, html: bool, permission: Optional[Group]) -> flask.Response:
+def needs_login_response(admin: bool, html: bool, permission: Group | None) -> flask.Response:
     if is_ajax():
         response = flask.json.jsonify('Not Authorized')
         response.status = 401
@@ -23,7 +23,7 @@ def needs_login_response(admin: bool, html: bool, permission: Optional[Group]) -
         return flask.render_template('needs_login.html', needs_admin=admin, permission=permission)
     return flask.make_response('Not Authorized', 401)
 
-def login_required(html=False, admin=False, permission: Optional[Group] = None):
+def login_required(html=False, admin=False, permission: Group | None = None):
     """
     Decorator that requires user to be logged in
     """
@@ -48,7 +48,7 @@ def uses_media_file(func):
     @wraps(func)
     def decorated_function(*args, **kwargs):
         filename = kwargs.get('filename', None)
-        mf: Optional[MediaFile] = None
+        mf: MediaFile | None = None
         if filename:
             sdir = kwargs.get('stream', None)
             # print('uses_media_file', sdir, filename)
@@ -88,7 +88,7 @@ def uses_stream(func):
     """
     @wraps(func)
     def decorated_function(*args, **kwargs):
-        stream: Optional[Stream] = None
+        stream: Stream | None = None
         spk = kwargs.get('spk', None)
         if spk:
             stream = Stream.get(pk=spk)
@@ -115,7 +115,7 @@ def uses_keypair(func):
     """
     @wraps(func)
     def decorated_function(*args, **kwargs):
-        keypair: Optional[Key] = None
+        keypair: Key | None = None
         kpk = kwargs.get('kpk', None)
         if not kpk:
             return flask.make_response('Key primary key missing', 404)
@@ -138,7 +138,7 @@ def modifies_user_model(func):
     """
     @wraps(func)
     def decorated_function(*args, **kwargs):
-        user: Optional[User] = None
+        user: User | None = None
         upk = kwargs.get('upk', None)
         if not upk:
             return flask.make_response('User primary key missing', 404)

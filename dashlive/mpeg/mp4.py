@@ -20,16 +20,10 @@
 #
 #############################################################################
 
-from __future__ import print_function
-from builtins import chr
-from builtins import range
-from past.builtins import basestring
-from builtins import object
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 import argparse
 import binascii
 import copy
-from future.utils import with_metaclass
 import io
 import json
 import logging
@@ -37,7 +31,7 @@ import os
 import re
 import struct
 import sys
-from typing import Union, Optional
+from typing import Optional
 
 try:
     import bitstring
@@ -61,19 +55,19 @@ class Options(ObjectWithFields):
     }
 
     def __init__(self, **kwargs):
-        super(Options, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.log = logging.getLogger('mp4')
 
     def has_bug(self, name):
         if self.bug_compatibility is None:
             return False
-        if isinstance(self.bug_compatibility, basestring):
-            self.bug_compatibility = set(
-                [s.strip() for s in self.bug_compatibility.split(',')])
+        if isinstance(self.bug_compatibility, str):
+            self.bug_compatibility = {
+                s.strip() for s in self.bug_compatibility.split(',')}
         return name in self.bug_compatibility
 
 
-class Mp4Atom(with_metaclass(ABCMeta, ObjectWithFields)):
+class Mp4Atom(ObjectWithFields):
     parse_children = False
     include_atom_type = False
 
@@ -94,7 +88,7 @@ class Mp4Atom(with_metaclass(ABCMeta, ObjectWithFields)):
     MODULE_PREFIX = 'dashlive.mpeg.mp4.'
 
     def __init__(self, **kwargs):
-        super(Mp4Atom, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         children_default = [] if self.parse_children else None
         self.apply_defaults({
             '_encoded': None,
@@ -121,7 +115,7 @@ class Mp4Atom(with_metaclass(ABCMeta, ObjectWithFields)):
             atom_type = str(atom_type, 'ascii')
         self.atom_type = atom_type
         if self.parent:
-            self._fullname = r'{0}.{1}'.format(self.parent._fullname, self.atom_type)
+            self._fullname = fr'{self.parent._fullname}.{self.atom_type}'
         else:
             self._fullname = self.atom_type
         if self.children:
@@ -162,7 +156,7 @@ class Mp4Atom(with_metaclass(ABCMeta, ObjectWithFields)):
 
     def __delattr__(self, name: str) -> None:
         if name in self._fields:
-            raise AttributeError('Unable to delete field {} '.format(name))
+            raise AttributeError(f'Unable to delete field {name} ')
         for idx, c in enumerate(self.children):
             if c.atom_type == name:
                 self.remove_child(idx)
@@ -175,14 +169,14 @@ class Mp4Atom(with_metaclass(ABCMeta, ObjectWithFields)):
     def _field_repr(self, exclude):
         if not self.include_atom_type:
             exclude = exclude.union({'atom_type', 'options'})
-        return super(Mp4Atom, self)._field_repr(exclude)
+        return super()._field_repr(exclude)
 
     def _int_field_repr(self, fields, names):
         for name in names:
             fields.append('%s=%d' % (name, self.__getattribute__(name)))
         return fields
 
-    def find_atom(self, atom_type: Union[bytes, str],
+    def find_atom(self, atom_type: bytes | str,
                   check_parent: bool = True) -> Optional["Mp4Atom"]:
         if isinstance(atom_type, bytes):
             atom_type = str(atom_type, 'ascii')
@@ -196,7 +190,7 @@ class Mp4Atom(with_metaclass(ABCMeta, ObjectWithFields)):
             return self.parent.find_atom(atom_type, True)
         raise AttributeError(atom_type)
 
-    def find_child(self, atom_type: Union[str, bytes]) -> Optional["Mp4Atom"]:
+    def find_child(self, atom_type: str | bytes) -> Optional["Mp4Atom"]:
         if self.children is None:
             return None
         if isinstance(atom_type, bytes):
@@ -209,7 +203,7 @@ class Mp4Atom(with_metaclass(ABCMeta, ObjectWithFields)):
                 return child
         return None
 
-    def index(self, atom_type: Union[str, bytes]) -> "Mp4Atom":
+    def index(self, atom_type: str | bytes) -> "Mp4Atom":
         if isinstance(atom_type, bytes):
             atom_type = str(atom_type, 'ascii')
         for idx, c in enumerate(self.children):
@@ -261,7 +255,7 @@ class Mp4Atom(with_metaclass(ABCMeta, ObjectWithFields)):
         if parent is not None:
             cursor = parent.payload_start
             end = parent.position + parent.size
-            prefix = r'{0}: '.format(parent._fullname)
+            prefix = fr'{parent._fullname}: '
         else:
             parent = Wrapper(position=src.tell())
             end = None
@@ -334,7 +328,7 @@ class Mp4Atom(with_metaclass(ABCMeta, ObjectWithFields)):
             else:
                 atom._encoded = encoded
             if (src.tell() - atom.position) != atom.size:
-                msg = r'{0}: expected "{1}" to contain {2:d} bytes but parsed {3:d} bytes'.format(
+                msg = r'{}: expected "{}" to contain {:d} bytes but parsed {:d} bytes'.format(
                     prefix, atom.atom_type, atom.size, src.tell() - atom.position)
                 options.log.warning(msg)
                 if options.strict:
@@ -470,7 +464,7 @@ class Mp4Atom(with_metaclass(ABCMeta, ObjectWithFields)):
                                    self._fullname, len(self._encoded))
             expected_size = 4 + len(fourcc) + len(self._encoded)
             if self.size != expected_size:
-                msg = r'{0}: Expected size {1:d}, actual size {2:d}'.format(
+                msg = r'{}: Expected size {:d}, actual size {:d}'.format(
                     self._fullname, self.size, expected_size)
                 self.options.log.warning(msg)
                 if self.options.strict:
@@ -532,7 +526,7 @@ class Mp4Atom(with_metaclass(ABCMeta, ObjectWithFields)):
 
 Mp4Atom.OBJECT_FIELDS['children'] = ListOf(Mp4Atom)
 
-class WrapperIterator(object):
+class WrapperIterator:
     def __init__(self, wrapper):
         self._wrapper = wrapper
         self._current = 0
@@ -617,7 +611,7 @@ class FileTypeBox(Mp4Atom):
 
 Mp4Atom.BOXES['ftyp'] = FileTypeBox
 
-class Descriptor(with_metaclass(ABCMeta, ObjectWithFields)):
+class Descriptor(ObjectWithFields):
     OBJECT_FIELDS = {
         'children': ListOf(ObjectWithFields),
         'data': Binary,
@@ -629,7 +623,7 @@ class Descriptor(with_metaclass(ABCMeta, ObjectWithFields)):
     }
 
     def __init__(self, **kwargs):
-        super(Descriptor, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.apply_defaults({
             "children": [],
             "options": Options(),
@@ -637,7 +631,7 @@ class Descriptor(with_metaclass(ABCMeta, ObjectWithFields)):
             "parent": None,
         })
         if self.parent:
-            self._fullname = r'{0}.{1}'.format(self.parent._fullname, self.classname())
+            self._fullname = fr'{self.parent._fullname}.{self.classname()}'
         else:
             self._fullname = self.classname()
 
@@ -697,7 +691,7 @@ class Descriptor(with_metaclass(ABCMeta, ObjectWithFields)):
         b = src.read(1)
         if len(b) == 0:
             raise ValueError(
-                "Failed to read tag byte: pos={}".format(position))
+                f"Failed to read tag byte: pos={position}")
         tag = struct.unpack('B', b)[0]
         header_size = 1
         more_bytes = True
@@ -778,7 +772,7 @@ class Descriptor(with_metaclass(ABCMeta, ObjectWithFields)):
 
     def _to_json(self, exclude):
         exclude = exclude.union({'parent', 'options'})
-        return super(Descriptor, self)._to_json(exclude)
+        return super()._to_json(exclude)
 
     def dump(self, indent=''):
         f = '{}{}: {:d} -> {:d} [header {:d} bytes] [{:d} bytes]'
@@ -1049,7 +1043,7 @@ class VisualSampleEntry(SampleEntry):
         return rv
 
     def encode_fields(self, dest):
-        super(VisualSampleEntry, self).encode_fields(dest)
+        super().encode_fields(dest)
         dest.write(struct.pack('>H', self.version))
         dest.write(struct.pack('>H', self.revision))
         dest.write(struct.pack('>I', self.vendor))
@@ -1104,7 +1098,7 @@ class WebVTTConfigurationBox(Mp4Atom):
         return rv
 
     def encode_fields(self, dest):
-        super(WebVTTConfigurationBox, self).encode_fields(dest)
+        super().encode_fields(dest)
         dest.write(bytes(self.config, 'utf-8'))
 
 
@@ -1151,7 +1145,7 @@ class XMLSubtitleSampleEntry(SampleEntry):
         return rv
 
     def encode_fields(self, dest):
-        super(XMLSubtitleSampleEntry, self).encode_fields(dest)
+        super().encode_fields(dest)
         d = FieldWriter(self, dest, debug=self.options.debug)
         d.write('S0', 'namespace')
         d.write('S0', 'schema_location')
@@ -1272,7 +1266,7 @@ class HevcNalArray(ObjectWithFields):
         rv['nal_units'] = []
         for i in range(num_nalus):
             unit_length = r.get(16, 'nalUnitLength')
-            nal_unit = r.get_bytes(unit_length, 'NAL unit {0}'.format(i))
+            nal_unit = r.get_bytes(unit_length, f'NAL unit {i}')
             rv['nal_units'].append(Binary(nal_unit, encoding=Binary.BASE64))
         return rv
 
@@ -1427,7 +1421,7 @@ class AudioSampleEntry(SampleEntry):
         return rv
 
     def encode_fields(self, dest):
-        super(AudioSampleEntry, self).encode_fields(dest)
+        super().encode_fields(dest)
         dest.write(b'\0' * 8)  # reserved
         dest.write(struct.pack('>H', self.channel_count))
         dest.write(struct.pack('>H', self.sample_size))
@@ -1613,7 +1607,7 @@ class ESDescriptorBox(FullBox):
     OBJECT_FIELDS.update(FullBox.OBJECT_FIELDS)
 
     def __init__(self, **kwargs):
-        super(ESDescriptorBox, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.apply_defaults({"descriptors": []})
         for d in self.descriptors:
             d.parent = self
@@ -1690,7 +1684,7 @@ class TrackFragmentHeaderBox(FullBox):
     default_base_is_moof = 0x020000
 
     def __init__(self, **kwargs):
-        super(TrackFragmentHeaderBox, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         # default base offset = first byte of moof
         if self.base_data_offset is None:
             self.base_data_offset = self.find_atom('moof').position
@@ -1793,7 +1787,7 @@ class TrackHeaderBox(FullBox):
             self.flags |= self.Track_in_preview
         if self.size_is_aspect_ratio:
             self.flags |= self.Track_size_is_aspect_ratio
-        super(TrackHeaderBox, self).encode_fields(dest)
+        super().encode_fields(dest)
 
     def encode_box_fields(self, dest):
         d = FieldWriter(self, dest)
@@ -1834,7 +1828,7 @@ class TrackFragmentDecodeTimeBox(FullBox):
             self.version = 1
         else:
             self.version = 0
-        super(TrackFragmentDecodeTimeBox, self).encode_fields(dest)
+        super().encode_fields(dest)
 
     def encode_box_fields(self, dest):
         d = FieldWriter(self, dest)
@@ -2126,7 +2120,7 @@ class CencSampleEncryptionBox(FullBox):
     def encode_fields(self, dest):
         if len(self.samples) > 0:
             self.flags |= 0x02
-        super(CencSampleEncryptionBox, self).encode_fields(dest)
+        super().encode_fields(dest)
 
     def encode_box_fields(self, dest):
         d = FieldWriter(self, dest)
@@ -2189,7 +2183,7 @@ class ProtectionSchemeTypeBox(FullBox):
     def encode_fields(self, dest):
         if self.scheme_uri is not None:
             self.flags |= 0x000001
-        return super(ProtectionSchemeTypeBox, self).encode_fields(dest)
+        return super().encode_fields(dest)
 
     def encode_box_fields(self, dest):
         w = FieldWriter(self, dest)
@@ -2344,7 +2338,7 @@ class TrackFragmentRunBox(FullBox):
     OBJECT_FIELDS.update(FullBox.OBJECT_FIELDS)
 
     def __init__(self, **kwargs):
-        super(TrackFragmentRunBox, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         for s in self.samples:
             object.__setattr__(s, 'parent', self)
 
@@ -2457,7 +2451,7 @@ class ContentProtectionSpecificBox(FullBox):
     OBJECT_FIELDS.update(FullBox.OBJECT_FIELDS)
 
     def __init__(self, **kwargs):
-        super(ContentProtectionSpecificBox, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.system_id = self._fixup_binary_field(self.system_id)
         kids = []
         for kid in self.key_ids:
@@ -2478,7 +2472,7 @@ class ContentProtectionSpecificBox(FullBox):
                     value = value[2:]
                 value = value.replace('-', '').decode('hex')
         if len(value) != 16:
-            raise ValueError(r"Invalid length: {0}".format(len(value)))
+            raise ValueError(fr"Invalid length: {len(value)}")
         return HexBinary(value, encoding=Binary.HEX)
 
     @classmethod
@@ -2650,7 +2644,7 @@ for clz in list(Mp4Atom.BOXES.values()):
     Mp4Atom.BOX_TYPES[clz.__name__] = clz
     Mp4Atom.BOX_TYPES['UnknownBox'] = UnknownBox
 
-class IsoParser(object):
+class IsoParser:
     @staticmethod
     def walk_atoms(filename, atom=None, options=None):
         atoms = None
@@ -2658,8 +2652,8 @@ class IsoParser(object):
         try:
             if options is not None:
                 options.log.debug('Parse %s', filename)
-            if isinstance(filename, basestring):
-                src = io.open(filename, mode="rb", buffering=16384)
+            if isinstance(filename, str):
+                src = open(filename, mode="rb", buffering=16384)
             else:
                 src = filename
             atoms = Mp4Atom.load(src, options=options)
