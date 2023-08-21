@@ -37,7 +37,7 @@ class TestHtmlPageHandlers(FlaskTestBase):
         if not result:
             current_url = getattr(self, "current_url")
             if current_url is not None:
-                print(r'URL: {}'.format(current_url))
+                print(fr'URL: {current_url}')
             if msg is not None:
                 raise AssertionError(msg)
             raise AssertionError(template.format(a, b))
@@ -61,7 +61,7 @@ class TestHtmlPageHandlers(FlaskTestBase):
             mpd_url = mpd_url.replace('/live/', '/{mode}/')
             self.assertIn(mpd_url, response.text)
         options_url = flask.url_for('cgi-options')
-        self.assertIn(r'href="{}"'.format(options_url), response.text)
+        self.assertIn(fr'href="{options_url}"', response.text)
         self.login_user(is_admin=True)
         response = self.client.get(url)
         self.assertEqual(response.status, '200 OK')

@@ -20,14 +20,14 @@
 #
 #############################################################################
 from dataclasses import dataclass
-from typing import AbstractSet, Dict, List, Optional
+from typing import AbstractSet
 
 from dashlive.utils.json_object import JsonObject
 
 @dataclass
 class UserInfo:
     email: str
-    groups: List[str]
+    groups: list[str]
     last_login: str
     pk: int
     username: str
@@ -64,7 +64,7 @@ class BlobInfo:
 
 class MediaFileInfo:
     def __init__(self, bitrate: int, content_type: str, encrypted: bool,
-                 pk: int, blob: Optional[JsonObject] = None,
+                 pk: int, blob: JsonObject | None = None,
                  **kwargs) -> None:
         self.bitrate = bitrate
         self.content_type = content_type
@@ -89,13 +89,13 @@ class MediaFileInfo:
 
 class StreamInfo:
     def __init__(self, pk: int, title: str, directory: str,
-                 blob: Optional[JsonObject] = None,
-                 marlin_la_url: Optional[str] = None,
-                 playready_la_url: Optional[str] = None,
-                 media_files: Optional[List[JsonObject]] = None,
-                 keys: Optional[List[JsonObject]] = None,
-                 upload_url: Optional[str] = None,
-                 csrf_tokens: Optional[JsonObject] = None,
+                 blob: JsonObject | None = None,
+                 marlin_la_url: str | None = None,
+                 playready_la_url: str | None = None,
+                 media_files: list[JsonObject] | None = None,
+                 keys: list[JsonObject] | None = None,
+                 upload_url: str | None = None,
+                 csrf_tokens: JsonObject | None = None,
                  **kwargs) -> None:
         self.pk = pk
         self.title = title
@@ -105,13 +105,13 @@ class StreamInfo:
         self.playready_la_url = playready_la_url
         self.upload_url = upload_url
         self.csrf_tokens = csrf_tokens
-        self.media_files: Dict[str, MediaFileInfo] = {}
+        self.media_files: dict[str, MediaFileInfo] = {}
         if media_files is not None:
             for mf in media_files:
                 if isinstance(mf, dict):
                     self.media_files[mf['name']] = MediaFileInfo(**mf)
 
-    def to_dict(self, only: Optional[AbstractSet[str]] = None) -> JsonObject:
+    def to_dict(self, only: AbstractSet[str] | None = None) -> JsonObject:
         result = {}
         for name in {'directory', 'title', 'marlin_la_url', 'playready_la_url'}:
             if only is None or name in only:

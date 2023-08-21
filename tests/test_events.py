@@ -20,10 +20,6 @@
 #
 #############################################################################
 
-from __future__ import print_function
-from __future__ import absolute_import
-from __future__ import division
-from past.utils import old_div
 import os
 import unittest
 
@@ -115,8 +111,8 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
             frag = mp4.Wrapper(
                 atom_type='wrap',
                 children=seg.validate(depth=1, all_atoms=True))
-            seg_presentation_time = (old_div(ev_presentation_time * info.timescale,
-                                             PingPongEvents.DEFAULT_VALUES['timescale']))
+            seg_presentation_time = (ev_presentation_time * info.timescale /
+                                     float(PingPongEvents.DEFAULT_VALUES['timescale']))
             decode_time = frag.moof.traf.tfdt.base_media_decode_time
             seg_end = decode_time + seg.duration
             if seg_presentation_time < decode_time or seg_presentation_time >= seg_end:
@@ -125,8 +121,8 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
                     emsg = frag.emsg
                 continue
             delta = seg_presentation_time - decode_time
-            delta = (old_div(delta * PingPongEvents.DEFAULT_VALUES['timescale'],
-                     info.timescale))
+            delta = (delta * PingPongEvents.DEFAULT_VALUES['timescale'] /
+                     float(info.timescale))
             emsg = frag.emsg
             self.assertEqual(emsg.scheme_id_uri, PingPongEvents.schemeIdUri)
             self.assertEqual(emsg.value, PingPongEvents.DEFAULT_VALUES['value'])
@@ -184,10 +180,10 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
                         'avail_num': avail_num,
                         'break_duration': {
                             'auto_return': auto_return,
-                            'duration': int(round(old_div(event.duration * MPEG_TIMEBASE, event_stream.timescale)))
+                            'duration': int(round(event.duration * MPEG_TIMEBASE / event_stream.timescale))
                         },
                         'splice_time': {
-                            'pts': int(round(old_div(event.presentationTime * MPEG_TIMEBASE, event_stream.timescale)))
+                            'pts': int(round(event.presentationTime * MPEG_TIMEBASE / event_stream.timescale))
                         },
                         'out_of_network_indicator': True,
                         'splice_event_cancel_indicator': False,

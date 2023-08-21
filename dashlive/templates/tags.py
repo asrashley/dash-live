@@ -19,8 +19,6 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-from builtins import str
-from past.builtins import basestring
 import base64
 import binascii
 import json
@@ -55,7 +53,7 @@ def dateTimeFormat(value, fmt):
     """ Format a date using the given format"""
     if not value:
         return value
-    if isinstance(value, basestring):
+    if isinstance(value, str):
         value = parse_date(value)
     if value is None:
         return value
@@ -103,7 +101,7 @@ def toHtmlString(item, className=None):
         else:
             rv = '<table>'
         for key, val in item.items():
-            rv.append('<tr><td>%s</td><td>%s</td></tr>' % (
+            rv.append('<tr><td>{}</td><td>{}</td></tr>'.format(
                 str(key), toHtmlString(val)))
         rv.append('</table>')
         rv = '\n'.join(rv)
@@ -116,7 +114,7 @@ def toHtmlString(item, className=None):
         else:
             rv = ''.join(['[', ','.join(rv), ']'])
         if className:
-            rv = '<span class="{0}">{1}</span>'.format(className, rv)
+            rv = f'<span class="{className}">{rv}</span>'
     elif isinstance(item, bool):
         if className is None:
             classes = []
@@ -128,10 +126,10 @@ def toHtmlString(item, className=None):
         else:
             classes.append("bool-no")
             entity = r"&cross;"
-        rv = '<span class="{0}">{1}</span>'.format(' '.join(classes), entity)
+        rv = '<span class="{}">{}</span>'.format(' '.join(classes), entity)
     else:
         if className:
-            rv = '<span class="{0}">{1:s}</span>'.format(className, rv)
+            rv = f'<span class="{className}">{rv:s}</span>'
         else:
             rv = str(rv)
     return HtmlSafeString(rv)
@@ -187,7 +185,7 @@ def sortedAttributes(value):
     keys.sort()
     rv = ['']
     for k in keys:
-        rv.append('{0}="{1}"'.format(k, value[k]))
+        rv.append(f'{k}="{value[k]}"')
     return ' '.join(rv)
 
 @custom_tags.app_template_filter()

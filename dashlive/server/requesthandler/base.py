@@ -21,10 +21,7 @@
 #############################################################################
 
 from abc import abstractmethod
-from builtins import str
-from past.builtins import basestring
-from past.utils import old_div
-from typing import Any, Dict, List, Optional, TypeAlias, Union
+from typing import Any, TypeAlias
 
 import base64
 import datetime
@@ -95,12 +92,12 @@ class RequestHandlerBase(MethodView):
                 'http://', 'https://')
         return context
 
-    def get_breadcrumbs(self, route: Route) -> List[Dict[str, str]]:
+    def get_breadcrumbs(self, route: Route) -> list[dict[str, str]]:
         breadcrumbs = [{
             'title': route.page_title(),
             'active': 'active'
         }]
-        p: Optional[str] = route.parent
+        p: str | None = route.parent
         while p:
             rt: Route = routes[p]
             breadcrumbs.insert(0, {
@@ -145,7 +142,7 @@ class RequestHandlerBase(MethodView):
             bytes(csrf_key, 'utf-8'),
             hashlib.sha1)
         cur_url = urllib.parse.urlparse(flask.request.url, 'http')
-        origin = '%s://%s' % (cur_url.scheme, cur_url.netloc)
+        origin = '{}://{}'.format(cur_url.scheme, cur_url.netloc)
         logging.debug(f'generate_csrf origin: "{origin}"')
         salt = secrets.token_urlsafe(models.Token.CSRF_SALT_LENGTH)
         salt = salt[:models.Token.CSRF_SALT_LENGTH]
@@ -190,9 +187,9 @@ class RequestHandlerBase(MethodView):
             origin = flask.request.headers['Origin']
         except KeyError:
             logging.debug(
-                "No origin in request, using: {}".format(flask.request.url))
+                f"No origin in request, using: {flask.request.url}")
             cur_url = urllib.parse.urlparse(flask.request.url, 'http')
-            origin = '%s://%s' % (cur_url.scheme, cur_url.netloc)
+            origin = '{}://{}'.format(cur_url.scheme, cur_url.netloc)
         logging.debug(f'check_csrf origin: "{origin}"')
         existing_key = models.Token.get(jti=token,
                                         token_type=models.TokenType.CSRF)
@@ -225,7 +222,7 @@ class RequestHandlerBase(MethodView):
             raise CsrfFailureException("signatures do not match")
         return True
 
-    def get_bool_param(self, param: str, default: Optional[bool] = False) -> bool:
+    def get_bool_param(self, param: str, default: bool | None = False) -> bool:
         value = flask.request.args.get(param)
         if value is None:
             value = flask.request.form.get(param)
@@ -260,13 +257,13 @@ class RequestHandlerBase(MethodView):
             rv.append((drm_name, drm, locations,))
         return rv
 
-    def generate_drm_dict(self, stream: Union[str, models.Stream],
-                          keys: Union[dict, list], options: OptionsContainer) -> dict:
+    def generate_drm_dict(self, stream: str | models.Stream,
+                          keys: dict | list, options: OptionsContainer) -> dict:
         """
         Generate contexts for all enabled DRM systems. It returns a
         dictionary with an entry for each DRM system.
         """
-        if isinstance(stream, basestring):
+        if isinstance(stream, str):
             stream = models.Stream.get(directory=stream)
             assert stream is not None
         rv = {}
@@ -293,7 +290,7 @@ class RequestHandlerBase(MethodView):
 
     def calculate_dash_params(self, mpd_url: str,
                               options: OptionsContainer,
-                              stream: Optional[models.Stream] = None):
+                              stream: models.Stream | None = None):
         if mpd_url is None:
             raise ValueError("Unable to determin MPD URL")
         if stream is None:
@@ -442,8 +439,8 @@ class RequestHandlerBase(MethodView):
             if rep.encrypted:
                 kids.update(rep.kids)
         rv["kids"] = kids
-        rv["mediaDuration"] = old_div(rv["ref_representation"].mediaDuration,
-                                      rv["ref_representation"].timescale)
+        rv["mediaDuration"] = (rv["ref_representation"].mediaDuration /
+                               float(rv["ref_representation"].timescale))
         rv["maxSegmentDuration"] = max(video.maxSegmentDuration,
                                        audio.maxSegmentDuration)
         if encrypted:
@@ -462,7 +459,7 @@ class RequestHandlerBase(MethodView):
     def calculate_audio_context(self,
                                 stream: models.Stream,
                                 options: OptionsContainer,
-                                max_items: Optional[int] = None):
+                                max_items: int | None = None):
         audio = AdaptationSet(
             mode=options.mode, content_type='audio', id=2,
             segment_timeline=options.segmentTimeline)
@@ -494,7 +491,7 @@ class RequestHandlerBase(MethodView):
     def calculate_video_context(self,
                                 stream: models.Stream,
                                 options: OptionsContainer,
-                                max_items: Optional[int] = None) -> List[AdaptationSet]:
+                                max_items: int | None = None) -> list[AdaptationSet]:
         video = AdaptationSet(
             mode=options.mode, content_type='video', id=1,
             segment_timeline=options.segmentTimeline)
@@ -512,7 +509,7 @@ class RequestHandlerBase(MethodView):
     def calculate_text_context(self,
                                stream: models.Stream,
                                options: OptionsContainer,
-                               max_items: Optional[int] = None):
+                               max_items: int | None = None):
         text = AdaptationSet(
             mode=options.mode, content_type='text', id=888,
             segment_timeline=options.segmentTimeline)
@@ -578,7 +575,7 @@ class RequestHandlerBase(MethodView):
         }
 
     def choose_time_source_method(self, options: OptionsContainer, cgi_params: dict,
-                                  now: datetime.datetime) -> Optional[dict]:
+                                  now: datetime.datetime) -> dict | None:
         if options.mode != 'live' or options.utcMethod is None:
             return None
         format = options.utcMethod
@@ -601,7 +598,7 @@ class RequestHandlerBase(MethodView):
         elif format == 'xsd':
             method = 'urn:mpeg:dash:utc:http-xsdate:2014'
         else:
-            raise ValueError(r'Unknown time format: "{0}"'.format(format))
+            raise ValueError(fr'Unknown time format: "{format}"')
         timeSource = {
             'format': format,
             'method': method,
@@ -684,9 +681,9 @@ class RequestHandlerBase(MethodView):
             end = content_length - 1
         elif end == '':
             end = content_length - 1
-        if isinstance(start, basestring):
+        if isinstance(start, str):
             start = int(start, 10)
-        if isinstance(end, basestring):
+        if isinstance(end, str):
             end = int(end, 10)
         status = 206
         headers = {
@@ -708,11 +705,11 @@ class RequestHandlerBase(MethodView):
     def is_ajax(self) -> bool:
         return is_ajax()
 
-    def get_next_url(self) -> Optional[str]:
+    def get_next_url(self) -> str | None:
         """
         Returns unquoted "next" URL if present in the request
         """
-        next: Optional[str] = None
+        next: str | None = None
         # TODO: check "next" is a URL within this app
         try:
             next = flask.request.args['next']
@@ -733,8 +730,8 @@ class RequestHandlerBase(MethodView):
             next = flask.url_for(route_name, **kwargs)
         return next
 
-    def jsonify(self, data: Any, status: Optional[int] = None,
-                headers: Optional[Dict] = None) -> flask.Response:
+    def jsonify(self, data: Any, status: int | None = None,
+                headers: dict | None = None) -> flask.Response:
         """
         Replacement for Flask jsonify that uses flatten to convert non-json objects
         """
@@ -778,7 +775,7 @@ class HTMLHandlerBase(RequestHandlerBase):
     """
 
     def create_context(self, **kwargs):
-        context = super(HTMLHandlerBase, self).create_context(**kwargs)
+        context = super().create_context(**kwargs)
         context.update({
             'routes': routes,
         })

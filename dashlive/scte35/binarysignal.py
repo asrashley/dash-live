@@ -20,8 +20,6 @@
 #
 #############################################################################
 
-from __future__ import print_function
-from builtins import object
 
 from dashlive.mpeg.section_table import MpegSectionTable
 from dashlive.utils.list_of import ListOf
@@ -30,7 +28,7 @@ from .splice_time import SpliceTime
 from .splice_insert import SpliceInsert
 from .splice_schedule import SpliceSchedule
 
-class SapType(object):
+class SapType:
     CLOSED_GOP_NO_LEADING_PICTURES = 0
     CLOSED_GOP_LEADING_PICTURES = 1
     OPEN_GOP = 2

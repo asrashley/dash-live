@@ -20,10 +20,7 @@
 #
 #############################################################################
 
-from __future__ import division
-from past.utils import old_div
 import time
-from typing import Optional
 
 from dashlive.mpeg.dash.event_stream import EventStream
 from dashlive.utils.objects import dict_to_cgi_params
@@ -39,7 +36,7 @@ class ContentComponent:
         self.contentType = content_type
 
 class AdaptationSet(ObjectWithFields):
-    _NEXT_ID: Optional[int] = None
+    _NEXT_ID: int | None = None
     OBJECT_FIELDS = {
         'event_streams': ListOf(EventStream),
         'representations': ListOf(Representation),
@@ -58,7 +55,7 @@ class AdaptationSet(ObjectWithFields):
         mode
         content_type
         """
-        super(AdaptationSet, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         defaults = {
             'id': AdaptationSet.get_next_id(),
             'representations': [],
@@ -131,8 +128,8 @@ class AdaptationSet(ObjectWithFields):
             (self.startNumber - 1) * self.representations[0].segment_duration)
         self.minBitrate = min([a.bitrate for a in self.representations])
         self.maxBitrate = max([a.bitrate for a in self.representations])
-        self.maxSegmentDuration = old_div(max(
-            [a.segment_duration for a in self.representations]), self.timescale)
+        self.maxSegmentDuration = (max(
+            [a.segment_duration for a in self.representations]) / float(self.timescale))
 
         if self.content_type in {'audio', 'text'}:
             for rep in self.representations:

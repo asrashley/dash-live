@@ -20,8 +20,7 @@
 #
 #############################################################################
 
-from builtins import object
-class Segment(object):
+class Segment:
     def __init__(self, pos, size, duration=None):
         self.pos = pos
         self.size = size
@@ -38,5 +37,5 @@ class Segment(object):
 
     def __repr__(self):
         if self.duration:
-            return '({:d},{:d},{:d})'.format(self.pos, self.size, self.duration)
-        return '({:d},{:d})'.format(self.pos, self.size)
+            return f'({self.pos:d},{self.size:d},{self.duration:d})'
+        return f'({self.pos:d},{self.size:d})'

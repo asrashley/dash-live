@@ -20,7 +20,6 @@
 #
 #############################################################################
 
-from __future__ import absolute_import
 import os
 import unittest
 
@@ -32,7 +31,7 @@ from dashlive.utils.buffered_reader import BufferedReader
 from .flask_base import FlaskTestBase
 
 class RepresentationTests(FlaskTestBase, unittest.TestCase):
-    def test_load_representation(self):
+    def test_load_representation(self) -> None:
         self.setup_media(with_subs=True)
         self.assertGreaterThan(models.MediaFile.count(), 0)
         for mfile in models.MediaFile.all():

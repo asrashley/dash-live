@@ -20,15 +20,10 @@
 
 #
 #############################################################################
-from __future__ import division
-from builtins import str
-from past.builtins import basestring
-from past.utils import old_div
 import datetime
 import math
 import re
 import time
-from typing import Optional
 
 from .timezone import UTC, FixedOffsetTimeZone
 
@@ -84,16 +79,16 @@ def toIsoDuration(secs):
      :param secs: the duration to convert, in seconds
      :returns: an ISO8601 formatted string version of the duration
     """
-    if isinstance(secs, basestring):
+    if isinstance(secs, str):
         secs = float(secs)
     elif isinstance(secs, datetime.timedelta):
         secs = secs.total_seconds()
     milli_secs = int((secs - math.floor(secs)) * 1000 + 0.5)
     secs = int(math.floor(secs))
-    hrs = math.floor(old_div(secs, 3600))
+    hrs = secs // 3600
     rv = ['PT']
     secs %= 3600
-    mins = math.floor(old_div(secs, 60))
+    mins = secs // 60
     secs %= 60
     if hrs:
         rv.append('%dH' % hrs)
@@ -118,7 +113,7 @@ def parse_date(date, format=None):
                "%a %b %d, %Y"]
     if format is not None:
         formats.insert(0, format)
-    if not isinstance(date, basestring):
+    if not isinstance(date, str):
         date = str(date)
     d = date
     tz = datetime.timedelta(0)
@@ -153,7 +148,7 @@ def parse_timezone(value):
         return UTC()
     return FixedOffsetTimeZone(value)
 
-def from_isodatetime(date_time: Optional[str]):
+def from_isodatetime(date_time: str | None):
     """
     Convert an ISO formated date string to a datetime.datetime or datetime.timedelta
     """
@@ -217,13 +212,13 @@ def DateTimeField(value):
     """
     if isinstance(value, datetime.datetime):
         return value
-    if isinstance(value, basestring):
+    if isinstance(value, str):
         return from_isodatetime(value)
     return datetime.datetime(value)
 
-def scale_timedelta(delta, num, denom):
+def scale_timedelta(delta: datetime.timedelta, num: int, denom: int) -> float:
     """Scale the given timedelta, avoiding overflows"""
     secs = num * delta.seconds
     msecs = num * delta.microseconds
     secs += msecs / 1000000.0
-    return old_div(secs, denom)
+    return secs / float(denom)

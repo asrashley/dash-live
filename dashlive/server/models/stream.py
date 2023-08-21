@@ -1,5 +1,4 @@
-from __future__ import print_function
-from typing import cast, List, Optional
+from typing import cast, Optional
 
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship  # type: ignore
@@ -31,11 +30,11 @@ class Stream(db.Model, ModelMixin):
         return cls.get_one(**kwargs)
 
     @classmethod
-    def all(cls) -> List["Stream"]:
+    def all(cls) -> list["Stream"]:
         """
         Return all items from this table
         """
-        return cast(List["Stream"], cls.get_all())
+        return cast(list["Stream"], cls.get_all())
 
     def toJSON(self, pure=False):
         return {
@@ -45,7 +44,7 @@ class Stream(db.Model, ModelMixin):
             'playready_la_url': self.playready_la_url,
         }
 
-    def get_fields(self, **kwargs) -> List[JsonObject]:
+    def get_fields(self, **kwargs) -> list[JsonObject]:
         def str_or_none(value):
             if value is None:
                 return ''

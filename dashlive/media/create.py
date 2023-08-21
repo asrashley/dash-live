@@ -196,13 +196,13 @@ class DashMediaCreator:
             "-profile:v", profile,
             "-level:v", str(level),
             "-field_order", "progressive",
-            "-bufsize", '{:d}k'.format(buffer_size),
-            "-maxrate", '{:d}k'.format(bitrate),
-            "-minrate", '{:d}k'.format(minrate),
-            "-b:v", "{:d}k".format(cbr),
+            "-bufsize", f'{buffer_size:d}k',
+            "-maxrate", f'{bitrate:d}k',
+            "-minrate", f'{minrate:d}k',
+            "-b:v", f"{cbr:d}k",
             "-pix_fmt", "yuv420p",
-            "-s", "{:d}x{:d}".format(width, height),
-            "-x264opts", "keyint={:d}:videoformat=pal".format(self.frame_segment_duration),
+            "-s", f"{width:d}x{height:d}",
+            "-x264opts", f"keyint={self.frame_segment_duration:d}:videoformat=pal",
             "-flags", "+cgop+global_header",
             "-flags2", "-local_header",
             "-g", str(self.frame_segment_duration),
@@ -237,7 +237,7 @@ class DashMediaCreator:
         ]
         idx = 0
         probe = subprocess.check_output(
-            ffmpeg_args, stderr=subprocess.STDOUT, universal_newlines=True)
+            ffmpeg_args, stderr=subprocess.STDOUT, text=True)
         for line in probe.splitlines():
             info = {}
             if '|' not in line:
@@ -251,7 +251,7 @@ class DashMediaCreator:
                 if info['media_type'] == 'video':
                     if (idx % self.frame_segment_duration) == 0 and info['key_frame'] != '1':
                         logging.warning('Info: %s', info)
-                        raise ValueError('Frame {} should be a key frame'.format(idx))
+                        raise ValueError(f'Frame {idx} should be a key frame')
                     idx += 1
             except KeyError:
                 pass
@@ -260,7 +260,7 @@ class DashMediaCreator:
         logging.info('Create file "%s" moov="%s" prefix="%s"',
                      dest_filename, moov, prefix)
         if not moov.exists():
-            raise IOError(f'MOOV not found: {moov}')
+            raise OSError(f'MOOV not found: {moov}')
         with dest_filename.open("wb") as dest:
             if self.options.verbose:
                 sys.stdout.write('I')
@@ -364,7 +364,7 @@ class DashMediaCreator:
 
     def destination_filename(self, contentType, index, encrypted):
         enc = '_enc' if encrypted else ''
-        return '{}_{}{:d}{}.mp4'.format(self.options.prefix, contentType, index, enc)
+        return f'{self.options.prefix}_{contentType}{index:d}{enc}.mp4'
 
     def create_key_ids(self):
         rv = []
@@ -513,7 +513,7 @@ class DashMediaCreator:
                     m = self.gcd(width, height)
                     width /= m
                     height /= m
-                    self.options.aspect = '{0}:{1}'.format(width, height)
+                    self.options.aspect = f'{width}:{height}'
         if self.options.duration == 0:
             self.options.duration = math.floor(float(info["format"]["duration"]))
         # round duration to be a multiple of fragment duration

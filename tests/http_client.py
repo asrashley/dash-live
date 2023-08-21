@@ -20,7 +20,6 @@
 #
 #############################################################################
 
-from typing import Dict, List, Optional, Tuple
 import urllib.parse
 
 from dashlive.utils.json_object import JsonObject
@@ -36,7 +35,7 @@ class HttpResponseWrapper(HttpResponse):
         return self.response.get_data(as_text=True)
 
     @property
-    def headers(self) -> Dict:
+    def headers(self) -> dict:
         return self.response.headers
 
     @property
@@ -51,7 +50,7 @@ class ClientHttpSession(HttpSession):
     def __init__(self, client) -> None:
         self.client = client
 
-    def get(self, url: str, params: Optional[Dict] = None,
+    def get(self, url: str, params: dict | None = None,
             **kwargs) -> HttpResponse:
         """Make a GET request"""
         if params is None:
@@ -62,7 +61,7 @@ class ClientHttpSession(HttpSession):
         return HttpResponseWrapper(self.client.get(url, **kwargs))
 
     def put(self, url: str,
-            params: Optional[JsonObject] = None,
+            params: JsonObject | None = None,
             **kwargs):
         """Make a PUT request"""
         if params is not None:
@@ -72,11 +71,11 @@ class ClientHttpSession(HttpSession):
         return HttpResponseWrapper(self.client.put(url, **kwargs))
 
     def post(self, url: str,
-             data: Optional[bytes] = None,
-             files: Optional[List[Tuple]] = None,
-             params: Optional[JsonObject] = None,
-             json: Optional[JsonObject] = None,
-             content_type: Optional[str] = None) -> HttpResponse:
+             data: bytes | None = None,
+             files: list[tuple] | None = None,
+             params: JsonObject | None = None,
+             json: JsonObject | None = None,
+             content_type: str | None = None) -> HttpResponse:
         """Make a POST request"""
         kwargs = {}
         if content_type is not None:
@@ -104,8 +103,8 @@ class ClientHttpSession(HttpSession):
         return HttpResponseWrapper(response)
 
     @staticmethod
-    def params_to_str(params: Dict) -> str:
-        args: List[str] = []
+    def params_to_str(params: dict) -> str:
+        args: list[str] = []
         for key, value in params.items():
             if isinstance(value, str):
                 value = urllib.parse.quote_plus(value, encoding='utf-8')

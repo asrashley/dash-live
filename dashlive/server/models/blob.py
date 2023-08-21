@@ -1,7 +1,6 @@
-from __future__ import print_function
 import contextlib
 from io import SEEK_SET
-from typing import cast, List, Optional
+from typing import cast
 from pathlib import Path
 
 import sqlalchemy as sa
@@ -33,11 +32,11 @@ class Blob(db.Model, ModelMixin):
     mediafile = relationship("MediaFile", back_populates="blob")
 
     @classmethod
-    def all(cls, session: DatabaseSession) -> List["Blob"]:
+    def all(cls, session: DatabaseSession) -> list["Blob"]:
         """
         Return all items from this table
         """
-        return cast(List["Blob"], cls.get_all(session))
+        return cast(list["Blob"], cls.get_all(session))
 
     def toJSON(self, pure=False):
         rv = self.to_dict()
@@ -46,7 +45,7 @@ class Blob(db.Model, ModelMixin):
         return rv
 
     def open_file(self, media_directory: Path,
-                  start: Optional[int],
+                  start: int | None,
                   buffer_size: int) -> contextlib.AbstractContextManager:
         filename = media_directory / self.filename
         handle = open(filename, mode='rb', buffering=buffer_size)

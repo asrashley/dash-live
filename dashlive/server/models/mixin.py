@@ -1,4 +1,4 @@
-from typing import AbstractSet, List, Optional
+from typing import AbstractSet, Optional
 
 from sqlalchemy.orm import class_mapper, ColumnProperty, RelationshipProperty  # type: ignore
 from sqlalchemy.orm.dynamic import AppenderQuery  # type: ignore
@@ -13,7 +13,7 @@ class ModelMixin:
     """
 
     @classmethod
-    def get_all(cls, order_by: Optional[tuple] = None) -> List["ModelMixin"]:
+    def get_all(cls, order_by: tuple | None = None) -> list["ModelMixin"]:
         """
         Return all items from this table
         """
@@ -32,8 +32,8 @@ class ModelMixin:
         # return session.query(cls).filter_by(**kwargs).one_or_none()
 
     @classmethod
-    def search(clz, max_items: Optional[int] = None,
-               **kwargs) -> List[db.Model]:
+    def search(clz, max_items: int | None = None,
+               **kwargs) -> list[db.Model]:
         query = db.select(clz)
         if kwargs:
             query = query.filter_by(**kwargs)
@@ -49,8 +49,8 @@ class ModelMixin:
         query = query.with_only_columns(db.func.count(cls.pk))
         return db.session.execute(query).scalar_one()
 
-    def to_dict(self, exclude: Optional[AbstractSet[str]] = None,
-                only: Optional[AbstractSet[str]] = None,
+    def to_dict(self, exclude: AbstractSet[str] | None = None,
+                only: AbstractSet[str] | None = None,
                 with_collections: bool = False) -> JsonObject:
         """
         Convert this model into a dictionary
@@ -101,8 +101,8 @@ class ModelMixin:
 
     @classmethod
     def get_column_names(cls, with_collections: bool = True,
-                         exclude: Optional[AbstractSet[str]] = None) -> List[str]:
-        names: List[str] = []
+                         exclude: AbstractSet[str] | None = None) -> list[str]:
+        names: list[str] = []
         for prop in class_mapper(cls).iterate_properties:
             if not with_collections and not isinstance(prop, ColumnProperty):
                 continue

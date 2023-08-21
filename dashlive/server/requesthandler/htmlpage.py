@@ -199,7 +199,6 @@ class ViewManifest(HTMLHandlerBase):
     decorators = [uses_stream]
 
     def get(self, mode, stream, manifest, **kwargs):
-        app_cfg = flask.current_app.config['DASH']
         context = self.create_context(**kwargs)
         try:
             options = self.calculate_options(mode)

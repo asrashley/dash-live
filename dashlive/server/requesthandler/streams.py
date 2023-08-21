@@ -21,7 +21,6 @@
 #############################################################################
 
 import logging
-from typing import Dict, Optional
 import urllib
 
 import flask
@@ -85,7 +84,7 @@ class AddStream(HTMLHandlerBase):
     """
     decorators = [login_required(permission=models.Group.MEDIA)]
 
-    def get(self, error: Optional[str] = None):
+    def get(self, error: str | None = None):
         """
         Returns an HTML form to add a new stream
         """
@@ -168,7 +167,7 @@ class EditStream(HTMLHandlerBase):
         })
         if current_user.has_permission(models.Group.MEDIA):
             result['csrf_tokens']['upload'] = self.generate_csrf_token('upload', csrf_key)
-        kids: Dict[str, models.Key] = {}
+        kids: dict[str, models.Key] = {}
         for mf in current_stream.media_files:
             result['media_files'].append(mf.toJSON(convert_date=False))
             for mk in mf.encryption_keys:
@@ -224,7 +223,7 @@ class EditStream(HTMLHandlerBase):
         return flask.redirect(flask.url_for('list-streams'))
 
     def create_context(self, **kwargs):
-        context = super(EditStream, self).create_context(**kwargs)
+        context = super().create_context(**kwargs)
         csrf_key = self.generate_csrf_cookie()
         context.update({
             'csrf_key': csrf_key,

@@ -50,7 +50,7 @@ class FixedOffsetTimeZone(datetime.tzinfo):
         tz_match = self.tzinfo_re.match(delta_str)
         if tz_match is None:
             raise ValueError(
-                r'Failed to parse timezone {}'.format(delta_str))
+                fr'Failed to parse timezone {delta_str}')
         offset = int(tz_match.group('hour'), 10) * 60
         offset += int(tz_match.group('minute'), 10)
         if tz_match.group('delta') == '-':

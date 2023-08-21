@@ -20,16 +20,7 @@
 #
 #############################################################################
 
-from __future__ import division
-from future import standard_library
-from future.utils import with_metaclass
-standard_library.install_aliases()
-from builtins import str
-from builtins import range
-from past.builtins import basestring
-from past.utils import old_div
-from builtins import object
-from abc import ABCMeta, abstractmethod
+from abc import abstractmethod
 import base64
 import collections
 import datetime
@@ -53,7 +44,7 @@ from dashlive.utils.date_time import from_isodatetime, scale_timedelta, to_iso_d
 from dashlive.utils.binary import Binary
 from dashlive.utils.buffered_reader import BufferedReader
 
-class ValidatorOptions(object):
+class ValidatorOptions:
     """
     Options that can be passed to the DASH validator
     """
@@ -73,27 +64,26 @@ class RelaxedDateTime(datetime.datetime):
         if kwargs.get('hour', 0) > 23 and kwargs.get('day') is None:
             kwargs['day'] = self.day + kwargs['hour'] // 24
             kwargs['hour'] = kwargs['hour'] % 24
-        return super(RelaxedDateTime, self).replace(**kwargs)
+        return super().replace(**kwargs)
 
 
 class ValidationException(Exception):
     def __init__(self, args):
-        super(ValidationException, self).__init__(args)
+        super().__init__(args)
 
 
 class MissingSegmentException(ValidationException):
     def __init__(self, url, response):
-        msg = 'Failed to get segment: {0:d} {1} {2}'.format(
+        msg = 'Failed to get segment: {:d} {} {}'.format(
             response.status_code, response.status, url)
-        super(
-            MissingSegmentException, self).__init__(
+        super().__init__(
             (msg, url, response.status))
         self.url = url
         self.status = response.status_code
         self.reason = response.status
 
 
-class HttpClient(with_metaclass(ABCMeta, TestCaseMixin)):
+class HttpClient(TestCaseMixin):
     @abstractmethod
     def get(self, url, headers=None, params=None, status=None, xhr=False):
         raise Exception("Not implemented")
@@ -103,12 +93,12 @@ class ContextAdapter(logging.LoggerAdapter):
     def process(self, msg, kwargs):
         url = getattr(self.extra, "url", None)
         if url is not None and 'http' not in msg:
-            return '%s\n    "%s"\n' % (msg, url), kwargs
+            return f'{msg}\n    "{url}"\n', kwargs
         return msg, kwargs
 
 
-class DashElement(with_metaclass(ABCMeta, TestCaseMixin)):
-    class Parent(object):
+class DashElement(TestCaseMixin):
+    class Parent:
         pass
     xmlNamespaces = {
         'cenc': 'urn:mpeg:cenc:2013',
@@ -162,7 +152,7 @@ class DashElement(with_metaclass(ABCMeta, TestCaseMixin)):
             if ':' in name:
                 ns, nm = name.split(':')
                 name = nm
-                val = elt.get("{{{0}}}{1}".format(self.xmlNamespaces[ns], nm))
+                val = elt.get(f"{{{self.xmlNamespaces[ns]}}}{nm}")
             else:
                 val = elt.get(name)
             if val is not None:
@@ -244,7 +234,7 @@ class DashElement(with_metaclass(ABCMeta, TestCaseMixin)):
         dest = os.path.join(self.options.dest,
                             to_iso_datetime(now).replace(':', '-'))
         if prefix is not None and bandwidth is not None:
-            filename = '{0}_{1}.mp4'.format(prefix, bandwidth)
+            filename = f'{prefix}_{bandwidth}.mp4'
         else:
             filename = ''.join([root, ext])
         self.log.debug('dest=%s, filename=%s', dest, filename)
@@ -262,10 +252,10 @@ class DashElement(with_metaclass(ABCMeta, TestCaseMixin)):
         return open(filename, 'wb')
 
 
-class DashValidator(with_metaclass(ABCMeta, DashElement)):
+class DashValidator(DashElement):
     def __init__(self, url, http_client, mode=None, options=None, xml=None):
         DashElement.init_xml_namespaces()
-        super(DashValidator, self).__init__(None, parent=None, options=options)
+        super().__init__(None, parent=None, options=options)
         self.http = http_client
         self.baseurl = self.url = url
         self.options = options if options is not None else ValidatorOptions()
@@ -329,8 +319,8 @@ class DashValidator(with_metaclass(ABCMeta, DashElement)):
                 'files': list(self.manifest.filenames)
             }
             filename = self.output_filename(
-                default=None, bandwidth=None, filename='{0}.json'.format(self.options.prefix))
-            with open(filename, 'wt') as dest:
+                default=None, bandwidth=None, filename=f'{self.options.prefix}.json')
+            with open(filename, 'w') as dest:
                 json.dump(config, dest, indent=2)
         return self.errors
 
@@ -366,7 +356,7 @@ class DashValidator(with_metaclass(ABCMeta, DashElement)):
         raise Exception("Not implemented")
 
 
-class RepresentationInfo(object):
+class RepresentationInfo:
     def __init__(self, encrypted, timescale, num_segments=0, **kwargs):
         self.encrypted = encrypted
         self.timescale = timescale
@@ -389,7 +379,7 @@ class Manifest(DashElement):
     ]
 
     def __init__(self, parent, url, mode, xml):
-        super(Manifest, self).__init__(xml, parent)
+        super().__init__(xml, parent)
         self.url = url
         parsed = urllib.parse.urlparse(url)
         self.params = {}
@@ -398,7 +388,7 @@ class Manifest(DashElement):
         self.mode = mode
         if self.baseurl is None:
             self.baseurl = url
-            assert isinstance(url, basestring)
+            assert isinstance(url, str)
         if mode != 'live':
             if "urn:mpeg:dash:profile:isoff-on-demand:2011" in xml.get(
                     'profiles'):
@@ -430,7 +420,7 @@ class Manifest(DashElement):
                 self.mediaPresentationDuration,
                 "MPD@mediaPresentationDuration must not be present for live manifest: %s" % self.url)
         else:
-            msg = r'MPD@type must be static for VOD manifest, got "{0}": {1}'.format(
+            msg = r'MPD@type must be static for VOD manifest, got "{}": {}'.format(
                 self.mpd_type, self.url)
             self.checkEqual(self.mpd_type, "static", msg=msg)
             if self.mediaPresentationDuration is not None:
@@ -455,7 +445,7 @@ class Manifest(DashElement):
                 period.validate(depth - 1)
 
 
-class DescriptorElement(object):
+class DescriptorElement:
     def __init__(self, elt):
         self.attributes = elt.attrib
         self.tag = elt.tag
@@ -472,7 +462,7 @@ class Descriptor(DashElement):
     ]
 
     def __init__(self, elt, parent):
-        super(Descriptor, self).__init__(elt, parent)
+        super().__init__(elt, parent)
         self.children = []
         for child in elt:
             self.children.append(DescriptorElement(child))
@@ -494,7 +484,7 @@ class DashEvent(DashElement):
     ]
 
     def __init__(self, elt, parent):
-        super(DashEvent, self).__init__(elt, parent)
+        super().__init__(elt, parent)
         self.children = []
         for child in elt:
             self.children.append(child)
@@ -516,7 +506,8 @@ class DashEvent(DashElement):
             self.checkIn('splice_insert', sig)
             self.checkIn('break_duration', sig['splice_insert'])
             duration = sig['splice_insert']['break_duration']['duration']
-            self.checkAlmostEqual(old_div(self.duration, timescale), old_div(duration, MPEG_TIMEBASE))
+            self.checkAlmostEqual(
+                self.duration / float(timescale), duration / float(MPEG_TIMEBASE))
             self.scte35_binary_signal = sig
 
 
@@ -535,7 +526,7 @@ class EventStreamBase(Descriptor):
     ]
 
     def __init__(self, elt, parent):
-        super(EventStreamBase, self).__init__(elt, parent)
+        super().__init__(elt, parent)
         evs = elt.findall('./dash:Event', self.xmlNamespaces)
         self.events = [DashEvent(a, self) for a in evs]
 
@@ -546,10 +537,10 @@ class EventStream(EventStreamBase):
     """
 
     def __init__(self, elt, parent):
-        super(EventStream, self).__init__(elt, parent)
+        super().__init__(elt, parent)
 
     def validate(self, depth=-1):
-        super(EventStream, self).validate(depth)
+        super().validate(depth)
         self.checkNotEqual(self.schemeIdUri, self.SCTE35_INBAND_EVENTS)
         if depth == 0:
             return
@@ -563,10 +554,10 @@ class InbandEventStream(EventStreamBase):
     """
 
     def __init__(self, elt, parent):
-        super(InbandEventStream, self).__init__(elt, parent)
+        super().__init__(elt, parent)
 
     def validate(self, depth=-1):
-        super(InbandEventStream, self).validate(depth)
+        super().validate(depth)
         self.checkEqual(len(self.children), 0)
 
 class Period(DashElement):
@@ -577,7 +568,7 @@ class Period(DashElement):
     ]
 
     def __init__(self, period, parent):
-        super(Period, self).__init__(period, parent)
+        super().__init__(period, parent)
         if self.parent.mpd_type == 'dynamic':
             if self.start is None:
                 self.start = parent.availabilityStartTime
@@ -598,7 +589,7 @@ class Period(DashElement):
             evs.validate(depth - 1)
 
 
-class HttpRange(object):
+class HttpRange:
     def __init__(self, start, end=None):
         if end is None:
             start, end = start.split('-')
@@ -606,15 +597,14 @@ class HttpRange(object):
         self.end = int(end)
 
     def __str__(self):
-        return '{0}-{1}'.format(self.start, self.end)
+        return f'{self.start}-{self.end}'
 
 
 class SegmentReference(DashElement):
     REPR_FMT = 'SegmentReference(url={sourceURL}, duration={duration}, decode_time={decode_time}, mediaRange={mediaRange}'
 
     def __init__(self, parent, url, start, end, decode_time, duration):
-        super(SegmentReference, self).__init__(elt=None, url=url,
-                                               parent=parent)
+        super().__init__(elt=None, url=url, parent=parent)
         self.sourceURL = url
         self.media = url
         self.mediaRange = HttpRange(start, end)
@@ -639,20 +629,20 @@ class SegmentBaseType(DashElement):
     ]
 
     def __init__(self, elt, parent):
-        super(SegmentBaseType, self).__init__(elt, parent)
+        super().__init__(elt, parent)
         inits = elt.findall('./dash:Initialization', self.xmlNamespaces)
         self.initializationList = [URLType(u, self) for u in inits]
         self.representationIndex = [URLType(i, self) for i in elt.findall('./dash:RepresentationIndex', self.xmlNamespaces)]
 
     def load_segment_index(self, url):
         self.checkIsNotNone(self.indexRange)
-        headers = {"Range": "bytes={}".format(self.indexRange)}
+        headers = {"Range": f"bytes={self.indexRange}"}
         self.log.debug('GET: %s %s', url, headers)
         response = self.http.get(url, headers=headers)
         # 206 = partial content
         self.checkEqual(response.status_code, 206)
         if self.options.save:
-            default = 'index-{0}-{1}'.format(self.parent.id, self.parent.bandwidth)
+            default = f'index-{self.parent.id}-{self.parent.bandwidth}'
             filename = self.output_filename(
                 default, self.parent.bandwidth, prefix=self.options.prefix,
                 makedirs=True)
@@ -685,7 +675,7 @@ class URLType(DashElement):
     ]
 
     def __init__(self, elt, parent):
-        super(URLType, self).__init__(elt, parent)
+        super().__init__(elt, parent)
 
     def validate(self, depth=-1):
         pass
@@ -695,9 +685,9 @@ class FrameRateType(TestCaseMixin):
     pattern = re.compile(r"([0-9]*[0-9])(/[0-9]*[0-9])?$")
 
     def __init__(self, num, denom=1):
-        if isinstance(num, basestring):
+        if isinstance(num, str):
             match = self.pattern.match(num)
-            self.checkIsNotNone(match, 'Invalid frame rate "{0}", pattern is "{1}"'.format(
+            self.checkIsNotNone(match, 'Invalid frame rate "{}", pattern is "{}"'.format(
                 num, self.pattern.pattern))
             num = int(match.group(1), 10)
             if match.group(2):
@@ -715,7 +705,7 @@ class FrameRateType(TestCaseMixin):
     def __repr__(self):
         if self.denom == 1:
             return str(self.value)
-        return '{0:d}/{1:d}'.format(self.num, self.denom)
+        return f'{self.num:d}/{self.denom:d}'
 
     def validate(self, depth=-1):
         pass
@@ -728,7 +718,7 @@ class MultipleSegmentBaseType(SegmentBaseType):
     ]
 
     def __init__(self, elt, parent):
-        super(MultipleSegmentBaseType, self).__init__(elt, parent)
+        super().__init__(elt, parent)
         self.segmentTimeline = None
         timeline = elt.findall('./dash:SegmentTimeline', self.xmlNamespaces)
         if len(timeline):
@@ -739,7 +729,7 @@ class MultipleSegmentBaseType(SegmentBaseType):
             self.BitstreamSwitching = bss[0].text
 
     def validate(self, depth=-1):
-        super(MultipleSegmentBaseType, self).validate(depth)
+        super().validate(depth)
         if self.segmentTimeline is not None:
             # 5.3.9.2.1: The attribute @duration and the element SegmentTimeline
             # shall not be present at the same time.
@@ -756,7 +746,7 @@ class RepresentationBaseType(DashElement):
     ]
 
     def __init__(self, elt, parent):
-        super(RepresentationBaseType, self).__init__(elt, parent)
+        super().__init__(elt, parent)
         prot = elt.findall('./dash:ContentProtection', self.xmlNamespaces)
         self.contentProtection = [ContentProtection(cp, self) for cp in prot]
         self.segmentTemplate = None
@@ -775,7 +765,7 @@ class SegmentTimeline(DashElement):
         'SegmentEntry', ['start', 'duration'])
 
     def __init__(self, timeline, parent):
-        super(SegmentTimeline, self).__init__(timeline, parent)
+        super().__init__(timeline, parent)
         self.segments = []
         start = None
         self.duration = 0
@@ -806,19 +796,19 @@ class SegmentTemplate(MultipleSegmentBaseType):
     ]
 
     def __init__(self, template, parent):
-        super(SegmentTemplate, self).__init__(template, parent)
+        super().__init__(template, parent)
         if self.startNumber is None:
             self.startNumber = 1
 
 
 class SegmentListType(MultipleSegmentBaseType):
     def __init__(self, elt, parent):
-        super(SegmentListType, self).__init__(elt, parent)
+        super().__init__(elt, parent)
         urls = elt.findall('./dash:SegmentURL', self.xmlNamespaces)
         self.segmentURLs = [SegmentURL(u, self) for u in urls]
 
     def validate(self, depth=-1):
-        super(SegmentListType, self).validate(depth)
+        super().validate(depth)
         self.checkGreaterThan(len(self.segmentURLs), 0)
         self.checkGreaterThan(len(self.segmentURLs[0].initializationList), 0)
 
@@ -832,7 +822,7 @@ class SegmentURL(DashElement):
     ]
 
     def __init__(self, template, parent):
-        super(SegmentURL, self).__init__(template, parent)
+        super().__init__(template, parent)
 
     def validate(self, depth=-1):
         self.checkIsNotNone(self.media)
@@ -845,10 +835,10 @@ class ContentProtection(Descriptor):
     ]
 
     def __init__(self, elt, parent):
-        super(ContentProtection, self).__init__(elt, parent)
+        super().__init__(elt, parent)
 
     def validate(self, depth=-1):
-        super(ContentProtection, self).validate(depth)
+        super().validate(depth)
         if self.schemeIdUri == "urn:mpeg:dash:mp4protection:2011":
             self.checkEqual(self.value, "cenc")
         else:
@@ -921,7 +911,7 @@ class AdaptationSet(RepresentationBaseType):
     ]
 
     def __init__(self, adap_set, parent):
-        super(AdaptationSet, self).__init__(adap_set, parent)
+        super().__init__(adap_set, parent)
         reps = adap_set.findall('./dash:Representation', self.xmlNamespaces)
         self.default_KID = None
         for cp in self.contentProtection:
@@ -934,7 +924,7 @@ class AdaptationSet(RepresentationBaseType):
         if len(self.contentProtection):
             self.checkIsNotNone(
                 self.default_KID,
-                'default_KID cannot be missing for protected stream: {}'.format(self.baseurl))
+                f'default_KID cannot be missing for protected stream: {self.baseurl}')
         self.checkIn(
             self.contentType,
             {'video', 'audio', 'text', 'image', 'font', 'application', None})
@@ -966,7 +956,7 @@ class Representation(RepresentationBaseType):
     ]
 
     def __init__(self, rep, parent):
-        super(Representation, self).__init__(rep, parent)
+        super().__init__(rep, parent)
         if self.segmentTemplate is None:
             self.segmentTemplate = parent.segmentTemplate
         if self.segmentTemplate is None:
@@ -988,7 +978,7 @@ class Representation(RepresentationBaseType):
         if self.mode != "live":
             self.checkGreaterThan(
                 len(self.media_segments), 0,
-                'Failed to generate any segments for Representation {0} for MPD {1}'.format(
+                'Failed to generate any segments for Representation {} for MPD {}'.format(
                     self.unique_id(), self.mpd.url))
 
     def init_seg_url(self):
@@ -1018,7 +1008,7 @@ class Representation(RepresentationBaseType):
         seg_duration = self.segmentTemplate.duration
         if seg_duration is None:
             self.assertIsNotNone(timeline)
-            seg_duration = old_div(timeline.duration, len(timeline.segments))
+            seg_duration = timeline.duration / len(timeline.segments)
         if self.mode == 'vod':
             self.checkIsNotNone(info.num_segments)
             num_segments = info.num_segments
@@ -1033,15 +1023,15 @@ class Representation(RepresentationBaseType):
                 self.checkIsNotNone(
                     self.mpd.timeShiftBufferDepth,
                     msg='MPD@timeShiftBufferDepth is required for a live stream')
-                num_segments = math.floor(old_div(self.mpd.timeShiftBufferDepth.total_seconds() *
-                                          self.segmentTemplate.timescale, seg_duration))
+                num_segments = math.floor((self.mpd.timeShiftBufferDepth.total_seconds() *
+                                          self.segmentTemplate.timescale) / seg_duration)
                 num_segments = int(num_segments)
                 if num_segments == 0:
                     self.assertEqual(self.mpd.timeShiftBufferDepth.total_seconds(), 0)
                     return
                 self.checkGreaterThan(
                     self.mpd.timeShiftBufferDepth.total_seconds(),
-                    old_div(seg_duration, self.segmentTemplate.timescale))
+                    seg_duration / float(self.segmentTemplate.timescale))
                 self.checkGreaterThan(num_segments, 0)
             now = datetime.datetime.now(tz=UTC())
             elapsed_time = now - self.mpd.availabilityStartTime
@@ -1072,9 +1062,9 @@ class Representation(RepresentationBaseType):
         elif self.parent.minFrameRate is not None:
             frameRate = self.parent.minFrameRate.value
         if self.segmentTemplate is not None:
-            tolerance = old_div(self.segmentTemplate.timescale, frameRate)
+            tolerance = self.segmentTemplate.timescale / frameRate
         else:
-            tolerance = old_div(info.timescale, frameRate)
+            tolerance = info.timescale / frameRate
         num_segments = min(num_segments, 20)
         self.log.debug('Generating %d MediaSegments', num_segments)
         if timeline is not None:
@@ -1086,7 +1076,7 @@ class Representation(RepresentationBaseType):
                 self.segmentTemplate.media, seg_num, decode_time)
             url = urllib.parse.urljoin(self.baseurl, url)
             if self.parent.contentType == 'audio':
-                tol = old_div(tolerance * frameRate, 2)
+                tol = tolerance * frameRate / 2.0
             elif idx == 0:
                 tol = tolerance * 2
             else:
@@ -1145,10 +1135,10 @@ class Representation(RepresentationBaseType):
         elif self.parent.minFrameRate is not None:
             frameRate = self.parent.minFrameRate.value
         if self.segmentTemplate is not None:
-            tolerance = old_div(self.segmentTemplate.timescale, frameRate)
+            tolerance = self.segmentTemplate.timescale / frameRate
             timescale = self.segmentTemplate.timescale
         else:
-            tolerance = old_div(info.timescale, frameRate)
+            tolerance = info.timescale / frameRate
             timescale = info.timescale
         for idx, item in enumerate(seg_list):
             self.checkIsNotNone(item.mediaRange)
@@ -1159,7 +1149,7 @@ class Representation(RepresentationBaseType):
             if idx == 0 and self.segmentTemplate and self.segmentTemplate.segmentTimeline:
                 seg_num = None
             if self.parent.contentType == 'audio':
-                tol = old_div(tolerance * frameRate, 2)
+                tol = tolerance * frameRate / 2.0
             elif idx == 0:
                 tol = tolerance * 2
             else:
@@ -1225,7 +1215,7 @@ class Representation(RepresentationBaseType):
             else:
                 self.checkEqual(
                     next_decode_time, seg.decode_time,
-                    '{0}: expected decode time {1} but got {2}'.format(
+                    '{}: expected decode time {} but got {}'.format(
                         seg.url, next_decode_time, seg.decode_time))
             if seg.seg_range is None and seg.url in info.tested_media_segment:
                 next_decode_time = seg.next_decode_time
@@ -1252,14 +1242,14 @@ class Representation(RepresentationBaseType):
         decode_time = None
         if seg_duration is None:
             self.checkIsNotNone(timeline)
-            seg_duration = old_div(timeline.duration, len(timeline.segments))
+            seg_duration = timeline.duration / float(len(timeline.segments))
         if timeline is not None:
             num_segments = len(self.segmentTemplate.segmentTimeline.segments)
             decode_time = timeline.segments[0].start
         else:
             self.checkIsNotNone(self.mpd.timeShiftBufferDepth)
-            num_segments = math.floor(old_div(self.mpd.timeShiftBufferDepth.total_seconds() *
-                                      timescale, seg_duration))
+            num_segments = math.floor(self.mpd.timeShiftBufferDepth.total_seconds() *
+                                      timescale / seg_duration)
             num_segments = int(num_segments)
             num_segments = min(num_segments, 25)
         now = datetime.datetime.now(tz=UTC())
@@ -1269,7 +1259,7 @@ class Representation(RepresentationBaseType):
         last_fragment = startNumber + int(
             scale_timedelta(elapsed_time, timescale, seg_duration))
         first_fragment = last_fragment - math.floor(
-            old_div(self.mpd.timeShiftBufferDepth.total_seconds() * timescale, seg_duration))
+            self.mpd.timeShiftBufferDepth.total_seconds() * timescale / seg_duration)
         if first_fragment < startNumber:
             num_segments -= startNumber - first_fragment
             if num_segments < 1:
@@ -1278,15 +1268,16 @@ class Representation(RepresentationBaseType):
         if decode_time is None:
             decode_time = (first_fragment - startNumber) * seg_duration
         self.checkIsNotNone(decode_time)
-        pos = self.mpd.availabilityStartTime + \
-            datetime.timedelta(seconds=(old_div(decode_time, timescale)))
-        earliest_pos = now - self.mpd.timeShiftBufferDepth - \
-            datetime.timedelta(seconds=(old_div(seg_duration, timescale)))
-        self.checkGreaterThanOrEqual(pos, earliest_pos,
-                                     'Position {0} is before first available fragment time {1}'.format(
-                                         pos, earliest_pos))
-        self.checkLessThan(pos, now,
-                           'Pos {0} is after current time of day {1}'.format(pos, now))
+        pos = (self.mpd.availabilityStartTime +
+               datetime.timedelta(seconds=(decode_time / float(timescale))))
+        earliest_pos = (now - self.mpd.timeShiftBufferDepth -
+                        datetime.timedelta(seconds=(seg_duration / float(timescale))))
+        self.checkGreaterThanOrEqual(
+            pos, earliest_pos,
+            'Position {} is before first available fragment time {}'.format(
+                pos, earliest_pos))
+        self.checkLessThan(
+            pos, now, f'Pos {pos} is after current time of day {now}')
 
     def check_on_demand_profile(self):
         pass
@@ -1300,7 +1291,7 @@ class Representation(RepresentationBaseType):
                 return value
             fmt = matchobj.group(1)
             if fmt is None:
-                if isinstance(value, basestring):
+                if isinstance(value, str):
                     fmt = r'%s'
                 else:
                     fmt = r'%d'
@@ -1311,14 +1302,14 @@ class Representation(RepresentationBaseType):
                             ('Number', seg_num),
                             ('Time', decode_time),
                             ('', '$')]:
-            rx = re.compile(r'\${0}(%0\d+d)?\$'.format(name))
+            rx = re.compile(fr'\${name}(%0\d+d)?\$')
             url = rx.sub(lambda match: repfn(match, value), url)
         return url
 
 
 class InitSegment(DashElement):
     def __init__(self, parent, url, info, seg_range):
-        super(InitSegment, self).__init__(None, parent)
+        super().__init__(None, parent)
         self.info = info
         self.seg_range = seg_range
         self.url = url
@@ -1328,7 +1319,7 @@ class InitSegment(DashElement):
         if self.url is None:
             return
         if self.seg_range is not None:
-            headers = {"Range": "bytes={}".format(self.seg_range)}
+            headers = {"Range": f"bytes={self.seg_range}"}
             expected_status = 206
         else:
             headers = None
@@ -1341,7 +1332,7 @@ class InitSegment(DashElement):
             response.status_code, expected_status,
             msg=f'Failed to load init segment: {response.status_code}: {self.url}')
         if self.options.save:
-            default = 'init-{0}-{1}'.format(self.parent.id, self.parent.bandwidth)
+            default = f'init-{self.parent.id}-{self.parent.bandwidth}'
             filename = self.output_filename(
                 default, self.parent.bandwidth, prefix=self.options.prefix,
                 makedirs=True)
@@ -1396,7 +1387,7 @@ class InitSegment(DashElement):
 class MediaSegment(DashElement):
     def __init__(self, parent, url, info, seg_num,
                  decode_time, tolerance, seg_range):
-        super(MediaSegment, self).__init__(None, parent)
+        super().__init__(None, parent)
         self.info = info
         self.seg_num = seg_num
         self.decode_time = decode_time
@@ -1412,7 +1403,7 @@ class MediaSegment(DashElement):
     def validate(self, depth=-1, all_atoms=False):
         headers = None
         if self.seg_range is not None:
-            headers = {"Range": "bytes={}".format(self.seg_range)}
+            headers = {"Range": f"bytes={self.seg_range}"}
         self.log.debug('MediaSegment: url=%s headers=%s', self.url, headers)
         response = self.http.get(self.url, headers=headers)
         if self.seg_range is None:
@@ -1426,8 +1417,7 @@ class MediaSegment(DashElement):
                 self.checkStartsWith(response.headers['content-type'],
                                      self.parent.mimeType)
         if self.options.save:
-            default = 'media-{0}-{1}-{2}'.format(self.parent.id, self.parent.bandwidth,
-                                                 self.seg_num)
+            default = f'media-{self.parent.id}-{self.parent.bandwidth}-{self.seg_num}'
             filename = self.output_filename(
                 default, self.parent.bandwidth, prefix=self.options.prefix)
             self.log.debug('saving media segment: %s', filename)
@@ -1475,7 +1465,7 @@ class MediaSegment(DashElement):
                 senc.samples[0].position,
                 saio.offsets[0] + base_data_offset,
                 msg=(r'saio.offsets[0] should point to first CencSampleAuxiliaryData entry. ' +
-                     'Expected {0}, got {1}'.format(
+                     'Expected {}, got {}'.format(
                          senc.samples[0].position, saio.offsets[0] + base_data_offset)))
             self.checkEqual(len(moof.traf.trun.samples), len(senc.samples))
         except AttributeError:
@@ -1484,7 +1474,7 @@ class MediaSegment(DashElement):
                 msg='Failed to find senc box in encrypted stream')
         if self.seg_num is not None:
             self.checkEqual(moof.mfhd.sequence_number, self.seg_num,
-                            msg='Sequence number error, expected {0}, got {1}'.format(
+                            msg='Sequence number error, expected {}, got {}'.format(
                                 self.seg_num, moof.mfhd.sequence_number))
         moov = self.info.moov
         if self.decode_time is not None:
@@ -1507,9 +1497,9 @@ class MediaSegment(DashElement):
             last_sample_end += samp.size
         msg = ' '.join([
             r'trun.data_offset must point inside the MDAT box.',
-            r'trun points to {0} but first sample of MDAT is {1}'.format(
+            r'trun points to {} but first sample of MDAT is {}'.format(
                 first_sample_pos, mdat.position + mdat.header_size),
-            r'trun last sample is {0} but end of MDAT is {1}'.format(
+            r'trun last sample is {} but end of MDAT is {}'.format(
                 last_sample_end, mdat.position + mdat.size),
         ])
         self.checkGreaterThanOrEqual(first_sample_pos, mdat.position + mdat.header_size, msg)
@@ -1552,7 +1542,7 @@ class MediaSegment(DashElement):
                 found = True
         self.checkTrue(
             found,
-            'Failed to find an InbandEventStream with schemeIdUri="{0}" value="{1}"'.format(
+            'Failed to find an InbandEventStream with schemeIdUri="{}" value="{}"'.format(
                 emsg.scheme_id_uri, emsg.value))
 
 
@@ -1624,9 +1614,7 @@ if __name__ == "__main__":
 
     class BasicDashValidator(DashValidator):
         def __init__(self, url, options):
-            super(
-                BasicDashValidator,
-                self).__init__(
+            super().__init__(
                 url,
                 RequestsHttpClient(),
                 options=options)
@@ -1654,8 +1642,7 @@ if __name__ == "__main__":
                 if duration is not None and rep.segmentTemplate:
                     seg_dur = rep.segmentTemplate.duration
                     num_segments = int(
-                        math.floor(
-                            old_div(duration.total_seconds() * timescale, seg_dur)))
+                        math.floor(duration.total_seconds() * timescale / seg_dur))
             return RepresentationInfo(encrypted=self.options.encrypted,
                                       iv_size=self.options.ivsize,
                                       timescale=timescale,
@@ -1726,7 +1713,7 @@ if __name__ == "__main__":
             if args.dest:
                 bdv.save_manifest()
                 filename = bdv.output_filename('error.txt', makedirs=True)
-                with open(filename, 'wt') as err_file:
+                with open(filename, 'w') as err_file:
                     err_file.write(str(err) + '\n')
                     traceback.print_exc(file=err_file)
             if args.strict:

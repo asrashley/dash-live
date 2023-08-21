@@ -24,7 +24,6 @@ import argparse
 import json
 import logging
 from pathlib import Path
-from typing import Optional
 
 from dashlive.utils.json_object import JsonObject
 from .base import ManagementBase
@@ -57,7 +56,7 @@ class DownloadDatabase(ManagementBase):
             json.dump(result, dest, indent=2, sort_keys=True)
         return retval
 
-    def download_stream(self, stream: StreamInfo, destination: Path) -> Optional[JsonObject]:
+    def download_stream(self, stream: StreamInfo, destination: Path) -> JsonObject | None:
         js = stream.to_dict(only={'directory', 'title', 'marlin_la_url', 'playready_la_url'})
         # js['files'] = [mf.blob.filename for mf in stream.media_files.values()]
         js['files'] = []

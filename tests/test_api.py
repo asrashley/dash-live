@@ -26,7 +26,6 @@ import copy
 import io
 import logging
 import os
-from typing import Dict
 import unittest
 
 from bs4 import BeautifulSoup
@@ -88,8 +87,8 @@ class TestRestApi(FlaskTestBase):
                 continue
             self.assertEqual(
                 getattr(streams[0], k), expected_result[k],
-                'Field {0}: expected "{1}" got "{2}"'.format(k, getattr(streams[0], k),
-                                                             expected_result[k]))
+                'Field {}: expected "{}" got "{}"'.format(
+                    k, getattr(streams[0], k), expected_result[k]))
 
         url = flask.url_for('list-streams')
         response = self.client.get(url)
@@ -612,7 +611,7 @@ class TestRestApi(FlaskTestBase):
             self.assertEqual(form['method'], 'POST')
             upload_url = form['action']
             content_type = form['enctype']
-        mock_file = io.BytesIO('data'.encode('ascii'))
+        mock_file = io.BytesIO(b'data')
         data = {
             'file': (mock_file, 'bbb_v1.mp4', 'video/mp4',),
             "ajax": ajax,
@@ -698,7 +697,7 @@ class TestRestApi(FlaskTestBase):
         self.assertEqual(response.json['media_files'][0]['name'], 'bbb_v1')
 
     def assert_upload_post_fails(self, upload_url: str, content_type: str,
-                                 ajax: int, data: Dict) -> None:
+                                 ajax: int, data: dict) -> None:
         response = self.client.post(
             upload_url, data=data, content_type=content_type)
         if ajax:

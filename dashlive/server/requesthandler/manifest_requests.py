@@ -20,10 +20,8 @@
 #
 #############################################################################
 
-from builtins import str
 import datetime
 import logging
-from typing import Optional
 
 import flask
 
@@ -82,7 +80,7 @@ class ServeManifest(RequestHandlerBase):
         return flask.make_response((body, 200, headers))
 
     def check_for_synthetic_manifest_error(self, options: OptionsContainer,
-                                           context: dict) -> Optional[flask.Response]:
+                                           context: dict) -> flask.Response | None:
         for item in options.manifestErrors:
             code, pos = item
             if isinstance(pos, int):

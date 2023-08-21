@@ -20,7 +20,7 @@
 #
 #############################################################################
 from collections.abc import MutableMapping
-from typing import AbstractSet, Any, Optional
+from typing import AbstractSet, Any
 
 from dashlive.utils.json_object import JsonObject
 from dashlive.utils.list_of import ListOf, clone_object, object_from
@@ -61,7 +61,7 @@ class ObjectWithFields(MutableMapping):
             for key, clz in self.REQUIRED_FIELDS.items():
                 assert key in self._fields
                 value = self.__dict__[key]
-                assert isinstance(value, clz), r"{0}: Expected type {1}, got {2}".format(
+                assert isinstance(value, clz), r"{}: Expected type {}, got {}".format(
                     key, clz.__name__, type(value).__name__)
 
     def clone(self, **kwargs) -> "ObjectWithFields":
@@ -114,9 +114,9 @@ class ObjectWithFields(MutableMapping):
             exclude = self.DEFAULT_EXCLUDE
         fields = self._field_repr(exclude)
         fields = ','.join(fields)
-        return '{name}({fields})'.format(name=self.classname(), fields=fields)
+        return f'{self.classname()}({fields})'
 
-    def toJSON(self, exclude: Optional[AbstractSet] = None, pure: bool = False) -> JsonObject:
+    def toJSON(self, exclude: AbstractSet | None = None, pure: bool = False) -> JsonObject:
         if exclude is None:
             exclude = self.DEFAULT_EXCLUDE
             if exclude is None:
@@ -131,7 +131,7 @@ class ObjectWithFields(MutableMapping):
         fields = self._to_json(exclude)
         for k, v in fields.items():
             if k != '_type':
-                rv.append('{0}={1}'.format(k, as_python(v)))
+                rv.append(f'{k}={as_python(v)}')
         return rv
 
     def _to_json(self, exclude: AbstractSet) -> JsonObject:

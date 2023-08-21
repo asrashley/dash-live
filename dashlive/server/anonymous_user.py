@@ -1,4 +1,3 @@
-
 from flask_login import AnonymousUserMixin
 
 class AnonymousUser(AnonymousUserMixin):

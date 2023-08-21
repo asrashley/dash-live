@@ -20,9 +20,6 @@
 #
 #############################################################################
 
-from __future__ import division
-from past.utils import old_div
-
 import flask
 
 from dashlive.mpeg import MPEG_TIMEBASE
@@ -47,23 +44,23 @@ class Scte35Events(RepeatingEventBase):
     PREFIX = 'scte35'
 
     def __init__(self, **kwargs) -> None:
-        super(Scte35Events, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         if self.inband:
             self.version = 1
 
-    def get_manifest_event_payload(self, event_id: int, presentation_time) -> str:
+    def get_manifest_event_payload(self, event_id: int, presentation_time: int) -> str:
         splice = self.create_binary_signal(event_id, presentation_time)
         data = splice.encode()
         xml = flask.render_template('events/scte35_xml_bin_event.xml', binary=data)
         return xml
 
-    def get_emsg_event_payload(self, event_id: int, presentation_time) -> bytes:
+    def get_emsg_event_payload(self, event_id: int, presentation_time: int) -> bytes:
         splice = self.create_binary_signal(event_id, presentation_time)
         return splice.encode()
 
-    def create_binary_signal(self, event_id: int, presentation_time) -> BinarySignal:
-        pts = old_div(presentation_time * MPEG_TIMEBASE, self.timescale)
-        duration = old_div(self.duration * MPEG_TIMEBASE, self.timescale)
+    def create_binary_signal(self, event_id: int, presentation_time: int) -> BinarySignal:
+        pts = presentation_time * MPEG_TIMEBASE // self.timescale
+        duration = self.duration * MPEG_TIMEBASE // self.timescale
         # auto_return is True for the OUT and False for the IN
         auto_return = (event_id & 1) == 0
         if self.count > 0:

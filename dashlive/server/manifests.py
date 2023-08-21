@@ -22,7 +22,7 @@
 
 from dataclasses import dataclass, field
 import logging
-from typing import AbstractSet, Optional
+from typing import AbstractSet
 
 from dashlive.mpeg.dash.profiles import primary_profiles
 from dashlive.server.options.drm_options import DrmLocation, DrmSelection
@@ -35,7 +35,7 @@ DashCgiOption = tuple[str, list[str]]
 class DashManifest:
     title: str
     features: set[str]
-    restrictions: Optional[dict] = field(default_factory=lambda: dict())
+    restrictions: dict | None = field(default_factory=lambda: dict())
     segment_timeline: bool = field(default=False)
 
     def supported_modes(self) -> list[str]:
@@ -45,9 +45,9 @@ class DashManifest:
             self,
             mode: str,
             simplified: bool = False,
-            use: Optional[OptionUsage] = None,
-            only: Optional[AbstractSet] = None,
-            extras: Optional[list[tuple]] = None) -> list[str]:
+            use: OptionUsage | None = None,
+            only: AbstractSet | None = None,
+            extras: list[tuple] | None = None) -> list[str]:
         """
         Returns a list of all possible combinations of CGI query parameters
         """
@@ -124,7 +124,7 @@ class DashManifest:
         logging.debug('%s total tests=%d', self.title, len(result))
         return result
 
-    def get_drm_options(self, mode: str, only: Optional[AbstractSet] = None) -> set[str]:
+    def get_drm_options(self, mode: str, only: AbstractSet | None = None) -> set[str]:
         """
         Calculates all possible DRM locations for this manifest.
         :only: optional set of DRM names, to restrict the list of DRM options

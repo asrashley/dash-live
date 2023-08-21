@@ -25,7 +25,6 @@ import importlib
 from os import environ
 from pathlib import Path
 import secrets
-from typing import Optional
 
 from dotenv import load_dotenv
 from flask import Flask, request  # type: ignore
@@ -73,8 +72,8 @@ def add_routes(app: Flask) -> None:
         app.add_url_rule(route.template, endpoint=name,
                          view_func=view_func)
 
-def create_app(config: Optional[JsonObject] = None,
-               instance_path: Optional[str] = None,
+def create_app(config: JsonObject | None = None,
+               instance_path: str | None = None,
                create_default_user: bool = True) -> Flask:
     load_dotenv(environ.get('DASHLIVE_SETTINGS', '.env'))
     logging.basicConfig()

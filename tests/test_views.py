@@ -159,7 +159,7 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
             mode='live')
         for code in [404, 410, 503, 504]:
             params = {
-                'merr': '{0:3d}={1}'.format(code, to_iso_datetime(active)),
+                'merr': f'{code:3d}={to_iso_datetime(active)}',
                 'start': to_iso_datetime(start),
                 'mup': '45',
             }
@@ -210,7 +210,7 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
                 url=mpd_url, encrypted=encrypted)
             mpd.validate()
             head = self.client.head(mpd_url)
-            msg = r'Expected HEAD.contentLength={0} == GET.contentLength={1} for URL {2}'.format(
+            msg = r'Expected HEAD.contentLength={} == GET.contentLength={} for URL {}'.format(
                 head.headers['Content-Length'], response.headers['Content-Length'],
                 baseurl)
             self.assertEqual(

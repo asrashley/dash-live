@@ -21,7 +21,7 @@
 #############################################################################
 
 from abc import ABC, abstractmethod
-from typing import AbstractSet, Optional
+from typing import AbstractSet
 
 from dashlive.mpeg.mp4 import BoxWithChildren, ContentProtectionSpecificBox
 from dashlive.server.options.container import OptionsContainer
@@ -37,8 +37,8 @@ class DrmBase(ABC):
 
     @abstractmethod
     def generate_manifest_context(self, stream, keys, options: OptionsContainer,
-                                  la_url: Optional[str] = None,
-                                  locations: Optional[AbstractSet[str]] = None) -> dict:
+                                  la_url: str | None = None,
+                                  locations: AbstractSet[str] | None = None) -> dict:
         raise RuntimeError('generate_manifest_context has not been implemented')
 
     def update_traf_if_required(self, options: OptionsContainer,

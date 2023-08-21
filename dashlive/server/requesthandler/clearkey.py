@@ -21,7 +21,6 @@
 #############################################################################
 
 import binascii
-from builtins import map
 import base64
 
 import flask

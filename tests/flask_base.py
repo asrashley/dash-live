@@ -20,12 +20,6 @@
 #
 #############################################################################
 
-from __future__ import print_function
-from __future__ import division
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
-from past.utils import old_div
 import binascii
 import ctypes
 import json
@@ -34,7 +28,7 @@ import multiprocessing
 from pathlib import Path
 import shutil
 import tempfile
-from typing import Any, Dict, Optional
+from typing import Any
 
 from bs4 import BeautifulSoup, element
 import flask
@@ -63,7 +57,7 @@ class FlaskTestBase(TestCaseMixin, TestCase):
     STREAM_TITLE = 'Big Buck Bunny'
 
     _temp_dir = multiprocessing.Array(ctypes.c_char, 1024)
-    current_url: Optional[str] = None
+    current_url: str | None = None
 
     def create_app(self):
         FORMAT = r"%(asctime)-15s:%(levelname)s:%(filename)s@%(lineno)d: %(message)s"
@@ -158,7 +152,7 @@ class FlaskTestBase(TestCaseMixin, TestCase):
             self.assertAlmostEqual(
                 rep['mediaDuration'],
                 self.MEDIA_DURATION * rep['timescale'],
-                delta=(old_div(rep['timescale'], 5)),
+                delta=(rep['timescale'] / 5.0),
                 msg='Invalid duration for {}. Expected {} got {}'.format(
                     filename, self.MEDIA_DURATION * rep['timescale'],
                     rep['mediaDuration']))
@@ -213,8 +207,8 @@ class FlaskTestBase(TestCaseMixin, TestCase):
         models.db.drop_all()
         logging.disable(logging.NOTSET)
 
-    def login_user(self, username: Optional[str] = None,
-                   password: Optional[str] = None,
+    def login_user(self, username: str | None = None,
+                   password: str | None = None,
                    is_admin: bool = False,
                    rememberme: bool = False,
                    ajax: bool = True):
@@ -264,11 +258,11 @@ class FlaskTestBase(TestCaseMixin, TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn('This page requires you to log in', response.text)
 
-    def check_form(self, form: element.Tag, expected: Dict[str, Any]) -> Optional[str]:
+    def check_form(self, form: element.Tag, expected: dict[str, Any]) -> str | None:
         """
         Check that the supplied HTML form has the expected fields and values
         """
-        csrf_token: Optional[str] = None
+        csrf_token: str | None = None
         for input_field in form.find_all('input'):
             name = input_field.get('name')
             if name == 'csrf_token':

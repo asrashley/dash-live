@@ -22,7 +22,9 @@
 
 from dataclasses import dataclass, field
 import datetime
-from typing import Any, Callable, Optional, Union
+from typing import Any, Union
+
+from collections.abc import Callable
 import urllib.parse
 
 from dashlive.utils.date_time import from_isodatetime, to_iso_datetime
@@ -39,16 +41,16 @@ class DashOption:
     full_name: str
     title: str
     description: str
-    cgi_name: Union[str, list[str]]
-    cgi_choices: Optional[tuple[CgiChoiceType, ...]] = field(default=None)
-    cgi_type: Optional[str] = None
+    cgi_name: str | list[str]
+    cgi_choices: tuple[CgiChoiceType, ...] | None = field(default=None)
+    cgi_type: str | None = None
     from_string: Callable[[str], Any] = field(default_factory=lambda: DashOption.string_or_none)
     to_string: Callable[[str], Any] = field(default_factory=lambda: flatten)
     prefix: str = field(default='')
     hidden: bool = True
-    html: Optional[str] = None
+    html: str | None = None
 
-    def get_cgi_option(self, omit_empty: bool = True) -> Optional[CgiOption]:
+    def get_cgi_option(self, omit_empty: bool = True) -> CgiOption | None:
         """
         Get a description of the CGI values that are allowed for this option
         """
@@ -108,31 +110,31 @@ class DashOption:
         return '0'
 
     @staticmethod
-    def int_or_none_from_string(value: str) -> Optional[int]:
+    def int_or_none_from_string(value: str) -> int | None:
         if value in {None, '', 'none'}:
             return None
         return int(value, 10)
 
     @staticmethod
-    def float_or_none_from_string(value: str) -> Optional[float]:
+    def float_or_none_from_string(value: str) -> float | None:
         if value in {None, '', 'none'}:
             return None
         return float(value)
 
     @staticmethod
-    def datetime_or_none_from_string(value: str) -> Optional[float]:
+    def datetime_or_none_from_string(value: str) -> float | None:
         if value in {None, '', 'none'}:
             return None
         return from_isodatetime(value)
 
     @staticmethod
-    def datetime_or_none_to_string(value: Optional[datetime.datetime]) -> Optional[str]:
+    def datetime_or_none_to_string(value: datetime.datetime | None) -> str | None:
         if value is None:
             return None
         return to_iso_datetime(value)
 
     @staticmethod
-    def list_without_none_from_string(value: Optional[str]) -> list[str]:
+    def list_without_none_from_string(value: str | None) -> list[str]:
         if value.lower() in {'', 'none'}:
             return []
         rv = []
@@ -142,7 +144,7 @@ class DashOption:
         return rv
 
     @staticmethod
-    def string_or_none(value: str) -> Optional[str]:
+    def string_or_none(value: str) -> str | None:
         if value.lower() in ['', 'none']:
             return None
         return value
@@ -154,7 +156,7 @@ class DashOption:
         return urllib.parse.unquote_plus(value)
 
     @staticmethod
-    def quoted_url_or_none_to_string(value: Optional[str]):
+    def quoted_url_or_none_to_string(value: str | None):
         if value is None:
             return None
         return urllib.parse.quote_plus(value)

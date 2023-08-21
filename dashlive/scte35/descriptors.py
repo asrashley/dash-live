@@ -20,9 +20,6 @@
 #
 #############################################################################
 
-from builtins import chr
-from builtins import range
-from builtins import object
 from abc import abstractmethod
 import copy
 
@@ -133,7 +130,7 @@ class DtmfDescriptor(SpliceDescriptor):
         w.write_bytes(self.chars)
 
 
-class SegmentationTypeId(object):
+class SegmentationTypeId:
     NOT_INDICATED = 0x00
     CONTENT_ID = 0x01
     PROGRAM_START = 0x10

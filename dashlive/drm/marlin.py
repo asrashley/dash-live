@@ -20,8 +20,6 @@
 #
 #############################################################################
 
-from typing import Optional
-
 from dashlive.mpeg.mp4 import ContentProtectionSpecificBox
 from dashlive.server.options.container import OptionsContainer
 
@@ -32,8 +30,8 @@ class Marlin(DrmBase):
 
     def generate_manifest_context(self, stream, keys,
                                   options: OptionsContainer,
-                                  la_url: Optional[str] = None,
-                                  locations: Optional[str] = None) -> dict:
+                                  la_url: str | None = None,
+                                  locations: str | None = None) -> dict:
         if la_url is None:
             la_url = options.marlinLicenseUrl
             if la_url is None:

@@ -58,10 +58,10 @@ class SegmentTests(unittest.TestCase):
             pos = 0
             for c in wrap.children:
                 if c.atom_type == 'moof':
-                    msg = 'Expected position for segment {0:d} of {1:s} to be {2:d} but was {3:d}'.format(
+                    msg = 'Expected position for segment {:d} of {:s} to be {:d} but was {:d}'.format(
                         idx, name, rep.segments[idx].pos, pos)
                     self.assertEqual(rep.segments[idx].pos, pos, msg)
-                    msg = 'Expected size for segment {0:d} of {1:s} to be {2:d} but was {3:d}'.format(
+                    msg = 'Expected size for segment {:d} of {:s} to be {:d} but was {:d}'.format(
                         idx, name, c.position - pos, rep.segments[idx].size)
                     self.assertEqual(
                         c.position - pos, rep.segments[idx].size, msg)

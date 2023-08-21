@@ -19,12 +19,11 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-from builtins import object
 import base64
 from binascii import unhexlify, b2a_hex
 from typing import Union
 
-class Binary(object):
+class Binary:
     BASE64 = 1
     HEX = 2
 
@@ -87,7 +86,7 @@ class Binary(object):
             return str(b2a_hex(self.data), 'ascii')
         if encoding == self.BASE64 or encoding == 'base64':
             return str(base64.b64encode(self.data), 'ascii')
-        raise ValueError(r'Unknown encoding format: "{0}"'.format(encoding))
+        raise ValueError(fr'Unknown encoding format: "{encoding}"')
 
     def __len__(self):
         if self.data is None:
@@ -116,5 +115,5 @@ class Binary(object):
 
 class HexBinary(Binary):
     def __init__(self, data, encoding=None, _type=None):
-        super(HexBinary, self).__init__(data, encoding=Binary.HEX, _type=_type)
+        super().__init__(data, encoding=Binary.HEX, _type=_type)
         self.encoding = Binary.HEX

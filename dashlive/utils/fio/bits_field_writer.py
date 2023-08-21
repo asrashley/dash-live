@@ -20,12 +20,11 @@
 #
 #############################################################################
 
-from builtins import object
 import logging
 
 import bitstring
 
-class BitsFieldWriter(object):
+class BitsFieldWriter:
     __slots__ = ('obj', 'bits', 'log')
 
     def __init__(self, obj, dest=None):

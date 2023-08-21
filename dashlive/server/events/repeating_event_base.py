@@ -20,9 +20,7 @@
 #
 #############################################################################
 
-from __future__ import division
 from abc import abstractmethod
-from past.utils import old_div
 
 from dashlive.mpeg.dash.event_stream import EventStream
 from dashlive.mpeg.mp4 import EventMessageBox
@@ -67,10 +65,8 @@ class RepeatingEventBase(EventBase):
         seg_end = seg_start + representation.segments[mod_segment].duration
 
         # convert seg_start and seg_end to event timebase
-        seg_start = (old_div(seg_start * self.timescale,
-                     representation.timescale))
-        seg_end = (old_div(seg_end * self.timescale,
-                   representation.timescale))
+        seg_start = (seg_start * self.timescale) // representation.timescale
+        seg_end = (seg_end * self.timescale) // representation.timescale
 
         # print('seg start={} end={} duration={}'.format(
         #    seg_start, seg_end, seg_end - seg_start))

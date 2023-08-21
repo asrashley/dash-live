@@ -20,7 +20,6 @@
 #
 #############################################################################
 import logging
-from typing import Dict, Optional
 import urllib
 
 import requests
@@ -41,7 +40,7 @@ class ManagementBase:
     Base class for downloading and uploading server management
     """
     def __init__(self, url: str, username: str, password: str,
-                 session: Optional[HttpSession] = None) -> None:
+                 session: HttpSession | None = None) -> None:
         self.base_url = url
         self.username = username
         self.password = password
@@ -51,9 +50,9 @@ class ManagementBase:
             self.session = requests.Session()
         self.csrf_tokens = {}
         self.keys = {}
-        self.streams: Dict[str, StreamInfo] = {}
+        self.streams: dict[str, StreamInfo] = {}
         self.log = logging.getLogger(self.__class__.__name__)
-        self.user: Optional[UserInfo] = None
+        self.user: UserInfo | None = None
 
     def url_for(self, name, **kwargs) -> str:
         route = routes[name]
@@ -117,7 +116,7 @@ class ManagementBase:
                     self.streams[s['directory']] = st
         return True
 
-    def get_stream_info(self, directory: str) -> Optional[StreamInfo]:
+    def get_stream_info(self, directory: str) -> StreamInfo | None:
         if directory not in self.streams:
             self.get_media_info()
         if directory not in self.streams:

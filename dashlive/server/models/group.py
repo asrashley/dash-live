@@ -2,7 +2,6 @@
 Enumeration for group types
 """
 import enum
-from typing import List
 
 class Group(enum.IntFlag):
     """
@@ -13,7 +12,7 @@ class Group(enum.IntFlag):
     ADMIN = 0x40000000
 
     @classmethod
-    def names(cls) -> List[str]:
+    def names(cls) -> list[str]:
         """
         get list of group names
         """

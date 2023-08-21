@@ -42,7 +42,7 @@ class Period(ObjectWithFields):
     }
 
     def __init__(self, **kwargs):
-        super(Period, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         defaults = {
             'adaptationSets': [],
             'event_streams': [],

@@ -5,7 +5,6 @@ import logging
 import multiprocessing
 import shutil
 import subprocess
-from typing import Optional
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -29,12 +28,13 @@ class MockFfmpeg(TestCaseMixin):
         self.tmpdir = tmpdir
         self.aspect = 16.0 / 9.0
 
-    def check_output(self, args, stderr=None, universal_newlines=False) -> str:
+    def check_output(self, args: list[str], stderr: int | None = None,
+                     universal_newlines: bool = False, text: bool = False) -> str:
         self.assertEqual(self.stage % 2, 0)
         if self.stage == 0:
-            rv = self.ffprobe_source_stream_info(args, stderr, universal_newlines)
+            rv = self.ffprobe_source_stream_info(args, stderr, universal_newlines, text)
         else:
-            rv = self.ffprobe_check_frames(args, stderr, universal_newlines)
+            rv = self.ffprobe_check_frames(args, stderr, universal_newlines, text)
         self.stage += 1
         return rv
 
@@ -170,8 +170,8 @@ class MockFfmpeg(TestCaseMixin):
         with filename.open('wb') as dest:
             dest.write(bytes(str(filename), 'utf-8'))
 
-    def ffprobe_source_stream_info(self, args: list[str], stderr: Optional[int],
-                                   universal_newlines: bool) -> str:
+    def ffprobe_source_stream_info(self, args: list[str], stderr: int | None,
+                                   universal_newlines: bool, text: bool) -> str:
         expected = [
             'ffprobe', '-v', '0', '-of', 'json',
             '-show_format', '-show_streams', 'BigBuckBunny.mp4'
@@ -191,7 +191,8 @@ class MockFfmpeg(TestCaseMixin):
         }
         return json.dumps(result)
 
-    def ffprobe_check_frames(self, args, stderr, universal_newlines) -> str:
+    def ffprobe_check_frames(self, args: list[str], stderr: int | None,
+                             universal_newlines: bool, text: bool) -> str:
         width, height, bitrate = DashMediaCreator.BITRATE_LADDER[(self.stage - 2) // 2]
         expected = [
             'ffprobe',
@@ -201,7 +202,7 @@ class MockFfmpeg(TestCaseMixin):
         ]
         self.assertEqual(expected, args)
         self.assertIsNotNone(stderr)
-        self.assertTrue(universal_newlines)
+        self.assertTrue(text)
         result: list[str] = []
         for num in range(60 * 24 * 10):
             pts = num * 100
