@@ -134,6 +134,17 @@ Periods = DashOption(
     cgi_choices=(None, '2', '3'),
     hidden=False)
 
+SegmentTimeline = DashOption(
+    usage=OptionUsage.MANIFEST,
+    short_name='st',
+    full_name='segmentTimeline',
+    title='Segment timeline',
+    description='Enable or disable segment timeline',
+    from_string=DashOption.bool_from_string,
+    to_string=DashOption.bool_to_string,
+    cgi_name='timeline',
+    cgi_choices=('0', '1'))
+
 TimeshiftBufferDepth = DashOption(
     usage=OptionUsage.MANIFEST + OptionUsage.VIDEO + OptionUsage.AUDIO + OptionUsage.TEXT,
     short_name='tbd',
@@ -164,6 +175,7 @@ manifest_options = [
     MinimumUpdatePeriod,
     OperatingMode,
     Periods,
+    SegmentTimeline,
     TimeshiftBufferDepth,
     UpdateCount,
     UseBaseUrl

@@ -20,6 +20,7 @@
 #
 #############################################################################
 
+from dataclasses import dataclass, field
 import logging
 from typing import AbstractSet, Optional
 
@@ -30,15 +31,12 @@ from dashlive.server.options.types import OptionUsage
 
 DashCgiOption = tuple[str, list[str]]
 
+@dataclass(slots=True, frozen=True)
 class DashManifest:
-    __slots__ = ('title', 'features', 'restrictions')
-
-    def __init__(self, title, features: set[str], restrictions=None):
-        self.title = title
-        self.features = features
-        if restrictions is None:
-            restrictions = dict()
-        self.restrictions = restrictions
+    title: str
+    features: set[str]
+    restrictions: Optional[dict] = field(default_factory=lambda: dict())
+    segment_timeline: bool = field(default=False)
 
     def supported_modes(self) -> list[str]:
         return self.restrictions.get('mode', primary_profiles.keys())
@@ -230,6 +228,7 @@ manifest = {
         title='Provider N live profile',
         features={'abr', 'audioCodec', 'useBaseUrls', 'drmSelection', 'eventTypes',
                   'mode', 'minimumUpdatePeriod'},
+        segment_timeline=True,
         restrictions={
             'mode': {'live', 'vod'},
         },

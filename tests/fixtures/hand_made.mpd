@@ -3,7 +3,7 @@
   <ProgramInformation>
     <Title>Big Buck Bunny DASH test stream</Title>
   </ProgramInformation>
-  <Location>https://wll1p00830.dev.youview.co.uk/dash/vod/bbb/hand_made.mpd?acodec=mp4a&amp;drm=all&amp;time=xsd</Location>
+  <Location>https://wll1p00830.dev.youview.co.uk/dash/vod/bbb/hand_made.mpd?drm=all&amp;time=xsd</Location>
   <Period start="PT0S" id="p0" duration="PT9M51.00S">
     <BaseURL>https://wll1p00830.dev.youview.co.uk/dash/vod/</BaseURL>
     <AdaptationSet mimeType="video/mp4" contentType="video" segmentAlignment="true" startWithSAP="1" maxWidth="1920" maxHeight="1080" maxFrameRate="24" par="16:9">

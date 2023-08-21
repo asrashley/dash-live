@@ -133,7 +133,7 @@ class VideoPlayer(HTMLHandlerBase):
                 del dash_parms[item]
             except KeyError:
                 pass
-        if dash_parms['encrypted']:
+        if options.encrypted:
             keys = dash_parms['keys']
             for kid in list(keys.keys()):
                 item = keys[kid].toJSON()

@@ -123,7 +123,8 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
                 if 'invalid-iso' in option:
                     self.assertEqual(response.status_code, 400)
                     continue
-                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.status_code, 200,
+                                 msg=f'Failed to fetch manifest {baseurl}')
                 xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
                 dv = ViewsTestDashValidator(
                     http_client=self.client, mode='live', xml=xml.getroot(),

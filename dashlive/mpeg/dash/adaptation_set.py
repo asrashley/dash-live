@@ -31,6 +31,7 @@ from dashlive.utils.list_of import ListOf
 from dashlive.utils.object_with_fields import ObjectWithFields
 
 from .representation import Representation
+from .time_values import TimeValues
 
 class ContentComponent:
     def __init__(self, id: int, content_type: str) -> None:
@@ -48,6 +49,7 @@ class AdaptationSet(ObjectWithFields):
         'startNumber': 1,
         'timescale': 1,
         'segmentAlignment': True,
+        'segment_timeline': False,
     }
 
     def __init__(self, **kwargs) -> None:
@@ -87,7 +89,10 @@ class AdaptationSet(ObjectWithFields):
             defaults['mediaURL'] = r'$RepresentationID$.' + suffix
         else:
             defaults['initURL'] = r'$RepresentationID$/init.' + suffix
-            defaults['mediaURL'] = r'$RepresentationID$/$Number$.' + suffix
+            if self.segment_timeline:
+                defaults['mediaURL'] = r'$RepresentationID$/time/$Time$.' + suffix
+            else:
+                defaults['mediaURL'] = r'$RepresentationID$/$Number$.' + suffix
         defaults['fileSuffix'] = suffix
         self.apply_defaults(defaults)
 
@@ -153,6 +158,6 @@ class AdaptationSet(ObjectWithFields):
         for rep in self.representations:
             rep.set_reference_representation(ref_representation)
 
-    def set_dash_timing(self, timing):
+    def set_dash_timing(self, timing: TimeValues) -> None:
         for rep in self.representations:
             rep.set_dash_timing(timing)

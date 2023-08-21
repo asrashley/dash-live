@@ -46,6 +46,7 @@ from flask_login import current_user
 from dashlive.mpeg.dash.adaptation_set import AdaptationSet
 from dashlive.mpeg.dash.period import Period
 from dashlive.mpeg.dash.profiles import primary_profiles, additional_profiles
+from dashlive.mpeg.dash.timing import DashTiming
 from dashlive.drm.base import DrmBase
 from dashlive.drm.clearkey import ClearKey
 from dashlive.drm.playready import PlayReady
@@ -61,7 +62,6 @@ from dashlive.utils.date_time import scale_timedelta, to_iso_datetime
 from dashlive.utils.json_object import JsonObject
 from dashlive.utils.timezone import UTC
 
-from .dash_timing import DashTiming
 from .decorators import current_stream, is_ajax
 from .exceptions import CsrfFailureException
 
@@ -306,13 +306,11 @@ class RequestHandlerBase(MethodView):
             now -= datetime.timedelta(seconds=options.clockDrift)
         rv = {
             "DRM": {},
-            "abr": options.abr,
-            "clockDrift": options.clockDrift,
-            "encrypted": options.encrypted,
             "minBufferTime": datetime.timedelta(seconds=1.5),
             "mode": options.mode,
             "mpd_url": mpd_url,
             "now": now,
+            "options": options,
             "periods": [],
             'profiles': [primary_profiles[options.mode]],
             "startNumber": 1,
@@ -331,9 +329,11 @@ class RequestHandlerBase(MethodView):
         video = self.calculate_video_context(stream, options, max_items=max_items)
         if video.representations:
             rv["ref_representation"] = video.representations[0]
+            start_number = video.startNumber
         else:
             rv["ref_representation"] = audio.representations[0]
-        timing = DashTiming(now, rv["ref_representation"], options)
+            start_number = audio.startNumber
+        timing = DashTiming(now, start_number, rv["ref_representation"], options)
         options.availabilityStartTime = timing.availabilityStartTime
         options.timeShiftBufferDepth = timing.timeShiftBufferDepth
         rv.update(timing.generate_manifest_context())
@@ -459,9 +459,13 @@ class RequestHandlerBase(MethodView):
             rv["period"] = rv["periods"][0]
         return rv
 
-    def calculate_audio_context(self, stream, options: OptionsContainer,
+    def calculate_audio_context(self,
+                                stream: models.Stream,
+                                options: OptionsContainer,
                                 max_items: Optional[int] = None):
-        audio = AdaptationSet(mode=options.mode, content_type='audio', id=2)
+        audio = AdaptationSet(
+            mode=options.mode, content_type='audio', id=2,
+            segment_timeline=options.segmentTimeline)
         media_files = models.MediaFile.search(
             content_type='audio', stream=stream, max_items=max_items)
         acodec = options.audioCodec
@@ -491,7 +495,9 @@ class RequestHandlerBase(MethodView):
                                 stream: models.Stream,
                                 options: OptionsContainer,
                                 max_items: Optional[int] = None) -> List[AdaptationSet]:
-        video = AdaptationSet(mode=options.mode, content_type='video', id=1)
+        video = AdaptationSet(
+            mode=options.mode, content_type='video', id=1,
+            segment_timeline=options.segmentTimeline)
         media_files = models.MediaFile.search(
             content_type='video', encrypted=options.encrypted, stream=stream,
             max_items=max_items)
@@ -507,7 +513,9 @@ class RequestHandlerBase(MethodView):
                                stream: models.Stream,
                                options: OptionsContainer,
                                max_items: Optional[int] = None):
-        text = AdaptationSet(mode=options.mode, content_type='text', id=888)
+        text = AdaptationSet(
+            mode=options.mode, content_type='text', id=888,
+            segment_timeline=options.segmentTimeline)
         media_files = models.MediaFile.search(
             content_type='text', stream=stream, max_items=max_items)
         for mf in media_files:

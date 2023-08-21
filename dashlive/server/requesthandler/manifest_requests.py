@@ -57,7 +57,8 @@ class ServeManifest(RequestHandlerBase):
             modes = primary_profiles.keys()
         if mode not in modes:
             logging.debug(
-                'Mode %s not supported with manifest %s', mode, manifest)
+                'Mode %s not supported with manifest %s (supported=%s)',
+                mode, manifest, modes)
             return flask.make_response(f'{manifest} not found', 404)
         context = self.create_context(**kwargs)
         try:
@@ -65,6 +66,7 @@ class ServeManifest(RequestHandlerBase):
         except ValueError as e:
             return flask.make_response(f'Invalid CGI parameters: {e}', 400)
         options.mode = mode
+        options.segmentTimeline = mft.segment_timeline
         options.remove_unused_parameters(mode)
         dash = self.calculate_dash_params(mpd_url=manifest, options=options)
         context.update(dash)

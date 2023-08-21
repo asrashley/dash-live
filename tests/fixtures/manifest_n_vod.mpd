@@ -3,7 +3,7 @@
   <Period start="PT0S" id="p0">
     <BaseURL>http://unit.test/dash/vod/fixtures/</BaseURL>
     <AdaptationSet mimeType="video/mp4" par="16:9" segmentAlignment="true" startWithSAP="1">
-      <SegmentTemplate initialization="$RepresentationID$/init.m4v" media="$RepresentationID$/$Number$.m4v" presentationTimeOffset="0" timescale="240">
+      <SegmentTemplate initialization="$RepresentationID$/init.m4v" media="$RepresentationID$/time/$Time$.m4v" presentationTimeOffset="0" timescale="240">
         <SegmentTimeline>
           <S r="10" t="0" d="960"/>
         </SegmentTimeline>
@@ -14,7 +14,7 @@
       </Representation>
     </AdaptationSet>
     <AdaptationSet lang="eng" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
-      <SegmentTemplate initialization="$RepresentationID$/init.m4a" media="$RepresentationID$/$Number$.m4a" presentationTimeOffset="0" timescale="44100">
+      <SegmentTemplate initialization="$RepresentationID$/init.m4a" media="$RepresentationID$/time/$Time$.m4a" presentationTimeOffset="0" timescale="44100">
         <SegmentTimeline>
           <S r="2" t="0" d="176128"/>
           <S d="177152"/>
