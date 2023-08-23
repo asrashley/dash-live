@@ -5,7 +5,12 @@
   </label>
   <div class="col-sm-10">
   {% endif %}
-  <input class="form-control" type="{{field.type}}" name="{{field.name}}"
+    {% if field.type == "select" %}
+      <select
+    {% else %}
+      <input
+    {% endif %}
+    class="form-control" type="{{field.type}}" name="{{field.name}}"
     id="model-{{field.name}}" title="{{model.title}}"
     {%- if field.type == 'checkbox' %}
     {%- if field.value %} checked{% endif %}
@@ -18,7 +23,17 @@
     {%- if field.placeholder %} placeholder="{{field.placeholder}}"{% endif %}
     {%- if field.spellcheck %} pattern="{{field.spellcheck}}"{% endif %}
     {%- if field.disabled %} disabled{% endif %}
+    {% if field.type == "select" %}
+	>
+      {% for option in field.options %}
+        <option value="{{ option.value }}"
+	  {%- if option.selected %}selected {%- endif %}
+	>{{ option.title }}</option>
+      {% endfor %}
+      </select>
+      {% else %}
     />
+    {% endif %}
   {% if field.type != "hidden" %}
   </div>
   {% endif %}

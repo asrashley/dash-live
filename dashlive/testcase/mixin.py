@@ -25,6 +25,7 @@ import datetime
 import logging
 import os
 import sys
+from typing import Any
 from unittest import mock
 
 class TestCaseMixin:
@@ -151,7 +152,8 @@ class TestCaseMixin:
         self._assert_true(isinstance(a, types), a, types,
                           msg, r'{} is not instance of {}')
 
-    def _check_true(self, result, a, b, msg, template):
+    def _check_true(self, result: bool, a: Any, b: Any,
+                    msg: str | None, template: str) -> bool:
         if not result:
             if msg is None:
                 msg = template.format(a, b)
@@ -159,71 +161,71 @@ class TestCaseMixin:
             if log is None:
                 log = logging.getLogger(self.classname)
             log.warning('%s', msg)
+        return result
 
-    def checkTrue(self, result, msg=None):
-        self._check_true(result, result, None, msg, r'{} not True')
+    def checkTrue(self, result: bool, msg: str | None = None) -> bool:
+        return self._check_true(result, result, None, msg, r'{} not True')
 
-    def checkFalse(self, result, msg=None):
-        self._check_true(not result, result, None, msg, r'{} not False')
+    def checkFalse(self, result: bool, msg: str | None = None) -> bool:
+        return self._check_true(not result, result, None, msg, r'{} not False')
 
-    def checkEqual(self, a, b, msg=None):
-        self._check_true(a == b, a, b, msg, r'{} != {}')
+    def checkEqual(self, a: Any, b: Any, msg: str | None = None) -> bool:
+        return self._check_true(a == b, a, b, msg, r'{} != {}')
 
-    def checkNotEqual(self, a, b, msg=None):
-        self._check_true(a != b, a, b, msg, r'{} == {}')
+    def checkNotEqual(self, a, b, msg=None) -> bool:
+        return self._check_true(a != b, a, b, msg, r'{} == {}')
 
-    def checkAlmostEqual(self, a, b, places=7, msg=None, delta=None):
+    def checkAlmostEqual(self, a, b, places=7, msg=None, delta=None) -> bool:
         if delta is not None:
             d = abs(a - b)
-            self._check_true(
+            return self._check_true(
                 d <= delta,
                 a,
                 b,
                 msg,
                 '{} !~= {} (delta %f)' %
                 (delta))
-        else:
-            ar = round(a, places)
-            br = round(b, places)
-            self._check_true(ar == br, a, b, msg, '{} !~= {}')
+        ar = round(a, places)
+        br = round(b, places)
+        return self._check_true(ar == br, a, b, msg, '{} !~= {}')
 
-    def checkGreaterThan(self, a, b, msg=None):
-        self._check_true(a > b, a, b, msg, r'{} <= {}')
+    def checkGreaterThan(self, a, b, msg=None) -> bool:
+        return self._check_true(a > b, a, b, msg, r'{} <= {}')
 
-    def checkGreaterThanOrEqual(self, a, b, msg=None):
-        self._check_true(a >= b, a, b, msg, r'{} < {}')
+    def checkGreaterThanOrEqual(self, a, b, msg=None) -> bool:
+        return self._check_true(a >= b, a, b, msg, r'{} < {}')
 
-    def checkLessThan(self, a, b, msg=None):
-        self._check_true(a < b, a, b, msg, r'{} >= {}')
+    def checkLessThan(self, a, b, msg=None) -> bool:
+        return self._check_true(a < b, a, b, msg, r'{} >= {}')
 
-    def checkLessThanOrEqual(self, a, b, msg=None):
-        self._check_true(a <= b, a, b, msg, r'{} > {}')
+    def checkLessThanOrEqual(self, a, b, msg=None) -> bool:
+        return self._check_true(a <= b, a, b, msg, r'{} > {}')
 
-    def checkIn(self, a, b, msg=None):
-        self._check_true(a in b, a, b, msg, r'{} not in {}')
+    def checkIn(self, a, b, msg=None) -> bool:
+        return self._check_true(a in b, a, b, msg, r'{} not in {}')
 
-    def checkNotIn(self, a, b, msg=None):
-        self._check_true(a not in b, a, b, msg, r'{} in {}')
+    def checkNotIn(self, a, b, msg=None) -> bool:
+        return self._check_true(a not in b, a, b, msg, r'{} in {}')
 
-    def checkIsNone(self, a, msg=None):
-        self._check_true(a is None, a, None, msg, r'{} is not None')
+    def checkIsNone(self, a, msg=None) -> bool:
+        return self._check_true(a is None, a, None, msg, r'{} is not None')
 
-    def checkIsNotNone(self, a, msg=None):
-        self._check_true(a is not None, a, None, msg, r'{} is None')
+    def checkIsNotNone(self, a, msg=None) -> bool:
+        return self._check_true(a is not None, a, None, msg, r'{} is None')
 
-    def checkEndsWith(self, a, b, msg=None):
-        self._check_true(a.endswith(b), a, b, msg, r'{} does not end with {}')
+    def checkEndsWith(self, a, b, msg=None) -> bool:
+        return self._check_true(a.endswith(b), a, b, msg, r'{} does not end with {}')
 
-    def checkIsInstance(self, a, types, msg=None):
-        self._check_true(isinstance(a, types), a, types,
-                         msg, r'{} is not instance of {}')
+    def checkIsInstance(self, a, types, msg=None) -> bool:
+        return self._check_true(
+            isinstance(a, types), a, types, msg, r'{} is not instance of {}')
 
-    def checkStartsWith(self, a, b, msg=None):
-        self._check_true(a.startswith(b), a, b, msg,
-                         r'{} does not start with {}')
+    def checkStartsWith(self, a, b, msg=None) -> bool:
+        return self._check_true(a.startswith(b), a, b, msg,
+                                r'{} does not start with {}')
 
-    def checkGreaterOrEqual(self, a, b, msg=None):
-        self._check_true(a >= b, a, b, msg, r'{} < {}')
+    def checkGreaterOrEqual(self, a, b, msg=None) -> bool:
+        return self._check_true(a >= b, a, b, msg, r'{} < {}')
 
     @staticmethod
     def _print_line(start, hex_line, ascii_line):

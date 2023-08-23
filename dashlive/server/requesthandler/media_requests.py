@@ -27,6 +27,7 @@ import logging
 import flask
 
 from dashlive.mpeg import mp4
+from dashlive.mpeg.dash.adaptation_set import AdaptationSet
 from dashlive.mpeg.dash.timing import DashTiming
 from dashlive.server import models
 from dashlive.server.events.factory import EventFactory
@@ -87,33 +88,36 @@ class LiveMedia(RequestHandlerBase):
             segment_num: str | None = None,
             segment_time: int | None = None) -> flask.Response:
         logging.debug('LiveMedia.get: %s %s %s %s', stream, filename, segment_num, ext)
-        # print('LiveMedia.get', flask.request.url)
         representation = current_media_file.representation
-        audio = None
         try:
             options = self.calculate_options(mode)
         except ValueError as err:
             logging.error('Invalid CGI parameters: %s', err)
             return flask.make_response(f'Invalid CGI parameters: {err}', 400)
-        options.encrypted = representation.encrypted
-        options.segmentTimeline = segment_time is not None
+        if current_stream.timing_reference is None:
+            logging.warning('stream.timing_reference has not been configured')
+            return flask.make_response(
+                'stream.timing_reference has not been configured', 404)
+        options.update(
+            encrypted=representation.encrypted,
+            segmentTimeline=(segment_time is not None))
         mf = current_media_file
-        # TODO: add subtitle support
         if mf.content_type == 'audio':
-            audio = self.calculate_audio_context(current_stream, options)
-            assert audio.content_type == 'audio'
-            video = self.calculate_video_context(current_stream, options, max_items=1)
-            assert video.content_type == 'video'
-            adp_set = audio
+            adp_id = 2
+        elif mf.content_type == 'video':
+            adp_id = 1
+        elif mf.content_type == 'text':
+            adp_id = 888
         else:
-            video = self.calculate_video_context(current_stream, options)
-            adp_set = video
-        if video.representations:
-            ref_representation = video.representations[0]
-        else:
-            ref_representation = audio.representations[0]
-        adp_set.set_reference_representation(ref_representation)
-        if segment_num == 'init' or segment_time == 'init':
+            return flask.make_response(
+                f'Unsupported content_type {mf.content_type}', 404)
+        adp_set = AdaptationSet(
+            mode=options.mode, content_type=mf.content_type, id=adp_id,
+            segment_timeline=options.segmentTimeline)
+        adp_set.representations.append(current_media_file.representation)
+        adp_set.compute_av_values()
+        # adp_set.set_timing_reference(current_stream.timing_reference)
+        if segment_num == 'init':
             mod_segment = segment_num = 0
         else:
             try:
@@ -126,63 +130,29 @@ class LiveMedia(RequestHandlerBase):
             if err:
                 return err
             now = datetime.datetime.now(tz=UTC())
-            timing = DashTiming(now, adp_set.startNumber, representation, options)
+            timing = DashTiming(now, adp_set.startNumber,
+                                current_stream.timing_reference, options)
             adp_set.set_dash_timing(timing)
-            logging.debug('elapsedTime=%s firstFragment=%d lastFragment=%d',
-                          timing.elapsedTime, timing.firstFragment, timing.lastFragment)
-            if mode == 'live':
-                # 5.3.9.5.3 Media Segment information
-                # For services with MPD@type='dynamic', the Segment availability
-                # start time of a Media Segment is the sum of:
-                #    the value of the MPD@availabilityStartTime,
-                #    the PeriodStart time of the containing Period as defined in 5.3.2.1,
-                #    the MPD start time of the Media Segment, and
-                #    the MPD duration of the Media Segment.
-                #
-                # The Segment availability end time of a Media Segment is the sum of
-                # the Segment availability start time, the MPD duration of the
-                # Media Segment and the value of the attribute @timeShiftBufferDepth
-                # for this Representation
-                try:
-                    if segment_time is None:
-                        timecode = ((segment_num - adp_set.startNumber) *
-                                    ref_representation.segment_duration /
-                                    float(ref_representation.timescale))
-                    else:
-                        timecode = segment_time
-                        seg_delta = representation.timescale_to_timedelta(segment_time)
-                        segment_num = segment_time // representation.segment_duration
-                        if (
-                                seg_delta < timing.firstAvailableTime or
-                                seg_delta > timing.elapsedTime
-                        ):
-                            msg = (
-                                f'$time$={segment_time} ({seg_delta}) not found ' +
-                                f'(valid range= {timing.firstAvailableTime} -> {timing.elapsedTime})')
-                            return flask.make_response(msg, 404)
-
-                    mod_segment, origin_time = representation.calculate_segment_from_timecode(
-                        timecode)
-                    logging.debug('mod_segment=%d origin_time=%d', mod_segment, origin_time)
-                except ValueError as err:
-                    logging.warning('ValueError: %s', err)
-                    msg = (f'Segment {segment_num} not found ' +
-                           f'(valid range= {timing.firstFragment} -> ' +
-                           f'{timing.lastFragment}): {err}')
-                    return flask.make_response(msg, 404)
-            else:
-                # firstFragment = adp_set.startNumber
-                # lastFragment = firstFragment + representation.num_segments - 1
-                mod_segment = 1 + segment_num - adp_set.startNumber
-            if segment_num < timing.firstFragment or segment_num > timing.lastFragment:
-                logging.info('now=%s', now)
+            try:
+                first_fragment, last_fragment = representation.calculate_first_and_last_segment_number()
+                logging.debug('elapsedTime=%s firstFragment=%d lastFragment=%d',
+                              timing.elapsedTime, first_fragment, last_fragment)
+                segment_num, mod_segment, origin_time = representation.calculate_segment_number_and_time(
+                    segment_time, segment_num)
+            except ValueError as err:
+                logging.warning('ValueError: %s', err)
+                msg = (f'Segment {segment_num} not found ' +
+                       f'(valid range= {timing.firstFragment} -> ' +
+                       f'{timing.lastFragment}): {err}')
+                return flask.make_response(msg, 404)
+            if segment_num < first_fragment or segment_num > last_fragment:
                 logging.info(
-                    'Request for fragment %d that is not available (%d -> %d)',
-                    segment_num, timing.firstFragment, timing.lastFragment)
+                    '%s: Request for fragment %d that is not available (%d -> %d)',
+                    now, segment_num, first_fragment, last_fragment)
                 return flask.make_response(
-                    f'Segment {segment_num} not found (valid range= {timing.firstFragment}->{timing.lastFragment})',
+                    f'Segment {segment_num} not found (valid range= {first_fragment}->{last_fragment})',
                     404)
-        assert mod_segment >= 0 and mod_segment <= representation.num_segments
+        assert mod_segment >= 0 and mod_segment <= representation.num_media_segments
         frag = representation.segments[mod_segment]
         mp4_options = mp4.Options(
             cache_encoded=True, bug_compatibility=options.bugCompatibility)
@@ -212,22 +182,15 @@ class LiveMedia(RequestHandlerBase):
                 except AttributeError:
                     pass
             else:
-                # Update the baseMediaDecodeTime to take account of the number of times the
-                # stream would have looped since availabilityStartTime
-                delta = origin_time * representation.timescale
-                if delta < 0:
-                    msg = "Failure in calculating delta={} segment={} mod={} startNumber={}".format(
-                        str(delta), segment_num, mod_segment, adp_set.startNumber)
-                    return flask.make_response((msg, 500))
-                atom.moof.traf.tfdt.base_media_decode_time += delta
+                atom.moof.traf.tfdt.base_media_decode_time += origin_time
 
                 # Update the sequenceNumber field in the MovieFragmentHeader
                 # box
                 atom.moof.mfhd.sequence_number = segment_num
-                logging.debug(r'$Time$=%s $Number$=%d base_media_decode_time=%d sequence_number=%d delta=%d',
-                              segment_time, segment_num,
-                              atom.moof.traf.tfdt.base_media_decode_time,
-                              atom.moof.mfhd.sequence_number, delta)
+                logging.debug(
+                    r'$Time$=%s $Number$=%d base_media_decode_time=%d sequence_number=%d origin=%d duration=%d',
+                    segment_time, segment_num, atom.moof.traf.tfdt.base_media_decode_time,
+                    atom.moof.mfhd.sequence_number, origin_time, representation.segment_duration)
             try:
                 # remove any sidx box as it has a baseMediaDecodeTime and it's
                 # an optional index

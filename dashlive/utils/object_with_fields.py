@@ -100,16 +100,22 @@ class ObjectWithFields(MutableMapping):
             return True
         return False
 
+    def update(self, values: dict | None = None, **kwargs) -> None:
+        if values is None:
+            values = kwargs
+        for key, value in values.items():
+            self.add_field(key, value)
+
     @classmethod
-    def classname(clz):
+    def classname(clz) -> str:
         if clz.__module__.startswith('__'):
             return clz.__name__
         return clz.__module__ + '.' + clz.__name__
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.as_python()
 
-    def as_python(self, exclude=None):
+    def as_python(self, exclude: AbstractSet | None = None) -> str:
         if exclude is None:
             exclude = self.DEFAULT_EXCLUDE
         fields = self._field_repr(exclude)
@@ -126,8 +132,8 @@ class ObjectWithFields(MutableMapping):
             rv = flatten(rv)
         return rv
 
-    def _field_repr(self, exclude: AbstractSet) -> list:
-        rv = []
+    def _field_repr(self, exclude: AbstractSet) -> list[str]:
+        rv: list[str] = []
         fields = self._to_json(exclude)
         for k, v in fields.items():
             if k != '_type':

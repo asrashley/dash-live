@@ -22,18 +22,19 @@
 
 import time
 
-from dashlive.mpeg.dash.event_stream import EventStream
 from dashlive.utils.objects import dict_to_cgi_params
 from dashlive.utils.list_of import ListOf
 from dashlive.utils.object_with_fields import ObjectWithFields
 
+from .event_stream import EventStream
 from .representation import Representation
-from .time_values import TimeValues
+from .timing import DashTiming
 
 class ContentComponent:
     def __init__(self, id: int, content_type: str) -> None:
         self.id = id
         self.contentType = content_type
+
 
 class AdaptationSet(ObjectWithFields):
     _NEXT_ID: int | None = None
@@ -150,11 +151,6 @@ class AdaptationSet(ObjectWithFields):
             self.maxFrameRate = max(
                 [a.frameRate for a in self.representations])
 
-    def set_reference_representation(self, ref_representation: Representation) -> None:
-        assert ref_representation is not None
-        for rep in self.representations:
-            rep.set_reference_representation(ref_representation)
-
-    def set_dash_timing(self, timing: TimeValues) -> None:
+    def set_dash_timing(self, timing: DashTiming) -> None:
         for rep in self.representations:
             rep.set_dash_timing(timing)

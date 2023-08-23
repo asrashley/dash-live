@@ -2,8 +2,10 @@ from typing import cast, Optional
 
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship  # type: ignore
+import sqlalchemy_jsonfield  # type: ignore
 
 from dashlive.utils.json_object import JsonObject
+from dashlive.mpeg.dash.reference import StreamTimingReference
 from .db import db
 from .mediafile import MediaFile
 from .mixin import ModelMixin
@@ -21,6 +23,13 @@ class Stream(db.Model, ModelMixin):
     marlin_la_url = sa.Column(sa.String(), nullable=True)
     playready_la_url = sa.Column(sa.String(), nullable=True)
     media_files = relationship('MediaFile', cascade="all, delete")
+    timing_ref = sa.Column(
+        'timing_reference',
+        sqlalchemy_jsonfield.JSONField(
+            enforce_string=True,
+            enforce_unicode=False
+        ),
+        nullable=True)
 
     @classmethod
     def get(cls, **kwargs) -> Optional["Stream"]:
@@ -81,3 +90,25 @@ class Stream(db.Model, ModelMixin):
             "pattern": "https?://.*",
             "value": str_or_none(kwargs.get("playready_la_url", self.playready_la_url)),
         }]
+
+    def get_timing_reference(self) -> StreamTimingReference | None:
+        if self.timing_ref is None:
+            return None
+        try:
+            return StreamTimingReference(**self.timing_ref)
+        except TypeError:
+            return None
+
+    def set_timing_reference(self, mediafile: MediaFile | None) -> None:
+        if mediafile is None:
+            self.timing_ref = None
+            return
+        ref = StreamTimingReference(
+            media_name=mediafile.name,
+            media_duration=mediafile.representation.mediaDuration,
+            segment_duration=mediafile.representation.segment_duration,
+            num_media_segments=mediafile.representation.num_media_segments,
+            timescale=mediafile.representation.timescale)
+        self.timing_ref = ref.toJSON()
+
+    timing_reference = property(get_timing_reference, set_timing_reference)

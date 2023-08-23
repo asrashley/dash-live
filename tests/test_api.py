@@ -709,6 +709,70 @@ class TestRestApi(FlaskTestBase):
                              flask.url_for('list-streams'))
 
     def test_edit_stream(self) -> None:
+        self.setup_media()
+        self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)
+        with self.app.app_context():
+            stream = models.Stream(
+                title='edit stream test',
+                directory='test_api',
+                marlin_la_url='https://fake.domain/marlin',
+                playready_la_url='https://fake.domain/playready'
+            )
+            stream.add(commit=True)
+            stream = models.Stream.get(title='edit stream test')
+            self.assertIsNotNone(stream)
+        url = flask.url_for('view-stream', spk=stream.pk, ajax=1)
+        response = self.client.get(url)
+        self.assert200(response)
+        csrf_token = response.json['csrf_tokens']['streams']
+        timing_ref = models.MediaFile.get(name="bbb_v7")
+        self.assertIsNotNone(timing_ref)
+        data = {
+            'csrf_token': csrf_token,
+            'directory': 'dir2',
+            'title': 'new title',
+            'playready_la_url': '',
+            'marlin_la_url': 'ms3ha://unit.test/sas',
+            'timing_reference': str(timing_ref.pk),
+        }
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 302)
+        with self.app.app_context():
+            st = models.Stream.get(pk=stream.pk)
+            self.assertIsNotNone(st)
+            self.assertEqual(st.title, 'new title')
+            self.assertEqual(st.directory, 'dir2')
+
+    def test_edit_stream_bad_timing_reference(self) -> None:
+        self.setup_media()
+        self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)
+        with self.app.app_context():
+            stream = models.Stream(
+                title='edit stream test',
+                directory='test_api',
+                marlin_la_url='https://fake.domain/marlin',
+                playready_la_url='https://fake.domain/playready'
+            )
+            stream.add(commit=True)
+            stream = models.Stream.get(title='edit stream test')
+            self.assertIsNotNone(stream)
+        url = flask.url_for('view-stream', spk=stream.pk, ajax=1)
+        response = self.client.get(url)
+        self.assert200(response)
+        csrf_token = response.json['csrf_tokens']['streams']
+        data = {
+            'csrf_token': csrf_token,
+            'directory': 'dir2',
+            'title': 'new title',
+            'playready_la_url': '',
+            'marlin_la_url': 'ms3ha://unit.test/sas',
+            'timing_reference': 'bad_int',
+        }
+        response = self.client.post(url, data=data)
+        self.assertEqual(response.status_code, 400)
+
+    def test_edit_stream_no_timing_reference(self) -> None:
+        self.setup_media()
         self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)
         with self.app.app_context():
             stream = models.Stream(

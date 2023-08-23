@@ -72,7 +72,7 @@ class ViewsTestDashValidator(DashValidator):
         self.assertIsNotNone(mf, msg=f'Failed to find MediaFile {filename}')
         rep = mf.representation
         info = RepresentationInfo(
-            num_segments=rep.num_segments, **rep.toJSON())
+            num_segments=rep.num_media_segments, **rep.toJSON())
         self.set_representation_info(representation, info)
         return info
 
