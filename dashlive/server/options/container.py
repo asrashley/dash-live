@@ -28,16 +28,6 @@ from dashlive.utils.objects import dict_to_cgi_params
 from .dash_option import DashOption
 from .types import OptionUsage
 
-class SubOptionsContainer(dict[str, DashOption]):
-    @property
-    def usage(self) -> OptionUsage:
-        result: int = 0
-        for _, val in self.items():
-            if isinstance(val, DashOption):
-                result = result | val.usage
-        return result
-
-
 class OptionsContainer(ObjectWithFields):
     OBJECT_FIELDS = {}
 
