@@ -205,6 +205,16 @@ class EditStream(HTMLHandlerBase):
             current_stream.directory = flask.request.form['directory']
         current_stream.marlin_la_url = str_or_none(flask.request.form['marlin_la_url'])
         current_stream.playready_la_url = str_or_none(flask.request.form['playready_la_url'])
+        current_stream.timing_reference = None
+        timing_reference = flask.request.form.get('timing_reference', '')
+        if timing_reference != '':
+            try:
+                mf = models.MediaFile.get(pk=int(timing_reference, 10))
+                if mf:
+                    current_stream.set_timing_reference(mf)
+            except ValueError as err:
+                return flask.make_response(
+                    f'Invalid timing_reference "{timing_reference}": {err}', 400)
         try:
             self.check_csrf('streams', flask.request.form)
         except (CsrfFailureException) as cfe:
@@ -234,7 +244,28 @@ class EditStream(HTMLHandlerBase):
             'upload_url': flask.url_for('upload-blob', spk=current_stream.pk),
             "fields": current_stream.get_fields(),
         })
-        if not current_user.has_permission(models.Group.MEDIA):
+        if current_user.has_permission(models.Group.MEDIA):
+            current_ref: str | None = None
+            if current_stream.timing_reference:
+                current_ref = current_stream.timing_reference.media_name
+            options = [{
+                'value': '',
+                'title': '--Please choose a mediafile as the timing reference--',
+                'selected': current_ref is None,
+            }]
+            for rep in current_stream.media_files:
+                options.append({
+                    'value': rep.pk,
+                    'title': rep.name,
+                    'selected': rep.name == current_ref,
+                })
+            context['fields'].append({
+                "name": "timing_reference",
+                "title": "Timing reference",
+                "type": "select",
+                "options": options,
+            })
+        else:
             for fld in context['fields']:
                 fld['disabled'] = True
         return context

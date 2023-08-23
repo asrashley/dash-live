@@ -63,8 +63,7 @@ class ServeManifest(RequestHandlerBase):
             options = self.calculate_options(mode)
         except ValueError as e:
             return flask.make_response(f'Invalid CGI parameters: {e}', 400)
-        options.mode = mode
-        options.segmentTimeline = mft.segment_timeline
+        options.update(segmentTimeline=mft.segment_timeline)
         options.remove_unused_parameters(mode)
         dash = self.calculate_dash_params(mpd_url=manifest, options=options)
         context.update(dash)

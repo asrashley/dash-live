@@ -22,42 +22,62 @@
 
 import datetime
 import logging
+from typing import ClassVar
 
-from dashlive.mpeg.dash.representation import Representation
+from dashlive.mpeg.dash.reference import StreamTimingReference
 from dashlive.server.options.container import OptionsContainer
-from dashlive.utils.date_time import scale_timedelta
 
 class DashTiming:
-    DEFAULT_TIMESHIFT_BUFFER_DEPTH = 60  # in seconds
+    DEFAULT_TIMESHIFT_BUFFER_DEPTH: ClassVar[int] = 60  # in seconds
+
+    __slots__ = ('timeShiftBufferDepth', 'mode', 'now', 'availabilityStartTime',
+                 'publishTime', 'startNumber', 'stream_reference', 'elapsedTime',
+                 'mediaDuration', 'firstFragment', 'lastFragment', 'minimumUpdatePeriod',
+                 'firstAvailableTime')
+
+    availabilityStartTime: datetime.datetime | None
+    elapsedTime: datetime.timedelta
+    firstAvailableTime: datetime.timedelta
+    firstFragment: int
+    lastFragment: int
+    mediaDuration: datetime.timedelta
+    minimumUpdatePeriod: int | None
+    mode: str
+    now: datetime.datetime
+    publishTime: datetime.datetime
+    startNumber: int
+    stream_reference: StreamTimingReference
+    timeshiftbufferdepth: int
 
     def __init__(self,
                  now: datetime.datetime,
                  start_number: int,
-                 representation: Representation,
+                 stream_ref: StreamTimingReference,
                  options: OptionsContainer) -> None:
-        self.timeShiftBufferDepth = 0
         self.mode = options.mode
         self.now = now
-        self.availabilityStartTime = None
         self.publishTime = now.replace(microsecond=0)
         self.startNumber = start_number
+        self.stream_reference = stream_ref
         if options.mode == 'live':
-            self.calculate_live_params(now, representation, options)
+            self.calculate_live_params(now, options)
         else:
-            self.calculate_vod_params(now, representation, options)
+            self.calculate_vod_params(now, options)
 
-    def calculate_vod_params(self, now, representation, options) -> None:
-        self.elapsedTime = datetime.timedelta(seconds=0)
+    def calculate_vod_params(self,
+                             now: datetime.datetime,
+                             options: OptionsContainer) -> None:
+        self.availabilityStartTime = None
+        self.timeShiftBufferDepth = 0
+        self.elapsedTime = self.firstAvailableTime = datetime.timedelta(seconds=0)
         self.mediaDuration = datetime.timedelta(seconds=(
-            representation.mediaDuration / float(representation.timescale)))
+            self.stream_reference.media_duration / float(self.stream_reference.timescale)))
         self.firstFragment = self.startNumber
-        self.lastFragment = (
-            self.startNumber - 1 +
-            representation.mediaDuration // representation.num_segments)
+        self.lastFragment = self.startNumber - 1 + self.stream_reference.num_media_segments
+        self.minimumUpdatePeriod = None
 
     def calculate_live_params(self,
                               now: datetime.datetime,
-                              representation: Representation,
                               options: OptionsContainer) -> None:
         self.timeShiftBufferDepth = options.timeShiftBufferDepth
         if not self.timeShiftBufferDepth:
@@ -83,7 +103,7 @@ class DashTiming:
             self.availabilityStartTime -= self.elapsedTime
         if self.elapsedTime.total_seconds() < self.timeShiftBufferDepth:
             self.timeShiftBufferDepth = int(self.elapsedTime.total_seconds())
-        default_mup = 2.0 * representation.segment_duration / representation.timescale
+        default_mup = 2.0 * self.stream_reference.segment_duration / self.stream_reference.timescale
         self.minimumUpdatePeriod = options.minimumUpdatePeriod
         if self.minimumUpdatePeriod is None:
             self.minimumUpdatePeriod = default_mup
@@ -91,13 +111,6 @@ class DashTiming:
             self.minimumUpdatePeriod = None
         self.firstAvailableTime = self.elapsedTime - datetime.timedelta(
             seconds=self.timeShiftBufferDepth)
-        self.lastFragment = self.startNumber + int(scale_timedelta(
-            self.elapsedTime, representation.timescale, representation.segment_duration))
-        self.firstFragment = (
-            self.lastFragment -
-            int(representation.timescale * self.timeShiftBufferDepth /
-                representation.segment_duration) - 1)
-        self.firstFragment = max(self.startNumber, self.firstFragment)
 
     def generate_manifest_context(self):
         if self.mode == 'live':

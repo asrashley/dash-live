@@ -283,9 +283,9 @@ class RequestHandlerBase(MethodView):
 
     def calculate_options(self, mode: str) -> OptionsContainer:
         defaults = OptionsRepository.get_default_options()
-        defaults.add_field('mode', mode)
         options = OptionsRepository.convert_cgi_options(
             flask.request.args, defaults=defaults)
+        options.add_field('mode', mode)
         return options
 
     def calculate_dash_params(self, mpd_url: str,
@@ -313,6 +313,7 @@ class RequestHandlerBase(MethodView):
             "startNumber": 1,
             "stream": stream.to_dict(exclude={'media_files'}),
             "suggestedPresentationDelay": 30,
+            "timing_ref": stream.timing_reference,
         }
         if options.mode != 'odvod':
             rv['profiles'].append(additional_profiles['dvb'])
@@ -324,13 +325,12 @@ class RequestHandlerBase(MethodView):
         if options.abr is False:
             max_items = 1
         video = self.calculate_video_context(stream, options, max_items=max_items)
+
         if video.representations:
-            rv["ref_representation"] = video.representations[0]
             start_number = video.startNumber
         else:
-            rv["ref_representation"] = audio.representations[0]
             start_number = audio.startNumber
-        timing = DashTiming(now, start_number, rv["ref_representation"], options)
+        timing = DashTiming(now, start_number, rv["timing_ref"], options)
         options.availabilityStartTime = timing.availabilityStartTime
         options.timeShiftBufferDepth = timing.timeShiftBufferDepth
         rv.update(timing.generate_manifest_context())
@@ -386,14 +386,12 @@ class RequestHandlerBase(MethodView):
                 video.event_streams.append(ev_stream)
             else:
                 period.event_streams.append(ev_stream)
-        video.set_reference_representation(rv["ref_representation"])
         video.set_dash_timing(timing)
         period.adaptationSets.append(video)
 
         for idx, rep in enumerate(audio.representations):
             audio_adp = audio.clone(
                 id=(idx + 2), lang=rep.lang, representations=[rep])
-            rep.set_reference_representation(rv["ref_representation"])
             rep.set_dash_timing(timing)
             if len(audio.representations) == 1:
                 audio_adp.role = 'main'
@@ -415,7 +413,6 @@ class RequestHandlerBase(MethodView):
             text_adp = text.clone(
                 id=(888 + len(period.adaptationSets)),
                 lang=rep.lang, representations=[rep])
-            rep.set_reference_representation(rv["ref_representation"])
             rep.set_dash_timing(timing)
             lang_match = (text.lang == audio.lang or
                           text.lang == 'und' or audio.lang == 'und')
@@ -439,8 +436,7 @@ class RequestHandlerBase(MethodView):
             if rep.encrypted:
                 kids.update(rep.kids)
         rv["kids"] = kids
-        rv["mediaDuration"] = (rv["ref_representation"].mediaDuration /
-                               float(rv["ref_representation"].timescale))
+        rv["mediaDuration"] = rv["timing_ref"].media_duration_timedelta().total_seconds()
         rv["maxSegmentDuration"] = max(video.maxSegmentDuration,
                                        audio.maxSegmentDuration)
         if encrypted:

@@ -165,6 +165,8 @@ class FlaskTestBase(TestCaseMixin, TestCase):
                 encrypted=rep['encrypted'],
                 blob=blob)
             media_files.append(mf)
+            if idx == 0:
+                bbb.set_timing_reference(mf)
         with self.app.app_context():
             models.db.session.add(bbb)
             for blob in blobs:

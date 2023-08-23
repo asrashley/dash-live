@@ -32,6 +32,7 @@ import os
 import re
 import time
 import traceback
+from typing import Any, Never
 import urllib.parse
 
 from lxml import etree as ET
@@ -189,10 +190,10 @@ class DashElement(TestCaseMixin):
             ET.register_namespace(prefix, url)
 
     @abstractmethod
-    def validate(self, depth=-1):
+    def validate(self, depth=-1) -> Never:
         raise Exception("Not implemented")
 
-    def unique_id(self):
+    def unique_id(self) -> str:
         rv = [self.classname(), self.ID]
         p = self.parent
         while p is not None:
@@ -200,7 +201,8 @@ class DashElement(TestCaseMixin):
             p = p.parent
         return '/'.join(rv)
 
-    def _check_true(self, result, a, b, msg, template):
+    def _check_true(self, result: bool, a: Any, b: Any,
+                    msg: str | None, template: str) -> bool:
         if not result:
             if msg is None:
                 msg = template.format(a, b)
@@ -208,6 +210,7 @@ class DashElement(TestCaseMixin):
                 raise AssertionError(msg)
             self.log.warning('%s', msg)
             self.errors.append(msg)
+        return result
 
     def output_filename(self, default, bandwidth, prefix=None, filename=None, makedirs=False):
         if filename is None:
@@ -989,18 +992,17 @@ class Representation(RepresentationBaseType):
         url = self.format_url_template(self.segmentTemplate.initialization)
         return urllib.parse.urljoin(self.baseurl, url)
 
-    def generate_segments_live_profile(self):
-        self.checkNotEqual(self.mode, 'odvod')
-        self.checkIsNotNone(self.segmentTemplate)
+    def generate_segments_live_profile(self) -> None:
+        self.assertNotEqual(self.mode, 'odvod')
+        if not self.checkIsNotNone(self.segmentTemplate):
+            return
         info = self.validator.get_representation_info(self)
-        self.checkIsNotNone(info)
-        if info is None:
+        if not self.checkIsNotNone(info):
             return
         decode_time = getattr(info, "decode_time", None)
         start_number = getattr(info, "start_number", None)
         self.media_segments = []
-        self.checkIsNotNone(self.segmentTemplate)
-        if self.segmentTemplate is None:
+        if not self.checkIsNotNone(self.segmentTemplate):
             self.init_segment = InitSegment(self, None, info, None)
             return
         self.init_segment = InitSegment(self, self.init_seg_url(), info, None)
@@ -1010,7 +1012,8 @@ class Representation(RepresentationBaseType):
             self.assertIsNotNone(timeline)
             seg_duration = timeline.duration / len(timeline.segments)
         if self.mode == 'vod':
-            self.checkIsNotNone(info.num_segments)
+            if not self.checkIsNotNone(info.num_segments):
+                return
             num_segments = info.num_segments
             decode_time = self.segmentTemplate.presentationTimeOffset
             start_number = 1
@@ -1020,14 +1023,15 @@ class Representation(RepresentationBaseType):
                 if decode_time is None:
                     decode_time = timeline.segments[0].start
             else:
-                self.checkIsNotNone(
-                    self.mpd.timeShiftBufferDepth,
-                    msg='MPD@timeShiftBufferDepth is required for a live stream')
+                if not self.checkIsNotNone(
+                        self.mpd.timeShiftBufferDepth,
+                        msg='MPD@timeShiftBufferDepth is required for a live stream'):
+                    return
                 num_segments = math.floor((self.mpd.timeShiftBufferDepth.total_seconds() *
                                           self.segmentTemplate.timescale) / seg_duration)
                 num_segments = int(num_segments)
                 if num_segments == 0:
-                    self.assertEqual(self.mpd.timeShiftBufferDepth.total_seconds(), 0)
+                    self.checkEqual(self.mpd.timeShiftBufferDepth.total_seconds(), 0)
                     return
                 self.checkGreaterThan(
                     self.mpd.timeShiftBufferDepth.total_seconds(),
