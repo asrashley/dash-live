@@ -32,10 +32,10 @@ from flask_login import LoginManager
 from werkzeug.routing import BaseConverter  # type: ignore
 
 from dashlive.server import models
-from dashlive.templates.tags import custom_tags
 from dashlive.utils.json_object import JsonObject
 from .anonymous_user import AnonymousUser
 from .routes import routes
+from .template_tags import custom_tags
 
 login_manager = LoginManager()
 
