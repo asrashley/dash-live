@@ -21,22 +21,27 @@
 #############################################################################
 import base64
 import binascii
+from dataclasses import dataclass
+import datetime
 import json
+from typing import Any, ClassVar
 
 from flask import Blueprint, current_app, url_for
 
 from dashlive.utils.objects import flatten_iterable
-from dashlive.utils.date_time import parse_date, toIsoDuration, to_iso_datetime
+from dashlive.utils.date_time import (
+    parse_date,
+    toIsoDuration,
+    to_iso_datetime,
+    from_isodatetime
+)
 
+@dataclass(slots=True, frozen=True)
 class ScriptTag:
-    SCRIPT_TEMPLATE = r'<script src="{js_filename}" type="text/javascript"></script>'
+    SCRIPT_TEMPLATE: ClassVar[str] = r'<script src="{js_filename}" type="text/javascript"></script>'
 
-    def __init__(self, filename: str, dev: bool) -> None:
-        self.filename = filename
-        self.dev = dev
-
-    def __str__(self) -> str:
-        return self.__html__()
+    filename: str
+    dev: bool
 
     def __html__(self) -> str:
         mode = 'dev' if self.dev else 'prod'
@@ -46,21 +51,30 @@ class ScriptTag:
         return self.SCRIPT_TEMPLATE.format(js_filename=js_filename)
 
 
+@dataclass(slots=True, frozen=True)
+class HtmlSafeString:
+    html: str
+
+    def __html__(self) -> str:
+        return self.html
+
+
 custom_tags = Blueprint('custom_tags', __name__)
 
 @custom_tags.app_template_filter()
-def dateTimeFormat(value, fmt):
+def dateTimeFormat(value: str | datetime.datetime | None, fmt: str) -> str:
     """ Format a date using the given format"""
-    if not value:
-        return value
-    if isinstance(value, str):
-        value = parse_date(value)
     if value is None:
         return value
+    if isinstance(value, str):
+        if 'T' in value:
+            value = from_isodatetime(value)
+        else:
+            value = parse_date(value)
     return value.strftime(fmt)
 
 @custom_tags.app_template_filter()
-def default(value, default_value):
+def default(value: Any, default_value: Any) -> Any:
     if value is None:
         return default_value
     if value or isinstance(value, bool):
@@ -68,7 +82,7 @@ def default(value, default_value):
     return default_value
 
 @custom_tags.app_template_filter()
-def sizeFormat(value, binary=True, units: str = 'B'):
+def sizeFormat(value: int, binary: bool = True, units: str = 'B') -> str:
     prefix = ['G', 'M', 'K', '']
     mult = 1024 if binary else 1000
     while value > mult and prefix:
@@ -82,13 +96,6 @@ def sizeFormat(value, binary=True, units: str = 'B'):
 def toBase64(value):
     return str(base64.b64encode(value), 'ascii')
 
-class HtmlSafeString:
-    def __init__(self, html: str) -> None:
-        self.html = html
-
-    def __html__(self) -> str:
-        return self.html
-
 @custom_tags.app_template_filter()
 def toHtmlString(item, className=None):
     """
@@ -97,18 +104,18 @@ def toHtmlString(item, className=None):
     rv = item
     if isinstance(item, dict):
         if className:
-            rv = '<table class="%s">' % className
+            rv = [f'<table class="{className}">']
         else:
-            rv = '<table>'
+            rv = ['<table>']
         for key, val in item.items():
             rv.append('<tr><td>{}</td><td>{}</td></tr>'.format(
-                str(key), toHtmlString(val)))
+                str(key), toHtmlString(val).html))
         rv.append('</table>')
         rv = '\n'.join(rv)
     elif isinstance(item, (list, tuple)):
         rv = []
         for val in item:
-            rv.append(toHtmlString(val))
+            rv.append(toHtmlString(val).html)
         if item.__class__ == tuple:
             rv = ''.join(['(', ','.join(rv), ')'])
         else:
@@ -135,15 +142,15 @@ def toHtmlString(item, className=None):
     return HtmlSafeString(rv)
 
 @custom_tags.app_template_filter()
-def toJson(value, indent=0):
+def toJson(value, indent: int | None = None):
     if value is None:
         return value
     try:
         if isinstance(value, (dict, list, set, tuple)):
             value = flatten_iterable(value)
         return json.dumps(value, indent=indent)
-    except ValueError:
-        return value
+    except ValueError as err:
+        return str(err)
 
 @custom_tags.app_template_filter(name='uuid')
 def toUuid(value):
@@ -197,10 +204,10 @@ def isoDuration(value):
     return toIsoDuration(value)
 
 @custom_tags.app_template_filter()
-def length(value):
+def length(value: str | None) -> int:
     if value is None:
         return 0
-    return str(len(value))
+    return len(value)
 
 @custom_tags.app_template_global()
 def import_script(filename: str) -> ScriptTag:
