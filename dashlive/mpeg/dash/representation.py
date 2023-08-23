@@ -35,7 +35,6 @@ from dashlive.utils.list_of import ListOf
 from dashlive.utils.object_with_fields import ObjectWithFields
 
 from .segment import Segment
-# from .time_values import TimeValues
 from .timing import DashTiming
 
 class SegmentNumberAndTime(NamedTuple):
