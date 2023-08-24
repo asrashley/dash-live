@@ -5,8 +5,17 @@ body, html {
 }
 
 header {
-    z-index: 2;
+    z-index: 4;
+    transition: height 0.5s;
+    transition: opacity 0.5s;
 }
+
+header.rollup {
+    height: 2em;
+    opacity: 0.3;
+    overflow-y: hidden;
+}
+
 
 #vid-window {
     width: 640px;

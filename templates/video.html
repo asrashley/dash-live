@@ -9,11 +9,21 @@
 {% endblock %}
 
 {% block header %}
+{% include "navbar.html" %}
+<nav class="breadcrumbs" aria-label="breadcrumb">
+  <ol class="breadcrumb">
+    <li class="breadcrumb-item">
+      <a href="{{ url_for('home') }}" title="home">Home</a>
+    </li>
+    <li class="breadcrumb-item active">
+      <a href="{{source}}" title="manifest URL">{{source}}</a>
+    </li>
+  </ol>
+</nav>
 {% endblock %}
 
 {% block content %}
 {% if source %}
-<p class="source"><a href="{{source}}">{{source}}</a></p>
 <div id="status" ></div>
 <div id="vid-window" data-src="{{source}}" data-type="{{mimeType}}">
   <span class="fa fa-4x fa-pause icon"></span>

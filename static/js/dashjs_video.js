@@ -7,8 +7,16 @@
     }
 
     dashlive.setupDashjsPlayer = function(vid, source, mimeType) {
-        var player = dashjs.MediaPlayer().create();
+	var $vid, player;
+
+	$vid = $(vid);
+	$vid.attr('controls', '');
+        player = dashjs.MediaPlayer().create();
         player.initialize(vid, source, true);
+        $(vid).on('canplay',function(){
+	    console.log('start playback');
+            vid.play();
+        });
     };
 
     if (dashlive.setupVideoPlayer === undefined) {
