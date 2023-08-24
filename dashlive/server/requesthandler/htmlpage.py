@@ -36,7 +36,7 @@ from dashlive.server.options.types import OptionUsage
 from dashlive.drm.playready import PlayReady
 
 from .base import HTMLHandlerBase
-from .decorators import uses_stream
+from .decorators import uses_stream, current_stream
 
 class MainPage(HTMLHandlerBase):
     """
@@ -119,6 +119,11 @@ class VideoPlayer(HTMLHandlerBase):
     decorators = [uses_stream]
 
     def get(self, mode, stream, manifest, **kwargs):
+        if current_stream.timing_reference is None:
+            flask.flash(
+                f'The timing reference needs to be set for stream "{current_stream.title}"',
+                'error')
+            return flask.redirect(flask.url_for('home'))
         app_cfg = flask.current_app.config['DASH']
         manifest += '.mpd'
         context = self.create_context(**kwargs)
