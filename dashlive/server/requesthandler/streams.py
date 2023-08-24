@@ -21,6 +21,7 @@
 #############################################################################
 
 import logging
+from pathlib import Path
 import urllib
 
 import flask
@@ -118,7 +119,7 @@ class AddStream(HTMLHandlerBase):
         try:
             self.check_csrf('streams', params)
         except (ValueError, CsrfFailureException) as err:
-            if self.is_ajax:
+            if self.is_ajax():
                 return self.jsonify({'error': f'{err}'}, 401)
             flask.flash(f'CSRF error: {err}', 'error')
             return self.get(error=str(err))
@@ -200,23 +201,25 @@ class EditStream(HTMLHandlerBase):
 
         context = self.create_context(**kwargs)
         context['error'] = None
-        current_stream.title = flask.request.form['title']
+        if self.is_ajax():
+            params = flask.request.json
+        else:
+            params = flask.request.form
+        current_stream.title = params['title']
         if models.MediaFile.count(stream=current_stream) == 0:
-            current_stream.directory = flask.request.form['directory']
-        current_stream.marlin_la_url = str_or_none(flask.request.form['marlin_la_url'])
-        current_stream.playready_la_url = str_or_none(flask.request.form['playready_la_url'])
+            current_stream.directory = params['directory']
+        current_stream.marlin_la_url = str_or_none(params['marlin_la_url'])
+        current_stream.playready_la_url = str_or_none(params['playready_la_url'])
         current_stream.timing_reference = None
-        timing_reference = flask.request.form.get('timing_reference', '')
+        timing_reference = params.get('timing_ref', '')
         if timing_reference != '':
-            try:
-                mf = models.MediaFile.get(pk=int(timing_reference, 10))
-                if mf:
-                    current_stream.set_timing_reference(mf)
-            except ValueError as err:
+            mf = models.MediaFile.get(name=Path(timing_reference).stem)
+            if not mf:
                 return flask.make_response(
-                    f'Invalid timing_reference "{timing_reference}": {err}', 400)
+                    f'Invalid timing_reference "{timing_reference}"', 400)
+            current_stream.set_timing_reference(mf.as_stream_timing_reference())
         try:
-            self.check_csrf('streams', flask.request.form)
+            self.check_csrf('streams', params)
         except (CsrfFailureException) as cfe:
             logging.debug("csrf check failed")
             logging.debug(cfe)
@@ -229,6 +232,8 @@ class EditStream(HTMLHandlerBase):
             }
             return flask.render_template('media/stream.html', **context)
         models.db.session.commit()
+        if self.is_ajax():
+            return self.jsonify(current_stream.toJSON())
         flask.flash(f'Saved changes to "{current_stream.title}"', 'success')
         return flask.redirect(flask.url_for('list-streams'))
 
@@ -255,12 +260,12 @@ class EditStream(HTMLHandlerBase):
             }]
             for rep in current_stream.media_files:
                 options.append({
-                    'value': rep.pk,
+                    'value': rep.name,
                     'title': rep.name,
                     'selected': rep.name == current_ref,
                 })
             context['fields'].append({
-                "name": "timing_reference",
+                "name": "timing_ref",
                 "title": "Timing reference",
                 "type": "select",
                 "options": options,

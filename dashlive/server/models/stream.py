@@ -46,11 +46,16 @@ class Stream(db.Model, ModelMixin):
         return cast(list["Stream"], cls.get_all())
 
     def toJSON(self, pure=False):
+        timing_ref: str | None = None
+        if self.timing_ref is not None:
+            timing_ref = self.timing_ref['media_name']
         return {
+            'pk': self.pk,
             'title': self.title,
             'directory': self.directory,
             'marlin_la_url': self.marlin_la_url,
             'playready_la_url': self.playready_la_url,
+            'timing_ref': timing_ref,
         }
 
     def get_fields(self, **kwargs) -> list[JsonObject]:
@@ -99,16 +104,11 @@ class Stream(db.Model, ModelMixin):
         except TypeError:
             return None
 
-    def set_timing_reference(self, mediafile: MediaFile | None) -> None:
-        if mediafile is None:
+    def set_timing_reference(
+            self, ref: StreamTimingReference | None) -> None:
+        if ref is None:
             self.timing_ref = None
-            return
-        ref = StreamTimingReference(
-            media_name=mediafile.name,
-            media_duration=mediafile.representation.mediaDuration,
-            segment_duration=mediafile.representation.segment_duration,
-            num_media_segments=mediafile.representation.num_media_segments,
-            timescale=mediafile.representation.timescale)
-        self.timing_ref = ref.toJSON()
+        else:
+            self.timing_ref = ref.toJSON()
 
     timing_reference = property(get_timing_reference, set_timing_reference)

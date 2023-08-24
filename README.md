@@ -217,7 +217,8 @@ Where bbb.json is a JSON file that looks like this:
                 "bbb_v3.mp4", "bbb_v3_enc.mp4", "bbb_v4.mp4", "bbb_v4_enc.mp4",
                 "bbb_v5.mp4", "bbb_v5_enc.mp4", "bbb_v6.mp4", "bbb_v6_enc.mp4",
                 "bbb_v7.mp4", "bbb_v7_enc.mp4"
-            ]
+            ],
+	        "timing_ref": "bbb_v1.mp4"
     }]
 }
 ```
