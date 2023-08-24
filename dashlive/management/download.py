@@ -58,8 +58,12 @@ class DownloadDatabase(ManagementBase):
 
     def download_stream(self, stream: StreamInfo, destination: Path) -> JsonObject | None:
         js = stream.to_dict(only={'directory', 'title', 'marlin_la_url', 'playready_la_url'})
-        # js['files'] = [mf.blob.filename for mf in stream.media_files.values()]
-        js['files'] = []
+        js.update({
+            'files': [],
+            'timing_ref': None
+        })
+        if stream.timing_ref:
+            js['timing_ref'] = stream.timing_ref.media_name
         destdir = destination / stream.directory
         if not destdir.exists():
             destdir.mkdir()

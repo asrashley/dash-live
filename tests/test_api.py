@@ -95,7 +95,7 @@ class TestRestApi(FlaskTestBase):
         self.assertIn(expected_result['title'], response.text)
         self.assertIn(expected_result['directory'], response.text)
 
-    def test_get_stream_info(self):
+    def test_get_media_info(self):
         """
         Test getting info on one media file
         """
@@ -733,15 +733,17 @@ class TestRestApi(FlaskTestBase):
             'title': 'new title',
             'playready_la_url': '',
             'marlin_la_url': 'ms3ha://unit.test/sas',
-            'timing_reference': str(timing_ref.pk),
+            'timing_ref': timing_ref.name,
         }
-        response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 302)
+        response = self.client.post(url, json=data)
+        self.assertEqual(response.status_code, 200)
         with self.app.app_context():
             st = models.Stream.get(pk=stream.pk)
             self.assertIsNotNone(st)
             self.assertEqual(st.title, 'new title')
             self.assertEqual(st.directory, 'dir2')
+            self.assertIsNotNone(st.timing_reference)
+            self.assertEqual(timing_ref.name, st.timing_reference.media_name)
 
     def test_edit_stream_bad_timing_reference(self) -> None:
         self.setup_media()
@@ -766,9 +768,9 @@ class TestRestApi(FlaskTestBase):
             'title': 'new title',
             'playready_la_url': '',
             'marlin_la_url': 'ms3ha://unit.test/sas',
-            'timing_reference': 'bad_int',
+            'timing_ref': 'unknown_filename',
         }
-        response = self.client.post(url, data=data)
+        response = self.client.post(url, json=data)
         self.assertEqual(response.status_code, 400)
 
     def test_edit_stream_no_timing_reference(self) -> None:
@@ -795,8 +797,8 @@ class TestRestApi(FlaskTestBase):
             'playready_la_url': '',
             'marlin_la_url': 'ms3ha://unit.test/sas',
         }
-        response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 302)
+        response = self.client.post(url, json=data)
+        self.assertEqual(response.status_code, 200)
         with self.app.app_context():
             st = models.Stream.get(pk=stream.pk)
             self.assertIsNotNone(st)

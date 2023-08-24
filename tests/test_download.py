@@ -99,9 +99,11 @@ class TestDownloadDatabase(FlaskTestBase):
             stream = models.Stream.get(directory=dirname)
             self.assertIsNotNone(stream)
             st = stream.to_dict(only={
-                'directory', 'marlin_la_url', 'playready_la_url', 'title'})
+                'directory', 'marlin_la_url', 'playready_la_url', 'title', 'timing_ref'})
             st['files'] = [f'{mf.name}.mp4' for mf in stream.media_files]
             st['files'].sort()
+            if st['timing_ref']:
+                st['timing_ref'] = st['timing_ref']['media_name']
             expected['streams'] = [st]
         self.maxDiff = None
         self.assertDictEqual(expected, js)

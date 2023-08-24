@@ -19,12 +19,12 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-from dataclasses import dataclass
+from dataclasses import dataclass, InitVar
 from typing import AbstractSet
 
 from dashlive.utils.json_object import JsonObject
 
-@dataclass
+@dataclass(slots=True)
 class UserInfo:
     email: str
     groups: list[str]
@@ -41,7 +41,7 @@ class UserInfo:
             'username': self.username
         }
 
-@dataclass
+@dataclass(slots=True)
 class BlobInfo:
     content_type: str
     created: str
@@ -87,36 +87,46 @@ class MediaFileInfo:
             result['blob'] = result['blob'].to_dict()
         return result
 
+
+@dataclass(slots=True, kw_only=True)
+class StreamTimingRef:
+    media_name: str
+    media_duration: int  # in timescale units
+    segment_duration: int  # in timescale units
+    num_media_segments: int
+    timescale: int  # ticks per second
+
+@dataclass(slots=True, kw_only=True)
 class StreamInfo:
-    def __init__(self, pk: int, title: str, directory: str,
-                 blob: JsonObject | None = None,
-                 marlin_la_url: str | None = None,
-                 playready_la_url: str | None = None,
-                 media_files: list[JsonObject] | None = None,
-                 keys: list[JsonObject] | None = None,
-                 upload_url: str | None = None,
-                 csrf_tokens: JsonObject | None = None,
-                 **kwargs) -> None:
-        self.pk = pk
-        self.title = title
-        self.directory = directory
-        self.blob = blob
-        self.marlin_la_url = marlin_la_url
-        self.playready_la_url = playready_la_url
-        self.upload_url = upload_url
-        self.csrf_tokens = csrf_tokens
-        self.media_files: dict[str, MediaFileInfo] = {}
-        if media_files is not None:
-            for mf in media_files:
+    pk: int
+    title: str
+    directory: str
+    blob: JsonObject | None = None
+    marlin_la_url: str | None = None
+    playready_la_url: str | None = None
+    timing_ref: StreamTimingRef | None = None
+    media_files: list[JsonObject] | dict[str, MediaFileInfo] | None = None
+    keys: list[JsonObject] | None = None
+    upload_url: str | None = None
+    csrf_tokens: JsonObject | None = None
+    csrf_token: InitVar[str | None] = None
+    id: InitVar[str | None] = None
+
+    def __post_init__(self, *args):
+        if isinstance(self.timing_ref, dict):
+            self.timing_ref = StreamTimingRef(**self.timing_ref)
+        media_files = {}
+        if self.media_files is not None:
+            for mf in self.media_files:
                 if isinstance(mf, dict):
-                    self.media_files[mf['name']] = MediaFileInfo(**mf)
+                    media_files[mf['name']] = MediaFileInfo(**mf)
+        self.media_files = media_files
 
     def to_dict(self, only: AbstractSet[str] | None = None) -> JsonObject:
         result = {}
-        for name in {'directory', 'title', 'marlin_la_url', 'playready_la_url'}:
+        for name in {'directory', 'title', 'marlin_la_url', 'playready_la_url', 'timing_ref'}:
             if only is None or name in only:
                 result[name] = getattr(self, name)
-
         if only is None or 'files' in only:
             result['files'] = [mf.to_dict() for mf in self.media_files.values()]
         return result

@@ -20,11 +20,14 @@
 #
 #############################################################################
 
+import json
 import logging
+from pathlib import Path
 import unittest
 
 import flask
 
+from dashlive.server import models
 from dashlive.management.base import LoginFailureException
 from dashlive.management.populate import PopulateDatabase
 
@@ -65,6 +68,23 @@ class TestPopulateDatabase(FlaskTestBase):
         jsonfile = self.FIXTURES_PATH / 'upload.json'
         result = pd.populate_database(str(jsonfile))
         self.assertTrue(result)
+        with jsonfile.open('rt', encoding='utf-8') as src:
+            upload_js = json.load(src)
+        for exp_stream in upload_js['streams']:
+            todo = {Path(fname).stem for fname in exp_stream['files']}
+            with self.app.app_context():
+                act_stream = models.Stream.get(directory=exp_stream['directory'])
+                self.assertIsNotNone(act_stream)
+                for field in {'title', 'marlin_la_url', 'playready_la_url'}:
+                    self.assertEqual(exp_stream[field], getattr(act_stream, field))
+                for mf in act_stream.media_files:
+                    self.assertIn(mf.name, todo)
+                    todo.remove(mf.name)
+            self.assertEqual(len(todo), 0)
+            self.assertIsNotNone(act_stream.timing_reference)
+            self.assertEqual(
+                Path(exp_stream['timing_ref']).stem,
+                act_stream.timing_reference.media_name)
 
     def test_translate_v1_json_with_streams(self) -> None:
         v1js = {
@@ -110,12 +130,14 @@ class TestPopulateDatabase(FlaskTestBase):
                 "title": "Big Buck Bunny",
                 "marlin_la_url": "ms3://ms3.test.expressplay.com:8443/hms/ms3/rights/?b=...",
                 "playready_la_url": "https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg={cfgs}",
+                "timing_ref": None,
                 "files": [
                     "bbb_a1.mp4", "bbb_a1_enc.mp4", "bbb_a2.mp4", "bbb_t1.mp4"
                 ]
             }, {
                 "directory": "tears",
                 "title": "Tears of Steel",
+                "timing_ref": None,
                 "files": [
                     "tears_a1.mp4", "tears_t1.mp4", "tears_v1.mp4", "tears_v2.mp4"
                 ]
@@ -157,12 +179,14 @@ class TestPopulateDatabase(FlaskTestBase):
             "streams": [{
                 "directory": "bbb",
                 "title": "bbb",
+                "timing_ref": None,
                 "files": [
                     "bbb_a1.mp4", "bbb_a1_enc.mp4", "bbb_a2.mp4", "bbb_t1.mp4"
                 ]
             }, {
                 "directory": "tears",
                 "title": "tears",
+                "timing_ref": None,
                 "files": [
                     "tears_a1.mp4", "tears_t1.mp4", "tears_v1.mp4", "tears_v2.mp4"
                 ]

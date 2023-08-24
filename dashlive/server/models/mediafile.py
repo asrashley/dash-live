@@ -8,6 +8,7 @@ import sqlalchemy_jsonfield  # type: ignore
 from sqlalchemy.event import listen  # type: ignore
 
 from dashlive.mpeg.dash.representation import Representation
+from dashlive.mpeg.dash.reference import StreamTimingReference
 from dashlive.utils.date_time import to_iso_datetime
 from dashlive.utils.json_object import JsonObject
 from .db import db
@@ -97,7 +98,7 @@ class MediaFile(db.Model, ModelMixin):
 
     def toJSON(self, convert_date: bool = True, pure: bool = False) -> JsonObject:
         blob = self.blob.to_dict(exclude={'rep', 'blob', 'stream_pk', 'encryption_keys'})
-        if convert_date or pure:
+        if blob["created"] and (convert_date or pure):
             blob["created"] = to_iso_datetime(blob["created"])
         retval = self.to_dict()
         retval['blob'] = blob
@@ -121,6 +122,17 @@ class MediaFile(db.Model, ModelMixin):
     def delete_file(self) -> None:
         abs_path = self.absolute_path(self.stream.directory)
         self.blob.delete_file(abs_path)
+
+    def as_stream_timing_reference(self) -> StreamTimingReference | None:
+        if self.representation is None:
+            return None
+        return StreamTimingReference(
+            media_name=self.name,
+            media_duration=self.representation.mediaDuration,
+            segment_duration=self.representation.segment_duration,
+            num_media_segments=self.representation.num_media_segments,
+            timescale=self.representation.timescale)
+
 
 # pylint: disable=unused-argument
 def before_mediafile_save(mapper, connect, mediafile):

@@ -40,6 +40,7 @@ from dashlive.mpeg.dash.representation import Representation
 from dashlive.testcase.mixin import TestCaseMixin
 from dashlive.server import models
 from dashlive.server.app import create_app
+from dashlive.utils.date_time import from_isodatetime
 
 class FlaskTestBase(TestCaseMixin, TestCase):
     # duration of media in test/fixtures directory (in seconds)
@@ -131,6 +132,7 @@ class FlaskTestBase(TestCaseMixin, TestCase):
                 content_type = 'text'
             blob = models.Blob(
                 filename=filename,
+                created=from_isodatetime("2022-09-01T12:23:00Z"),
                 size=src_file.stat().st_size,
                 sha1_hash=str(src_file),
                 content_type=content_type,
@@ -166,7 +168,7 @@ class FlaskTestBase(TestCaseMixin, TestCase):
                 blob=blob)
             media_files.append(mf)
             if idx == 0:
-                bbb.set_timing_reference(mf)
+                bbb.set_timing_reference(mf.as_stream_timing_reference())
         with self.app.app_context():
             models.db.session.add(bbb)
             for blob in blobs:

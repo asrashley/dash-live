@@ -67,6 +67,8 @@ class PopulateDatabase(ManagementBase):
             for name in s['files']:
                 if not self.upload_file_and_index(js_dir, s_info, name):
                     result = False
+            if s.get('timing_ref'):
+                self.set_timing_ref(s_info, s['timing_ref'])
         return result
 
     def convert_v1_json_data(self, v1json: JsonObject) -> JsonObject:
@@ -93,6 +95,7 @@ class PopulateDatabase(ManagementBase):
         for stream in v1json['streams']:
             new_st = {
                 'directory': stream['prefix'],
+                'timing_ref': None,
                 'title': stream.get('title', stream['prefix']),
                 'files': []
             }
@@ -145,8 +148,12 @@ class PopulateDatabase(ManagementBase):
         }
         return True
 
-    def add_stream(self, directory: str, title: str, marlin_la_url: str = '',
-                   playready_la_url: str = '', **kwargs) -> StreamInfo | None:
+    def add_stream(self,
+                   directory: str,
+                   title: str,
+                   marlin_la_url: str = '',
+                   playready_la_url: str = '',
+                   **kwargs) -> StreamInfo | None:
         try:
             return self.streams[directory]
         except KeyError:
@@ -197,6 +204,38 @@ class PopulateDatabase(ManagementBase):
             if not self.index_file(stream, name):
                 self.log.error('Failed to index file %s', name)
                 return False
+        return True
+
+    def set_timing_ref(self, stream: StreamInfo, timing_ref: str) -> bool:
+        url = self.url_for('view-stream', spk=stream.pk) + '?ajax=1'
+        self.log.debug('GET %s', url)
+        result = self.session.get(url)
+        if result.status_code != 200:
+            self.log.warning('HTTP status %d', result.status_code)
+            self.log.debug('HTTP headers %s', str(result.headers))
+            self.log.error('Add stream failure: HTTP %d', result.status_code)
+            return False
+        js = result.json()
+        if 'csrf_tokens' in js:
+            self.csrf_tokens.update(js['csrf_tokens'])
+        data = {
+            'csrf_token': self.csrf_tokens['streams'],
+            'timing_ref': timing_ref,
+        }
+        for name in {'title', 'directory', 'marlin_la_url', 'playready_la_url'}:
+            data[name] = js[name]
+        self.log.debug('POST %s', url)
+        result = self.session.post(url, json=data)
+        if result.status_code != 200:
+            self.log.warning('HTTP status %d', result.status_code)
+            self.log.debug('HTTP headers %s', str(result.headers))
+            self.log.error('Add stream failure: HTTP %d', result.status_code)
+            return False
+        js = result.json()
+        if 'csrf_token' in js:
+            self.csrf_tokens['streams'] = js['csrf_token']
+        stream = StreamInfo(**js)
+        self.streams[stream.directory] = stream
         return True
 
     def get_stream_csrf_token(self, stream: StreamInfo, service: str) -> str:

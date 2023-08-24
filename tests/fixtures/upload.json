@@ -15,6 +15,7 @@
 	"files": [
 	    "bbb_a1.mp4", "bbb_a1_enc.mp4", "bbb_a2.mp4", "bbb_t1.mp4",
 	    "bbb_v6.mp4", "bbb_v6_enc.mp4", "bbb_v7.mp4", "bbb_v7_enc.mp4"
-	]
+	],
+	"timing_ref": "bbb_v6.mp4"
     }]
 }
