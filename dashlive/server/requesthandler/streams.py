@@ -237,6 +237,15 @@ class EditStream(HTMLHandlerBase):
         flask.flash(f'Saved changes to "{current_stream.title}"', 'success')
         return flask.redirect(flask.url_for('list-streams'))
 
+    @login_required(permission=models.Group.MEDIA)
+    def delete(self, **kwargs):
+        """
+        Delete a stream
+        """
+        models.db.session.delete(current_stream)
+        models.db.session.commit()
+        return flask.redirect(flask.url_for('list-streams'))
+
     def create_context(self, **kwargs):
         context = super().create_context(**kwargs)
         csrf_key = self.generate_csrf_cookie()

@@ -183,6 +183,27 @@ class TestHtmlPageHandlers(FlaskTestBase):
         finally:
             self.current_url = None
 
+    def test_delete_stream(self):
+        self.setup_media()
+        stream = models.Stream.get(title='Big Buck Bunny')
+        url = flask.url_for('view-stream', spk=stream.pk)
+
+        try:
+            self.current_url = url
+            self.logout_user()
+            response = self.client.delete(url)
+            self.assertEqual(response.status_code, 401)
+
+            self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)
+            response = self.client.delete(url)
+            self.assertEqual(response.status_code, 302)
+            self.assertEqual(response.headers['Location'], flask.url_for('list-streams'))
+            self.assertEqual(models.MediaFile.count(), 0)
+            self.assertEqual(models.Blob.count(), 0)
+            self.assertEqual(models.Stream.count(), 0)
+        finally:
+            self.current_url = None
+
     def test_video_playback(self) -> None:
         """
         Test generating the video HTML page.
