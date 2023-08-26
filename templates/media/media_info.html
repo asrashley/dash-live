@@ -30,6 +30,14 @@
       </div>
       {% if mediafile.representation %}
       <div class="row">
+	<div class="col-sm-3 field-title">Track ID:</div>
+	<div class="col-sm-9">{{ mediafile.representation.track_id }}</div>
+      </div>
+      <div class="row">
+	<div class="col-sm-3 field-title">Content Type:</div>
+	<div class="col-sm-9">{{ mediafile.representation.content_type }}</div>
+      </div>
+      <div class="row">
 	<div class="col-sm-3 field-title">MIME Type:</div>
 	<div class="col-sm-9">{{ mediafile.representation.mimeType }}</div>
       </div>
@@ -37,10 +45,22 @@
 	<div class="col-sm-3 field-title">Codecs:</div>
 	<div class="col-sm-9">{{ mediafile.representation.codecs }}</div>
       </div>
+      {% if mediafile.representation.lang %}
+      <div class="row">
+	<div class="col-sm-3 field-title">Language:</div>
+	<div class="col-sm-9">{{ mediafile.representation.lang }}</div>
+      </div>
+      {% endif %}
       {% if mediafile.representation.nalLengthFieldLength %}
       <div class="row">
 	<div class="col-sm-3 field-title">NAL field length:</div>
 	<div class="col-sm-9">{{ mediafile.representation.nalLengthFieldLength }} bytes</div>
+      </div>
+      {% endif %}
+      {% if mediafile.representation.numChannels %}
+      <div class="row">
+	<div class="col-sm-3 field-title">Number of audio channels:</div>
+	<div class="col-sm-9">{{ mediafile.representation.numChannels }} bytes</div>
       </div>
       {% endif %}
       <div class="row">
