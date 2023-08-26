@@ -6,7 +6,6 @@ $(document).ready(function(){
         kid = $row.find('input[name="kid"]').val();
         key = $row.find('input[name="key"]').val();
         csrf = $('#keys').data('csrf');
-        console.log('add key', kid, key, csrf);
         $row.find('.btn').attr("disabled", true);
         $('#keys .error').text('');
         $.ajax({
@@ -52,7 +51,6 @@ $(document).ready(function(){
         var $row = $(ev.target).parents('tr');
         kid = $row.find('.kid').text();
         csrf = $('#keys').data('csrf');
-        console.log('delete key',kid, csrf);
         if (!kid) {
             return;
         }
@@ -124,6 +122,7 @@ $(document).ready(function(){
         function onClick(btnEv) {
             var cmd;
 
+            btnEv.preventDefault();
             closeDialog();
             cmd = $(btnEv.target).data("cmd");
             if (cmd === "yes") {
@@ -136,31 +135,32 @@ $(document).ready(function(){
         if (!id) {
             return;
         }
-	ev.preventDefault();
+        ev.preventDefault();
         csrf = $('#streams').data('csrf');
-	if (!csrf) {
+        if (!csrf) {
             input = $('#edit-model input[name="csrf_token"]');
-	    if (!input) {
-		return;
-	    }
-	    csrf = input[0].value;
-	}
+            if (!input) {
+                return;
+            }
+            csrf = input[0].value;
+        }
         $row = $(ev.target).parents('tr');
-	if ($row.length) {
+        if ($row.length) {
             title = $row.find('.title').text();
             if (title === "" || title === undefined) {
-		title = $row.find('.directory').text();
+                title = $row.find('.directory').text();
             }
-	} else {
-	    title = ev.target.innerText.slice(7, -1);
-	}
+        } else {
+            title = ev.target.innerText.slice(7, -1);
+        }
         dialog = $('#dialog-box');
         dialog.find(".modal-body").html(
-            '<p>Delete stream &quot;' + title +
-                '&quot; ?</p><div>' +
-                '<button class="btn btn-danger" style="margin:1em" data-cmd="yes">Yes Please</button>' +
-                '<button class="btn btn-secondary" data-cmd="no">Cancel</button>' +
-                '</div>');
+            '<div><h3>Delete stream &quot;' + title + '&quot; ?</h3>' +
+            '<p>This will also delete all of the media files for this stream</p></div>' +
+            '<div>' +
+            '<button class="btn btn-danger" style="margin:1em" data-cmd="yes">Yes Please</button>' +
+            '<button class="btn btn-secondary" data-cmd="no">Cancel</button>' +
+            '</div>');
         dialog.find(".modal-body .btn").one('click', onClick);
         showDialog();
     }
@@ -177,13 +177,8 @@ $(document).ready(function(){
         }).done(function(result) {
             if(result.error) {
                 $('#streams .error').text(result.error);
-            } else if ($row && $row.length) {
-                $row.remove();
             } else {
-		window.location = '/media';
-	    }
-            if (result.csrf) {
-                $('#streams').data('csrf', result.csrf);
+                window.location = $('#media-management').data('back');
             }
         }).fail(function(jqXhr, status) {
             $('#streams .error').text(status);
@@ -258,7 +253,6 @@ $(document).ready(function(){
         if (!blobId) {
             return;
         }
-        console.log('delete blob',blobId);
         $('#media .error').text('');
         $.ajax({
             url: '/media/'+blobId+'?csrf_token='+csrf,
@@ -282,7 +276,6 @@ $(document).ready(function(){
         ev.preventDefault();
         form = $("#upload-form");
         filename = form.find('input[name="file"]').val();
-        console.log("Filename: "+filename);
         if (filename === "") {
             alert("No file selected");
             return;
