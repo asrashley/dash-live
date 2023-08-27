@@ -30,7 +30,7 @@
             duration="{{rep.segment_duration}}"
             initialization="{{video.initURL|xmlSafe}}"
             media="{{video.mediaURL|xmlSafe}}"
-            startNumber="{{startNumber}}" >
+            startNumber="{{ video.start_number }}" >
         </SegmentTemplate>
         {% endif %}
         <Representation
@@ -43,31 +43,29 @@
             bandwidth="{{rep.bitrate}}" />
     {% endfor %}
     </AdaptationSet>
+    {%- for audio in audio_sets %}
     <AdaptationSet
-        lang="und"
+        lang="{{ audio.lang }}"
         mimeType="audio/mp4"
         segmentAlignment="true">
-       {% for rep in audio.representations %}
-         {% if loop.first %}
-           {% include "drm/template.xml" %}
-    <SegmentTemplate
-          timescale="{{audio.timescale}}"
-          duration="{{rep.segment_duration}}"
-          initialization="{{audio.initURL|xmlSafe}}"
-          media="{{audio.mediaURL|xmlSafe}}"
-          startNumber="{{startNumber}}" />
-          {% endif %}
-      {% if rep.role=="main" %}
-      <Representation
+       <SegmentTemplate
+          timescale="{{ audio.timescale }}"
+          duration="{{ audio.segment_duration }}"
+          initialization="{{ audio.initURL|xmlSafe }}"
+          media="{{ audio.mediaURL|xmlSafe }}"
+          startNumber="{{ audio.start_number }}" />
+       {%- for rep in audio.representations %}
+       {%- if loop.first %}{% include "drm/template.xml" %}{% endif %}
+       <Representation
           id="{{rep.id}}"
           mimeType="audio/mp4"
           codecs="{{rep.codecs}}"
           audioSamplingRate="{{rep.sampleRate}}"
           startWithSAP="{{rep.startWithSAP}}"
           bandwidth="{{rep.bitrate}}">
-      </Representation>
-      {% endif %}
-      {% endfor %}
+       </Representation>
+       {%- endfor %}
     </AdaptationSet>
+    {%- endfor %}
   </Period>
 </MPD>

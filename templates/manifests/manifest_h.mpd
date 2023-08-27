@@ -29,7 +29,7 @@
                 initialization="{{video.initURL|xmlSafe}}"
                 media="{{video.mediaURL|xmlSafe}}"
                 duration="{{rep.segment_duration}}"
-                startNumber="{{startNumber}}"/>
+                startNumber="{{ rep.start_number }}"/>
           {% endif %}
           <Representation
               id="{{rep.id}}"
@@ -45,25 +45,29 @@
         </AdaptationSet>
           {% endif %}
        {%- endfor %}
-       {%- for rep in audio.representations %}
-         {%- if loop.first %}{% include "drm/template.xml" %}{% endif %}
-         {%- if rep.role=="main" %}
-      <AdaptationSet mimeType="audio/mp4" lang="{{rep.language}}" segmentAlignment="true" startWithSAP="{{rep.startWithSAP}}">
+       {%- for audio in audio_sets %}
+	 <AdaptationSet
+	     mimeType="audio/mp4"
+	     lang="{{audio.language}}"
+	     segmentAlignment="true"
+	     startWithSAP="{{ audio.startWithSAP }}">
           <SegmentTemplate
-              presentationTimeOffset="{{audio.presentationTimeOffset}}"
-              timescale="{{audio.timescale}}"
-              initialization="{{audio.initURL|xmlSafe}}"
-              media="{{audio.mediaURL|xmlSafe}}"
-              duration="{{rep.segment_duration}}"
-              startNumber="{{startNumber}}"/>
+              presentationTimeOffset="{{ audio.presentationTimeOffset }}"
+              timescale="{{ audio.timescale }}"
+              initialization="{{ audio.initURL|xmlSafe }}"
+              media="{{ audio.mediaURL|xmlSafe }}"
+              duration="{{ audio.segment_duration }}"
+              startNumber="{{ audio.start_number }}"/>
+	  {%- for rep in audio.representations %}
+      {%- if loop.first %}{% include "drm/template.xml" %}{% endif %}
           <Representation
               id="{{rep.id}}"
               mimeType="audio/mp4"
               codecs="{{rep.codecs}}"
               audioSamplingRate="{{rep.sampleRate}}"
               bandwidth="{{rep.bitrate}}" />
+       {%- endfor %}
       </AdaptationSet>
-        {% endif %}
        {%- endfor %}
   </Period>
 </MPD>

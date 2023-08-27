@@ -132,7 +132,7 @@ class VideoPlayer(HTMLHandlerBase):
         except ValueError as err:
             logging.error('Invalid CGI parameters: %s', err)
             return flask.make_response(f'Invalid CGI parameters: {err}', 400)
-        dash_parms = self.calculate_dash_params(mpd_url=manifest, options=options)
+        dash_parms = self.calculate_manifest_params(mpd_url=manifest, options=options)
         for item in {'periods', 'period', 'ref_representation', 'audio', 'video'}:
             try:
                 del dash_parms[item]

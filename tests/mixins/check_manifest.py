@@ -231,7 +231,7 @@ class DashManifestCheckMixin:
     def generate_manifest_context(self, mpd_filename: str, mode: str,
                                   stream: models.Stream, options: OptionsContainer) -> dict:
         mock = MockServeManifest(flask.request)
-        context = mock.calculate_dash_params(mpd_url=mpd_filename, options=options)
+        context = mock.calculate_manifest_params(mpd_url=mpd_filename, options=options)
         if options.encrypted:
             kids = set()
             for period in context['periods']:

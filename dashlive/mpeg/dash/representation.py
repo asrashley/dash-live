@@ -80,6 +80,7 @@ class Representation(ObjectWithFields):
         'nalLengthFieldLength': None,
         'segment_duration': None,
         'startWithSAP': 1,
+        'start_number': 1,
         'timescale': 1,
         'track_id': 1,
         'version': 0,
@@ -122,6 +123,7 @@ class Representation(ObjectWithFields):
     def load(clz, filename: str, atoms: list[Mp4Atom], verbose: int = 0) -> "Representation":
         segment_start_time = 0
         segment_end_time = 0
+        segment_start_number: int | None = None
         default_sample_duration = 0
         moov = None
         filename = os.path.basename(filename)
@@ -148,6 +150,9 @@ class Representation(ObjectWithFields):
                     sys.stdout.write('f')
                     sys.stdout.flush()
                 dur = 0
+                if segment_start_number is None:
+                    segment_start_number = atom.mfhd.sequence_number
+                    rv.start_number = segment_start_number
                 for sample in atom.traf.trun.samples:
                     if not sample.duration:
                         sample.duration = moov.mvex.trex.default_sample_duration
@@ -472,13 +477,13 @@ class Representation(ObjectWithFields):
         """
         timing = self._timing
         if timing.mode != 'live':
-            return (timing.startNumber, self.num_media_segments + timing.startNumber - 1)
-        last_fragment = timing.startNumber + int(scale_timedelta(
+            return (self.start_number, self.num_media_segments + self.start_number - 1)
+        last_fragment = self.start_number + int(scale_timedelta(
             timing.elapsedTime, self.timescale, self.segment_duration))
         first_fragment = (
             last_fragment -
             int(self.timescale * timing.timeShiftBufferDepth // self.segment_duration) - 1)
-        first_fragment = max(timing.startNumber, first_fragment)
+        first_fragment = max(self.start_number, first_fragment)
         return (first_fragment, last_fragment)
 
     def calculate_segment_number_and_time(
@@ -488,7 +493,7 @@ class Representation(ObjectWithFields):
 
         timing = self._timing
         if timing.mode != 'live':
-            mod_segment = 1 + segment_num - timing.startNumber
+            mod_segment = 1 + segment_num - self.start_number
             return SegmentNumberAndTime(segment_num, mod_segment, 0)
 
         # 5.3.9.5.3 Media Segment information
@@ -504,7 +509,7 @@ class Representation(ObjectWithFields):
         # Media Segment and the value of the attribute @timeShiftBufferDepth
         # for this Representation
         if segment_time is None:
-            timecode = int((segment_num - timing.startNumber) * self.segment_duration)
+            timecode = int((segment_num - self.start_number) * self.segment_duration)
         else:
             timecode = segment_time
             segment_num = int(segment_time // self.segment_duration)

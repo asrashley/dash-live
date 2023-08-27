@@ -10,16 +10,6 @@ from .dash_option import DashOption
 from .http_error import TextHttpError
 from .types import OptionUsage
 
-MainTextTrack = DashOption(
-    usage=OptionUsage.MANIFEST,
-    short_name='mt',
-    full_name='mainText',
-    title='Main text track',
-    description='Select text AdaptationSet that will be given the "main" role',
-    from_string=DashOption.string_or_none,
-    cgi_name='main_text',
-    cgi_type='(<id>)')
-
 TextCodec = DashOption(
     usage=OptionUsage.MANIFEST,
     short_name='tc',
@@ -33,8 +23,28 @@ TextCodec = DashOption(
         ('im1t codec', 'im1t|etd1'),
     ))
 
+TextLanguage = DashOption(
+    usage=OptionUsage.MANIFEST,
+    short_name='tl',
+    full_name='textLanguage',
+    title='Text Language',
+    description='Filter text adaptation sets by language',
+    from_string=DashOption.string_or_none,
+    cgi_name='tlang')
+
+MainTextTrack = DashOption(
+    usage=OptionUsage.MANIFEST,
+    short_name='mt',
+    full_name='mainText',
+    title='Main text track',
+    description='Select text AdaptationSet that will be given the "main" role',
+    from_string=DashOption.string_or_none,
+    cgi_name='main_text',
+    cgi_type='(<id>)')
+
 text_options = [
-    MainTextTrack,
     TextCodec,
     TextHttpError,
+    TextLanguage,
+    MainTextTrack
 ]

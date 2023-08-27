@@ -75,7 +75,8 @@ def add_routes(app: Flask) -> None:
 def create_app(config: JsonObject | None = None,
                instance_path: str | None = None,
                create_default_user: bool = True) -> Flask:
-    load_dotenv(environ.get('DASHLIVE_SETTINGS', '.env'))
+    if config is None:
+        load_dotenv(environ.get('DASHLIVE_SETTINGS', '.env'))
     logging.basicConfig()
     srcdir = Path(__file__).parent.resolve()
     basedir = srcdir.parent.parent

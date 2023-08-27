@@ -65,7 +65,7 @@ class ServeManifest(RequestHandlerBase):
             return flask.make_response(f'Invalid CGI parameters: {e}', 400)
         options.update(segmentTimeline=mft.segment_timeline)
         options.remove_unused_parameters(mode)
-        dash = self.calculate_dash_params(mpd_url=manifest, options=options)
+        dash = self.calculate_manifest_params(mpd_url=manifest, options=options)
         context.update(dash)
         response = self.check_for_synthetic_manifest_error(options, context)
         if response is not None:

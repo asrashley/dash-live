@@ -35,30 +35,35 @@
           sar="{{rep.sar}}"
           height="{{rep.height}}"
           scanType="{{rep.scanType}}">
-        <SegmentTemplate startNumber="{{startNumber}}" duration="{{rep.segment_duration}}" initialization="{{video.initURL|xmlSafe}}" media="{{video.mediaURL|xmlSafe}}" timescale="{{video.timescale}}"/>
+        <SegmentTemplate startNumber="{{ rep.start_number }}" duration="{{ rep.segment_duration }}"
+         initialization="{{video.initURL|xmlSafe}}" media="{{video.mediaURL|xmlSafe}}" 
+         timescale="{{video.timescale}}"/>
       </Representation>
 	  {% if loop.last %}</AdaptationSet>{% endif %}
       {% endfor %}
-    {% for rep in audio.representations %}
-      <AdaptationSet mimeType="audio/mp4"
-                     codecs="{{rep.codecs}}"
-                     startWithSAP="{{rep.startWithSAP}}"
-                     segmentAlignment="true"
-                     lang="{{rep.language|default('und')}}">
-        {% include "drm/template.xml" %}
-        <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+    {% for audio in audio_sets %}
+    <AdaptationSet
+	mimeType="audio/mp4"
+        codecs="{{ audio.codecs }}"
+        startWithSAP="{{audio.startWithSAP}}"
+        segmentAlignment="true"
+        lang="{{audio.language|default('und')}}">
+        <Role schemeIdUri="urn:mpeg:dash:role:2011" value="{{ audio.role }}"/>
+	{% for rep in audio.representations %}
+      {%- if loop.first %}{% include "drm/template.xml" %}{% endif %}
         <Representation
             bandwidth="{{rep.bitrate}}"
             id="{{rep.id}}"
             mimeType="audio/mp4"
             audioSamplingRate="{{rep.sampleRate}}">
           <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="{{rep.numChannels}}"/>
-          <SegmentTemplate startNumber="{{startNumber}}"
+          <SegmentTemplate startNumber="{{audio.start_number}}"
                            duration="{{rep.segment_duration}}"
                            initialization="{{audio.initURL|xmlSafe}}"
                            media="{{audio.mediaURL|xmlSafe}}"
                            timescale="{{audio.timescale}}"/>
         </Representation>
+	{% endfor %}
       </AdaptationSet>
     {% endfor %}
   </Period>

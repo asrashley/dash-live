@@ -16,7 +16,7 @@
       </Representation>
     </AdaptationSet>
     <AdaptationSet mimeType="audio/mp4" contentType="audio" segmentAlignment="true" startWithSAP="" >
-      <ContentComponent id="2" contentType="audio"/>
+      <ContentComponent id="102" contentType="audio"/>
       <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
       <SegmentTemplate startNumber="1" timescale="44100" duration="176355" initialization="$RepresentationID$/init.m4a?start=2022-09-06T00:00:00Z" media="$RepresentationID$/$Number$.m4a?start=2022-09-06T00:00:00Z"/>
       <Representation id="bbb_a1" mimeType="audio/mp4" codecs="mp4a.40.2" sampleRate="44100" numChannels="2" startWithSAP="1" bandwidth="98381">

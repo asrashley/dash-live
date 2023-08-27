@@ -10,7 +10,7 @@
    {% for rep in video.representations %}
    {% if loop.first %}{% include "drm/template.xml" %}{% endif %}
    <Representation id="{{rep.id}}" mimeType="video/mp4" codecs="{{rep.codecs}}" width="{{rep.width}}" height="{{rep.height}}" startWithSAP="{{rep.startWithSAP}}" bandwidth="{{rep.bitrate}}">
-      <SegmentTemplate startNumber="{{startNumber}}"
+      <SegmentTemplate startNumber="{{ rep.start_number}}"
                        timescale="{{video.timescale}}"
                        duration="{{rep.segment_duration}}"
                        initialization="{{video.initURL|xmlSafe}}"
@@ -18,20 +18,29 @@
    </Representation>
    {% endfor %}
   </AdaptationSet>
-  <AdaptationSet mimeType="audio/mp4">
+  {%- for audio in audio_sets %}
+  <AdaptationSet mimeType="audio/mp4" id="{{ audio.id }}">
      <ContentComponent id="1" contentType="audio" lang="eng"/>
      {% for rep in audio.representations %}
-       {% if loop.first %}{% include "drm/template.xml" %}{% endif %}
-     {% if rep.role=="main" %}
-     <Representation id="{{rep.id}}" mimeType="audio/mp4" codecs="{{rep.codecs}}" sampleRate="{{rep.sampleRate}}" numChannels="{{rep.numChannels}}" lang="{{rep.lang}}" startWithSAP="{{rep.startWithSAP}}" bandwidth="{{rep.bitrate}}">
-       <SegmentTemplate startNumber="1"
+      {%- if loop.first %}{% include "drm/template.xml" %}{% endif %}
+     <Representation
+	 id="{{rep.id}}"
+	 mimeType="audio/mp4"
+	 codecs="{{ rep.codecs }}"
+	 sampleRate="{{ rep.sampleRate }}"
+	 numChannels="{{ rep.numChannels }}"
+	 lang="{{ rep.lang }}"
+	 startWithSAP="{{ rep.startWithSAP }}"
+	 bandwidth="{{ rep.bitrate }}">
+       <SegmentTemplate startNumber="{{ audio.start_number }}"
                         timescale="{{audio.timescale}}"
                         duration="{{rep.segment_duration}}"
                         initialization="{{audio.initURL|xmlSafe}}"
                         media="{{audio.mediaURL|xmlSafe}}"/>
      </Representation>
-     {% endif %}{% endfor %}
+     {% endfor %}
   </AdaptationSet>
+     {% endfor %}
  </Period>
 </MPD>
 

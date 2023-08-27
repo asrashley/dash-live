@@ -130,8 +130,7 @@ class LiveMedia(RequestHandlerBase):
             if err:
                 return err
             now = datetime.datetime.now(tz=UTC())
-            timing = DashTiming(now, adp_set.startNumber,
-                                current_stream.timing_reference, options)
+            timing = DashTiming(now, current_stream.timing_reference, options)
             adp_set.set_dash_timing(timing)
             try:
                 first_fragment, last_fragment = representation.calculate_first_and_last_segment_number()

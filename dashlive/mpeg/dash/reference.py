@@ -5,8 +5,8 @@ from datetime import timedelta
 class StreamTimingReference:
     media_name: str
     media_duration: int  # in timescale units
-    segment_duration: int  # in timescale units
     num_media_segments: int
+    segment_duration: int  # in timescale units
     timescale: int  # ticks per second
 
     def media_duration_timedelta(self) -> timedelta:
@@ -17,7 +17,7 @@ class StreamTimingReference:
         return {
             'media_name': self.media_name,
             'media_duration': self.media_duration,
-            'segment_duration': self.segment_duration,
             'num_media_segments': self.num_media_segments,
+            'segment_duration': self.segment_duration,
             'timescale': self.timescale
         }
