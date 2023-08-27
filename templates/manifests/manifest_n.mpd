@@ -55,14 +55,17 @@
         </Representation>
       {% endfor %}
     </AdaptationSet>
-  {% for rep in audio.representations %}
+  {%- for audio in audio_sets %}
       <AdaptationSet
-        lang="eng"
-        mimeType="audio/mp4"
-        segmentAlignment="true"
-        startWithSAP="1"
+          lang="{{ audio.lang }}"
+	  id="{{ audio.id }}"
+          mimeType="audio/mp4"
+          segmentAlignment="true"
+          startWithSAP="1"
         >
-        {% include "drm/template.xml" %}
+      {%- for rep in audio.representations %}
+      {%- if loop.first %}
+      {% include "drm/template.xml" %}
       <SegmentTemplate
           initialization="{{audio.initURL|xmlSafe}}"
           media="{{audio.mediaURL|xmlSafe}}"
@@ -71,13 +74,15 @@
           >
         {% include "segment/timeline.xml" %}
       </SegmentTemplate>
-    <Representation
-        audioSamplingRate="{{rep.sampleRate}}"
-        bandwidth="{{rep.bitrate}}"
-        codecs="{{rep.codecs}}"
-        mimeType="audio/mp4"
-        id="{{rep.id}}" />
+      {%- endif %}
+      <Representation
+          audioSamplingRate="{{rep.sampleRate}}"
+          bandwidth="{{rep.bitrate}}"
+          codecs="{{rep.codecs}}"
+          mimeType="audio/mp4"
+          id="{{rep.id}}" />
+      {%- endfor %}
       </AdaptationSet>
-  {% endfor %}
+  {%- endfor %}
   </Period>
 </MPD>

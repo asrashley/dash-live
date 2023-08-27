@@ -257,6 +257,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             'shakaVersion': None,
             'textCodec': None,
             'textErrors': [],
+            'textLanguage': None,
             'timeShiftBufferDepth': 1800,
             'videoCorruption': [],
             'videoCorruptionFrameCount': None,

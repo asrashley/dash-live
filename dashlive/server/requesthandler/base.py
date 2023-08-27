@@ -43,6 +43,7 @@ from flask_login import current_user
 from dashlive.mpeg.dash.adaptation_set import AdaptationSet
 from dashlive.mpeg.dash.period import Period
 from dashlive.mpeg.dash.profiles import primary_profiles, additional_profiles
+from dashlive.mpeg.dash.representation import Representation
 from dashlive.mpeg.dash.timing import DashTiming
 from dashlive.drm.base import DrmBase
 from dashlive.drm.clearkey import ClearKey
@@ -288,9 +289,9 @@ class RequestHandlerBase(MethodView):
         options.add_field('mode', mode)
         return options
 
-    def calculate_dash_params(self, mpd_url: str,
-                              options: OptionsContainer,
-                              stream: models.Stream | None = None):
+    def calculate_manifest_params(self, mpd_url: str,
+                                  options: OptionsContainer,
+                                  stream: models.Stream | None = None) -> dict:
         if mpd_url is None:
             raise ValueError("Unable to determin MPD URL")
         if stream is None:
@@ -319,32 +320,43 @@ class RequestHandlerBase(MethodView):
             rv['profiles'].append(additional_profiles['dvb'])
         encrypted = options.encrypted
         period = Period(start=datetime.timedelta(0), id="p0")
-        audio = self.calculate_audio_context(stream, options)
-        text = self.calculate_text_context(stream, options)
+        audio_adps = self.calculate_audio_adaptation_sets(stream, options)
+        text_adps = self.calculate_text_adaptation_sets(stream, options)
         max_items = None
         if options.abr is False:
             max_items = 1
-        video = self.calculate_video_context(stream, options, max_items=max_items)
+        video = self.calculate_video_adaptation_set(stream, options, max_items=max_items)
 
-        if video.representations:
-            start_number = video.startNumber
-        else:
-            start_number = audio.startNumber
-        timing = DashTiming(now, start_number, rv["timing_ref"], options)
+        timing = DashTiming(now, rv["timing_ref"], options)
         options.availabilityStartTime = timing.availabilityStartTime
         options.timeShiftBufferDepth = timing.timeShiftBufferDepth
         rv.update(timing.generate_manifest_context())
         cgi_params = self.calculate_cgi_parameters(
-            options=options, now=now, audio=audio, video=video)
+            options=options, now=now, audio=audio_adps[0], video=video)
         video.append_cgi_params(cgi_params['video'])
-        audio.append_cgi_params(cgi_params['audio'])
-        text.append_cgi_params(cgi_params['text'])
+        for audio in audio_adps:
+            audio.append_cgi_params(cgi_params['audio'])
+        for text in text_adps:
+            text.append_cgi_params(cgi_params['text'])
         if cgi_params['manifest']:
             locationURL = flask.request.url
             if '?' in locationURL:
                 locationURL = locationURL[:flask.request.url.index('?')]
             locationURL = locationURL + objects.dict_to_cgi_params(cgi_params['manifest'])
             rv["locationURL"] = locationURL
+        event_generators = EventFactory.create_event_generators(options)
+        for evgen in event_generators:
+            ev_stream = evgen.create_manifest_context(context=rv)
+            if evgen.inband:
+                # TODO: allow AdaptationSet for inband events to be
+                # configurable
+                video.event_streams.append(ev_stream)
+            else:
+                period.event_streams.append(ev_stream)
+        period.adaptationSets.append(video)
+        period.adaptationSets += audio_adps
+        period.adaptationSets += text_adps
+        prefix = ''
         if options.useBaseUrls:
             if options.mode == 'odvod':
                 rv["baseURL"] = urllib.parse.urljoin(
@@ -355,80 +367,28 @@ class RequestHandlerBase(MethodView):
             if self.is_https_request():
                 rv["baseURL"] = rv["baseURL"].replace('http://', 'https://')
         else:
+            # convert every initURL and mediaURL to be an absolute URL
             if options.mode == 'odvod':
                 prefix = flask.url_for(
-                    'dash-od-media',
-                    stream=stream.directory,
-                    filename='RepresentationID',
-                    ext='m4v')
+                        'dash-od-media',
+                        stream=stream.directory,
+                        filename='RepresentationID',
+                        ext='m4v')
                 prefix = prefix.replace('RepresentationID.m4v', '')
             else:
                 prefix = flask.url_for(
-                    'dash-media',
-                    mode=options.mode,
-                    stream=stream.directory,
-                    filename='RepresentationID',
-                    segment_num='init',
-                    ext='m4v')
+                        'dash-media',
+                        mode=options.mode,
+                        stream=stream.directory,
+                        filename='RepresentationID',
+                        segment_num='init',
+                        ext='m4v')
                 prefix = prefix.replace('RepresentationID/init.m4v', '')
-                video.initURL = prefix + video.initURL
-                audio.initURL = prefix + audio.initURL
-                text.initURL = prefix + text.initURL
-            video.mediaURL = prefix + video.mediaURL
-            audio.mediaURL = prefix + audio.mediaURL
-            text.mediaURL = prefix + text.mediaURL
-        event_generators = EventFactory.create_event_generators(options)
-        for evgen in event_generators:
-            ev_stream = evgen.create_manifest_context(context=rv)
-            if evgen.inband:
-                # TODO: allow AdaptationSet for inband events to be
-                # configurable
-                video.event_streams.append(ev_stream)
-            else:
-                period.event_streams.append(ev_stream)
-        video.set_dash_timing(timing)
-        period.adaptationSets.append(video)
-
-        for idx, rep in enumerate(audio.representations):
-            audio_adp = audio.clone(
-                id=(idx + 2), lang=rep.lang, representations=[rep])
-            rep.set_dash_timing(timing)
-            if len(audio.representations) == 1:
-                audio_adp.role = 'main'
-            elif options.mainAudio == rep.id:
-                audio_adp.role = 'main'
-            elif rep.codecs.startswith(options.mainAudio):
-                audio_adp.role = 'main'
-            else:
-                audio_adp.role = 'alternate'
-            if options.audioDescription == rep.id:
-                audio_adp.role = 'alternate'
-                audio_adp.accessibility = {
-                    'schemeIdUri': "urn:tva:metadata:cs:AudioPurposeCS:2007",
-                    'value': 1,  # Audio description for the visually impaired
-                }
-            period.adaptationSets.append(audio_adp)
-
-        for rep in text.representations:
-            text_adp = text.clone(
-                id=(888 + len(period.adaptationSets)),
-                lang=rep.lang, representations=[rep])
-            rep.set_dash_timing(timing)
-            lang_match = (text.lang == audio.lang or
-                          text.lang == 'und' or audio.lang == 'und')
-            if len(text.representations) == 1 and lang_match:
-                text_adp.role = 'main'
-                # Subtitles for the hard of hearing in the same language as
-                # the programme
-                text_adp.accessibility = {
-                    'schemeIdUri': "urn:tva:metadata:cs:AudioPurposeCS:2007",
-                    'value': 2,
-                }
-            elif options.mainText == rep.id:
-                text_adp.role = 'main'
-            else:
-                text_adp.role = 'alternate'
-            period.adaptationSets.append(text_adp)
+        for adp in period.adaptationSets:
+            if options.mode != 'odvod':
+                adp.initURL = prefix + adp.initURL
+            adp.mediaURL = prefix + adp.mediaURL
+            adp.set_dash_timing(timing)
 
         rv["periods"].append(period)
         kids = set()
@@ -446,48 +406,71 @@ class RequestHandlerBase(MethodView):
                 rv["keys"] = models.Key.get_kids(kids)
             rv["DRM"] = self.generate_drm_dict(stream, rv["keys"], options)
         rv["timeSource"] = self.choose_time_source_method(options, cgi_params, now)
-        if 'periods' not in manifest_info.features:
-            rv["video"] = video
-            rv["audio"] = audio
+        if 'numPeriods' not in manifest_info.features:
+            rv["video"] = video  # TODO: support multiple video tracks
+            rv["audio_sets"] = audio_adps
+            rv["text_sets"] = text_adps
             rv["period"] = rv["periods"][0]
         return rv
 
-    def calculate_audio_context(self,
-                                stream: models.Stream,
-                                options: OptionsContainer,
-                                max_items: int | None = None):
-        audio = AdaptationSet(
-            mode=options.mode, content_type='audio', id=2,
-            segment_timeline=options.segmentTimeline)
-        media_files = models.MediaFile.search(
-            content_type='audio', stream=stream, max_items=max_items)
-        acodec = options.audioCodec
-        for mf in media_files:
-            r = mf.representation
-            assert r.content_type == 'audio'
-            assert mf.content_type == 'audio'
-            if r.encrypted == options.encrypted:
-                if acodec is None or r.codecs.startswith(acodec):
-                    audio.representations.append(r)
-                elif acodec == 'ec-3' and r.codecs == 'ac-3':
-                    # special case as CGI paramaters doesn't distinguish between
-                    # AC-3 and EAC-3
-                    audio.representations.append(r)
-        # if stream is encrypted but there is no encrypted version of the audio track, fall back
-        # to a clear version
-        if not audio.representations and acodec:
-            for mf in media_files:
-                r = mf.representation
-                if r.codecs.startswith(acodec):
-                    audio.representations.append(r)
-        audio.compute_av_values()
-        assert isinstance(audio.representations, list)
-        return audio
-
-    def calculate_video_context(self,
+    def calculate_audio_adaptation_sets(self,
                                 stream: models.Stream,
                                 options: OptionsContainer,
                                 max_items: int | None = None) -> list[AdaptationSet]:
+        adap_sets: dict[int, AdaptationSet] = {}
+        media_files = models.MediaFile.search(
+            content_type='audio', stream=stream, max_items=max_items)
+        audio_files: list[Representation] = []
+        acodec = options.audioCodec
+        for mf in media_files:
+            r = mf.representation
+            if r.encrypted != options.encrypted:
+                continue
+            if acodec is None or r.codecs.startswith(acodec):
+                audio_files.append(r)
+            elif acodec == 'ec-3' and r.codecs == 'ac-3':
+                # special case as CGI paramaters doesn't distinguish between
+                # AC-3 and EAC-3
+                audio.representations.append(r)
+        if not audio_files and acodec:
+            # if stream is encrypted but there is no encrypted version of the audio track, fall back
+            # to a clear version
+            for mf in media_files:
+                r = mf.representation
+                if acodec is None or r.codecs.startswith(acodec):
+                    audio_files.append(r)
+                elif acodec == 'ec-3' and r.codecs == 'ac-3':
+                    # special case as CGI paramaters doesn't distinguish between
+                    # AC-3 and EAC-3
+                    audio_files.append(r)
+        
+        for r in audio_files:
+            try:
+                audio = adap_sets[r.track_id]
+            except KeyError:
+                audio = AdaptationSet(
+                    mode=options.mode, content_type='audio', id=(100 + r.track_id),
+                    segment_timeline=options.segmentTimeline)
+                adap_sets[r.track_id] = audio
+            if len(audio_files) == 1 or options.mainAudio == r.id:
+                audio.role = 'main'
+            else:
+                audio.role = 'alternate'
+                if options.audioDescription == r.id:
+                    audio.accessibility = {
+                        'schemeIdUri': "urn:tva:metadata:cs:AudioPurposeCS:2007",
+                        'value': 1,  # Audio description for the visually impaired
+                    }
+            audio.representations.append(r)
+        result: list[AdaptationSet] = []
+        for audio in adap_sets.values():
+            audio.compute_av_values()
+            result.append(audio)
+        return result
+
+    def calculate_video_adaptation_set(
+            self, stream: models.Stream, options: OptionsContainer,
+            max_items: int | None = None) -> AdaptationSet:
         video = AdaptationSet(
             mode=options.mode, content_type='video', id=1,
             segment_timeline=options.segmentTimeline)
@@ -502,29 +485,46 @@ class RequestHandlerBase(MethodView):
         assert isinstance(video.representations, list)
         return video
 
-    def calculate_text_context(self,
-                               stream: models.Stream,
-                               options: OptionsContainer,
-                               max_items: int | None = None):
-        text = AdaptationSet(
-            mode=options.mode, content_type='text', id=888,
-            segment_timeline=options.segmentTimeline)
+    def calculate_text_adaptation_sets(
+            self, stream: models.Stream, options: OptionsContainer,
+            max_items: int | None = None) -> list[AdaptationSet]:
         media_files = models.MediaFile.search(
             content_type='text', stream=stream, max_items=max_items)
+        text_tracks: list[Representation] = []
         for mf in media_files:
             r = mf.representation
             if r.encrypted == options.encrypted:
                 if options.textCodec is None or r.codecs.startswith(options.textCodec):
-                    text.representations.append(r)
-        # if stream is encrypted but there is no encrypted version of the text track, fall back
-        # to a clear version
-        if not text.representations:
+                    text_tracks.append(r)
+        if not text_tracks:
+            # if stream is encrypted but there is no encrypted version of the text track, fall back
+            # to a clear version
             for mf in media_files:
                 r = mf.representation
                 if options.textCodec is None or r.codecs.startswith(options.textCodec):
-                    text.representations.append(r)
-        text.compute_av_values()
-        return text
+                    text_tracks.append(r)
+        result: list[AdaptationSet] = []
+        for r in text_tracks:
+            text = AdaptationSet(
+                mode=options.mode, content_type='text', id=(200 + r.track_id),
+                segment_timeline=options.segmentTimeline)
+            lang_match = (options.textLanguage is None or
+                          text.lang in {'und', options.textLanguage})
+            if len(text_tracks) == 1 or lang_match:
+                text.role = 'main'
+                # Subtitles for the hard of hearing in the same language as
+                # the programme
+                text.accessibility = {
+                    'schemeIdUri': "urn:tva:metadata:cs:AudioPurposeCS:2007",
+                    'value': 2,
+                }
+            elif options.mainText == r.id:
+                text.role = 'main'
+            else:
+                text.role = 'alternate'
+            text.compute_av_values()
+            result.append(text)
+        return result
 
     def calculate_cgi_parameters(self, options: OptionsContainer,
                                  now: datetime.datetime, audio, video) -> dict[str, dict]:

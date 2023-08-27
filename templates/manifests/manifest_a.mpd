@@ -51,19 +51,23 @@
         </Representation>
       {% endfor %}
     </AdaptationSet>
-    {% for rep in audio.representations %}
+    {% for audio in audio_sets %}
     <AdaptationSet
-      group="2"
-      mimeType="audio/mp4"
-      minBandwidth="{{audio.minBitrate}}"
-      maxBandwidth="{{audio.maxBitrate}}"
-      segmentAlignment="true"
-      startWithSAP="1">
+	id="{{ audio.id }}"
+	group="2"
+	mimeType="audio/mp4"
+	minBandwidth="{{audio.minBitrate}}"
+	maxBandwidth="{{audio.maxBitrate}}"
+	segmentAlignment="true"
+	startWithSAP="1">
+	{%- for rep in audio.representations %}
+      {%- if loop.first %}
         <SegmentTemplate timescale="{{audio.timescale}}"
                          initialization="{{audio.initURL|xmlSafe}}"
                          media="{{audio.mediaURL|xmlSafe}}">
           {% include "segment/timeline.xml" %}
         </SegmentTemplate>
+        {%- endif %}
         <Representation
           id="{{rep.id}}"
           mimeType="audio/mp4"
@@ -74,6 +78,7 @@
           lang="{{rep.language}}"
         >
         </Representation>
+	{% endfor %}
         </AdaptationSet>
       {% endfor %}
   </Period>

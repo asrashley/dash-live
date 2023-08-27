@@ -13,7 +13,7 @@
       <Representation id="bbb_v6" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="374782">
       </Representation>
     </AdaptationSet>
-    <AdaptationSet lang="eng" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
+    <AdaptationSet lang="und" mimeType="audio/mp4" segmentAlignment="true" startWithSAP="1">
       <SegmentTemplate initialization="$RepresentationID$/init.m4a" media="$RepresentationID$/time/$Time$.m4a" presentationTimeOffset="0" timescale="44100">
         <SegmentTimeline>
           <S r="2" t="0" d="176128"/>

@@ -31,33 +31,28 @@ class DashTiming:
     DEFAULT_TIMESHIFT_BUFFER_DEPTH: ClassVar[int] = 60  # in seconds
 
     __slots__ = ('timeShiftBufferDepth', 'mode', 'now', 'availabilityStartTime',
-                 'publishTime', 'startNumber', 'stream_reference', 'elapsedTime',
-                 'mediaDuration', 'firstFragment', 'lastFragment', 'minimumUpdatePeriod',
+                 'publishTime', 'stream_reference', 'elapsedTime',
+                 'mediaDuration', 'minimumUpdatePeriod',
                  'firstAvailableTime')
 
     availabilityStartTime: datetime.datetime | None
     elapsedTime: datetime.timedelta
     firstAvailableTime: datetime.timedelta
-    firstFragment: int
-    lastFragment: int
     mediaDuration: datetime.timedelta
     minimumUpdatePeriod: int | None
     mode: str
     now: datetime.datetime
     publishTime: datetime.datetime
-    startNumber: int
     stream_reference: StreamTimingReference
     timeshiftbufferdepth: int
 
     def __init__(self,
                  now: datetime.datetime,
-                 start_number: int,
                  stream_ref: StreamTimingReference,
                  options: OptionsContainer) -> None:
         self.mode = options.mode
         self.now = now
         self.publishTime = now.replace(microsecond=0)
-        self.startNumber = start_number
         self.stream_reference = stream_ref
         if options.mode == 'live':
             self.calculate_live_params(now, options)
@@ -72,8 +67,6 @@ class DashTiming:
         self.elapsedTime = self.firstAvailableTime = datetime.timedelta(seconds=0)
         self.mediaDuration = datetime.timedelta(seconds=(
             self.stream_reference.media_duration / float(self.stream_reference.timescale)))
-        self.firstFragment = self.startNumber
-        self.lastFragment = self.startNumber - 1 + self.stream_reference.num_media_segments
         self.minimumUpdatePeriod = None
 
     def calculate_live_params(self,

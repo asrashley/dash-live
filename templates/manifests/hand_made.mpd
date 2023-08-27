@@ -77,7 +77,7 @@
                </SegmentTemplate>
              {%- else %}
                <SegmentTemplate
-                   startNumber="{{adp.startNumber}}"
+                   startNumber="{{adp.start_number}}"
                    timescale="{{adp.timescale}}"
                    duration="{{rep.segment_duration}}"
                    initialization="{{adp.initURL|xmlSafe}}"

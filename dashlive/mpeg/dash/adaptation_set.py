@@ -44,7 +44,6 @@ class AdaptationSet(ObjectWithFields):
     }
     DEFAULT_VALUES = {
         'maxSegmentDuration': 1,
-        'startNumber': 1,
         'timescale': 1,
         'segmentAlignment': True,
         'segment_timeline': False,
@@ -106,6 +105,18 @@ class AdaptationSet(ObjectWithFields):
     def contentComponent(self):
         return ContentComponent(self.id, self.content_type)
 
+    @property
+    def start_number(self) -> int:
+        if self.representations:
+            return self.representations[0].start_number
+        return 1
+
+    @property
+    def segment_duration(self) -> int:
+        if self.representations:
+            return self.representations[0].segment_duration
+        return 0
+
     def key_ids(self):
         kids = set()
         for rep in self.representations:
@@ -126,7 +137,7 @@ class AdaptationSet(ObjectWithFields):
             return
         self.timescale = self.representations[0].timescale
         self.presentationTimeOffset = int(
-            (self.startNumber - 1) * self.representations[0].segment_duration)
+            (self.start_number - 1) * self.representations[0].segment_duration)
         self.minBitrate = min([a.bitrate for a in self.representations])
         self.maxBitrate = max([a.bitrate for a in self.representations])
         self.maxSegmentDuration = (max(
