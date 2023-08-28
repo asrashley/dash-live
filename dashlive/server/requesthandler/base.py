@@ -370,19 +370,19 @@ class RequestHandlerBase(MethodView):
             # convert every initURL and mediaURL to be an absolute URL
             if options.mode == 'odvod':
                 prefix = flask.url_for(
-                        'dash-od-media',
-                        stream=stream.directory,
-                        filename='RepresentationID',
-                        ext='m4v')
+                    'dash-od-media',
+                    stream=stream.directory,
+                    filename='RepresentationID',
+                    ext='m4v')
                 prefix = prefix.replace('RepresentationID.m4v', '')
             else:
                 prefix = flask.url_for(
-                        'dash-media',
-                        mode=options.mode,
-                        stream=stream.directory,
-                        filename='RepresentationID',
-                        segment_num='init',
-                        ext='m4v')
+                    'dash-media',
+                    mode=options.mode,
+                    stream=stream.directory,
+                    filename='RepresentationID',
+                    segment_num='init',
+                    ext='m4v')
                 prefix = prefix.replace('RepresentationID/init.m4v', '')
         for adp in period.adaptationSets:
             if options.mode != 'odvod':
@@ -413,10 +413,11 @@ class RequestHandlerBase(MethodView):
             rv["period"] = rv["periods"][0]
         return rv
 
-    def calculate_audio_adaptation_sets(self,
-                                stream: models.Stream,
-                                options: OptionsContainer,
-                                max_items: int | None = None) -> list[AdaptationSet]:
+    def calculate_audio_adaptation_sets(
+            self,
+            stream: models.Stream,
+            options: OptionsContainer,
+            max_items: int | None = None) -> list[AdaptationSet]:
         adap_sets: dict[int, AdaptationSet] = {}
         media_files = models.MediaFile.search(
             content_type='audio', stream=stream, max_items=max_items)
@@ -431,7 +432,7 @@ class RequestHandlerBase(MethodView):
             elif acodec == 'ec-3' and r.codecs == 'ac-3':
                 # special case as CGI paramaters doesn't distinguish between
                 # AC-3 and EAC-3
-                audio.representations.append(r)
+                audio_files.append(r)
         if not audio_files and acodec:
             # if stream is encrypted but there is no encrypted version of the audio track, fall back
             # to a clear version
@@ -443,7 +444,7 @@ class RequestHandlerBase(MethodView):
                     # special case as CGI paramaters doesn't distinguish between
                     # AC-3 and EAC-3
                     audio_files.append(r)
-        
+
         for r in audio_files:
             try:
                 audio = adap_sets[r.track_id]
