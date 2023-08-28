@@ -182,11 +182,31 @@ class EditStream(HTMLHandlerBase):
                 exclude.add('key')
             result['keys'] = [k.toJSON(exclude=exclude, pure=True) for k in result['keys']]
             return self.jsonify(result)
+        options = self.calculate_options(mode='vod')
+        options.audioCodec = None
+        options.textCodec = None
+        clear_adaptation_sets = [self.calculate_video_adaptation_set(current_stream, options)]
+        clear_adaptation_sets += self.calculate_audio_adaptation_sets(current_stream, options)
+        clear_adaptation_sets += self.calculate_text_adaptation_sets(current_stream, options)
+        enc_options = options.clone(
+            drmSelection=['playready', 'marlin', 'clearkey'], encrypted=True)
+        enc_adaptation_sets = [self.calculate_video_adaptation_set(current_stream, enc_options)]
+        enc_adaptation_sets += self.calculate_audio_adaptation_sets(current_stream, enc_options)
+        enc_adaptation_sets += self.calculate_text_adaptation_sets(current_stream, enc_options)
+        if 'fragment' in flask.request.args:
+            layout = 'fragment.html'
+        else:
+            layout = 'layout.html'
         context.update(result)
-        context['user_can_modify'] = current_user.has_permission(models.Group.MEDIA)
-        context['stream'] = result
-        context['next'] = urllib.parse.quote_plus(
-            flask.url_for('view-stream', spk=current_stream.pk))
+        context.update({
+            'clear_adaptation_sets': clear_adaptation_sets,
+            'encrypted_adaptation_sets': enc_adaptation_sets,
+            'user_can_modify': current_user.has_permission(models.Group.MEDIA),
+            'stream': result,
+            'layout': layout,
+            'next': urllib.parse.quote_plus(
+                flask.url_for('view-stream', spk=current_stream.pk)),
+        })
         return flask.render_template('media/stream.html', **context)
 
     @login_required(permission=models.Group.MEDIA)

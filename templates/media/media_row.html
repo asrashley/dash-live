@@ -11,7 +11,9 @@
   </td>
   <td class="delete">
     {% if media.blob %}
-    <button class="btn btn-danger btn-sm delete-file" data-key="{{media.pk}}">Delete</button>
+    <a class="btn btn-danger btn-sm delete-file"
+       href="{{ url_for('media-info', spk=stream.pk, mfid=media.pk) }}"
+       >Delete</a>
     {% endif %}
   </td>
   {% endif %}

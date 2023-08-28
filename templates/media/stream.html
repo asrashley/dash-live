@@ -1,5 +1,4 @@
-{% extends 'layout.html' %}
-
+{% extends layout %}
 
 {% block content %}
 <div id="media-management" class="container" data-back="{{ url_for('list-streams') }}">
@@ -9,36 +8,63 @@
   <div class="form-group">
     {% set extra_buttons %}
     {% if user_can_modify %}
-    <a href="{{url_for('delete-stream', spk=stream.pk)}}"
-       class="btn btn-danger delete-stream"
-       data-id="{{stream.pk}}">Delete &quot;{{stream.title}}&quot;</a>
+    <a href="{{url_for('delete-stream', spk=stream.pk)}}" class="btn btn-danger delete-stream"
+      data-id="{{stream.pk}}">Delete &quot;{{stream.title}}&quot;</a>
     {% endif %}
     {% endset %}
   </div>
   {% set cancel_url = url_for('list-streams') %}
   {% include 'edit-model-form.html' %}
+  <div id="exampleManifestTabs">
+    <ul class="nav nav-tabs" id="exampleManifests" role="tablist">
+      <li class="nav-item">
+	<a class="nav-link active" id="clear-tab" data-toggle="tab" href="#clear"
+	   role="tab" aria-controls="clear" aria-selected="true">Clear</a>
+      </li>
+      <li class="nav-item">
+	<a class="nav-link" id="encrypted-tab" data-toggle="tab" href="#encrypted"
+	   role="tab" aria-controls="encrypted" aria-selected="false">Encrypted</a>
+      </li>
+    </ul>
+    <div class="tab-content" id="exampleManifestsContent">
+      <div class="tab-pane fade show active" id="clear" role="tabpanel" aria-labelledby="clear-tab">
+	{% with adaptation_sets = clear_adaptation_sets %}
+	{% set tab_name = "Clear" %}
+	{% include 'media/adaptation-sets.html' %}
+	{% endwith %}
+      </div>
+      <div class="tab-pane fade" id="encrypted" role="tabpanel" aria-labelledby="encrypted-tab">
+	{% with adaptation_sets = encrypted_adaptation_sets %}
+	{% set tab_name = "Encrypted" %}
+	{% include 'media/adaptation-sets.html' %}
+	{% endwith %}
+      </div>
+    </div>
+  </div>
   <table class="table table-striped" id="media-files" data-csrf="{{csrf_tokens.files}}">
     <caption>Media Files</caption>
     <thead>
       <tr>
-	{% if user_can_modify %}
-	<th class="index"></th>
-	<th class="delete"></th>
-	{% endif %}
-	<th class="filename">Name</th>
-	<th class="filesize">Size</th>
-	<th class="created">Created</th>
-	<th class="sha1-hash">SHA1</th>
-	<th class="contentType">Type</th>
-	<th class="codec">Codec</th>
-	<th class="kid">KID</th>
+        {% if user_can_modify %}
+        <th class="index"></th>
+        <th class="delete"></th>
+        {% endif %}
+        <th class="filename">Name</th>
+        <th class="filesize">Size</th>
+        <th class="created">Created</th>
+        <th class="sha1-hash">SHA1</th>
+        <th class="contentType">Type</th>
+        <th class="codec">Codec</th>
+        <th class="kid">KID</th>
       </tr>
     </thead>
     <tbody>
       {% for media in media_files %}
       {% include "media/media_row.html" %}
       {% endfor %}
-      <tr class="error-row"><td class="error" colspan="8"></td></tr>
+      <tr class="error-row">
+        <td class="error" colspan="8"></td>
+      </tr>
     </tbody>
   </table>
   {% include "media/keys_table.html" %}

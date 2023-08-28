@@ -46,7 +46,7 @@ class OptionsContainer(ObjectWithFields):
         for key in self._fields:
             if key[0] == '_':
                 continue
-            value = getattr(kwargs, key, getattr(self, key))
+            value = kwargs.get(key, getattr(self, key))
             if value is not None:
                 if isinstance(value, OptionsContainer):
                     dflt = None
@@ -60,6 +60,8 @@ class OptionsContainer(ObjectWithFields):
             if key in self._fields or key[0] == '_':
                 continue
             args[key] = value
+        if 'defaults' not in args:
+            args['defaults'] = self._defaults
         return OptionsContainer(**args)
 
     def convert_sub_options(self,
