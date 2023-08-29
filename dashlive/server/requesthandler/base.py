@@ -427,7 +427,7 @@ class RequestHandlerBase(MethodView):
             r = mf.representation
             if r.encrypted != options.encrypted:
                 continue
-            if acodec is None or r.codecs.startswith(acodec):
+            if acodec in {None, 'any'} or r.codecs.startswith(acodec):
                 audio_files.append(r)
             elif acodec == 'ec-3' and r.codecs == 'ac-3':
                 # special case as CGI paramaters doesn't distinguish between
@@ -438,7 +438,7 @@ class RequestHandlerBase(MethodView):
             # to a clear version
             for mf in media_files:
                 r = mf.representation
-                if acodec is None or r.codecs.startswith(acodec):
+                if acodec in {None, 'any'} or r.codecs.startswith(acodec):
                     audio_files.append(r)
                 elif acodec == 'ec-3' and r.codecs == 'ac-3':
                     # special case as CGI paramaters doesn't distinguish between

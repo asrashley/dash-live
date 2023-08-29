@@ -20,7 +20,7 @@ AudioCodec = DashOption(
     cgi_choices=(
         ('HEAAC codec', 'mp4a'),
         ('EAC3 codec', 'ec-3'),
-        ('Any codec', None),
+        ('Any codec', 'any'),
     ),
     hidden=False)
 
@@ -40,8 +40,7 @@ MainAudioTrack = DashOption(
     title='Main audio track',
     description='Select audio AdaptationSet that will be given the "main" role',
     cgi_name='main_audio',
-    cgi_choices=('mp4a', 'ec-3'),
-    cgi_type='(mp4a|ec3|<id>)')
+    cgi_type='<id>')
 
 audio_options = [
     AudioCodec,

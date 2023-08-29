@@ -220,7 +220,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             'drmSelection': [],
             'eventTypes': [],
             'failureCount': None,
-            'mainAudio': 'mp4a',
+            'mainAudio': None,
             'mode': 'vod',
             'manifestErrors': [],
             'mainText': None,
