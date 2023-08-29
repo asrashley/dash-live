@@ -42,7 +42,7 @@ class TestPopulateDatabase(FlaskTestBase):
             password='secret',
             session=ClientHttpSession(self.client))
         with self.assertRaises(LoginFailureException):
-            jsonfile = self.FIXTURES_PATH / 'upload.json'
+            jsonfile = self.FIXTURES_PATH / 'upload_v2.json'
             pd.populate_database(str(jsonfile))
 
     def test_file_not_found(self) -> None:
@@ -55,7 +55,13 @@ class TestPopulateDatabase(FlaskTestBase):
         with self.assertRaises(FileNotFoundError):
             pd.populate_database('script.json')
 
-    def test_populate_database(self) -> None:
+    def test_populate_database_using_v1_json(self) -> None:
+        self.check_populate_database('upload_v1.json', 1)
+
+    def test_populate_database_using_v2_json(self) -> None:
+        self.check_populate_database('upload_v2.json', 2)
+
+    def check_populate_database(self, fixture_name: str, version: int) -> None:
         self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)
         tmpdir = self.create_upload_folder()
         with self.app.app_context():
@@ -65,11 +71,32 @@ class TestPopulateDatabase(FlaskTestBase):
             username=self.MEDIA_USER,
             password=self.MEDIA_PASSWORD,
             session=ClientHttpSession(self.client))
-        jsonfile = self.FIXTURES_PATH / 'upload.json'
+        jsonfile = self.FIXTURES_PATH / fixture_name
+        self.assertTrue(jsonfile.exists())
         result = pd.populate_database(str(jsonfile))
         self.assertTrue(result)
         with jsonfile.open('rt', encoding='utf-8') as src:
             upload_js = json.load(src)
+        if version == 1:
+            self.check_database_for_v1_results(upload_js)
+        else:
+            self.check_database_for_v2_results(upload_js)
+
+    def check_database_for_v1_results(self, upload_js: dict) -> None:
+        for exp_stream in upload_js['streams']:
+            todo = {Path(fname).stem for fname in upload_js['files']}
+            with self.app.app_context():
+                act_stream = models.Stream.get(directory=exp_stream['prefix'])
+                self.assertIsNotNone(act_stream)
+                for field in {'title', 'marlin_la_url', 'playready_la_url'}:
+                    self.assertEqual(exp_stream.get(field), getattr(act_stream, field))
+                for mf in act_stream.media_files:
+                    self.assertIn(mf.name, todo)
+                    todo.remove(mf.name)
+            self.assertEqual(len(todo), 0)
+            self.assertIsNone(act_stream.timing_reference)
+
+    def check_database_for_v2_results(self, upload_js: dict) -> None:
         for exp_stream in upload_js['streams']:
             todo = {Path(fname).stem for fname in exp_stream['files']}
             with self.app.app_context():

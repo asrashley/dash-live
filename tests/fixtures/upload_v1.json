@@ -1,0 +1,21 @@
+{
+    "keys": [
+        {
+            "computed": true,
+            "kid": "1ab45440532c439994dc5c5ad9584bac"
+        }
+    ],
+    "streams": [
+        {
+            "prefix": "bbb",
+            "title": "Big Buck Bunny",
+            "marlin_la_url": "https://a.marlin.server/bbb-sas"
+        }
+    ],
+    "files": [
+        "bbb_a1.mp4", "bbb_a1_enc.mp4",
+        "bbb_a2.mp4",
+        "bbb_v6.mp4", "bbb_v6_enc.mp4",
+        "bbb_v7.mp4", "bbb_v7_enc.mp4"        
+    ]
+}

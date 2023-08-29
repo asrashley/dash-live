@@ -310,9 +310,15 @@ class PopulateDatabase(ManagementBase):
             if 'error' in js:
                 self.log.error('%s', str(js['error']))
             if result.status_code != 404 or timeout == 0:
+                if timeout == 0:
+                    self.log.error('Timeout uploading file "%s"', name)
+                else:
+                    self.log.error(
+                        'Error uploading file "%s": %s', name, err)
                 return False
             timeout -= 1
             time.sleep(2)
+        self.log.error('Timeout uploading file "%s"', name)
         return False
 
     @classmethod
