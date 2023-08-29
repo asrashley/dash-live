@@ -183,7 +183,7 @@ class EditStream(HTMLHandlerBase):
             result['keys'] = [k.toJSON(exclude=exclude, pure=True) for k in result['keys']]
             return self.jsonify(result)
         options = self.calculate_options(mode='vod')
-        options.audioCodec = None
+        options.audioCodec = 'any'
         options.textCodec = None
         clear_adaptation_sets = [self.calculate_video_adaptation_set(current_stream, options)]
         clear_adaptation_sets += self.calculate_audio_adaptation_sets(current_stream, options)
