@@ -75,7 +75,10 @@ class TestPopulateDatabase(FlaskTestBase):
         self.assertTrue(jsonfile.exists())
         result = pd.populate_database(str(jsonfile))
         self.assertTrue(result)
-        with jsonfile.open('rt', encoding='utf-8') as src:
+        self.check_database_results(jsonfile, version)
+
+    def check_database_results(self, jsonfilename: Path, version: int) -> None:
+        with jsonfilename.open('rt', encoding='utf-8') as src:
             upload_js = json.load(src)
         if version == 1:
             self.check_database_for_v1_results(upload_js)
@@ -112,6 +115,23 @@ class TestPopulateDatabase(FlaskTestBase):
             self.assertEqual(
                 Path(exp_stream['timing_ref']).stem,
                 act_stream.timing_reference.media_name)
+
+    def test_populate_database_using_command_line(self) -> None:
+        jsonfile = self.FIXTURES_PATH / 'upload_v2.json'
+        self.assertTrue(jsonfile.exists())
+        args: list[str] = [
+            '--username', self.MEDIA_USER,
+            '--password', self.MEDIA_PASSWORD,
+            '--host', flask.url_for('home'),
+            str(jsonfile),
+        ]
+        tmpdir = self.create_upload_folder()
+        with self.app.app_context():
+            self.app.config['BLOB_FOLDER'] = tmpdir
+        with unittest.mock.patch('requests.Session') as mock:
+            mock.return_value = ClientHttpSession(self.client)
+            PopulateDatabase.main(args)
+        self.check_database_results(jsonfile, 2)
 
     def test_translate_v1_json_with_streams(self) -> None:
         v1js = {
