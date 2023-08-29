@@ -313,8 +313,7 @@ class PopulateDatabase(ManagementBase):
                 if timeout == 0:
                     self.log.error('Timeout uploading file "%s"', name)
                 else:
-                    self.log.error(
-                        'Error uploading file "%s": %s', name, err)
+                    self.log.error('Error uploading file "%s"', name)
                 return False
             timeout -= 1
             time.sleep(2)
@@ -322,7 +321,7 @@ class PopulateDatabase(ManagementBase):
         return False
 
     @classmethod
-    def main(cls):
+    def main(cls, argv: list[str]) -> None:
         ap = argparse.ArgumentParser(description='dashlive database population')
         ap.add_argument('--debug', action="store_true")
         ap.add_argument('--host', help='HTTP address of host to populate',
@@ -330,7 +329,7 @@ class PopulateDatabase(ManagementBase):
         ap.add_argument('--username')
         ap.add_argument('--password')
         ap.add_argument('jsonfile', help='JSON file', nargs='+', default=None)
-        args = ap.parse_args()
+        args = ap.parse_args(argv)
         mm_log = logging.getLogger('PopulateDatabase')
         ch = logging.StreamHandler()
         ch.setFormatter(logging.Formatter(
@@ -341,6 +340,6 @@ class PopulateDatabase(ManagementBase):
             mm_log.setLevel(logging.DEBUG)
         else:
             mm_log.setLevel(logging.INFO)
-        mm = PopulateDatabase(args.host, args.username, args.password)
+        mm = cls(args.host, args.username, args.password)
         for jsonfile in args.jsonfile:
             mm.populate_database(jsonfile)

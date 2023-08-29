@@ -19,8 +19,9 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+import sys
 
 from dashlive.management.populate import PopulateDatabase
 
 if __name__ == "__main__":
-    PopulateDatabase.main()
+    PopulateDatabase.main(sys.argv[1:])
