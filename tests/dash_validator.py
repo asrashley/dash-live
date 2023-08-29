@@ -1584,6 +1584,11 @@ if __name__ == "__main__":
         def body(self):
             return self.response.content
 
+        def get_data(self, as_text: bool) -> bytes | str:
+            if as_text:
+                return self.response.text
+            return self.response.content
+
         def mustcontain(self, *strings):
             for text in strings:
                 self.checkIn(text, self.response.text)
