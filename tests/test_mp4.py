@@ -733,7 +733,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
             track_id=1,
             version=0,
         )
-        traf = mp4.BoxWithChildren(
+        traf = mp4.TrackFragmentBox(
             atom_type='traf',
             children=[tfhd, trun],
         )
