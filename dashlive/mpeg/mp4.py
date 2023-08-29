@@ -24,6 +24,7 @@ from abc import abstractmethod
 import argparse
 import binascii
 import copy
+from dataclasses import dataclass, field
 import io
 import json
 import logging
@@ -46,16 +47,16 @@ from dashlive.utils.object_with_fields import ObjectWithFields
 from dashlive.utils.list_of import ListOf
 from .nal import Nal
 
-class Options(ObjectWithFields):
-    DEFAULT_VALUES = {
-        "cache_encoded": False,
-        "iv_size": None,
-        "strict": False,
-        "bug_compatibility": None,
-    }
+@dataclass(slots=True, kw_only=True)
+class Options:
+    cache_encoded: bool = False
+    debug: bool = False
+    iv_size: int | None = None
+    strict: bool = False
+    bug_compatibility: str | set | None = None
+    log: logging = field(init=False)
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __post_init__(self):
         self.log = logging.getLogger('mp4')
 
     def has_bug(self, name):
@@ -75,7 +76,7 @@ def fourcc(box_name: str):
     return func
 
 
-fourcc.BOXES = {}
+fourcc.BOXES = {}  # map from fourcc code to Mp4Atom class
 fourcc.BOX_TYPES = {}
 
 def mp4descriptor(tag: int):
@@ -139,11 +140,6 @@ class Mp4Atom(ObjectWithFields):
                 ch.parent = self
 
     def __getattr__(self, name: str) -> "Mp4Atom":
-        if name in self.__dict__:
-            return self.__dict__[name]
-        if name[0] == "_":
-            # __getattribute__ should have responded before __getattr__ called
-            raise AttributeError(name)
         if name in self._fields:
             # __getattribute__ should have responded before __getattr__ called
             raise AttributeError(name)
