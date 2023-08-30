@@ -226,7 +226,11 @@ class IndexMediaFile(HTMLHandlerBase):
             mf.content_type = rep.content_type
             mf.bitrate = rep.bitrate
             mf.encrypted = rep.encrypted
-            models.db.session.commit()
+            if rep.bitrate:
+                # bitrate cannot be None, therefore don't commit if
+                # Representation class failed to discover the
+                # bitrate
+                models.db.session.commit()
             result = {
                 "indexed": mf.pk,
                 "representation": mf.rep,
