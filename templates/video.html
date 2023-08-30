@@ -47,7 +47,7 @@
   <script type="text/javascript">
     var dashParameters = {{dash|toJson(indent=2)|safe}};
   </script>
-  {{import_script("jquery-3.7.0")}}
+  {{import_script("jquery-3.7.1")}}
   <script src="{{url_for('static', filename='js/video_utils.js')}}" type="text/javascript"></script>
   {% if shakaUrl %}
   <script src="{{ shakaUrl }}" type="text/javascript"></script>
