@@ -322,14 +322,14 @@ class DashValidator(DashElement):
             config = {
                 'keys': [{'computed': True, 'kid': kid} for kid in list(kids)],
                 'streams': [{
-                    'prefix': self.options.prefix,
-                    'title': self.url
+                    'directory': self.options.prefix,
+                    'title': self.url,
+                    'files': list(self.manifest.filenames)
                 }],
-                'files': list(self.manifest.filenames)
             }
             filename = self.output_filename(
                 default=None, bandwidth=None, filename=f'{self.options.prefix}.json')
-            with open(filename, 'w') as dest:
+            with open(filename, 'wt') as dest:
                 json.dump(config, dest, indent=2)
         return self.errors
 
