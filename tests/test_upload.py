@@ -242,6 +242,51 @@ class TestPopulateDatabase(FlaskTestBase):
         self.maxDiff = None
         self.assertDictEqual(expected, result)
 
+    def test_translate_v1_json_with_absolute_filenames(self) -> None:
+        v1js = {
+            "keys": [{
+                "computed": False,
+                "key": "533a583a843436a536fbe2a5821c4b6c",
+                "kid": "c001de8e567b5fcfbc22c565ed5bda24"
+            }],
+            "streams": [{
+                "prefix": "bbb",
+                "title": "Big Buck Bunny"
+            }],
+            "files": [
+                "media/bbb/2023-08-30T20-00-00Z/bbb_a1.mp4",
+                "media/bbb/2023-08-30T20-00-00Z/bbb_a1_enc.mp4",
+                "media/bbb/2023-08-30T20-00-00Z/bbb_a2.mp4",
+                "media/bbb/2023-08-30T20-00-00Z/bbb_t1.mp4"
+            ]
+        }
+        pd = PopulateDatabase(
+            url=flask.url_for('home'),
+            username=self.MEDIA_USER,
+            password=self.MEDIA_PASSWORD,
+            session=ClientHttpSession(self.client))
+        result = pd.convert_v1_json_data(v1js)
+        expected = {
+            "keys": [{
+                "computed": False,
+                "key": "533a583a843436a536fbe2a5821c4b6c",
+                "kid": "c001de8e567b5fcfbc22c565ed5bda24"
+            }],
+            "streams": [{
+                "directory": "bbb",
+                "title": "Big Buck Bunny",
+                "timing_ref": None,
+                "files": [
+                    "media/bbb/2023-08-30T20-00-00Z/bbb_a1.mp4",
+                    "media/bbb/2023-08-30T20-00-00Z/bbb_a1_enc.mp4",
+                    "media/bbb/2023-08-30T20-00-00Z/bbb_a2.mp4",
+                    "media/bbb/2023-08-30T20-00-00Z/bbb_t1.mp4"
+                ]
+            }]
+        }
+        self.maxDiff = None
+        self.assertDictEqual(expected, result)
+
 
 if __name__ == "__main__":
     mm_log = logging.getLogger('PopulateDatabase')

@@ -84,7 +84,7 @@ class PopulateDatabase(ManagementBase):
             v1json['streams'] = []
             file_prefixes = set()
             for filename in files:
-                prefix = filename.split('_')[0]
+                prefix = Path(filename).name.split('_')[0]
                 if prefix not in file_prefixes:
                     v1json['streams'].append({
                         'title': prefix,
@@ -108,7 +108,7 @@ class PopulateDatabase(ManagementBase):
             except KeyError:
                 pass
             for filename in list(files):
-                if filename.startswith(stream['prefix']):
+                if Path(filename).name.startswith(stream['prefix']):
                     new_st['files'].append(filename)
                     files.remove(filename)
             new_st['files'].sort()
@@ -190,7 +190,9 @@ class PopulateDatabase(ManagementBase):
             return True
         filename = name
         if not filename.exists():
-            filename = js_dir / filename
+            self.log.debug(
+                "%s not found, trying directory %s", filename, js_dir)
+            filename = js_dir / filename.name
         if not filename.exists():
             self.log.warning("%s not found", name)
             return False
