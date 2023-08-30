@@ -41,7 +41,13 @@ from dashlive.drm.playready import PlayReady
 from dashlive.testcase.mixin import HideMixinsFilter, TestCaseMixin
 from dashlive.mpeg import MPEG_TIMEBASE, mp4
 from dashlive import scte35
-from dashlive.utils.date_time import from_isodatetime, scale_timedelta, to_iso_datetime, UTC
+from dashlive.utils.date_time import (
+    from_isodatetime,
+    multiply_timedelta,
+    scale_timedelta,
+    to_iso_datetime,
+    UTC
+)
 from dashlive.utils.binary import Binary
 from dashlive.utils.buffered_reader import BufferedReader
 
@@ -1010,7 +1016,7 @@ class Representation(RepresentationBaseType):
         seg_duration = self.segmentTemplate.duration
         if seg_duration is None:
             self.assertIsNotNone(timeline)
-            seg_duration = timeline.duration / len(timeline.segments)
+            seg_duration = timeline.duration // len(timeline.segments)
         if self.mode == 'vod':
             if not self.checkIsNotNone(info.num_segments):
                 return
@@ -1027,9 +1033,9 @@ class Representation(RepresentationBaseType):
                         self.mpd.timeShiftBufferDepth,
                         msg='MPD@timeShiftBufferDepth is required for a live stream'):
                     return
-                num_segments = math.floor((self.mpd.timeShiftBufferDepth.total_seconds() *
-                                          self.segmentTemplate.timescale) / seg_duration)
-                num_segments = int(num_segments)
+                num_segments = int(
+                    (self.mpd.timeShiftBufferDepth.total_seconds() *
+                     self.segmentTemplate.timescale) // seg_duration)
                 if num_segments == 0:
                     self.checkEqual(self.mpd.timeShiftBufferDepth.total_seconds(), 0)
                     return
@@ -1037,11 +1043,20 @@ class Representation(RepresentationBaseType):
                     self.mpd.timeShiftBufferDepth.total_seconds(),
                     seg_duration / float(self.segmentTemplate.timescale))
                 self.checkGreaterThan(num_segments, 0)
+                if self.options.duration:
+                    max_num_segments = (
+                        self.options.duration *
+                        self.segmentTemplate.timescale //
+                        seg_duration)
+                    num_segments = min(num_segments, max_num_segments)
             now = datetime.datetime.now(tz=UTC())
+            # TODO: add support for UTCTiming elements
             elapsed_time = now - self.mpd.availabilityStartTime
-            elapsed_tc = scale_timedelta(elapsed_time, self.segmentTemplate.timescale, 1)
+            elapsed_tc = multiply_timedelta(
+                elapsed_time, self.segmentTemplate.timescale)
             elapsed_tc -= self.segmentTemplate.presentationTimeOffset
-            last_fragment = self.segmentTemplate.startNumber + int(elapsed_tc // seg_duration)
+            last_fragment = self.segmentTemplate.startNumber + int(
+                elapsed_tc // seg_duration)
             # first_fragment = last_fragment - math.floor(
             #    self.mpd.timeShiftBufferDepth.total_seconds() * self.segmentTemplate.timescale /
             #    seg_duration)
@@ -1069,7 +1084,8 @@ class Representation(RepresentationBaseType):
             tolerance = self.segmentTemplate.timescale / frameRate
         else:
             tolerance = info.timescale / frameRate
-        num_segments = min(num_segments, 20)
+        if self.options.duration is None:
+            num_segments = min(num_segments, 20)
         self.log.debug('Generating %d MediaSegments', num_segments)
         if timeline is not None:
             msg = r'Expected segment segmentTimeline to have at least {} items, found {}'.format(
@@ -1085,7 +1101,8 @@ class Representation(RepresentationBaseType):
                 tol = tolerance * 2
             else:
                 tol = tolerance
-            ms = MediaSegment(self, url, info, seg_num=seg_num, decode_time=decode_time,
+            ms = MediaSegment(self, url, info, seg_num=seg_num,
+                              decode_time=decode_time,
                               tolerance=tol, seg_range=None)
             self.media_segments.append(ms)
             seg_num += 1
@@ -1100,6 +1117,10 @@ class Representation(RepresentationBaseType):
                     dt = decode_time
                 if dt >= (self.options.duration * self.segmentTemplate.timescale):
                     return
+        if len(self.media_segments) < num_segments:
+            self.log.warning(
+                'Expected to generate %d segments, but only created %d',
+                num_segments, len(self.media_segments))
 
     def generate_segments_on_demand_profile(self):
         self.media_segments = []
@@ -1172,10 +1193,8 @@ class Representation(RepresentationBaseType):
     def validate(self, depth=-1):
         self.checkIsNotNone(self.bandwidth, 'bandwidth is a mandatory attribute')
         self.checkIsNotNone(self.id, 'id is a mandatory attribute')
-        if self.options.strict:
-            self.checkIsNotNone(self.mimeType, 'mimeType is a mandatory attribute')
-        if self.mimeType is None:
-            self.log.warning('mimeType is a mandatory attribute')
+        self.checkIsNotNone(
+            self.mimeType, 'Representation@mimeType is a mandatory attribute')
         info = self.validator.get_representation_info(self)
         if getattr(info, "moov", None) is None:
             info.moov = self.init_segment.validate(depth - 1)
@@ -1239,19 +1258,21 @@ class Representation(RepresentationBaseType):
         self.checkIsNotNone(self.segmentTemplate)
         if self.mode == 'vod':
             return
-        self.checkEqual(self.mode, 'live')
+        self.assertEqual(self.mode, 'live')
         seg_duration = self.segmentTemplate.duration
         timeline = self.segmentTemplate.segmentTimeline
         timescale = self.segmentTemplate.timescale
         decode_time = None
         if seg_duration is None:
-            self.checkIsNotNone(timeline)
+            if not self.checkIsNotNone(timeline):
+                return
             seg_duration = timeline.duration / float(len(timeline.segments))
         if timeline is not None:
             num_segments = len(self.segmentTemplate.segmentTimeline.segments)
             decode_time = timeline.segments[0].start
         else:
-            self.checkIsNotNone(self.mpd.timeShiftBufferDepth)
+            if not self.checkIsNotNone(self.mpd.timeShiftBufferDepth):
+                return
             num_segments = math.floor(self.mpd.timeShiftBufferDepth.total_seconds() *
                                       timescale / seg_duration)
             num_segments = int(num_segments)
@@ -1684,7 +1705,8 @@ if __name__ == "__main__":
                         type=int,
                         default=64,
                         required=False)
-    parser.add_argument('-v', '--verbose',
+    parser.add_argument('-v', '--verbose', '--debug',
+                        dest='verbose',
                         action='count',
                         help='increase verbosity',
                         default=0)
@@ -1709,7 +1731,7 @@ if __name__ == "__main__":
         bdv.save_manifest()
     done = False
     while not done:
-        if bdv.manifest.mpd_type != 'dynamic':
+        if bdv.manifest.mpd_type != 'dynamic' or args.duration:
             done = True
         try:
             bdv.validate()
