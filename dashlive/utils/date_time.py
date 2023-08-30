@@ -216,9 +216,24 @@ def DateTimeField(value):
         return from_isodatetime(value)
     return datetime.datetime(value)
 
-def scale_timedelta(delta: datetime.timedelta, num: int, denom: int) -> float:
-    """Scale the given timedelta, avoiding overflows"""
+def multiply_timedelta(delta: datetime.timedelta, num: int) -> int:
+    """
+    Multiply the given timedelta by :num: and return int floor
+    """
+    days = num * delta.days
     secs = num * delta.seconds
     msecs = num * delta.microseconds
-    secs += msecs / 1000000.0
+    secs += days * 86400
+    secs += int(msecs // 1000000)
+    return secs
+
+def scale_timedelta(delta: datetime.timedelta, num: int, denom: int) -> float:
+    """Scale the given timedelta, avoiding overflows"""
+    days = num * delta.days
+    secs = num * delta.seconds
+    msecs = num * delta.microseconds
+    secs += days * 86400
+    secs += msecs // 1000000.0
+    if denom == 1:
+        return secs
     return secs / float(denom)
