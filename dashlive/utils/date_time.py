@@ -50,6 +50,13 @@ duration_re = re.compile(r''.join([
     r'T((?P<hours>\d+)[H:])?((?P<minutes>\d+)[M:])?((?P<seconds>[\d.]+)S?)?$'
 ]))
 
+class RelaxedDateTime(datetime.datetime):
+    def replace(self, **kwargs):
+        if kwargs.get('hour', 0) > 23 and kwargs.get('day') is None:
+            kwargs['day'] = self.day + kwargs['hour'] // 24
+            kwargs['hour'] = kwargs['hour'] % 24
+        return super().replace(**kwargs)
+
 def from_iso_epoch(delta):
     rv = ISO_EPOCH + datetime.timedelta(seconds=delta)
     return rv

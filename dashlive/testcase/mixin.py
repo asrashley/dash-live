@@ -159,7 +159,7 @@ class TestCaseMixin:
                 msg = template.format(a, b)
             log = getattr(self, "log", None)
             if log is None:
-                log = logging.getLogger(self.classname)
+                log = logging.getLogger(self.classname())
             log.warning('%s', msg)
         return result
 
