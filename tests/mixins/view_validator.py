@@ -25,7 +25,7 @@ import urllib.parse
 
 from dashlive.server import models, routes
 from dashlive.testcase.mixin import HideMixinsFilter
-from tests.dash_validator import DashValidator, RepresentationInfo, ValidatorOptions
+from dashlive.mpeg.dash.validator import DashValidator, RepresentationInfo, ValidatorOptions
 
 class ViewsTestDashValidator(DashValidator):
     def __init__(self, http_client, mode, url, encrypted=False, xml=None, debug=False):
