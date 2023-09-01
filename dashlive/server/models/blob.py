@@ -9,9 +9,8 @@ from sqlalchemy.orm import relationship  # type: ignore
 from dashlive.utils.date_time import to_iso_datetime
 from .db import db
 from .mixin import ModelMixin
-from .session import DatabaseSession
 
-class Blob(db.Model, ModelMixin):
+class Blob(ModelMixin, db.Model):
     """
     Database model for a generic file store
     """
@@ -32,11 +31,11 @@ class Blob(db.Model, ModelMixin):
     mediafile = relationship("MediaFile", back_populates="blob")
 
     @classmethod
-    def all(cls, session: DatabaseSession) -> list["Blob"]:
+    def all(cls) -> list["Blob"]:
         """
         Return all items from this table
         """
-        return cast(list["Blob"], cls.get_all(session))
+        return cast(list["Blob"], cls.get_all())
 
     def toJSON(self, pure=False):
         rv = self.to_dict()
