@@ -325,14 +325,17 @@ class PopulateDatabase(ManagementBase):
     @classmethod
     def main(cls, argv: list[str]) -> None:
         ap = argparse.ArgumentParser(description='dashlive database population')
-        ap.add_argument('--debug', action="store_true")
+        ap.add_argument('--debug', action="store_true",
+                        help='Display debugging information when populating database')
+        ap.add_argument('--silent', action="store_true",
+                        help='Only show warnings and errors')
         ap.add_argument('--host', help='HTTP address of host to populate',
                         default="http://localhost:5000/")
         ap.add_argument('--username')
         ap.add_argument('--password')
         ap.add_argument('jsonfile', help='JSON file', nargs='+', default=None)
         args = ap.parse_args(argv)
-        mm_log = logging.getLogger('PopulateDatabase')
+        mm_log = logging.getLogger('management')
         ch = logging.StreamHandler()
         ch.setFormatter(logging.Formatter(
             '%(asctime)s - %(levelname)s: %(funcName)s:%(lineno)d: %(message)s'))
@@ -340,6 +343,8 @@ class PopulateDatabase(ManagementBase):
         if args.debug:
             logging.getLogger().setLevel(logging.DEBUG)
             mm_log.setLevel(logging.DEBUG)
+        elif args.silent:
+            mm_log.setLevel(logging.WARNING)
         else:
             mm_log.setLevel(logging.INFO)
         mm = cls(args.host, args.username, args.password)

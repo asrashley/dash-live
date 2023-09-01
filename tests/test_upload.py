@@ -123,6 +123,7 @@ class TestPopulateDatabase(FlaskTestBase):
             '--username', self.MEDIA_USER,
             '--password', self.MEDIA_PASSWORD,
             '--host', flask.url_for('home'),
+            '--silent',
             str(jsonfile),
         ]
         tmpdir = self.create_upload_folder()
