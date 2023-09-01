@@ -1051,6 +1051,59 @@ class SampleTableBox(BoxWithChildren):
     pass
 
 
+@fourcc('mvhd')
+class MovieHeaderBox(FullBox):
+    OBJECT_FIELDS = {
+        "creation_time": DateTimeField,
+        "modification_time": DateTimeField,
+        "matrix": ListOf(int),
+    }
+
+    @classmethod
+    def parse(clz, src, parent, options, **kwargs):
+        rv = FullBox.parse(src, parent, options=options, **kwargs)
+        r = FieldReader(clz.classname(), src, rv, debug=options.debug)
+        if rv['version'] == 1:
+            sz = 'Q'
+        else:
+            sz = 'I'
+        r.read(sz, 'creation_time')
+        r.read(sz, 'modification_time')
+        r.read('I', 'timescale')
+        r.read(sz, 'duration')
+        rv["creation_time"] = from_iso_epoch(rv["creation_time"])
+        rv["modification_time"] = from_iso_epoch(rv["modification_time"])
+        r.read('D16.16', 'rate')
+        r.read('D8.8', 'volume')
+        r.skip(10)  # reserved
+        rv["matrix"] = []
+        for i in range(9):
+            rv["matrix"].append(r.get('I', 'matrix'))
+        r.skip(6 * 4)  # pre_defined = 0
+        r.read('I', 'next_track_id')
+        return rv
+
+    def encode_box_fields(self, dest):
+        d = FieldWriter(self, dest)
+        if self.version == 1:
+            sz = 'Q'
+        else:
+            sz = 'I'
+        d.write(sz, 'creation_time',
+                value=to_iso_epoch(self.creation_time))
+        d.write(sz, 'modification_time',
+                value=to_iso_epoch(self.modification_time))
+        d.write('I', 'timescale')
+        d.write(sz, 'duration')
+        d.write('D16.16', 'rate')
+        d.write('D8.8', 'volume')
+        d.write(10, 'reserved', value=(b'\0' * 10))  # reserved
+        for value in self.matrix:
+            d.write('I', 'matrix', value=value)
+        d.write(6 * 4, 'reserved', value=(b'\0' * 6 * 4))  # reserved
+        d.write('I', 'next_track_id')
+
+
 class SampleEntry(Mp4Atom):
     @classmethod
     def parse(clz, src, parent, options, **kwargs):
