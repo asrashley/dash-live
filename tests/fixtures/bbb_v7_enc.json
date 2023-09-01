@@ -17,16 +17,32 @@
   "atom_type": "moov",
   "children": [
     {
-      "_type": "UnknownBox",
+      "_type": "MovieHeaderBox",
       "atom_type": "mvhd",
       "children": null,
-      "data": {
-	"_type": "utils.binary.Binary",
-	"b64": "AAAAANmVfgDZlX4AAAACWAAAAAAAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAg=="
-      },
+      "creation_time": "2019-09-04T14:43:12Z",
+      "duration": 0,
+      "flags": 0,
       "header_size": 8,
+      "matrix": [
+	65536,
+	0,
+	0,
+	0,
+	65536,
+	0,
+	0,
+	0,
+	1073741824
+      ],
+      "modification_time": "2019-09-04T14:43:12Z",
+      "next_track_id": 2,
       "position": 103,
-      "size": 108
+      "rate": 1.0,
+      "size": 108,
+      "timescale": 600,
+      "version": 0,
+      "volume": 1.0
     },
     {
       "_type": "MovieExtendsBox",
