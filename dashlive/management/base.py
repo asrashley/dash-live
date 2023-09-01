@@ -51,14 +51,12 @@ class ManagementBase:
         self.csrf_tokens = {}
         self.keys = {}
         self.streams: dict[str, StreamInfo] = {}
-        self.log = logging.getLogger(self.__class__.__name__)
+        self.log = logging.getLogger('management')
         self.user: UserInfo | None = None
 
     def url_for(self, name, **kwargs) -> str:
         route = routes[name]
-        # print('formatTemplate', route.formatTemplate)
         path = route.formatTemplate.format(**kwargs)
-        # print('path', path)
         return urllib.parse.urljoin(self.base_url, path)
 
     def login(self) -> bool:
