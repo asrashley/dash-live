@@ -1056,6 +1056,10 @@ class SampleTableBox(BoxWithChildren):
     pass
 
 
+@fourcc('udta')
+class UserDataBox(BoxWithChildren):
+    pass
+
 @fourcc('mvhd')
 class MovieHeaderBox(FullBox):
     OBJECT_FIELDS = {
