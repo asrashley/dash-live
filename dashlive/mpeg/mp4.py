@@ -625,6 +625,11 @@ class FileTypeBox(Mp4Atom):
             d.write(4, 'compatible_brand', value=bytes(cb, 'ascii'))
 
 
+@fourcc('styp')
+class SegmentTypeBox(FileTypeBox):
+    pass
+
+
 class Descriptor(ObjectWithFields):
     OBJECT_FIELDS = {
         'children': ListOf(ObjectWithFields),
