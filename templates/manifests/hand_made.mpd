@@ -45,7 +45,7 @@
          {%- if adp.content_type == "video" %}
            maxWidth="{{adp.maxWidth}}"
            maxHeight="{{adp.maxHeight}}"
-           maxFrameRate="{{adp.maxFrameRate}}"
+           maxFrameRate="{{adp.maxFrameRate | frameRateFraction}}"
            par="{{adp.par}}"
          {%- endif %}
          {%- if adp.lang and adp.lang != "und" %}
