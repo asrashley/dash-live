@@ -178,7 +178,6 @@ class BasicDashValidator(DashValidator):
             logging.getLogger('fio').setLevel(logging.DEBUG)
         if args.ivsize is not None and args.ivsize > 16:
             args.ivsize = args.ivsize // 8
-        manifest = args.manifest
         bdv = cls(args.manifest, args)
         bdv.load()
         if args.dest:

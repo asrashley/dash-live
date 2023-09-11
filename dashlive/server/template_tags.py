@@ -207,13 +207,8 @@ def isoDuration(value):
 def frameRateFraction(value):
     if (value - int(value)) < 0.01:
         return int(value)
-    a = int(round(value * 1001))
-    b = int(round(value * 1000))
-    option_a = float(a) / 1001.0
-    option_b = float(b) / 1000.0
-    if abs(value - option_a) < abs(value - option_b):
-        return f'{a}/1001'
-    return f'{b}/1000'
+    num = int(round(value * 1001))
+    return f'{num}/1001'
 
 @custom_tags.app_template_filter()
 def length(value: str | None) -> int:
