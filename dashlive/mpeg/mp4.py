@@ -2023,8 +2023,9 @@ class HandlerBox(FullBox):
         src.read(12)  # const unsigned int(32)[3] reserved = 0;
         name_len = rv["position"] + rv["size"] - src.tell()
         name_bytes = src.read(name_len)
-        while name_bytes[len(name_bytes) - 1] == 0:
+        while name_len and name_bytes[-1] == 0:
             name_bytes = name_bytes[:-1]
+            name_len -= 1
         rv["name"] = str(name_bytes, 'utf-8')
         return rv
 
