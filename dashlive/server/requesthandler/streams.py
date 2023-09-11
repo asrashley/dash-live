@@ -29,6 +29,7 @@ from flask_login import current_user
 
 from dashlive.drm.playready import PlayReady
 from dashlive.server import models
+from dashlive.server.routes import Route
 from dashlive.utils.json_object import JsonObject
 
 from .base import HTMLHandlerBase, DeleteModelBase
@@ -303,6 +304,11 @@ class EditStream(HTMLHandlerBase):
             for fld in context['fields']:
                 fld['disabled'] = True
         return context
+
+    def get_breadcrumbs(self, route: Route) -> list[dict[str, str]]:
+        crumbs = super().get_breadcrumbs(route)
+        crumbs[-1]['title'] = current_stream.directory
+        return crumbs
 
 class DeleteStream(DeleteModelBase):
     MODEL_NAME = 'stream'

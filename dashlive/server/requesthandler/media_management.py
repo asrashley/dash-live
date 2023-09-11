@@ -163,6 +163,7 @@ class MediaInfo(HTMLHandlerBase):
             'title': current_stream.directory,
             'href': flask.url_for('view-stream', spk=current_stream.pk),
         })
+        breadcrumbs[-1]['title'] = current_media_file.name
         return breadcrumbs
 
     @login_required(permission=models.Group.MEDIA, html=True)
@@ -284,6 +285,21 @@ class MediaSegmentList(HTMLHandlerBase):
         })
         return flask.render_template('media/segment_list.html', **context)
 
+    def get_breadcrumbs(self, route: Route) -> list[dict[str, str]]:
+        crumbs = super().get_breadcrumbs(route)
+        stream_crumb = {
+            'title': current_stream.directory,
+            'href': flask.url_for('view-stream', spk=current_stream.pk),
+        }
+        crumbs.insert(-1, stream_crumb)
+        media_info = {
+            'title': current_media_file.name,
+            'href': flask.url_for(
+                'media-info', spk=current_stream.pk, mfid=current_media_file.pk),
+        }
+        crumbs.insert(-1, media_info)
+        return crumbs
+
 
 class MediaSegmentInfo(HTMLHandlerBase):
     """
@@ -294,6 +310,10 @@ class MediaSegmentInfo(HTMLHandlerBase):
 
     def get(self, spk: int, mfid: int, segnum: int) -> flask.Response:
         context = self.create_context()
+        if segnum == 0:
+            context['breadcrumbs'][-1]['title'] = 'Init Segment'
+        else:
+            context['breadcrumbs'][-1]['title'] = f'Segment {segnum}'
         frag = current_media_file.representation.segments[int(segnum)]
         options = mp4.Options(cache_encoded=True)
         if current_media_file.representation.encrypted:
@@ -345,6 +365,28 @@ class MediaSegmentInfo(HTMLHandlerBase):
             'object_name': self.object_name,
         })
         return flask.render_template('media/segment_info.html', **context)
+
+    def get_breadcrumbs(self, route: Route) -> list[dict[str, str]]:
+        crumbs = super().get_breadcrumbs(route)
+        stream_crumb = {
+            'title': current_stream.directory,
+            'href': flask.url_for('view-stream', spk=current_stream.pk),
+        }
+        crumbs.insert(-1, stream_crumb)
+        media_info = {
+            'title': current_media_file.name,
+            'href': flask.url_for(
+                'media-info', spk=current_stream.pk, mfid=current_media_file.pk),
+        }
+        crumbs.insert(-1, media_info)
+        all_segments = {
+            'title': 'Segments',
+            'href': flask.url_for(
+                'list-media-segments', spk=current_stream.pk,
+                mfid=current_media_file.pk),
+        }
+        crumbs.insert(-1, all_segments)
+        return crumbs
 
     @staticmethod
     def object_name(obj: str | JsonObject) -> str:
