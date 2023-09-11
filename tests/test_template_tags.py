@@ -171,6 +171,27 @@ class TestTemplateTags(unittest.TestCase):
         actual = tags.sort_icon('name', 'other', True)
         self.assertEqual('', actual)
 
+    def test_frame_rate_fraction(self) -> None:
+        test_cases = [
+            (24.0, 24, None),
+            (25.0, 25, None),
+            (30.0, 30, None),
+            (23.976023976023976023976023976023976023, 24000, 1001),
+            (24000.0 / 1001.0, 24000, 1001),
+            (29.97, 29970, 1000),
+            (30.0 / 1.001, 30000, 1001),
+            (48.0, 48, None),
+            (59.94005994005994, 60000, 1001),
+            (60.0 / 1.001, 60000, 1001),
+            (59.94, 59940, 1000),
+        ]
+        for inp, num, denom in test_cases:
+            result = tags.frameRateFraction(inp)
+            if denom is None:
+                self.assertEqual(result, num)
+            else:
+                self.assertEqual(f'{num}/{denom}', result)
+
 
 if __name__ == '__main__':
     logging.basicConfig()

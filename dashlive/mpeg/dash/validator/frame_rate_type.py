@@ -15,7 +15,7 @@ class FrameRateType(TestCaseMixin):
     def __init__(self, num, denom=1):
         if isinstance(num, str):
             match = self.pattern.match(num)
-            self.checkIsNotNone(match, 'Invalid frame rate "{}", pattern is "{}"'.format(
+            self.assertIsNotNone(match, 'Invalid frame rate "{}", pattern is "{}"'.format(
                 num, self.pattern.pattern))
             num = int(match.group(1), 10)
             if match.group(2):
