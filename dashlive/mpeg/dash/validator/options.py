@@ -10,6 +10,8 @@ from logging import Logger
 
 from dashlive.utils.date_time import RelaxedDateTime, UTC
 
+from .progress import Progress
+
 @dataclass(slots=True, kw_only=True)
 class ValidatorOptions:
     """
@@ -24,5 +26,6 @@ class ValidatorOptions:
     prefix: str | None = None
     verbose: bool = False
     start_time: RelaxedDateTime = field(default_factory=lambda: RelaxedDateTime.now(UTC()))
-    log: Logger = field(init=False)
+    progress: Progress | None = None
+    log: Logger | None = None
     manifest: str = field(init=False)

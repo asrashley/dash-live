@@ -1,0 +1,45 @@
+{% extends 'layout.html' %}
+
+{% block firstscript %}
+{% endblock %}
+
+{% block extraheaders %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/font-awesome.css') }}" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/validator.css') }}" />
+{% endblock %}
+
+{% block content %}
+<div id="validator" class="container">
+  <form
+    {% if submit_url %}action="{{submit_url}}"{% endif %}
+    method="POST"
+    id="manifest-form"
+    name="manifest"
+    class="card"
+    >
+    {%- for field in form %}
+    <div class="form-actions">
+      {% include 'input-field.html' %}
+    </div>
+    {%- endfor %}
+    <div class="form-actions">
+      <button type="submit" id="submit" class="btn btn-primary">Validate DASH stream</button>
+      <button id="btn-cancel" disabled class="btn btn-secondary">Cancel</button>
+    </div>
+  </form>
+  <div class="card progress">
+    <div class="progress-bar progress-bar-striped bg-info progress-bar-animated" role="progressbar"
+	 aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
+	 style="visibility:hidden">0%</div>
+    <div class="progress-text"></div>
+  </div>
+  <div class="card results"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ import_script("jquery-3.7.1") }}
+{{ import_script("socket.io") }}
+<script src="{{ url_for('static', filename='js/validator.js')}}" type="text/javascript"></script>
+{% endblock %}

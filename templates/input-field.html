@@ -11,12 +11,15 @@
       <input
     {% endif %}
     class="form-control" type="{{field.type}}" name="{{field.name}}"
-    id="model-{{field.name}}" title="{{model.title}}"
+	id="model-{{field.name}}"
+	{%- if model %} title="{{model.title}}" {% endif %}
     {%- if field.type == 'checkbox' %}
     {%- if field.value %} checked{% endif %}
     {% else %}
     {%- if field.value %} value="{{field.value}}"{% endif %}
     {% endif %}
+    {%- if field.min %} min="{{field.min}}"{% endif %}
+    {%- if field.max %} max="{{field.max}}"{% endif %}
     {%- if field.minlength %} minlength="{{field.minlength}}"{% endif %}
     {%- if field.maxlength %} maxlength="{{field.maxlength}}"{% endif %}
     {%- if field.pattern %} pattern="{{field.pattern}}"{% endif %}

@@ -256,6 +256,11 @@ class Representation(RepresentationBaseType):
                 if decode_time >= (self.options.duration * timescale):
                     return
 
+    def num_tests(self, depth: int = -1) -> int:
+        if depth == 0:
+            return 0
+        return 1 + len(self.media_segments)
+
     def validate(self, depth: int = -1) -> None:
         self.checkIsNotNone(self.bandwidth, 'bandwidth is a mandatory attribute')
         self.checkIsNotNone(self.id, 'id is a mandatory attribute')
@@ -285,7 +290,8 @@ class Representation(RepresentationBaseType):
         else:
             # parent ContentProtection elements checked in parent's validate()
             self.checkEqual(len(self.contentProtection), 0)
-        if depth == 0:
+        self.progress.inc()
+        if depth == 0 or self.progress.aborted():
             return
         if self.mode == "odvod":
             self.check_on_demand_profile()
@@ -297,6 +303,8 @@ class Representation(RepresentationBaseType):
         # next_seg_num = self.media_segments[0].seg_num
         self.log.debug('starting next_decode_time: %s', str(next_decode_time))
         for seg in self.media_segments:
+            if self.progress.aborted():
+                return
             seg.set_info(info)
             if seg.decode_time is None:
                 self.checkIsNotNone(next_decode_time)
@@ -306,9 +314,11 @@ class Representation(RepresentationBaseType):
                     next_decode_time, seg.decode_time,
                     '{}: expected decode time {} but got {}'.format(
                         seg.url, next_decode_time, seg.decode_time))
+                next_decode_time = seg.decode_time
             if seg.seg_range is None and seg.url in info.tested_media_segment:
                 next_decode_time = seg.next_decode_time
                 continue
+            self.progress.text(seg.url)
             moof = seg.validate(depth - 1)
             self.checkIsNotNone(moof)
             if seg.seg_num is None:
@@ -318,7 +328,8 @@ class Representation(RepresentationBaseType):
                 if not sample.duration:
                     sample.duration = info.moov.mvex.trex.default_sample_duration
                 next_decode_time += sample.duration
-            seg.next_decode_time = next_decode_time
+            self.log.debug('Segment time span: %d -> %d', seg.decode_time, next_decode_time)
+            self.progress.inc()
 
     def check_live_profile(self):
         self.checkIsNotNone(self.segmentTemplate)

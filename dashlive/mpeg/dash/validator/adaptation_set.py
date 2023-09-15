@@ -36,6 +36,14 @@ class AdaptationSet(RepresentationBaseType):
                 break
         self.representations = [Representation(r, self) for r in reps]
 
+    def num_tests(self, depth: int = -1) -> int:
+        if depth == 0:
+            return 0
+        count = len(self.contentProtection) + len(self.representations)
+        for rep in self.representations:
+            count += rep.num_tests(depth - 1)
+        return count
+
     def validate(self, depth: int = -1) -> None:
         if len(self.contentProtection):
             self.checkIsNotNone(
@@ -54,10 +62,14 @@ class AdaptationSet(RepresentationBaseType):
             return
         for cp in self.contentProtection:
             cp.validate(depth - 1)
+            self.progress.inc()
         for rep in self.representations:
+            if self.progress.aborted():
+                return
             try:
                 rep.validate(depth - 1)
             except (AssertionError, ValidationException) as err:
                 if self.options.strict:
                     raise
                 self.log.error(err, exc_info=err)
+            self.progress.inc()

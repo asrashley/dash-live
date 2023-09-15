@@ -146,6 +146,10 @@ routes = {
         r'/streams/add',
         handler='streams.AddStream',
         title='Add stream'),
+    "validate-stream": Route(
+        r'/validate/',
+        handler='htmlpage.DashValidator',
+        title='DASH Validator'),
     "view-stream": Route(
         r'/stream/<int:spk>',
         handler='streams.EditStream',

@@ -218,3 +218,30 @@ class ViewManifest(HTMLHandlerBase):
             'mpd_url': mpd_url,
         })
         return flask.render_template('manifest.html', **context)
+
+
+class DashValidator(HTMLHandlerBase):
+    """
+    Responds with an HTML page that allows a manifest to be validated
+    """
+
+    def get(self):
+        context = self.create_context()
+        context['form'] = [{
+            "name": "manifest",
+            "title": "Select Manifest",
+            "type": "url",
+            "placeholder": "DASH manifest URL",
+        }, {
+            'name': 'duration',
+            'title': 'Maximum duration',
+            'type': 'number',
+            'value': 30,
+            'min': 1,
+            'max': 3600,
+        }, {
+            'name': 'verbose',
+            'title': 'Verbose output',
+            'type': 'checkbox',
+        }]
+        return flask.render_template('validator.html', **context)
