@@ -33,7 +33,9 @@ from .manifest import Manifest
 from .options import ValidatorOptions
 
 class DashValidator(DashElement):
-    def __init__(self, url, http_client, mode=None, options=None, xml=None):
+    def __init__(self, url, http_client,
+                 mode: str | None = None, options: ValidatorOptions | None = None,
+                 xml: str | None = None) -> None:
         DashElement.init_xml_namespaces()
         super().__init__(None, parent=None, options=options)
         self.http = http_client
@@ -70,6 +72,7 @@ class DashValidator(DashElement):
     def validate(self, depth=-1):
         if self.xml is None:
             self.load()
+        self.progress.reset(self.manifest.num_tests(depth))
         if self.options.save:
             self.save_manifest()
         if self.mode == 'live' and self.prev_manifest is not None:

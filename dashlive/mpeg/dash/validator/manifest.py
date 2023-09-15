@@ -48,6 +48,14 @@ class Manifest(DashElement):
     def mpd(self):
         return self
 
+    def num_tests(self, depth: int = -1) -> int:
+        if depth == 0:
+            return 0
+        count = len(self.periods)
+        for period in self.periods:
+            count += period.num_tests(depth - 1)
+        return count
+
     def validate(self, depth=-1):
         self.checkGreaterThan(len(self.periods), 0,
                               "Manifest does not have a Period element: %s" % self.url)
@@ -88,3 +96,4 @@ class Manifest(DashElement):
         if depth != 0:
             for period in self.periods:
                 period.validate(depth - 1)
+                self.progress.inc()

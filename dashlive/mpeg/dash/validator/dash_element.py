@@ -15,13 +15,22 @@ from lxml import etree as ET
 
 from dashlive.testcase.mixin import TestCaseMixin
 from dashlive.utils.date_time import to_iso_datetime
+from .progress import Progress
 
 class ContextAdapter(logging.LoggerAdapter):
-    def process(self, msg, kwargs):
+    def process(self, msg: str, kwargs) -> tuple[str, dict]:
         url = getattr(self.extra, "url", None)
         if url is not None and 'http' not in msg:
-            return f'{msg}\n    "{url}"\n', kwargs
-        return msg, kwargs
+            return (f'{msg}\n    "{url}"\n', kwargs,)
+        return (msg, kwargs,)
+
+
+class NullProgress(Progress):
+    def send_progress(self, pct: float, text: str) -> None:
+        pass
+
+    def aborted(self) -> bool:
+        return False
 
 
 class DashElement(TestCaseMixin):
@@ -49,11 +58,16 @@ class DashElement(TestCaseMixin):
             self.http = parent.http
             self.errors = parent.errors
             self.filenames = parent.filenames
+            self.progress = parent.progress
         else:
             assert options is not None
             self.options = options
             self.errors = []
             self.filenames = set()
+            if options.progress is None:
+                self.progress = NullProgress()
+            else:
+                self.progress = options.progress
         # self.log = logging.getLogger(self.classname())
         #    log.addFilter(mixins.HideMixinsFilter())
         self.log = ContextAdapter(self.options.log, self)
@@ -114,6 +128,13 @@ class DashElement(TestCaseMixin):
     def init_xml_namespaces(clz):
         for prefix, url in clz.xmlNamespaces.items():
             ET.register_namespace(prefix, url)
+
+    def num_tests(self, depth: int = -1) -> int:
+        """
+        Returns count of number of tests performed within this element.
+        Used for progress reporting
+        """
+        return 0
 
     @abstractmethod
     def validate(self, depth=-1) -> Never:

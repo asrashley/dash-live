@@ -31,10 +31,12 @@ import secrets
 from dotenv import load_dotenv
 from flask import Flask, request  # type: ignore
 from flask_login import LoginManager
+from flask_socketio import SocketIO
 from sqlalchemy import URL
 from werkzeug.routing import BaseConverter  # type: ignore
 
 from dashlive.server import models
+from dashlive.server.requesthandler.websocket import WebsocketHandler
 from dashlive.utils.json_object import JsonObject
 from .anonymous_user import AnonymousUser
 from .routes import routes
@@ -190,4 +192,9 @@ def create_app(config: JsonObject | None = None,
         models.Token.prune_database(all_csrf=True)
 
     app.register_blueprint(custom_tags)
+    socketio = SocketIO(app)
+    wss = WebsocketHandler(socketio)
+    socketio.on_event('connect', wss.connect)
+    socketio.on_event('disconnect', wss.disconnect)
+    socketio.on_event('cmd', wss.event_handler)
     return app

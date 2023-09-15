@@ -267,6 +267,14 @@ class TestHtmlPageHandlers(FlaskTestBase):
         finally:
             self.current_url = None
 
+    def test_validate_page(self):
+        self.setup_media()
+        url = flask.url_for('validate-stream')
+        response = self.client.get(url)
+        self.assertEqual(response.status, '200 OK')
+        html = BeautifulSoup(response.text, 'lxml')
+        self.assertIsNotNone(html)
+
 
 if __name__ == "__main__":
     unittest.main()
