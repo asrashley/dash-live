@@ -1,18 +1,21 @@
-<div class="form-group row">
+<div class="form-group row mb-3">
   {% if field.type != "hidden" %}
   <label class="col-sm-2 col-form-label" for="model-{{field.name}}">
     {{ field.title }}:
   </label>
-  <div class="col-sm-10">
+  <div {% if field.text %}class="col-sm-5" {% else %}class="col-sm-10" {% endif %}>
   {% endif %}
     {% if field.type == "select" %}
       <select
     {% else %}
       <input
     {% endif %}
-    class="form-control" type="{{field.type}}" name="{{field.name}}"
-	id="model-{{field.name}}"
-	{%- if model %} title="{{model.title}}" {% endif %}
+	type="{{ field.type }}"
+	name="{{ field.name }}"
+	id="model-{{ field.name }}"
+    {%- if field.type != 'checkbox' %} class="form-control" {% endif %}
+    {%- if model %} title="{{model.title}}" {% endif %}
+    {%- if field.text %} aria-describedby="text-{{ field.name }}" {% endif %}
     {%- if field.type == 'checkbox' %}
     {%- if field.value %} checked{% endif %}
     {% else %}
@@ -36,8 +39,11 @@
       </select>
       {% else %}
     />
-    {% endif %}
+      {% endif %}
   {% if field.type != "hidden" %}
   </div>
   {% endif %}
+  {%- if field.text %}
+  <div class="form-text col-sm-5" id="text-{{ field.name }}">{{ field.text }}</div>
+  {%- endif %}
 </div>

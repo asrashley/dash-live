@@ -218,7 +218,7 @@ def length(value: str | None) -> int:
 
 @custom_tags.app_template_global()
 def import_script(filename: str) -> ScriptTag:
-    debug = current_app.config['DEBUG']
+    debug = current_app.config.get('JS_DEBUG', False)
     return ScriptTag(filename, debug)
 
 @custom_tags.app_template_global()

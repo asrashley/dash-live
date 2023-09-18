@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
     <head>
         <meta charset="utf-8">
@@ -50,6 +50,7 @@
       {% block scripts %}
       {{import_script("jquery-3.7.1")}}
       {{import_script("bootstrap.bundle")}}
+      <script src="{{url_for('static', filename='js/main.js')}}" type="text/javascript"></script>
       {% endblock %}
       {% block extrascripts %}{% endblock %}
     </body>

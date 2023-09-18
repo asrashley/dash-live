@@ -236,6 +236,7 @@ class DashValidator(HTMLHandlerBase):
             'name': 'duration',
             'title': 'Maximum duration',
             'type': 'number',
+            'text': 'seconds',
             'value': 30,
             'min': 1,
             'max': 3600,
