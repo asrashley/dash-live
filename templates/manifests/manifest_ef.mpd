@@ -29,7 +29,7 @@
       <Representation
           bandwidth="{{rep.bitrate}}"
           id="{{rep.id}}"
-          frameRate="{{rep.frameRate}}"
+          frameRate="{{ rep.frameRate | frameRateFraction }}"
           mimeType="video/mp4"
           width="{{rep.width}}"
           sar="{{rep.sar}}"

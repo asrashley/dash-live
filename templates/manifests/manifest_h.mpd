@@ -38,7 +38,7 @@
               width="{{rep.width}}"
               height="{{rep.height}}"
               bandwidth="{{rep.bitrate}}"
-              frameRate="{{rep.frameRate}}"
+              frameRate="{{ rep.frameRate | frameRateFraction }}"
               sar="{{rep.sar}}"
               scanType="{{rep.scanType}}" />
           {%- if loop.last %}

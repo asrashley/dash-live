@@ -47,7 +47,7 @@
           codecs="{{rep.codecs}}"
           width="{{rep.width}}"
           height="{{rep.height}}"
-          frameRate="{{rep.frameRate}}">
+          frameRate="{{ rep.frameRate | frameRateFraction }}">
         </Representation>
       {% endfor %}
     </AdaptationSet>

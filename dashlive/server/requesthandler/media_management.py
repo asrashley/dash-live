@@ -266,9 +266,9 @@ class MediaSegmentList(HTMLHandlerBase):
             else:
                 item.update({
                     'duration': '',
-                    'duration_time': '',
+                    'duration_time': None,
                     'start': '',
-                    'start_time': '',
+                    'start_time': None,
                 })
             segments.append(item)
         if self.is_ajax():
