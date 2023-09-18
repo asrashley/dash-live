@@ -1,3 +1,7 @@
+@import "boilerplate";
+@import "fluid960";
+@import "prefixer";
+
 @blue: #43a1f7;
 @darkGrey: #777;
 @lightGrey: #eee;
@@ -8,18 +12,11 @@
 
 @tableHeadingBack: #999;
 @tableHeadingBackDark: #777;
-@navbarActiveColor: #0808c4;
-
-:root {
-    --bs-link-hover-color-rgb: 8,8,192;
-    --bs-navbar-active-color: @navbarActiveColor;
-    --bs-tertiary-bg-rgb: 240,241,243;
-}
 
 body {
     font-family: "Lucida Grande", Helvetica, Arial, sans-serif;
     margin: 0;
-    padding: 0;
+    padding: 0xs;
 }
 
 header {
@@ -29,6 +26,23 @@ header {
     padding: 0;
     width: 100%;
     position: relative;
+    .user {
+	display:block;
+	position: absolute;
+	right: 1em;
+	z-index: 10;
+	border: 1px solid #777;
+	background-color: #ddd;
+	padding: 0.2em 0.5em;
+	box-shadow: 0 1px 0 0 rgba(255,255,255,0.4), 0 0 4px 0 #377ad0;
+	> li {
+	    display: inline-block;
+	    margin-left: 1em;
+	    a:hover {
+		background-color:#335363;
+	    }
+	}
+    }
     .title {
 	color: @blue;
 	padding: 0;
@@ -38,36 +52,24 @@ header {
 	    content: ">";
 	}
     }
-    .navbar {
-	padding: 0 1em 1em;
-	.navbar-brand,
-	.navbar-brand:hover {
-	    color: @blue;
-	}
-	.nav-link.active {
-	    color: @navbarActiveColor;
-	    font-weight: bold;
-	}
-	.user-login {
-	    position: absolute;
-	    right: 1em;
-	}
+    .navbar > .navbar-brand,
+    .navbar > .navbar-brand:hover {
+	color: @blue;
     }
     .breadcrumbs {
-	border-bottom: 2px solid @darkBlue;
-	font-size: 1.1rem;
-	line-height: 1rem;
-	padding: 0.1em 1em 0.25em;
-
 	.breadcrumb {
 	    margin-bottom: 0;
 	    margin-top: 0;
 	}
+	border-bottom: 2px solid @darkBlue;
+	font-size: 1.1rem;
+	line-height: 1rem;
     }
 }
 
 a {
 	text-decoration: none;
+	color: inherit;
 }
 
 .link {
@@ -402,9 +404,6 @@ a {
     text-align: left;
     width: 35rem;
   }
-  .manifest-title {
-      color: black;
-  }
   .option {
     padding-right: 2.5em;
     width: 35rem;
@@ -499,9 +498,6 @@ div.representations, div.cgi-parameters {
     font-size: 1rem;
     table-layout: fixed;
     width: auto;
-    & > tbody > tr > td {
-	border-bottom-width: 0;
-    }
     .filename {
       width: 8em;
       font-stretch: condensed;
@@ -546,9 +542,6 @@ div.representations, div.cgi-parameters {
     input {
 	width: 23em;
     }
-    & > tbody > tr > td {
-	border-bottom-width: 0;
-    }
     .kid, .key {
 	vertical-align: middle;
     }
@@ -568,9 +561,6 @@ div.representations, div.cgi-parameters {
   }
   #streams {
       table-layout: fixed;
-      & > tbody > tr > td {
-	  border-bottom-width: 0;
-      }
       .stream-actions {
 	  width: 12em;
 	  text-align: center;
@@ -639,9 +629,6 @@ div.representations, div.cgi-parameters {
     }
     .start, .duration, .size {
 	width: 6em;
-    }
-    th {
-	border-right-width: 1px;
     }
     th.start, th.duration {
 	width: 12em;

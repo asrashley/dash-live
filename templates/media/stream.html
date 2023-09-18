@@ -17,13 +17,15 @@
   {% include 'edit-model-form.html' %}
   <div id="exampleManifestTabs">
     <ul class="nav nav-tabs" id="exampleManifests" role="tablist">
-      <li class="nav-item">
-	<a class="nav-link active" id="clear-tab" data-toggle="tab" href="#clear"
-	   role="tab" aria-controls="clear" aria-selected="true">Clear</a>
+      <li class="nav-item" role="presentation">
+	<a class="nav-link active" id="clear-tab" data-bs-toggle="tab" href="#clear"
+	   role="tab" aria-controls="clear" aria-selected="true"
+	   data-bs-target="#clear">Clear</a>
       </li>
-      <li class="nav-item">
-	<a class="nav-link" id="encrypted-tab" data-toggle="tab" href="#encrypted"
-	   role="tab" aria-controls="encrypted" aria-selected="false">Encrypted</a>
+      <li class="nav-item" role="presentation">
+	<a class="nav-link" id="encrypted-tab" data-bs-toggle="tab" href="#encrypted"
+	   role="tab" aria-controls="encrypted" aria-selected="false"
+	   data-bs-target="#encrypted">Encrypted</a>
       </li>
     </ul>
     <div class="tab-content" id="exampleManifestsContent">

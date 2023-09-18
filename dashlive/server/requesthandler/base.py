@@ -74,39 +74,18 @@ class RequestHandlerBase(MethodView):
     INJECTED_ERROR_CODES = [404, 410, 503, 504]
 
     def create_context(self, **kwargs):
-        route = routes[flask.request.endpoint]
         context = {
-            "title": kwargs.get('title', route.title),
             "http_protocol": flask.request.scheme,
-            "breadcrumbs": self.get_breadcrumbs(route),
         }
         context.update(kwargs)
         if current_user.is_authenticated:
-            context['logout'] = flask.url_for('logout')
             context["is_current_user_admin"] = current_user.is_admin
-        else:
-            context['login'] = flask.url_for('login')
         context['remote_addr'] = flask.request.remote_addr
         context['request_uri'] = flask.request.url
         if self.is_https_request():
             context['request_uri'] = context['request_uri'].replace(
                 'http://', 'https://')
         return context
-
-    def get_breadcrumbs(self, route: Route) -> list[dict[str, str]]:
-        breadcrumbs = [{
-            'title': route.page_title(),
-            'active': 'active'
-        }]
-        p: str | None = route.parent
-        while p:
-            rt: Route = routes[p]
-            breadcrumbs.insert(0, {
-                "title": rt.page_title(),
-                "href": flask.url_for(rt.name)
-            })
-            p = rt.parent
-        return breadcrumbs
 
     def generate_csrf_cookie(self) -> str:
         """
@@ -773,10 +752,64 @@ class HTMLHandlerBase(RequestHandlerBase):
 
     def create_context(self, **kwargs):
         context = super().create_context(**kwargs)
+        route = routes[flask.request.endpoint]
+        navbar = [{
+            'title': 'Home', 'href': flask.url_for('home')
+        }, {
+            'title': 'Streams', 'href': flask.url_for('list-streams')
+        }, {
+            'title': 'Validate', 'href': flask.url_for('validate-stream')
+        }]
+        if current_user.is_authenticated:
+            if current_user.is_admin:
+                navbar.append({
+                    'title': 'Users', 'href': flask.url_for('list-users')
+                })
+            else:
+                navbar.append({
+                    'title': 'My Account', 'href': flask.url_for('change-password')
+                })
+            navbar.append({
+                'title': 'Log Out',
+                'class': 'user-login',
+                'href': flask.url_for('logout')
+            })
+        else:
+            navbar.append({
+                'title': 'Log In',
+                'class': 'user-login',
+                'href': flask.url_for('login')
+            })
+        found_active = False
+        for nav in navbar[1:]:
+            if flask.request.path.startswith(nav['href']):
+                nav['active'] = True
+                found_active = True
+                break
+        if not found_active:
+            navbar[0]['active'] = True
         context.update({
+            "title": kwargs.get('title', route.title),
+            "breadcrumbs": self.get_breadcrumbs(route),
+            "navbar": navbar,
             'routes': routes,
         })
         return context
+
+    def get_breadcrumbs(self, route: Route) -> list[dict[str, str]]:
+        breadcrumbs = [{
+            'title': route.page_title(),
+            'active': 'active'
+        }]
+        p: str | None = route.parent
+        while p:
+            rt: Route = routes[p]
+            breadcrumbs.insert(0, {
+                "title": rt.page_title(),
+                "href": flask.url_for(rt.name)
+            })
+            p = rt.parent
+        return breadcrumbs
 
 
 class DeleteModelBase(HTMLHandlerBase):

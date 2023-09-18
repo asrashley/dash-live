@@ -12,17 +12,23 @@
       <table class="table table-striped segment-list">
 	<thead>
 	  <tr>
-	    <th class="seg-num">#</th>
+	    <th class="seg-num" rowspan="2">#</th>
 	    <th class="text-center start" colspan="2">Start</th>
 	    <th class="text-center duration" colspan="2">Duration</th>
-	    <th class="text-right position">Position</th>
-	    <th class="text-right size">Size</th>
+	    <th class="text-end position" rowspan="2">Position</th>
+	    <th class="text-end size" rowspan="2">Size</th>
+	  </tr>
+	  <tr>
+	    <th class="text-center start">Timescale</th>
+	    <th class="text-center start">Time</th>
+	    <th class="text-center duration">Timescale</th>
+	    <th class="text-center duration">Time</th>
 	  </tr>
 	</thead>
 	<tbody>
 	  {% for seg in segments %}
 	  <tr>
-	    <td class="text-right seg-num">
+	    <td class="text-end seg-num">
 	      <a class="text-primary"
 		href="{{ url_for('view-media-segment', spk=stream.pk, mfid=mediafile.pk, segnum=loop.index0) }}">
 	      {%- if loop.first %}

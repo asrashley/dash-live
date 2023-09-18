@@ -11,8 +11,9 @@ src/server/settings.py
 static/css/boilerplate.css
 static/css/fluid960.css
 static/css/helpers.css
-static/css/prefixer.css
+static/css/legacy.css
 static/css/main.css
+static/css/prefixer.css
 static/css/validator.css
 static/css/video.css
 tests/runner.py
