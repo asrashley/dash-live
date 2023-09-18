@@ -29,7 +29,7 @@ type="dynamic"
     startWithSAP="1"
     maxWidth="{{ video.maxWidth }}"
     maxHeight="{{ video.maxHeight }}"
-    maxFrameRate="{{ video.maxFrameRate }}"
+    maxFrameRate="{{ video.maxFrameRate | frameRateFraction }}"
     par="16:9">
         <SegmentTemplate
             presentationTimeOffset="{{ video.presentationTimeOffset }}"
@@ -48,7 +48,7 @@ type="dynamic"
           mimeType="video/mp4"
           startWithSAP="{{rep.startWithSAP}}"
           bandwidth="{{rep.bitrate}}"
-          frameRate="{{rep.frameRate}}"
+          frameRate="{{ rep.frameRate | frameRateFraction }}"
           sar="{{rep.sar}}"
           scanType="{{rep.scanType}}" />
     {% endfor %}

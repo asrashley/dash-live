@@ -71,7 +71,26 @@ def dateTimeFormat(value: str | datetime.datetime | None, fmt: str) -> str:
             value = from_isodatetime(value)
         else:
             value = parse_date(value)
+        if value is None:
+            return value
     return value.strftime(fmt)
+
+@custom_tags.app_template_filter()
+def timeDelta(value: datetime.timedelta | None) -> str:
+    if value is None:
+        return ''
+    ticks = value / datetime.timedelta(milliseconds=10)
+    seconds = int(ticks // 100)
+    mins = int(seconds // 60)
+    hours = int(mins // 60)
+    mins %= 60
+    seconds %= 60
+    ticks = int(ticks) % 100
+    if hours:
+        return f'{hours:d}:{mins:#02d}:{seconds:#02d}.{ticks:#02d}'
+    if mins:
+        return f'{mins:d}:{seconds:#02d}.{ticks:#02d}'
+    return f'{seconds:#02d}.{ticks:#02d}'
 
 @custom_tags.app_template_filter()
 def default(value: Any, default_value: Any) -> Any:

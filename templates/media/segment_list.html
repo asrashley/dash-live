@@ -38,12 +38,12 @@
 	      {%- endif %}
 	      </a>
 	    </td>
-	    <td class="text-right start">{{ seg.start }}</td>
-	    <td class="text-right start">{{ seg.start_time }}</td>
-	    <td class="text-right duration">{{ seg.duration }}</td>
-	    <td class="text-right duration">{{ seg.duration_time }}</td>
-	    <td class="text-right position">{{ seg.position }}</td>
-	    <td class="text-right size">{{ seg.size }}</td>
+	    <td class="text-end start">{{ seg.start }}</td>
+	    <td class="text-end start">{{ seg.start_time | timeDelta }}</td>
+	    <td class="text-end duration">{{ seg.duration }}</td>
+	    <td class="text-end duration">{{ seg.duration_time | timeDelta }}</td>
+	    <td class="text-end position">{{ seg.position }}</td>
+	    <td class="text-end size">{{ seg.size }}</td>
 	  </tr>
 	  {% endfor %}
 	</tbody>

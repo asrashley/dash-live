@@ -17,9 +17,32 @@ class TestTemplateTags(unittest.TestCase):
                 "%H:%M:%S %d/%m/%Y",
                 '20:10:02 18/07/2023'
             ),
+
         ]
         for value, fmt, expected in testcases:
             actual = tags.dateTimeFormat(value, fmt)
+            self.assertEqual(expected, actual)
+
+    def test_time_delta(self) -> None:
+        testcases= [(
+            datetime.timedelta(seconds=20), '20.00',
+        ), (
+            datetime.timedelta(seconds=20, milliseconds=2), '20.00',
+        ), (
+            datetime.timedelta(seconds=20, milliseconds=120), '20.12',
+        ), (
+            datetime.timedelta(seconds=60, milliseconds=120), '1:00.12',
+        ), (
+            datetime.timedelta(seconds=3600, milliseconds=120), '1:00:00.12',
+        ), (
+            datetime.timedelta(seconds=3640, milliseconds=120), '1:00:40.12',
+        ), (
+            datetime.timedelta(seconds=(25 * 3600), milliseconds=120), '25:00:00.12',
+        ), (
+            None, '',
+        )]
+        for value, expected in testcases:
+            actual = tags.timeDelta(value)
             self.assertEqual(expected, actual)
 
     def test_sizeFormat(self) -> None:
