@@ -26,7 +26,7 @@ import unittest
 
 from dashlive.server.models import Blob
 
-from .flask_base import FlaskTestBase
+from .mixins.flask_base import FlaskTestBase
 
 class TestBlobModel(FlaskTestBase):
 

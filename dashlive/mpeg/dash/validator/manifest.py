@@ -48,6 +48,14 @@ class Manifest(DashElement):
     def mpd(self):
         return self
 
+    def children(self) -> list[DashElement]:
+        return self.periods
+
+    def get_duration(self) -> datetime.timedelta:
+        if self.mediaPresentationDuration:
+            return self.mediaPresentationDuration
+        return datetime.timedelta(seconds=0)
+
     def num_tests(self, depth: int = -1) -> int:
         if depth == 0:
             return 0
@@ -57,42 +65,43 @@ class Manifest(DashElement):
         return count
 
     def validate(self, depth=-1):
-        self.checkGreaterThan(len(self.periods), 0,
-                              "Manifest does not have a Period element: %s" % self.url)
+        self.elt.check_greater_than(
+            len(self.periods), 0,
+            msg=f'Manifest does not have a Period element: {self.url}')
         if self.mode == "live":
-            self.checkEqual(
+            self.attrs.check_equal(
                 self.mpd_type, "dynamic",
-                "MPD@type must be dynamic for live manifest: %s" % self.url)
-            self.checkIsNotNone(
+                msg=f'MPD@type must be dynamic for live manifest: {self.url}')
+            self.attrs.check_not_none(
                 self.availabilityStartTime,
-                "MPD@availabilityStartTime must be present for live manifest: %s" % self.url)
-            self.checkIsNotNone(
+                msg=f"MPD@availabilityStartTime must be present for live manifest: {self.url}")
+            self.attrs.check_not_none(
                 self.timeShiftBufferDepth,
-                "MPD@timeShiftBufferDepth must be present for live manifest: %s" % self.url)
-            self.checkIsNone(
+                msg=f"MPD@timeShiftBufferDepth must be present for live manifest: {self.url}")
+            self.attrs.check_none(
                 self.mediaPresentationDuration,
-                "MPD@mediaPresentationDuration must not be present for live manifest: %s" % self.url)
+                msg=f"MPD@mediaPresentationDuration must not be present for live manifest: {self.url}")
         else:
-            msg = r'MPD@type must be static for VOD manifest, got "{}": {}'.format(
-                self.mpd_type, self.url)
-            self.checkEqual(self.mpd_type, "static", msg=msg)
+            msg = f'MPD@type must be static for VOD manifest, got "{self.mpd_type}": {self.url}'
+            self.attrs.check_equal(self.mpd_type, "static", msg=msg)
             if self.mediaPresentationDuration is not None:
-                self.checkGreaterThan(
+                msg = ('Invalid MPD@mediaPresentationDuration ' +
+                       f'"{self.mediaPresentationDuration}": {self.url}')
+                self.attrs.check_greater_than(
                     self.mediaPresentationDuration,
                     datetime.timedelta(seconds=0),
-                    'Invalid MPD@mediaPresentationDuration "{}": {}'.format(
-                        self.mediaPresentationDuration, self.url))
+                    msg=msg)
             else:
                 msg = 'If MPD@mediaPresentationDuration is not present, ' +\
                       'Period@duration must be present: ' + self.url
                 for p in self.periods:
-                    self.checkIsNotNone(p.duration, msg)
-            self.checkIsNone(
+                    self.elt.check_not_none(p.duration, msg)
+            self.attrs.check_none(
                 self.minimumUpdatePeriod,
-                "MPD@minimumUpdatePeriod must not be present for VOD manifest: %s" % self.url)
-            self.checkIsNone(
+                msg=f"MPD@minimumUpdatePeriod must not be present for VOD manifest: {self.url}")
+            self.attrs.check_none(
                 self.availabilityStartTime,
-                "MPD@availabilityStartTime must not be present for VOD manifest: %s" % self.url)
+                msg=f"MPD@availabilityStartTime must not be present for VOD manifest: {self.url}")
         if depth != 0:
             for period in self.periods:
                 period.validate(depth - 1)

@@ -5,17 +5,19 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 import logging
 import os
-from typing import Any, Never
+from typing import Never, Optional
 import urllib.parse
 
 from lxml import etree as ET
 
-from dashlive.testcase.mixin import TestCaseMixin
 from dashlive.utils.date_time import to_iso_datetime
-from .progress import Progress
+
+from .errors import ErrorSource, LineRange, ValidationChecks, ValidationError
+from .options import ValidatorOptions
+from .progress import NullProgress
 
 class ContextAdapter(logging.LoggerAdapter):
     def process(self, msg: str, kwargs) -> tuple[str, dict]:
@@ -25,17 +27,10 @@ class ContextAdapter(logging.LoggerAdapter):
         return (msg, kwargs,)
 
 
-class NullProgress(Progress):
-    def send_progress(self, pct: float, text: str) -> None:
-        pass
-
-    def aborted(self) -> bool:
-        return False
-
-
-class DashElement(TestCaseMixin):
+class DashElement(ABC):
     class Parent:
         pass
+
     xmlNamespaces = {
         'cenc': 'urn:mpeg:cenc:2013',
         'dash': 'urn:mpeg:dash:schema:mpd:2011',
@@ -47,7 +42,11 @@ class DashElement(TestCaseMixin):
 
     attributes = []
 
-    def __init__(self, elt, parent, options=None, url=None):
+    def __init__(self,
+                 elt: ET.ElementBase,
+                 parent: Optional["DashElement"],
+                 options: ValidatorOptions | None = None,
+                 url: str | None = None) -> None:
         self.parent = parent
         self.url = url
         if parent:
@@ -56,25 +55,29 @@ class DashElement(TestCaseMixin):
             self.validator = getattr(parent, "validator")
             self.options = parent.options
             self.http = parent.http
-            self.errors = parent.errors
             self.filenames = parent.filenames
             self.progress = parent.progress
         else:
             assert options is not None
             self.options = options
-            self.errors = []
             self.filenames = set()
             if options.progress is None:
                 self.progress = NullProgress()
             else:
                 self.progress = options.progress
-        # self.log = logging.getLogger(self.classname())
-        #    log.addFilter(mixins.HideMixinsFilter())
+        self.errors = []
         self.log = ContextAdapter(self.options.log, self)
         self.log.setLevel = self.options.log.setLevel
         self.baseurl = None
         self.ID = None
+        sourceline: int | None = None
+        line_range: tuple | None = None
         if elt is not None:
+            sourceline = elt.sourceline
+            end = elt.sourceline
+            for child in elt:
+                end = DashElement.max_source_line(end, child)
+            line_range = LineRange(elt.sourceline, end)
             base = elt.findall('./dash:BaseURL', self.xmlNamespaces)
             if len(base):
                 self.baseurl = base[0].text
@@ -84,9 +87,51 @@ class DashElement(TestCaseMixin):
             elif parent:
                 self.baseurl = parent.baseurl
             self.ID = elt.get('id')
+        elif parent is not None:
+            sourceline = parent.elt.location.start
+            line_range = parent.elt.location
+        self.attrs = ValidationChecks(
+            ErrorSource.ATTRIBUTE, LineRange(sourceline, sourceline))
+        self.elt = ValidationChecks(ErrorSource.ELEMENT, line_range)
         if self.ID is None:
             self.ID = str(id(self))
         self.parse_attributes(elt, self.attributes)
+
+    @staticmethod
+    def max_source_line(linenum: int, elt) -> int:
+        if elt is None:
+            return linenum
+        if elt.sourceline is not None:
+            linenum = max(linenum, elt.sourceline)
+        for child in elt:
+            linenum = DashElement.max_source_line(linenum, child)
+        return linenum
+
+    @classmethod
+    def classname(clz):
+        if clz.__module__.startswith('__'):
+            return clz.__name__
+        return clz.__module__ + '.' + clz.__name__
+
+    def has_errors(self) -> bool:
+        result = (self.attrs.has_errors() or
+                  self.elt.has_errors())
+        if result:
+            return True
+        for child in self.children():
+            if child.has_errors():
+                return True
+        return False
+
+    def get_errors(self) -> list[ValidationError]:
+        result = self.attrs.errors + self.elt.errors
+        for child in self.children():
+            result += child.get_errors()
+        return result
+
+    @abstractmethod
+    def children(self) -> list["DashElement"]:
+        ...
 
     def parse_attributes(self, elt, attributes):
         for name, conv, dflt in attributes:
@@ -100,11 +145,9 @@ class DashElement(TestCaseMixin):
                 try:
                     val = conv(val)
                 except (ValueError) as err:
-                    self.log.error('Attribute "%s@%s" has invalid value "%s": %s',
-                                   self.classname(), name, val, err)
-                    xml = ET.tostring(elt)
-                    print(f'Error parsing attribute "{name}": {xml}')
-                    raise err
+                    msg = f'Attribute "{self.classname()}@{name}" has invalid value "{val}": {err}'
+                    self.attrs.add_error(msg)
+                    self.log.error(msg)
             elif dflt == DashElement.Parent:
                 val = getattr(self.parent, name, None)
             else:
@@ -123,6 +166,13 @@ class DashElement(TestCaseMixin):
         if self.parent:
             return self.parent.mpd
         return self
+
+    def find_parent(self, name: str) -> Optional["DashElement"]:
+        if name == self.__class__.__name__:
+            return self
+        if self.parent:
+            return self.parent.find_parent(name)
+        return None
 
     @classmethod
     def init_xml_namespaces(clz):
@@ -147,17 +197,6 @@ class DashElement(TestCaseMixin):
             rv.append(p.ID)
             p = p.parent
         return '/'.join(rv)
-
-    def _check_true(self, result: bool, a: Any, b: Any,
-                    msg: str | None, template: str) -> bool:
-        if not result:
-            if msg is None:
-                msg = template.format(a, b)
-            if self.options.strict:
-                raise AssertionError(msg)
-            self.log.warning('%s', msg)
-            self.errors.append(msg)
-        return result
 
     def output_filename(self, default, bandwidth, prefix=None, filename=None, makedirs=False):
         if filename is None:

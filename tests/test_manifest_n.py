@@ -23,8 +23,9 @@ import os
 import unittest
 
 from dashlive.utils.date_time import from_isodatetime
+
 from .mixins.check_manifest import DashManifestCheckMixin
-from .flask_base import FlaskTestBase
+from .mixins.flask_base import FlaskTestBase
 
 class ManifestNTests(FlaskTestBase, DashManifestCheckMixin):
     def test_manifest_n_vod(self):

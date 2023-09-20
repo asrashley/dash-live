@@ -6,6 +6,7 @@
 #
 #############################################################################
 
+from .dash_element import DashElement
 from .exceptions import ValidationException
 from .frame_rate_type import FrameRateType
 from .representation_base_type import RepresentationBaseType
@@ -44,32 +45,34 @@ class AdaptationSet(RepresentationBaseType):
             count += rep.num_tests(depth - 1)
         return count
 
+    def children(self) -> list[DashElement]:
+        return super().children() + self.representations
+
     def validate(self, depth: int = -1) -> None:
         if len(self.contentProtection):
-            self.checkIsNotNone(
+            self.elt.check_not_none(
                 self.default_KID,
-                f'default_KID cannot be missing for protected stream: {self.baseurl}')
-        self.checkIn(
-            self.contentType,
-            {'video', 'audio', 'text', 'image', 'font', 'application', None})
-        if self.options.strict:
-            self.checkIsNotNone(self.mimeType, 'mimeType is a mandatory attribute')
-        if self.mimeType is None:
-            self.log.warning('mimeType is a mandatory attribute')
+                msg=f'default_KID cannot be missing for protected stream: {self.baseurl}')
+        self.attrs.check_includes(
+            container={'video', 'audio', 'text', 'image', 'font', 'application', None},
+            item=self.contentType,
+            template=r'Unexpected content type {1}, allowed values: {0}')
+        self.attrs.check_not_none(
+            self.mimeType, msg='AdaptationSet@mimeType is a mandatory attribute',
+            clause='5.3.7.2')
         if not self.options.encrypted:
-            self.checkEqual(len(self.contentProtection), 0)
+            self.elt.check_equal(
+                len(self.contentProtection), 0,
+                msg='At least one ContentProtection element is required for an encrypted stream')
         if depth == 0:
             return
         for cp in self.contentProtection:
+            if self.progress.aborted():
+                return
             cp.validate(depth - 1)
             self.progress.inc()
         for rep in self.representations:
             if self.progress.aborted():
                 return
-            try:
-                rep.validate(depth - 1)
-            except (AssertionError, ValidationException) as err:
-                if self.options.strict:
-                    raise
-                self.log.error(err, exc_info=err)
+            rep.validate(depth - 1)
             self.progress.inc()

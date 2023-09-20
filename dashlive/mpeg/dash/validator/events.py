@@ -6,13 +6,59 @@
 #
 #############################################################################
 import base64
+import binascii
 
 from dashlive import scte35
 from dashlive.mpeg import MPEG_TIMEBASE
 from dashlive.utils.buffered_reader import BufferedReader
+from dashlive.utils.binary import Binary
 
 from .dash_element import DashElement
 from .descriptor import Descriptor
+
+class Scte35Binary(DashElement):
+    def __init__(self, elt, parent: DashElement, schemeIdUri: str) -> None:
+        super().__init__(elt, parent)
+        self.schemeIdUri = schemeIdUri
+        try:
+            data = Binary(elt.text, encoding=Binary.BASE64, decode=True)
+            src = BufferedReader(None, data=data.data)
+            self.signal = scte35.BinarySignal.parse(src, size=len(data))
+        except (ValueError, binascii.Error) as err:
+            self.elt.add_error(str(err))
+            self.signal = None
+
+    def children(self) -> list[DashElement]:
+        return []
+
+    def validate(self, depth: int = -1) -> None:
+        self.attrs.check_equal(
+            self.schemeIdUri, EventStreamBase.SCTE35_XML_BIN_EVENTS)
+        if self.signal is None:
+            return
+        ev_stream = self.find_parent('EventStream')
+        self.elt.check_includes(sig, 'splice_insert')
+        self.elt.check_includes(sig['splice_insert'], 'break_duration')
+        duration = sig['splice_insert']['break_duration']['duration']
+        self.elt.check_almost_equal(
+            self.duration / float(ev_stream.timescale), duration / float(MPEG_TIMEBASE))
+
+
+# <scte35:Signal><scte35:Binary>{{binary|base64}}</scte35:Binary></scte35:Signal>
+class Scte35EventElement(DashElement):
+    def __init__(self, elt, parent: DashElement, schemeIdUri: str) -> None:
+        super().__init__(elt, parent)
+        bins = elt.findall('./scte35:Binary', self.xmlNamespaces)
+        self._children = [Scte35Binary(b, self, schemeIdUri) for b in bins]
+
+    def children(self) -> list[DashElement]:
+        return self._children
+
+    def validate(self, depth: int = - 1) -> None:
+        if depth == 0:
+            return
+        for ch in self._children:
+            ch.validate(depth - 1)
 
 class DashEvent(DashElement):
     """
@@ -28,30 +74,31 @@ class DashEvent(DashElement):
 
     def __init__(self, elt, parent: DashElement) -> None:
         super().__init__(elt, parent)
-        self.children = []
+        self._children = []
+        schemeIdUri = self.parent.schemeIdUri
         for child in elt:
-            self.children.append(child)
+            if child.prefix:
+                ns = child.nsmap[child.prefix]
+                if ns == self.xmlNamespaces['scte35']:
+                    self._children.append(Scte35EventElement(child, self, schemeIdUri))
+                    continue
+            self._children.append(DashEventElement(child, self))
+
+    def children(self) -> list[DashElement]:
+        return self._children
 
     def validate(self, depth: int = -1) -> None:
-        if self.children:
-            self.checkIsNone(self.messageData)
+        if self._children:
+            self.elt.check_none(
+                self.messageData,
+                msg='message data is not allowed when the DashElement has children')
         if self.contentEncoding is not None:
-            self.checkEqual(self.contentEncoding, 'base64')
-        if self.parent.schemeIdUri == EventStreamBase.SCTE35_XML_BIN_EVENTS:
-            self.checkEqual(len(self.children), 1)
-            bin_elt = self.children[0].findall('./scte35:Binary', self.xmlNamespaces)
-            self.checkIsNotNone(bin_elt)
-            self.checkEqual(len(bin_elt), 1)
-            data = base64.b64decode(bin_elt[0].text)
-            src = BufferedReader(None, data=data)
-            sig = scte35.BinarySignal.parse(src, size=len(data))
-            timescale = self.parent.timescale
-            self.checkIn('splice_insert', sig)
-            self.checkIn('break_duration', sig['splice_insert'])
-            duration = sig['splice_insert']['break_duration']['duration']
-            self.checkAlmostEqual(
-                self.duration / float(timescale), duration / float(MPEG_TIMEBASE))
-            self.scte35_binary_signal = sig
+            self.elt.check_equal(
+                self.contentEncoding, 'base64',
+                msg='content encoding must be Base64')
+        if depth > 0:
+            for ch in self._children:
+                ch.validate(depth - 1)
 
 
 class EventStreamBase(Descriptor):
@@ -73,6 +120,9 @@ class EventStreamBase(Descriptor):
         evs = elt.findall('./dash:Event', self.xmlNamespaces)
         self.events = [DashEvent(a, self) for a in evs]
 
+    def children(self) -> list[DashEvent]:
+        return super().children() + self.events
+
 
 class EventStream(EventStreamBase):
     """
@@ -81,7 +131,7 @@ class EventStream(EventStreamBase):
 
     def validate(self, depth: int = -1) -> None:
         super().validate(depth)
-        self.checkNotEqual(self.schemeIdUri, self.SCTE35_INBAND_EVENTS)
+        self.attrs.check_not_equal(self.schemeIdUri, self.SCTE35_INBAND_EVENTS)
         if depth == 0:
             return
         for event in self.events:
@@ -94,4 +144,6 @@ class InbandEventStream(EventStreamBase):
     """
     def validate(self, depth: int = -1) -> None:
         super().validate(depth)
-        self.checkEqual(len(self.children), 0)
+        self.elt.check_equal(
+            len(self._children), 0,
+            msg='Event elements are not allowed in an inband EventStream element')

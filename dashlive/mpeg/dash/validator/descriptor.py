@@ -14,11 +14,15 @@ class Descriptor(DashElement):
         ('value', str, ""),
     ]
 
-    def __init__(self, elt, parent):
+    def __init__(self, elt, parent: DashElement) -> None:
         super().__init__(elt, parent)
-        self.children = []
+        self._children = []
         for child in elt:
-            self.children.append(DescriptorElement(child))
+            self._children.append(DescriptorElement(child, self))
 
-    def validate(self, depth=-1):
-        self.checkIsNotNone(self.schemeIdUri)
+    def validate(self, depth: int = -1) -> None:
+        self.attrs.check_not_none(
+            self.schemeIdUri, msg='schemeIdUri is mandatory')
+
+    def children(self) -> list[DashElement]:
+        return self._children

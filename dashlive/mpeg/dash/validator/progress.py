@@ -37,3 +37,11 @@ class Progress(ABC):
     @abstractmethod
     def aborted(self) -> bool:
         ...
+
+
+class NullProgress(Progress):
+    def send_progress(self, pct: float, text: str) -> None:
+        pass
+
+    def aborted(self) -> bool:
+        return False

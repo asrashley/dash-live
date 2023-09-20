@@ -33,3 +33,9 @@ class MultipleSegmentBaseType(SegmentBaseType):
             # 5.3.9.2.1: The attribute @duration and the element SegmentTimeline
             # shall not be present at the same time.
             self.checkIsNone(self.duration)
+
+    def children(self) -> list[DashElement]:
+        rv = []
+        if self.segmentTimeline:
+            rv.append(self.segmentTimeline)
+        return rv

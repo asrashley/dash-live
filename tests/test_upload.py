@@ -31,7 +31,7 @@ from dashlive.server import models
 from dashlive.management.base import LoginFailureException
 from dashlive.management.populate import PopulateDatabase
 
-from .flask_base import FlaskTestBase
+from .mixins.flask_base import FlaskTestBase
 from .http_client import ClientHttpSession
 
 class TestPopulateDatabase(FlaskTestBase):

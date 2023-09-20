@@ -28,7 +28,7 @@ from dashlive.mpeg.mp4 import Mp4Atom
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.utils.buffered_reader import BufferedReader
 
-from .flask_base import FlaskTestBase
+from .mixins.flask_base import FlaskTestBase
 
 class RepresentationTests(FlaskTestBase, unittest.TestCase):
     def test_load_representation(self) -> None:

@@ -35,3 +35,19 @@ class RepresentationBaseType(DashElement):
         self.segmentList = [SegmentListType(s, self) for s in seg_list]
         ibevs = elt.findall('./dash:InbandEventStream', self.xmlNamespaces)
         self.event_streams = [InbandEventStream(r, self) for r in ibevs]
+
+    def get_timescale(self) -> int:
+        if self.segmentTemplate:
+            return self.segmentTemplate.timescale
+        if isinstance(self.parent, RepresentationBaseType):
+            return self.parent.get_timescale()
+        return 1
+
+    def validate(self, depth: int = -1) -> None:
+        if depth == 0:
+            return
+        for ev in self.event_streams:
+            ev.validate(depth - 1)
+
+    def children(self) -> list[DashElement]:
+        return self.event_streams

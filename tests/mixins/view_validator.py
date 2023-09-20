@@ -24,12 +24,13 @@ import logging
 import urllib.parse
 
 from dashlive.server import models, routes
-from dashlive.testcase.mixin import HideMixinsFilter
 from dashlive.mpeg.dash.validator import DashValidator, RepresentationInfo, ValidatorOptions
+
+from .mixin import HideMixinsFilter
 
 class ViewsTestDashValidator(DashValidator):
     def __init__(self, http_client, mode, url, encrypted=False, xml=None, debug=False):
-        opts = ValidatorOptions(strict=True, encrypted=encrypted)
+        opts = ValidatorOptions(encrypted=encrypted)
         opts.log = logging.getLogger(__name__)
         opts.log.addFilter(HideMixinsFilter())
         if debug:
@@ -63,13 +64,14 @@ class ViewsTestDashValidator(DashValidator):
             match = routes.routes["dash-od-media"].reTemplate.match(parts.path)
         if match is None:
             self.log.error('match %s %s', url, parts.path)
-        self.assertIsNotNone(match, msg=f'Failed to find match for URL path "{parts.path}"')
+        self.elt.check_not_none(
+            match, msg=f'Failed to find match for URL path "{parts.path}"')
         directory = match.group("stream")
         stream = models.Stream.get(directory=directory)
-        self.assertIsNotNone(stream, msg=f'Failed to find stream {directory}')
+        self.elt.check_not_none(stream, msg=f'Failed to find stream {directory}')
         filename = match.group("filename")
         mf = models.MediaFile.get(name=filename)
-        self.assertIsNotNone(mf, msg=f'Failed to find MediaFile {filename}')
+        self.elt.check_not_none(mf, msg=f'Failed to find MediaFile {filename}')
         rep = mf.representation
         info = RepresentationInfo(
             num_segments=rep.num_media_segments, **rep.toJSON())

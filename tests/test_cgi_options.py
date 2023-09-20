@@ -5,8 +5,9 @@ from dashlive.server.options.drm_options import DrmSelection
 from dashlive.server.options.container import OptionsContainer
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.options.types import OptionUsage
-from dashlive.testcase.mixin import TestCaseMixin
 from dashlive.utils.timezone import UTC
+
+from .mixins.mixin import TestCaseMixin
 
 class TestServerOptions(TestCaseMixin, unittest.TestCase):
     def test_option_usage_from_string(self) -> None:

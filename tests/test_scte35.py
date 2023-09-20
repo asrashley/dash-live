@@ -28,11 +28,12 @@ import unittest
 
 from crccheck.crc import Crc32Mpeg2
 
-from dashlive.testcase.mixin import TestCaseMixin
 from dashlive.mpeg import MPEG_TIMEBASE
 from dashlive.scte35.binarysignal import BinarySignal
 from dashlive.scte35.descriptors import SegmentationTypeId
 from dashlive.utils.buffered_reader import BufferedReader
+
+from .mixins.mixin import TestCaseMixin
 
 class Scte35Tests(TestCaseMixin, unittest.TestCase):
     dash_timebase = 10000000

@@ -40,7 +40,7 @@ from dashlive.server import manifests
 from dashlive.utils.binary import Binary
 from dashlive.utils.buffered_reader import BufferedReader
 
-from .flask_base import FlaskTestBase
+from .mixins.flask_base import FlaskTestBase
 from .key_stub import KeyStub
 from .mixins.check_manifest import DashManifestCheckMixin
 from .mixins.view_validator import ViewsTestDashValidator
@@ -641,6 +641,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             http_client=self.client, mode='vod', xml=xml.getroot(), url=baseurl,
             encrypted=True)
         mpd.validate()
+        self.assertFalse(mpd.has_errors())
         self.assertEqual(len(mpd.manifest.periods), 1)
         schemeIdUri = "urn:uuid:" + PlayReady.SYSTEM_ID.lower()
         pro_tag = "{{{0}}}pro".format(mpd.xmlNamespaces['mspr'])
@@ -648,7 +649,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             for prot in adap_set.contentProtection:
                 if prot.schemeIdUri != schemeIdUri:
                     continue
-                for elt in prot.children:
+                for elt in prot.children():
                     if elt.tag != pro_tag:
                         continue
                     pro = base64.b64decode(elt.text)
@@ -720,6 +721,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             http_client=self.client, mode='vod', xml=xml.getroot(), url=baseurl,
             encrypted=True)
         mpd.validate()
+        self.assertFalse(mpd.has_errors())
         self.assertEqual(len(mpd.manifest.periods), 1)
         piff_uuid = mp4.PiffSampleEncryptionBox.DEFAULT_VALUES['atom_type']
         for adap_set in mpd.manifest.periods[0].adaptation_sets:

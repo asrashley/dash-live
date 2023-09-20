@@ -27,7 +27,8 @@ import os
 import unittest
 
 from dashlive.drm.keymaterial import KeyMaterial
-from dashlive.testcase.mixin import TestCaseMixin
+
+from .mixins.mixin import TestCaseMixin
 
 class KeyMaterialTests(TestCaseMixin, unittest.TestCase):
     def test_base64_input(self):

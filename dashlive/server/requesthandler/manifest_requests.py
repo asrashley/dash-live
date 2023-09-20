@@ -32,7 +32,7 @@ from dashlive.server.options.container import OptionsContainer
 from dashlive.utils.objects import dict_to_cgi_params
 
 from .base import RequestHandlerBase
-from .decorators import uses_stream
+from .decorators import uses_stream, current_stream
 
 class ServeManifest(RequestHandlerBase):
     """handler for generating MPD files"""
@@ -59,6 +59,7 @@ class ServeManifest(RequestHandlerBase):
                 mode, manifest, modes)
             return flask.make_response(f'{manifest} not found', 404)
         context = self.create_context(**kwargs)
+        context['title'] = current_stream.title
         try:
             options = self.calculate_options(mode)
         except ValueError as e:

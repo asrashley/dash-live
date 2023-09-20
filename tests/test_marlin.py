@@ -27,9 +27,9 @@ import unittest
 
 from dashlive.drm.marlin import Marlin
 from dashlive.mpeg.dash.representation import Representation
-from dashlive.testcase.mixin import TestCaseMixin
 
 from .key_stub import KeyStub
+from .mixins.mixin import TestCaseMixin
 
 def to_hex(data: bytes) -> str:
     return str(binascii.b2a_hex(data), 'ascii')

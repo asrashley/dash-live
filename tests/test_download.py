@@ -30,7 +30,7 @@ from dashlive.management.base import LoginFailureException
 from dashlive.management.download import DownloadDatabase
 from dashlive.server import models
 
-from .flask_base import FlaskTestBase
+from .mixins.flask_base import FlaskTestBase
 from .http_client import ClientHttpSession
 
 class TestDownloadDatabase(FlaskTestBase):

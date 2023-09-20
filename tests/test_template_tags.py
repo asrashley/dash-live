@@ -24,7 +24,7 @@ class TestTemplateTags(unittest.TestCase):
             self.assertEqual(expected, actual)
 
     def test_time_delta(self) -> None:
-        testcases= [(
+        testcases = [(
             datetime.timedelta(seconds=20), '20.00',
         ), (
             datetime.timedelta(seconds=20, milliseconds=2), '20.00',

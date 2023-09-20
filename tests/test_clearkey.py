@@ -28,8 +28,9 @@ import unittest
 
 from dashlive.drm.clearkey import ClearKey
 from dashlive.mpeg.dash.representation import Representation
-from dashlive.testcase.mixin import TestCaseMixin
+
 from .key_stub import KeyStub
+from .mixins.mixin import TestCaseMixin
 
 class ClearkeyTests(TestCaseMixin, unittest.TestCase):
     def setUp(self):

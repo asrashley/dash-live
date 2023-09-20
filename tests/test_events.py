@@ -30,7 +30,7 @@ from dashlive.server.events.ping_pong import PingPongEvents
 from dashlive.server.events.scte35_events import Scte35Events
 from dashlive import scte35
 
-from .flask_base import FlaskTestBase
+from .mixins.flask_base import FlaskTestBase
 from .mixins.check_manifest import DashManifestCheckMixin
 
 class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
@@ -211,7 +211,10 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
                     }],
                 }
                 # print(json.dumps(event.scte35_binary_signal, indent=2))
-                self.assertObjectEqual(expected, event.scte35_binary_signal)
+                self.assertEqual(len(event.children()), 1)
+                ev_elt = event.children()[0]
+                self.assertEqual(len(ev_elt.children()), 1)
+                self.assertObjectEqual(expected, ev_elt.children()[0].signal)
                 presentationTime += Scte35Events.DEFAULT_VALUES['interval']
 
 

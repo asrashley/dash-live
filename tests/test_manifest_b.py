@@ -23,7 +23,7 @@ import os
 import unittest
 
 from .mixins.check_manifest import DashManifestCheckMixin
-from .flask_base import FlaskTestBase
+from .mixins.flask_base import FlaskTestBase
 
 class ManifestBTest(FlaskTestBase, DashManifestCheckMixin):
     def test_manifest_b(self):

@@ -33,7 +33,8 @@ import flask
 
 from dashlive.server import models
 from dashlive.utils.date_time import to_iso_datetime
-from .flask_base import FlaskTestBase
+
+from .mixins.flask_base import FlaskTestBase
 
 class TestRestApi(FlaskTestBase):
     def test_add_stream(self):

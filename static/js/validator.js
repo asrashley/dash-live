@@ -2,23 +2,15 @@ $(document).ready(function(){
     'use strict';
     const socket = io();
 
-    socket.on('connect', function() {
-        socket.emit('cmd', {
-	    method: 'hello',
-	    payload: 'I\'m connected!'
-	});
-    });
- 
-    socket.on('hello', function(msg) {
-	console.log(msg);
-    });
+    /* socket.on('connect', function() {
+    }); */
 
     socket.on('log', function(msg) {
 	const { level, text } = msg;
 	const item = $('<p class="' + level + '">' + text + '</p>');
 	$('#validator .results').append(item);
     });
-    
+
     socket.on('progress', function(data) {
 	let { pct, text, finished } = data;
 	if (pct !== undefined) {
@@ -30,7 +22,31 @@ $(document).ready(function(){
 	}
 	if (finished === true) {
 	    $('.progress-bar').removeClass(['progress-bar-animated', 'bg-info']).addClass('bg-success');
+	    socket.emit('cmd', {method: 'done'});
 	}
+    });
+
+    socket.on('manifest', function(data) {
+	$('#manifest-text').empty();
+	data.text.forEach(function(txt, idx) {
+	    const item = $(`<div class="manifest-line" id="line-${idx + 1}" />`);
+	    item.append($(`<span class="line-num">${idx + 1}</span>`));
+	    const text_elt = $('<pre class="text"></pre>');
+	    text_elt.text(txt);
+	    item.append(text_elt);
+	    $('#manifest-text').append(item);
+	});
+    });
+
+    socket.on('errors', function(errors) {
+	errors.forEach(({ location, text }) => {
+	    const [ start, end ] = location;
+	    const err = $(`<p class="error-text">${text}</p>`);
+	    const line = $(`#line-${start}`).append(err);
+	    for(let i=start; i <= end; ++i) {
+		$(`#line-${i}`).addClass('error');
+	    }
+	});
     });
 
     $('#submit').on('click', function(ev) {
@@ -52,7 +68,7 @@ $(document).ready(function(){
     });
     $('#btn-cancel').on('click', function(ev) {
 	ev.preventDefault();
-        socket.emit('cmd', {method: 'cancel'});
+	socket.emit('cmd', {method: 'cancel'});
 	$('#btn-validate').attr('disabled', false);
 	$('#btn-cancel').attr('disabled', 'disabled');
 	return false;

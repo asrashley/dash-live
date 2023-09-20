@@ -29,7 +29,7 @@ import flask
 from dashlive.utils.date_time import from_isodatetime
 from dashlive.server import models
 
-from .flask_base import FlaskTestBase
+from .mixins.flask_base import FlaskTestBase
 
 class TestKeypairHandlers(FlaskTestBase):
     NOW = from_isodatetime("2023-07-18T20:10:02Z")

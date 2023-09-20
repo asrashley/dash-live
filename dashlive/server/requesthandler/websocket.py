@@ -25,6 +25,7 @@ class WebsocketHandler(Progress):
         self.dash_log = logging.getLogger('DashValidator')
         self.dash_log.propagate = False
         self._aborted = False
+        self.task = None
 
     def connect(self) -> None:
         log_queue = queue.Queue(-1)
@@ -47,12 +48,12 @@ class WebsocketHandler(Progress):
         except KeyError as err:
             self.sockio.emit('log', f'Invalid command: {err}')
             return
-        if cmd == 'hello':
-            self.hello_cmd(data)
-        elif cmd == 'validate':
+        if cmd == 'validate':
             self.validate_cmd(data)
         elif cmd == 'cancel':
             self.cancel_cmd(data)
+        elif cmd == 'done':
+            self.join()
 
     def send_progress(self, pct: float, text: str) -> None:
         self.sockio.emit('progress', {'pct': round(pct), 'text': text})
@@ -60,11 +61,13 @@ class WebsocketHandler(Progress):
     def aborted(self) -> bool:
         return self._aborted
 
-    def hello_cmd(self, data) -> None:
-        self.sockio.emit('hello', {'hello': 'world'})
-
     def validate_cmd(self, data) -> None:
-        data['verbose'] = data.get('verbose', '').lower() == 'on'
+        for field in ['pretty', 'encrypted']:
+            data[field] = data.get(field, '').lower() == 'on'
+        if data.get('verbose', '').lower() == 'on':
+            data['verbose'] = 1
+        else:
+            data['verbose'] = 0
         data['duration'] = int(data['duration'])
         self._aborted = False
         self.task = self.sockio.start_background_task(self.dash_validator_task, **data)
@@ -72,30 +75,37 @@ class WebsocketHandler(Progress):
     def dash_validator_task(self,
                             method: str,
                             manifest: str,
-                            duration: int,
-                            verbose: bool) -> None:
+                            **kwargs) -> None:
         start_time = time.time()
         self.dash_log.info('Fetching manifest: %s', manifest)
-        print('verbose', verbose)
-        if verbose:
+        opts = ValidatorOptions(log=self.dash_log, progress=self, **kwargs)
+        if opts.verbose:
             self.dash_log.setLevel(logging.DEBUG)
         else:
             self.dash_log.setLevel(logging.INFO)
-        opts = ValidatorOptions(
-            verbose=verbose, duration=duration, log=self.dash_log,
-            progress=self)
         dv = BasicDashValidator(manifest, opts)
         try:
             dv.load()
+            self.sockio.emit('manifest', {
+                'text': dv.get_manifest_lines()
+            })
             self.dash_log.info('Starting stream validation...')
             dv.validate()
+            if dv.has_errors():
+                errs = [e.to_dict() for e in dv.get_errors()]
+                self.dash_log.info('Found %d errors', len(errs))
+                self.sockio.emit('errors', errs)
             duration = round(time.time() - start_time)
             self.dash_log.info(f'DASH validation complete after {duration} seconds')
             self.sockio.emit('progress', {'pct': 100, 'text': '', 'finished': True})
         except Exception as err:
             print(err)
             self.dash_log.error('%s', err)
-            raise
+
+    def join(self, error: Exception | None = None) -> None:
+        if self.task:
+            self.task.join()
+            self.task = None
 
     def cancel_cmd(self, data) -> None:
         self.sockio.emit('log', {
@@ -103,3 +113,4 @@ class WebsocketHandler(Progress):
             'text': 'Cancelled validation'
         })
         self._aborted = True
+        self.join()

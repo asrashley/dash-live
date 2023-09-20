@@ -25,7 +25,7 @@ import flask
 
 from dashlive.utils.date_time import from_isodatetime
 
-from .flask_base import FlaskTestBase
+from .mixins.flask_base import FlaskTestBase
 from .mixins.check_manifest import DashManifestCheckMixin
 
 class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
