@@ -35,11 +35,11 @@ from dashlive.server.options.drm_options import DrmLocation, PlayreadyVersion
 from dashlive.utils.date_time import UTC, to_iso_datetime, from_isodatetime
 from dashlive.utils.objects import dict_to_cgi_params
 
-from .flask_base import FlaskTestBase
 from .mixins.check_manifest import DashManifestCheckMixin
+from .mixins.flask_base import FlaskTestBase
 from .mixins.view_validator import ViewsTestDashValidator
 
-class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
+class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
     def test_request_unknown_manifest(self):
         self.setup_media()
         self.logout_user()
@@ -130,6 +130,7 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
                     http_client=self.client, mode='live', xml=xml.getroot(),
                     url=baseurl, encrypted=False, debug=False)
                 dv.validate(depth=3)
+                self.assertFalse(dv.has_errors())
                 if option == 'now':
                     start_time = dv.manifest.publishTime - dv.manifest.timeShiftBufferDepth
                 self.assertEqual(
@@ -172,6 +173,7 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
                     http_client=self.client, mode='live',
                     xml=xml.getroot(), url=url, encrypted=False)
                 dv.validate(depth=2)
+                self.assertFalse(dv.has_errors())
             with self.mock_datetime_now(active):
                 response = self.client.get(url)
                 self.assertEqual(
@@ -182,6 +184,7 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
                     http_client=self.client, mode='live',
                     url=url, encrypted=False)
                 dv.validate(depth=2)
+                self.assertFalse(dv.has_errors())
 
     def test_get_vod_media_using_live_profile(self):
         """Get VoD segments for each DRM type (live profile)"""
@@ -209,6 +212,9 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
                 http_client=self.client, mode='vod', xml=xml.getroot(),
                 url=mpd_url, encrypted=encrypted)
             mpd.validate()
+            if mpd.has_errors():
+                print(mpd.get_errors())
+            self.assertFalse(mpd.has_errors())
             head = self.client.head(mpd_url)
             msg = r'Expected HEAD.contentLength={} == GET.contentLength={} for URL {}'.format(
                 head.headers['Content-Length'], response.headers['Content-Length'],
@@ -275,6 +281,7 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
                 http_client=self.client, mode="live", xml=xml.getroot(),
                 url=baseurl, encrypted=encrypted)
             mpd.validate()
+            self.assertFalse(mpd.has_errors())
         self.progress(total_tests, total_tests)
 
     def test_get_vod_media_using_on_demand_profile(self):
@@ -298,6 +305,7 @@ class TestHandlers(FlaskTestBase, DashManifestCheckMixin):
                 http_client=self.client, mode="odvod", xml=xml.getroot(),
                 url=baseurl, encrypted=False)
             mpd.validate()
+            self.assertFalse(mpd.has_errors())
 
     def test_request_unknown_media(self):
         url = flask.url_for(

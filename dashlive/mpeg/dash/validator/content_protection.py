@@ -23,29 +23,40 @@ class ContentProtection(Descriptor):
     def validate(self, depth: int = -1) -> None:
         super().validate(depth)
         if self.schemeIdUri == "urn:mpeg:dash:mp4protection:2011":
-            self.checkEqual(self.value, "cenc")
+            self.attrs.check_equal(
+                self.value, "cenc", template=r'{0} != {1}')
         else:
-            self.checkStartsWith(self.schemeIdUri, "urn:uuid:")
+            self.attrs.check_starts_with(
+                self.schemeIdUri, "urn:uuid:",
+                template=r'Expected schemeIdUri to start with {1} but found {0}')
         if depth == 0:
             return
-        for child in self.children:
+        for child in self.children():
             if child.tag == '{urn:mpeg:cenc:2013}pssh':
                 data = base64.b64decode(child.text)
                 src = BufferedReader(None, data=data)
                 atoms = mp4.Mp4Atom.load(src)
-                self.checkEqual(len(atoms), 1)
-                self.checkEqual(atoms[0].atom_type, 'pssh')
+                self.elt.check_equal(len(atoms), 1, msg='Expected one child element')
+                self.elt.check_equal(
+                    atoms[0].atom_type, 'pssh',
+                    template=r'Atom type should be PSSH but got "{0}"')
                 pssh = atoms[0]
                 if PlayReady.is_supported_scheme_id(self.schemeIdUri):
-                    self.checkIsInstance(pssh.system_id, Binary)
-                    self.checkEqual(pssh.system_id.data, PlayReady.RAW_SYSTEM_ID)
-                    self.checkIsInstance(pssh.data, Binary)
+                    self.elt.check_is_instance(
+                        pssh.system_id, Binary,
+                        msg='System ID should have been parsed to a Binary object')
+                    self.elt.check_equal(
+                        pssh.system_id.data, PlayReady.RAW_SYSTEM_ID,
+                        msg=f'Expected system ID {PlayReady.SYSTEM_ID} but got {pssh.system_id}')
+                    self.elt.check_is_instance(
+                        pssh.data, Binary,
+                        msg='PSSH payload should have been parsed to a Binary object')
                     pro = self.parse_playready_pro(pssh.data.data)
                     self.validate_playready_pro(pro)
             elif child.tag == '{urn:microsoft:playready}pro':
-                self.checkTrue(
-                    PlayReady.is_supported_scheme_id(
-                        self.schemeIdUri))
+                self.elt.check_true(
+                    PlayReady.is_supported_scheme_id(self.schemeIdUri),
+                    msg=f'System ID "{self.schemeIdUri}" is not supported')
                 data = base64.b64decode(child.text)
                 pro = self.parse_playready_pro(data)
                 self.validate_playready_pro(pro)
@@ -54,25 +65,27 @@ class ContentProtection(Descriptor):
         return PlayReady.parse_pro(BufferedReader(None, data=data))
 
     def validate_playready_pro(self, pro):
-        self.checkEqual(len(pro), 1)
+        self.elt.check_equal(len(pro), 1)
         xml = pro[0]['xml'].getroot()
-        self.checkEqual(
+        self.elt.check_equal(
             xml.tag,
             '{http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader}WRMHEADER')
-        self.checkIn(
-            xml.attrib['version'], [
-                "4.0.0.0", "4.1.0.0", "4.2.0.0", "4.3.0.0"])
+        self.elt.check_includes(
+            ["4.0.0.0", "4.1.0.0", "4.2.0.0", "4.3.0.0"],
+            xml.attrib['version'])
         if 'playready_version' in self.mpd.params:
             version = float(self.mpd.params['playready_version'])
             if version < 2.0:
-                self.checkEqual(xml.attrib['version'], "4.0.0.0")
-                self.checkEqual(
+                self.elt.check_equal(xml.attrib['version'], "4.0.0.0")
+                self.elt.check_equal(
                     self.schemeIdUri,
                     "urn:uuid:" +
                     PlayReady.SYSTEM_ID_V10)
             elif version < 3.0:
-                self.checkIn(xml.attrib['version'], ["4.0.0.0", "4.1.0.0"])
+                self.elt.check_includes(
+                    {"4.0.0.0", "4.1.0.0"},
+                    xml.attrib['version'], )
             elif version < 4.0:
-                self.checkIn(
-                    xml.attrib['version'], [
-                        "4.0.0.0", "4.1.0.0", "4.2.0.0"])
+                self.elt.check_includes(
+                    {"4.0.0.0", "4.1.0.0", "4.2.0.0"},
+                    xml.attrib['version'])

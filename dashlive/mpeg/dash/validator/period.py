@@ -33,6 +33,20 @@ class Period(DashElement):
         evs = period.findall('./dash:EventStream', self.xmlNamespaces)
         self.event_streams = [EventStream(r, self) for r in evs]
 
+    def children(self) -> list[DashElement]:
+        return self.adaptation_sets + self.event_streams
+
+    def get_duration(self) -> datetime.timedelta:
+        if self.duration:
+            return self.duration
+        return self.parent.get_duration()
+
+    def get_duration_as_timescale(self, timescale: int) -> int:
+        dur = self.get_duration()
+        if dur is None:
+            return 0
+        return int(dur.total_seconds() * timescale)
+
     def num_tests(self, depth: int = -1) -> int:
         if depth == 0:
             return 0

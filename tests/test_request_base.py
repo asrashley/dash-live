@@ -28,7 +28,7 @@ import flask
 from dashlive.server.requesthandler.base import RequestHandlerBase
 from dashlive.server.requesthandler.exceptions import CsrfFailureException
 
-from .flask_base import FlaskTestBase
+from .mixins.flask_base import FlaskTestBase
 
 class MockHandler(RequestHandlerBase):
     def is_https_request(self) -> bool:

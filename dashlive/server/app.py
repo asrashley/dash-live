@@ -125,7 +125,8 @@ def make_db_connection_string(instance_path: Path, url_template: str) -> str:
 
 def create_app(config: JsonObject | None = None,
                instance_path: str | None = None,
-               create_default_user: bool = True) -> Flask:
+               create_default_user: bool = True,
+               wss: bool = True) -> Flask:
     if config is None:
         load_dotenv(environ.get('DASHLIVE_SETTINGS', '.env'))
     logging.basicConfig()
@@ -192,9 +193,10 @@ def create_app(config: JsonObject | None = None,
         models.Token.prune_database(all_csrf=True)
 
     app.register_blueprint(custom_tags)
-    socketio = SocketIO(app)
-    wss = WebsocketHandler(socketio)
-    socketio.on_event('connect', wss.connect)
-    socketio.on_event('disconnect', wss.disconnect)
-    socketio.on_event('cmd', wss.event_handler)
+    if wss:
+        socketio = SocketIO(app)
+        wss = WebsocketHandler(socketio)
+        socketio.on_event('connect', wss.connect)
+        socketio.on_event('disconnect', wss.disconnect)
+        socketio.on_event('cmd', wss.event_handler)
     return app

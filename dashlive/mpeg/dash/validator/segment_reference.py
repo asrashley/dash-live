@@ -21,7 +21,7 @@ class SegmentReference(DashElement):
         self.duration = duration
 
     def validate(self, depth: int = -1) -> None:
-        self.checkGreaterThan(self.duration, 0)
+        self.elt.check_greater_than(self.duration, 0)
 
     def __repr__(self):
         return self.REPR_FMT.format(**self.__dict__)

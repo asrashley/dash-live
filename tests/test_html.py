@@ -30,7 +30,7 @@ from dashlive.server import manifests, models
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.options.types import OptionUsage
 
-from .flask_base import FlaskTestBase
+from .mixins.flask_base import FlaskTestBase
 
 class TestHtmlPageHandlers(FlaskTestBase):
     def _assert_true(self, result, a, b, msg, template):

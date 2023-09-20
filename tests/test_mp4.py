@@ -28,11 +28,12 @@ from pathlib import Path
 import struct
 import unittest
 
-from dashlive.testcase.mixin import TestCaseMixin
 from dashlive.mpeg import mp4
 from dashlive.utils.buffered_reader import BufferedReader
 from dashlive.utils.binary import Binary, HexBinary
 from dashlive.utils.json_object import JsonObject
+
+from .mixins.mixin import TestCaseMixin
 
 class Mp4Tests(TestCaseMixin, unittest.TestCase):
     FIXTURES_PATH = Path(__file__).parent / "fixtures"

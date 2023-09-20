@@ -9,11 +9,12 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from dashlive.testcase.mixin import TestCaseMixin
 from dashlive.media.create import DashMediaCreator
 from dashlive.mpeg.dash.representation import Representation
 
-class DashMediaCreatorWithoutParser(DashMediaCreator, TestCaseMixin):
+from .mixins.mixin import TestCaseMixin
+
+class DashMediaCreatorWithoutParser(TestCaseMixin, DashMediaCreator):
     def parse_representation(self, filename: str) -> Representation:
         name = Path(filename).stem
         prefix, num = name.split('_')

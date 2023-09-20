@@ -37,15 +37,16 @@ from flask_testing import TestCase  # type: ignore
 from dashlive.drm.playready import PlayReady
 from dashlive.mpeg import mp4
 from dashlive.mpeg.dash.representation import Representation
-from dashlive.testcase.mixin import TestCaseMixin
 from dashlive.server import models
 from dashlive.server.app import create_app
 from dashlive.utils.date_time import from_isodatetime
 
+from .mixin import TestCaseMixin
+
 class FlaskTestBase(TestCaseMixin, TestCase):
     # duration of media in test/fixtures directory (in seconds)
     MEDIA_DURATION = 40
-    FIXTURES_PATH = Path(__file__).parent / "fixtures"
+    FIXTURES_PATH = Path(__file__).parent.parent / "fixtures"
     ADMIN_USER = 'admin'
     ADMIN_EMAIL = 'admin@dashlive.unit.test'
     ADMIN_PASSWORD = r'suuuperSecret!'
@@ -56,6 +57,7 @@ class FlaskTestBase(TestCaseMixin, TestCase):
     MEDIA_EMAIL = 'media@dashlive.unit.test'
     MEDIA_PASSWORD = r'm3d!a'
     STREAM_TITLE = 'Big Buck Bunny'
+    ENABLE_WSS = False
 
     _temp_dir = multiprocessing.Array(ctypes.c_char, 1024)
     current_url: str | None = None
@@ -78,7 +80,7 @@ class FlaskTestBase(TestCaseMixin, TestCase):
             'TESTING': True,
             'LOG_LEVEL': 'critical',
         }
-        app = create_app(config=config, create_default_user=False)
+        app = create_app(config=config, create_default_user=False, wss=self.ENABLE_WSS)
         with app.app_context():
             admin = models.User(
                 username=self.ADMIN_USER,

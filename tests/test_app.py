@@ -34,7 +34,8 @@ import flask
 
 from dashlive.server import models
 from dashlive.server.app import create_app
-from dashlive.testcase.mixin import TestCaseMixin
+
+from .mixins.mixin import TestCaseMixin
 
 class TestAppConfig(TestCaseMixin, unittest.TestCase):
     _temp_dir = multiprocessing.Array(ctypes.c_char, 1024)

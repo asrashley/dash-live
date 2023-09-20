@@ -114,6 +114,11 @@ class TestCaseMixin:
                 self.assertObjectEqual(exp, act, f'{msg:s}[{idx:d}]')
             else:
                 assert_msg = f'{msg}[{idx}] expected "{exp}" got "{act}"'
+                if exp != act:
+                    print(type(exp), type(act))
+                    print(len(exp), len(act))
+                    print(f'exp="${exp}"')
+                    print(f'act="${act}"')
                 self.assertEqual(exp, act, assert_msg)
             idx += 1
 

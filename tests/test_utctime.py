@@ -30,7 +30,8 @@ import flask
 
 from dashlive.utils.date_time import to_iso_datetime, from_isodatetime
 from dashlive.utils.timezone import UTC
-from .flask_base import FlaskTestBase
+
+from .mixins.flask_base import FlaskTestBase
 
 class TestUtcTime(FlaskTestBase):
     NOW = from_isodatetime("2023-07-18T20:10:02Z")

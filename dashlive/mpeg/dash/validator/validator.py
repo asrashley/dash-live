@@ -28,9 +28,10 @@ import time
 from lxml import etree as ET
 
 from .dash_element import DashElement
-from .exceptions import ValidationException
 from .manifest import Manifest
 from .options import ValidatorOptions
+from .representation import Representation
+from .representation_info import RepresentationInfo
 
 class DashValidator(DashElement):
     def __init__(self, url, http_client,
@@ -45,20 +46,33 @@ class DashValidator(DashElement):
         self.validator = self
         self.xml = xml
         self.manifest = None
+        self.manifest_text: list[tuple[int, str]] = []
         self.prev_manifest = None
         if xml is not None:
             self.manifest = Manifest(self, self.url, self.mode, self.xml)
 
-    def load(self, xml=None):
+    def load(self, xml=None) -> bool:
         self.prev_manifest = self.manifest
         self.xml = xml
         if self.xml is None:
             result = self.http.get(self.url)
-            self.assertEqual(
-                result.status_code, 200,
-                f'Failed to load manifest: {result.status_code} {self.url}')
+            if not self.elt.check_equal(
+                    result.status_code, 200,
+                    msg=f'Failed to load manifest: {result.status_code} {self.url}'):
+                return False
             # print(result.text)
             xml = ET.parse(io.BytesIO(result.get_data(as_text=False)))
+            self.manifest_text = []
+            for line in io.StringIO(result.get_data(as_text=True)):
+                self.manifest_text.append(line[:-1])
+            if self.options.pretty:
+                encoding = xml.docinfo.encoding
+                pp_txt = ET.tostring(xml, pretty_print=True, xml_declaration=True,
+                                     encoding=encoding)
+                xml = ET.parse(io.BytesIO(pp_txt))
+                self.manifest_text = []
+                for line in io.StringIO(str(pp_txt, encoding)):
+                    self.manifest_text.append(line[:-1])
             self.xml = xml.getroot()
         if self.mode is None:
             if self.xml.get("type") == "dynamic":
@@ -68,22 +82,26 @@ class DashValidator(DashElement):
             else:
                 self.mode = 'vod'
         self.manifest = Manifest(self, self.url, self.mode, self.xml)
+        return True
 
-    def validate(self, depth=-1):
+    def get_manifest_lines(self) -> list[str]:
+        return self.manifest_text
+
+    def validate(self, depth=-1) -> bool:
         if self.xml is None:
-            self.load()
+            if not self.load():
+                return False
         self.progress.reset(self.manifest.num_tests(depth))
         if self.options.save:
             self.save_manifest()
         if self.mode == 'live' and self.prev_manifest is not None:
-            if self.prev_manifest.availabilityStartTime != self.manifest.availabilityStartTime:
-                raise ValidationException('availabilityStartTime has changed from {:s} to {:s}'.format(
-                    self.prev_manifest.availabilityStartTime.isoformat(),
-                    self.manifest.availabilityStartTime.isoformat()))
+            self.attrs.check_equal(
+                self.prev_manifest.availabilityStartTime, self.manifest.availabilityStartTime,
+                template=r'availabilityStartTime has changed from {} to {}')
             age = self.manifest.publishTime - self.prev_manifest.publishTime
             fmt = (r'Manifest should have updated by now. minimumUpdatePeriod is {0} but ' +
                    r'manifest has not been updated for {1} seconds')
-            self.checkLessThan(
+            self.attrs.check_less_than(
                 age, 5 * self.manifest.minimumUpdatePeriod,
                 fmt.format(self.manifest.minimumUpdatePeriod, age.total_seconds()))
         self.manifest.validate(depth=depth)
@@ -105,7 +123,10 @@ class DashValidator(DashElement):
                 default=None, bandwidth=None, filename=f'{self.options.prefix}.json')
             with open(filename, 'wt') as dest:
                 json.dump(config, dest, indent=2)
-        return self.errors
+        return self.has_errors()
+
+    def children(self) -> list[DashElement]:
+        return [self.manifest]
 
     def save_manifest(self, filename=None):
         if self.options.dest:
@@ -123,11 +144,11 @@ class DashValidator(DashElement):
         time.sleep(dur)
 
     @abstractmethod
-    def get_representation_info(self, representation):
+    def get_representation_info(self, rep: Representation)  -> RepresentationInfo:
         """Get the Representation object for the specified media URL.
         The returned object must have the following attributes:
         * encrypted: bool         - Is AdaptationSet encrypted ?
-        * iv_size: int            - IV size in bytes (8 or 16) (N/A if encrypted==False)
+        * ivsize: int             - IV size in bytes (8 or 16) (N/A if encrypted==False)
         * timescale: int          - The timescale units for the AdaptationSet
         * num_segments: int       - The number of segments in the stream (VOD only)
         * segments: List[Segment] - Information about each segment (optional)
@@ -135,5 +156,5 @@ class DashValidator(DashElement):
         raise Exception("Not implemented")
 
     @abstractmethod
-    def set_representation_info(self, representation, info):
+    def set_representation_info(self, rep: Representation, info: RepresentationInfo):
         raise Exception("Not implemented")

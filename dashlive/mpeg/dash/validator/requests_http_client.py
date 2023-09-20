@@ -10,9 +10,9 @@ import logging
 from lxml import etree as ET
 import requests
 
-from dashlive.testcase.mixin import TestCaseMixin
+from .options import ValidatorOptions
 
-class HttpResponse(TestCaseMixin):
+class HttpResponse:
     def __init__(self, response):
         self.response = response
         self.status_int = self.status_code = response.status_code
@@ -55,13 +55,14 @@ class HttpResponse(TestCaseMixin):
         logging.getLogger(__name__).warning(fmt, *args)
 
 
-class RequestsHttpClient(TestCaseMixin):
+class RequestsHttpClient:
     """
     Implements HttpClient protocol using the requests library
     """
 
-    def __init__(self) -> None:
+    def __init__(self, options: ValidatorOptions) -> None:
         self.session = requests.Session()
+        self.log = options.log
 
     def get(self, url, headers=None, params=None, status=None, xhr=False) -> HttpResponse:
         try:
@@ -80,6 +81,4 @@ class RequestsHttpClient(TestCaseMixin):
                 url,
                 data=params,
                 headers=headers))
-        if status is not None:
-            self.checkEqual(rv.status_code, status)
         return rv

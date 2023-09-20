@@ -16,6 +16,50 @@
     }
   }
   
+  #manifest-text {
+      @manifestFontSize: 0.9rem;
+      
+      font-family: SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      font-size: @manifestFontSize;
+      margin: 1em 0;
+      overflow-x: scroll;
+
+      .manifest-line {
+	  background-color: #eee;
+	  line-height: 1rem;
+	  width: 150em;
+	  &:nth-child(2n) {
+	      background-color: #ddd;
+	  }
+      }
+      
+      .line-num {
+	  border-right: 1px solid #555;
+	  display: inline-block;
+	  font-size: @manifestFontSize;
+	  padding-right: 0.5em;
+	  text-align: right;
+	  width: 3em;
+	  vertical-align: middle;
+      }
+      .text {
+	  display: inline-block;
+	  font-size: @manifestFontSize;
+	  line-height: @manifestFontSize;
+	  padding-left: 0.5em;
+	  margin: 0;
+	  vertical-align: bottom;
+      }
+      .error-text {
+	  font-weight: normal;
+	  margin-bottom: 0;
+	  padding-left: 4em;
+	  &:last-child {
+	      margin-bottom: 1em;
+	  }
+      }
+  }
+  
   .results {
       background-color: rgba(210, 220, 230, 0.4);
       font-size: 0.9rem;

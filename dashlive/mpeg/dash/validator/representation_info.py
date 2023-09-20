@@ -5,6 +5,7 @@ class RepresentationInfo:
         self.num_segments = num_segments
         self.tested_media_segment = set()
         self.init_segment = None
+        self.moov = None
         self.media_segments = []
         self.segments = []
         for k, v in kwargs.items():

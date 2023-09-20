@@ -22,7 +22,7 @@
 import unittest
 
 from .mixins.check_manifest import DashManifestCheckMixin
-from .flask_base import FlaskTestBase
+from .mixins.flask_base import FlaskTestBase
 
 class ManifestITest(FlaskTestBase, DashManifestCheckMixin):
     def test_manifest_i_vod(self):

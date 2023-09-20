@@ -27,7 +27,9 @@ class SegmentBaseType(DashElement):
         super().__init__(elt, parent)
         inits = elt.findall('./dash:Initialization', self.xmlNamespaces)
         self.initializationList = [URLType(u, self) for u in inits]
-        self.representationIndex = [URLType(i, self) for i in elt.findall('./dash:RepresentationIndex', self.xmlNamespaces)]
+        self.representationIndex = [
+            URLType(i, self) for i in elt.findall(
+                './dash:RepresentationIndex', self.xmlNamespaces)]
 
     def load_segment_index(self, url):
         self.checkIsNotNone(self.indexRange)
@@ -45,7 +47,7 @@ class SegmentBaseType(DashElement):
             with self.open_file(filename, self.options) as dest:
                 dest.write(response.body)
         src = BufferedReader(None, data=response.body)
-        opts = mp4.Options(strict=self.options.strict)
+        opts = mp4.Options(strict=True)
         atoms = mp4.Mp4Atom.load(src, options=opts)
         self.checkEqual(len(atoms), 1)
         self.checkEqual(atoms[0].atom_type, 'sidx')
@@ -62,3 +64,11 @@ class SegmentBaseType(DashElement):
             start = end + 1
             decode_time += ref.duration
         return rv
+
+    def get_timescale(self) -> int:
+        if self.timescale is not None:
+            return self.timescale
+        try:
+            return self.parent.get_timescale()
+        except AttributeError:
+            return 1

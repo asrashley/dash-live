@@ -11,7 +11,6 @@ from dashlive.utils.buffered_reader import BufferedReader
 
 from .dash_element import DashElement
 from .events import InbandEventStream
-from .exceptions import MissingSegmentException
 
 class MediaSegment(DashElement):
     def __init__(self, parent, url, info, seg_num,
@@ -26,6 +25,9 @@ class MediaSegment(DashElement):
         self.log.debug('MediaSegment: url=%s $Number$=%s $Time$=%s tolerance=%d',
                        url, str(seg_num), str(decode_time), tolerance)
 
+    def children(self) -> list[DashElement]:
+        return []
+
     def set_info(self, info):
         self.info = info
 
@@ -35,16 +37,22 @@ class MediaSegment(DashElement):
             headers = {"Range": f"bytes={self.seg_range}"}
         self.log.debug('MediaSegment: url=%s headers=%s', self.url, headers)
         response = self.http.get(self.url, headers=headers)
+        self.log.debug('Status: %d  Length: %s', response.status_code,
+                       response.headers['Content-Length'])
         if self.seg_range is None:
-            if response.status_code != 200:
-                raise MissingSegmentException(self.url, response)
+            if not self.elt.check_equal(
+                    response.status_code, 200,
+                    msg=f'Missing segment {self.url}: {response.status_code}'):
+                return
         else:
-            if response.status_code != 206:
-                raise MissingSegmentException(self.url, response)
+            if not self.elt.check_equal(
+                    response.status_code, 206,
+                    msg=f'Incorrect HTTP status code for RANGE GET {self.url}: {response.status_code}'):
+                return
         if self.parent.mimeType is not None:
-            if self.options.strict:
-                self.checkStartsWith(response.headers['content-type'],
-                                     self.parent.mimeType)
+            self.elt.check_starts_with(
+                response.headers['content-type'], self.parent.mimeType,
+                template=r'HTTP Content-Type "{0}" should match Representation MIME type "{1}"')
         if self.options.save:
             default = f'media-{self.parent.id}-{self.parent.bandwidth}-{self.seg_num}'
             filename = self.output_filename(
@@ -54,11 +62,11 @@ class MediaSegment(DashElement):
                 dest.write(response.body)
         src = BufferedReader(None, data=response.get_data(as_text=False))
         options = {"strict": True}
-        self.checkEqual(self.options.encrypted, self.info.encrypted)
+        self.elt.check_equal(self.options.encrypted, self.info.encrypted)
         if self.info.encrypted:
-            options["iv_size"] = self.info.iv_size
+            options["iv_size"] = self.info.ivsize
         atoms = mp4.Mp4Atom.load(src, options=options)
-        self.checkGreaterThan(len(atoms), 1)
+        self.elt.check_greater_than(len(atoms), 1)
         moof = None
         mdat = None
         for a in atoms:
@@ -68,21 +76,23 @@ class MediaSegment(DashElement):
                 moof = a
             elif a.atom_type == 'mdat':
                 mdat = a
-                self.checkIsNotNone(
+                self.elt.check_not_none(
                     moof,
                     msg='Failed to find moof box before mdat box')
-        self.checkIsNotNone(moof)
-        self.checkIsNotNone(mdat)
+        if not self.elt.check_not_none(moof):
+            return
+        if not self.elt.check_not_none(mdat):
+            return
         try:
             senc = moof.traf.senc
-            self.checkNotEqual(
+            self.elt.check_not_equal(
                 self.info.encrypted, False,
                 msg='senc box should not be found in a clear stream')
             saio = moof.traf.find_child('saio')
-            self.checkIsNotNone(
+            self.elt.check_not_none(
                 saio,
                 msg='saio box is required for an encrypted stream')
-            self.checkEqual(
+            self.elt.check_equal(
                 len(saio.offsets), 1,
                 msg='saio box should only have one offset entry')
             tfhd = moof.traf.find_child('tfhd')
@@ -90,22 +100,25 @@ class MediaSegment(DashElement):
                 base_data_offset = moof.position
             else:
                 base_data_offset = tfhd.base_data_offset
-            self.checkEqual(
+            self.elt.check_equal(
                 senc.samples[0].position,
                 saio.offsets[0] + base_data_offset,
                 msg=(r'saio.offsets[0] should point to first CencSampleAuxiliaryData entry. ' +
                      'Expected {}, got {}'.format(
                          senc.samples[0].position, saio.offsets[0] + base_data_offset)))
-            self.checkEqual(len(moof.traf.trun.samples), len(senc.samples))
+            self.elt.check_equal(len(moof.traf.trun.samples), len(senc.samples))
         except AttributeError:
-            self.checkNotEqual(
+            self.elt.check_not_equal(
                 self.info.encrypted, True,
                 msg='Failed to find senc box in encrypted stream')
         if self.seg_num is not None:
-            self.checkEqual(moof.mfhd.sequence_number, self.seg_num,
-                            msg='Sequence number error, expected {}, got {}'.format(
-                                self.seg_num, moof.mfhd.sequence_number))
+            self.elt.check_equal(
+                moof.mfhd.sequence_number, self.seg_num,
+                msg='Sequence number error, expected {}, got {}'.format(
+                    self.seg_num, moof.mfhd.sequence_number))
         moov = self.info.moov
+        if not self.elt.check_not_none(moov, msg='Failed to find INIT segment'):
+            return
         if self.decode_time is not None:
             self.log.debug(
                 'decode_time=%s base_media_decode_time=%d delta=%d',
@@ -115,7 +128,7 @@ class MediaSegment(DashElement):
             seg_dt = moof.traf.tfdt.base_media_decode_time
             msg = 'Decode time {seg_dt:d} should be {dt:d} for segment {num} in {url:s}'.format(
                 seg_dt=seg_dt, dt=self.decode_time, num=self.seg_num, url=self.url)
-            self.checkAlmostEqual(
+            self.elt.check_almost_equal(
                 seg_dt,
                 self.decode_time,
                 delta=self.tolerance,
@@ -131,10 +144,11 @@ class MediaSegment(DashElement):
             r'trun last sample is {} but end of MDAT is {}'.format(
                 last_sample_end, mdat.position + mdat.size),
         ])
-        self.checkGreaterThanOrEqual(first_sample_pos, mdat.position + mdat.header_size, msg)
-        self.checkLessThanOrEqual(last_sample_end, mdat.position + mdat.size, msg)
-        if self.options.strict:
-            self.checkEqual(first_sample_pos, mdat.position + mdat.header_size, msg)
+        self.elt.check_greater_or_equal(
+            first_sample_pos, mdat.position + mdat.header_size, msg=msg)
+        self.elt.check_less_than_or_equal(
+            last_sample_end, mdat.position + mdat.size, msg=msg)
+        self.elt.check_equal(first_sample_pos, mdat.position + mdat.header_size, msg=msg)
         pts_values = set()
         dts = moof.traf.tfdt.base_media_decode_time
         for sample in moof.traf.trun.samples:
@@ -142,7 +156,7 @@ class MediaSegment(DashElement):
                 pts = dts + sample.composition_time_offset
             except AttributeError:
                 pts = dts
-            self.checkNotIn(pts, pts_values)
+            self.elt.check_not_in(pts, pts_values)
             pts_values.add(pts)
             if sample.duration is None:
                 dts += moov.mvex.trex.default_sample_duration
@@ -160,16 +174,15 @@ class MediaSegment(DashElement):
                            evs.schemeIdUri, evs.value)
             if (evs.schemeIdUri == emsg.scheme_id_uri and
                     evs.value == emsg.value):
-                self.checkIsInstance(evs, InbandEventStream)
+                self.elt.check_is_instance(evs, InbandEventStream)
                 found = True
         for evs in self.parent.parent.event_streams:
             self.log.debug('Found schemeIdUri="%s", value="%s"',
                            evs.schemeIdUri, evs.value)
             if (evs.schemeIdUri == emsg.scheme_id_uri and
                     evs.value == emsg.value):
-                self.checkIsInstance(evs, InbandEventStream)
+                self.elt.check_is_instance(evs, InbandEventStream)
                 found = True
-        self.checkTrue(
-            found,
-            'Failed to find an InbandEventStream with schemeIdUri="{}" value="{}"'.format(
-                emsg.scheme_id_uri, emsg.value))
+        self.elt.check_true(
+            found, emsg.scheme_id_uri, emsg.value,
+            template=r'Failed to find an InbandEventStream with schemeIdUri="{}" value="{}"')

@@ -10,9 +10,6 @@ import logging
 import math
 import traceback
 
-
-from dashlive.testcase.mixin import HideMixinsFilter
-
 from .validator import DashValidator
 from .exceptions import ValidationException
 from .options import ValidatorOptions
@@ -23,22 +20,22 @@ class BasicDashValidator(DashValidator):
     def __init__(self, url: str, options: ValidatorOptions) -> None:
         super().__init__(
             url,
-            RequestsHttpClient(),
+            RequestsHttpClient(options),
             options=options)
         self.representations = {}
         self.url = url
 
-    def get_representation_info(self, rep) -> RepresentationInfo:
+    def get_representation_info(self, rep) -> RepresentationInfo | None:
         try:
             return self.representations[rep.unique_id()]
         except KeyError:
             pass
+        timescale = 1
         if rep.mode == 'odvod':
-            timescale = rep.segmentBase.timescale
+            if rep.segmentBase is not None:
+                timescale = rep.segmentBase.timescale
         elif rep.segmentTemplate is not None:
             timescale = rep.segmentTemplate.timescale
-        else:
-            timescale = 1
         num_segments = None
         if rep.segmentTemplate and rep.segmentTemplate.segmentTimeline is not None:
             num_segments = len(rep.segmentTemplate.segmentTimeline.segments)
@@ -51,7 +48,7 @@ class BasicDashValidator(DashValidator):
                 num_segments = int(
                     math.floor(duration.total_seconds() * timescale / seg_dur))
         return RepresentationInfo(encrypted=self.options.encrypted,
-                                  iv_size=self.options.ivsize,
+                                  ivsize=self.options.ivsize,
                                   timescale=timescale,
                                   num_segments=num_segments)
 
@@ -62,17 +59,18 @@ class BasicDashValidator(DashValidator):
     def main(cls):
         parser = argparse.ArgumentParser(
             description='DASH live manifest validator')
-        parser.add_argument('--strict', action='store_true', dest='strict',
-                            help='Abort if an error is detected')
         parser.add_argument('-e', '--encrypted', action='store_true', dest='encrypted',
                             help='Stream is encrypted')
         parser.add_argument('-s', '--save',
                             help='save all fragments into <dest>',
                             action='store_true')
+        parser.add_argument('--pretty',
+                            help='pretty print XML before validation',
+                            action='store_true')
         parser.add_argument('-d', '--dest',
                             help='directory to store results',
                             required=False)
-        parser.add_argument('-p', '--prefix',
+        parser.add_argument('--prefix',
                             help='filename prefix to use when storing media files',
                             required=False)
         parser.add_argument('--duration',
@@ -92,16 +90,16 @@ class BasicDashValidator(DashValidator):
         parser.add_argument(
             'manifest',
             help='URL or filename of manifest to validate')
-        args = parser.parse_args(namespace=ValidatorOptions(strict=False))
+        args = parser.parse_args(namespace=ValidatorOptions())
         # FORMAT = r"%(asctime)-15s:%(levelname)s:%(filename)s@%(lineno)d: %(message)s\n  [%(url)s]"
         FORMAT = r"%(asctime)-15s:%(levelname)s:%(filename)s@%(lineno)d: %(message)s"
         logging.basicConfig(format=FORMAT)
         args.log = logging.getLogger('DashValidator')
-        args.log.addFilter(HideMixinsFilter())
         if args.verbose > 0:
             args.log.setLevel(logging.DEBUG)
-            logging.getLogger('mp4').setLevel(logging.DEBUG)
-            logging.getLogger('fio').setLevel(logging.DEBUG)
+            if args.verbose > 1:
+                logging.getLogger('mp4').setLevel(logging.DEBUG)
+                logging.getLogger('fio').setLevel(logging.DEBUG)
         if args.ivsize is not None and args.ivsize > 16:
             args.ivsize = args.ivsize // 8
         bdv = cls(args.manifest, args)
@@ -118,7 +116,7 @@ class BasicDashValidator(DashValidator):
                     bdv.sleep()
                     bdv.load()
             except (AssertionError, ValidationException) as err:
-                logging.error(err)
+                args.log.error(err)
                 traceback.print_exc()
                 if args.dest:
                     bdv.save_manifest()
@@ -126,5 +124,3 @@ class BasicDashValidator(DashValidator):
                     with open(filename, 'w') as err_file:
                         err_file.write(str(err) + '\n')
                         traceback.print_exc(file=err_file)
-                if args.strict:
-                    raise
