@@ -944,7 +944,11 @@ class DecoderSpecificInfo(Descriptor):
                 r.read(1, "extension_flag_3")
         rv["data"] = None
         if r.bitpos() != (8 * rv["size"]):
-            rv["data"] = r.data[r.bytepos():]
+            skip = 8 - r.bitpos() & 7
+            if skip:
+                r.read(skip, 'reserved')
+            if r.bytepos() != rv["size"]:
+                rv["data"] = r.data[r.bytepos():]
         return rv
 
     def encode_fields(self, dest):
