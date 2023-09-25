@@ -18,10 +18,17 @@
     class="card"
     >
     {%- for field in form %}
-    <div class="row">
-      {% include 'input-field.html' %}
-    </div>
+      {% if field.type != 'checkbox' %}
+        {% include 'input-field.html' %}
+      {% endif %}
     {%- endfor %}
+    <div class="row mb-3">
+    {%- for field in form %}
+      {% if field.type == 'checkbox' %}
+        {% include 'checkbox.html' %}
+      {% endif %}
+    {%- endfor %}
+    </div>
     <div class="form-actions">
       <button type="submit" id="submit" class="btn btn-primary">Validate DASH stream</button>
       <button id="btn-cancel" disabled class="btn btn-secondary">Cancel</button>

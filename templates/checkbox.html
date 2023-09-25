@@ -1,0 +1,12 @@
+<div class="form-check form-switch {%- if field.inline %} form-check-inline{%- endif %}">
+  <input
+    class="form-check-input"
+    type="checkbox"
+    name="{{ field.name }}"
+    id="model-{{ field.name }}"
+    role="switch"
+    {%- if field.value %} checked{% endif %}
+    {%- if field.disabled %} disabled{% endif %}
+    />
+  <label class="form-check-label" for="model-{{ field.name }}">{{ field.title }}</label>
+</div>
