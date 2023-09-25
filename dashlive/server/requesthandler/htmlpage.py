@@ -244,13 +244,16 @@ class DashValidator(HTMLHandlerBase):
             'name': 'verbose',
             'title': 'Verbose output',
             'type': 'checkbox',
+            'inline': True
         }, {
             'name': 'pretty',
             'title': 'Pretty print XML before validation',
             'type': 'checkbox',
+            'inline': True
         }, {
             'name': 'encrypted',
             'title': 'Stream is encrypted?',
             'type': 'checkbox',
+            'inline': True
         }]
         return flask.render_template('validator.html', **context)

@@ -1,4 +1,14 @@
-<div class="form-group row mb-3">
+{%- if field.rowClass %}
+{% set rowClass = field.rowClass %}
+{%- else %}
+{% set rowClass = "form-group row mb-3" %}
+{%- endif %}
+{%- if field.type == 'checkbox' %}
+{% set formClass = 'form-check' %}
+{%- else %}
+{% set formClass = "form-group" %}
+{%- endif %}
+<div class="{{ rowClass }} {{ formClass }}">
   {% if field.type != "hidden" %}
   <label class="col-sm-2 col-form-label" for="model-{{field.name}}">
     {{ field.title }}:
