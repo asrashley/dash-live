@@ -22,6 +22,10 @@ class LineRange(NamedTuple):
     end: int
 
 
+    def __str__(self) -> str:
+        return f'{self.start}->{self.end}'
+
+
 @dataclass(slots=True, kw_only=True)
 class ValidationError:
     """
@@ -41,6 +45,13 @@ class ValidationError:
             'location': list(self.location),
             'text': msg,
         }
+
+    def __str__(self) -> str:
+        if self.clause:
+            msg = f'{self.clause}: {self.msg}'
+        else:
+            msg = self.msg
+        return f'{self.location}: {msg}'
 
 
 class ValidationChecks:

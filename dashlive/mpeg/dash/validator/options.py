@@ -7,9 +7,11 @@
 #############################################################################
 from dataclasses import dataclass, field
 from logging import Logger
+from typing import Optional
 
 from dashlive.utils.date_time import RelaxedDateTime, UTC
 
+from .pool import WorkerPool
 from .progress import Progress
 
 @dataclass(slots=True, kw_only=True)
@@ -28,4 +30,4 @@ class ValidatorOptions:
     start_time: RelaxedDateTime = field(default_factory=lambda: RelaxedDateTime.now(UTC()))
     progress: Progress | None = None
     log: Logger | None = None
-    manifest: str = field(init=False)
+    pool: Optional[WorkerPool] = None

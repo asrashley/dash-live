@@ -6,14 +6,17 @@
 #
 #############################################################################
 import argparse
+from concurrent.futures import ThreadPoolExecutor, Executor
 import logging
 import math
+import sys
 import traceback
 
 from .validator import DashValidator
 from .exceptions import ValidationException
 from .options import ValidatorOptions
-from .representation_info import RepresentationInfo
+from .pool import WorkerPool
+from .progress import ConsoleProgress
 from .requests_http_client import RequestsHttpClient
 
 class BasicDashValidator(DashValidator):
@@ -25,38 +28,8 @@ class BasicDashValidator(DashValidator):
         self.representations = {}
         self.url = url
 
-    def get_representation_info(self, rep) -> RepresentationInfo | None:
-        try:
-            return self.representations[rep.unique_id()]
-        except KeyError:
-            pass
-        timescale = 1
-        if rep.mode == 'odvod':
-            if rep.segmentBase is not None:
-                timescale = rep.segmentBase.timescale
-        elif rep.segmentTemplate is not None:
-            timescale = rep.segmentTemplate.timescale
-        num_segments = None
-        if rep.segmentTemplate and rep.segmentTemplate.segmentTimeline is not None:
-            num_segments = len(rep.segmentTemplate.segmentTimeline.segments)
-        else:
-            duration = rep.parent.parent.duration
-            if duration is None:
-                duration = rep.mpd.mediaPresentationDuration
-            if duration is not None and rep.segmentTemplate:
-                seg_dur = rep.segmentTemplate.duration
-                num_segments = int(
-                    math.floor(duration.total_seconds() * timescale / seg_dur))
-        return RepresentationInfo(encrypted=self.options.encrypted,
-                                  ivsize=self.options.ivsize,
-                                  timescale=timescale,
-                                  num_segments=num_segments)
-
-    def set_representation_info(self, representation, info):
-        self.representations[representation.unique_id()] = info
-
     @classmethod
-    def main(cls):
+    def main(cls) -> int:
         parser = argparse.ArgumentParser(
             description='DASH live manifest validator')
         parser.add_argument('-e', '--encrypted', action='store_true', dest='encrypted',
@@ -77,6 +50,13 @@ class BasicDashValidator(DashValidator):
                             help='Maximum duration (in seconds)',
                             type=int,
                             required=False)
+        parser.add_argument(
+            '--threads',
+            dest='threads',
+            help='Use mulit-threaded validation with a maximum number of threads (0=auto)',
+            type=int,
+            default=None,
+            required=False)
         parser.add_argument('--ivsize',
                             help='IV size (in bits or bytes)',
                             type=int,
@@ -90,20 +70,39 @@ class BasicDashValidator(DashValidator):
         parser.add_argument(
             'manifest',
             help='URL or filename of manifest to validate')
-        args = parser.parse_args(namespace=ValidatorOptions())
+        args = parser.parse_args()
         # FORMAT = r"%(asctime)-15s:%(levelname)s:%(filename)s@%(lineno)d: %(message)s\n  [%(url)s]"
         FORMAT = r"%(asctime)-15s:%(levelname)s:%(filename)s@%(lineno)d: %(message)s"
         logging.basicConfig(format=FORMAT)
-        args.log = logging.getLogger('DashValidator')
+        log = logging.getLogger('DashValidator')
         if args.verbose > 0:
-            args.log.setLevel(logging.DEBUG)
+            log.setLevel(logging.DEBUG)
             if args.verbose > 1:
                 logging.getLogger('mp4').setLevel(logging.DEBUG)
                 logging.getLogger('fio').setLevel(logging.DEBUG)
+        else:
+            log.setLevel(logging.INFO)
         if args.ivsize is not None and args.ivsize > 16:
             args.ivsize = args.ivsize // 8
-        bdv = cls(args.manifest, args)
+        kwargs = { **vars(args) }
+        del kwargs['manifest']
+        try:
+            del kwargs['threads']
+        except KeyError:
+            pass
+        options = ValidatorOptions(log=log, progress=ConsoleProgress(), **kwargs)
+        if args.threads is not None:
+            max_workers: int | None = args.threads
+            if max_workers < 1:
+                max_workers = None
+            options.pool = WorkerPool(ThreadPoolExecutor(max_workers=max_workers))
+        bdv = cls(args.manifest, options=options)
+        log.info('Loading manifest: %s', args.manifest)
         bdv.load()
+        if bdv.has_errors():
+            for err in bdv.get_errors():
+                print(err)
+            return 1
         if args.dest:
             bdv.save_manifest()
         done = False
@@ -111,16 +110,24 @@ class BasicDashValidator(DashValidator):
             if bdv.manifest.mpd_type != 'dynamic' or args.duration:
                 done = True
             try:
+                log.info('Starting stream validation...')
                 bdv.validate()
                 if bdv.manifest.mpd_type == 'dynamic' and not done:
                     bdv.sleep()
                     bdv.load()
-            except (AssertionError, ValidationException) as err:
-                args.log.error(err)
-                traceback.print_exc()
-                if args.dest:
-                    bdv.save_manifest()
-                    filename = bdv.output_filename('error.txt', makedirs=True)
-                    with open(filename, 'w') as err_file:
-                        err_file.write(str(err) + '\n')
-                        traceback.print_exc(file=err_file)
+            except KeyboardInterrupt:
+                options.progress.abort()
+        options.progress.finished(args.manifest)
+        sys.stdout.write('\n')
+        if not bdv.has_errors():
+            print('No errors found')
+            return 0
+        if args.dest:
+            filename = bdv.output_filename('error.txt', makedirs=True)
+            with open(filename, 'wt') as err_file:
+                for err in bdv.get_errors():
+                    err_file.write(f'{err}\n')
+        else:
+            for err in bdv.get_errors():
+                print(err)
+        return 1

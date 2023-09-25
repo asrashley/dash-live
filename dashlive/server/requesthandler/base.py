@@ -403,6 +403,8 @@ class RequestHandlerBase(MethodView):
         audio_files: list[Representation] = []
         acodec = options.audioCodec
         for mf in media_files:
+            if mf.representation is None:
+                continue
             r = mf.representation
             if r.encrypted != options.encrypted:
                 continue
@@ -416,6 +418,8 @@ class RequestHandlerBase(MethodView):
             # if stream is encrypted but there is no encrypted version of the audio track, fall back
             # to a clear version
             for mf in media_files:
+                if mf.representation is None:
+                    continue
                 r = mf.representation
                 if acodec in {None, 'any'} or r.codecs.startswith(acodec):
                     audio_files.append(r)
@@ -458,6 +462,8 @@ class RequestHandlerBase(MethodView):
             content_type='video', encrypted=options.encrypted, stream=stream,
             max_items=max_items)
         for mf in media_files:
+            if mf.representation is None:
+                continue
             assert mf.content_type == 'video'
             assert mf.representation.content_type == 'video'
             video.representations.append(mf.representation)
@@ -472,6 +478,8 @@ class RequestHandlerBase(MethodView):
             content_type='text', stream=stream, max_items=max_items)
         text_tracks: list[Representation] = []
         for mf in media_files:
+            if mf.representation is None:
+                continue
             r = mf.representation
             if r.encrypted == options.encrypted:
                 if options.textCodec is None or r.codecs.startswith(options.textCodec):

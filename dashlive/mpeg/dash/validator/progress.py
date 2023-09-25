@@ -6,6 +6,7 @@
 #
 #############################################################################
 from abc import ABC, abstractmethod
+import sys
 
 class Progress(ABC):
     def __init__(self):
@@ -20,6 +21,11 @@ class Progress(ABC):
 
     def inc(self) -> None:
         self.count += 1
+        self._send_output()
+
+    def finished(self, text: str) -> None:
+        self.count = self.num_items
+        self.txt = text
         self._send_output()
 
     def text(self, text: str) -> None:
@@ -45,3 +51,19 @@ class NullProgress(Progress):
 
     def aborted(self) -> bool:
         return False
+
+class ConsoleProgress(Progress):
+    def __init__(self):
+        super().__init__()
+        self._aborted = False
+
+    def send_progress(self, pct: float, text: str) -> None:
+        sys.stdout.write(f'\r{pct:#05.1f}: {text}     ')
+        sys.stdout.flush()
+
+    def aborted(self) -> bool:
+        return self._aborted
+
+    def abort(self) -> None:
+        self._aborted = True
+

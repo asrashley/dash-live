@@ -19,6 +19,19 @@ class SegmentURL(DashElement):
         ('indexRange', HttpRange, None),
     ]
 
+    def __repr__(self) -> str:
+        params: list[str] = []
+        if self.media:
+            params.append(f'media={self.media}')
+        if self.mediaRange:
+            params.append(f'mediaRange={self.mediaRange}')
+        if self.index:
+            params.append(f'index={self.index}')
+        if self.indexRange:
+            params.append(f'indexRange={self.indexRange}')
+        txt = ', '.join(params)
+        return f'SegmentURL({txt})'
+
     def validate(self, depth: int = -1) -> None:
         self.checkIsNotNone(self.media)
         self.checkIsNotNone(self.index)

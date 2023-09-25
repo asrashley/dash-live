@@ -8,6 +8,7 @@
 
 import datetime
 
+from dashlive.mpeg.dash.representation import Representation as ServerRepresentation
 from dashlive.utils.date_time import from_isodatetime
 
 from .adaptation_set import AdaptationSet
@@ -32,6 +33,10 @@ class Period(DashElement):
         self.adaptation_sets = [AdaptationSet(a, self) for a in adps]
         evs = period.findall('./dash:EventStream', self.xmlNamespaces)
         self.event_streams = [EventStream(r, self) for r in evs]
+
+    def set_representation_info(self, info: ServerRepresentation):
+        for a in self.adaptation_sets:
+            a.set_representation_info(info)
 
     def children(self) -> list[DashElement]:
         return self.adaptation_sets + self.event_streams
@@ -65,6 +70,9 @@ class Period(DashElement):
                 return
             adap_set.validate(depth - 1)
             self.progress.inc()
+        if self.pool is not None:
+            for err in self.pool.wait_for_completion():
+                self.elt.add_error(f'Exception: {err}')
         for evs in self.event_streams:
             if self.progress.aborted():
                 return

@@ -9,6 +9,7 @@
 import datetime
 import urllib.parse
 
+from dashlive.mpeg.dash.representation import Representation as ServerRepresentation
 from dashlive.utils.date_time import from_isodatetime
 
 from .dash_element import DashElement
@@ -47,6 +48,10 @@ class Manifest(DashElement):
     @property
     def mpd(self):
         return self
+
+    def set_representation_info(self, info: ServerRepresentation):
+        for p in self.periods:
+            p.set_representation_info(info)
 
     def children(self) -> list[DashElement]:
         return self.periods
