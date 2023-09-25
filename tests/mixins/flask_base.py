@@ -141,10 +141,13 @@ class FlaskTestBase(TestCaseMixin, TestCase):
                 auto_delete=False)
             blobs.append(blob)
             js_filename = self.FIXTURES_PATH / f'rep-{rid}.json'
+            rep = None
             if js_filename.exists():
                 with js_filename.open('rt', encoding='utf-8') as src:
                     rep = json.load(src)
-            else:
+                if rep['version'] != Representation.VERSION:
+                    rep = None
+            if rep is None:
                 with src_file.open(mode="rb", buffering=16384) as src:
                     atoms = mp4.Mp4Atom.load(src)
                 rep = Representation.load(filename, atoms)
