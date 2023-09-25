@@ -24,7 +24,7 @@ import datetime
 import logging
 import os
 import sys
-from typing import NamedTuple
+from typing import NamedTuple, Optional
 
 import bitstring
 
@@ -81,11 +81,12 @@ class Representation(ObjectWithFields):
         'segment_duration': None,
         'startWithSAP': 1,
         'start_number': 1,
+        'start_time': 0,
         'timescale': 1,
         'track_id': 1,
         'version': 0,
     }
-    VERSION = 3
+    VERSION = 4
     KNOWN_CODEC_BOXES = [
         'ac_3', 'avc1', 'avc3', 'mp4a', 'ec_3', 'encv', 'enca',
         'hev1', 'hvc1', 'stpp', 'wvtt',
@@ -121,11 +122,12 @@ class Representation(ObjectWithFields):
 
     @classmethod
     def load(clz, filename: str, atoms: list[Mp4Atom], verbose: int = 0) -> "Representation":
+        representation_start_time: int | None = None
         segment_start_time = 0
         segment_end_time = 0
         segment_start_number: int | None = None
         default_sample_duration = 0
-        moov = None
+        moov: Optional[mp4.Mp4Atom] = None
         filename = os.path.basename(filename)
         rep_id = os.path.splitext(filename)[0]
         rv = Representation(id=rep_id.lower(),
@@ -169,6 +171,8 @@ class Representation(ObjectWithFields):
                 else:
                     segment_start_time = atom.traf.tfdt.base_media_decode_time
                     segment_end_time = segment_start_time
+                if representation_start_time is None:
+                    representation_start_time = segment_start_time
                 for sample in atom.traf.trun.samples:
                     segment_end_time += sample.duration
                 rv.segments.append(seg)
@@ -193,6 +197,10 @@ class Representation(ObjectWithFields):
                     moov = atom
         if rv.encrypted:
             rv.kids = list(key_ids)
+        if representation_start_time is None:
+            rv.start_time = 0
+        else:
+            rv.start_time = representation_start_time
         if verbose == 1:
             sys.stdout.write('\r\n')
         if len(rv.segments) > 2:
