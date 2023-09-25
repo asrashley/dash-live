@@ -186,7 +186,7 @@ class FlaskTestBase(TestCaseMixin, TestCase):
             self.assertGreaterThan(models.MediaFile.count(), 0)
             for mf in models.MediaFile.all():
                 r = mf.representation
-                self.assertIsNotNone(r)
+                self.assertIsNotNone(r, f'Failed to get Representation for MediaFile {mf.name}')
                 if not r.encrypted:
                     continue
                 for kid in r.kids:

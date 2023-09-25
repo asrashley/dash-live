@@ -35,7 +35,7 @@ class MultipleSegmentBaseType(SegmentBaseType):
             self.checkIsNone(self.duration)
 
     def children(self) -> list[DashElement]:
-        rv = []
+        rv = super().children()
         if self.segmentTimeline:
             rv.append(self.segmentTimeline)
         return rv

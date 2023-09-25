@@ -157,7 +157,10 @@ class DashManifestCheckMixin:
                 http_client=self.client, mode=mode, xml=xml.getroot(),
                 url=mpd_url, encrypted=encrypted)
             dv.validate(depth=3)
-            self.assertFalse(dv.has_errors())
+            if dv.has_errors():
+                for err in dv.get_errors():
+                    print(err)
+            self.assertFalse(dv.has_errors(), 'DASH stream validation failed')
             if check_head:
                 head = self.client.head(mpd_url)
             if mode != 'live':

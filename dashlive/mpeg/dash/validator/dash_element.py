@@ -18,6 +18,7 @@ from dashlive.utils.date_time import to_iso_datetime
 from .errors import ErrorSource, LineRange, ValidationChecks, ValidationError
 from .options import ValidatorOptions
 from .progress import NullProgress
+from .pool import WorkerPool
 
 class ContextAdapter(logging.LoggerAdapter):
     def process(self, msg: str, kwargs) -> tuple[str, dict]:
@@ -49,6 +50,7 @@ class DashElement(ABC):
                  url: str | None = None) -> None:
         self.parent = parent
         self.url = url
+        self.pool: WorkerPool | None = None
         if parent:
             self.mode = parent.mode
             self.url = parent.url
@@ -57,6 +59,7 @@ class DashElement(ABC):
             self.http = parent.http
             self.filenames = parent.filenames
             self.progress = parent.progress
+            self.pool = parent.pool
         else:
             assert options is not None
             self.options = options

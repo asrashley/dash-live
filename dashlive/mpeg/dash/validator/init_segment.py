@@ -12,18 +12,27 @@ from dashlive.utils.buffered_reader import BufferedReader
 from .dash_element import DashElement
 
 class InitSegment(DashElement):
-    def __init__(self, parent, url, info, seg_range):
+    def __init__(self, parent, url: str | None, seg_range: str | None) -> None:
         super().__init__(None, parent)
-        self.info = info
         self.seg_range = seg_range
         self.url = url
+        self.atoms: list[mp4.Mp4Atom] | None = None
 
     def children(self) -> list[DashElement]:
         return []
 
-    def validate(self, depth: int = -1) -> mp4.Mp4Atom | None:
-        if not self.elt.check_not_none(self.url):
-            return None
+    def get_moov(self) -> mp4.Mp4Atom | None:
+        if self.atoms is None:
+            if not self.load():
+                return None
+        for atom in self.atoms:
+            if atom.atom_type == 'moov':
+                return atom
+        return None
+
+    def load(self) -> bool:
+        if not self.elt.check_not_none(self.url, msg='URL of init segment is missing'):
+            return False
         if self.seg_range is not None:
             headers = {"Range": f"bytes={self.seg_range}"}
             expected_status = 206
@@ -32,9 +41,10 @@ class InitSegment(DashElement):
             expected_status = 200
         self.log.debug('GET: %s %s', self.url, headers)
         response = self.http.get(self.url, headers=headers)
-        self.elt.check_equal(
-            response.status_code, expected_status,
-            msg=f'Failed to load init segment: {response.status_code}: {self.url}')
+        if not self.elt.check_equal(
+                response.status_code, expected_status,
+                msg=f'Failed to load init segment: {response.status_code}: {self.url}'):
+            return False
         if self.options.save:
             default = f'init-{self.parent.id}-{self.parent.bandwidth}'
             filename = self.output_filename(
@@ -45,15 +55,24 @@ class InitSegment(DashElement):
                 dest.write(response.body)
         src = BufferedReader(None, data=response.get_data(as_text=False))
         try:
-            atoms = mp4.Mp4Atom.load(src)
+            self.atoms = mp4.Mp4Atom.load(src)
         except Exception as err:
             self.elt.add_error(f'Failed to load init segment: {err}')
             self.log.error('Failed to load init segment: %s', err)
-            return None
-        self.elt.check_greater_than(len(atoms), 1)
-        self.elt.check_equal(atoms[0].atom_type, 'ftyp')
+            return False
+        return True
+
+    def validate(self, depth: int = -1) -> None:
+        if not self.elt.check_not_none(self.url, msg='URL of init segment is missing'):
+            return
+        if self.atoms is None:
+            if not self.load():
+                self.elt.add_error('Failed to load init segment')
+                return
+        self.elt.check_greater_than(len(self.atoms), 1)
+        self.elt.check_equal(self.atoms[0].atom_type, 'ftyp')
         moov = None
-        for atom in atoms:
+        for atom in self.atoms:
             if atom.atom_type == 'moov':
                 moov = atom
                 break
@@ -61,8 +80,8 @@ class InitSegment(DashElement):
         if not self.elt.check_not_none(moov, msg=msg):
             self.logging.error(msg)
             return None
-        if not self.info.encrypted:
-            return moov
+        if not self.options.encrypted:
+            return
         try:
             self.validate_pssh(moov.pssh)
         except (AttributeError) as ae:
@@ -72,7 +91,6 @@ class InitSegment(DashElement):
                 self.elt.check_true(
                     'moov' not in self.url, None, None,
                     f'PSSH box should be present in {self.url}\n{ae}')
-        return moov
 
     def validate_pssh(self, pssh) -> None:
         self.elt.check_equal(len(pssh.system_id), 16)

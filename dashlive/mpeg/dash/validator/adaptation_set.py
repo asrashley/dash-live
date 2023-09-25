@@ -6,6 +6,8 @@
 #
 #############################################################################
 
+from dashlive.mpeg.dash.representation import Representation as ServerRepresentation
+
 from .dash_element import DashElement
 from .exceptions import ValidationException
 from .frame_rate_type import FrameRateType
@@ -48,6 +50,11 @@ class AdaptationSet(RepresentationBaseType):
     def children(self) -> list[DashElement]:
         return super().children() + self.representations
 
+    def set_representation_info(self, info: ServerRepresentation):
+        for r in self.representations:
+            if r.id == info.id:
+                r.set_representation_info(info)
+
     def validate(self, depth: int = -1) -> None:
         if len(self.contentProtection):
             self.elt.check_not_none(
@@ -74,5 +81,7 @@ class AdaptationSet(RepresentationBaseType):
         for rep in self.representations:
             if self.progress.aborted():
                 return
-            rep.validate(depth - 1)
-            self.progress.inc()
+            if self.pool:
+                self.pool.submit(rep.validate, depth - 1)
+            else:
+                rep.validate(depth - 1)

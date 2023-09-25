@@ -13,10 +13,9 @@ from .dash_element import DashElement
 from .events import InbandEventStream
 
 class MediaSegment(DashElement):
-    def __init__(self, parent, url, info, seg_num,
+    def __init__(self, parent, url, seg_num,
                  decode_time, tolerance, seg_range):
         super().__init__(None, parent)
-        self.info = info
         self.seg_num = seg_num
         self.decode_time = decode_time
         self.tolerance = tolerance
@@ -27,9 +26,6 @@ class MediaSegment(DashElement):
 
     def children(self) -> list[DashElement]:
         return []
-
-    def set_info(self, info):
-        self.info = info
 
     def validate(self, depth: int = -1, all_atoms: bool = False) -> None:
         headers = None
@@ -62,9 +58,12 @@ class MediaSegment(DashElement):
                 dest.write(response.body)
         src = BufferedReader(None, data=response.get_data(as_text=False))
         options = {"strict": True}
-        self.elt.check_equal(self.options.encrypted, self.info.encrypted)
-        if self.info.encrypted:
-            options["iv_size"] = self.info.ivsize
+        info = self.parent.info
+        self.elt.check_equal(self.options.encrypted, info.encrypted)
+        if info.encrypted:
+            if not self.elt.check_not_none(info.iv_size, msg='IV size is unknown'):
+                return
+            options["iv_size"] = info.iv_size
         atoms = mp4.Mp4Atom.load(src, options=options)
         self.elt.check_greater_than(len(atoms), 1)
         moof = None
@@ -86,7 +85,7 @@ class MediaSegment(DashElement):
         try:
             senc = moof.traf.senc
             self.elt.check_not_equal(
-                self.info.encrypted, False,
+                info.encrypted, False,
                 msg='senc box should not be found in a clear stream')
             saio = moof.traf.find_child('saio')
             self.elt.check_not_none(
@@ -107,18 +106,15 @@ class MediaSegment(DashElement):
                      'Expected {}, got {}'.format(
                          senc.samples[0].position, saio.offsets[0] + base_data_offset)))
             self.elt.check_equal(len(moof.traf.trun.samples), len(senc.samples))
-        except AttributeError:
+        except AttributeError as err:
             self.elt.check_not_equal(
-                self.info.encrypted, True,
-                msg='Failed to find senc box in encrypted stream')
+                info.encrypted, True,
+                msg=f'Failed to find senc box in encrypted stream: {err}')
         if self.seg_num is not None:
             self.elt.check_equal(
                 moof.mfhd.sequence_number, self.seg_num,
                 msg='Sequence number error, expected {}, got {}'.format(
                     self.seg_num, moof.mfhd.sequence_number))
-        moov = self.info.moov
-        if not self.elt.check_not_none(moov, msg='Failed to find INIT segment'):
-            return
         if self.decode_time is not None:
             self.log.debug(
                 'decode_time=%s base_media_decode_time=%d delta=%d',
@@ -149,6 +145,9 @@ class MediaSegment(DashElement):
         self.elt.check_less_than_or_equal(
             last_sample_end, mdat.position + mdat.size, msg=msg)
         self.elt.check_equal(first_sample_pos, mdat.position + mdat.header_size, msg=msg)
+        moov = self.parent.init_segment.get_moov()
+        if not self.elt.check_not_none(moov, msg='Failed to get MOOV box from init segment'):
+            return
         pts_values = set()
         dts = moof.traf.tfdt.base_media_decode_time
         for sample in moof.traf.trun.samples:

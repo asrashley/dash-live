@@ -24,19 +24,23 @@ from abc import abstractmethod
 import io
 import json
 import time
+from typing import Optional
 
 from lxml import etree as ET
+
+from dashlive.mpeg.dash.representation import Representation as ServerRepresentation
 
 from .dash_element import DashElement
 from .manifest import Manifest
 from .options import ValidatorOptions
+#from .pool import WorkerPool
 from .representation import Representation
-from .representation_info import RepresentationInfo
 
 class DashValidator(DashElement):
     def __init__(self, url, http_client,
-                 mode: str | None = None, options: ValidatorOptions | None = None,
-                 xml: str | None = None) -> None:
+                 mode: str | None = None,
+                 options: ValidatorOptions | None = None,
+                 xml: Optional[ET.Element] = None) -> None:
         DashElement.init_xml_namespaces()
         super().__init__(None, parent=None, options=options)
         self.http = http_client
@@ -45,9 +49,10 @@ class DashValidator(DashElement):
         self.mode = mode
         self.validator = self
         self.xml = xml
-        self.manifest = None
+        self.manifest: Manifest | None = None
         self.manifest_text: list[tuple[int, str]] = []
         self.prev_manifest = None
+        self.pool = options.pool
         if xml is not None:
             self.manifest = Manifest(self, self.url, self.mode, self.xml)
 
@@ -105,6 +110,9 @@ class DashValidator(DashElement):
                 age, 5 * self.manifest.minimumUpdatePeriod,
                 fmt.format(self.manifest.minimumUpdatePeriod, age.total_seconds()))
         self.manifest.validate(depth=depth)
+        if self.pool:
+            for err in self.pool.wait_for_completion():
+                self.elt.add_error(f'Exception: {err}')
         if self.options.save and self.options.prefix:
             kids = set()
             for p in self.manifest.periods:
@@ -126,6 +134,8 @@ class DashValidator(DashElement):
         return self.has_errors()
 
     def children(self) -> list[DashElement]:
+        if self.manifest is None:
+            return []
         return [self.manifest]
 
     def save_manifest(self, filename=None):
@@ -143,18 +153,7 @@ class DashValidator(DashElement):
         self.log.info('Wait %d seconds', dur)
         time.sleep(dur)
 
-    @abstractmethod
-    def get_representation_info(self, rep: Representation)  -> RepresentationInfo:
-        """Get the Representation object for the specified media URL.
-        The returned object must have the following attributes:
-        * encrypted: bool         - Is AdaptationSet encrypted ?
-        * ivsize: int             - IV size in bytes (8 or 16) (N/A if encrypted==False)
-        * timescale: int          - The timescale units for the AdaptationSet
-        * num_segments: int       - The number of segments in the stream (VOD only)
-        * segments: List[Segment] - Information about each segment (optional)
-        """
-        raise Exception("Not implemented")
-
-    @abstractmethod
-    def set_representation_info(self, rep: Representation, info: RepresentationInfo):
-        raise Exception("Not implemented")
+    def set_representation_info(self, info: ServerRepresentation):
+        if self.manifest is None:
+            return
+        self.manifest.set_representation_info(info)

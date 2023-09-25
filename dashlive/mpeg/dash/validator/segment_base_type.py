@@ -31,6 +31,9 @@ class SegmentBaseType(DashElement):
             URLType(i, self) for i in elt.findall(
                 './dash:RepresentationIndex', self.xmlNamespaces)]
 
+    def children(self) -> list[DashElement]:
+        return self.initializationList + self.representationIndex
+
     def load_segment_index(self, url):
         self.checkIsNotNone(self.indexRange)
         headers = {"Range": f"bytes={self.indexRange}"}

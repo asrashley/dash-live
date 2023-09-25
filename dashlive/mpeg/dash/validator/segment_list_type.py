@@ -5,6 +5,7 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+from .dash_element import DashElement
 from .multiple_segment_base_type import MultipleSegmentBaseType
 from .segment_url import SegmentURL
 
@@ -18,3 +19,13 @@ class SegmentListType(MultipleSegmentBaseType):
         super().validate(depth)
         self.checkGreaterThan(len(self.segmentURLs), 0)
         self.checkGreaterThan(len(self.segmentURLs[0].initializationList), 0)
+
+    def children(self) -> list[DashElement]:
+        return super().children() + self.segmentURLs
+
+    def __repr__(self) -> str:
+        params: list[str] = []
+        for item in self.children():
+            params.append(str(item))
+        txt = ', '.join(params)
+        return f'SegmentListType({txt})'

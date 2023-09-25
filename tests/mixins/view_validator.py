@@ -20,11 +20,14 @@
 #
 #############################################################################
 
+from concurrent.futures import ThreadPoolExecutor, Executor
 import logging
+import threading
 import urllib.parse
 
 from dashlive.server import models, routes
 from dashlive.mpeg.dash.validator import DashValidator, RepresentationInfo, ValidatorOptions
+from dashlive.mpeg.dash.validator.pool import WorkerPool
 
 from .mixin import HideMixinsFilter
 
@@ -35,48 +38,14 @@ class ViewsTestDashValidator(DashValidator):
         opts.log.addFilter(HideMixinsFilter())
         if debug:
             opts.log.setLevel(logging.DEBUG)
+        # opts.pool = WorkerPool(ThreadPoolExecutor(max_workers=4))
         super().__init__(
             url=url,
             http_client=http_client,
             mode=mode,
             options=opts)
-        self.representations = {}
         self.log.debug('Check manifest: %s', url)
         if xml is not None:
             self.load(xml)
-
-    def get_representation_info(self, representation):
-        try:
-            return self.representations[representation.unique_id()]
-        except KeyError:
-            pass
-        url = representation.init_seg_url()
-        parts = urllib.parse.urlparse(url)
-        self.log.debug('Trying to match %s using %s',
-                       parts.path,
-                       routes.routes["dash-media"].reTemplate.pattern)
-        match = routes.routes["dash-media"].reTemplate.match(parts.path)
-        if match is None:
-            self.log.debug(
-                'Tying to match %s using %s',
-                parts.path,
-                routes.routes["dash-od-media"].reTemplate.pattern)
-            match = routes.routes["dash-od-media"].reTemplate.match(parts.path)
-        if match is None:
-            self.log.error('match %s %s', url, parts.path)
-        self.elt.check_not_none(
-            match, msg=f'Failed to find match for URL path "{parts.path}"')
-        directory = match.group("stream")
-        stream = models.Stream.get(directory=directory)
-        self.elt.check_not_none(stream, msg=f'Failed to find stream {directory}')
-        filename = match.group("filename")
-        mf = models.MediaFile.get(name=filename)
-        self.elt.check_not_none(mf, msg=f'Failed to find MediaFile {filename}')
-        rep = mf.representation
-        info = RepresentationInfo(
-            num_segments=rep.num_media_segments, **rep.toJSON())
-        self.set_representation_info(representation, info)
-        return info
-
-    def set_representation_info(self, representation, info):
-        self.representations[representation.unique_id()] = info
+            for mf in models.MediaFile.all():
+                self.set_representation_info(mf.representation)

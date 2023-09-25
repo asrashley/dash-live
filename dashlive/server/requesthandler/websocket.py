@@ -6,6 +6,7 @@
 #
 #############################################################################
 
+from concurrent.futures import ThreadPoolExecutor, Executor
 import queue
 import logging
 from logging.handlers import QueueHandler, QueueListener
@@ -14,6 +15,7 @@ import time
 from dashlive.utils.json_object import JsonObject
 from dashlive.mpeg.dash.validator.options import ValidatorOptions
 from dashlive.mpeg.dash.validator.basic import BasicDashValidator
+from dashlive.mpeg.dash.validator.pool import WorkerPool
 from dashlive.mpeg.dash.validator.progress import Progress
 
 from .ws_log_handler import WebsocketLogHandler
@@ -78,7 +80,8 @@ class WebsocketHandler(Progress):
                             **kwargs) -> None:
         start_time = time.time()
         self.dash_log.info('Fetching manifest: %s', manifest)
-        opts = ValidatorOptions(log=self.dash_log, progress=self, **kwargs)
+        pool = WorkerPool(ThreadPoolExecutor(max_workers=8))
+        opts = ValidatorOptions(log=self.dash_log, progress=self, pool=pool, **kwargs)
         if opts.verbose:
             self.dash_log.setLevel(logging.DEBUG)
         else:
