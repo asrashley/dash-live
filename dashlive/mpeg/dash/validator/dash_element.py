@@ -136,7 +136,7 @@ class DashElement(ABC):
     def children(self) -> list["DashElement"]:
         ...
 
-    def parse_attributes(self, elt, attributes):
+    def parse_attributes(self, elt: ET.ElementBase, attributes: list[tuple]) -> None:
         for name, conv, dflt in attributes:
             if ':' in name:
                 ns, nm = name.split(':')
@@ -151,6 +151,7 @@ class DashElement(ABC):
                     msg = f'Attribute "{self.classname()}@{name}" has invalid value "{val}": {err}'
                     self.attrs.add_error(msg)
                     self.log.error(msg)
+                    val = dflt
             elif dflt == DashElement.Parent:
                 val = getattr(self.parent, name, None)
             else:
