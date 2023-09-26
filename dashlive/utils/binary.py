@@ -29,7 +29,8 @@ class Binary:
 
     __slots__ = ['data', 'encoding']
 
-    def __init__(self, data, encoding=BASE64, decode: bool = False,  _type=None):
+    def __init__(self, data: str | bytes, encoding: int = BASE64,
+                 decode: bool = False, _type: str | None = None):
         if data is not None and (decode or _type is not None):
             if encoding == self.BASE64:
                 data = base64.b64decode(data)

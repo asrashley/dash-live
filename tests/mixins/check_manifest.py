@@ -44,10 +44,13 @@ def add_url(method, url):
     @wraps(method)
     def tst_fn(self, *args, **kwargs):
         try:
+            self.log_context.add_item('url', url)
             return method(self, *args, **kwargs)
         except AssertionError:
             print(f'URL="{url}"')
             raise
+        finally:
+            self.log_context.add_item('url', '')
     return tst_fn
 
 class MockServeManifest(ServeManifest):
@@ -66,13 +69,6 @@ class MockServeManifest(ServeManifest):
         raise ValueError(fr'Unsupported route name: {route}')
 
 class DashManifestCheckMixin:
-    def _assert_true(self, result, a, b, msg, template):
-        if not result:
-            print(fr'URL: {self.current_url}')
-            if msg is not None:
-                raise AssertionError(msg)
-            raise AssertionError(template.format(a, b))
-
     def check_a_manifest_using_major_options(self, filename: str, mode: str) -> None:
         """
         Exhaustive test of a manifest with every combination of options
@@ -134,58 +130,62 @@ class DashManifestCheckMixin:
         clear = ('drm=none' in query) or ('drm' not in query)
         self.check_manifest_url(mpd_url, mode, not clear)
 
-    def check_manifest_url(self, mpd_url: str, mode: str, encrypted: bool, check_head=False):
+    def check_manifest_url(self, mpd_url: str, mode: str, encrypted: bool,
+                           check_head=False) -> ViewsTestDashValidator:
+        """
+        Test one manifest for validity (wrapped in context of MPD url)
+        """
+        try:
+            self.log_context.add_item('url', mpd_url)
+            return self.do_check_manifest_url(mpd_url, mode, encrypted, check_head)
+        finally:
+            del self.log_context['url']
+
+    def do_check_manifest_url(self, mpd_url: str, mode: str, encrypted: bool,
+                              check_head: bool = False) -> ViewsTestDashValidator:
         """
         Test one manifest for validity
         """
         response = None
-        try:
+        # print('check_manifest_url', mpd_url, mode, encrypted)
+        response = self.client.get(mpd_url)
+        if response.status_code == 302:
+            # Handle redirect request
+            mpd_url = response.headers['Location']
             self.current_url = mpd_url
-            # print('check_manifest_url', mpd_url, mode, encrypted)
             response = self.client.get(mpd_url)
-            if response.status_code == 302:
-                # Handle redirect request
-                mpd_url = response.headers['Location']
-                self.current_url = mpd_url
-                response = self.client.get(mpd_url)
-            self.assertIn("Access-Control-Allow-Origin", response.headers)
-            self.assertEqual(response.headers["Access-Control-Allow-Origin"], '*')
-            self.assertEqual(response.headers["Access-Control-Allow-Methods"], "HEAD, GET, POST")
-            self.assertEqual(response.status_code, 200)
-            xml = ET.parse(io.BytesIO(response.get_data(as_text=False)))
-            dv = ViewsTestDashValidator(
-                http_client=self.client, mode=mode, xml=xml.getroot(),
-                url=mpd_url, encrypted=encrypted)
-            dv.validate(depth=3)
-            if dv.has_errors():
-                for err in dv.get_errors():
-                    print(err)
-            self.assertFalse(dv.has_errors(), 'DASH stream validation failed')
+        self.assertIn("Access-Control-Allow-Origin", response.headers)
+        self.assertEqual(response.headers["Access-Control-Allow-Origin"], '*')
+        self.assertEqual(response.headers["Access-Control-Allow-Methods"], "HEAD, GET, POST")
+        self.assertEqual(response.status_code, 200)
+        xml = ET.parse(io.BytesIO(response.get_data(as_text=False)))
+        dv = ViewsTestDashValidator(
+            http_client=self.client, mode=mode, xml=xml.getroot(),
+            url=mpd_url, encrypted=encrypted)
+        dv.validate(depth=3)
+        if dv.has_errors():
+            for err in dv.get_errors():
+                print(err)
+        self.assertFalse(dv.has_errors(), 'DASH stream validation failed')
+        if check_head:
+            head = self.client.head(mpd_url)
+        if mode != 'live':
             if check_head:
-                head = self.client.head(mpd_url)
-            if mode != 'live':
-                if check_head:
-                    self.assertEqual(
-                        head.headers['Content-Length'],
-                        response.headers['Content-Length'])
-                if dv.manifest.mediaPresentationDuration is None:
-                    # duration must be specified in the Period
-                    dur = datetime.timedelta(seconds=0)
-                    for period in dv.manifest.periods:
-                        self.assertIsNotNone(period.duration)
-                        dur += period.duration
-                    self.assertAlmostEqual(dur.total_seconds(), self.MEDIA_DURATION,
-                                           delta=1.0)
-                else:
-                    self.assertAlmostEqual(dv.manifest.mediaPresentationDuration.total_seconds(),
-                                           self.MEDIA_DURATION, delta=1.0)
-            return dv
-        except AssertionError as err:
-            if response is not None:
-                print(f'{err}: response={response.text}')
-            raise err
-        finally:
-            self.current_url = ''
+                self.assertEqual(
+                    head.headers['Content-Length'],
+                    response.headers['Content-Length'])
+            if dv.manifest.mediaPresentationDuration is None:
+                # duration must be specified in the Period
+                dur = datetime.timedelta(seconds=0)
+                for period in dv.manifest.periods:
+                    self.assertIsNotNone(period.duration)
+                    dur += period.duration
+                self.assertAlmostEqual(dur.total_seconds(), self.MEDIA_DURATION,
+                                       delta=1.0)
+            else:
+                self.assertAlmostEqual(dv.manifest.mediaPresentationDuration.total_seconds(),
+                                       self.MEDIA_DURATION, delta=1.0)
+        return dv
 
     @contextmanager
     def create_mock_request_context(self, url: str, stream: models.Stream,

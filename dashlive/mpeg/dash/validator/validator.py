@@ -20,7 +20,6 @@
 #
 #############################################################################
 
-from abc import abstractmethod
 import io
 import json
 import time
@@ -33,8 +32,6 @@ from dashlive.mpeg.dash.representation import Representation as ServerRepresenta
 from .dash_element import DashElement
 from .manifest import Manifest
 from .options import ValidatorOptions
-#from .pool import WorkerPool
-from .representation import Representation
 
 class DashValidator(DashElement):
     def __init__(self, url, http_client,
@@ -53,32 +50,20 @@ class DashValidator(DashElement):
         self.manifest_text: list[tuple[int, str]] = []
         self.prev_manifest = None
         self.pool = options.pool
+        self.prefetch_done = False
         if xml is not None:
+            self.progress.reset(1)
             self.manifest = Manifest(self, self.url, self.mode, self.xml)
+            self.manifest.prefetch_media_info()
+            self.prefetch_done = True
 
     def load(self, xml=None) -> bool:
+        self.progress.reset(1)
+        self.prefetch_done = False
         self.prev_manifest = self.manifest
         self.xml = xml
         if self.xml is None:
-            result = self.http.get(self.url)
-            if not self.elt.check_equal(
-                    result.status_code, 200,
-                    msg=f'Failed to load manifest: {result.status_code} {self.url}'):
-                return False
-            # print(result.text)
-            xml = ET.parse(io.BytesIO(result.get_data(as_text=False)))
-            self.manifest_text = []
-            for line in io.StringIO(result.get_data(as_text=True)):
-                self.manifest_text.append(line[:-1])
-            if self.options.pretty:
-                encoding = xml.docinfo.encoding
-                pp_txt = ET.tostring(xml, pretty_print=True, xml_declaration=True,
-                                     encoding=encoding)
-                xml = ET.parse(io.BytesIO(pp_txt))
-                self.manifest_text = []
-                for line in io.StringIO(str(pp_txt, encoding)):
-                    self.manifest_text.append(line[:-1])
-            self.xml = xml.getroot()
+            self.fetch_manifest()
         if self.mode is None:
             if self.xml.get("type") == "dynamic":
                 self.mode = 'live'
@@ -89,13 +74,46 @@ class DashValidator(DashElement):
         self.manifest = Manifest(self, self.url, self.mode, self.xml)
         return True
 
+    def prefetch_media_info(self) -> None:
+        if self.prefetch_done:
+            return
+        self.log.info('Prefetching media files required before validation can start')
+        self.progress.text('Prefetching media files')
+        self.manifest.prefetch_media_info()
+        self.prefetch_done = True
+
     def get_manifest_lines(self) -> list[str]:
         return self.manifest_text
+
+    def fetch_manifest(self) -> bool:
+        self.progress.text(self.url)
+        result = self.http.get(self.url)
+        if not self.elt.check_equal(
+                result.status_code, 200,
+                msg=f'Failed to load manifest: {result.status_code} {self.url}'):
+            return False
+        # print(result.text)
+        xml = ET.parse(io.BytesIO(result.get_data(as_text=False)))
+        self.manifest_text = []
+        for line in io.StringIO(result.get_data(as_text=True)):
+            self.manifest_text.append(line.rstrip())
+        if self.options.pretty:
+            encoding = xml.docinfo.encoding
+            pp_txt = ET.tostring(xml, pretty_print=True, xml_declaration=True,
+                                 encoding=encoding)
+            xml = ET.parse(io.BytesIO(pp_txt))
+            self.manifest_text = []
+            for line in io.StringIO(str(pp_txt, encoding)):
+                self.manifest_text.append(line.rstrip())
+        self.xml = xml.getroot()
+        self.progress.text('')
+        return True
 
     def validate(self, depth=-1) -> bool:
         if self.xml is None:
             if not self.load():
                 return False
+        self.prefetch_media_info()
         self.progress.reset(self.manifest.num_tests(depth))
         if self.options.save:
             self.save_manifest()
@@ -119,19 +137,26 @@ class DashValidator(DashElement):
                 for a in p.adaptation_sets:
                     if a.default_KID is not None:
                         kids.add(a.default_KID)
+            if self.options.title is None:
+                title = self.url
+            else:
+                title = self.options.title
             config = {
                 'keys': [{'computed': True, 'kid': kid} for kid in list(kids)],
                 'streams': [{
                     'directory': self.options.prefix,
-                    'title': self.url,
+                    'title': title,
                     'files': list(self.manifest.filenames)
                 }],
             }
-            filename = self.output_filename(
-                default=None, bandwidth=None, filename=f'{self.options.prefix}.json')
+            filename = self.get_json_script_filename()
             with open(filename, 'wt') as dest:
                 json.dump(config, dest, indent=2)
         return self.has_errors()
+
+    def get_json_script_filename(self) -> str:
+        return self.output_filename(
+            default=None, bandwidth=None, filename=f'{self.options.prefix}.json')
 
     def children(self) -> list[DashElement]:
         if self.manifest is None:

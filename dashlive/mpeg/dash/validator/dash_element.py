@@ -201,7 +201,8 @@ class DashElement(ABC):
             p = p.parent
         return '/'.join(rv)
 
-    def output_filename(self, default, bandwidth, prefix=None, filename=None, makedirs=False):
+    def output_filename(self, default: str | None, bandwidth: int | None, prefix: str | None = None,
+                        filename: str | None = None, makedirs=False) -> str:
         if filename is None:
             filename = self.url
         if filename.startswith('http:'):

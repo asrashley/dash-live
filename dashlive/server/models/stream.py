@@ -1,11 +1,26 @@
+#############################################################################
+#
+#  Project Name        :    Simulated MPEG DASH service
+#
+#  Author              :    Alex Ashley
+#
+#############################################################################
+import hashlib
+import logging
+from pathlib import Path
 from typing import cast, Optional
 
+import flask
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship  # type: ignore
 import sqlalchemy_jsonfield  # type: ignore
+from werkzeug.datastructures import FileStorage
+from werkzeug.utils import secure_filename
 
 from dashlive.utils.json_object import JsonObject
 from dashlive.mpeg.dash.reference import StreamTimingReference
+
+from .blob import Blob
 from .db import db
 from .mediafile import MediaFile
 from .mixin import ModelMixin
@@ -112,3 +127,36 @@ class Stream(db.Model, ModelMixin):
             self.timing_ref = ref.toJSON()
 
     timing_reference = property(get_timing_reference, set_timing_reference)
+
+    def add_file(self, file_upload: FileStorage, commit: bool = False) -> MediaFile:
+        filename = Path(secure_filename(file_upload.filename))
+        upload_folder = Path(flask.current_app.config['UPLOAD_FOLDER']) / self.directory
+        logging.debug('upload_folder="%s"', upload_folder)
+        if not upload_folder.exists():
+            upload_folder.mkdir(parents=True)
+        abs_filename = upload_folder / filename
+        mf = MediaFile.get(name=filename.stem)
+        if mf:
+            mf.delete_file()
+            mf.delete()
+        blob = Blob.get_one(filename=filename.name)
+        if blob:
+            blob.delete_file(upload_folder)
+            blob.delete()
+        file_upload.save(abs_filename)
+        blob = Blob(
+            filename=filename.name,
+            size=abs_filename.stat().st_size,
+            content_type=file_upload.mimetype)
+        with abs_filename.open('rb') as src:
+            digest = hashlib.file_digest(src, 'sha1')
+            blob.sha1_hash = digest.hexdigest()
+        db.session.add(blob)
+        mf = MediaFile(
+            name=filename.stem, stream=self, blob=blob,
+            content_type=file_upload.mimetype)
+        db.session.add(mf)
+        if not commit:
+            return mf
+        db.session.commit()
+        return MediaFile.get(name=filename.stem, stream=self)

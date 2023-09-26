@@ -20,25 +20,23 @@
 #
 #############################################################################
 
-from concurrent.futures import ThreadPoolExecutor, Executor
 import logging
-import threading
-import urllib.parse
 
-from dashlive.server import models, routes
-from dashlive.mpeg.dash.validator import DashValidator, RepresentationInfo, ValidatorOptions
-from dashlive.mpeg.dash.validator.pool import WorkerPool
-
+from dashlive.server import models
+from dashlive.mpeg.dash.validator import DashValidator, ValidatorOptions, WorkerPool
 from .mixin import HideMixinsFilter
 
 class ViewsTestDashValidator(DashValidator):
-    def __init__(self, http_client, mode, url, encrypted=False, xml=None, debug=False):
+    def __init__(self, http_client, mode, url, encrypted=False, xml=None, debug=False,
+                 workers: int = 0):
         opts = ValidatorOptions(encrypted=encrypted)
         opts.log = logging.getLogger(__name__)
         opts.log.addFilter(HideMixinsFilter())
         if debug:
             opts.log.setLevel(logging.DEBUG)
-        # opts.pool = WorkerPool(ThreadPoolExecutor(max_workers=4))
+        opts.pool = None
+        if workers > 0:
+            opts.pool = WorkerPool(ThreadPoolExecutor(max_workers=workers))
         super().__init__(
             url=url,
             http_client=http_client,

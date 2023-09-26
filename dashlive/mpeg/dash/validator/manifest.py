@@ -49,6 +49,11 @@ class Manifest(DashElement):
     def mpd(self):
         return self
 
+    def prefetch_media_info(self) -> None:
+        self.progress.add_todo(len(self.periods))
+        for p in self.periods:
+            p.prefetch_media_info()
+
     def set_representation_info(self, info: ServerRepresentation):
         for p in self.periods:
             p.set_representation_info(info)

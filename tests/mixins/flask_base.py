@@ -28,7 +28,7 @@ import multiprocessing
 from pathlib import Path
 import shutil
 import tempfile
-from typing import Any
+from typing import Any, ClassVar, Optional, Type
 
 from bs4 import BeautifulSoup, element
 import flask
@@ -41,31 +41,57 @@ from dashlive.server import models
 from dashlive.server.app import create_app
 from dashlive.utils.date_time import from_isodatetime
 
+from .context_filter import ContextFilter
 from .mixin import TestCaseMixin
 
 class FlaskTestBase(TestCaseMixin, TestCase):
     # duration of media in test/fixtures directory (in seconds)
-    MEDIA_DURATION = 40
-    FIXTURES_PATH = Path(__file__).parent.parent / "fixtures"
     ADMIN_USER = 'admin'
     ADMIN_EMAIL = 'admin@dashlive.unit.test'
     ADMIN_PASSWORD = r'suuuperSecret!'
+    ENABLE_WSS = False
+    FIXTURES_PATH = Path(__file__).parent.parent / "fixtures"
     STD_USER = 'user'
     STD_EMAIL = 'user@dashlive.unit.test'
     STD_PASSWORD = r'pa55word'
+    MEDIA_DURATION = 40
     MEDIA_USER = 'media'
     MEDIA_EMAIL = 'media@dashlive.unit.test'
     MEDIA_PASSWORD = r'm3d!a'
     STREAM_TITLE = 'Big Buck Bunny'
-    ENABLE_WSS = False
+
+    LOG_LEVEL: ClassVar[Type[logging.WARNING]] = logging.WARNING
+    log_context: ClassVar[Optional[ContextFilter]] = None
 
     _temp_dir = multiprocessing.Array(ctypes.c_char, 1024)
     current_url: str | None = None
 
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        cls.log_context = ContextFilter({'url'})
+        format = r"%(asctime)s %(levelname)-8s:%(filename)s@%(lineno)d: %(message)s"
+        logging.basicConfig(level=cls.LOG_LEVEL, format=format,
+                            datefmt='%d-%m-%y %H:%M:%S')
+        formatter = logging.Formatter(format + r"\n%(url)s", defaults={"url": ""})
+        console = logging.StreamHandler()
+        console.setLevel(cls.LOG_LEVEL)
+        console.setFormatter(formatter)
+        dash_log = logging.getLogger('DashValidator')
+        dash_log.addFilter(cls.log_context)
+        dash_log.setLevel(cls.LOG_LEVEL)
+        dash_log.addHandler(console)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        if cls.log_context:
+            dash_log = logging.getLogger('DashValidator')
+            dash_log.removeFilter(cls.log_context)
+            cls.log_context = None
+        logging.disable(logging.NOTSET)
+        super().tearDownClass()
+
     def create_app(self):
-        FORMAT = r"%(asctime)-15s:%(levelname)s:%(filename)s@%(lineno)d: %(message)s"
-        logging.basicConfig(format=FORMAT)
-        logging.getLogger('dash').setLevel(logging.INFO)
         config = {
             'BLOB_FOLDER': str(self.FIXTURES_PATH.parent),
             'DASH': {
@@ -214,7 +240,6 @@ class FlaskTestBase(TestCaseMixin, TestCase):
             shutil.rmtree(self._temp_dir.value, ignore_errors=True)
         models.db.session.remove()
         models.db.drop_all()
-        logging.disable(logging.NOTSET)
 
     def login_user(self, username: str | None = None,
                    password: str | None = None,

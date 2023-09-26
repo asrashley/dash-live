@@ -5,7 +5,6 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-import base64
 import binascii
 
 from dashlive import scte35
@@ -37,9 +36,9 @@ class Scte35Binary(DashElement):
         if self.signal is None:
             return
         ev_stream = self.find_parent('EventStream')
-        self.elt.check_includes(sig, 'splice_insert')
-        self.elt.check_includes(sig['splice_insert'], 'break_duration')
-        duration = sig['splice_insert']['break_duration']['duration']
+        self.elt.check_includes(self.signal, 'splice_insert')
+        self.elt.check_includes(self.signal['splice_insert'], 'break_duration')
+        duration = self.signal['splice_insert']['break_duration']['duration']
         self.elt.check_almost_equal(
             self.duration / float(ev_stream.timescale), duration / float(MPEG_TIMEBASE))
 
@@ -82,7 +81,7 @@ class DashEvent(DashElement):
                 if ns == self.xmlNamespaces['scte35']:
                     self._children.append(Scte35EventElement(child, self, schemeIdUri))
                     continue
-            self._children.append(DashEventElement(child, self))
+            # self._children.append(DashEventElement(child, self))
 
     def children(self) -> list[DashElement]:
         return self._children

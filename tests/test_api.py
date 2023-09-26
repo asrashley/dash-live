@@ -689,7 +689,7 @@ class TestRestApi(FlaskTestBase):
             self.assertNotEqual(response.json['csrf_token'], csrf_token)
             self.assertObjectEqual(expected_result, response.json)
         else:
-            self.assertIn('File bbb_v1.mp4 uploaded', response.text)
+            self.assertIn('Uploaded file bbb_v1', response.text)
 
         # print('==== get index ====')
         url = flask.url_for('view-stream', spk=stream.pk, ajax=1)

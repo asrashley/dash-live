@@ -76,7 +76,7 @@ class InitSegment(DashElement):
             if atom.atom_type == 'moov':
                 moov = atom
                 break
-        msg='Failed to find MOOV box in this init segment'
+        msg = 'Failed to find MOOV box in this init segment'
         if not self.elt.check_not_none(moov, msg=msg):
             self.logging.error(msg)
             return None

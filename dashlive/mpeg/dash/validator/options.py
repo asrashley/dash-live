@@ -25,6 +25,7 @@ class ValidatorOptions:
     dest: str | None = None
     duration: int | None = None
     prefix: str | None = None
+    title: str | None = None
     verbose: int = 0
     pretty: bool = False
     start_time: RelaxedDateTime = field(default_factory=lambda: RelaxedDateTime.now(UTC()))

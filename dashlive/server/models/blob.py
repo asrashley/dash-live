@@ -1,3 +1,10 @@
+#############################################################################
+#
+#  Project Name        :    Simulated MPEG DASH service
+#
+#  Author              :    Alex Ashley
+#
+#############################################################################
 import contextlib
 from io import SEEK_SET
 from typing import cast
@@ -7,6 +14,7 @@ import sqlalchemy as sa
 from sqlalchemy.orm import relationship  # type: ignore
 
 from dashlive.utils.date_time import to_iso_datetime
+
 from .db import db
 from .mixin import ModelMixin
 

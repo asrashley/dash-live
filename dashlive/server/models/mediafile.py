@@ -1,3 +1,10 @@
+#############################################################################
+#
+#  Project Name        :    Simulated MPEG DASH service
+#
+#  Author              :    Alex Ashley
+#
+#############################################################################
 import contextlib
 from pathlib import Path
 from typing import cast, Optional

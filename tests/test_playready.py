@@ -36,7 +36,7 @@ from lxml import etree
 from dashlive.drm.playready import PlayReady
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.mpeg import mp4
-from dashlive.server import manifests
+from dashlive.server import manifests, models
 from dashlive.utils.binary import Binary
 from dashlive.utils.buffered_reader import BufferedReader
 
@@ -691,7 +691,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         args = ['drm=playready', 'playready_version=3.0',
                 'playready_piff=1', 'bugs=saio']
         with self.assertRaises(AssertionError):
-            self.check_piff_uuid_is_present(args)
+            self.check_piff_uuid_is_present(args, expect_errors=True)
 
     def test_all_playready_options(self):
         filename = 'hand_made.mpd'
@@ -707,7 +707,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             only={'playreadyPiff', 'playreadyVersion'},
             extras=extras)
 
-    def check_piff_uuid_is_present(self, args):
+    def check_piff_uuid_is_present(self, args: list[str], expect_errors: bool = False) -> None:
         filename = 'hand_made.mpd'
         baseurl = flask.url_for(
             'dash-mpd-v3',
@@ -715,16 +715,23 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             stream=self.FIXTURES_PATH.name,
             mode='vod')
         baseurl += '?' + '&'.join(args)
-        response = self.client.get(baseurl)
-        xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
-        mpd = ViewsTestDashValidator(
-            http_client=self.client, mode='vod', xml=xml.getroot(), url=baseurl,
-            encrypted=True)
-        mpd.validate()
-        self.assertFalse(mpd.has_errors())
-        self.assertEqual(len(mpd.manifest.periods), 1)
+        # response = self.client.get(baseurl)
+        # xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
+        dv = ViewsTestDashValidator(
+            http_client=self.client, mode='vod', url=baseurl, encrypted=True)
+        self.assertTrue(dv.load())
+        for mf in models.MediaFile.all():
+            dv.set_representation_info(mf.representation)
+        dv.validate()
+        if dv.has_errors() and not expect_errors:
+            for idx, line in enumerate(dv.manifest_text, start=1):
+                print(f'{idx:3d}: {line}')
+            for err in dv.get_errors():
+                print(err)
+        self.assertFalse(dv.has_errors(), msg='DASH stream validation failed')
+        self.assertEqual(len(dv.manifest.periods), 1)
         piff_uuid = mp4.PiffSampleEncryptionBox.DEFAULT_VALUES['atom_type']
-        for adap_set in mpd.manifest.periods[0].adaptation_sets:
+        for adap_set in dv.manifest.periods[0].adaptation_sets:
             for rep in adap_set.representations:
                 for seg in rep.media_segments:
                     response = self.client.get(seg.url)
