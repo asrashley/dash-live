@@ -21,12 +21,9 @@
 #############################################################################
 
 import datetime
-import hashlib
 import logging
-from pathlib import Path
 
 import flask
-from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
 
 from dashlive.drm.playready import PlayReady
@@ -76,40 +73,12 @@ class UploadHandler(RequestHandlerBase):
     def save_file(self, file_upload: FileStorage,
                   stream: models.Stream) -> flask.Response:
         logging.debug("File %s uploaded", file_upload.filename)
-        filename = Path(secure_filename(file_upload.filename))
-        upload_folder = Path(flask.current_app.config['UPLOAD_FOLDER']) / stream.directory
-        logging.debug('upload_folder="%s"', upload_folder)
-        if not upload_folder.exists():
-            upload_folder.mkdir(parents=True)
-        abs_filename = upload_folder / filename
-        mf = models.MediaFile.get(name=filename.stem)
-        if mf:
-            mf.delete_file()
-            mf.delete()
-        blob = models.Blob.get_one(filename=filename.name)
-        if blob:
-            blob.delete_file(upload_folder)
-            blob.delete()
-        file_upload.save(abs_filename)
-        blob = models.Blob(
-            filename=filename.name,
-            size=abs_filename.stat().st_size,
-            content_type=file_upload.mimetype)
-        with abs_filename.open('rb') as src:
-            digest = hashlib.file_digest(src, 'sha1')
-            blob.sha1_hash = digest.hexdigest()
-        models.db.session.add(blob)
-        mf = models.MediaFile(
-            name=filename.stem, stream=stream, blob=blob,
-            content_type=file_upload.mimetype)
-        models.db.session.add(mf)
-        models.db.session.commit()
-        mf = models.MediaFile.get(name=filename.stem, stream=stream)
+        mf = stream.add_file(file_upload, commit=True)
         result = mf.toJSON()
         result['blob']['created'] = datetime.datetime.now()
-        logging.debug("upload done %s", abs_filename)
+        logging.debug("upload done %s", mf.name)
         context = self.create_context(
-            title=f'File {filename.name} uploaded',
+            title=f'File {mf.name} uploaded',
             media=result)
         context['stream'] = current_stream
         if self.is_ajax():
@@ -119,7 +88,7 @@ class UploadHandler(RequestHandlerBase):
                 "upload", csrf_key)
             result["file_html"] = flask.render_template('media/media_row.html', **context)
             return self.jsonify(result)
-        flask.flash(f'Uploaded file {filename.stem}', 'success')
+        flask.flash(f'Uploaded file {mf.name}', 'success')
         return flask.render_template('upload-done.html', **context)
 
 

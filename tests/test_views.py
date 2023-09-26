@@ -281,7 +281,11 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                 http_client=self.client, mode="live", xml=xml.getroot(),
                 url=baseurl, encrypted=encrypted)
             mpd.validate()
-            self.assertFalse(mpd.has_errors())
+            if mpd.has_errors():
+                print(response.text)
+                for err in mpd.get_errors():
+                    print(err)
+            self.assertFalse(mpd.has_errors(), msg='Stream validation failed')
         self.progress(total_tests, total_tests)
 
     def test_get_vod_media_using_on_demand_profile(self):
@@ -305,7 +309,15 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                 http_client=self.client, mode="odvod", xml=xml.getroot(),
                 url=baseurl, encrypted=False)
             mpd.validate()
-            self.assertFalse(mpd.has_errors())
+            if mpd.has_errors():
+                manifest_text: list[str] = []
+                for line in io.StringIO(response.get_data(as_text=True)):
+                    manifest_text.append(line[:-1])
+                for idx, txt in enumerate(manifest_text, start=1):
+                    print(f'{idx:#03d}: {txt}')
+                for err in mpd.get_errors():
+                    print(err)
+            self.assertFalse(mpd.has_errors(), msg='Stream validation failed')
 
     def test_request_unknown_media(self):
         url = flask.url_for(

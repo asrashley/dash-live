@@ -15,7 +15,7 @@
     method="POST"
     id="manifest-form"
     name="manifest"
-    class="card"
+    class="card needs-validation"
     >
     {%- for field in form %}
       {% if field.type != 'checkbox' %}
@@ -24,7 +24,10 @@
     {%- endfor %}
     <div class="row mb-3">
     {%- for field in form %}
-      {% if field.type == 'checkbox' %}
+    {% if field.type == 'checkbox' %}
+    {% if field.newRow %}
+    </div><div class="row mb-3">
+    {% endif %}
         {% include 'checkbox.html' %}
       {% endif %}
     {%- endfor %}

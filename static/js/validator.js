@@ -2,14 +2,35 @@ $(document).ready(function(){
     'use strict';
     const socket = io();
 
+    function updateDirectoryState(target) {
+	if (target.checked) {
+	    $('#model-prefix, #model-title').attr('disabled', false);
+	    $('label[for="model-prefix"]').removeClass('disabled');
+	    $('label[for="model-title"]').removeClass('disabled');
+	} else {
+	    $('#model-prefix, #model-title').attr('disabled', 'disabled');
+	    $('label[for="model-prefix"]').addClass('disabled');
+	    $('label[for="model-title"]').addClass('disabled');
+	}
+    }
+
+    function checkInputValidity(target) {
+	if (target.checkValidity()) {
+	    $(target).addClass('is-valid').removeClass('is-invalid');
+	} else {
+	    $(target).removeClass('is-valid').addClass('is-invalid');
+	}
+    }
+
     /* socket.on('connect', function() {
     }); */
 
-    socket.on('log', function(msg) {
+    function addLogMessage(msg) {
 	const { level, text } = msg;
 	const item = $('<p class="' + level + '">' + text + '</p>');
 	$('#validator .results').append(item);
-    });
+    }
+    socket.on('log', addLogMessage);
 
     socket.on('progress', function(data) {
 	let { pct, text, finished } = data;
@@ -38,7 +59,26 @@ $(document).ready(function(){
 	});
     });
 
-    socket.on('errors', function(errors) {
+    socket.on('manifest-validation', function(fields) {
+	$('#manifest-form').addClass('was-validated');
+	$('#manifest-form input').each((idx, elt) => {
+	    const name = $(elt).attr('name');
+	    if (fields[name]) {
+		$(elt.parentElement).addClass('has-validation');
+		$(elt).addClass('is-invalid');
+		$(elt.parentElement).find('.invalid-feedback').text(fields[name]);
+	    } else {
+		$(elt.parentElement).removeClass('has-validation');
+		$(elt.parentElement).find('.invalid-feedback').text('');
+		$(elt).removeClass('is-invalid');
+	    }
+	});
+	/* for (const [key, value] of Object.entries(fields)) {
+	    const id = `model-${key}`;
+	} */
+    });
+
+    socket.on('manifest-errors', function(errors) {
 	errors.forEach(({ location, text }) => {
 	    const [ start, end ] = location;
 	    const err = $(`<p class="error-text">${text}</p>`);
@@ -49,12 +89,42 @@ $(document).ready(function(){
 	});
     });
 
-    $('#submit').on('click', function(ev) {
+    socket.on('script', function(data) {
+	const { filename, title, prefix } = data;
+	addLogMessage({
+	    level: 'info',
+	    text: `Installing ${filename}`
+	});
+	socket.emit('cmd', {
+	    method: 'save',
+            filename,
+            prefix,
+            title,
+	});
+    });
+
+    $('#submit').on('click', (ev) => {
 	ev.preventDefault();
+	const form = document.getElementById('manifest-form');
+	$('#manifest-form').removeClass('needs-validation');
+	if (!form.checkValidity()) {
+	    $('#manifest-form input').each((idx, elt) => {
+		checkInputValidity(elt);
+	    });
+	    ev.stopPropagation();
+	    addLogMessage({
+		level: 'error',
+		text: 'Form has errors'
+	    });
+	    $(form).removeClass('was-validated').addClass('is-invalid');
+	    return;
+	}
+
 	const data = {
 	    method: 'validate',
 	};
-	$('#manifest-form').serializeArray().forEach(function(item) {
+	$(form).addClass('was-validated');
+	$(form).serializeArray().forEach(function(item) {
 	    data[item.name] = item.value;
 	});
 	$('#btn-validate').attr('disabled', 'disabled');
@@ -66,11 +136,17 @@ $(document).ready(function(){
 	socket.emit('cmd', data);
 	return false;
     });
-    $('#btn-cancel').on('click', function(ev) {
-	ev.preventDefault();
-	socket.emit('cmd', {method: 'cancel'});
-	$('#btn-validate').attr('disabled', false);
-	$('#btn-cancel').attr('disabled', 'disabled');
-	return false;
+    $('#model-save').on('change', (ev) => {
+	updateDirectoryState(ev.target);
     });
+    $('#manifest-form input').on('change', (ev) => {
+	checkInputValidity(ev.target);
+    });
+    $('#manifest-form input').on('invalid', (ev) => {
+	$(ev.target).removeClass('is-valid').addClass('is-invalid');
+    });
+    $('#manifest-form input').on('valid', (ev) => {
+	$(ev.target).addClass('is-valid').removeClass('is-invalid');
+    });
+    updateDirectoryState(document.getElementById('model-save'));
 });

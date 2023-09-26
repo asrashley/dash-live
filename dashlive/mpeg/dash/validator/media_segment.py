@@ -5,16 +5,20 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+from typing import Optional
+import urllib.parse
 
 from dashlive.mpeg import mp4
 from dashlive.utils.buffered_reader import BufferedReader
 
 from .dash_element import DashElement
 from .events import InbandEventStream
+from .http_range import HttpRange
 
 class MediaSegment(DashElement):
-    def __init__(self, parent, url, seg_num,
-                 decode_time, tolerance, seg_range):
+    def __init__(self, parent: DashElement, url: str, seg_num: int,
+                 decode_time: int | None, tolerance: int,
+                 seg_range: Optional[HttpRange] = None) -> None:
         super().__init__(None, parent)
         self.seg_num = seg_num
         self.decode_time = decode_time
@@ -26,6 +30,12 @@ class MediaSegment(DashElement):
 
     def children(self) -> list[DashElement]:
         return []
+
+    def url_description(self) -> str:
+        path = urllib.parse.urlparse(self.url).path
+        if self.seg_range:
+            return f'{path}?range={self.seg_range}'
+        return path
 
     def validate(self, depth: int = -1, all_atoms: bool = False) -> None:
         headers = None
@@ -123,7 +133,7 @@ class MediaSegment(DashElement):
                 abs(moof.traf.tfdt.base_media_decode_time - self.decode_time))
             seg_dt = moof.traf.tfdt.base_media_decode_time
             msg = 'Decode time {seg_dt:d} should be {dt:d} for segment {num} in {url:s}'.format(
-                seg_dt=seg_dt, dt=self.decode_time, num=self.seg_num, url=self.url)
+                seg_dt=seg_dt, dt=self.decode_time, num=self.seg_num, url=self.url_description())
             self.elt.check_almost_equal(
                 seg_dt,
                 self.decode_time,

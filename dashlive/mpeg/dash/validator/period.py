@@ -34,6 +34,15 @@ class Period(DashElement):
         evs = period.findall('./dash:EventStream', self.xmlNamespaces)
         self.event_streams = [EventStream(r, self) for r in evs]
 
+    def prefetch_media_info(self) -> None:
+        self.progress.add_todo(len(self.adaptation_sets))
+        for adp in self.adaptation_sets:
+            adp.prefetch_media_info()
+        if self.pool is not None:
+            for err in self.pool.wait_for_completion():
+                self.elt.add_error(f'Exception: {err}')
+        self.progress.inc()
+
     def set_representation_info(self, info: ServerRepresentation):
         for a in self.adaptation_sets:
             a.set_representation_info(info)

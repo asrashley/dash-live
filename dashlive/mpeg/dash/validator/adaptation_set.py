@@ -9,7 +9,6 @@
 from dashlive.mpeg.dash.representation import Representation as ServerRepresentation
 
 from .dash_element import DashElement
-from .exceptions import ValidationException
 from .frame_rate_type import FrameRateType
 from .representation_base_type import RepresentationBaseType
 from .representation import Representation
@@ -38,6 +37,14 @@ class AdaptationSet(RepresentationBaseType):
                 self.default_KID = cp.default_KID
                 break
         self.representations = [Representation(r, self) for r in reps]
+
+    def prefetch_media_info(self) -> None:
+        self.progress.add_todo(len(self.representations))
+        for r in self.representations:
+            if self.pool:
+                self.pool.submit(r.generate_segment_todo_list)
+            else:
+                r.generate_segment_todo_list()
 
     def num_tests(self, depth: int = -1) -> int:
         if depth == 0:

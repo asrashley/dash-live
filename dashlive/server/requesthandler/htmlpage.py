@@ -27,6 +27,7 @@ import urllib.error
 import urllib.parse
 
 import flask
+from flask_login import current_user
 
 from dashlive.server import manifests, models
 from dashlive.server.options.drm_options import DrmLocation, DrmSelection
@@ -231,6 +232,7 @@ class DashValidator(HTMLHandlerBase):
             "name": "manifest",
             "title": "Select Manifest",
             "type": "url",
+            "required": True,
             "placeholder": "DASH manifest URL",
         }, {
             'name': 'duration',
@@ -240,7 +242,26 @@ class DashValidator(HTMLHandlerBase):
             'value': 30,
             'min': 1,
             'max': 3600,
-        }, {
+        }]
+        if current_user.has_permission(models.Group.MEDIA):
+            context['form'] += [{
+                "name": "prefix",
+                "title": "Destination directory",
+                "type": "text",
+                "disabled": True,
+                "pattern": r'[A-Za-z0-9]{3,31}',
+                "text": "3 to 31 characters without any special characters",
+                "minlength": 3,
+                "maxlength": 31,
+            }, {
+                "name": "title",
+                "title": "Stream title",
+                "type": "text",
+                "disabled": True,
+                "minlength": 3,
+                "maxlength": 119,
+            }]
+        context['form'] += [{
             'name': 'verbose',
             'title': 'Verbose output',
             'type': 'checkbox',
@@ -256,4 +277,12 @@ class DashValidator(HTMLHandlerBase):
             'type': 'checkbox',
             'inline': True
         }]
+        if current_user.has_permission(models.Group.MEDIA):
+            context['form'].append({
+                'name': 'save',
+                'title': 'Add stream to this server?',
+                'type': 'checkbox',
+                'inline': True,
+                'newRow': True,
+            })
         return flask.render_template('validator.html', **context)

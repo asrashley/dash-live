@@ -1,16 +1,16 @@
 {%- if field.rowClass %}
 {% set rowClass = field.rowClass %}
 {%- else %}
-{% set rowClass = "form-group row mb-3" %}
+{% set rowClass = "row mb-3" %}
 {%- endif %}
-{%- if field.type == 'checkbox' %}
-{% set formClass = 'form-check' %}
+{%- if field.type == "checkbox" %}
+{% set formClass = "form-check" %}
 {%- else %}
 {% set formClass = "form-group" %}
 {%- endif %}
 <div class="{{ rowClass }} {{ formClass }}">
   {% if field.type != "hidden" %}
-  <label class="col-sm-2 col-form-label" for="model-{{field.name}}">
+  <label class="col-sm-2 col-form-label {%- if field.disabled %} disabled{%- endif %}" for="model-{{field.name}}">
     {{ field.title }}:
   </label>
   <div {% if field.text %}class="col-sm-5" {% else %}class="col-sm-10" {% endif %}>
@@ -38,6 +38,7 @@
     {%- if field.pattern %} pattern="{{field.pattern}}"{% endif %}
     {%- if field.placeholder %} placeholder="{{field.placeholder}}"{% endif %}
     {%- if field.spellcheck %} pattern="{{field.spellcheck}}"{% endif %}
+    {%- if field.required %} required{% endif %}
     {%- if field.disabled %} disabled{% endif %}
     {% if field.type == "select" %}
 	>
@@ -51,6 +52,7 @@
     />
       {% endif %}
   {% if field.type != "hidden" %}
+  <div class="invalid-feedback"></div>
   </div>
   {% endif %}
   {%- if field.text %}

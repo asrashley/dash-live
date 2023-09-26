@@ -6,14 +6,12 @@
 #
 #############################################################################
 import argparse
-from concurrent.futures import ThreadPoolExecutor, Executor
+from concurrent.futures import ThreadPoolExecutor
 import logging
-import math
 import sys
-import traceback
+import time
 
 from .validator import DashValidator
-from .exceptions import ValidationException
 from .options import ValidatorOptions
 from .pool import WorkerPool
 from .progress import ConsoleProgress
@@ -45,6 +43,9 @@ class BasicDashValidator(DashValidator):
                             required=False)
         parser.add_argument('--prefix',
                             help='filename prefix to use when storing media files',
+                            required=False)
+        parser.add_argument('--title',
+                            help='Title to use for stream when storing media files',
                             required=False)
         parser.add_argument('--duration',
                             help='Maximum duration (in seconds)',
@@ -84,7 +85,7 @@ class BasicDashValidator(DashValidator):
             log.setLevel(logging.INFO)
         if args.ivsize is not None and args.ivsize > 16:
             args.ivsize = args.ivsize // 8
-        kwargs = { **vars(args) }
+        kwargs = {**vars(args)}
         del kwargs['manifest']
         try:
             del kwargs['threads']
@@ -96,12 +97,18 @@ class BasicDashValidator(DashValidator):
             if max_workers < 1:
                 max_workers = None
             options.pool = WorkerPool(ThreadPoolExecutor(max_workers=max_workers))
+        start_time = time.time()
         bdv = cls(args.manifest, options=options)
         log.info('Loading manifest: %s', args.manifest)
-        bdv.load()
+        if not bdv.load():
+            log.error('Failed to load manifest')
+            return 1
+        bdv.prefetch_media_info()
         if bdv.has_errors():
             for err in bdv.get_errors():
                 print(err)
+            duration = time.time() - start_time
+            print(f'Finished with errors after f{duration:#5.1f} seconds')
             return 1
         if args.dest:
             bdv.save_manifest()
@@ -119,8 +126,9 @@ class BasicDashValidator(DashValidator):
                 options.progress.abort()
         options.progress.finished(args.manifest)
         sys.stdout.write('\n')
+        duration = time.time() - start_time
         if not bdv.has_errors():
-            print('No errors found')
+            print(f'No errors found. Validation took {duration:#5.1f} seconds')
             return 0
         if args.dest:
             filename = bdv.output_filename('error.txt', makedirs=True)
@@ -130,4 +138,5 @@ class BasicDashValidator(DashValidator):
         else:
             for err in bdv.get_errors():
                 print(err)
+        print(f'Finished with errors after f{duration:#5.1f} seconds')
         return 1

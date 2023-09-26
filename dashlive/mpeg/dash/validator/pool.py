@@ -1,6 +1,5 @@
 import concurrent.futures
 import traceback
-from typing import NamedTuple
 
 class WorkerPool:
     def __init__(self, executor: concurrent.futures.Executor) -> None:
@@ -23,4 +22,3 @@ class WorkerPool:
                 errors.append(f'{exc}')
         self.tasks = set()
         return errors
-        

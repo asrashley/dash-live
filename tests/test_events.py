@@ -67,7 +67,7 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
                 self.assertEqual(event.duration, PingPongEvents.DEFAULT_VALUES['duration'])
                 presentationTime += PingPongEvents.DEFAULT_VALUES['interval']
 
-    def test_inband_ping_pong_dash_events(self):
+    def test_inband_ping_pong_dash_events(self) -> None:
         """
         Test DASH 'PingPong' events carried in the video media segments
         """
@@ -96,10 +96,9 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
                 self.assertEqual(event_stream.value, PingPongEvents.DEFAULT_VALUES['value'])
                 # self.assertIsInstance(event_stream, InbandEventStream)
                 rep = adp.representations[0]
-                info = dv.get_representation_info(rep)
-                self.check_inband_events_for_representation(rep, params, info)
+                self.check_inband_events_for_representation(rep, params)
 
-    def check_inband_events_for_representation(self, rep, params, info):
+    def check_inband_events_for_representation(self, rep, params) -> None:
         """
         Check all of the fragments in the given representation
         """
@@ -111,7 +110,7 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
             frag = mp4.Wrapper(
                 atom_type='wrap',
                 children=seg.validate(depth=1, all_atoms=True))
-            seg_presentation_time = (ev_presentation_time * info.timescale /
+            seg_presentation_time = (ev_presentation_time * rep.info.timescale /
                                      float(PingPongEvents.DEFAULT_VALUES['timescale']))
             decode_time = frag.moof.traf.tfdt.base_media_decode_time
             seg_end = decode_time + seg.duration
@@ -122,7 +121,7 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
                 continue
             delta = seg_presentation_time - decode_time
             delta = (delta * PingPongEvents.DEFAULT_VALUES['timescale'] /
-                     float(info.timescale))
+                     float(rep.info.timescale))
             emsg = frag.emsg
             self.assertEqual(emsg.scheme_id_uri, PingPongEvents.schemeIdUri)
             self.assertEqual(emsg.value, PingPongEvents.DEFAULT_VALUES['value'])
@@ -135,7 +134,7 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
             ev_presentation_time += PingPongEvents.DEFAULT_VALUES['interval']
             event_id += 1
 
-    def test_inline_scte35_dash_events(self):
+    def test_inline_scte35_dash_events(self) -> None:
         """
         Test DASH scte35 events carried in the manifest
         """

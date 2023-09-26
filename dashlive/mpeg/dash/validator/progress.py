@@ -19,6 +19,9 @@ class Progress(ABC):
         self.count = 0
         self._send_output()
 
+    def add_todo(self, num: int) -> None:
+        self.num_items += num
+
     def inc(self) -> None:
         self.count += 1
         self._send_output()
@@ -66,4 +69,3 @@ class ConsoleProgress(Progress):
 
     def abort(self) -> None:
         self._aborted = True
-
