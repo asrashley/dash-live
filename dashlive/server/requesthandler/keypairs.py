@@ -26,11 +26,11 @@ from dashlive.drm.playready import PlayReady
 from dashlive.drm.keymaterial import KeyMaterial
 from dashlive.server import models
 
-from .base import RequestHandlerBase
+from .base import HTMLHandlerBase
 from .decorators import login_required, uses_keypair, current_keypair
 from .exceptions import CsrfFailureException
 
-class KeyHandler(RequestHandlerBase):
+class KeyHandler(HTMLHandlerBase):
     """
     Handler to add, edit and remove encryption keys
     """
@@ -148,7 +148,7 @@ class KeyHandler(RequestHandlerBase):
         return self.jsonify(result)
 
 
-class DeleteKeyHandler(RequestHandlerBase):
+class DeleteKeyHandler(HTMLHandlerBase):
     """
     Handler used by HTML pages to delete encryption keys
     """
