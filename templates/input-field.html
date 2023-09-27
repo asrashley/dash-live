@@ -3,17 +3,25 @@
 {%- else %}
 {% set rowClass = "row mb-3" %}
 {%- endif %}
-{%- if field.type == "checkbox" %}
-{% set formClass = "form-check" %}
-{%- else %}
 {% set formClass = "form-group" %}
+{%- if field.columns %}
+  {% set left, middle, right = field.columns %}
+{%- else %}
+  {% set left = "col-2" %}
+  {%- if field.text %}
+    {% set middle = "col-5" %}
+    {% set right = "col-5" %}
+  {%- else %}
+    {% set middle = "col-10" %}
+    {% set right = "" %}
+  {%- endif %}
 {%- endif %}
-<div class="{{ rowClass }} {{ formClass }}">
+<div class="{{ rowClass }} {{ formClass }} row-field-{{ field.name }}">
   {% if field.type != "hidden" %}
-  <label class="col-sm-2 col-form-label {%- if field.disabled %} disabled{%- endif %}" for="model-{{field.name}}">
+  <label class="{{ left }} col-form-label {%- if field.disabled %} disabled{%- endif %}" for="model-{{field.name}}">
     {{ field.title }}:
   </label>
-  <div {% if field.text %}class="col-sm-5" {% else %}class="col-sm-10" {% endif %}>
+  <div class="{{ middle }}">
   {% endif %}
     {% if field.type == "select" %}
       <select
@@ -27,6 +35,7 @@
     {%- if model %} title="{{model.title}}" {% endif %}
     {%- if field.text %} aria-describedby="text-{{ field.name }}" {% endif %}
     {%- if field.type == 'checkbox' %}
+        class="form-check-input"
     {%- if field.value %} checked{% endif %}
     {% else %}
     {%- if field.value %} value="{{field.value}}"{% endif %}
@@ -56,6 +65,6 @@
   </div>
   {% endif %}
   {%- if field.text %}
-  <div class="form-text col-sm-5" id="text-{{ field.name }}">{{ field.text }}</div>
+  <div class="form-text {{ right }}" id="text-{{ field.name }}">{{ field.text }}</div>
   {%- endif %}
 </div>
