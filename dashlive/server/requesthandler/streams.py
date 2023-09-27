@@ -265,6 +265,11 @@ class EditStream(HTMLHandlerBase):
         """
         models.db.session.delete(current_stream)
         models.db.session.commit()
+        if self.is_ajax():
+            return self.jsonify({
+                'success': True,
+                'message': f'Deleted {current_stream.title}',
+            })
         return flask.redirect(flask.url_for('list-streams'))
 
     def create_context(self, **kwargs):

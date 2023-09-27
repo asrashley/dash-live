@@ -137,16 +137,17 @@ $(document).ready(function () {
             return false;
         }
 
+        ev.preventDefault();
+
         id = $(ev.target).data("id");
         if (!id) {
-            return;
+            return false;
         }
-        ev.preventDefault();
         csrf = $('#streams').data('csrf');
         if (!csrf) {
             input = $('#edit-model input[name="csrf_token"]');
             if (!input) {
-                return;
+                return false;
             }
             csrf = input[0].value;
         }
@@ -162,13 +163,15 @@ $(document).ready(function () {
         dialog = $('#dialog-box');
         dialog.find(".modal-body").html(
             '<div><h3>Delete stream &quot;' + title + '&quot; ?</h3>' +
-            '<p>This will also delete all of the media files for this stream</p></div>' +
+                '<p>This will also delete all of the media files for this stream</p></div>');
+        dialog.find(".modal-footer").html(
             '<div>' +
-            '<button class="btn btn-danger" style="margin:1em" data-cmd="yes">Yes Please</button>' +
+            '<button class="btn btn-danger" style="margin:1em" data-cmd="yes">Delete Stream</button>' +
             '<button class="btn btn-secondary" data-cmd="no">Cancel</button>' +
             '</div>');
-        dialog.find(".modal-body .btn").one('click', onClick);
+        dialog.find(".modal-footer .btn").one('click', onClick);
         showDialog();
+        return false;
     }
 
     function confirmDeleteStream($row, id, csrf) {
@@ -177,9 +180,14 @@ $(document).ready(function () {
         }
         $('#streams .error').text('');
         $.ajax({
-            url: '/stream/' + id + '?csrf_token=' + csrf,
+            accepts: 'application/json',
+            url: `/stream/${id}`,
             method: 'DELETE',
             dataType: 'json',
+            data: {
+                csrf_token: csrf,
+                ajax: 1,
+            },
         }).done(function (result) {
             if (result.error) {
                 $('#streams .error').text(result.error);
