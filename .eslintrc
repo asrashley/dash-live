@@ -1,0 +1,15 @@
+{
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "script",
+    "ecmaFeatures": {
+      "impliedStrict": true
+    }
+  },
+  "env": {
+    "browser": true,
+    "es6": true
+  },
+  "plugins": [
+  ]
+}
