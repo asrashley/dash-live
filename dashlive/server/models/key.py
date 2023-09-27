@@ -97,6 +97,7 @@ class Key(db.Model, ModelMixin):
             "pattern": f'[A-Fa-f0-9]{{{KeyMaterial.length * 2}}}',
             "placeholder": f'{KeyMaterial.length * 2} hexadecimal digits',
             "spellcheck": False,
+            "columns": ["col-3", "col-7", ""],
         }, {
             "name": "hkey",
             "title": "Key (in hex)",
@@ -107,9 +108,11 @@ class Key(db.Model, ModelMixin):
             "spellcheck": False,
             "placeholder": f'{KeyMaterial.length * 2} hexadecimal digits',
             "value": self.hkey,
+            "columns": ["col-3", "col-7", ""],
         }, {
             "name": "computed",
             "title": "Key is auto-computed?",
             "type": "checkbox",
             "value": self.computed,
+            "columns": ["col-3", "col-6", ""],
         }]
