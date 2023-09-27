@@ -9,73 +9,77 @@
     </div>
     <div class="card-body">
       <div class="row">
-	<div class="col-sm-3 field-title">Filename:</div>
-	<div class="col-sm-9">{{ mediafile.blob.filename }}</div>
+	<div class="col-3 field-title">Filename:</div>
+	<div class="col-9">{{ mediafile.blob.filename }}</div>
       </div>
       <div class="row">
-	<div class="col-sm-3 field-title">Stream:</div>
-	<div class="col-sm-9">
+	<div class="col-3 field-title">Stream:</div>
+	<div class="col-9">
 	  <a href="{{ url_for('view-stream', spk=stream.pk) }}" class="text-primary">
 	    {{ stream.directory }}
 	  </a>
 	</div>
       </div>
       <div class="row">
-	<div class="col-sm-3 field-title">Encrypted:</div>
-	<div class="col-sm-9">{{ mediafile.encrypted | toHtmlString }}</div>
+	<div class="col-3 field-title">Encrypted:</div>
+	<div class="col-9">{{ mediafile.encrypted | toHtmlString }}</div>
       </div>
       <div class="row">
-	<div class="col-sm-3 field-title">Content Type:</div>
-	<div class="col-sm-9">{{ mediafile.content_type }}</div>
+	<div class="col-3 field-title">Content Type:</div>
+	<div class="col-9">{{ mediafile.content_type }}</div>
       </div>
       {% if mediafile.representation %}
       <div class="row">
-	<div class="col-sm-3 field-title">Track ID:</div>
-	<div class="col-sm-9">{{ mediafile.representation.track_id }}</div>
+	<div class="col-3 field-title">Track ID:</div>
+	<div class="col-9">{{ mediafile.representation.track_id }}</div>
       </div>
       <div class="row">
-	<div class="col-sm-3 field-title">Content Type:</div>
-	<div class="col-sm-9">{{ mediafile.representation.content_type }}</div>
+	<div class="col-3 field-title">Content Type:</div>
+	<div class="col-9">{{ mediafile.representation.content_type }}</div>
       </div>
       <div class="row">
-	<div class="col-sm-3 field-title">MIME Type:</div>
-	<div class="col-sm-9">{{ mediafile.representation.mimeType }}</div>
+	<div class="col-3 field-title">MIME Type:</div>
+	<div class="col-9">{{ mediafile.representation.mimeType }}</div>
       </div>
       <div class="row">
-	<div class="col-sm-3 field-title">Codecs:</div>
-	<div class="col-sm-9">{{ mediafile.representation.codecs }}</div>
+	<div class="col-3 field-title">Codecs:</div>
+	<div class="col-9">{{ mediafile.representation.codecs }}</div>
       </div>
       {% if mediafile.representation.lang %}
       <div class="row">
-	<div class="col-sm-3 field-title">Language:</div>
-	<div class="col-sm-9">{{ mediafile.representation.lang }}</div>
+	<div class="col-3 field-title">Language:</div>
+	<div class="col-9">{{ mediafile.representation.lang }}</div>
       </div>
       {% endif %}
       {% if mediafile.representation.nalLengthFieldLength %}
       <div class="row">
-	<div class="col-sm-3 field-title">NAL field length:</div>
-	<div class="col-sm-9">{{ mediafile.representation.nalLengthFieldLength }} bytes</div>
+	<div class="col-3 field-title">NAL field length:</div>
+	<div class="col-9">{{ mediafile.representation.nalLengthFieldLength }} bytes</div>
       </div>
       {% endif %}
       {% if mediafile.representation.numChannels %}
       <div class="row">
-	<div class="col-sm-3 field-title">Number of audio channels:</div>
-	<div class="col-sm-9">{{ mediafile.representation.numChannels }} bytes</div>
+	<div class="col-3 field-title">Number of audio channels:</div>
+	<div class="col-9">{{ mediafile.representation.numChannels }} bytes</div>
       </div>
       {% endif %}
       <div class="row">
-	<div class="col-sm-3 field-title">Timescale:</div>
-	<div class="col-sm-9">{{ mediafile.representation.timescale }}</div>
+	<div class="col-3 field-title">Timescale:</div>
+	<div class="col-9">{{ mediafile.representation.timescale }}</div>
       </div>
       <div class="row">
-	<div class="col-sm-3 field-title">Segment Duration:</div>
-	<div class="col-sm-9">
+	<div class="col-3 field-title">Start time:</div>
+	<div class="col-9">{{ mediafile.representation.start_time }}</div>
+      </div>
+      <div class="row">
+	<div class="col-3 field-title">Segment Duration:</div>
+	<div class="col-9">
 	  {{ mediafile.representation.segment_duration }} ({{ segment_duration }})
 	</div>
       </div>
       <div class="row">
-	<div class="col-sm-3 field-title">Number of Segments:</div>
-	<div class="col-sm-9">
+	<div class="col-3 field-title">Number of Segments:</div>
+	<div class="col-9">
 	  <a href="{{ url_for('list-media-segments', spk=stream.pk, mfid=mediafile.pk) }}"
 	     class="text-primary">
 	    {{ mediafile.representation.segments | length }}
@@ -88,36 +92,36 @@
       </div>
       {% if mediafile.encrypted %}
       <div class="row">
-	<div class="col-sm-3 field-title">IV size:</div>
-	<div class="col-sm-9">{{ mediafile.representation.iv_size * 8 }} bits</div>
+	<div class="col-3 field-title">IV size:</div>
+	<div class="col-9">{{ mediafile.representation.iv_size * 8 }} bits</div>
       </div>
       <div class="row">
-	<div class="col-sm-3 field-title">Default KID:</div>
-	<div class="col-sm-9">{{ mediafile.representation.default_kid }}</div>
+	<div class="col-3 field-title">Default KID:</div>
+	<div class="col-9">{{ mediafile.representation.default_kid }}</div>
       </div>
       {% endif %}
       {% endif %}
       {% if duration %}
       <div class="row">
-	<div class="col-sm-3 field-title">Duration:</div>
-	<div class="col-sm-9">{{ duration }}</div>
+	<div class="col-3 field-title">Duration:</div>
+	<div class="col-9">{{ duration }}</div>
       </div>
       {% endif %}
       <div class="row">
-	<div class="col-sm-3 field-title">Bitrate:</div>
-	<div class="col-sm-9">{{ mediafile.bitrate | sizeFormat(units='bps') }}</div>
+	<div class="col-3 field-title">Bitrate:</div>
+	<div class="col-9">{{ mediafile.bitrate | sizeFormat(units='bps') }}</div>
       </div>
       <div class="row">
-	<div class="col-sm-3 field-title">Created:</div>
-	<div class="col-sm-9">{{ mediafile.blob.created }}</div>
+	<div class="col-3 field-title">Created:</div>
+	<div class="col-9">{{ mediafile.blob.created }}</div>
       </div>
       <div class="row">
-	<div class="col-sm-3 field-title">File size:</div>
-	<div class="col-sm-9">{{ mediafile.blob.size | sizeFormat }}</div>
+	<div class="col-3 field-title">File size:</div>
+	<div class="col-9">{{ mediafile.blob.size | sizeFormat }}</div>
       </div>
       <div class="row">
-	<div class="col-sm-3 field-title">SHA1 hash:</div>
-	<div class="col-sm-9">{{ mediafile.blob.sha1_hash }}</div>
+	<div class="col-3 field-title">SHA1 hash:</div>
+	<div class="col-9">{{ mediafile.blob.sha1_hash }}</div>
       </div>
     </div> <!-- card-body -->
   </div> <!-- card -->
