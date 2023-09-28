@@ -62,7 +62,6 @@ ENV SERVER_NAME="_"
 ENV USER_GID=""
 RUN apt-get -y -q --force-yes install nginx
 RUN rm /etc/nginx/sites-enabled/default
-RUN pip3 install uwsgi
 COPY deploy/application.py $HOME/dash-live/
 COPY deploy/start-uwsgi.sh $HOME/dash-live/
 COPY deploy/dashlive.conf /etc/nginx/sites-available/
