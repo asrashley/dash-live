@@ -98,7 +98,9 @@ class Representation(RepresentationBaseType):
         if not self.elt.check_not_none(self.info, msg='Failed to get Representation info'):
             return
         decode_time = getattr(self.info, "start_time", None)
-        start_number = self.info.start_number
+        start_number = None
+        if self.info.segments:
+            start_number = self.info.start_number
         self.media_segments = []
         timeline = self.segmentTemplate.segmentTimeline
         seg_duration = self.segmentTemplate.duration
@@ -119,8 +121,7 @@ class Representation(RepresentationBaseType):
                 num_segments = int(period_duration // seg_duration)
         else:
             num_segments = len(timeline.segments)
-            if decode_time is None:
-                decode_time = timeline.segments[0].start
+            decode_time = timeline.segments[0].start
         if self.mode == 'vod':
             decode_time = self.segmentTemplate.presentationTimeOffset
             start_number = 1
@@ -162,8 +163,10 @@ class Representation(RepresentationBaseType):
                 if num_segments < 1:
                     num_segments = 1
                 start_number = self.segmentTemplate.startNumber
-            decode_time = (
-                start_number - self.segmentTemplate.startNumber) * seg_duration
+            if decode_time is None:
+                decode_time = (
+                    (start_number - self.segmentTemplate.startNumber) *
+                    seg_duration)
         self.elt.check_not_none(start_number, msg='Failed to calculate segment start number')
         self.elt.check_not_none(decode_time, msg='Failed to calculate segment decode time')
         if self.options.duration:
@@ -395,8 +398,9 @@ class Representation(RepresentationBaseType):
                 next_decode_time = seg.decode_time
             self.progress.text(seg.url)
             moof = seg.validate(depth - 1)
-            if not self.elt.check_not_none(moof, msg='Failed to fetch MOOF'):
-                self.log.warning('Failed to fetch MOOF')
+            msg = f'Failed to fetch MOOF {seg.url_description()}'
+            if not self.elt.check_not_none(moof, msg=msg):
+                self.log.warning(msg)
                 continue
             if seg.seg_num is None:
                 seg.seg_num = moof.mfhd.sequence_number
