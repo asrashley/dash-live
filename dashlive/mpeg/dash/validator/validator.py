@@ -152,13 +152,15 @@ class DashValidator(DashElement):
                 }],
             }
             filename = self.get_json_script_filename()
-            with open(filename, 'wt') as dest:
+            self.log.debug('Creating json file %s', filename)
+            with open(filename, 'wt', encoding='ascii') as dest:
                 json.dump(config, dest, indent=2)
         return self.has_errors()
 
     def get_json_script_filename(self) -> str:
         return self.output_filename(
-            default=None, bandwidth=None, filename=f'{self.options.prefix}.json')
+            default=None, bandwidth=None,
+            filename=f'{self.options.prefix}.json')
 
     def children(self) -> list[DashElement]:
         if self.manifest is None:
@@ -168,14 +170,16 @@ class DashValidator(DashElement):
     def save_manifest(self, filename=None):
         if self.options.dest:
             filename = self.output_filename(
-                'manifest.mpd', bandwidth=None, filename=filename, makedirs=True)
-            ET.ElementTree(self.xml).write(filename, xml_declaration=True)
+                'manifest.mpd', bandwidth=None, filename=filename,
+                makedirs=True)
+            ET.ElementTree(self.xml).write(
+                filename, xml_declaration=True, pretty_print=True)
         else:
-            print(ET.tostring(self.xml))
+            print(ET.tostring(self.xml, pretty_print=True))
 
     def sleep(self):
-        self.checkEqual(self.mode, 'live')
-        self.checkIsNotNone(self.manifest)
+        self.elt.check_equal(self.mode, 'live')
+        self.elt.check_not_none(self.manifest)
         dur = max(self.manifest.minimumUpdatePeriod.seconds, 1)
         self.log.info('Wait %d seconds', dur)
         time.sleep(dur)

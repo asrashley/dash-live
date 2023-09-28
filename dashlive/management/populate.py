@@ -43,8 +43,10 @@ class PopulateDatabase(ManagementBase):
         if 'files' in config:
             config = self.convert_v1_json_data(config)
         js_dir = Path(jsonfile).parent
-        self.login()
-        self.get_media_info()
+        if not self.login():
+            return False
+        if not self.get_media_info():
+            return False
         result = True
         for k in config['keys']:
             if k['kid'] not in self.keys:

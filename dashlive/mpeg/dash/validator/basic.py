@@ -104,16 +104,12 @@ class BasicDashValidator(DashValidator):
             log.error('Failed to load manifest')
             return 1
         bdv.prefetch_media_info()
-        if bdv.has_errors():
-            for err in bdv.get_errors():
-                print(err)
-            duration = time.time() - start_time
-            print(f'Finished with errors after f{duration:#5.1f} seconds')
-            return 1
         if args.dest:
             bdv.save_manifest()
         done = False
         while not done:
+            # TODO: duration might be > number of available segments
+            # in the live manifest
             if bdv.manifest.mpd_type != 'dynamic' or args.duration:
                 done = True
             try:
@@ -124,6 +120,7 @@ class BasicDashValidator(DashValidator):
                     bdv.load()
             except KeyboardInterrupt:
                 options.progress.abort()
+                done = True
         options.progress.finished(args.manifest)
         sys.stdout.write('\n')
         duration = time.time() - start_time
@@ -131,12 +128,14 @@ class BasicDashValidator(DashValidator):
             print(f'No errors found. Validation took {duration:#5.1f} seconds')
             return 0
         if args.dest:
-            filename = bdv.output_filename('error.txt', makedirs=True)
+            filename = bdv.output_filename(
+                default='errors.txt', filename='errors.txt',
+                makedirs=True, bandwidth=None)
             with open(filename, 'wt') as err_file:
                 for err in bdv.get_errors():
                     err_file.write(f'{err}\n')
         else:
             for err in bdv.get_errors():
                 print(err)
-        print(f'Finished with errors after f{duration:#5.1f} seconds')
+        print(f'Finished with errors after {duration:#5.1f} seconds')
         return 1

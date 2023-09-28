@@ -141,6 +141,12 @@ class Representation(RepresentationBaseType):
                     self.mpd.timeShiftBufferDepth.total_seconds(), 0,
                     msg='Expected MPD@timeShiftBufferDepth to equal 0 when num_segments == 0')
                 return
+            if timeline:
+                self.elt.check_equal(
+                    num_segments, len(timeline.segments),
+                    template='Expected SegmentTimeline to have {0} segments but has {1} segments')
+                num_segments = min(
+                    num_segments, len(timeline.segments))
             self.attrs.check_greater_than(
                 self.mpd.timeShiftBufferDepth.total_seconds(),
                 seg_duration / float(self.segmentTemplate.timescale))
