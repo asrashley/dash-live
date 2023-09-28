@@ -198,8 +198,13 @@ class WebsocketHandler(Progress):
     def join_finished_tasks(self) -> None:
         done: set[Thread] = set()
         for tsk in self.tasks:
-            if not tsk.is_alive():
-                done.add(tsk)
+            try:
+                if not tsk.is_alive():
+                    done.add(tsk)
+            except AttributeError:
+                # a greenlet task
+                if tsk.dead:
+                    done.add(tsk)
         for tsk in done:
             self.tasks.remove(tsk)
         for tsk in done:

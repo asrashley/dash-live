@@ -1,4 +1,6 @@
 #!/bin/bash
+source /home/dash/.venv/bin/activate
+
 if [ -z "${SERVER_NAME}" ]; then
     echo "Using server name ${SERVER_NAME}"
     SERVER_NAME="_"
@@ -17,10 +19,10 @@ echo "server_name ${SERVER_NAME};" > /etc/nginx/snippets/server_name.conf
 if [ -f /etc/uwsgi/sites/dash.ini ]; then
     mkdir /run/uwsgi
     chown www-data:www-data /run/uwsgi
-    uwsgi --uid www-data --gid www-data --ini /etc/uwsgi/sites/dash.ini &
+    uwsgi --ini /etc/uwsgi/sites/dash.ini &
     nginx -g "daemon off;"
 else
-    uwsgi --http localhost:80 --module application:app --enable-threads --uid www-data --gid www-data
+    uwsgi --uid www-data --gid www-data --http localhost:80 --gevent 100 --http-websockets --module application:app
 fi
 
 
