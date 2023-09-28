@@ -46,9 +46,13 @@ class InitSegment(DashElement):
                 msg=f'Failed to load init segment: {response.status_code}: {self.url}'):
             return False
         if self.options.save:
-            default = f'init-{self.parent.id}-{self.parent.bandwidth}'
+            if self.parent.id:
+                default = f'init-{self.parent.id}-{self.parent.id}'
+            else:
+                default = f'init-{self.parent.id}-{self.parent.bandwidth}'
             filename = self.output_filename(
-                default, self.parent.bandwidth, prefix=self.options.prefix,
+                default=default, bandwidth=self.parent.bandwidth,
+                prefix=self.options.prefix, elt_id=self.parent.id,
                 makedirs=True)
             self.log.debug('saving init segment: %s', filename)
             with self.open_file(filename, self.options) as dest:

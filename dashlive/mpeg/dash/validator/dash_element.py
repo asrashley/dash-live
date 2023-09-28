@@ -111,7 +111,7 @@ class DashElement(ABC):
         return linenum
 
     @classmethod
-    def classname(clz):
+    def classname(clz) -> str:
         if clz.__module__.startswith('__'):
             return clz.__name__
         return clz.__module__ + '.' + clz.__name__
@@ -179,7 +179,7 @@ class DashElement(ABC):
         return None
 
     @classmethod
-    def init_xml_namespaces(clz):
+    def init_xml_namespaces(clz) -> None:
         for prefix, url in clz.xmlNamespaces.items():
             ET.register_namespace(prefix, url)
 
@@ -202,8 +202,12 @@ class DashElement(ABC):
             p = p.parent
         return '/'.join(rv)
 
-    def output_filename(self, default: str | None, bandwidth: int | None, prefix: str | None = None,
-                        filename: str | None = None, makedirs=False) -> str:
+    def output_filename(self, default: str | None,
+                        bandwidth: int | None,
+                        elt_id: str | None = None,
+                        prefix: str | None = None,
+                        filename: str | None = None,
+                        makedirs: bool = False) -> str:
         if filename is None:
             filename = self.url
         if filename.startswith('http:'):
@@ -227,17 +231,19 @@ class DashElement(ABC):
         now = self.options.start_time.replace(microsecond=0)
         dest = os.path.join(self.options.dest,
                             to_iso_datetime(now).replace(':', '-'))
-        if prefix is not None and bandwidth is not None:
+        if prefix is not None and elt_id is not None:
+            filename = f'{prefix}_{elt_id}.mp4'
+        elif prefix is not None and bandwidth is not None:
             filename = f'{prefix}_{bandwidth}.mp4'
         else:
-            filename = ''.join([root, ext])
+            filename = f'{root}{ext}'
         self.log.debug('dest=%s, filename=%s', dest, filename)
         if makedirs:
             if not os.path.exists(dest):
                 os.makedirs(dest)
         return os.path.join(dest, filename)
 
-    def open_file(self, filename, options):
+    def open_file(self, filename: str, options):
         self.filenames.add(filename)
         if options.prefix:
             fd = open(filename, 'ab')

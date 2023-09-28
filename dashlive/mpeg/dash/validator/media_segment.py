@@ -61,9 +61,13 @@ class MediaSegment(DashElement):
                 response.headers['content-type'], self.parent.mimeType,
                 template=r'HTTP Content-Type "{0}" should match Representation MIME type "{1}"')
         if self.options.save:
-            default = f'media-{self.parent.id}-{self.parent.bandwidth}-{self.seg_num}'
+            if self.parent.id:
+                default = f'media-{self.parent.id}-{self.parent.id}-{self.seg_num}'
+            else:
+                default = f'media-{self.parent.id}-{self.parent.bandwidth}-{self.seg_num}'
             filename = self.output_filename(
-                default, self.parent.bandwidth, prefix=self.options.prefix)
+                default=default, bandwidth=self.parent.bandwidth,
+                prefix=self.options.prefix, elt_id=self.parent.id)
             self.log.debug('saving media segment: %s', filename)
             with self.open_file(filename, self.options) as dest:
                 dest.write(response.body)
