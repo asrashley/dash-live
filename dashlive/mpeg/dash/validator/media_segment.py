@@ -37,7 +37,8 @@ class MediaSegment(DashElement):
             return f'{path}?range={self.seg_range}'
         return path
 
-    def validate(self, depth: int = -1, all_atoms: bool = False) -> None:
+    def validate(self, depth: int = -1,
+                 all_atoms: bool = False) -> mp4.Mp4Atom | list[mp4.Mp4Atom] | None:
         headers = None
         if self.seg_range is not None:
             headers = {"Range": f"bytes={self.seg_range}"}
@@ -71,13 +72,16 @@ class MediaSegment(DashElement):
         info = self.parent.info
         self.elt.check_equal(self.options.encrypted, info.encrypted)
         if info.encrypted:
-            if not self.elt.check_not_none(info.iv_size, msg='IV size is unknown'):
+            if not self.elt.check_not_none(
+                    info.iv_size, msg='IV size is unknown'):
                 return
             options["iv_size"] = info.iv_size
         atoms = mp4.Mp4Atom.load(src, options=options)
         self.elt.check_greater_than(len(atoms), 1)
         moof = None
         mdat = None
+        self.log.debug('MediaSegment atoms=%s',
+                       [a.atom_type for a in atoms])
         for a in atoms:
             if a.atom_type == 'emsg':
                 self.check_emsg_box(a)
@@ -88,38 +92,18 @@ class MediaSegment(DashElement):
                 self.elt.check_not_none(
                     moof,
                     msg='Failed to find moof box before mdat box')
-        if not self.elt.check_not_none(moof):
+        if not self.elt.check_not_none(
+                moof, msg='Failed to find MOOF box'):
             return
-        if not self.elt.check_not_none(mdat):
+        if not self.elt.check_not_none(
+                mdat, msg='Failed to find mdat box'):
             return
-        try:
-            senc = moof.traf.senc
-            self.elt.check_not_equal(
-                info.encrypted, False,
+        if info.encrypted:
+            self.check_saio_offset(moof)
+        else:
+            self.elt.check_not_in(
+                'senc', moof.traf,
                 msg='senc box should not be found in a clear stream')
-            saio = moof.traf.find_child('saio')
-            self.elt.check_not_none(
-                saio,
-                msg='saio box is required for an encrypted stream')
-            self.elt.check_equal(
-                len(saio.offsets), 1,
-                msg='saio box should only have one offset entry')
-            tfhd = moof.traf.find_child('tfhd')
-            if tfhd is None:
-                base_data_offset = moof.position
-            else:
-                base_data_offset = tfhd.base_data_offset
-            self.elt.check_equal(
-                senc.samples[0].position,
-                saio.offsets[0] + base_data_offset,
-                msg=(r'saio.offsets[0] should point to first CencSampleAuxiliaryData entry. ' +
-                     'Expected {}, got {}'.format(
-                         senc.samples[0].position, saio.offsets[0] + base_data_offset)))
-            self.elt.check_equal(len(moof.traf.trun.samples), len(senc.samples))
-        except AttributeError as err:
-            self.elt.check_not_equal(
-                info.encrypted, True,
-                msg=f'Failed to find senc box in encrypted stream: {err}')
         if self.seg_num is not None:
             self.elt.check_equal(
                 moof.mfhd.sequence_number, self.seg_num,
@@ -156,7 +140,8 @@ class MediaSegment(DashElement):
             last_sample_end, mdat.position + mdat.size, msg=msg)
         self.elt.check_equal(first_sample_pos, mdat.position + mdat.header_size, msg=msg)
         moov = self.parent.init_segment.get_moov()
-        if not self.elt.check_not_none(moov, msg='Failed to get MOOV box from init segment'):
+        if not self.elt.check_not_none(
+                moov, msg='Failed to get MOOV box from init segment'):
             return
         pts_values = set()
         dts = moof.traf.tfdt.base_media_decode_time
@@ -195,3 +180,31 @@ class MediaSegment(DashElement):
         self.elt.check_true(
             found, emsg.scheme_id_uri, emsg.value,
             template=r'Failed to find an InbandEventStream with schemeIdUri="{}" value="{}"')
+
+    def check_saio_offset(self, moof: mp4.Mp4Atom) -> None:
+        try:
+            senc = moof.traf.senc
+        except AttributeError:
+            self.elt.add_error(
+                'An encrypted stream must contain a senc box')
+            return
+        saio = moof.traf.find_child('saio')
+        self.elt.check_not_none(
+            saio, msg='saio box is required for an encrypted stream')
+        self.elt.check_equal(
+            len(saio.offsets), 1,
+            msg='saio box should only have one offset entry')
+        tfhd = moof.traf.find_child('tfhd')
+        if tfhd is None:
+            base_data_offset = moof.position
+        else:
+            base_data_offset = tfhd.base_data_offset
+        msg = (
+            r'saio.offsets[0] should point to first ' +
+            r'CencSampleAuxiliaryData entry. ' +
+            f'Expected {senc.samples[0].position}, ' +
+            f'got {saio.offsets[0] + base_data_offset}')
+        self.elt.check_equal(
+            senc.samples[0].position, saio.offsets[0] + base_data_offset,
+            msg=msg)
+        self.elt.check_equal(len(moof.traf.trun.samples), len(senc.samples))
