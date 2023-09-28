@@ -36,6 +36,8 @@ class WebsocketHandler(Progress):
         self._aborted = False
         self.tasks: set[Thread] = set()
         self.tmpdir: Optional[tempfile.TemporaryDirectory] = None
+        self.queue_handler: Optional[QueueHandler] = None
+        self.listener: Optional[QueueListener] = None
 
     def connect(self) -> None:
         self._aborted = False
@@ -48,10 +50,12 @@ class WebsocketHandler(Progress):
     def disconnect(self) -> None:
         self._aborted = True
         self.join_finished_tasks()
-        self.listener.stop()
-        self.dash_log.removeHandler(self.queue_handler)
-        self.queue_handler = None
-        self.listener = None
+        if self.listener:
+            self.listener.stop()
+            self.listener = None
+        if self.queue_handler:
+            self.dash_log.removeHandler(self.queue_handler)
+            self.queue_handler = None
         # if self.tmpdir:
         #     shutil.rmtree(self.tmpdir, ignore_errors=True)
         self.tmpdir = None
