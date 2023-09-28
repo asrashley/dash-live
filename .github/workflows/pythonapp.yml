@@ -25,4 +25,4 @@ jobs:
         flake8 dashlive tests --count --ignore E302,E402,C901,W504 --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Unit tests
       run: |
-        python -m unittest
+        pytest -n auto
