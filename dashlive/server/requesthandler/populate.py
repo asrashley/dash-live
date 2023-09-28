@@ -38,12 +38,6 @@ class BackendPopulateDatabase(PopulateDatabase):
     def __init__(self) -> None:
         super().__init__(url='', username='', password='')
 
-    def populate_database(self, jsonfile: str) -> bool:
-        rv = super().populate_database(jsonfile)
-        if rv:
-            models.db.session.commit()
-        return rv
-
     def login(self) -> bool:
         current_user.is_authenticated
 
@@ -63,16 +57,17 @@ class BackendPopulateDatabase(PopulateDatabase):
                    marlin_la_url: str = '',
                    playready_la_url: str = '',
                    **kwargs) -> models.Stream | None:
+        self.log.info('Adding stream "%s" (%s)', title, directory)
         stream = models.Stream(
             title=title, directory=directory, marlin_la_url=marlin_la_url,
             playready_la_url=playready_la_url)
-        stream.add()
+        stream.add(commit=True)
         return stream
 
     def add_key(self, kid: str, computed: bool,
                 key: str | None = None, alg: str | None = None) -> bool:
         k = models.Key(hkid=kid, computed=computed, hkey=key, halg=alg)
-        k.add()
+        k.add(commit=True)
         return True
 
     def upload_file_and_index(self, js_dir: Path, stream: models.Stream, name: str) -> bool:
@@ -87,13 +82,16 @@ class BackendPopulateDatabase(PopulateDatabase):
         if not filename.exists():
             self.log.warning("%s not found", name)
             return False
+        self.log.debug('Installing file %s', filename)
         file_upload = MockFileUpload(filename, 'application/mp4')
-        mf = stream.add_file(file_upload)
+        mf = stream.add_file(file_upload, commit=True)
         if not mf:
+            self.log.warning('Failed to add file %s', filename)
             return False
         return self.index_file(mf)
 
     def index_file(self, mf: models.MediaFile) -> bool:
+        self.log.info('Indexing file %s', mf.name)
         with mf.open_file() as src:
             atom = mp4.Wrapper(
                 atom_type='wrap', position=0, size=mf.blob.size,
@@ -113,9 +111,11 @@ class BackendPopulateDatabase(PopulateDatabase):
         mf.bitrate = rep.bitrate
         mf.encrypted = rep.encrypted
         if not rep.bitrate:
+            self.log.warning('Failed to calculate bitrate of file %s', mf.name)
             return False
         # bitrate cannot be None, therefore don't commit if
         # Representation class failed to discover the
         # bitrate
         models.db.session.commit()
+        self.log.info('Indexing file %s complete', mf.name)
         return True
