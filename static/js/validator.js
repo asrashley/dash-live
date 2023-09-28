@@ -3,6 +3,9 @@ $(document).ready(function(){
     const socket = io();
 
     function updateDirectoryState(target) {
+        if (target === null) {
+            return;
+        }
 	if (target.checked) {
 	    $('#model-prefix, #model-title').attr('disabled', false);
 	    $('label[for="model-prefix"]').removeClass('disabled');
