@@ -93,7 +93,9 @@ class DashValidator(DashElement):
                 msg=f'Failed to load manifest: {result.status_code} {self.url}'):
             return False
         # print(result.text)
-        xml = ET.parse(io.BytesIO(result.get_data(as_text=False)))
+        parser = ET.XMLParser(remove_blank_text=self.options.pretty)
+        xml = ET.parse(
+            io.BytesIO(result.get_data(as_text=False)), parser)
         self.manifest_text = []
         for line in io.StringIO(result.get_data(as_text=True)):
             self.manifest_text.append(line.rstrip())
