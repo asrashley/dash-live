@@ -42,6 +42,11 @@ class WebsocketHandler(Progress):
 
     def connect(self) -> None:
         self._aborted = False
+        self.join_finished_tasks()
+        if self.listener:
+            self.listener.stop()
+        if self.queue_handler:
+            self.dash_log.removeHandler(self.queue_handler)
         log_queue = queue.Queue(-1)
         self.queue_handler = QueueHandler(log_queue)
         self.dash_log.addHandler(self.queue_handler)
