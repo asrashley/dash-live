@@ -96,6 +96,14 @@ class StreamTimingRef:
     num_media_segments: int
     timescale: int  # ticks per second
 
+
+@dataclass(slots=True, kw_only=True)
+class KeyInfo:
+    kid: str
+    computed: bool
+    key: str | None = None
+
+
 @dataclass(slots=True, kw_only=True)
 class StreamInfo:
     pk: int

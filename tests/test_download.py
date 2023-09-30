@@ -26,8 +26,8 @@ import unittest
 
 import flask
 
-from dashlive.management.base import LoginFailureException
 from dashlive.management.download import DownloadDatabase
+from dashlive.management.frontend_db import FrontendDatabaseAccess
 from dashlive.server import models
 
 from .mixins.flask_base import FlaskTestBase
@@ -35,13 +35,14 @@ from .http_client import ClientHttpSession
 
 class TestDownloadDatabase(FlaskTestBase):
     def test_login_failure(self) -> None:
-        dd = DownloadDatabase(
+        fdb = FrontendDatabaseAccess(
             url=flask.url_for('home'),
             username='unknown',
             password='secret',
             session=ClientHttpSession(self.client))
-        with self.assertRaises(LoginFailureException):
-            dd.download_database(Path('/tmp'))
+        self.assertFalse(fdb.login())
+        dd = DownloadDatabase(fdb)
+        self.assertFalse(dd.download_database(Path('/tmp')))
 
     def test_download_database(self) -> None:
         self.setup_media()
@@ -55,11 +56,12 @@ class TestDownloadDatabase(FlaskTestBase):
             models.db.session.commit()
         self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)
         tmpdir = self.create_upload_folder()
-        dd = DownloadDatabase(
+        fdb = FrontendDatabaseAccess(
             url=flask.url_for('home'),
             username=self.MEDIA_USER,
             password=self.MEDIA_PASSWORD,
             session=ClientHttpSession(self.client))
+        dd = DownloadDatabase(fdb)
         result = dd.download_database(Path(tmpdir))
         self.assertTrue(result)
         jsonfile = Path(tmpdir) / dd.OUTPUT_NAME

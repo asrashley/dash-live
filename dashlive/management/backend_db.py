@@ -6,16 +6,19 @@
 #
 #############################################################################
 from dataclasses import dataclass
+import logging
 from pathlib import Path
 import shutil
 
 from flask_login import current_user
 
 from dashlive.drm.playready import PlayReady
-from dashlive.management.populate import PopulateDatabase
 from dashlive.mpeg import mp4
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.server import models
+
+from .db_access import DatabaseAccess
+from .info import KeyInfo, StreamInfo
 
 @dataclass
 class MockFileUpload:
@@ -30,16 +33,15 @@ class MockFileUpload:
         shutil.move(str(self.abs_name), dest_filename)
 
 
-class BackendPopulateDatabase(PopulateDatabase):
+class BackendDatabaseAccess(DatabaseAccess):
     """
-    Populates the database within a Flask request handler using files
-    that are already on the server.
+    Access to database using flask back-end APIs
     """
     def __init__(self) -> None:
-        super().__init__(url='', username='', password='')
+        self.log = logging.getLogger('management')
 
     def login(self) -> bool:
-        current_user.is_authenticated
+        return current_user.is_authenticated
 
     def get_media_info(self, with_details: bool = False) -> bool:
         if not self.login():
@@ -47,6 +49,12 @@ class BackendPopulateDatabase(PopulateDatabase):
         self.keys = models.Key.all()
         self.streams = models.Stream.all()
         return True
+
+    def fetch_media_info(self, with_details: bool = False) -> bool:
+        return current_user.is_authenticated
+
+    def get_streams(self) -> list[StreamInfo]:
+        return list(models.Stream.all())
 
     def get_stream_info(self, directory: str) -> models.Stream | None:
         return models.Stream.get(directory=directory)
@@ -64,33 +72,47 @@ class BackendPopulateDatabase(PopulateDatabase):
         stream.add(commit=True)
         return stream
 
+    def get_keys(self) -> dict[str, KeyInfo]:
+        rv: dict[str, KeyInfo] = {}
+        for k in models.Key.all():
+            rv[k.hkid] = k
+        return rv
+
     def add_key(self, kid: str, computed: bool,
                 key: str | None = None, alg: str | None = None) -> bool:
+        if key is None:
+            computed = True
         k = models.Key(hkid=kid, computed=computed, hkey=key, halg=alg)
+        if computed:
+            kid_km = models.KeyMaterial(kid)
+            k.hkey = models.KeyMaterial(raw=PlayReady.generate_content_key(kid_km.raw)).hex
         k.add(commit=True)
         return True
 
-    def upload_file_and_index(self, js_dir: Path, stream: models.Stream, name: str) -> bool:
-        name = Path(name)
-        if name.stem in stream.media_files:
+    def upload_file(self, stream: StreamInfo, filename: Path) -> bool:
+        name = Path(filename)
+        mf = models.MediaFile.get(stream=stream, name=name.stem)
+        if mf is not None:
+            self.log.debug('File %s (%s) already part of stream %s',
+                           filename, name.stem, stream.directory)
             return True
-        filename = name
-        if not filename.exists():
-            self.log.debug(
-                "%s not found, trying directory %s", filename, js_dir)
-            filename = js_dir / filename.name
-        if not filename.exists():
+        if not name.exists():
             self.log.warning("%s not found", name)
             return False
-        self.log.debug('Installing file %s', filename)
-        file_upload = MockFileUpload(filename, 'application/mp4')
+        self.log.debug('Installing file %s', name)
+        file_upload = MockFileUpload(name, 'application/mp4')
         mf = stream.add_file(file_upload, commit=True)
         if not mf:
-            self.log.warning('Failed to add file %s', filename)
+            self.log.warning('Failed to add file %s', name)
             return False
-        return self.index_file(mf)
+        return True
 
-    def index_file(self, mf: models.MediaFile) -> bool:
+    def index_file(self, stream: StreamInfo, name: Path) -> bool:
+        name = Path(name)
+        mf = models.MediaFile.get(stream=stream, name=name.stem)
+        if not mf:
+            self.log.error('Failed to find MediaFile %s', name.stem)
+            return False
         self.log.info('Indexing file %s', mf.name)
         with mf.open_file() as src:
             atom = mp4.Wrapper(
@@ -118,4 +140,12 @@ class BackendPopulateDatabase(PopulateDatabase):
         # bitrate
         models.db.session.commit()
         self.log.info('Indexing file %s complete', mf.name)
+        return True
+
+    def set_timing_ref(self, stream: StreamInfo, timing_ref: str) -> bool:
+        mf = models.MediaFile.get(name=Path(timing_ref).stem)
+        if not mf:
+            return False
+        stream.set_timing_reference(mf.as_stream_timing_reference())
+        models.db.session.commit()
         return True
