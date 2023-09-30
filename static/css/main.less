@@ -75,14 +75,6 @@ a {
   color: blue;
 }
 
-#content {
-	padding: 0;
-	h1 {
-	  color: #ddd;
-	  font-size: 2em;
-	}
-}
-
 .button {
   margin: 1em 0;
   user-select: none;
@@ -99,7 +91,6 @@ a {
 }
 
 #buttons {
-  margin-top: -0.5em;
   .subtitle, .keypair {
     font-size: 0.75em;
     color: #444;
@@ -124,10 +115,29 @@ a {
     font-weight: bold;
     background-color: @darkBlue;
   }
+  .info {
+      margin: 1em 2em;
+      & > a {
+          font-weight: bold;
+          color: blue;
+      }
+  }
+
   .selected > .bool-yes {
     visibility: visible;
   }
+  .table {
+      margin: 0 auto;
+  }
+  .play-row {
+      padding-top: 0;
+      height: 2.5rem;
+      .play-cell {
+          padding: 0.5em 0;
+      }
+  }
 }
+
 .button:hover,
 .button.hover {
   .gradientV(darken(@blue,20%), #ddd);
@@ -423,11 +433,6 @@ a {
   }
 }
 
-.info > a {
-  font-weight: bold;
-  color: blue;
-}
-
 div.representations, div.cgi-parameters {
   .table {
     display: inline-block;
@@ -687,11 +692,6 @@ div.representations, div.cgi-parameters {
   margin: 0.25em 1.5em 0 0.5em;
   font-weight: bold;
   font-size: 1.25em;
-}
-
-.play-row {
-  padding-top: 0;
-  height: 2.5rem;
 }
 
 #play-button {
