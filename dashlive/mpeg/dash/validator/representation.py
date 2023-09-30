@@ -142,7 +142,7 @@ class Representation(RepresentationBaseType):
                     msg='Expected MPD@timeShiftBufferDepth to equal 0 when num_segments == 0')
                 return
             if timeline:
-                self.elt.check_equal(
+                self.elt.check_less_than_or_equal(
                     num_segments, len(timeline.segments),
                     template='Expected SegmentTimeline to have {0} segments but has {1} segments')
                 num_segments = min(
