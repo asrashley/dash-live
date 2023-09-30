@@ -265,6 +265,7 @@ class EditStream(HTMLHandlerBase):
         """
         models.db.session.delete(current_stream)
         models.db.session.commit()
+        flask.flash(f'Deleted stream "{current_stream.title}"', 'success')
         if self.is_ajax():
             return self.jsonify({
                 'success': True,
