@@ -18,6 +18,8 @@ from typing import Optional
 import flask
 
 from dashlive.utils.json_object import JsonObject
+from dashlive.management.populate import PopulateDatabase
+from dashlive.management.backend_db import BackendDatabaseAccess
 from dashlive.mpeg.dash.validator.options import ValidatorOptions
 from dashlive.mpeg.dash.validator.basic import BasicDashValidator
 from dashlive.mpeg.dash.validator.pool import WorkerPool
@@ -25,7 +27,6 @@ from dashlive.mpeg.dash.validator.progress import Progress
 from dashlive.server import models
 
 from .ws_log_handler import WebsocketLogHandler
-from .populate import BackendPopulateDatabase
 
 class WebsocketHandler(Progress):
     def __init__(self, sockio) -> None:
@@ -183,11 +184,13 @@ class WebsocketHandler(Progress):
             self.dash_log.error('%s', err)
 
     def save_stream_task(self, filename: str, prefix: str, title: str):
-        bpd = BackendPopulateDatabase()
-        bpd.log = self.dash_log
+        bda = BackendDatabaseAccess()
+        pd = PopulateDatabase(bda)
+        bda.log = self.dash_log
+        pd.log = self.dash_log
         self.dash_log.info(f'Adding new stream {prefix}: "{title}"')
         self.dash_log.debug('Installing %s', filename)
-        bpd.populate_database(filename)
+        pd.populate_database(filename)
         self.dash_log.info('Adding new stream complete')
         self.sockio.emit('progress', {
             'pct': 100,

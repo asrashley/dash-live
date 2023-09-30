@@ -26,25 +26,30 @@ import logging
 from pathlib import Path
 
 from dashlive.utils.json_object import JsonObject
-from .base import ManagementBase
+
+from .frontend_db import FrontendDatabaseAccess
 from .info import StreamInfo
 
-class DownloadDatabase(ManagementBase):
+class DownloadDatabase:
     OUTPUT_NAME = 'downloaded.json'
 
+    def __init__(self, db: FrontendDatabaseAccess) -> None:
+        self.db = db
+        self.log = logging.getLogger('management')
+
     def download_database(self, destination: Path) -> bool:
-        if not self.login():
+        if not self.db.login():
             return False
-        if not self.get_media_info(with_details=True):
+        if not self.db.fetch_media_info(with_details=True):
             return False
         if not destination.exists():
             destination.mkdir()
         result = {
-            "keys": list(self.keys.values()),
+            "keys": list(self.db.get_keys().values()),
             "streams": [],
         }
         retval = True
-        for stream in self.streams.values():
+        for stream in self.db.get_streams():
             js = self.download_stream(stream, destination)
             if js is None:
                 retval = False
@@ -81,7 +86,7 @@ class DownloadDatabase(ManagementBase):
         filename = destination / stream.directory / f'{stream.directory}.json'
         # TODO: only select keys used by this stream
         result = {
-            'keys': list(self.keys.values()),
+            'keys': list(self.db.get_keys().values()),
             'streams': [js]
         }
         with filename.open('wt', encoding='utf-8') as dest:
@@ -89,13 +94,13 @@ class DownloadDatabase(ManagementBase):
         return js
 
     def download_file(self, stream: StreamInfo, name: str, filename: Path, info) -> bool:
-        url = self.url_for(
+        url = self.db.url_for(
             'dash-od-media', stream=stream.directory, filename=filename.stem,
             ext=filename.suffix[1:])
         self.log.info('Downloading %s', name)
         self.log.debug('GET %s', url)
         headers = {"Range": "bytes=0-"}
-        result = self.session.get(url, headers=headers)
+        result = self.db.session.get(url, headers=headers)
         if result.status_code not in {200, 206}:
             self.log.warning('Get %s: HTTP status %d', url, result.status_code)
             self.log.debug('HTTP headers %s', str(result.headers))

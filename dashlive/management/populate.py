@@ -19,58 +19,65 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-import argparse
 import json
 import logging
 from pathlib import Path
-import time
-import urllib
 
 from dashlive.utils.json_object import JsonObject
 
-from .base import ManagementBase
+from .db_access import DatabaseAccess
 from .info import StreamInfo
 
-class PopulateDatabase(ManagementBase):
+class PopulateDatabase:
     """
     Helper class that uses a JSON file to describe a set of
     streams, keys and files that it will upload to the server.
     """
 
+    def __init__(self, db: DatabaseAccess) -> None:
+        self.db = db
+        self.log = logging.getLogger('management')
+
     def populate_database(self, jsonfile: str) -> bool:
+        self.log.debug('Loading JSON file %s', jsonfile)
         with open(jsonfile) as js:
             config = json.load(js)
         if 'files' in config:
+            self.log.debug('Converting JSON script to v2 Schema')
             config = self.convert_v1_json_data(config)
         js_dir = Path(jsonfile).parent
-        if not self.login():
+        if not self.db.login():
+            self.log.error('Login failed')
             return False
-        if not self.get_media_info():
+        if not self.db.fetch_media_info():
+            self.log.error('Fetch media info failed')
             return False
         result = True
+        db_keys = self.db.get_keys()
         for k in config['keys']:
-            if k['kid'] not in self.keys:
+            if k['kid'] not in db_keys:
                 self.log.info('Add key KID={kid} computed={computed}'.format(**k))
-                if not self.add_key(**k):
+                if not self.db.add_key(**k):
                     self.log.error('Failed to add key {kid}'.format(**k))
                     result = False
         directory = None
         for s in config['streams']:
             directory = s.get('directory')
-            if directory not in self.streams:
+            s_info = self.db.get_stream_info(directory)
+            if s_info is None:
                 self.log.info(f'Add stream directory="{directory}" title="{s["title"]}"')
-                if not self.add_stream(**s):
+                if not self.db.add_stream(**s):
                     self.log.error(f'Failed to add stream {directory}: {s["title"]}')
                     result = False
                     continue
-            s_info = self.get_stream_info(directory)
+                s_info = self.db.get_stream_info(directory)
             if s_info is None:
                 continue
             for name in s['files']:
                 if not self.upload_file_and_index(js_dir, s_info, name):
                     result = False
             if s.get('timing_ref'):
-                self.set_timing_ref(s_info, s['timing_ref'])
+                self.db.set_timing_ref(s_info, s['timing_ref'])
         return result
 
     def convert_v1_json_data(self, v1json: JsonObject) -> JsonObject:
@@ -117,75 +124,6 @@ class PopulateDatabase(ManagementBase):
             output['streams'].append(new_st)
         return output
 
-    def add_key(self, kid: str, computed: bool,
-                key: str | None = None, alg: str | None = None) -> bool:
-        if kid in self.keys:
-            return True
-        params = {
-            'kid': kid,
-            'csrf_token': self.csrf_tokens['kids']
-        }
-        if key is not None:
-            params['key'] = key
-        url = self.url_for('add-key')
-        self.log.debug('AddKey PUT %s', url)
-        result = self.session.put(url, params=params)
-        try:
-            js = result.json()
-        except ValueError:
-            js = {}
-        if 'csrf_token' in js:
-            self.csrf_tokens['kids'] = js['csrf_token']
-        if result.status_code != 200 or 'error' in js:
-            self.log.warning('HTTP status %d', result.status_code)
-            self.log.debug('HTTP headers %s', str(result.headers))
-            if 'error' in js:
-                self.log.error('%s', js['error'])
-            return False
-        js = result.json()
-        self.keys[js['kid']] = {
-            'kid': js['kid'],
-            'key': js['key'],
-            'computed': js['computed'],
-        }
-        return True
-
-    def add_stream(self,
-                   directory: str,
-                   title: str,
-                   marlin_la_url: str = '',
-                   playready_la_url: str = '',
-                   **kwargs) -> StreamInfo | None:
-        try:
-            return self.streams[directory]
-        except KeyError:
-            pass
-        params = {
-            'title': title,
-            'directory': directory,
-            'marlin_la_url': marlin_la_url,
-            'playready_la_url': playready_la_url,
-            'csrf_token': self.csrf_tokens['streams']
-        }
-        url = self.url_for('add-stream')
-        self.log.debug('PUT %s', url)
-        result = self.session.put(url, json=params)
-        if result.status_code != 200:
-            self.log.warning('HTTP status %d', result.status_code)
-            self.log.debug('HTTP headers %s', str(result.headers))
-            self.log.error('Add stream failure: HTTP %d', result.status_code)
-            return None
-        js = result.json()
-        if 'csrf_token' in js:
-            self.csrf_tokens['streams'] = js['csrf_token']
-        if js.get('error') is not None:
-            self.log.error('Add stream failure: %s', js['error'])
-            return None
-        ds = StreamInfo(**js)
-        self.streams[js['directory']] = ds
-        ds.csrf_tokens = {'streams': js['csrf_token']}
-        return ds
-
     def upload_file_and_index(self, js_dir: Path, stream: StreamInfo, name: str) -> bool:
         name = Path(name)
         if name.stem in stream.media_files:
@@ -199,156 +137,11 @@ class PopulateDatabase(ManagementBase):
             self.log.warning("%s not found", name)
             return False
         self.log.info('Add file %s', filename.name)
-        if not self.upload_file(stream, filename):
+        if not self.db.upload_file(stream, filename):
             self.log.error('Failed to add file %s', name)
             return False
-        time.sleep(2)  # allow time for DB to sync
-        if stream.media_files[name.stem]['representation'] is None:
-            self.log.info('Index file %s', name)
-            if not self.index_file(stream, name):
-                self.log.error('Failed to index file %s', name)
-                return False
+        self.log.info('Index file %s', name)
+        if not self.db.index_file(stream, name):
+            self.log.error('Failed to index file %s', name)
+            return False
         return True
-
-    def set_timing_ref(self, stream: StreamInfo, timing_ref: str) -> bool:
-        url = self.url_for('view-stream', spk=stream.pk) + '?ajax=1'
-        self.log.debug('GET %s', url)
-        result = self.session.get(url)
-        if result.status_code != 200:
-            self.log.warning('HTTP status %d', result.status_code)
-            self.log.debug('HTTP headers %s', str(result.headers))
-            self.log.error('Add stream failure: HTTP %d', result.status_code)
-            return False
-        js = result.json()
-        if 'csrf_tokens' in js:
-            self.csrf_tokens.update(js['csrf_tokens'])
-        data = {
-            'csrf_token': self.csrf_tokens['streams'],
-            'timing_ref': timing_ref,
-        }
-        for name in {'title', 'directory', 'marlin_la_url', 'playready_la_url'}:
-            data[name] = js[name]
-        self.log.debug('POST %s', url)
-        result = self.session.post(url, json=data)
-        if result.status_code != 200:
-            self.log.warning('HTTP status %d', result.status_code)
-            self.log.debug('HTTP headers %s', str(result.headers))
-            self.log.error('Add stream failure: HTTP %d', result.status_code)
-            return False
-        js = result.json()
-        if 'csrf_token' in js:
-            self.csrf_tokens['streams'] = js['csrf_token']
-        stream = StreamInfo(**js)
-        self.streams[stream.directory] = stream
-        return True
-
-    def get_stream_csrf_token(self, stream: StreamInfo, service: str) -> str:
-        token = stream.csrf_tokens[service]
-        if token is None:
-            s_info = self.get_stream_info(stream.directory)
-            stream.csrf_tokens.update(s_info.csrf_tokens)
-            token = stream.csrf_tokens[service]
-        stream.csrf_tokens[service] = None
-        return token
-
-    def upload_file(self, stream: StreamInfo, filename: Path) -> bool:
-        if filename.stem in stream.media_files:
-            return True
-        params = {
-            'ajax': 1,
-            'stream': stream.pk,
-            'submit': 'Submit',
-            'csrf_token': self.get_stream_csrf_token(stream, 'upload'),
-        }
-        self.log.debug('Upload file: %s', params)
-        upload_url = urllib.parse.urljoin(self.base_url, stream.upload_url)
-        with filename.open('rb') as mp4_src:
-            files = [
-                ('file', (str(filename.name), mp4_src, 'video/mp4')),
-            ]
-            self.log.debug('POST %s', stream.upload_url)
-            result = self.session.post(
-                upload_url, data=params, files=files)
-        if result.status_code != 200:
-            self.log.warning('HTTP status %d', result.status_code)
-            self.log.debug('HTTP headers %s', str(result.headers))
-            return False
-        js = result.json()
-        if 'csrf_token' in js:
-            stream.csrf_tokens['upload'] = js['csrf_token']
-        if 'upload_url' in js:
-            stream.upload_url = js['upload_url']
-        if 'error' in js:
-            self.log.warning('Error: %s', js['error'])
-            return False
-        js['representation'] = None
-        stream.media_files[filename.stem] = js
-        return True
-
-    def index_file(self, stream: StreamInfo, name: Path) -> bool:
-        params = {
-            'ajax': 1,
-            'csrf_token': self.get_stream_csrf_token(stream, 'files'),
-        }
-        if name.stem not in stream.media_files:
-            self.log.warning('File "%s" not found', name)
-            return False
-        mfid = stream.media_files[name.stem]['pk']
-        url = self.url_for('index-media-file', mfid=mfid)
-        timeout = 15
-        while timeout > 0:
-            self.log.debug('GET %s', url)
-            result = self.session.get(url, params=params)
-            try:
-                js = result.json()
-            except (ValueError) as err:
-                js = {'error': str(err)}
-            if 'csrf_token' in js:
-                stream.csrf_tokens['files'] = js['csrf_token']
-                params['csrf_token'] = js['csrf_token']
-            if result.status_code == 200 and 'error' not in js:
-                stream.media_files[name.stem]['representation'] = js['representation']
-                return True
-            self.log.warning('HTTP status %d', result.status_code)
-            self.log.debug('HTTP headers %s', str(result.headers))
-            if 'error' in js:
-                self.log.error('%s', str(js['error']))
-            if result.status_code != 404 or timeout == 0:
-                if timeout == 0:
-                    self.log.error('Timeout uploading file "%s"', name)
-                else:
-                    self.log.error('Error uploading file "%s"', name)
-                return False
-            timeout -= 1
-            time.sleep(2)
-        self.log.error('Timeout uploading file "%s"', name)
-        return False
-
-    @classmethod
-    def main(cls, argv: list[str]) -> None:
-        ap = argparse.ArgumentParser(description='dashlive database population')
-        ap.add_argument('--debug', action="store_true",
-                        help='Display debugging information when populating database')
-        ap.add_argument('--silent', action="store_true",
-                        help='Only show warnings and errors')
-        ap.add_argument('--host', help='HTTP address of host to populate',
-                        default="http://localhost:5000/")
-        ap.add_argument('--username')
-        ap.add_argument('--password')
-        ap.add_argument('jsonfile', help='JSON file', nargs='+', default=None)
-        args = ap.parse_args(argv)
-        mm_log = logging.getLogger('management')
-        ch = logging.StreamHandler()
-        ch.setFormatter(logging.Formatter(
-            '%(asctime)s - %(levelname)s: %(funcName)s:%(lineno)d: %(message)s'))
-        mm_log.addHandler(ch)
-        if args.debug:
-            logging.getLogger().setLevel(logging.DEBUG)
-            mm_log.setLevel(logging.DEBUG)
-        elif args.silent:
-            mm_log.setLevel(logging.WARNING)
-        else:
-            mm_log.setLevel(logging.INFO)
-        mm = cls(args.host, args.username, args.password)
-        for jsonfile in args.jsonfile:
-            mm.populate_database(jsonfile)

@@ -23,35 +23,54 @@
 import json
 import logging
 from pathlib import Path
+import shutil
 import unittest
 
 import flask
 
+import dashlive.upload
 from dashlive.server import models
-from dashlive.management.base import LoginFailureException
 from dashlive.management.populate import PopulateDatabase
+from dashlive.management.backend_db import BackendDatabaseAccess
+from dashlive.management.frontend_db import FrontendDatabaseAccess
 
 from .mixins.flask_base import FlaskTestBase
 from .http_client import ClientHttpSession
 
 class TestPopulateDatabase(FlaskTestBase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        # logging.disable(logging.CRITICAL)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        if cls.log_context:
+            dash_log = logging.getLogger('DashValidator')
+            dash_log.removeFilter(cls.log_context)
+            cls.log_context = None
+        logging.disable(logging.NOTSET)
+        super().tearDownClass()
+
     def test_login_failure(self) -> None:
-        pd = PopulateDatabase(
+        fda = FrontendDatabaseAccess(
             url=flask.url_for('home'),
             username='unknown',
             password='secret',
             session=ClientHttpSession(self.client))
-        with self.assertRaises(LoginFailureException):
-            jsonfile = self.FIXTURES_PATH / 'upload_v2.json'
-            pd.populate_database(str(jsonfile))
+        self.assertFalse(fda.login())
+        pd = PopulateDatabase(fda)
+        jsonfile = self.FIXTURES_PATH / 'upload_v2.json'
+        self.assertFalse(pd.populate_database(str(jsonfile)))
 
     def test_file_not_found(self) -> None:
         self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)
-        pd = PopulateDatabase(
+        fda = FrontendDatabaseAccess(
             url=flask.url_for('home'),
             username=self.MEDIA_USER,
             password=self.MEDIA_PASSWORD,
             session=ClientHttpSession(self.client))
+        pd = PopulateDatabase(fda)
         with self.assertRaises(FileNotFoundError):
             pd.populate_database('script.json')
 
@@ -63,18 +82,19 @@ class TestPopulateDatabase(FlaskTestBase):
 
     def check_populate_database(self, fixture_name: str, version: int) -> None:
         self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)
+        jsonfile = self.FIXTURES_PATH / fixture_name
         tmpdir = self.create_upload_folder()
         with self.app.app_context():
             self.app.config['BLOB_FOLDER'] = tmpdir
-        pd = PopulateDatabase(
+        da = FrontendDatabaseAccess(
             url=flask.url_for('home'),
             username=self.MEDIA_USER,
             password=self.MEDIA_PASSWORD,
             session=ClientHttpSession(self.client))
-        jsonfile = self.FIXTURES_PATH / fixture_name
+        pd = PopulateDatabase(da)
         self.assertTrue(jsonfile.exists())
         result = pd.populate_database(str(jsonfile))
-        self.assertTrue(result)
+        self.assertTrue(result, msg='populate_database() failed')
         self.check_database_results(jsonfile, version)
 
     def check_database_results(self, jsonfilename: Path, version: int) -> None:
@@ -131,7 +151,7 @@ class TestPopulateDatabase(FlaskTestBase):
             self.app.config['BLOB_FOLDER'] = tmpdir
         with unittest.mock.patch('requests.Session') as mock:
             mock.return_value = ClientHttpSession(self.client)
-            PopulateDatabase.main(args)
+            dashlive.upload.main(args)
         self.check_database_results(jsonfile, 2)
 
     def test_translate_v1_json_with_streams(self) -> None:
@@ -158,11 +178,12 @@ class TestPopulateDatabase(FlaskTestBase):
                 "tears_a1.mp4", "tears_v2.mp4", "tears_v1.mp4", "tears_t1.mp4"
             ]
         }
-        pd = PopulateDatabase(
+        fda = FrontendDatabaseAccess(
             url=flask.url_for('home'),
             username=self.MEDIA_USER,
             password=self.MEDIA_PASSWORD,
             session=ClientHttpSession(self.client))
+        pd = PopulateDatabase(fda)
         result = pd.convert_v1_json_data(v1js)
         expected = {
             "keys": [{
@@ -209,11 +230,12 @@ class TestPopulateDatabase(FlaskTestBase):
                 "tears_a1.mp4", "tears_v2.mp4", "tears_v1.mp4", "tears_t1.mp4"
             ]
         }
-        pd = PopulateDatabase(
+        fda = FrontendDatabaseAccess(
             url=flask.url_for('home'),
             username=self.MEDIA_USER,
             password=self.MEDIA_PASSWORD,
             session=ClientHttpSession(self.client))
+        pd = PopulateDatabase(fda)
         result = pd.convert_v1_json_data(v1js)
         expected = {
             "keys": [{
@@ -261,11 +283,12 @@ class TestPopulateDatabase(FlaskTestBase):
                 "media/bbb/2023-08-30T20-00-00Z/bbb_t1.mp4"
             ]
         }
-        pd = PopulateDatabase(
+        fda = FrontendDatabaseAccess(
             url=flask.url_for('home'),
             username=self.MEDIA_USER,
             password=self.MEDIA_PASSWORD,
             session=ClientHttpSession(self.client))
+        pd = PopulateDatabase(fda)
         result = pd.convert_v1_json_data(v1js)
         expected = {
             "keys": [{
@@ -288,13 +311,41 @@ class TestPopulateDatabase(FlaskTestBase):
         self.maxDiff = None
         self.assertDictEqual(expected, result)
 
+    def test_populate_database_using_backend(self) -> None:
+        # add a temporary route, so that BackendDatabaseAccess has its correct
+        # Flask context (e.g. current_user being the logged in user)
+        @self.app.route("/test-populate")
+        def populate_db():
+            da = BackendDatabaseAccess()
+            pd = PopulateDatabase(da)
+            self.assertTrue(jsonfile.exists())
+            result = pd.populate_database(str(jsonfile))
+            self.assertTrue(result, msg='populate_database() failed')
+            return flask.make_response('done')
+        jsonfile = self.FIXTURES_PATH / 'upload_v2.json'
+        tmpdir = self.create_upload_folder()
+        with self.app.app_context():
+            self.app.config['UPLOAD_FOLDER'] = tmpdir
+            self.app.config['BLOB_FOLDER'] = tmpdir
+        subdir = Path(tmpdir) / 'verifier-dest'
+        subdir.mkdir()
+        js_dest = subdir / 'script.json'
+        shutil.copyfile(str(jsonfile), js_dest)
+        with open(jsonfile) as js:
+            config = json.load(js)
+        for stream in config['streams']:
+            for fname in stream['files']:
+                shutil.copyfile(self.FIXTURES_PATH / fname, subdir / fname)
+        jsonfile = js_dest
+        self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)
+        response = self.client.get("/test-populate")
+        self.assertEqual(response.status_code, 200)
+        self.check_database_results(jsonfile, 2)
+
 
 if __name__ == "__main__":
-    mm_log = logging.getLogger('PopulateDatabase')
-    ch = logging.StreamHandler()
-    ch.setFormatter(logging.Formatter(
-        '%(asctime)s - %(levelname)s: %(funcName)s:%(lineno)d: %(message)s'))
-    mm_log.addHandler(ch)
-    # logging.getLogger().setLevel(logging.DEBUG)
-    # mm_log.setLevel(logging.DEBUG)
+    format = r"%(asctime)s %(levelname)-8s:%(filename)s@%(lineno)d: %(message)s"
+    logging.basicConfig(format=format)
+    # logging.getLogger().setLevel(logging.INFO)
+    # logging.getLogger('management').setLevel(logging.DEBUG)
     unittest.main()
