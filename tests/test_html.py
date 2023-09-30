@@ -233,8 +233,21 @@ class TestHtmlPageHandlers(FlaskTestBase):
                         count += 1
         self.progress(num_tests, num_tests)
 
-    def check_video_html_page(self, filename: str, manifest, mode: str,
-                              stream: models.Stream, query: str) -> None:
+    def test_video_playaback_no_audio(self) -> None:
+        """
+        Check rendering video page for a stream without audio
+        """
+        self.setup_media()
+        with self.app.app_context():
+            for mf in list(models.MediaFile.search(content_type='audio')):
+                mf.delete()
+            models.db.session.commit()
+        self.check_video_html_page(
+            'hand_made.mpd', manifests.manifest['hand_made.mpd'], 'vod',
+            models.Stream.get(title=self.STREAM_TITLE), '')
+
+    def check_video_html_page(self, filename: str, manifest: manifests.DashManifest,
+                              mode: str, stream: models.Stream, query: str) -> None:
         html_url = flask.url_for(
             "video",
             mode=mode,

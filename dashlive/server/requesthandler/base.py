@@ -311,7 +311,7 @@ class RequestHandlerBase(MethodView):
         options.timeShiftBufferDepth = timing.timeShiftBufferDepth
         rv.update(timing.generate_manifest_context())
         cgi_params = self.calculate_cgi_parameters(
-            options=options, now=now, audio=audio_adps[0], video=video)
+            options=options, now=now, audio=audio_adps, video=video)
         video.append_cgi_params(cgi_params['video'])
         for audio in audio_adps:
             audio.append_cgi_params(cgi_params['audio'])
@@ -363,21 +363,22 @@ class RequestHandlerBase(MethodView):
                     segment_num='init',
                     ext='m4v')
                 prefix = prefix.replace('RepresentationID/init.m4v', '')
+        kids = set()
+        rv["maxSegmentDuration"] = 0
         for adp in period.adaptationSets:
             if options.mode != 'odvod':
                 adp.initURL = prefix + adp.initURL
             adp.mediaURL = prefix + adp.mediaURL
             adp.set_dash_timing(timing)
+            rv["maxSegmentDuration"] = max(
+                rv["maxSegmentDuration"], adp.maxSegmentDuration)
+            for rep in adp.representations:
+                if rep.encrypted:
+                    kids.update(rep.kids)
 
         rv["periods"].append(period)
-        kids = set()
-        for rep in video.representations + audio.representations:
-            if rep.encrypted:
-                kids.update(rep.kids)
         rv["kids"] = kids
         rv["mediaDuration"] = rv["timing_ref"].media_duration_timedelta().total_seconds()
-        rv["maxSegmentDuration"] = max(video.maxSegmentDuration,
-                                       audio.maxSegmentDuration)
         if encrypted:
             if not kids:
                 rv["keys"] = models.Key.all_as_dict()
@@ -515,7 +516,9 @@ class RequestHandlerBase(MethodView):
         return result
 
     def calculate_cgi_parameters(self, options: OptionsContainer,
-                                 now: datetime.datetime, audio, video) -> dict[str, dict]:
+                                 now: datetime.datetime,
+                                 audio: list[AdaptationSet],
+                                 video: AdaptationSet) -> dict[str, dict]:
         exclude = {'encrypted', 'mode'}
         vid_cgi_params = options.generate_cgi_parameters(use=OptionUsage.VIDEO, exclude=exclude)
         aud_cgi_params = options.generate_cgi_parameters(use=OptionUsage.AUDIO, exclude=exclude)
@@ -530,14 +533,15 @@ class RequestHandlerBase(MethodView):
                 options.timeShiftBufferDepth,
                 video.representations[0])
             vid_cgi_params['verr'] = times
-        if options.audioErrors:
-            times = self.calculate_injected_error_segments(
-                options.audioErrors,
-                now,
-                options.availabilityStartTime,
-                options.timeShiftBufferDepth,
-                audio.representations[0])
-            aud_cgi_params['aerr'] = times
+        if options.audioErrors and audio:
+            if audio[0].representations:
+                times = self.calculate_injected_error_segments(
+                    options.audioErrors,
+                    now,
+                    options.availabilityStartTime,
+                    options.timeShiftBufferDepth,
+                    audio[0].representations[0])
+                aud_cgi_params['aerr'] = times
         if options.videoCorruption:
             errs = [(None, tc) for tc in options.videoCorruption]
             segs = self.calculate_injected_error_segments(
