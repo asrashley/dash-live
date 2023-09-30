@@ -3,13 +3,14 @@
 {% block content %}
 <div id="media-management" class="container" data-back="{{ url_for('list-streams') }}">
   {% if user_can_modify %}
-  <h2>Editing &quot;{{stream.title}}&quot;</h2>
+  <h2 class="stream-title">Editing &quot;{{stream.title}}&quot;</h2>
   {% endif %}
   <div class="form-group">
     {% set extra_buttons %}
     {% if user_can_modify %}
     <a href="{{url_for('delete-stream', spk=stream.pk)}}" class="btn btn-danger delete-stream"
-      data-id="{{stream.pk}}">Delete &quot;{{stream.title}}&quot;</a>
+       data-id="{{ stream.pk }}" data-title="{{ stream.title }}" data-directory="{{ stream.directory }}"
+       >Delete stream &quot;{{stream.title}}&quot;</a>
     {% endif %}
     {% endset %}
   </div>
