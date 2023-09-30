@@ -123,7 +123,7 @@ $(document).ready(function () {
     }
 
     function deleteStream(ev) {
-        var dialog, id, title, $row, csrf, input;
+        var dialog, id, title, directory, csrf, input;
 
         function onClick(btnEv) {
             var cmd;
@@ -132,7 +132,7 @@ $(document).ready(function () {
             closeDialog();
             cmd = $(btnEv.target).data("cmd");
             if (cmd === "yes") {
-                confirmDeleteStream($row, id, csrf);
+                confirmDeleteStream(id, csrf);
             }
             return false;
         }
@@ -151,22 +151,16 @@ $(document).ready(function () {
             }
             csrf = input[0].value;
         }
-        $row = $(ev.target).parents('tr');
-        if ($row.length) {
-            title = $row.find('.title').text();
-            if (title === "" || title === undefined) {
-                title = $row.find('.directory').text();
-            }
-        } else {
-            title = ev.target.innerText.slice(7, -1);
-        }
+        title = $(ev.target).data('title');
+        directory = $(ev.target).data('directory');
         dialog = $('#dialog-box');
         dialog.find(".modal-body").html(
             '<div><h3>Delete stream &quot;' + title + '&quot; ?</h3>' +
                 '<p>This will also delete all of the media files for this stream</p></div>');
         dialog.find(".modal-footer").html(
             '<div>' +
-            '<button class="btn btn-danger" style="margin:1em" data-cmd="yes">Delete Stream</button>' +
+                '<button class="btn btn-danger" style="margin:1em" data-cmd="yes">Delete stream ' +
+                directory + '</button>' +
             '<button class="btn btn-secondary" data-cmd="no">Cancel</button>' +
             '</div>');
         dialog.find(".modal-footer .btn").one('click', onClick);
@@ -174,7 +168,7 @@ $(document).ready(function () {
         return false;
     }
 
-    function confirmDeleteStream($row, id, csrf) {
+    function confirmDeleteStream(id, csrf) {
         if (!id) {
             return;
         }
