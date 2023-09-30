@@ -2,6 +2,7 @@
 *.sql3
 *.pyc
 .coverage
+.env
 .project
 .pydevproject
 ./media
