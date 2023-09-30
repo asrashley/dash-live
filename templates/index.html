@@ -49,7 +49,8 @@
         </td>
         </tr>
       {% endfor %}
-      <tr class="play-row"><td colspan="2" id="play-cell">
+      <tr class="play-row">
+        <td colspan="2" class="play-cell">
           <div id="play-button" class="disabled" >
             <a class="button play-icon"><span class="fa fa-play icon"></span></a>
             <select name="stream" class="play-select">
@@ -61,7 +62,6 @@
       </td></tr>
     </tbody>
   </table>
-</div>
   <p class="info">
     The MPD files for live streams are dynamically
     generated so that they appear to be live sources, using static media files.
@@ -69,6 +69,7 @@
     using various CGI parameters, which are documented on the
     <a href="{{url_for('cgi-options')}}" class="link">CGI options</a> page.
   </p>
+</div>
 {% endblock %}
 
 {% block extrascripts %}
