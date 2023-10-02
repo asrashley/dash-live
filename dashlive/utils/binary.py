@@ -21,7 +21,9 @@
 #############################################################################
 import base64
 from binascii import unhexlify, b2a_hex
-from typing import Union
+from typing import AbstractSet, Union
+
+from dashlive.utils.json_object import JsonObject
 
 class Binary:
     BASE64 = 1
@@ -70,7 +72,8 @@ class Binary:
             return clz.__name__
         return clz.__module__ + '.' + clz.__name__
 
-    def toJSON(self, pure=False):
+    def toJSON(self, pure: bool = False,
+               exclude: AbstractSet | None = None) -> JsonObject:
         if self.data is None:
             return None
         rv = {
@@ -80,9 +83,14 @@ class Binary:
             rv['b64'] = str(base64.b64encode(self.data), 'ascii')
         else:
             rv['hx'] = str(b2a_hex(self.data), 'ascii')
+        if exclude is None:
+            return rv
+        for k in rv.keys():
+            if k in exclude:
+                del rv[k]
         return rv
 
-    def encode(self, encoding):
+    def encode(self, encoding) -> str:
         if encoding == self.HEX or encoding == 'hex':
             return str(b2a_hex(self.data), 'ascii')
         if encoding == self.BASE64 or encoding == 'base64':

@@ -1,4 +1,4 @@
-#############################################################################
+############################################################################
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-
 import logging
 from pathlib import Path
 import urllib
@@ -30,7 +29,9 @@ from flask_login import current_user
 from dashlive.drm.playready import PlayReady
 from dashlive.server import models
 from dashlive.server.routes import Route
+from dashlive.server.options.repository import OptionsRepository
 from dashlive.utils.json_object import JsonObject
+from dashlive.utils.objects import flatten
 
 from .base import HTMLHandlerBase, DeleteModelBase
 from .decorators import login_required, uses_stream, current_stream
@@ -186,11 +187,11 @@ class EditStream(HTMLHandlerBase):
         options = self.calculate_options(mode='vod')
         options.audioCodec = 'any'
         options.textCodec = None
+        options.drmSelection = []
         clear_adaptation_sets = [self.calculate_video_adaptation_set(current_stream, options)]
         clear_adaptation_sets += self.calculate_audio_adaptation_sets(current_stream, options)
         clear_adaptation_sets += self.calculate_text_adaptation_sets(current_stream, options)
-        enc_options = options.clone(
-            drmSelection=['playready', 'marlin', 'clearkey'], encrypted=True)
+        enc_options = options.clone(drmSelection=['playready', 'marlin', 'clearkey'])
         enc_adaptation_sets = [self.calculate_video_adaptation_set(current_stream, enc_options)]
         enc_adaptation_sets += self.calculate_audio_adaptation_sets(current_stream, enc_options)
         enc_adaptation_sets += self.calculate_text_adaptation_sets(current_stream, enc_options)
@@ -306,6 +307,19 @@ class EditStream(HTMLHandlerBase):
                 "type": "select",
                 "options": options,
             })
+            if current_stream.defaults is None:
+                value = ''
+            else:
+                value = current_stream.defaults
+
+            context['fields'].append({
+                "name": "defaults",
+                "title": "Stream defaults",
+                "link_title": "Edit stream's default options",
+                "type": "link",
+                "value": value,
+                "href": flask.url_for("edit-stream-defaults", spk=current_stream.pk)
+            })
         else:
             for fld in context['fields']:
                 fld['disabled'] = True
@@ -315,6 +329,7 @@ class EditStream(HTMLHandlerBase):
         crumbs = super().get_breadcrumbs(route)
         crumbs[-1]['title'] = current_stream.directory
         return crumbs
+
 
 class DeleteStream(DeleteModelBase):
     MODEL_NAME = 'stream'
@@ -342,3 +357,70 @@ class DeleteStream(DeleteModelBase):
 
     def get_next_url(self) -> str:
         return flask.url_for('list-streams')
+
+class EditStreamDefaults(HTMLHandlerBase):
+    """
+    Handler that allows viewing and updating a stream's default options
+    """
+    decorators = [uses_stream]
+
+    def get(self, spk: int) -> flask.Response:
+        context = self.create_context()
+        csrf_key = self.generate_csrf_cookie()
+        context['csrf_token'] = self.generate_csrf_token('streams', csrf_key)
+        defaults = OptionsRepository.get_default_options()
+        if current_stream.defaults is None:
+            options = defaults
+        else:
+            options = defaults.clone(**current_stream.defaults)
+        field_choices = {
+            'representation': [
+                dict(value=mf.name, title=mf.name) for mf in current_stream.media_files],
+            'audio_representation': [
+                dict(value=mf.name, title=mf.name) for mf in models.MediaFile.search(
+                    stream=current_stream, content_type='audio')],
+            'text_representation': [
+                dict(value=mf.name, title=mf.name) for mf in models.MediaFile.search(
+                    stream=current_stream, content_type='text')],
+        }
+        for name in ['representation', 'audio_representation', 'text_representation']:
+            field_choices[name].insert(0, {
+                'title': '--',
+                'value': '',
+            })
+        context['fields'] = options.generate_input_fields(
+            field_choices,
+            exclude={'mode', 'clockDrift', 'dashjsVersion', 'marlinLicenseUrl',
+                     'audioErrors', 'manifestErrors', 'textErrors', 'videoErrors',
+                     'numPeriods', 'playreadyLicenseUrl', 'shakaVersion', 'failureCount',
+                     'videoCorruption', 'videoCorruptionFrameCount',
+                     'videoPlayer', 'updateCount', 'utcValue'})
+        context['stream'] = current_stream
+        return flask.render_template('media/stream_defaults.html', **context)
+
+    def post(self, spk: int) -> flask.Response:
+        try:
+            self.check_csrf('streams', flask.request.form)
+        except (ValueError, CsrfFailureException) as err:
+            if self.is_ajax():
+                return self.jsonify({'error': f'{err}'}, 401)
+            flask.flash(f'CSRF error: {err}', 'error')
+            return self.get(spk)
+        defaults = OptionsRepository.get_default_options()
+        form = {**flask.request.form}
+        del form['csrf_token']
+        form['drm'] = ','.join(flask.request.form.getlist('drm'))
+        form['events'] = ','.join(flask.request.form.getlist('events'))
+        opts = OptionsRepository.convert_cgi_options(form, defaults=defaults)
+        current_stream.defaults = flatten(opts.remove_default_values(defaults))
+        models.db.session.commit()
+        flask.flash('Saved stream defaults', 'success')
+        return flask.redirect(flask.url_for('view-stream', spk=current_stream.pk))
+
+    def get_breadcrumbs(self, route: Route) -> list[dict[str, str]]:
+        crumbs = super().get_breadcrumbs(route)
+        crumbs.insert(-1, {
+            'title': current_stream.directory,
+            'href': flask.url_for('view-stream', spk=current_stream.pk),
+        })
+        return crumbs

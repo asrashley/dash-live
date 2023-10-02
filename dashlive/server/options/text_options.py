@@ -40,7 +40,8 @@ MainTextTrack = DashOption(
     description='Select text AdaptationSet that will be given the "main" role',
     from_string=DashOption.string_or_none,
     cgi_name='main_text',
-    cgi_type='(<id>)')
+    cgi_type='(<id>)',
+    input_type='text_representation')
 
 text_options = [
     TextCodec,

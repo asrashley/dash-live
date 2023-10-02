@@ -22,7 +22,9 @@
 
 from dataclasses import dataclass, field
 from enum import IntFlag, auto
-from typing import NamedTuple, Union
+from typing import AbstractSet, NamedTuple, Union
+
+from dashlive.utils.json_object import JsonObject
 
 class OptionUsage(IntFlag):
     MANIFEST = auto()
@@ -68,8 +70,9 @@ class CgiOption:
     html: str = ''
     hidden: bool = False
 
-    def toJSON(self):
-        return {
+    def toJSON(self, pure: bool = False,
+               exclude: AbstractSet | None = None) -> JsonObject:
+        rv = {
             'hidden': self.hidden,
             'html': self.html,
             'name': self.name,
@@ -77,3 +80,9 @@ class CgiOption:
             'syntax': self.syntax,
             'title': self.title,
         }
+        if exclude is None:
+            return rv
+        for k in rv.keys():
+            if k in exclude:
+                del rv[k]
+        return rv

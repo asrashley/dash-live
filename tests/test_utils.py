@@ -1,11 +1,12 @@
 import datetime
 import io
+from typing import AbstractSet
 import unittest
 
 from dashlive.utils.date_time import from_isodatetime, toIsoDuration, parse_date, UTC
 from dashlive.utils.buffered_reader import BufferedReader
 from dashlive.utils import objects, timezone
-
+from dashlive.utils.json_object import JsonObject
 
 class DateTimeTests(unittest.TestCase):
     def test_from_isodatetime(self):
@@ -113,11 +114,12 @@ class BufferedReaderTests(unittest.TestCase):
             self.assertEqual(p[i], i + 8)
 
 class HasTwoJson:
-    def __init__(self, result, pure):
+    def __init__(self, result, pure: bool) -> None:
         self.pure = pure
         self.result = result
 
-    def toJSON(self, pure):
+    def toJSON(self, pure: bool = False,
+               exclude: AbstractSet | None = None) -> JsonObject:
         if pure != self.pure:
             raise AssertionError(
                 f"Wrong pure argument. Got {pure} expected {self.pure}")

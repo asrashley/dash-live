@@ -3,6 +3,9 @@
 {%- else %}
 {% set rowClass = "row mb-3" %}
 {%- endif %}
+{% if field.prefix %}
+{% set rowClass = rowClass + " prefix-" + field.prefix %}
+{% endif %}
 {% set formClass = "form-group" %}
 {%- if field.columns %}
   {% set left, middle, right = field.columns %}
@@ -16,6 +19,13 @@
     {% set right = "" %}
   {%- endif %}
 {%- endif %}
+{%- if field.type == 'checkbox' %}
+{% set inputClass = 'form-check-input' %}
+{% elif field.type == "select" %}
+{% set inputClass = 'form-select' %}
+{%- else %}
+{% set inputClass = 'form-control' %}
+{%- endif %}
 <div class="{{ rowClass }} {{ formClass }} row-field-{{ field.name }}">
   {% if field.type != "hidden" %}
   <label class="{{ left }} col-form-label {%- if field.disabled %} disabled{%- endif %}" for="model-{{field.name}}">
@@ -25,17 +35,18 @@
   {% endif %}
     {% if field.type == "select" %}
       <select
+    {% elif field.type == "link" %}
+      <input disabled type="text"
     {% else %}
       <input
     {% endif %}
-	type="{{ field.type }}"
-	name="{{ field.name }}"
-	id="model-{{ field.name }}"
-    {%- if field.type != 'checkbox' %} class="form-control" {% endif %}
+        type="{{ field.type }}"
+        name="{{ field.name }}"
+        id="model-{{ field.name }}"
+        class="{{ inputClass }} {{ field.className }}"
     {%- if model %} title="{{model.title}}" {% endif %}
     {%- if field.text %} aria-describedby="text-{{ field.name }}" {% endif %}
     {%- if field.type == 'checkbox' %}
-        class="form-check-input"
     {%- if field.value %} checked{% endif %}
     {% else %}
     {%- if field.value %} value="{{field.value}}"{% endif %}
@@ -47,24 +58,38 @@
     {%- if field.pattern %} pattern="{{field.pattern}}"{% endif %}
     {%- if field.placeholder %} placeholder="{{field.placeholder}}"{% endif %}
     {%- if field.spellcheck %} pattern="{{field.spellcheck}}"{% endif %}
+    {%- if field.multiple %} multiple{% endif %}
     {%- if field.required %} required{% endif %}
     {%- if field.disabled %} disabled{% endif %}
+    {%- if field.datalist %} list="list-{{ field.name }}" {% endif %}
     {% if field.type == "select" %}
-	>
+        >
       {% for option in field.options %}
         <option value="{{ option.value }}"
-	  {%- if option.selected %}selected {%- endif %}
-	>{{ option.title }}</option>
+          {%- if option.selected %}selected {%- endif %}
+        >{{ option.title }}</option>
       {% endfor %}
       </select>
       {% else %}
     />
       {% endif %}
   {% if field.type != "hidden" %}
-  <div class="invalid-feedback"></div>
+    <div class="invalid-feedback"></div>
+    {%- if field.type == "link" %}
+      <a href="{{ field.href }}" class="btn btn-primary mt-2 mb-2" title="{{ field.link_title }}">
+        {{ field.link_title }}
+      </a>
+    {% endif %}
   </div>
   {% endif %}
   {%- if field.text %}
   <div class="form-text {{ right }}" id="text-{{ field.name }}">{{ field.text }}</div>
   {%- endif %}
+  {%- if field.datalist %}
+  <datalist id="list-{{ field.name }}">
+      {% for option in field.options %}
+        <option value="{{ option.value }}">{{ option.title }}</option>
+      {% endfor %}
+  </datalist>
+  {% endif %}
 </div>

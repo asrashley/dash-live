@@ -71,7 +71,7 @@ DrmSelectionTuple: TypeAlias = tuple[str, set[str]]
 
 def _drm_selection_from_string(value: str) -> list[DrmSelectionTuple]:
     value = value.lower()
-    if value.startswith('none'):
+    if value.startswith('none') or value == '':
         return []
     if value.startswith('all'):
         if '-' in value:
@@ -118,6 +118,7 @@ DrmSelection = DashOption(
     to_string=_drm_selection_to_string,
     cgi_name='drm',
     cgi_type='<drm>,.. or <drm>-<location>,..',
+    input_type='multipleSelect',
     cgi_choices=(None, 'all', 'clearkey', 'marlin', 'playready'),
     hidden=False)
 
@@ -150,6 +151,7 @@ PlayreadyPiff = DashOption(
     title='Playready PIFF',
     description='Include PIFF sample encryption data',
     from_string=DashOption.bool_from_string,
+    to_string=DashOption.bool_to_string,
     cgi_name='playready_piff',
     cgi_choices=('1', '0'))
 

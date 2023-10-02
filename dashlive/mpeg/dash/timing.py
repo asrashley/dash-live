@@ -24,6 +24,7 @@ import datetime
 import logging
 from typing import ClassVar
 
+from dashlive.utils.timezone import UTC
 from dashlive.mpeg.dash.reference import StreamTimingReference
 from dashlive.server.options.container import OptionsContainer
 
@@ -75,7 +76,10 @@ class DashTiming:
         self.timeShiftBufferDepth = options.timeShiftBufferDepth
         if not self.timeShiftBufferDepth:
             self.timeShiftBufferDepth = self.DEFAULT_TIMESHIFT_BUFFER_DEPTH
-        if options.availabilityStartTime == 'today':
+        if options.availabilityStartTime == 'epoch':
+            # TODO: add in leap seconds
+            self.availabilityStartTime = datetime.datetime(1970, 1, 1, 0, 0, tzinfo=UTC())
+        elif options.availabilityStartTime == 'today':
             self.availabilityStartTime = now.replace(
                 hour=0, minute=0, second=0, microsecond=0)
             if self.publishTime.hour == 0 and self.publishTime.minute == 0:

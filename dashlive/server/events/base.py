@@ -22,7 +22,7 @@
 
 from abc import abstractmethod
 import datetime
-from typing import Any
+from typing import Any, Callable
 
 from dashlive.mpeg.mp4 import EventMessageBox
 from dashlive.server.options.dash_option import DashOption
@@ -49,6 +49,15 @@ class EventBase(ObjectWithFields):
     def create_emsg_boxes(self, **kwargs) -> list[EventMessageBox]:
         ...
 
+    @staticmethod
+    def int_or_default_from_string(default: int) -> Callable[[str], int]:
+        def int_or_default(value: str):
+            value = DashOption.int_or_none_from_string(value)
+            if value is None:
+                return default
+            return value
+        return int_or_default
+
     @classmethod
     def get_dash_options(cls) -> list[DashOption]:
         """
@@ -69,7 +78,7 @@ class EventBase(ObjectWithFields):
                 cgi_type = '(0|1)'
                 cgi_choices = (str(dflt), str(not dflt))
             elif isinstance(dflt, int):
-                from_string = DashOption.int_or_none_from_string
+                from_string = cls.int_or_default_from_string(dflt)
                 cgi_type = '<int>'
                 cgi_choices = tuple([str(dflt)])
             elif isinstance(dflt, (

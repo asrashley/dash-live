@@ -7,13 +7,14 @@
 #############################################################################
 import contextlib
 from io import SEEK_SET
-from typing import cast
+from typing import cast, AbstractSet
 from pathlib import Path
 
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship  # type: ignore
 
 from dashlive.utils.date_time import to_iso_datetime
+from dashlive.utils.json_object import JsonObject
 
 from .db import db
 from .mixin import ModelMixin
@@ -45,10 +46,15 @@ class Blob(ModelMixin, db.Model):
         """
         return cast(list["Blob"], cls.get_all())
 
-    def toJSON(self, pure=False):
+    def toJSON(self, pure: bool = False,
+               exclude: AbstractSet | None = None) -> JsonObject:
         rv = self.to_dict()
         if pure:
             rv['created'] = to_iso_datetime(self.created)
+        if exclude:
+            for k in rv.keys():
+                if k in exclude:
+                    del rv[k]
         return rv
 
     def open_file(self, media_directory: Path,

@@ -28,6 +28,7 @@ from dashlive.mpeg.dash.profiles import primary_profiles
 from dashlive.server.options.drm_options import DrmLocation, DrmSelection
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.options.types import OptionUsage
+from dashlive.utils.json_object import JsonObject
 
 DashCgiOption = tuple[str, list[str]]
 
@@ -151,7 +152,8 @@ class DashManifest:
                 d_opts.append(f'{opt}-{loc[1]}')
         return set(d_opts)
 
-    def toJSON(self):
+    def toJSON(self, pure: bool = False,
+               exclude: AbstractSet | None = None) -> JsonObject:
         return {
             'title': self.title,
             'features': self.features,

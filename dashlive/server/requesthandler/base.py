@@ -261,8 +261,13 @@ class RequestHandlerBase(MethodView):
                     stream, keys, options, locations=locations)
         return rv
 
-    def calculate_options(self, mode: str) -> OptionsContainer:
+    def calculate_options(self,
+                          mode: str,
+                          stream: models.Stream | None = None) -> OptionsContainer:
         defaults = OptionsRepository.get_default_options()
+        if stream is not None:
+            if stream.defaults is not None:
+                defaults = defaults.clone(**stream.defaults)
         options = OptionsRepository.convert_cgi_options(
             flask.request.args, defaults=defaults)
         options.add_field('mode', mode)

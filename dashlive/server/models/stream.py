@@ -8,7 +8,7 @@
 import hashlib
 import logging
 from pathlib import Path
-from typing import cast, Optional
+from typing import cast, AbstractSet, Optional
 
 import flask
 import sqlalchemy as sa
@@ -45,6 +45,13 @@ class Stream(db.Model, ModelMixin):
             enforce_unicode=False
         ),
         nullable=True)
+    defaults = sa.Column(
+        'defaults',
+        sqlalchemy_jsonfield.JSONField(
+            enforce_string=True,
+            enforce_unicode=False
+        ),
+        nullable=True)
 
     @classmethod
     def get(cls, **kwargs) -> Optional["Stream"]:
@@ -60,11 +67,12 @@ class Stream(db.Model, ModelMixin):
         """
         return cast(list["Stream"], cls.get_all())
 
-    def toJSON(self, pure=False):
+    def toJSON(self, pure: bool = False,
+               exclude: AbstractSet | None = None) -> JsonObject:
         timing_ref: str | None = None
         if self.timing_ref is not None:
             timing_ref = self.timing_ref['media_name']
-        return {
+        rv = {
             'pk': self.pk,
             'title': self.title,
             'directory': self.directory,
@@ -72,6 +80,12 @@ class Stream(db.Model, ModelMixin):
             'playready_la_url': self.playready_la_url,
             'timing_ref': timing_ref,
         }
+        if exclude is None:
+            return rv
+        for k in rv.keys():
+            if k in exclude:
+                del rv[k]
+        return rv
 
     def get_fields(self, **kwargs) -> list[JsonObject]:
         def str_or_none(value):

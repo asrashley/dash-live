@@ -23,10 +23,11 @@
 from collections.abc import Iterable
 import datetime
 import decimal
+from typing import AbstractSet
 
 from dashlive.utils.date_time import to_iso_datetime, toIsoDuration
 
-def flatten(value, convert_numbers=False, pure=True):
+def flatten(value, convert_numbers=False, pure=True, exclude: AbstractSet | None = None):
     """
     Converts a value in to a form suitable for storage.
     It will inspect the type of the value to try to detect
@@ -41,9 +42,9 @@ def flatten(value, convert_numbers=False, pure=True):
             return str(value).replace("'", "\'")
         return value
     if hasattr(value, 'toJSON'):
-        return value.toJSON(pure=pure)
+        return value.toJSON(pure=pure, exclude=exclude)
     if isinstance(value, Iterable):
-        return flatten_iterable(value, convert_numbers)
+        return flatten_iterable(value, convert_numbers, exclude=exclude)
     if isinstance(value, (datetime.date, datetime.datetime, datetime.time)):
         return to_iso_datetime(value)
     if isinstance(value, (datetime.timedelta)):
@@ -53,12 +54,12 @@ def flatten(value, convert_numbers=False, pure=True):
     if isinstance(value, decimal.Decimal):
         return float(value)
     if isinstance(value, (list, set, tuple)):
-        return flatten_iterable(list(value))
+        return flatten_iterable(list(value), exclude=exclude)
     if isinstance(value, dict):
-        return flatten_iterable(value)
+        return flatten_iterable(value, exclude=exclude)
     return value
 
-def flatten_iterable(items, convert_numbers=False):
+def flatten_iterable(items, convert_numbers=False, exclude: AbstractSet | None = None):
     """
     Converts an object in to a form suitable for storage.
     flatten_iterable will take a dictionary, list or tuple and inspect each item
@@ -66,10 +67,12 @@ def flatten_iterable(items, convert_numbers=False):
     that need to be converted to a canonical form before
     they can be processed for storage.
     """
+    if exclude is None:
+        exclude = set()
     if isinstance(items, dict):
         rv = {}
         for key, value in items.items():
-            if callable(value):
+            if callable(value) or key in exclude:
                 continue
             rv[key] = flatten(value)
         return rv

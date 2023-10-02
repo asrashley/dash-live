@@ -5,7 +5,6 @@ from dashlive.server.options.drm_options import DrmSelection
 from dashlive.server.options.container import OptionsContainer
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.options.types import OptionUsage
-from dashlive.utils.timezone import UTC
 
 from .mixins.mixin import TestCaseMixin
 
@@ -92,11 +91,10 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
         expected = {
             'abr': True,
             'audioCodec': 'ec-3',
-            'availabilityStartTime': datetime.datetime(1970, 1, 1, 0, 0, 0, 0, UTC()),
+            'availabilityStartTime': 'epoch',
             'bugCompatibility': ['saio'],
             'clockDrift': 20,
             'drmSelection': [('playready', {'pro', 'moov', 'cenc'})],
-            'encrypted': True,
             'minimumUpdatePeriod': None,
             'numPeriods': 2,
             'playreadyPiff': True,
@@ -113,6 +111,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             self.assertEqual(
                 value, actual,
                 msg=f'Expected {key} to be "{value}" but found "{actual}"')
+        self.assertTrue(result.encrypted)
         params['vcorrupt'] = '1,2'
         expected['videoCorruption'] = ['1', '2']
         result = OptionsRepository.convert_cgi_options(params)
@@ -134,7 +133,6 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
         expected = {
             '_type': 'dashlive.server.options.container.OptionsContainer',
             'audioCodec': 'ec-3',
-            'encrypted': False,
             'eventTypes': ['ping'],
             'ping': {
                 '_type': 'dashlive.server.options.container.OptionsContainer',
@@ -281,7 +279,6 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
         }
         expected = {
             '_type': 'dashlive.server.options.container.OptionsContainer',
-            'encrypted': False,
             'shakaVersion': '1.2.3',
             'videoPlayer': 'shaka',
         }
@@ -295,12 +292,117 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
         }
         expected = {
             '_type': 'dashlive.server.options.container.OptionsContainer',
-            'encrypted': False,
             'dashjsVersion': '1.2.3',
             'videoPlayer': 'dashjs',
         }
         result = OptionsRepository.convert_cgi_options(params).toJSON()
         self.assertDictEqual(expected, result)
+
+    def test_convert_stream_default_options(self) -> None:
+        form = {
+            'abr': '1',
+            'acodec': 'mp4a',
+            'start': 'epoch',
+            'events': 'ping',
+            'ping_count': '5',
+            'ping_duration': '200',
+            'ping_inband': '1',
+            'ping_interval': '1000',
+            'ping_start': '',
+            'ping_timescale': '100',
+            'ping_value': '0',
+            'ping_version': '',
+            'playready_piff': '1',
+            'scte35_count': '',
+            'scte35_duration': '200',
+            'scte35_inband': '1',
+            'scte35_interval': '1000',
+            'scte35_program_id': '1620',
+            'scte35_start': '',
+            'scte35_timescale': '100',
+            'scte35_value': '',
+            'timeline': '0',
+            'base': '1',
+            'depth': '1800',
+        }
+        expected = {
+            "_type": "dashlive.server.options.container.OptionsContainer",
+            "abr": True,
+            "audioCodec": "mp4a",
+            "audioDescription": None,
+            "audioErrors": [],
+            "availabilityStartTime": "epoch",
+            "bugCompatibility": [],
+            "clockDrift": None,
+            "dashjsVersion": None,
+            "drmSelection": [],
+            "eventTypes": [
+                "ping"
+            ],
+            "failureCount": None,
+            "mainAudio": None,
+            "mainText": None,
+            "manifestErrors": [],
+            "marlinLicenseUrl": None,
+            "minimumUpdatePeriod": None,
+            "mode": "vod",
+            "numPeriods": None,
+            "ping": {
+                "_type": "dashlive.server.options.container.OptionsContainer",
+                "count": 5,
+                "duration": 200,
+                "inband": True,
+                "interval": 1000,
+                "start": 0,
+                "timescale": 100,
+                "value": "0",
+                "version": 0
+            },
+            "playreadyLicenseUrl": None,
+            "playreadyPiff": True,
+            "playreadyVersion": None,
+            "scte35": {
+                "_type": "dashlive.server.options.container.OptionsContainer",
+                "count": 0,
+                "duration": 200,
+                "inband": True,
+                "interval": 1000,
+                "program_id": 1620,
+                "start": 0,
+                "timescale": 100,
+                "value": "",
+                "version": 0
+            },
+            "segmentTimeline": False,
+            "shakaVersion": None,
+            "textCodec": None,
+            "textErrors": [],
+            "textLanguage": None,
+            "timeShiftBufferDepth": 1800,
+            "updateCount": None,
+            "useBaseUrls": True,
+            "utcMethod": None,
+            "utcValue": None,
+            "videoCorruption": [],
+            "videoCorruptionFrameCount": None,
+            "videoErrors": [],
+            "videoPlayer": "native"
+        }
+        defaults = OptionsRepository.get_default_options()
+        opts = OptionsRepository.convert_cgi_options(form, defaults)
+        self.maxDiff = None
+        self.assertDictEqual(expected, opts.toJSON())
+        result = opts.remove_default_values()
+        without_defaults = {
+            'availabilityStartTime': 'epoch',
+            'eventTypes': ['ping'],
+            'ping': {
+                'count': 5,
+            },
+        }
+        self.assertDictEqual(without_defaults, result)
+        new_opts = defaults.clone(**result)
+        self.assertDictEqual(expected, new_opts.toJSON())
 
 
 if __name__ == "__main__":
