@@ -37,6 +37,7 @@ EventSelection = DashOption(
     cgi_name='events',
     cgi_type='<format>,..',
     cgi_choices=(None, 'ping', 'scte35'),
+    input_type='multipleSelect',
     hidden=False)
 
 event_options = [EventSelection] + EventFactory.get_dash_options()

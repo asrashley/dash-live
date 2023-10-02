@@ -61,7 +61,7 @@ class ServeManifest(RequestHandlerBase):
         context = self.create_context(**kwargs)
         context['title'] = current_stream.title
         try:
-            options = self.calculate_options(mode)
+            options = self.calculate_options(mode, current_stream)
         except ValueError as e:
             return flask.make_response(f'Invalid CGI parameters: {e}', 400)
         options.update(segmentTimeline=mft.segment_timeline)

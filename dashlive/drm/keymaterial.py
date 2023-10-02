@@ -23,7 +23,9 @@
 import base64
 import binascii
 import re
+from typing import AbstractSet
 
+from dashlive.utils.json_object import JsonObject
 
 class KeyMaterial:
     length = 16
@@ -70,13 +72,20 @@ class KeyMaterial:
 
     b64 = property(to_base64, from_base64)
 
-    def toJSON(self, pure=True):
+    def toJSON(self, pure=True, exclude: AbstractSet | None = None) -> JsonObject:
         if pure:
             return self.to_hex()
-        return {
+        rv: JsonObject = {
             '_type': KeyMaterial.__name__,
             'hex': self.to_hex(),
         }
+        if exclude is None:
+            return rv
+        if '_type' in exclude:
+            del rv['_type']
+        if 'hex' in exclude:
+            del rv['hex']
+        return rv
 
     def __len__(self):
         return self.length

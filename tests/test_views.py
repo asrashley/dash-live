@@ -29,11 +29,12 @@ from unittest.mock import patch
 from lxml import etree
 import flask
 
+from dashlive.drm.clearkey import ClearKey
 from dashlive.server import manifests, models
 from dashlive.server.requesthandler.base import RequestHandlerBase
 from dashlive.server.options.drm_options import DrmLocation, PlayreadyVersion
 from dashlive.utils.date_time import UTC, to_iso_datetime, from_isodatetime
-from dashlive.utils.objects import dict_to_cgi_params
+from dashlive.utils.objects import dict_to_cgi_params, flatten
 
 from .mixins.check_manifest import DashManifestCheckMixin
 from .mixins.flask_base import FlaskTestBase
@@ -458,6 +459,57 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
             rhb.add_allowed_origins(headers)
             self.assertNotIn("Access-Control-Allow-Methods", headers)
             self.assertNotIn("Access-Control-Allow-Origin", headers)
+
+    def test_get_vod_media_with_stream_defaults(self):
+        """
+        Get VoD segments where the stream has defaults
+        """
+        self.setup_media()
+        with self.app.app_context():
+            bbb = models.Stream.get(title=self.STREAM_TITLE)
+            self.assertIsNotNone(bbb, 'Failed to get stream model')
+            bbb.defaults = flatten({
+                'availabilityStartTime': 'epoch',
+                'ping': {
+                    'count': 5
+                },
+                'timeShiftBufferDepth': 120,
+                'eventTypes': ['ping'],
+                'drmSelection': [
+                    ('clearkey', {'cenc'})
+                ]
+            })
+            models.db.session.commit()
+        self.logout_user()
+        mpd_url = flask.url_for(
+            'dash-mpd-v3', manifest='hand_made.mpd', stream=self.FIXTURES_PATH.name, mode='vod')
+        response = self.client.get(mpd_url)
+        self.assertEqual(response.status_code, 200)
+        xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
+        mpd = ViewsTestDashValidator(
+            http_client=self.client, mode='vod', xml=xml.getroot(),
+            url=mpd_url, encrypted=True)
+        mpd.validate()
+        if mpd.has_errors():
+            print(mpd.get_errors())
+        self.assertFalse(mpd.has_errors(), 'Stream validation failed')
+        for adp in mpd.manifest.periods[0].adaptation_sets:
+            if adp.contentType != 'video':
+                continue
+            self.assertEqual(len(adp.event_streams), 1)
+            self.assertEqual(adp.event_streams[0].schemeIdUri, r'urn:dash-live:pingpong:2022')
+            schemes = {cp.schemeIdUri for cp in adp.contentProtection}
+            self.assertIn(f"urn:uuid:{ClearKey.MPD_SYSTEM_ID}", schemes)
+        response = self.client.get(f'{mpd_url}?drm=none')
+        self.assertEqual(response.status_code, 200)
+        xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
+        mpd = ViewsTestDashValidator(
+            http_client=self.client, mode='vod', xml=xml.getroot(),
+            url=mpd_url, encrypted=False)
+        mpd.validate()
+        if mpd.has_errors():
+            print(mpd.get_errors())
+        self.assertFalse(mpd.has_errors(), 'Stream validation failed')
 
 
 if __name__ == '__main__':

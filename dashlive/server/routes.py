@@ -155,6 +155,11 @@ routes = {
         handler='streams.EditStream',
         title='Edit Stream',
         parent='list-streams'),
+    "edit-stream-defaults": Route(
+        r'/stream/<int:spk>/defaults',
+        handler='streams.EditStreamDefaults',
+        title='Edit Stream Defaults',
+        parent='list-streams'),
     "upload-blob": Route(
         r'/media/<int:spk>/blob',
         handler='media_management.UploadHandler',

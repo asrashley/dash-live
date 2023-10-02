@@ -28,6 +28,7 @@ from collections.abc import Callable
 import urllib.parse
 
 from dashlive.utils.date_time import from_isodatetime, to_iso_datetime
+from dashlive.utils.json_object import JsonObject
 from dashlive.utils.objects import flatten
 
 from .types import CgiOption, CgiOptionChoice, OptionUsage
@@ -44,6 +45,7 @@ class DashOption:
     cgi_name: str | list[str]
     cgi_choices: tuple[CgiChoiceType, ...] | None = field(default=None)
     cgi_type: str | None = None
+    input_type: str | None = None
     from_string: Callable[[str], Any] = field(default_factory=lambda: DashOption.string_or_none)
     to_string: Callable[[str], Any] = field(default_factory=lambda: flatten)
     prefix: str = field(default='')
@@ -98,6 +100,71 @@ class DashOption:
             syntax=syntax,
             options=ocs,
             usage=OptionUsage.to_string_set(self.usage))
+
+    def input_field(self, value: Any, field_choices: dict) -> JsonObject:
+        input = {
+            "name": self.cgi_name,
+            "title": self.title,
+            "value": value,
+            "text": self.description,
+            "type": self.input_type,
+            "prefix": self.prefix,
+        }
+        if self.cgi_choices and len(self.cgi_choices) > 1:
+            input['options'] = []
+            for ch in self.cgi_choices:
+                if isinstance(ch, tuple):
+                    title, val = ch
+                else:
+                    val = title = ch
+                if title is None:
+                    title = '--'
+                if val is None:
+                    val = ''
+                input['options'].append({
+                    "value": val,
+                    "title": title,
+                    "selected": value == val
+                })
+        if input['type'] is None:
+            if isinstance(value, bool) or self.to_string == DashOption.bool_to_string:
+                input['type'] = 'bool'
+            elif isinstance(value, int) or self.to_string == DashOption.int_or_none_from_string:
+                input['type'] = 'number'
+            elif self.cgi_choices and len(self.cgi_choices) > 1:
+                input['type'] = 'select'
+        if input['type'] == 'multipleSelect':
+            input['type'] = 'select'
+            input['multiple'] = True
+            for val in value:
+                for ch in input['options']:
+                    if ch['value'] == val:
+                        ch['selected'] = True
+        elif input['type'] == 'bool':
+            input['type'] = 'select'
+            input['options'] = [{
+                "value": '',
+                "title": '--',
+                "selected": value is None,
+            }, {
+                "value": '1',
+                "title": 'True',
+                "selected": value is True,
+            }, {
+                "value": '0',
+                "title": 'False',
+                "selected": value is False,
+            }]
+        elif input['type'] == 'numberList':
+            input['type'] = 'number'
+            input['datalist'] = True
+        elif input['type'] == 'textList':
+            input['type'] = 'text'
+            input['datalist'] = True
+        elif input['type'] in field_choices:
+            input['options'] = field_choices[input['type']]
+            input['type'] = 'select'
+        return input
 
     @staticmethod
     def bool_from_string(value: str) -> bool:

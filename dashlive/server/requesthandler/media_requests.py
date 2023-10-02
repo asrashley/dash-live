@@ -90,7 +90,7 @@ class LiveMedia(RequestHandlerBase):
         logging.debug('LiveMedia.get: %s %s %s %s', stream, filename, segment_num, ext)
         representation = current_media_file.representation
         try:
-            options = self.calculate_options(mode)
+            options = self.calculate_options(mode, current_stream)
         except ValueError as err:
             logging.error('Invalid CGI parameters: %s', err)
             return flask.make_response(f'Invalid CGI parameters: {err}', 400)
@@ -98,9 +98,11 @@ class LiveMedia(RequestHandlerBase):
             logging.warning('stream.timing_reference has not been configured')
             return flask.make_response(
                 'stream.timing_reference has not been configured', 404)
-        options.update(
-            encrypted=representation.encrypted,
-            segmentTimeline=(segment_time is not None))
+        if representation.encrypted and not options.encrypted:
+            logging.warning('Request for an encrypted stream, when drmSelection is empty')
+            return flask.make_response(
+                'Request for an encrypted stream, when drmSelection is empty', 404)
+        options.update(segmentTimeline=(segment_time is not None))
         mf = current_media_file
         if mf.content_type == 'audio':
             adp_id = 2

@@ -129,7 +129,7 @@ class ObjectWithFields(MutableMapping):
                 exclude = set()
         rv = self._to_json(exclude)
         if pure:
-            rv = flatten(rv)
+            rv = flatten(rv, exclude=exclude)
         return rv
 
     def _field_repr(self, exclude: AbstractSet) -> list[str]:
@@ -150,10 +150,10 @@ class ObjectWithFields(MutableMapping):
             if k[0] == '_' or k in exclude:
                 continue
             v = getattr(self, k)
-            rv[k] = self._convert_value_to_json(k, v)
+            rv[k] = self._convert_value_to_json(k, v, exclude)
         return rv
 
-    def _convert_value_to_json(self, key: str, value: Any) -> Any:
+    def _convert_value_to_json(self, key: str, value: Any, exclude: AbstractSet) -> Any:
         if value is None:
             return value
         if key and self.OBJECT_FIELDS and key in self.OBJECT_FIELDS:
@@ -161,8 +161,8 @@ class ObjectWithFields(MutableMapping):
             # print('_convert_value_to_json check clz', self.classname(), key, clz)
             if isinstance(clz, ListOf):
                 # print('_convert_value_to_json listOf', self.classname(), key, clz.clazz)
-                return list(map(flatten, value))
-        return flatten(value)
+                return [flatten(v, exclude=exclude) for v in value]
+        return flatten(value, exclude=exclude)
 
     def _copy_args(self, args: dict) -> None:
         for key, value in args.items():

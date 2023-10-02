@@ -1,5 +1,8 @@
 from dataclasses import dataclass
 from datetime import timedelta
+from typing import AbstractSet
+
+from dashlive.utils.json_object import JsonObject
 
 @dataclass(slots=True, frozen=True)
 class StreamTimingReference:
@@ -13,11 +16,17 @@ class StreamTimingReference:
         seconds = self.media_duration / float(self.timescale)
         return timedelta(seconds=seconds)
 
-    def toJSON(self, pure: bool = False) -> dict:
-        return {
+    def toJSON(self, pure: bool = False, exclude: AbstractSet | None = None) -> JsonObject:
+        rv: JsonObject = {
             'media_name': self.media_name,
             'media_duration': self.media_duration,
             'num_media_segments': self.num_media_segments,
             'segment_duration': self.segment_duration,
             'timescale': self.timescale
         }
+        if exclude is None:
+            return rv
+        for k in rv.keys():
+            if k in exclude:
+                del rv[k]
+        return rv

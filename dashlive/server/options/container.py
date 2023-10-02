@@ -22,6 +22,7 @@
 
 from typing import AbstractSet, Any, Optional
 
+from dashlive.utils.json_object import JsonObject
 from dashlive.utils.object_with_fields import ObjectWithFields
 from dashlive.utils.objects import dict_to_cgi_params
 
@@ -32,12 +33,19 @@ class OptionsContainer(ObjectWithFields):
     OBJECT_FIELDS = {}
 
     def __init__(self,
-                 parameter_map: dict[str, DashOption],
-                 defaults: Optional["OptionsContainer"],
+                 parameter_map: dict[str, DashOption] = None,
+                 defaults: Optional["OptionsContainer"] = None,
                  **kwargs) -> None:
         super().__init__(**kwargs)
         self._parameter_map = parameter_map
         self._defaults = defaults
+
+    @property
+    def encrypted(self) -> bool:
+        try:
+            return len(self.drmSelection) > 0
+        except AttributeError:
+            return False
 
     def clone(self, **kwargs) -> "OptionsContainer":
         args = {
@@ -46,15 +54,28 @@ class OptionsContainer(ObjectWithFields):
         for key in self._fields:
             if key[0] == '_':
                 continue
-            value = kwargs.get(key, getattr(self, key))
-            if value is not None:
-                if isinstance(value, OptionsContainer):
-                    dflt = None
-                    if self._defaults is not None:
-                        dflt = self._defaults[key]
-                    value = value.clone(
-                        parameter_map=self._parameter_map,
-                        defaults=dflt)
+            ours = getattr(self, key)
+            value = kwargs.get(key, ours)
+            if isinstance(value, OptionsContainer) or isinstance(ours, OptionsContainer):
+                if ours is None:
+                    ours = {}
+                elif isinstance(ours, OptionsContainer):
+                    ours = ours.toJSON()
+                if value is None:
+                    theirs = {}
+                elif isinstance(value, OptionsContainer):
+                    theirs = value.toJSON()
+                else:
+                    theirs = value
+                value = {
+                    **ours,
+                    **theirs,
+                }
+                dflt = None
+                if self._defaults is not None:
+                    dflt = self._defaults[key]
+                value = self.__class__(
+                    parameter_map=self._parameter_map, defaults=dflt, **value)
             args[key] = value
         for key, value in kwargs.items():
             if key in self._fields or key[0] == '_':
@@ -96,6 +117,18 @@ class OptionsContainer(ObjectWithFields):
         Produces a dictionary of CGI parameters that represent these options.
         Any option that matches its default is excluded.
         """
+        return self.generate_parameters_dict(
+            'cgi_name', destination=destination, use=use, exclude=exclude)
+
+    def generate_parameters_dict(self,
+                                 attr_name: str,
+                                 destination: dict[str, str] | None = None,
+                                 use: OptionUsage | None = None,
+                                 exclude: AbstractSet | None = None) -> dict[str, str]:
+        """
+        Produces a dictionary of parameters that represent these options.
+        Any option that matches its default is excluded.
+        """
         if exclude is None:
             exclude = {'encrypted', 'mode'}
         if destination is None:
@@ -114,8 +147,34 @@ class OptionsContainer(ObjectWithFields):
             opt = self._parameter_map[key]
             if use is not None and (opt.usage & use) == 0:
                 continue
-            destination[opt.cgi_name] = opt.to_string(value)
+            destination[getattr(opt, attr_name)] = opt.to_string(value)
         return destination
+
+    def remove_default_values(self, defaults: Optional["OptionsContainer"] = None) -> JsonObject:
+        if defaults is None:
+            defaults = self._defaults
+        if defaults is None:
+            return self.toJSON()
+        result: JsonObject = {}
+        for key, value in self.items():
+            try:
+                dflt = defaults[key]
+            except KeyError:
+                continue
+            if isinstance(value, OptionsContainer):
+                sub_result = {}
+                for k, v in value.items():
+                    if k not in dflt:
+                        continue
+                    d = dflt[k]
+                    if d != v:
+                        sub_result[k] = v
+                if sub_result:
+                    result[key] = sub_result
+                continue
+            if value != dflt:
+                result[key] = value
+        return result
 
     def generate_cgi_parameters_string(self,
                                        use: OptionUsage | None = None,
@@ -152,6 +211,32 @@ class OptionsContainer(ObjectWithFields):
                     todo.append(name)
         for name in todo:
             self.remove_field(name)
+
+    def generate_input_fields(self, field_choices: dict,
+                              exclude: AbstractSet | None = None) -> list[JsonObject]:
+        fields = []
+        if exclude is None:
+            exclude = set()
+        for key, value in self.items():
+            if key in exclude:
+                continue
+            if isinstance(value, OptionsContainer):
+                for ok, ov in value.items():
+                    name = f'{key}.{ok}'
+                    if name in exclude:
+                        continue
+                    op = self._parameter_map[name]
+                    fields.append(
+                        op.input_field(ov, field_choices))
+                continue
+            try:
+                opt = self._parameter_map[key]
+            except KeyError:
+                continue
+            input = opt.input_field(value, field_choices)
+            fields.append(input)
+        fields.sort(key=lambda item: item['title'])
+        return fields
 
 
 # manually adding the event types avoids a circular import loop

@@ -51,13 +51,13 @@ def http_error_factory(use: str, description: str):
         cgi_type='<code>=<num|isoDateTime>,..')
 
 
-ManifestHttpError = http_error_factory('manifest', 'a manifest')
+ManifestHttpError = http_error_factory('manifest', 'Manifest')
 
-VideoHttpError = http_error_factory('video', 'video fragments')
+VideoHttpError = http_error_factory('video', 'Video fragments')
 
-AudioHttpError = http_error_factory('audio', 'audio fragments')
+AudioHttpError = http_error_factory('audio', 'Audio fragments')
 
-TextHttpError = http_error_factory('text', 'text fragments')
+TextHttpError = http_error_factory('text', 'Text fragments')
 
 FailureCount = DashOption(
     usage=(OptionUsage.MANIFEST | OptionUsage.AUDIO | OptionUsage.VIDEO | OptionUsage.TEXT),

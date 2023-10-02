@@ -37,6 +37,7 @@ from .utc_time_options import time_options
 
 class OptionsRepository:
     _cgi_map: ClassVar[dict[str, DashOption] | None] = None
+    _short_name_map: ClassVar[dict[str, DashOption] | None] = None
     _param_map: ClassVar[dict[str, DashOption] | None] = None
     _global_default_options: ClassVar[OptionsContainer | None] = None
     _all_options: ClassVar[list[DashOption]] = (
@@ -122,16 +123,30 @@ class OptionsRepository:
         return cls._cgi_map
 
     @classmethod
+    def get_short_param_map(cls) -> dict[str, str]:
+        """
+        Returns a dictionary that maps from the short parameter used in a
+        stream defaults
+        """
+        if cls._short_name_map is not None:
+            return cls._short_name_map
+        cls._short_name_map = {}
+        for opt in cls.get_dash_options():
+            cls._short_name_map[opt.short_name] = opt
+        return cls._short_name_map
+
+    @classmethod
     def get_parameter_map(cls) -> dict[str, str]:
         """
         Returns a dictionary that maps from the full parameter name
-        to is DashOption entry
+        to its DashOption entry
         """
         if cls._param_map is not None:
             return cls._param_map
         cls._param_map = {}
         for opt in cls.get_dash_options():
             if opt.prefix:
+                cls._param_map[f'{opt.prefix}.{opt.short_name}'] = opt
                 name = f'{opt.prefix}.{opt.full_name}'
             else:
                 name = opt.full_name
@@ -174,19 +189,41 @@ class OptionsRepository:
         """
         Convert a dictionary of CGI parameters to an OptionsContainer object
         """
+        return cls.convert_options(params, True, defaults=defaults)
+
+    @classmethod
+    def convert_short_name_options(
+            cls, params: dict[str, str],
+            defaults: OptionsContainer | None = None) -> OptionsContainer:
+        """
+        Convert a dictionary of CGI parameters to an OptionsContainer object
+        """
+        return cls.convert_options(params, False, defaults=defaults)
+
+    @classmethod
+    def convert_options(cls,
+                        params: dict[str, str],
+                        is_cgi: bool,
+                        defaults: OptionsContainer | None = None) -> OptionsContainer:
         if defaults is not None:
             result = defaults.clone(
                 parameter_map=cls.get_parameter_map(),
                 defaults=defaults)
         else:
             result = OptionsContainer(cls.get_parameter_map(), defaults)
-        cgi_map = cls.get_cgi_map()
+        if is_cgi:
+            param_map: dict[str, DashOption] = cls.get_cgi_map()
+        else:
+            param_map = cls.get_short_param_map()
         for key, value in params.items():
             try:
-                opt = cgi_map[key]
+                opt = param_map[key]
                 value = opt.from_string(value)
                 if opt.prefix:
-                    name = key[len(opt.prefix) + 1:]
+                    if is_cgi:
+                        name = key[len(opt.prefix) + 1:]
+                    else:
+                        name = key
                     try:
                         dest = result[opt.prefix]
                     except KeyError:
@@ -199,8 +236,7 @@ class OptionsRepository:
                     dest.add_field(name, value)
                 else:
                     result.add_field(opt.full_name, value)
-            except KeyError as err:
-                logging.warning(f'Invalid CGI parameter {key}: {err}')
+            except KeyError:
+                logging.warning(f'Invalid parameter {key} cgi={is_cgi}')
                 continue
-        result.add_field('encrypted', len(getattr(result, 'drmSelection', '')) > 0)
         return result

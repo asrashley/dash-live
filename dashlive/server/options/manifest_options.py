@@ -8,8 +8,7 @@
 import datetime
 import logging
 
-from dashlive.utils.timezone import UTC
-from dashlive.utils.date_time import from_isodatetime
+from dashlive.utils.date_time import from_isodatetime, to_iso_datetime
 from .dash_option import DashOption
 from .http_error import FailureCount, ManifestHttpError
 from .types import OptionUsage
@@ -40,16 +39,21 @@ AST_HTML = '''
 '''
 
 def ast_from_string(value: str) -> datetime.datetime | str:
-    if value in {'now', 'today'}:
+    if value in {'now', 'today', 'epoch'}:
         return value
-    if value == 'epoch':
-        return datetime.datetime(1970, 1, 1, 0, 0, tzinfo=UTC())
     try:
         value = from_isodatetime(value)
     except ValueError as err:
         logging.warning('Failed to parse availabilityStartTime: %s', err)
         raise err
     return value
+
+def ast_to_string(value: datetime.datetime | str | None) -> str:
+    if value in {'now', 'today', 'epoch'}:
+        return value
+    if value is None:
+        return ''
+    return to_iso_datetime(value)
 
 
 AvailabilityStartTime = DashOption(
@@ -59,11 +63,12 @@ AvailabilityStartTime = DashOption(
     title='Availability start time',
     description='Sets availabilityStartTime for live streams',
     from_string=ast_from_string,
-    to_string=DashOption.datetime_or_none_to_string,
+    to_string=ast_to_string,
     cgi_name='start',
     cgi_type='(today|epoch|now|<iso-datetime>)',
     cgi_choices=('today', 'epoch', 'now'),
-    html=AST_HTML)
+    html=AST_HTML,
+    input_type='textList')
 
 UseBaseUrl = DashOption(
     usage=OptionUsage.MANIFEST,
@@ -119,7 +124,8 @@ MinimumUpdatePeriod = DashOption(
         ('Every fragment', '4'),
         ('Every 30 seconds', '30'),
     ),
-    cgi_type='<number>')
+    cgi_type='<number>',
+    input_type='numberList')
 
 Periods = DashOption(
     usage=OptionUsage.MANIFEST + OptionUsage.VIDEO + OptionUsage.AUDIO + OptionUsage.TEXT,
@@ -153,7 +159,8 @@ TimeshiftBufferDepth = DashOption(
     from_string=DashOption.int_or_none_from_string,
     cgi_name='depth',
     cgi_type='<seconds>',
-    cgi_choices=('1800', '30'))
+    cgi_choices=('1800', '30'),
+    input_type='numberList')
 
 UpdateCount = DashOption(
     usage=OptionUsage.MANIFEST,

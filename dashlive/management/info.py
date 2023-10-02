@@ -117,6 +117,7 @@ class StreamInfo:
     keys: list[JsonObject] | None = None
     upload_url: str | None = None
     csrf_tokens: JsonObject | None = None
+    defaults: JsonObject | None = None
     csrf_token: InitVar[str | None] = None
     id: InitVar[str | None] = None
 

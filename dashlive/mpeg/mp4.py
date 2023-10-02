@@ -148,8 +148,6 @@ class Mp4Atom(ObjectWithFields):
         for c in self.children:
             if c.atom_type == name:
                 return c
-            if isinstance(c.atom_type, bytes):
-                print('c.atom_type', c.atom_type)
             if '-' in c.atom_type:
                 if c.atom_type.replace('-', '_') == name:
                     return c
@@ -462,8 +460,6 @@ class Mp4Atom(ObjectWithFields):
         self.position = out.tell()
         if len(self.atom_type) > 4:
             # 16 hex chars + 'UUID()' == 38
-            if len(self.atom_type) != 38:
-                print(len(self.atom_type), self.atom_type)
             assert len(self.atom_type) == 38
             fourcc = b'uuid' + binascii.a2b_hex(self.atom_type[5:-1])
         else:
