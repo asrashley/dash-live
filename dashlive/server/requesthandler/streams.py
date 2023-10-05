@@ -28,8 +28,9 @@ from flask_login import current_user
 
 from dashlive.drm.playready import PlayReady
 from dashlive.server import models
-from dashlive.server.routes import Route
+from dashlive.server.options.drm_options import ALL_DRM_TYPES
 from dashlive.server.options.repository import OptionsRepository
+from dashlive.server.routes import Route
 from dashlive.utils.json_object import JsonObject
 from dashlive.utils.objects import flatten
 
@@ -390,9 +391,9 @@ class EditStreamDefaults(HTMLHandlerBase):
             })
         context['fields'] = options.generate_input_fields(
             field_choices,
-            exclude={'mode', 'clockDrift', 'dashjsVersion', 'marlinLicenseUrl',
+            exclude={'mode', 'clockDrift', 'dashjsVersion', 'marlin.licenseUrl',
                      'audioErrors', 'manifestErrors', 'textErrors', 'videoErrors',
-                     'numPeriods', 'playreadyLicenseUrl', 'shakaVersion', 'failureCount',
+                     'numPeriods', 'playready.licenseUrl', 'shakaVersion', 'failureCount',
                      'videoCorruption', 'videoCorruptionFrameCount',
                      'videoPlayer', 'updateCount', 'utcValue'})
         context['stream'] = current_stream
@@ -409,7 +410,13 @@ class EditStreamDefaults(HTMLHandlerBase):
         defaults = OptionsRepository.get_default_options()
         form = {**flask.request.form}
         del form['csrf_token']
-        form['drm'] = ','.join(flask.request.form.getlist('drm'))
+        drms = []
+        for name in ALL_DRM_TYPES:
+            if flask.request.form.get(f'drm_{name}', '') != 'on':
+                continue
+            loc = flask.request.form.get(f'{name}_drmloc', 'all')
+            drms.append(f'{name}-{loc}')
+        form['drm'] = ','.join(drms)
         form['events'] = ','.join(flask.request.form.getlist('events'))
         opts = OptionsRepository.convert_cgi_options(form, defaults=defaults)
         current_stream.defaults = flatten(opts.remove_default_values(defaults))

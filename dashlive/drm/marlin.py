@@ -31,9 +31,10 @@ class Marlin(DrmBase):
     def generate_manifest_context(self, stream, keys,
                                   options: OptionsContainer,
                                   la_url: str | None = None,
+                                  https_request: bool = False,
                                   locations: str | None = None) -> dict:
         if la_url is None:
-            la_url = options.marlinLicenseUrl
+            la_url = options.licenseUrl
             if la_url is None:
                 la_url = stream.marlin_la_url
         return {

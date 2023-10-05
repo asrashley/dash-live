@@ -22,6 +22,12 @@
 
 from typing import AbstractSet, Any, Optional
 
+from dashlive.server.options.drm_options import (
+    ALL_DRM_LOCATIONS,
+    ALL_DRM_TYPES,
+    DrmLocation,
+    DrmSelectionTuple
+)
 from dashlive.utils.json_object import JsonObject
 from dashlive.utils.object_with_fields import ObjectWithFields
 from dashlive.utils.objects import dict_to_cgi_params
@@ -233,12 +239,37 @@ class OptionsContainer(ObjectWithFields):
                 opt = self._parameter_map[key]
             except KeyError:
                 continue
-            input = opt.input_field(value, field_choices)
-            fields.append(input)
+            if opt.full_name == 'drmSelection':
+                fields += self.generate_drm_fields(value)
+            else:
+                input = opt.input_field(value, field_choices)
+                fields.append(input)
         fields.sort(key=lambda item: item['title'])
         return fields
 
-
-# manually adding the event types avoids a circular import loop
-OptionsContainer.OBJECT_FIELDS['ping'] = OptionsContainer
-OptionsContainer.OBJECT_FIELDS['scte35'] = OptionsContainer
+    def generate_drm_fields(self, value: list[DrmSelectionTuple] | None) -> list[JsonObject]:
+        fields: list[JsonObject] = []
+        drms: dict[str, set[str]] = {}
+        if value:
+            for item in value:
+                drms[item[0]] = item[1]
+        for name in ALL_DRM_TYPES:
+            fields.append({
+                "name": f'drm_{name}',
+                "title": f'{name.title()} DRM',
+                "text": f'Enable {name.title()} DRM support?',
+                "value": name in drms,
+                "type": "checkbox",
+                "className": "drm-checkbox"
+            })
+            locs = drms.get(name, ALL_DRM_LOCATIONS)
+            if locs == ALL_DRM_LOCATIONS:
+                val = ''
+            else:
+                val = '-'.join(sorted(list(locs)))
+            input = DrmLocation.input_field(val, {})
+            input['name'] = f'{name}_{input["name"]}'
+            input['title'] = f'{name.title()} location'
+            input['rowClass'] = f'row mb-3 drm-location prefix-{name}'
+            fields.append(input)
+        return fields

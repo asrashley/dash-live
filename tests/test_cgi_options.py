@@ -97,8 +97,10 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             'drmSelection': [('playready', {'pro', 'moov', 'cenc'})],
             'minimumUpdatePeriod': None,
             'numPeriods': 2,
-            'playreadyPiff': True,
-            'playreadyVersion': 2.0,
+            'playready': {
+                'piff': True,
+                'version': 2.0,
+            },
             'timeShiftBufferDepth': 60,
             'useBaseUrls': True,
             'videoPlayer': 'shaka',
@@ -214,6 +216,10 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             'audioDescription': None,
             'audioErrors': [],
             'bugCompatibility': [],
+            'clearkey': {
+                '_type': 'dashlive.server.options.container.OptionsContainer',
+                'licenseUrl': None
+            },
             'clockDrift': None,
             'dashjsVersion': None,
             'drmSelection': [],
@@ -223,7 +229,10 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             'mode': 'vod',
             'manifestErrors': [],
             'mainText': None,
-            'marlinLicenseUrl': None,
+            'marlin': {
+                '_type': 'dashlive.server.options.container.OptionsContainer',
+                'licenseUrl': None,
+            },
             'minimumUpdatePeriod': None,
             'numPeriods': None,
             'ping': {
@@ -237,9 +246,12 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
                 'value': '0',
                 'version': 0
             },
-            'playreadyLicenseUrl': None,
-            'playreadyPiff': True,
-            'playreadyVersion': None,
+            'playready': {
+                '_type': 'dashlive.server.options.container.OptionsContainer',
+                'licenseUrl': None,
+                'piff': True,
+                'version': None,
+            },
             'scte35': {
                 '_type': 'dashlive.server.options.container.OptionsContainer',
                 'count': 0,
@@ -333,6 +345,10 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             "audioErrors": [],
             "availabilityStartTime": "epoch",
             "bugCompatibility": [],
+            'clearkey': {
+                '_type': 'dashlive.server.options.container.OptionsContainer',
+                'licenseUrl': None
+            },
             "clockDrift": None,
             "dashjsVersion": None,
             "drmSelection": [],
@@ -343,7 +359,10 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             "mainAudio": None,
             "mainText": None,
             "manifestErrors": [],
-            "marlinLicenseUrl": None,
+            "marlin": {
+                "_type": "dashlive.server.options.container.OptionsContainer",
+                "licenseUrl": None,
+            },
             "minimumUpdatePeriod": None,
             "mode": "vod",
             "numPeriods": None,
@@ -358,9 +377,12 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
                 "value": "0",
                 "version": 0
             },
-            "playreadyLicenseUrl": None,
-            "playreadyPiff": True,
-            "playreadyVersion": None,
+            "playready": {
+                '_type': 'dashlive.server.options.container.OptionsContainer',
+                "licenseUrl": None,
+                "piff": True,
+                "version": None,
+            },
             "scte35": {
                 "_type": "dashlive.server.options.container.OptionsContainer",
                 "count": 0,
@@ -403,6 +425,131 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
         self.assertDictEqual(without_defaults, result)
         new_opts = defaults.clone(**result)
         self.assertDictEqual(expected, new_opts.toJSON())
+
+    def test_generate_drm_input_fields_playready(self) -> None:
+        self.check_generate_drm_input_fields({
+            'playready': ({'pro', 'cenc', 'moov'}, ''),
+        })
+        self.check_generate_drm_input_fields({
+            'playready': ({'cenc', 'moov'}, 'cenc-moov'),
+        })
+        self.check_generate_drm_input_fields({
+            'playready': ({'cenc'}, 'cenc'),
+        })
+        self.check_generate_drm_input_fields({
+            'playready': ({'moov'}, 'moov'),
+        })
+        self.check_generate_drm_input_fields({
+            'playready': ({'moov', 'pro'}, 'moov-pro'),
+        })
+
+    def test_generate_drm_input_fields_clearkey(self) -> None:
+        self.check_generate_drm_input_fields({
+            'clearkey': ({'pro', 'cenc', 'moov'}, ''),
+        })
+        self.check_generate_drm_input_fields({
+            'clearkey': ({'cenc', 'moov'}, 'cenc-moov'),
+        })
+        self.check_generate_drm_input_fields({
+            'clearkey': ({'cenc'}, 'cenc'),
+        })
+        self.check_generate_drm_input_fields({
+            'clearkey': ({'moov'}, 'moov'),
+        })
+        self.check_generate_drm_input_fields({
+            'clearkey': ({'moov', 'pro'}, 'moov-pro'),
+        })
+
+    def test_generate_drm_input_fields_marlin(self) -> None:
+        self.check_generate_drm_input_fields({
+            'marlin': ({'pro', 'cenc', 'moov'}, ''),
+        })
+        self.check_generate_drm_input_fields({
+            'marlin': ({'cenc', 'moov'}, 'cenc-moov'),
+        })
+        self.check_generate_drm_input_fields({
+            'marlin': ({'cenc'}, 'cenc'),
+        })
+        self.check_generate_drm_input_fields({
+            'marlin': ({'moov'}, 'moov'),
+        })
+        self.check_generate_drm_input_fields({
+            'marlin': ({'moov', 'pro'}, 'moov-pro'),
+        })
+
+    def test_generate_drm_input_fields_playready_clearkey(self) -> None:
+        self.check_generate_drm_input_fields({
+            'playready': ({'pro', 'cenc', 'moov'}, ''),
+            'clearkey': ({'pro', 'cenc', 'moov'}, ''),
+        })
+        self.check_generate_drm_input_fields({
+            'playready': ({'cenc', 'moov'}, 'cenc-moov'),
+            'clearkey': ({'cenc', 'moov', 'pro'}, ''),
+        })
+        self.check_generate_drm_input_fields({
+            'playready': ({'cenc'}, 'cenc'),
+            'clearkey': ({'moov'}, 'moov'),
+        })
+
+    def check_generate_drm_input_fields(self, drm_map: dict) -> None:
+        expected = []
+        for name in ['clearkey', 'marlin', 'playready']:
+            try:
+                loc = drm_map[name][1]
+            except KeyError:
+                loc = ''
+            expected.append({
+                'name': f'drm_{name}',
+                'title': f'{name.title()} DRM',
+                'value': name in drm_map,
+                'type': 'checkbox'
+            })
+            options = [{
+                'value': '',
+                'title':
+                'All locations',
+                'selected': loc == ''
+            }, {
+                'value': 'pro',
+                'title': 'mspr:pro element in MPD',
+                'selected': loc == 'pro'
+            }, {
+                'value': 'cenc',
+                'title': 'dash:cenc element in MPD',
+                'selected': loc == 'cenc'
+            }, {
+                'value': 'moov',
+                'title': 'PSSH in init segment',
+                'selected': loc == 'moov'
+            }, {
+                'value': 'cenc-pro',
+                'title': 'mspr:pro + dash:cenc in MPD',
+                'selected': loc == 'cenc-pro'
+            }, {
+                'value': 'moov-pro',
+                'title': 'mspr:pro MPD + PSSH init',
+                'selected': loc == 'moov-pro'
+            }, {
+                'value': 'cenc-moov',
+                'title': 'dash:cenc MPD + PSSH init',
+                'selected': loc == 'cenc-moov'
+            }]
+            expected.append({
+                'name': f'{name}_drmloc',
+                'title': f'{name.title()} location',
+                'value': loc,
+                'text': 'Location to place DRM data',
+                'type': 'select',
+                'prefix': '',
+                'options': options,
+                'rowClass': f'row mb-3 drm-location prefix-{name}'
+            })
+        defaults = OptionsRepository.get_default_options()
+        drm_selection = []
+        for key in sorted(list(drm_map.keys())):
+            drm_selection.append((key, drm_map[key][0]))
+        fields = defaults.generate_drm_fields(drm_selection)
+        self.assertListEqual(expected, fields)
 
 
 if __name__ == "__main__":

@@ -258,8 +258,8 @@ class LiveMedia(RequestHandlerBase):
         Insert DRM specific data into the traf box, if required
         """
         modified = False
-        for _, drm, __ in self.generate_drm_location_tuples(options):
-            modif = drm.update_traf_if_required(options, traf)
+        for name, drm, __ in self.generate_drm_location_tuples(options):
+            modif = drm.update_traf_if_required(getattr(options, name), traf)
             modified = modified or modif
         return modified
 

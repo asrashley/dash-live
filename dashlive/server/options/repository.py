@@ -220,10 +220,6 @@ class OptionsRepository:
                 opt = param_map[key]
                 value = opt.from_string(value)
                 if opt.prefix:
-                    if is_cgi:
-                        name = key[len(opt.prefix) + 1:]
-                    else:
-                        name = key
                     try:
                         dest = result[opt.prefix]
                     except KeyError:
@@ -233,10 +229,17 @@ class OptionsRepository:
                         dest = OptionsContainer(
                             cls.get_parameter_map(), dflt)
                         result.add_field(opt.prefix, dest)
-                    dest.add_field(name, value)
+                    dest.add_field(opt.full_name, value)
                 else:
                     result.add_field(opt.full_name, value)
             except KeyError:
                 logging.warning(f'Invalid parameter {key} cgi={is_cgi}')
                 continue
         return result
+
+
+# manually set OptionsContainer.OBJECT_FIELDS to avoid a circular
+# import reference
+for opt in OptionsRepository._all_options:
+    if opt.prefix and opt.prefix not in OptionsContainer.OBJECT_FIELDS:
+        OptionsContainer.OBJECT_FIELDS[opt.prefix] = OptionsContainer

@@ -249,16 +249,11 @@ class RequestHandlerBase(MethodView):
         rv = {}
         drm_tuples = self.generate_drm_location_tuples(options)
         for drm_name, drm, locations in drm_tuples:
-            if drm_name == 'clearkey':
-                ck_laurl = urllib.parse.urljoin(
-                    flask.request.host_url, flask.url_for('clearkey'))
-                if self.is_https_request():
-                    ck_laurl = ck_laurl.replace('http://', 'https://')
-                rv[drm_name] = drm.generate_manifest_context(
-                    stream, keys, options, la_url=ck_laurl, locations=locations)
-            else:
-                rv[drm_name] = drm.generate_manifest_context(
-                    stream, keys, options, locations=locations)
+            la_url = flask.request.args.get(f'{drm_name}_la_url')
+            rv[drm_name] = drm.generate_manifest_context(
+                stream, keys, getattr(options, drm_name),
+                https_request=self.is_https_request(),
+                la_url=la_url, locations=locations)
         return rv
 
     def calculate_options(self,
@@ -688,7 +683,8 @@ class RequestHandlerBase(MethodView):
             status = 416
         return (start, end, status, headers,)
 
-    def is_https_request(self):
+    @staticmethod
+    def is_https_request():
         if flask.request.scheme == 'https':
             return True
         if environ.get('HTTPS', 'off') == 'on':

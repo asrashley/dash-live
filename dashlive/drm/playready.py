@@ -244,13 +244,14 @@ class PlayReady(DrmBase):
     def generate_manifest_context(
             self, stream, keys, options: OptionsContainer,
             la_url: str | None = None,
+            https_request: bool = False,
             locations: AbstractSet[str] | None = None) -> dict:
-        version = options.playreadyVersion
+        version = options.version
         if version is None:
             header_version = self.minimum_header_version(keys)
             version = self.minimum_playready_version(header_version)
         if la_url is None:
-            la_url = options.playreadyLicenseUrl
+            la_url = options.licenseUrl
             if la_url is not None:
                 la_url = urllib.parse.unquote_plus(la_url)
             elif stream.playready_la_url is not None:
@@ -305,10 +306,10 @@ class PlayReady(DrmBase):
 
     def update_traf_if_required(self, options: OptionsContainer,
                                 traf: mp4.BoxWithChildren) -> bool:
-        version = options.playreadyVersion
+        version = options.version
         if version is None:
             version = self.version
-        if version != 1.0 and not options.playreadyPiff:
+        if version != 1.0 and not options.piff:
             return False
         senc = traf.find_child('senc')
         if senc is None:
