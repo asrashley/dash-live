@@ -16,6 +16,8 @@ if [ "x${USER_UID}" != "x" -a "x${USER_GID}" != "x" ]; then
 fi
 echo "server_name ${SERVER_NAME};" > /etc/nginx/snippets/server_name.conf
 
+python -m alembic upgrade head
+
 if [ -f /etc/uwsgi/sites/dash.ini ]; then
     mkdir /run/uwsgi
     chown www-data:www-data /run/uwsgi

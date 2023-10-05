@@ -29,6 +29,9 @@ COPY templates/segment/*.xml $HOME/dash-live/templates/segment/
 COPY templates/users/*.html $HOME/dash-live/templates/users/
 COPY static/css/* $HOME/dash-live/static/css/
 COPY runserver.sh $HOME/dash-live/
+COPY alembic.ini $HOME/dash-live/
+COPY alembic/*.py $HOME/dash-live/alembic/
+COPY alembic/versions/*.py $HOME/dash-live/alembic/versions/
 COPY dashlive/*.py $HOME/dash-live/dashlive/
 COPY dashlive/components/*.py $HOME/dash-live/dashlive/components/
 COPY dashlive/drm/*.py $HOME/dash-live/dashlive/drm/
