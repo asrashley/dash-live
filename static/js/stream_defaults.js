@@ -3,28 +3,26 @@ $(document).ready(function () {
     const allDrms = ['clearkey', 'marlin', 'playready'];
     function updateEventFields() {
         const { selectedOptions } = document.getElementById('model-events');
-        $('.prefix-ping, .prefix-scte35').addClass('hidden');
+        $('.prefix-ping, .prefix-scte35').addClass('not-selected');
         for (let i=0; i < selectedOptions.length; ++i) {
             const { value } = selectedOptions[i];
-            $(`.prefix-${value}`).removeClass('hidden');
+            $(`.prefix-${value}`).removeClass('not-selected');
         }
     }
+
     function updateDrmFields() {
-        /* $('.drm-location').addClass('hidden');*/
         allDrms.forEach((name) => {
             if (document.getElementById(`model-drm_${name}`)?.checked) {
-                $(`.${name}-option`).removeClass('hidden');
-                $(`.prefix-${name}`).removeClass('hidden');
+                $(`.${name}-option`).removeClass('not-selected');
+                $(`.prefix-${name}`).removeClass('not-selected');
             } else {
-                $(`.prefix-${name}`).addClass('hidden');
+                $(`.prefix-${name}`).addClass('not-selected');
             }
         });
-        /*if (document.getElementById('model-drm_clearkey')?.checked) {
-            $('.row-field-clearkey_drmloc').removeClass('hidden');
-        }*/
     }
+
     updateEventFields();
-    updateDrmFields();
     $('#model-events').on('change', updateEventFields);
+    updateDrmFields();
     $('.drm-checkbox').on('change', updateDrmFields);
 });

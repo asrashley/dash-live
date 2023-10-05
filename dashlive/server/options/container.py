@@ -20,6 +20,7 @@
 #
 #############################################################################
 
+from collections import defaultdict
 from typing import AbstractSet, Any, Optional
 
 from dashlive.server.options.drm_options import (
@@ -28,6 +29,7 @@ from dashlive.server.options.drm_options import (
     DrmLocation,
     DrmSelectionTuple
 )
+from dashlive.components.field_group import InputFieldGroup
 from dashlive.utils.json_object import JsonObject
 from dashlive.utils.object_with_fields import ObjectWithFields
 from dashlive.utils.objects import dict_to_cgi_params
@@ -218,6 +220,20 @@ class OptionsContainer(ObjectWithFields):
         for name in todo:
             self.remove_field(name)
 
+    def generate_input_field_groups(
+            self, field_choices: dict,
+            exclude: AbstractSet | None = None) -> list[InputFieldGroup]:
+        sections = defaultdict(list)
+        for field in self.generate_input_fields(field_choices, exclude):
+            sections[field.get('prefix')].append(field)
+        result: list[InputFieldGroup] = []
+        for name, fields in sorted(sections.items()):
+            if name == "":
+                result.append(InputFieldGroup('General Options', fields, show=True))
+            else:
+                result.append(InputFieldGroup(f'{name.title()} Options', fields))
+        return result
+
     def generate_input_fields(self, field_choices: dict,
                               exclude: AbstractSet | None = None) -> list[JsonObject]:
         fields = []
@@ -260,7 +276,8 @@ class OptionsContainer(ObjectWithFields):
                 "text": f'Enable {name.title()} DRM support?',
                 "value": name in drms,
                 "type": "checkbox",
-                "className": "drm-checkbox"
+                "className": "drm-checkbox",
+                "prefix": name,
             })
             locs = drms.get(name, ALL_DRM_LOCATIONS)
             if locs == ALL_DRM_LOCATIONS:
@@ -268,8 +285,11 @@ class OptionsContainer(ObjectWithFields):
             else:
                 val = '-'.join(sorted(list(locs)))
             input = DrmLocation.input_field(val, {})
-            input['name'] = f'{name}_{input["name"]}'
-            input['title'] = f'{name.title()} location'
-            input['rowClass'] = f'row mb-3 drm-location prefix-{name}'
+            input.update({
+                'name': f'{name}_{input["name"]}',
+                'title': f'{name.title()} location',
+                'rowClass': f'row mb-3 drm-location prefix-{name}',
+                'prefix': name,
+            })
             fields.append(input)
         return fields

@@ -500,6 +500,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
                 loc = ''
             expected.append({
                 'name': f'drm_{name}',
+                'prefix': name,
                 'title': f'{name.title()} DRM',
                 'value': name in drm_map,
                 'type': 'checkbox'
@@ -540,7 +541,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
                 'value': loc,
                 'text': 'Location to place DRM data',
                 'type': 'select',
-                'prefix': '',
+                'prefix': name,
                 'options': options,
                 'rowClass': f'row mb-3 drm-location prefix-{name}'
             })

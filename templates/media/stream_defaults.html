@@ -2,7 +2,7 @@
 
 {% block content %}
 <div id="media-management" class="container" data-back="{{ url_for('view-stream', spk=stream.pk) }}">
-  <div class="card border-secondary-subtle m-3 p-3">
+  <div class="m-3 p-3">
     {% if user_can_modify %}
     <h2 class="stream-title">Editing default options for &quot;{{stream.title}}&quot;</h2>
     {% endif %}
