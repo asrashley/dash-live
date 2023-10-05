@@ -24,6 +24,7 @@ from abc import ABC, abstractmethod
 from typing import AbstractSet
 
 from dashlive.mpeg.mp4 import BoxWithChildren, ContentProtectionSpecificBox
+from dashlive.server.models import Stream
 from dashlive.server.options.container import OptionsContainer
 
 class DrmBase(ABC):
@@ -36,8 +37,11 @@ class DrmBase(ABC):
         raise RuntimeError('dash_scheme_id has not been implemented')
 
     @abstractmethod
-    def generate_manifest_context(self, stream, keys, options: OptionsContainer,
+    def generate_manifest_context(self, stream: Stream,
+                                  keys,
+                                  options: OptionsContainer,
                                   la_url: str | None = None,
+                                  https_request: bool = False,
                                   locations: AbstractSet[str] | None = None) -> dict:
         raise RuntimeError('generate_manifest_context has not been implemented')
 

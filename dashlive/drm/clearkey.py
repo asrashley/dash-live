@@ -21,8 +21,16 @@
 #############################################################################
 
 import binascii
+import urllib.parse
+from typing import AbstractSet
+
+import flask
+
 
 from dashlive.mpeg.mp4 import ContentProtectionSpecificBox
+from dashlive.server.options.container import OptionsContainer
+from dashlive.server.models import Stream
+
 from .base import DrmBase
 from .keymaterial import KeyMaterial
 
@@ -34,9 +42,18 @@ class ClearKey(DrmBase):
     def dash_scheme_id(self):
         return f"urn:uuid:{self.MPD_SYSTEM_ID}"
 
-    def generate_manifest_context(self, stream, keys, cgi_params, la_url=None, locations=None):
+    def generate_manifest_context(self, stream: Stream, keys,
+                                  options: OptionsContainer,
+                                  la_url: str | None = None,
+                                  https_request: bool = False,
+                                  locations: AbstractSet | None = None) -> dict:
         if locations is None:
             locations = {'cenc', 'moov'}
+        if la_url is None:
+            la_url = urllib.parse.urljoin(
+                flask.request.host_url, flask.url_for('clearkey'))
+            if https_request:
+                la_url = la_url.replace('http://', 'https://')
         rv = {
             'scheme_id': self.dash_scheme_id(),
             'laurl': la_url,

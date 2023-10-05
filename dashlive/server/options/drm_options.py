@@ -25,6 +25,18 @@ from typing import TypeAlias
 from .dash_option import DashOption
 from .types import OptionUsage
 
+ClearkeyLicenseUrl = DashOption(
+    usage=(OptionUsage.MANIFEST | OptionUsage.AUDIO | OptionUsage.VIDEO),
+    short_name='clu',
+    full_name='licenseUrl',
+    prefix='clearkey',
+    title='Clearkey LA_URL',
+    description='Override the Clearkey license URL field',
+    from_string=DashOption.unquoted_url_or_none_from_string,
+    to_string=DashOption.quoted_url_or_none_to_string,
+    cgi_name='clearkey_la_url',
+    cgi_type='<escaped-url>')
+
 HTML_DESCRIPTION = '''
 <p>A comma separated list of DRMs:</p>
 <ul>
@@ -57,8 +69,8 @@ DrmLocation = DashOption(
         ('mspr:pro element in MPD', 'pro'),
         ('dash:cenc element in MPD', 'cenc'),
         ('PSSH in init segment', 'moov'),
-        ('mspr:pro + dash:cenc in MPD', 'pro-cenc'),
-        ('mspr:pro MPD + PSSH init', 'pro-moov'),
+        ('mspr:pro + dash:cenc in MPD', 'cenc-pro'),
+        ('mspr:pro MPD + PSSH init', 'moov-pro'),
         ('dash:cenc MPD + PSSH init', 'cenc-moov'),
     ),
     hidden=False)
@@ -66,6 +78,7 @@ DrmLocation = DashOption(
 
 # TODO: get this list from dashlive.drm
 ALL_DRM_TYPES: list[str] = ['clearkey', 'marlin', 'playready']
+ALL_DRM_LOCATIONS: set[str] = {'pro', 'cenc', 'moov'}
 
 DrmSelectionTuple: TypeAlias = tuple[str, set[str]]
 
@@ -77,7 +90,7 @@ def _drm_selection_from_string(value: str) -> list[DrmSelectionTuple]:
         if '-' in value:
             locations = set(value.split('-')[1:])
         else:
-            locations = {'pro', 'cenc', 'moov'}
+            locations = ALL_DRM_LOCATIONS
         return [(drm, locations) for drm in ALL_DRM_TYPES]
     result = []
     for item in value.split(','):
@@ -87,7 +100,7 @@ def _drm_selection_from_string(value: str) -> list[DrmSelectionTuple]:
             locations = set(parts[1:])
         else:
             drm = item
-            locations = {'pro', 'cenc', 'moov'}
+            locations = ALL_DRM_LOCATIONS
         result.append((drm, locations))
     return result
 
@@ -95,7 +108,7 @@ def _drm_selection_from_string(value: str) -> list[DrmSelectionTuple]:
 def _drm_selection_to_string(value: list[DrmSelectionTuple]) -> str:
     result: list[str] = []
     for drm, locations in value:
-        if locations == {'pro', 'cenc', 'moov'}:
+        if locations == ALL_DRM_LOCATIONS:
             result.append(drm)
         else:
             parts = [drm] + sorted(list(locations))
@@ -125,7 +138,8 @@ DrmSelection = DashOption(
 MarlinLicenseUrl = DashOption(
     usage=(OptionUsage.MANIFEST | OptionUsage.AUDIO | OptionUsage.VIDEO),
     short_name='mlu',
-    full_name='marlinLicenseUrl',
+    full_name='licenseUrl',
+    prefix='marlin',
     title='Marlin LA_URL',
     description='Override the Marlin S-URL field',
     from_string=DashOption.unquoted_url_or_none_from_string,
@@ -136,19 +150,21 @@ MarlinLicenseUrl = DashOption(
 PlayreadyLicenseUrl = DashOption(
     usage=(OptionUsage.MANIFEST | OptionUsage.AUDIO | OptionUsage.VIDEO),
     short_name='plu',
-    full_name='playreadyLicenseUrl',
+    full_name='licenseUrl',
     title='Playready LA_URL',
     description='Override the Playready LA_URL field',
     from_string=DashOption.unquoted_url_or_none_from_string,
     to_string=DashOption.quoted_url_or_none_to_string,
     cgi_name='playready_la_url',
-    cgi_type='<escaped-url>')
+    cgi_type='<escaped-url>',
+    prefix='playready')
 
 PlayreadyPiff = DashOption(
     usage=(OptionUsage.MANIFEST | OptionUsage.AUDIO | OptionUsage.VIDEO),
     short_name='pff',
-    full_name='playreadyPiff',
+    full_name='piff',
     title='Playready PIFF',
+    prefix='playready',
     description='Include PIFF sample encryption data',
     from_string=DashOption.bool_from_string,
     to_string=DashOption.bool_to_string,
@@ -158,14 +174,16 @@ PlayreadyPiff = DashOption(
 PlayreadyVersion = DashOption(
     usage=(OptionUsage.MANIFEST | OptionUsage.AUDIO | OptionUsage.VIDEO),
     short_name='pvn',
-    full_name='playreadyVersion',
-    title='PlayReady Version',
+    full_name='version',
+    prefix='playready',
+    title='Playready Version',
     description='Set the PlayReady version compatibility for this stream',
     from_string=DashOption.float_or_none_from_string,
     cgi_name='playready_version',
     cgi_choices=(None, '1.0', '2.0', '3.0', '4.0'))
 
 drm_options = [
+    ClearkeyLicenseUrl,
     DrmSelection,
     MarlinLicenseUrl,
     PlayreadyLicenseUrl,
