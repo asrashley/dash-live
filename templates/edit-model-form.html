@@ -8,9 +8,31 @@
     <div class="alert alert-danger" role="alert">{{error}}</div>
   {% endif %}
   <input type="hidden" name="csrf_token" value="{{csrf_token}}" />
-  {% for field in fields %}
-  {% include 'input-field.html' %}
-  {% endfor %}
+  {% if field_groups %}
+  <div class="accordion">
+    {% for group in field_groups %}
+    <div class="accordion-item mb-4">
+      <div class="accordion-header">
+        <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                data-bs-target="#model-group-{{ loop.index }}" aria-expanded="true"
+                aria-controls="model-group-{{ loop.index }}">
+          {{ group.title }}
+        </button>
+      </div>
+      <div class="accordion-collapse collapse p-3 {%- if group.show %} show{%- endif %}"
+           id="model-group-{{ loop.index }}">
+        {% for field in group.fields %}
+        {% include 'input-field.html' %}
+        {% endfor %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+    {% for field in fields %}
+    {% include 'input-field.html' %}
+    {% endfor %}
+  {% endif %}
   <div class="form-actions">
     {% if current_user.has_permission('MEDIA') %}
     <button type="submit" class="btn btn-primary">Save Changes</button>

@@ -30,6 +30,7 @@ COPY templates/users/*.html $HOME/dash-live/templates/users/
 COPY static/css/* $HOME/dash-live/static/css/
 COPY runserver.sh $HOME/dash-live/
 COPY dashlive/*.py $HOME/dash-live/dashlive/
+COPY dashlive/components/*.py $HOME/dash-live/dashlive/components/
 COPY dashlive/drm/*.py $HOME/dash-live/dashlive/drm/
 COPY dashlive/management/*.py $HOME/dash-live/dashlive/management/
 COPY dashlive/media/*.py $HOME/dash-live/dashlive/media/

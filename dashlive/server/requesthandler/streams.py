@@ -389,7 +389,7 @@ class EditStreamDefaults(HTMLHandlerBase):
                 'title': '--',
                 'value': '',
             })
-        context['fields'] = options.generate_input_fields(
+        context['field_groups'] = options.generate_input_field_groups(
             field_choices,
             exclude={'mode', 'clockDrift', 'dashjsVersion', 'marlin.licenseUrl',
                      'audioErrors', 'manifestErrors', 'textErrors', 'videoErrors',
