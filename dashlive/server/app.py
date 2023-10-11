@@ -23,6 +23,7 @@
 import importlib
 import json
 import logging
+from logging.config import dictConfig
 from os import environ
 from pathlib import Path
 import re
@@ -168,6 +169,23 @@ def create_app(config: JsonObject | None = None,
         SECRET_KEY=secrets.token_urlsafe(16)
     )
     app.config.from_prefixed_env()
+
+    dictConfig({
+        'version': 1,
+        'formatters': {'default': {
+            'format': '%(asctime)s %(levelname)s:%(module)s: %(message)s',
+        }},
+        'handlers': {'wsgi': {
+            'class': 'logging.StreamHandler',
+            'stream': 'ext://flask.logging.wsgi_errors_stream',
+            'formatter': 'default'
+        }},
+        'root': {
+            'level': 'INFO',
+            'handlers': ['wsgi']
+        }
+    })
+
     if config is not None:
         app.config.update(config)
     log_level = app.config.get('LOG_LEVEL')
@@ -175,7 +193,8 @@ def create_app(config: JsonObject | None = None,
         logging.getLogger().setLevel(log_level.upper())
     for module in ['fio', 'mp4']:
         log_level = app.config.get(f'{module.upper()}_LOG_LEVEL', 'warning')
-        logging.getLogger(module).setLevel(log_level.upper())
+        log = logging.getLogger(module)
+        log.setLevel(log_level.upper())
     models.db.init_app(app)
     login_manager.anonymous_user = AnonymousUser
     login_manager.init_app(app)
