@@ -5,6 +5,7 @@ from dashlive.server.options.drm_options import DrmSelection
 from dashlive.server.options.container import OptionsContainer
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.options.types import OptionUsage
+from dashlive.server.requesthandler.base import RequestHandlerBase
 
 from .mixins.mixin import TestCaseMixin
 
@@ -310,6 +311,40 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
         result = OptionsRepository.convert_cgi_options(params).toJSON()
         self.assertDictEqual(expected, result)
 
+    def test_convert_manifest_timeline_options(self) -> None:
+        params = {
+            'abr': '0',
+            'timeline': '1',
+        }
+        expected = {
+            '_type': 'dashlive.server.options.container.OptionsContainer',
+            'abr': False,
+            'segmentTimeline': True,
+        }
+        result = OptionsRepository.convert_cgi_options(params).toJSON()
+        self.assertDictEqual(expected, result)
+
+    def test_apply_manifest_timeline_options_to_default(self) -> None:
+        form = {
+            'abr': '0',
+            'timeline': '1',
+        }
+        defaults = OptionsRepository.get_default_options()
+        opts = OptionsRepository.convert_cgi_options(form, defaults)
+        expected = {
+            **defaults.toJSON(),
+            'abr': False,
+            'segmentTimeline': True,
+        }
+        self.assertDictEqual(expected, opts.toJSON())
+        opts.remove_unused_parameters('vod')
+        for field in {
+                'availabilityStartTime', 'minimumUpdatePeriod', 'timeShiftBufferDepth',
+                'utcMethod', 'utcValue'}:
+            del expected[field]
+        self.maxDiff = None
+        self.assertDictEqual(expected, opts.toJSON())
+
     def test_convert_stream_default_options(self) -> None:
         form = {
             'abr': '1',
@@ -551,6 +586,30 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             drm_selection.append((key, drm_map[key][0]))
         fields = defaults.generate_drm_fields(drm_selection)
         self.assertListEqual(expected, fields)
+
+    def test_apply_restrictions(self) -> None:
+        restrictions = {
+            'acodec': {'mp4a'},
+        }
+        args = {
+            'acodec': 'ec-3',
+        }
+        handler = RequestHandlerBase()
+        opts = handler.calculate_options(
+            mode='vod', stream=None, restrictions=restrictions, args=args)
+        self.assertEqual(opts.audioCodec, 'mp4a')
+        restrictions = {
+            'mode': {'live', 'vod'},
+            'timeline': {'1'},
+        }
+        args = {
+            'acodec': 'ec-3',
+            'timeline': '0',
+        }
+        opts = handler.calculate_options(
+            mode='vod', stream=None, restrictions=restrictions, args=args)
+        self.assertEqual(opts.audioCodec, 'ec-3')
+        self.assertEqual(opts.segmentTimeline, True)
 
 
 if __name__ == "__main__":

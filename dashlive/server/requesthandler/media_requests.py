@@ -87,10 +87,12 @@ class LiveMedia(RequestHandlerBase):
             ext: str,
             segment_num: str | None = None,
             segment_time: int | None = None) -> flask.Response:
-        logging.debug('LiveMedia.get: %s %s %s %s', stream, filename, segment_num, ext)
+        logging.debug(
+            'LiveMedia.get: %s.%s stream=%s num=%s time=%s',
+            filename, ext, stream, segment_num, segment_time)
         representation = current_media_file.representation
         try:
-            options = self.calculate_options(mode, current_stream)
+            options = self.calculate_options(mode, flask.request.args, current_stream)
         except ValueError as err:
             logging.error('Invalid CGI parameters: %s', err)
             return flask.make_response(f'Invalid CGI parameters: {err}', 400)
@@ -118,7 +120,6 @@ class LiveMedia(RequestHandlerBase):
             segment_timeline=options.segmentTimeline)
         adp_set.representations.append(current_media_file.representation)
         adp_set.compute_av_values()
-        # adp_set.set_timing_reference(current_stream.timing_reference)
         if segment_num == 'init':
             mod_segment = segment_num = 0
         else:
@@ -140,6 +141,7 @@ class LiveMedia(RequestHandlerBase):
                               timing.elapsedTime, first_fragment, last_fragment)
                 segment_num, mod_segment, origin_time = representation.calculate_segment_number_and_time(
                     segment_time, segment_num)
+                logging.debug('segment=%d mod=%d origin=%d', segment_num, mod_segment, origin_time)
             except ValueError as err:
                 logging.warning('ValueError: %s', err)
                 msg = (f'Segment {segment_num} not found ' +
@@ -150,6 +152,11 @@ class LiveMedia(RequestHandlerBase):
                 logging.info(
                     '%s: Request for fragment %d that is not available (%d -> %d)',
                     now, segment_num, first_fragment, last_fragment)
+                if mode == 'live':
+                    first_tc = timing.availabilityStartTime + datetime.timedelta(
+                        seconds=(first_fragment * representation.segment_duration /
+                                 representation.timescale))
+                    logging.debug('oldest fragment %d start = %s', first_fragment, first_tc)
                 return flask.make_response(
                     f'Segment {segment_num} not found (valid range= {first_fragment}->{last_fragment})',
                     404)

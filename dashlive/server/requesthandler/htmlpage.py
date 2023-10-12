@@ -129,7 +129,7 @@ class VideoPlayer(HTMLHandlerBase):
         manifest += '.mpd'
         context = self.create_context(**kwargs)
         try:
-            options = self.calculate_options(mode)
+            options = self.calculate_options(mode, flask.request.args)
         except ValueError as err:
             logging.error('Invalid CGI parameters: %s', err)
             return flask.make_response(f'Invalid CGI parameters: {err}', 400)
@@ -207,7 +207,7 @@ class ViewManifest(HTMLHandlerBase):
     def get(self, mode, stream, manifest, **kwargs):
         context = self.create_context(**kwargs)
         try:
-            options = self.calculate_options(mode)
+            options = self.calculate_options(mode, flask.request.args)
         except ValueError as err:
             logging.error('Invalid CGI parameters: %s', err)
             return flask.make_response(f'Invalid CGI parameters: {err}', 400)

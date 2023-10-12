@@ -102,9 +102,14 @@ class DashTiming:
         else:
             self.availabilityStartTime = options.availabilityStartTime
         self.elapsedTime = now - self.availabilityStartTime
-        logging.debug('calculate_live_params elapsed=%s (%f) now=%s availabilityStartTime=%s',
-                      self.elapsedTime, self.elapsedTime.total_seconds(),
-                      now, self.availabilityStartTime)
+        logging.debug(
+            'calculate_live_params elapsed=%s (%f) now=%s availabilityStartTime=%s timescale=%d',
+            self.elapsedTime, self.elapsedTime.total_seconds(),
+            now, self.availabilityStartTime, self.stream_reference.timescale)
+        logging.debug(
+            'elapsed_fragments=%d',
+            self.elapsedTime.total_seconds() * self.stream_reference.timescale //
+            self.stream_reference.segment_duration)
         if self.elapsedTime.total_seconds() == 0:
             logging.info('Elapsed time is zero, moving availabilityStartTime back one day')
             self.elapsedTime = datetime.timedelta(days=1)

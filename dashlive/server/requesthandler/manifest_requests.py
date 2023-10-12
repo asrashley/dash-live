@@ -22,7 +22,7 @@
 
 import datetime
 import logging
-
+import math
 import flask
 
 from dashlive.mpeg.dash.profiles import primary_profiles
@@ -61,11 +61,17 @@ class ServeManifest(RequestHandlerBase):
         context = self.create_context(**kwargs)
         context['title'] = current_stream.title
         try:
-            options = self.calculate_options(mode, current_stream)
+            options = self.calculate_options(
+                mode=mode, args=flask.request.args, stream=current_stream,
+                restrictions=mft.restrictions)
         except ValueError as e:
             return flask.make_response(f'Invalid CGI parameters: {e}', 400)
-        options.update(segmentTimeline=mft.segment_timeline)
+        if 'segmentTimeline' not in mft.features:
+            options.update(segmentTimeline=False)
+        elif mft.segment_timeline:
+            options.update(segmentTimeline=True)
         options.remove_unused_parameters(mode)
+        context['options'] = options
         dash = self.calculate_manifest_params(mpd_url=manifest, options=options)
         context.update(dash)
         response = self.check_for_synthetic_manifest_error(options, context)

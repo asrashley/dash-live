@@ -36,7 +36,7 @@ DashCgiOption = tuple[str, list[str]]
 class DashManifest:
     title: str
     features: set[str]
-    restrictions: dict | None = field(default_factory=lambda: dict())
+    restrictions: dict[str, tuple] | None = field(default_factory=lambda: dict())
     segment_timeline: bool = field(default=False)
 
     def supported_modes(self) -> list[str]:
@@ -166,7 +166,7 @@ manifest = {
         title='Hand-made manifest',
         features={
             'abr', 'audioCodec', 'useBaseUrls', 'drmSelection', 'eventTypes', 'mode',
-            'minimumUpdatePeriod', 'numPeriods', 'utcMethod'},
+            'minimumUpdatePeriod', 'numPeriods', 'segmentTimeline', 'utcMethod'},
     ),
     'manifest_vod_aiv.mpd': DashManifest(
         title='AIV on demand profile',
@@ -229,10 +229,11 @@ manifest = {
     'manifest_n.mpd': DashManifest(
         title='Provider N live profile',
         features={'abr', 'audioCodec', 'useBaseUrls', 'drmSelection', 'eventTypes',
-                  'mode', 'minimumUpdatePeriod'},
+                  'mode', 'minimumUpdatePeriod', 'segmentTimeline'},
         segment_timeline=True,
         restrictions={
             'mode': {'live', 'vod'},
+            'timeline': {'1'},
         },
     ),
 }

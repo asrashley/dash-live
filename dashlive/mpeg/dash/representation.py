@@ -488,8 +488,14 @@ class Representation(ObjectWithFields):
             return (self.start_number, self.num_media_segments + self.start_number - 1)
         last_fragment = self.start_number + int(scale_timedelta(
             timing.elapsedTime, self.timescale, self.segment_duration))
+        # For services with MPD@type='dynamic', the Segment availability start time
+        # of a Media Segment is the sum of
+        # - the value of the MPD@availabilityStartTime,
+        # - the PeriodStart time of the containing Period as defined in subclause 5.3.2.1,
+        # - the MPD start time of the Media Segment, and
+        # - the MPD duration of the Media Segment
         first_fragment = (
-            last_fragment -
+            last_fragment - 1 -
             int(self.timescale * timing.timeShiftBufferDepth // self.segment_duration) - 1)
         first_fragment = max(self.start_number, first_fragment)
         return (first_fragment, last_fragment)
@@ -501,6 +507,9 @@ class Representation(ObjectWithFields):
 
         timing = self._timing
         if timing.mode != 'live':
+            if segment_num is None:
+                st = segment_time + (self.segment_duration >> 2)
+                segment_num = int(st // self.segment_duration) + self.start_number
             mod_segment = 1 + segment_num - self.start_number
             return SegmentNumberAndTime(segment_num, mod_segment, 0)
 
@@ -570,7 +579,7 @@ class Representation(ObjectWithFields):
             'ref_duration_ms=%dms this_duration_ms=%dms',
             ref_nominal_duration_ms, this_nominal_duration_ms)
         logging.debug(
-            'num_loops=%d duration=%d duration_ms=%dms num_segments=%d',
+            'num_loops=%d duration=%d duration_ms=%dms num_media_segments=%d',
             num_loops, this_nominal_duration, this_nominal_duration_ms, self.num_media_segments)
 
         drift = (ref_nominal_duration_ms - this_nominal_duration_ms) * num_loops

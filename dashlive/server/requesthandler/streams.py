@@ -185,7 +185,7 @@ class EditStream(HTMLHandlerBase):
                 exclude.add('key')
             result['keys'] = [k.toJSON(exclude=exclude, pure=True) for k in result['keys']]
             return self.jsonify(result)
-        options = self.calculate_options(mode='vod')
+        options = self.calculate_options('vod', flask.request.args)
         options.audioCodec = 'any'
         options.textCodec = None
         options.drmSelection = []

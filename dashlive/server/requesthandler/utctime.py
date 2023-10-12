@@ -37,7 +37,7 @@ class UTCTimeHandler(RequestHandlerBase):
 
     def get(self, format, **kwargs):
         try:
-            options = self.calculate_options('live')
+            options = self.calculate_options('live', flask.request.args)
         except ValueError as err:
             logging.error('Invalid CGI parameters: %s', err)
             return flask.make_response(f'Invalid CGI parameters: {err}', 400)
