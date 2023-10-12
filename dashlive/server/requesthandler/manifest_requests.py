@@ -78,8 +78,13 @@ class ServeManifest(RequestHandlerBase):
         if response is not None:
             return response
         body = flask.render_template(f'manifests/{manifest}', **context)
+        try:
+            max_age = int(math.floor(context["minimumUpdatePeriod"]))
+        except KeyError:
+            max_age = 60
         headers = {
             'Content-Type': 'application/dash+xml',
+            'Cache-Control': f'max-age={max_age}',
             'Accept-Ranges': 'none',
         }
         self.add_allowed_origins(headers)
