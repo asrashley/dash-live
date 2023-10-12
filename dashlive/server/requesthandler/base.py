@@ -378,7 +378,8 @@ class RequestHandlerBase(MethodView):
                 prefix = prefix.replace('RepresentationID/init.m4v', '')
         kids = set()
         rv["maxSegmentDuration"] = 0
-        for adp in period.adaptationSets:
+        for idx, adp in enumerate(period.adaptationSets):
+            adp.id = idx + 1
             if options.mode != 'odvod':
                 adp.initURL = prefix + adp.initURL
             adp.mediaURL = prefix + adp.mediaURL

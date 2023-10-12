@@ -23,8 +23,8 @@ from .pool import WorkerPool
 class ContextAdapter(logging.LoggerAdapter):
     def process(self, msg: str, kwargs) -> tuple[str, dict]:
         url = getattr(self.extra, "url", None)
-        if url is not None and 'http' not in msg:
-            return (f'{msg}\n    "{url}"\n', kwargs,)
+        # if url is not None and 'http' not in msg:
+        #    return (f'{msg}\n    "{url}"\n', kwargs,)
         return (msg, kwargs,)
 
 
@@ -189,6 +189,9 @@ class DashElement(ABC):
         Used for progress reporting
         """
         return 0
+
+    def finished(self) -> bool:
+        return False
 
     @abstractmethod
     def validate(self, depth=-1) -> Never:

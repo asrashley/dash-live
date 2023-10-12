@@ -19,7 +19,7 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-
+import datetime
 import io
 import json
 import time
@@ -60,7 +60,7 @@ class DashValidator(DashElement):
     def load(self, xml=None) -> bool:
         self.progress.reset(1)
         self.prefetch_done = False
-        self.prev_manifest = self.manifest
+        self.prev_manifest = None
         self.xml = xml
         if self.xml is None:
             self.fetch_manifest()
@@ -73,6 +73,26 @@ class DashValidator(DashElement):
                 self.mode = 'vod'
         self.manifest = Manifest(self, self.url, self.mode, self.xml)
         return True
+
+    def refresh(self) -> bool:
+        """
+        Reload a live manifest.
+        This will copy across some information from the previous manifest into
+        the new one.
+        """
+        if self.mode != 'live':
+            self.log.debug('Not a live stream, no need to reload manifest')
+            return True
+        self.prev_manifest = self.manifest
+        if not self.fetch_manifest():
+            return False
+        self.manifest = Manifest(self, self.url, self.mode, self.xml)
+        return self.manifest.merge_previous_element(self.prev_manifest)
+
+    def finished(self) -> bool:
+        if self.manifest is None:
+            return False
+        return self.manifest.finished()
 
     def prefetch_media_info(self) -> None:
         if self.prefetch_done:
@@ -87,12 +107,14 @@ class DashValidator(DashElement):
 
     def fetch_manifest(self) -> bool:
         self.progress.text(self.url)
+        self.log.debug('Fetch manifest %s', self.url)
         result = self.http.get(self.url)
         if not self.elt.check_equal(
                 result.status_code, 200,
                 msg=f'Failed to load manifest: {result.status_code} {self.url}'):
             return False
         # print(result.text)
+        print(result.headers)
         parser = ET.XMLParser(remove_blank_text=self.options.pretty)
         xml = ET.parse(
             io.BytesIO(result.get_data(as_text=False)), parser)
@@ -127,7 +149,7 @@ class DashValidator(DashElement):
             fmt = (r'Manifest should have updated by now. minimumUpdatePeriod is {0} but ' +
                    r'manifest has not been updated for {1} seconds')
             self.attrs.check_less_than(
-                age, 5 * self.manifest.minimumUpdatePeriod,
+                age, 3 * self.manifest.minimumUpdatePeriod,
                 fmt.format(self.manifest.minimumUpdatePeriod, age.total_seconds()))
         self.manifest.validate(depth=depth)
         if self.pool:
@@ -178,11 +200,15 @@ class DashValidator(DashElement):
             print(ET.tostring(self.xml, pretty_print=True))
 
     def sleep(self):
-        self.elt.check_equal(self.mode, 'live')
-        self.elt.check_not_none(self.manifest)
-        dur = max(self.manifest.minimumUpdatePeriod.seconds, 1)
-        self.log.info('Wait %d seconds', dur)
-        time.sleep(dur)
+        if not self.elt.check_equal(self.mode, 'live'):
+            return
+        if not self.elt.check_not_none(self.manifest):
+            return
+        next_refresh = self.manifest.publishTime + self.manifest.minimumUpdatePeriod
+        diff = self.manifest.now() - next_refresh
+        if diff > datetime.timedelta(seconds=0):
+            self.log.info('Wait %s', diff)
+            time.sleep(diff.total_seconds())
 
     def set_representation_info(self, info: ServerRepresentation):
         if self.manifest is None:
