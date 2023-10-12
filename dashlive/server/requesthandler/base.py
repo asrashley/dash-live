@@ -258,13 +258,26 @@ class RequestHandlerBase(MethodView):
 
     def calculate_options(self,
                           mode: str,
-                          stream: models.Stream | None = None) -> OptionsContainer:
+                          args: dict[str, str],
+                          stream: models.Stream | None = None,
+                          restrictions: dict[str, tuple] | None = None) -> OptionsContainer:
         defaults = OptionsRepository.get_default_options()
         if stream is not None:
             if stream.defaults is not None:
                 defaults = defaults.clone(**stream.defaults)
-        options = OptionsRepository.convert_cgi_options(
-            flask.request.args, defaults=defaults)
+        if restrictions is not None:
+            args = {**args}
+            for key, allowed_values in restrictions.items():
+                try:
+                    value = args[key]
+                    if value not in allowed_values:
+                        if len(allowed_values) == 1:
+                            args[key] = list(allowed_values)[0]
+                        else:
+                            del args[key]
+                except KeyError:
+                    pass
+        options = OptionsRepository.convert_cgi_options(args, defaults=defaults)
         options.add_field('mode', mode)
         return options
 

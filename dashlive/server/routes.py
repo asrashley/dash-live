@@ -102,7 +102,7 @@ routes = {
         handler='media_requests.LiveMedia',
         title="DASH fragment"),
     "dash-media-by-time": Route(
-        r'/dash/<regex("(live)"):mode>/<stream>/<filename>/time/' +
+        r'/dash/<regex("(live|vod)"):mode>/<stream>/<filename>/time/' +
         r'<int:segment_time>.<regex("(mp4|m4v|m4a|m4s)"):ext>',
         handler='media_requests.LiveMedia',
         title="DASH fragment"),
