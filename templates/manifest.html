@@ -6,7 +6,17 @@
 
 {% block content %}
 <div class="display-manifest">
-<pre id="manifest-xml"> </pre>
+  <form id="mpd-form">
+    <div class="row mb-3 form-group row-field-title">
+      <label class="col-1 col-form-label" for="model-title">
+        MPD URL:
+      </label>
+      <div class="col-11">
+        <input type="text" value="{{ mpd_url }}" name="mpd_url" id="id_mpd_url" class="form-control" />
+      </div>
+    </div>
+  </form>
+  <pre id="manifest-xml"> </pre>
 </div>
 {% endblock %}
 
@@ -20,6 +30,17 @@ $(document).ready(function(){
       ser = new XMLSerializer();
       $('#manifest-xml').text(ser.serializeToString(data));
     }
+    $('#mpd-form').on('submit', function(ev) {
+        var mpd_url;
+
+        ev.preventDefault();
+        console.log('form submit');
+        mpd_url = $('#id_mpd_url').val();
+        $.ajax(mpd_url, {
+            success: displayMpd,
+            dataType: "xml"
+        });
+    });
     $.ajax("{{ mpd_url }}", {
        success: displayMpd,
        dataType: "xml"
