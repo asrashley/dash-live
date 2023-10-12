@@ -25,6 +25,7 @@ import logging
 from typing import ClassVar
 
 from dashlive.utils.timezone import UTC
+from dashlive.utils.date_time import timecode_to_timedelta
 from dashlive.mpeg.dash.reference import StreamTimingReference
 from dashlive.server.options.container import OptionsContainer
 
@@ -66,8 +67,8 @@ class DashTiming:
         self.availabilityStartTime = None
         self.timeShiftBufferDepth = 0
         self.elapsedTime = self.firstAvailableTime = datetime.timedelta(seconds=0)
-        self.mediaDuration = datetime.timedelta(seconds=(
-            self.stream_reference.media_duration / float(self.stream_reference.timescale)))
+        self.mediaDuration = timecode_to_timedelta(
+            self.stream_reference.media_duration, self.stream_reference.timescale)
         self.minimumUpdatePeriod = None
 
     def calculate_live_params(self,

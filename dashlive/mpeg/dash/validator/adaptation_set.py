@@ -15,9 +15,11 @@ from .representation import Representation
 
 class AdaptationSet(RepresentationBaseType):
     attributes = RepresentationBaseType.attributes + [
-        ('group', int, None),
-        ('lang', str, None),
         ('contentType', str, None),
+        ('group', int, None),
+        ('href', str, None),
+        ('id', int, None),
+        ('lang', str, None),
         ('minBandwidth', int, None),
         ('maxBandwidth', int, None),
         ('minWidth', int, None),
@@ -56,6 +58,42 @@ class AdaptationSet(RepresentationBaseType):
 
     def children(self) -> list[DashElement]:
         return super().children() + self.representations
+
+    def merge_previous_element(self, prev: "AdaptationSet") -> bool:
+        def make_rep_id(idx, r):
+            if r.id is not None:
+                return r.id
+            if r.bandwidth:
+                return f'bw={r.bandwidth}'
+            return f'idx={idx}'
+
+        self.log.debug(
+            'Merging previous AdaptationSet element id=%s contentType=%s',
+            str(self.id), self.contentType)
+        rep_map = {}
+        for idx, r in enumerate(self.representations):
+            rid = make_rep_id(idx, r)
+            rep_map[rid] = r
+        rv = True
+        for idx, r in enumerate(prev.representations):
+            rid = make_rep_id(idx, r)
+            try:
+                if not rep_map[rid].merge_previous_element(r):
+                    rv = False
+            except KeyError as err:
+                self.elt.add_error(
+                    'Representations have changed within a Period: %s', err)
+        return rv
+
+    def finished(self) -> bool:
+        for child in self.representations:
+            if not child.finished():
+                self.log.debug(
+                    'AdaptationSet %s not finished, as Representation %s not finished',
+                    self.id, child.id)
+                return False
+        self.log.debug('AdaptationSet %s finished', self.id)
+        return True
 
     def set_representation_info(self, info: ServerRepresentation):
         for r in self.representations:

@@ -72,7 +72,6 @@ class BasicDashValidator(DashValidator):
             'manifest',
             help='URL or filename of manifest to validate')
         args = parser.parse_args()
-        # FORMAT = r"%(asctime)-15s:%(levelname)s:%(filename)s@%(lineno)d: %(message)s\n  [%(url)s]"
         FORMAT = r"%(asctime)-15s:%(levelname)s:%(filename)s@%(lineno)d: %(message)s"
         logging.basicConfig(format=FORMAT)
         log = logging.getLogger('DashValidator')
@@ -106,21 +105,16 @@ class BasicDashValidator(DashValidator):
         bdv.prefetch_media_info()
         if args.dest:
             bdv.save_manifest()
-        done = False
-        while not done:
-            # TODO: duration might be > number of available segments
-            # in the live manifest
-            if bdv.manifest.mpd_type != 'dynamic' or args.duration:
-                done = True
+        while not bdv.finished() and not options.progress.aborted():
             try:
                 log.info('Starting stream validation...')
                 bdv.validate()
-                if bdv.manifest.mpd_type == 'dynamic' and not done:
+                if not bdv.finished():
                     bdv.sleep()
-                    bdv.load()
+                    log.info('Refreshing manifest')
+                    bdv.refresh()
             except KeyboardInterrupt:
                 options.progress.abort()
-                done = True
         options.progress.finished(args.manifest)
         sys.stdout.write('\n')
         duration = time.time() - start_time

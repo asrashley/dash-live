@@ -31,15 +31,16 @@
  {%- for period in periods %}
    <Period
      start="{{period.start|isoDuration}}"
-     id="{{period.id}}"
+     id="{{ period.id }}"
      {%- if period.duration %}duration="{{period.duration|isoDuration}}"{% endif %}
    >
      {%- if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
      {% include "events/period.xml" %}
      {%- for adp in period.adaptationSets %}
        <AdaptationSet
-         mimeType="{{adp.mimeType}}"
-         contentType="{{adp.content_type}}"
+         id="{{ adp.id }}"
+         mimeType="{{ adp.mimeType }}"
+         contentType="{{ adp.content_type }}"
          segmentAlignment="{{adp.segmentAlignment|trueFalse}}"
          startWithSAP="{{adp.startWithSAP}}"
          {%- if adp.content_type == "video" %}

@@ -10,7 +10,7 @@ import datetime
 import urllib.parse
 
 from dashlive.mpeg.dash.representation import Representation as ServerRepresentation
-from dashlive.utils.date_time import from_isodatetime
+from dashlive.utils.date_time import from_isodatetime, UTC
 
 from .dash_element import DashElement
 from .period import Period
@@ -40,7 +40,7 @@ class Manifest(DashElement):
                     'profiles'):
                 self.mode = 'odvod'
         if self.publishTime is None:
-            self.publishTime = datetime.datetime.now()
+            self.publishTime = datetime.datetime.now(tz=UTC())
         self.mpd_type = xml.get("type", "static")
         self.periods = [Period(p, self) for p in xml.findall('./dash:Period', self.xmlNamespaces)]
         self.dump_attributes()
@@ -48,6 +48,10 @@ class Manifest(DashElement):
     @property
     def mpd(self):
         return self
+
+    def now(self) -> datetime.datetime:
+        # TODO: implement clock drift compensation
+        return datetime.datetime.now(tz=UTC())
 
     def prefetch_media_info(self) -> None:
         self.progress.add_todo(len(self.periods))
@@ -73,6 +77,27 @@ class Manifest(DashElement):
         for period in self.periods:
             count += period.num_tests(depth - 1)
         return count
+
+    def finished(self) -> bool:
+        for period in self.periods:
+            if not period.finished():
+                return False
+        return True
+
+    def merge_previous_element(self, prev: "Manifest") -> bool:
+        period_map = {}
+        for idx, period in enumerate(self.periods):
+            pid = f'{idx}' if period.id is None else period.id
+            period_map[pid] = period
+        rv = True
+        for idx, period in enumerate(prev.periods):
+            pid = f'{idx}' if period.id is None else period.id
+            try:
+                if not period_map[pid].merge_previous_element(period):
+                    rv = False
+            except KeyError:
+                self.log.debug('New period %s', pid)
+        return rv
 
     def validate(self, depth=-1):
         self.elt.check_greater_than(

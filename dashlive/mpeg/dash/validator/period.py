@@ -17,6 +17,7 @@ from .events import EventStream
 
 class Period(DashElement):
     attributes = [
+        ('id', str, None),
         ('start', from_isodatetime, None),
         ('duration', from_isodatetime, DashElement.Parent),
     ]
@@ -43,12 +44,43 @@ class Period(DashElement):
                 self.elt.add_error(f'Exception: {err}')
         self.progress.inc()
 
+    def merge_previous_element(self, prev: "Period") -> bool:
+        def make_adp_id(idx, adp):
+            if adp.id is not None:
+                return adp.id
+            if adp.contentType or adp.lang:
+                return f'{adp.contentType}:{adp.lang}'
+            return f'{idx}'
+
+        self.log.debug('Merging previous Period element')
+        adp_map = {}
+        for idx, adp in enumerate(self.adaptation_sets):
+            aid = make_adp_id(idx, adp)
+            adp_map[aid] = adp
+        rv = True
+        for idx, adp in enumerate(prev.adaptation_sets):
+            aid = make_adp_id(idx, adp)
+            try:
+                if not adp_map[aid].merge_previous_element(adp):
+                    rv = False
+            except KeyError as err:
+                self.log.debug('New AdaptationSet %s', err)
+        return rv
+
     def set_representation_info(self, info: ServerRepresentation):
         for a in self.adaptation_sets:
             a.set_representation_info(info)
 
     def children(self) -> list[DashElement]:
         return self.adaptation_sets + self.event_streams
+
+    def finished(self) -> bool:
+        for child in self.children():
+            if not child.finished():
+                self.log.debug('Period %s not finished', self.id)
+                return False
+        self.log.debug('Period %s finished', self.id)
+        return True
 
     def get_duration(self) -> datetime.timedelta:
         if self.duration:
