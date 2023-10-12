@@ -76,6 +76,7 @@ class DashTiming:
         self.timeShiftBufferDepth = options.timeShiftBufferDepth
         if not self.timeShiftBufferDepth:
             self.timeShiftBufferDepth = self.DEFAULT_TIMESHIFT_BUFFER_DEPTH
+        one_day = datetime.timedelta(days=1)
         if options.availabilityStartTime == 'epoch':
             # TODO: add in leap seconds
             self.availabilityStartTime = datetime.datetime(1970, 1, 1, 0, 0, tzinfo=UTC())
@@ -84,6 +85,16 @@ class DashTiming:
                 hour=0, minute=0, second=0, microsecond=0)
             if self.publishTime.hour == 0 and self.publishTime.minute == 0:
                 self.availabilityStartTime -= datetime.timedelta(days=1)
+        elif options.availabilityStartTime == 'month':
+            self.availabilityStartTime = now.replace(
+                day=1, hour=0, minute=0, second=0, microsecond=0)
+            if (self.publishTime - self.availabilityStartTime) < one_day:
+                self.availabilityStartTime -= one_day
+        elif options.availabilityStartTime == 'year':
+            self.availabilityStartTime = now.replace(
+                month=1, day=1, hour=0, minute=0, second=0, microsecond=0)
+            if (self.publishTime - self.availabilityStartTime) < one_day:
+                self.availabilityStartTime -= one_day
         elif options.availabilityStartTime == 'now':
             self.availabilityStartTime = (
                 self.publishTime -

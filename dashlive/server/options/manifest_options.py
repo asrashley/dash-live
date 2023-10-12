@@ -30,16 +30,20 @@ AbrControl = DashOption(
 
 AST_HTML = '''
 <p>
-  Specify availabilityStartTime as "today", "now", "epoch" or an
-  ISO datetime (YYYY-MM-DDTHH:MM:SSZ). "today" will
-  select midnight UTC today, "now" will select
-  publishTime - timeShiftBufferDepth, and "epoch" will
-  select the Unix epoch (Jan 1 1970).
+  Specify availabilityStartTime as "today", "now", "year",
+  "month", "epoch" or an ISO datetime (YYYY-MM-DDTHH:MM:SSZ).
+  "today" will select midnight UTC today,
+  "month" will select midnight UTC at the start of this month,
+  "year" will select midnight UTC at the start of this year,
+  "now" will select  publishTime - timeShiftBufferDepth, and
+  "epoch" will select the Unix epoch (Jan 1 1970).
 </p>
 '''
 
+SPECIAL_AST_VALUES = {'now', 'today', 'month', 'year', 'epoch'}
+
 def ast_from_string(value: str) -> datetime.datetime | str:
-    if value in {'now', 'today', 'epoch'}:
+    if value in SPECIAL_AST_VALUES:
         return value
     try:
         value = from_isodatetime(value)
@@ -49,7 +53,7 @@ def ast_from_string(value: str) -> datetime.datetime | str:
     return value
 
 def ast_to_string(value: datetime.datetime | str | None) -> str:
-    if value in {'now', 'today', 'epoch'}:
+    if value in SPECIAL_AST_VALUES:
         return value
     if value is None:
         return ''
@@ -65,8 +69,8 @@ AvailabilityStartTime = DashOption(
     from_string=ast_from_string,
     to_string=ast_to_string,
     cgi_name='start',
-    cgi_type='(today|epoch|now|<iso-datetime>)',
-    cgi_choices=('today', 'epoch', 'now'),
+    cgi_type='(today|month|year|epoch|now|<iso-datetime>)',
+    cgi_choices=('today', 'month', 'year', 'epoch', 'now'),
     html=AST_HTML,
     input_type='textList')
 
