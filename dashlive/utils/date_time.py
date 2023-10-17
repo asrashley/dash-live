@@ -246,6 +246,17 @@ def scale_timedelta(delta: datetime.timedelta, num: int, denom: int) -> float:
     return secs / float(denom)
 
 def timecode_to_timedelta(timecode: int, timescale: int) -> datetime.timedelta:
-    us = timecode * 1_000_000
-    us = int(us // timescale)
+    """
+    Convert a timecode and timescale into a timedelta
+    """
+    us = int(timecode) * 1000000 // timescale
     return datetime.timedelta(microseconds=us)
+
+def timedelta_to_timecode(delta: datetime.timedelta, timescale: int) -> int:
+    """
+    Convert a timedelta and timescale into a timecode
+    """
+    result = timescale * delta.days * 86400
+    result += timescale * delta.seconds
+    result += int(timescale * delta.microseconds // 1_000_000)
+    return result

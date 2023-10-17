@@ -26,8 +26,9 @@ from typing import ClassVar
 
 from dashlive.utils.timezone import UTC
 from dashlive.utils.date_time import timecode_to_timedelta
-from dashlive.mpeg.dash.reference import StreamTimingReference
 from dashlive.server.options.container import OptionsContainer
+
+from .reference import StreamTimingReference
 
 class DashTiming:
     DEFAULT_TIMESHIFT_BUFFER_DEPTH: ClassVar[int] = 60  # in seconds
@@ -47,7 +48,7 @@ class DashTiming:
     now: datetime.datetime
     publishTime: datetime.datetime
     stream_reference: StreamTimingReference
-    timeshiftbufferdepth: int
+    timeShiftBufferDepth: int  # in seconds
 
     def __init__(self,
                  now: datetime.datetime,

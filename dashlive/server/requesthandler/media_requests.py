@@ -145,8 +145,9 @@ class LiveMedia(RequestHandlerBase):
             except ValueError as err:
                 logging.warning('ValueError: %s', err)
                 msg = (f'Segment {segment_num} not found ' +
-                       f'(valid range= {timing.firstFragment} -> ' +
-                       f'{timing.lastFragment}): {err}')
+                       f'(valid range= {first_fragment} -> ' +
+                       f'{last_fragment}): {err}')
+                logging.info("%s", msg)
                 return flask.make_response(msg, 404)
             if segment_num < first_fragment or segment_num > last_fragment:
                 logging.info(
@@ -195,10 +196,21 @@ class LiveMedia(RequestHandlerBase):
                 # Update the sequenceNumber field in the MovieFragmentHeader
                 # box
                 atom.moof.mfhd.sequence_number = segment_num
+                diff = None
+                if segment_time is not None:
+                    diff = segment_time - atom.moof.traf.tfdt.base_media_decode_time
                 logging.debug(
-                    r'$Time$=%s $Number$=%d base_media_decode_time=%d sequence_number=%d origin=%d duration=%d',
-                    segment_time, segment_num, atom.moof.traf.tfdt.base_media_decode_time,
-                    atom.moof.mfhd.sequence_number, origin_time, representation.segment_duration)
+                    r'%s: $Time$ want=%s got=%d (%s)',
+                    filename, segment_time, atom.moof.traf.tfdt.base_media_decode_time, diff)
+                diff = None
+                if segment_num is not None:
+                    diff = segment_num - atom.moof.mfhd.sequence_number
+                logging.debug(
+                    r'%s: $Number$ want=%s got=%d (%s)',
+                    filename, segment_num, atom.moof.mfhd.sequence_number, diff)
+                logging.debug(
+                    r'%s: origin=%d duration=%d',
+                    filename, origin_time, representation.segment_duration)
             try:
                 # remove any sidx box as it has a baseMediaDecodeTime and it's
                 # an optional index
