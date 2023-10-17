@@ -33,13 +33,14 @@ class DashTiming:
     DEFAULT_TIMESHIFT_BUFFER_DEPTH: ClassVar[int] = 60  # in seconds
 
     __slots__ = ('timeShiftBufferDepth', 'mode', 'now', 'availabilityStartTime',
-                 'publishTime', 'stream_reference', 'elapsedTime',
+                 'publishTime', 'stream_reference', 'elapsedTime', 'leeway',
                  'mediaDuration', 'minimumUpdatePeriod',
                  'firstAvailableTime')
 
     availabilityStartTime: datetime.datetime | None
     elapsedTime: datetime.timedelta
     firstAvailableTime: datetime.timedelta
+    leeway: datetime.timedelta
     mediaDuration: datetime.timedelta
     minimumUpdatePeriod: int | None
     mode: str
@@ -56,6 +57,7 @@ class DashTiming:
         self.now = now
         self.publishTime = now.replace(microsecond=0)
         self.stream_reference = stream_ref
+        self.leeway = datetime.timedelta(seconds=0)
         if options.mode == 'live':
             self.calculate_live_params(now, options)
         else:
@@ -125,6 +127,8 @@ class DashTiming:
             self.minimumUpdatePeriod = None
         self.firstAvailableTime = self.elapsedTime - datetime.timedelta(
             seconds=self.timeShiftBufferDepth)
+        if options.leeway is not None:
+            self.leeway = datetime.timedelta(seconds=options.leeway)
 
     def generate_manifest_context(self):
         if self.mode == 'live':
