@@ -527,18 +527,21 @@ class Representation(ObjectWithFields):
         else:
             timecode = segment_time
             segment_num = int(segment_time // self.segment_duration)
-            seg_delta = self.timescale_to_timedelta(segment_time)
-            if (
-                    seg_delta < timing.firstAvailableTime or
-                    seg_delta > timing.elapsedTime
-            ):
-                msg = (
-                    f'$time$={segment_time} ({seg_delta}) not found ' +
-                    f'(valid range= {timing.firstAvailableTime} -> {timing.elapsedTime})')
-                raise ValueError(msg)
+        seg_delta = self.timescale_to_timedelta(timecode)
+        fta = timing.firstAvailableTime - timing.leeway
+        if (
+                seg_delta < fta or
+                seg_delta > timing.elapsedTime
+        ):
+            msg = (
+                f'$Time$={segment_time} $Number$={segment_num} ({seg_delta}) not available ' +
+                f'(valid range= {timing.firstAvailableTime} -> {timing.elapsedTime})' +
+                f'(available range= {fta} -> {timing.elapsedTime})')
+            raise ValueError(msg)
 
         mod_segment, origin_time = self.calculate_segment_from_timecode(timecode)
-        logging.debug('mod_segment=%d origin_time=%d', mod_segment, origin_time)
+        logging.debug('segment=%d mod_segment=%d origin_time=%d',
+                      segment_num, mod_segment, origin_time)
         return SegmentNumberAndTime(segment_num, mod_segment, origin_time)
 
     def calculate_segment_from_timecode(self, timecode: int) -> tuple[int, int]:

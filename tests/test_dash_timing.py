@@ -11,7 +11,7 @@ from dashlive.server.options.repository import OptionsRepository
 from .mixins.mixin import TestCaseMixin
 
 class TestDashTiming(TestCaseMixin, unittest.TestCase):
-    def create_representation(self, mode: str) -> tuple[StreamTimingReference, Representation]:
+    def create_representation(self, mode: str, **kwargs) -> tuple[StreamTimingReference, Representation]:
         stream_ref = StreamTimingReference(
             media_name='bbb_v1',
             media_duration=142080,
@@ -21,8 +21,10 @@ class TestDashTiming(TestCaseMixin, unittest.TestCase):
         now = datetime.datetime.fromisoformat('2020-01-01T01:00:00Z')
         defaults = OptionsRepository.get_default_options()
         args = {
+            'leeway': '0',
             'depth': '60',
             'start': '2020-01-01T00:00:00Z',
+            **kwargs,
         }
         options = OptionsRepository.convert_cgi_options(args, defaults)
         options.add_field('mode', mode)
@@ -49,7 +51,7 @@ class TestDashTiming(TestCaseMixin, unittest.TestCase):
         self.assertEqual(timeline[0].start, 0)
         self.assertEqual(timeline[0].count, stream_ref.num_media_segments)
         self.assertEqual(timeline[0].duration, stream_ref.segment_duration)
-        
+
     def test_generate_segment_timeline_live(self) -> None:
         stream_ref, rep = self.create_representation('live')
         self.assertEqual(rep._timing.elapsedTime, datetime.timedelta(seconds=3600))
@@ -71,7 +73,42 @@ class TestDashTiming(TestCaseMixin, unittest.TestCase):
         self.assertEqual(timeline[0].duration, stream_ref.segment_duration)
         total_dur = timeline[0].count * stream_ref.segment_duration
         self.assertEqual(total_dur, 60 * 240)
-        
+
+    def test_calculate_segment_number_and_time_vod(self) -> None:
+        stream_ref, rep = self.create_representation('vod')
+        segment_time = 123 * 4 * 240
+        segment_num, mod_segment, origin_time = rep.calculate_segment_number_and_time(
+            segment_time, None)
+        self.assertEqual(segment_num, 124)
+        self.assertEqual(mod_segment, 124)
+        self.assertEqual(origin_time, 0)
+
+    def test_calculate_segment_number_and_time_live(self) -> None:
+        stream_ref, rep = self.create_representation('live')
+        start_time = 3556 * 240
+        segment_num, mod_segment, origin_time = rep.calculate_segment_number_and_time(
+            start_time, None)
+        tc = origin_time + (mod_segment - 1) * 960
+        self.assertEqual(tc, start_time)
+        sn = int(start_time // 960)
+        self.assertEqual(segment_num, sn)
+        while sn > stream_ref.num_media_segments:
+            sn -= stream_ref.num_media_segments
+        self.assertEqual(mod_segment, sn + 1)
+
+    def test_calculate_segment_number_and_time_leeway(self) -> None:
+        stream_ref, rep = self.create_representation('live')
+        with self.assertRaises(ValueError):
+            rep.calculate_segment_number_and_time(0, None)
+        start_time = 3520 * 240 # 20 seconds beyond start of timeshift buffer
+        with self.assertRaises(ValueError):
+            rep.calculate_segment_number_and_time(start_time, None)
+        stream_ref, rep = self.create_representation('live', leeway='30')
+        segment_num, mod_segment, origin_time = rep.calculate_segment_number_and_time(
+            start_time, None)
+        start_time = 3500 * 240 # 40 seconds beyond start of timeshift buffer
+        with self.assertRaises(ValueError):
+            rep.calculate_segment_number_and_time(start_time, None)
 
 if __name__ == "__main__":
     # logging.getLogger().setLevel(logging.DEBUG)

@@ -100,6 +100,17 @@ Bugs = DashOption(
     cgi_name='bugs',
     cgi_choices=(None, 'saio'))
 
+Leeway = DashOption(
+    usage=OptionUsage.MANIFEST + OptionUsage.VIDEO + OptionUsage.AUDIO + OptionUsage.TEXT,
+    short_name='lee',
+    full_name='leeway',
+    title='Fragment expiration leeway',
+    description='Number of seconds after a fragment has expired before it becomes unavailable',
+    from_string=DashOption.int_or_none_from_string,
+    cgi_name='leeway',
+    input_type='numberList',
+    cgi_choices=('16', '60', '0'))
+
 OperatingMode = DashOption(
     usage=OptionUsage.MANIFEST,
     short_name='md',
@@ -181,6 +192,7 @@ manifest_options = [
     AvailabilityStartTime,
     Bugs,
     FailureCount,
+    Leeway,
     ManifestHttpError,
     MinimumUpdatePeriod,
     OperatingMode,
