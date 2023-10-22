@@ -6,6 +6,7 @@
 #
 #############################################################################
 
+import asyncio
 import datetime
 import urllib.parse
 
@@ -14,6 +15,7 @@ from dashlive.utils.date_time import from_isodatetime, UTC
 
 from .dash_element import DashElement
 from .period import Period
+from .validation_flag import ValidationFlag
 
 class Manifest(DashElement):
     attributes = [
@@ -43,7 +45,6 @@ class Manifest(DashElement):
             self.publishTime = datetime.datetime.now(tz=UTC())
         self.mpd_type = xml.get("type", "static")
         self.periods = [Period(p, self) for p in xml.findall('./dash:Period', self.xmlNamespaces)]
-        self.dump_attributes()
 
     @property
     def mpd(self):
@@ -53,10 +54,11 @@ class Manifest(DashElement):
         # TODO: implement clock drift compensation
         return datetime.datetime.now(tz=UTC())
 
-    def prefetch_media_info(self) -> None:
+    async def prefetch_media_info(self) -> None:
         self.progress.add_todo(len(self.periods))
-        for p in self.periods:
-            p.prefetch_media_info()
+        futures = [
+            p.prefetch_media_info() for p in self.periods]
+        await asyncio.gather(*futures)
 
     def set_representation_info(self, info: ServerRepresentation):
         for p in self.periods:
@@ -70,12 +72,12 @@ class Manifest(DashElement):
             return self.mediaPresentationDuration
         return datetime.timedelta(seconds=0)
 
-    def num_tests(self, depth: int = -1) -> int:
-        if depth == 0:
-            return 0
-        count = len(self.periods)
+    def num_tests(self) -> int:
+        count = 0
+        if ValidationFlag.MANIFEST in self.options.verify:
+            count += 1
         for period in self.periods:
-            count += period.num_tests(depth - 1)
+            count += period.num_tests()
         return count
 
     def finished(self) -> bool:
@@ -84,22 +86,28 @@ class Manifest(DashElement):
                 return False
         return True
 
-    def merge_previous_element(self, prev: "Manifest") -> bool:
+    async def merge_previous_element(self, prev: "Manifest") -> bool:
         period_map = {}
         for idx, period in enumerate(self.periods):
             pid = f'{idx}' if period.id is None else period.id
             period_map[pid] = period
-        rv = True
+        futures = []
         for idx, period in enumerate(prev.periods):
             pid = f'{idx}' if period.id is None else period.id
             try:
-                if not period_map[pid].merge_previous_element(period):
-                    rv = False
+                futures.append(period_map[pid].merge_previous_element(period))
             except KeyError:
                 self.log.debug('New period %s', pid)
-        return rv
+        result = await asyncio.gather(*futures)
+        return False not in result
 
-    def validate(self, depth=-1):
+    async def validate(self):
+        if ValidationFlag.MANIFEST in self.options.verify:
+            self.validate_self()
+        futures = [p.validate() for p in self.periods]
+        await asyncio.gather(*futures)
+            
+    def validate_self(self):
         self.elt.check_greater_than(
             len(self.periods), 0,
             msg=f'Manifest does not have a Period element: {self.url}')
@@ -137,7 +145,4 @@ class Manifest(DashElement):
             self.attrs.check_none(
                 self.availabilityStartTime,
                 msg=f"MPD@availabilityStartTime must not be present for VOD manifest: {self.url}")
-        if depth != 0:
-            for period in self.periods:
-                period.validate(depth - 1)
-                self.progress.inc()
+        self.progress.inc()

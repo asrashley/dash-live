@@ -6,6 +6,8 @@
 #
 #############################################################################
 
+import asyncio
+from collections.abc import Iterable
 import datetime
 import math
 import re
@@ -22,11 +24,12 @@ from dashlive.utils.date_time import (
     UTC
 )
 
-from .dash_element import DashElement
+from .dash_element import DashElement, ValidateTask
 from .init_segment import InitSegment
 from .media_segment import MediaSegment
 from .multiple_segment_base_type import MultipleSegmentBaseType
 from .representation_base_type import RepresentationBaseType
+from .validation_flag import ValidationFlag
 
 class Representation(RepresentationBaseType):
     attributes = RepresentationBaseType.attributes + [
@@ -51,7 +54,7 @@ class Representation(RepresentationBaseType):
                 self.segmentBase = MultipleSegmentBaseType(
                     segmentBase[0], self)
 
-    def merge_previous_element(self, prev: "Representation") -> bool:
+    async def merge_previous_element(self, prev: "Representation") -> bool:
         self.log.debug('Merging previous representation %s', prev.id)
         if prev.init_segment is not None:
             self.init_segment = prev.init_segment
@@ -59,47 +62,47 @@ class Representation(RepresentationBaseType):
                 '%s: Reusing previous init segment. has_atoms=%s',
                 self.id, self.init_segment.atoms is not None)
         self.info = prev.info
-        self.generate_segment_todo_list()
+        await self.generate_segment_todo_list()
         seg_map = {}
         for seg in prev.media_segments:
-            seg_map[seg.seg_num] = seg
+            seg_map[seg.name] = seg
         merged_segments = []
-        for seg in prev.media_segments:
-            if seg.seg_num >= self.media_segments[0].seg_num:
-                break
-            self.log.debug(
-                '%s: Re-use previous media segment %d (dur %s)',
-                self.id, seg.seg_num, seg.duration)
-            merged_segments.append(seg)
+        #for seg in prev.media_segments:
+        #    if seg.seg_num >= self.media_segments[0].seg_num:
+        #        break
+        #    self.log.debug(
+        #        '%s: Re-use previous media segment %d (dur %s)',
+        #        self.id, seg.seg_num, seg.duration)
+        #    merged_segments.append(seg)
         for seg in self.media_segments:
             try:
-                merged_segments.append(seg_map[seg.seg_num])
+                merged_segments.append(seg_map[seg.name])
                 self.log.debug(
-                    '%s: Re-use existing media segment %d', self.id, seg.seg_num)
+                    '%s: Re-use existing media segment %s', self.id, seg.name)
             except KeyError as err:
-                self.log.debug('%s: Adding new media segment %d (%s)',
-                               self.id, seg.seg_num, err)
+                self.log.debug('%s: Adding new media segment %s (%s)',
+                               self.id, seg.name, err)
                 merged_segments.append(seg)
         self.media_segments = merged_segments
         return True
 
-    def generate_segment_todo_list(self) -> None:
+    async def generate_segment_todo_list(self) -> None:
         if self.mode == "odvod":
-            self.generate_segments_on_demand_profile()
+            await self.generate_segments_on_demand_profile()
         else:
-            self.generate_segments_live_profile()
+            await self.generate_segments_live_profile()
         self.progress.inc()
 
     def set_representation_info(self, info: ServerRepresentation):
         self.info = info
 
-    def load_representation_info(self) -> bool:
+    async def load_representation_info(self) -> bool:
         if not self.elt.check_not_none(
                 self.init_segment, msg='Failed to find init segment'):
             return False
         if self.init_segment.atoms is None:
             self.log.debug('%s: Loading init segment', self.id)
-            if not self.init_segment.load():
+            if not await self.init_segment.load():
                 return False
         parsed = urllib.parse.urlparse(self.init_seg_url())
         filename = PurePath(parsed.path)
@@ -118,7 +121,7 @@ class Representation(RepresentationBaseType):
         url = self.format_url_template(self.segmentTemplate.initialization)
         return urllib.parse.urljoin(self.baseurl, url)
 
-    def generate_segments_live_profile(self) -> None:
+    async def generate_segments_live_profile(self) -> None:
         if not self.elt.check_not_equal(self.mode, 'odvod'):
             return
         if not self.elt.check_not_none(
@@ -129,7 +132,7 @@ class Representation(RepresentationBaseType):
         if self.init_segment is None:
             self.init_segment = InitSegment(self, self.init_seg_url(), None)
         if self.info is None:
-            self.load_representation_info()
+            await self.load_representation_info()
         if not self.elt.check_not_none(self.info, msg='Failed to get Representation info'):
             return
         frameRate = 24
@@ -244,11 +247,7 @@ class Representation(RepresentationBaseType):
                 tol = tolerance >> 1
             else:
                 tol = tolerance
-            ms = MediaSegment(self, url,
-                              seg_num=seg_num,
-                              decode_time=decode_time,
-                              tolerance=tol,
-                              estimated_decode_time=True)
+            ms = MediaSegment(self, url, expected_seg_num=seg_num, tolerance=tol)
             if self.mode == 'live':
                 ms.set_segment_availability(
                     seg_duration, self.segmentTemplate.presentationTimeOffset, self.timescale())
@@ -283,9 +282,8 @@ class Representation(RepresentationBaseType):
                 self.segmentTemplate.media, seg_num, decode_time)
             url = urllib.parse.urljoin(self.baseurl, url)
             ms = MediaSegment(
-                self, url, seg_num=seg_num, decode_time=decode_time,
-                tolerance=tolerance,
-                estimated_seg_number=True)
+                self, url, expected_decode_time=decode_time,
+                tolerance=tolerance)
             if self.mode == 'live':
                 ms.set_segment_availability(
                     seg_duration, self.segmentTemplate.presentationTimeOffset, self.timescale())
@@ -302,7 +300,7 @@ class Representation(RepresentationBaseType):
                     total_duration, tsb,
                     template=r'SegmentTimeline has duration {0}, expected {1} based upon timeshiftbufferdepth')
 
-    def generate_segments_on_demand_profile(self):
+    async def generate_segments_on_demand_profile(self):
         if not self.elt.check_equal(self.mode, 'odvod'):
             return
         self.media_segments = []
@@ -329,7 +327,7 @@ class Representation(RepresentationBaseType):
         if not self.elt.check_not_none(self.init_segment, msg='failed to find init segment URL'):
             return
         if self.info is None:
-            self.load_representation_info()
+            await self.load_representation_info()
         if not self.elt.check_not_none(self.info, msg='Failed to get Representation init segment'):
             return
         decode_time = self.info.start_time
@@ -337,7 +335,7 @@ class Representation(RepresentationBaseType):
         for sl in self.segmentList:
             seg_list += sl.segmentURLs
         if not seg_list and self.segmentBase and self.segmentBase.indexRange:
-            seg_list = self.segmentBase.load_segment_index(self.baseurl)
+            seg_list = await self.segmentBase.load_segment_index(self.baseurl)
             decode_time = seg_list[0].decode_time
         frameRate = 24
         if self.frameRate is not None:
@@ -370,9 +368,9 @@ class Representation(RepresentationBaseType):
             else:
                 tol = tolerance
             dt = getattr(item, 'decode_time', decode_time)
-            ms = MediaSegment(self, url, seg_num=seg_num,
-                              decode_time=dt, tolerance=tol,
-                              seg_range=item.mediaRange)
+            ms = MediaSegment(
+                self, url, expected_seg_num=seg_num, expected_decode_time=dt,
+                tolerance=tol, seg_range=item.mediaRange)
             self.media_segments.append(ms)
             if self.info.segments:
                 # self.info.segments[0] is the init segment
@@ -383,10 +381,13 @@ class Representation(RepresentationBaseType):
                 if decode_time >= (self.options.duration * timescale):
                     return
 
-    def num_tests(self, depth: int = -1) -> int:
-        if depth == 0:
-            return 0
-        return 1 + len(self.media_segments)
+    def num_tests(self) -> int:
+        count = 0
+        if ValidationFlag.REPRESENTATION in self.options.verify:
+            count += 1
+        if ValidationFlag.MEDIA in self.options.verify:
+            count += len(self.media_segments)
+        return count
 
     def children(self) -> list[DashElement]:
         rv = super().children() + self.media_segments
@@ -402,7 +403,7 @@ class Representation(RepresentationBaseType):
             if seg.availability_end_time and seg.availability_end_time < now:
                 continue
             if not seg.validated:
-                self.log.debug('%s: Segment %d not yet validated', self.id, seg.seg_num)
+                self.log.debug('%s: Segment %s not yet validated', self.id, seg.name)
                 return False
         if self.mode != 'live':
             self.log.debug('%s: Non-live stream, finished=True. (mode=%s)',
@@ -420,7 +421,58 @@ class Representation(RepresentationBaseType):
                        self.id, total_dur, need_duration)
         return total_dur >= need_duration
 
-    def validate(self, depth: int = -1) -> None:
+    async def validate(self) -> None:
+        if ValidationFlag.REPRESENTATION in self.options.verify:
+            await self.validate_self()
+        if len(self.media_segments) == 0:
+            return
+        if ValidationFlag.MEDIA not in self.options.verify:
+            return
+        discard_before = self.mpd.now() + datetime.timedelta(seconds=2)
+        #while (
+        #        self.media_segments and
+        #        self.media_segments[0].availability_end_time and
+        #        self.media_segments[0].availability_end_time < discard_before):
+        #    self.log.debug(
+        #        '%s: Discarding segment %s as it is about to expire (%s)', self.id,
+        #        self.media_segments[0].name, self.media_segments[0].availability_end_time)
+        #    self.media_segments.pop(0)
+        next_decode_time = None
+        next_seg_num = None
+        for idx, seg in enumerate(self.media_segments):
+            if self.progress.aborted():
+                return
+            self.progress.text(seg.url)
+            if seg.expected_seg_num is None and next_seg_num is not None:
+                seg.expected_seg_num = next_seg_num
+            if seg.expected_decode_time is None and next_decode_time is not None:
+                seg.expected_decode_time = next_decode_time
+            if not seg.validated:
+                await seg.validate()
+            self.log.debug('%s: Segment %s decode time span: %s -> %s', self.id,
+                           seg.name, seg.decode_time, seg.next_decode_time)
+            #if seg.expected_seg_num is None and next_seg_num is not None:
+            #    self.elt.check_equal(
+            #        next_seg_num, seg.seg_num, 
+            #        msg=f'{seg.url}: Expected segment number {next_seg_num} but found {seg.seg_num}')
+            #if seg.expected_decode_time is None and next_decode_time is not None:
+            #    diff = 1000 * (next_decode_time - seg.decode_time) / self.timescale()
+            #    tol = 1000 * seg.tolerance / self.timescale()
+            #    msg = (f'{seg.name}: expected decode time {next_decode_time} ' +
+            #           f'but got {seg.decode_time} for segment {seg.seg_num} ' +
+            #           f'(diff={diff} ms) (tolerance={tol} ms)')
+            #    within_range = (
+            #        (seg.decode_time + seg.tolerance) >= next_decode_time and
+            #        (seg.decode_time - seg.tolerance) <= next_decode_time)
+            #    self.elt.check_true(within_range, next_decode_time, seg.decode_time, msg=msg)
+            next_decode_time = seg.next_decode_time
+            if seg.seg_num is None:
+                next_seg_num = None
+            else:
+                next_seg_num = seg.seg_num + 1
+            self.progress.inc()
+        
+    async def validate_self(self) -> None:
         if self.progress.aborted():
             return
         if self.segmentTemplate is None:
@@ -440,13 +492,14 @@ class Representation(RepresentationBaseType):
             self.mimeType, msg='Representation@mimeType is a mandatory attribute',
             clause='5.3.7.2')
         if self.info is None:
-            if not self.load_representation_info():
+            if not await self.load_representation_info():
                 return
-        if depth > 0:
-            self.init_segment.validate(depth - 1)
-        moov = self.init_segment.get_moov()
-        if not self.elt.check_not_none(moov, msg='Failed to find MOOV data'):
-            self.log.warning('Failed to validate init segment')
+        if ValidationFlag.MEDIA in self.options.verify:
+            await self.init_segment.validate()
+        moov = await self.init_segment.get_moov()
+        if not self.elt.check_not_none(moov, msg=f'{self.id}: Failed to find MOOV data'):
+            self.log.warning('%s: Failed to get MOOV box from init segment %s', self.id,
+                             self.init_segment.name)
             return
         if self.options.encrypted:
             if self.options.ivsize is None:
@@ -473,60 +526,12 @@ class Representation(RepresentationBaseType):
                 len(self.contentProtection), 0,
                 msg='ContentProtection elements should not be present for unencrypted stream')
         self.progress.inc()
-        if depth == 0 or self.progress.aborted():
+        if self.progress.aborted():
             return
         if self.mode == "odvod":
             self.check_on_demand_profile()
         else:
             self.check_live_profile()
-        now = self.mpd.now()
-        while (
-                self.media_segments and
-                self.media_segments[0].availability_end_time and
-                self.media_segments[0].availability_end_time < now):
-            self.media_segments.pop()
-        if len(self.media_segments) == 0:
-            return
-        next_decode_time = self.media_segments[0].decode_time
-        # next_seg_num = self.media_segments[0].seg_num
-        self.log.debug('%s: starting next_decode_time: %s', self.id, str(next_decode_time))
-        for idx, seg in enumerate(self.media_segments):
-            if self.progress.aborted():
-                return
-            if seg.validated:
-                self.log.debug('Segment %d already checked', seg.seg_num)
-                self.progress.inc()
-                continue
-            if seg.decode_time is None:
-                msg = f'{seg.url_description()}: Failed to calculate next decode time for segment {seg.seg_num}'
-                self.elt.check_not_none(next_decode_time, msg=msg)
-                seg.decode_time = next_decode_time
-            else:
-                diff = 1000 * (next_decode_time - seg.decode_time) / self.timescale()
-                tol = 1000 * seg.tolerance / self.timescale()
-                msg = (f'{seg.url_description()}: expected decode time {next_decode_time} ' +
-                       f'but got {seg.decode_time} for segment {seg.seg_num} ' +
-                       f'(diff={diff} ms) (tolerance={tol} ms)')
-                within_range = (
-                    (seg.decode_time + seg.tolerance) >= next_decode_time and
-                    (seg.decode_time - seg.tolerance) <= next_decode_time)
-                self.elt.check_true(within_range, next_decode_time, seg.decode_time, msg=msg)
-                next_decode_time = seg.decode_time
-            self.progress.text(seg.url)
-            if seg.estimated_decode_time:
-                seg.estimated_decode_time = False
-                seg.decode_time = next_decode_time
-            moof = seg.validate(depth - 1)
-            msg = f'{self.id}: Failed to fetch MOOF {seg.url_description()}'
-            if not self.elt.check_not_none(moof, msg=msg):
-                self.log.warning(msg)
-                continue
-            if seg.seg_num is None:
-                seg.seg_num = moof.mfhd.sequence_number
-            next_decode_time = seg.next_decode_time
-            self.log.debug('%s: Segment %d decode time span: %d -> %d', self.id,
-                           seg.seg_num, seg.decode_time, next_decode_time)
-            self.progress.inc()
 
     def check_live_profile(self):
         self.elt.check_not_none(
@@ -586,7 +591,7 @@ class Representation(RepresentationBaseType):
     def check_on_demand_profile(self):
         pass
 
-    def format_url_template(self, url, seg_num=0, decode_time=0):
+    def format_url_template(self, url: str, seg_num: int = 0, decode_time: int = 0) -> str:
         """
         Replaces the template variables according the DASH template syntax
         """

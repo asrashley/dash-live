@@ -1,24 +1,12 @@
-import concurrent.futures
-import traceback
+from abc import ABC, abstractmethod
+import asyncio
 
-class WorkerPool:
-    def __init__(self, executor: concurrent.futures.Executor) -> None:
-        self.executor = executor
-        self.tasks: set[concurrent.futures.Future] = set()
+class WorkerPool(ABC):
 
-    def submit(self, fn, *args, **kwargs) -> concurrent.futures.Future:
-        future = self.executor.submit(fn, *args, **kwargs)
-        self.tasks.add(future)
-        return future
+    @abstractmethod
+    def submit(self, fn, *args, **kwargs) -> asyncio.Future:
+        ...
 
-    def wait_for_completion(self) -> list[str]:
-        errors: list[Exception] = []
-        for future in concurrent.futures.as_completed(self.tasks):
-            try:
-                future.result()
-            except Exception as exc:
-                print(exc)
-                traceback.print_exc()
-                errors.append(f'{exc}')
-        self.tasks = set()
-        return errors
+    @abstractmethod
+    def wait_for_completion(self, timeout: int) -> list[str]:
+        ...

@@ -34,14 +34,15 @@ class SegmentBaseType(DashElement):
     def children(self) -> list[DashElement]:
         return self.initializationList + self.representationIndex
 
-    def load_segment_index(self, url):
+    async def load_segment_index(self, url):
         self.checkIsNotNone(self.indexRange)
         headers = {"Range": f"bytes={self.indexRange}"}
         self.log.debug('GET: %s %s', url, headers)
-        response = self.http.get(url, headers=headers)
+        response = await self.http.get(url, headers=headers)
         # 206 = partial content
         self.checkEqual(response.status_code, 206)
         if self.options.save:
+            # TODO: use an async function to save index file
             default = f'index-{self.parent.id}-{self.parent.bandwidth}'
             filename = self.output_filename(
                 default, self.parent.bandwidth, prefix=self.options.prefix,

@@ -5,13 +5,18 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+import asyncio
+from collections.abc import Iterable
 
 from dashlive.mpeg.dash.representation import Representation as ServerRepresentation
 
-from .dash_element import DashElement
+from .dash_element import DashElement, ValidateTask
 from .frame_rate_type import FrameRateType
+from .options import ValidationFlag
 from .representation_base_type import RepresentationBaseType
 from .representation import Representation
+from .roundrobin import roundrobin
+from .validation_flag import ValidationFlag
 
 class AdaptationSet(RepresentationBaseType):
     attributes = RepresentationBaseType.attributes + [
@@ -40,26 +45,24 @@ class AdaptationSet(RepresentationBaseType):
                 break
         self.representations = [Representation(r, self) for r in reps]
 
-    def prefetch_media_info(self) -> None:
+    async def prefetch_media_info(self) -> None:
         self.progress.add_todo(len(self.representations))
-        for r in self.representations:
-            if self.pool:
-                self.pool.submit(r.generate_segment_todo_list)
-            else:
-                r.generate_segment_todo_list()
+        futures = [
+            r.generate_segment_todo_list() for r in self.representations]
+        await asyncio.gather(*futures)
 
-    def num_tests(self, depth: int = -1) -> int:
-        if depth == 0:
-            return 0
-        count = len(self.contentProtection) + len(self.representations)
+    def num_tests(self) -> int:
+        count = 0
+        if ValidationFlag.ADAPTATION_SET in self.options.verify:
+            count += 1 + len(self.contentProtection)
         for rep in self.representations:
-            count += rep.num_tests(depth - 1)
+            count += rep.num_tests()
         return count
 
     def children(self) -> list[DashElement]:
         return super().children() + self.representations
 
-    def merge_previous_element(self, prev: "AdaptationSet") -> bool:
+    async def merge_previous_element(self, prev: "AdaptationSet") -> bool:
         def make_rep_id(idx, r):
             if r.id is not None:
                 return r.id
@@ -74,16 +77,16 @@ class AdaptationSet(RepresentationBaseType):
         for idx, r in enumerate(self.representations):
             rid = make_rep_id(idx, r)
             rep_map[rid] = r
-        rv = True
+        futures = []
         for idx, r in enumerate(prev.representations):
             rid = make_rep_id(idx, r)
             try:
-                if not rep_map[rid].merge_previous_element(r):
-                    rv = False
+                futures.append(rep_map[rid].merge_previous_element(r))
             except KeyError as err:
                 self.elt.add_error(
                     'Representations have changed within a Period: %s', err)
-        return rv
+        results = await asyncio.gather(*futures)
+        return False not in results
 
     def finished(self) -> bool:
         for child in self.representations:
@@ -99,8 +102,20 @@ class AdaptationSet(RepresentationBaseType):
         for r in self.representations:
             if r.id == info.id:
                 r.set_representation_info(info)
-
-    def validate(self, depth: int = -1) -> None:
+    
+    async def validate(self) -> None:
+        if ValidationFlag.ADAPTATION_SET in self.options.verify:
+            await self.validate_self()
+        futures = []
+        for rep in self.representations:
+            #if self.options.pool:
+            #    futures.append(self.options.pool.submit(
+            #        lambda: asyncio.run(rep.validate())))
+            #else:
+            futures.append(rep.validate())
+        await asyncio.gather(*futures)
+            
+    async def validate_self(self, depth: int = -1) -> None:
         if len(self.contentProtection):
             self.elt.check_not_none(
                 self.default_KID,
@@ -116,17 +131,8 @@ class AdaptationSet(RepresentationBaseType):
             self.elt.check_equal(
                 len(self.contentProtection), 0,
                 msg='At least one ContentProtection element is required for an encrypted stream')
-        if depth == 0:
-            return
         for cp in self.contentProtection:
             if self.progress.aborted():
                 return
-            cp.validate(depth - 1)
+            cp.validate()
             self.progress.inc()
-        for rep in self.representations:
-            if self.progress.aborted():
-                return
-            if self.pool:
-                self.pool.submit(rep.validate, depth - 1)
-            else:
-                rep.validate(depth - 1)

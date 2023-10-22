@@ -6,9 +6,11 @@
 #
 #############################################################################
 from abc import ABC, abstractmethod
+import asyncio
+from collections.abc import Iterable
 import logging
 import os
-from typing import Never, Optional
+from typing import Callable, Never, Optional
 import urllib.parse
 
 from lxml import etree as ET
@@ -19,6 +21,8 @@ from .errors import ErrorSource, LineRange, ValidationChecks, ValidationError
 from .options import ValidatorOptions
 from .progress import NullProgress
 from .pool import WorkerPool
+
+ValidateTask = Callable[[], None]
 
 class ContextAdapter(logging.LoggerAdapter):
     def process(self, msg: str, kwargs) -> tuple[str, dict]:
@@ -183,7 +187,7 @@ class DashElement(ABC):
         for prefix, url in clz.xmlNamespaces.items():
             ET.register_namespace(prefix, url)
 
-    def num_tests(self, depth: int = -1) -> int:
+    def num_tests(self) -> int:
         """
         Returns count of number of tests performed within this element.
         Used for progress reporting
@@ -194,7 +198,7 @@ class DashElement(ABC):
         return False
 
     @abstractmethod
-    def validate(self, depth=-1) -> Never:
+    async def validate(self) -> None:
         raise Exception("Not implemented")
 
     def unique_id(self) -> str:

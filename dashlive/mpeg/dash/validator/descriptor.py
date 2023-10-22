@@ -20,7 +20,7 @@ class Descriptor(DashElement):
         for child in elt:
             self._children.append(DescriptorElement(child, self))
 
-    def validate(self, depth: int = -1) -> None:
+    def validate(self) -> None:
         self.attrs.check_not_none(
             self.schemeIdUri, msg='schemeIdUri is mandatory')
 

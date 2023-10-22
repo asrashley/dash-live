@@ -128,13 +128,13 @@ class EventStream(EventStreamBase):
     An EventStream, where events are carried in the manifest
     """
 
-    def validate(self, depth: int = -1) -> None:
-        super().validate(depth)
-        self.attrs.check_not_equal(self.schemeIdUri, self.SCTE35_INBAND_EVENTS)
-        if depth == 0:
+    def validate(self) -> None:
+        if ValidationFlag.EVENTS not in self.options.verify:
             return
+        super().validate()
+        self.attrs.check_not_equal(self.schemeIdUri, self.SCTE35_INBAND_EVENTS)
         for event in self.events:
-            event.validate(depth - 1)
+            event.validate()
 
 
 class InbandEventStream(EventStreamBase):
