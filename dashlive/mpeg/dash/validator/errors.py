@@ -124,12 +124,18 @@ class ValidationChecks:
         result = a <= b
         return self.check_true(result, a, b, **kwargs)
 
-    def check_greater_than(self, a: Any, b: Any, **kwargs) -> bool:
+    def check_greater_than(self, a: Any, b: Any,
+                           template: str | None = None, **kwargs) -> bool:
         result = a > b
-        return self.check_true(result, a, b, **kwargs)
+        if template is None:
+            template = f'{0} should be greater than  {1}'
+        return self.check_true(result, a, b, template=template, **kwargs)
 
-    def check_greater_or_equal(self, a: Any, b: Any, **kwargs) -> bool:
+    def check_greater_or_equal(self, a: Any, b: Any,
+                               template: str | None = None, **kwargs) -> bool:
         result = a >= b
+        if template is None:
+            template = f'{0} should be >=  {1}'
         return self.check_true(result, a, b, **kwargs)
 
     def check_starts_with(self, text: str, prefix: str, template: str | None = None,

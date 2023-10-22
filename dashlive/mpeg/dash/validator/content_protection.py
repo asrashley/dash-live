@@ -20,8 +20,8 @@ class ContentProtection(Descriptor):
         ('cenc:default_KID', str, None),
     ]
 
-    def validate(self, depth: int = -1) -> None:
-        super().validate(depth)
+    def validate(self) -> None:
+        super().validate()
         if self.schemeIdUri == "urn:mpeg:dash:mp4protection:2011":
             self.attrs.check_equal(
                 self.value, "cenc", template=r'{0} != {1}')

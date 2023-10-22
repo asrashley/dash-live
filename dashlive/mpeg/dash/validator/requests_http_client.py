@@ -64,7 +64,7 @@ class RequestsHttpClient:
         self.session = requests.Session()
         self.log = options.log
 
-    def get(self, url, headers=None, params=None, status=None, xhr=False) -> HttpResponse:
+    async def get(self, url, headers=None, params=None, status=None, xhr=False) -> HttpResponse:
         try:
             self.log.debug('GET %s', url)
         except AttributeError:

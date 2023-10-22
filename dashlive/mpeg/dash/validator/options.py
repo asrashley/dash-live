@@ -13,6 +13,7 @@ from dashlive.utils.date_time import RelaxedDateTime, UTC
 
 from .pool import WorkerPool
 from .progress import Progress
+from .validation_flag import ValidationFlag
 
 @dataclass(slots=True, kw_only=True)
 class ValidatorOptions:
@@ -28,6 +29,7 @@ class ValidatorOptions:
     title: str | None = None
     verbose: int = 0
     pretty: bool = False
+    verify: ValidationFlag = field(default_factory=ValidationFlag.all)
     start_time: RelaxedDateTime = field(default_factory=lambda: RelaxedDateTime.now(UTC()))
     progress: Progress | None = None
     log: Logger | None = None

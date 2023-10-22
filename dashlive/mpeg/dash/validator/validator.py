@@ -19,6 +19,7 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+import asyncio
 import datetime
 import io
 import json
@@ -36,8 +37,7 @@ from .options import ValidatorOptions
 class DashValidator(DashElement):
     def __init__(self, url, http_client,
                  mode: str | None = None,
-                 options: ValidatorOptions | None = None,
-                 xml: Optional[ET.Element] = None) -> None:
+                 options: ValidatorOptions | None = None) -> None:
         DashElement.init_xml_namespaces()
         super().__init__(None, parent=None, options=options)
         self.http = http_client
@@ -45,25 +45,18 @@ class DashValidator(DashElement):
         self.options = options if options is not None else ValidatorOptions()
         self.mode = mode
         self.validator = self
-        self.xml = xml
+        self.xml = None
         self.manifest: Manifest | None = None
         self.manifest_text: list[tuple[int, str]] = []
         self.prev_manifest = None
         self.pool = options.pool
-        self.prefetch_done = False
-        if xml is not None:
-            self.progress.reset(1)
-            self.manifest = Manifest(self, self.url, self.mode, self.xml)
-            self.manifest.prefetch_media_info()
-            self.prefetch_done = True
 
-    def load(self, xml=None) -> bool:
+    async def load(self, xml=None) -> bool:
         self.progress.reset(1)
-        self.prefetch_done = False
         self.prev_manifest = None
         self.xml = xml
         if self.xml is None:
-            self.fetch_manifest()
+            await self.fetch_manifest()
         if self.mode is None:
             if self.xml.get("type") == "dynamic":
                 self.mode = 'live'
@@ -74,7 +67,7 @@ class DashValidator(DashElement):
         self.manifest = Manifest(self, self.url, self.mode, self.xml)
         return True
 
-    def refresh(self) -> bool:
+    async def refresh(self) -> bool:
         """
         Reload a live manifest.
         This will copy across some information from the previous manifest into
@@ -84,37 +77,33 @@ class DashValidator(DashElement):
             self.log.debug('Not a live stream, no need to reload manifest')
             return True
         self.prev_manifest = self.manifest
-        if not self.fetch_manifest():
+        if not await self.fetch_manifest():
             return False
         self.manifest = Manifest(self, self.url, self.mode, self.xml)
-        return self.manifest.merge_previous_element(self.prev_manifest)
+        return await self.manifest.merge_previous_element(self.prev_manifest)
 
     def finished(self) -> bool:
         if self.manifest is None:
             return False
         return self.manifest.finished()
 
-    def prefetch_media_info(self) -> None:
-        if self.prefetch_done:
-            return
+    async def prefetch_media_info(self) -> None:
         self.log.info('Prefetching media files required before validation can start')
         self.progress.text('Prefetching media files')
-        self.manifest.prefetch_media_info()
-        self.prefetch_done = True
+        await self.manifest.prefetch_media_info()
 
     def get_manifest_lines(self) -> list[str]:
         return self.manifest_text
 
-    def fetch_manifest(self) -> bool:
+    async def fetch_manifest(self) -> bool:
         self.progress.text(self.url)
         self.log.debug('Fetch manifest %s', self.url)
-        result = self.http.get(self.url)
+        result = await self.http.get(self.url)
         if not self.elt.check_equal(
                 result.status_code, 200,
                 msg=f'Failed to load manifest: {result.status_code} {self.url}'):
             return False
         # print(result.text)
-        print(result.headers)
         parser = ET.XMLParser(remove_blank_text=self.options.pretty)
         xml = ET.parse(
             io.BytesIO(result.get_data(as_text=False)), parser)
@@ -133,12 +122,12 @@ class DashValidator(DashElement):
         self.progress.text('')
         return True
 
-    def validate(self, depth=-1) -> bool:
+    async def validate(self) -> bool:
         if self.xml is None:
-            if not self.load():
+            if not await self.load():
                 return False
-        self.prefetch_media_info()
-        self.progress.reset(self.manifest.num_tests(depth))
+        await self.prefetch_media_info()
+        self.progress.reset(self.manifest.num_tests())
         if self.options.save:
             self.save_manifest()
         if self.mode == 'live' and self.prev_manifest is not None:
@@ -151,7 +140,7 @@ class DashValidator(DashElement):
             self.attrs.check_less_than(
                 age, 3 * self.manifest.minimumUpdatePeriod,
                 fmt.format(self.manifest.minimumUpdatePeriod, age.total_seconds()))
-        self.manifest.validate(depth=depth)
+        await self.manifest.validate()
         if self.pool:
             for err in self.pool.wait_for_completion():
                 self.elt.add_error(f'Exception: {err}')
@@ -199,16 +188,21 @@ class DashValidator(DashElement):
         else:
             print(ET.tostring(self.xml, pretty_print=True))
 
-    def sleep(self):
+    async def sleep(self):
         if not self.elt.check_equal(self.mode, 'live'):
             return
         if not self.elt.check_not_none(self.manifest):
             return
         next_refresh = self.manifest.publishTime + self.manifest.minimumUpdatePeriod
-        diff = self.manifest.now() - next_refresh
+        self.log.debug(
+            'publishTime=%s minimumUpdatePeriod=%s nextUpdate=%s',
+            self.manifest.publishTime, self.manifest.minimumUpdatePeriod,
+            next_refresh)
+        diff = next_refresh - self.manifest.now()
+        self.log.info('Diff = %s', diff)
         if diff > datetime.timedelta(seconds=0):
             self.log.info('Wait %s', diff)
-            time.sleep(diff.total_seconds())
+            await asyncio.sleep(diff.total_seconds())
 
     def set_representation_info(self, info: ServerRepresentation):
         if self.manifest is None:

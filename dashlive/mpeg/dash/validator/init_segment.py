@@ -5,6 +5,10 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+from pathlib import Path
+import traceback
+import urllib.parse
+
 from dashlive.drm.playready import PlayReady
 from dashlive.mpeg import mp4
 from dashlive.utils.buffered_reader import BufferedReader
@@ -17,20 +21,24 @@ class InitSegment(DashElement):
         self.seg_range = seg_range
         self.url = url
         self.atoms: list[mp4.Mp4Atom] | None = None
+        path = Path(urllib.parse.urlparse(url).path)
+        self.name = path.name
+        if seg_range:
+            self.name += f'?range={self.seg_range}'
 
     def children(self) -> list[DashElement]:
         return []
 
-    def get_moov(self) -> mp4.Mp4Atom | None:
+    async def get_moov(self) -> mp4.Mp4Atom | None:
         if self.atoms is None:
-            if not self.load():
+            if not await self.load():
                 return None
         for atom in self.atoms:
             if atom.atom_type == 'moov':
                 return atom
         return None
 
-    def load(self) -> bool:
+    async def load(self) -> bool:
         if not self.elt.check_not_none(self.url, msg='URL of init segment is missing'):
             return False
         if self.seg_range is not None:
@@ -40,16 +48,17 @@ class InitSegment(DashElement):
             headers = None
             expected_status = 200
         self.log.debug('GET: %s %s', self.url, headers)
-        response = self.http.get(self.url, headers=headers)
+        response = await self.http.get(self.url, headers=headers)
         if not self.elt.check_equal(
                 response.status_code, expected_status,
                 msg=f'Failed to load init segment: {response.status_code}: {self.url}'):
             return False
         if self.options.save:
+            adp = self.parent.parent
             if self.parent.id:
-                default = f'init-{self.parent.id}-{self.parent.id}'
+                default = f'init-{adp.id}-{self.parent.id}'
             else:
-                default = f'init-{self.parent.id}-{self.parent.bandwidth}'
+                default = f'init-{adp.id}-{self.parent.bandwidth}'
             filename = self.output_filename(
                 default=default, bandwidth=self.parent.bandwidth,
                 prefix=self.options.prefix, elt_id=self.parent.id,
@@ -66,14 +75,16 @@ class InitSegment(DashElement):
             return False
         return True
 
-    def validate(self, depth: int = -1) -> None:
+    async def validate(self, depth: int = -1) -> None:
         if not self.elt.check_not_none(self.url, msg='URL of init segment is missing'):
             return
         if self.atoms is None:
-            if not self.load():
+            if not await self.load():
                 self.elt.add_error('Failed to load init segment')
                 return
-        self.elt.check_greater_than(len(self.atoms), 1)
+        if not self.elt.check_greater_than(len(self.atoms), 1):
+            print('atoms', type(self.atoms), len(self.atoms))
+            return
         self.elt.check_equal(self.atoms[0].atom_type, 'ftyp')
         moov = None
         for atom in self.atoms:

@@ -6,28 +6,31 @@
 #
 #############################################################################
 import argparse
+import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import logging
+from logging.config import dictConfig
 import sys
 import time
 
-from .validator import DashValidator
+from .gevent_http_client import GeventHttpClient
+from .gevent_pool import GeventWorkerPool
 from .options import ValidatorOptions
 from .pool import WorkerPool
 from .progress import ConsoleProgress
-from .requests_http_client import RequestsHttpClient
+from .validator import DashValidator
 
 class BasicDashValidator(DashValidator):
     def __init__(self, url: str, options: ValidatorOptions) -> None:
         super().__init__(
             url,
-            RequestsHttpClient(options),
+            GeventHttpClient(options),
             options=options)
         self.representations = {}
         self.url = url
 
     @classmethod
-    def main(cls) -> int:
+    async def main(cls) -> int:
         parser = argparse.ArgumentParser(
             description='DASH live manifest validator')
         parser.add_argument('-e', '--encrypted', action='store_true', dest='encrypted',
@@ -72,16 +75,46 @@ class BasicDashValidator(DashValidator):
             'manifest',
             help='URL or filename of manifest to validate')
         args = parser.parse_args()
-        FORMAT = r"%(asctime)-15s:%(levelname)s:%(filename)s@%(lineno)d: %(message)s"
-        logging.basicConfig(format=FORMAT)
-        log = logging.getLogger('DashValidator')
+        log_config = {
+            'version': 1,
+            'handlers': {
+                'console': {
+                    'class': 'logging.StreamHandler',
+                    'formatter': 'default',
+                    'stream': 'ext://sys.stdout',
+                },
+            },
+            'formatters': {
+                'default': {
+                    'datefmt': r'%H:%M:%S,uuu',
+                    'format': r'%(asctime)-15s:%(levelname)s:%(filename)s@%(lineno)d: %(message)s',
+                }
+            },
+            'loggers': {
+                'DashValidator': {
+                    'level': 'INFO',
+                },
+                'mp4': {
+                    'level': 'WARN',
+                },
+                'fio': {
+                    'level': 'WARN',
+                },
+            },
+            'root': {
+                'level': 'INFO',
+            },
+        }
         if args.verbose > 0:
-            log.setLevel(logging.DEBUG)
+            log_config['root']['level'] = 'DEBUG'
+            log_config['loggers']['DashValidator']['level'] = 'DEBUG'
             if args.verbose > 1:
-                logging.getLogger('mp4').setLevel(logging.DEBUG)
-                logging.getLogger('fio').setLevel(logging.DEBUG)
-        else:
-            log.setLevel(logging.INFO)
+                log_config['loggers']['mp4']['level'] = 'DEBUG'
+                log_config['loggers']['fio']['level'] = 'DEBUG'
+        logging.basicConfig(
+            datefmt=r'%H:%M:%S',
+            format='%(asctime)-8s:%(levelname)s:%(filename)s@%(lineno)d: %(message)s')
+        # dictConfig(log_config)
         if args.ivsize is not None and args.ivsize > 16:
             args.ivsize = args.ivsize // 8
         kwargs = {**vars(args)}
@@ -90,29 +123,29 @@ class BasicDashValidator(DashValidator):
             del kwargs['threads']
         except KeyError:
             pass
+        log = logging.getLogger('DashValidator')
+        if args.verbose > 0:
+            log.setLevel(logging.DEBUG)
         options = ValidatorOptions(log=log, progress=ConsoleProgress(), **kwargs)
         if args.threads is not None:
-            max_workers: int | None = args.threads
-            if max_workers < 1:
-                max_workers = None
-            options.pool = WorkerPool(ThreadPoolExecutor(max_workers=max_workers))
+            options.pool = GeventWorkerPool(args.threads)
         start_time = time.time()
         bdv = cls(args.manifest, options=options)
         log.info('Loading manifest: %s', args.manifest)
-        if not bdv.load():
+        if not await bdv.load():
             log.error('Failed to load manifest')
             return 1
-        bdv.prefetch_media_info()
+        await bdv.prefetch_media_info()
         if args.dest:
             bdv.save_manifest()
         while not bdv.finished() and not options.progress.aborted():
             try:
                 log.info('Starting stream validation...')
-                bdv.validate()
+                await bdv.validate()
                 if not bdv.finished():
-                    bdv.sleep()
+                    await bdv.sleep()
                     log.info('Refreshing manifest')
-                    bdv.refresh()
+                    await bdv.refresh()
             except KeyboardInterrupt:
                 options.progress.abort()
         options.progress.finished(args.manifest)
