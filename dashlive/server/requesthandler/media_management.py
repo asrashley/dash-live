@@ -32,6 +32,7 @@ from dashlive.mpeg.dash.representation import Representation
 from dashlive.server import models
 from dashlive.server.routes import Route
 from dashlive.utils.buffered_reader import BufferedReader
+from dashlive.utils.date_time import timecode_to_timedelta
 from dashlive.utils.json_object import JsonObject
 
 from .base import HTMLHandlerBase, RequestHandlerBase
@@ -120,10 +121,11 @@ class MediaInfo(HTMLHandlerBase):
             "segment_duration": None,
         })
         if mf.representation:
-            context['duration'] = datetime.timedelta(seconds=(
-                mf.representation.mediaDuration / float(mf.representation.timescale)))
-            context['segment_duration'] = datetime.timedelta(seconds=(
-                mf.representation.segment_duration / float(mf.representation.timescale)))
+            context['duration_tc'] = mf.representation.mediaDuration
+            context['duration_time'] = timecode_to_timedelta(
+                mf.representation.mediaDuration, mf.representation.timescale)
+            context['segment_duration'] = timecode_to_timedelta(
+                mf.representation.segment_duration, mf.representation.timescale)
         return flask.render_template('media/media_info.html', **context)
 
     def get_breadcrumbs(self, route: Route) -> list[dict[str, str]]:
