@@ -14,6 +14,7 @@ from dashlive.utils.binary import Binary
 
 from .dash_element import DashElement
 from .descriptor import Descriptor
+from .validation_flag import ValidationFlag
 
 class Scte35Binary(DashElement):
     def __init__(self, elt, parent: DashElement, schemeIdUri: str) -> None:

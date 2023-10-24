@@ -6,7 +6,6 @@
 #
 #############################################################################
 from pathlib import Path
-import traceback
 import urllib.parse
 
 from dashlive.drm.playready import PlayReady
@@ -53,27 +52,35 @@ class InitSegment(DashElement):
                 response.status_code, expected_status,
                 msg=f'Failed to load init segment: {response.status_code}: {self.url}'):
             return False
-        if self.options.save:
-            adp = self.parent.parent
-            if self.parent.id:
-                default = f'init-{adp.id}-{self.parent.id}'
-            else:
-                default = f'init-{adp.id}-{self.parent.bandwidth}'
-            filename = self.output_filename(
-                default=default, bandwidth=self.parent.bandwidth,
-                prefix=self.options.prefix, elt_id=self.parent.id,
-                makedirs=True)
-            self.log.debug('saving init segment: %s', filename)
-            with self.open_file(filename, self.options) as dest:
-                dest.write(response.body)
-        src = BufferedReader(None, data=response.get_data(as_text=False))
-        try:
-            self.atoms = mp4.Mp4Atom.load(src)
-        except Exception as err:
-            self.elt.add_error(f'Failed to load init segment: {err}')
-            self.log.error('Failed to load init segment: %s', err)
+        async with self.pool.group() as tg:
+            body = response.get_data(as_text=False)
+            if self.options.save:
+                tg.submit(self.save, body)
+            parse_task = tg.submit(self.parse_body, body)
+        exc = parse_task.exception()
+        if exc:
+            self.elt.add_error(f'Failed to load init segment: {exc}')
+            self.log.error('Failed to load init segment: %s', exc)
             return False
         return True
+
+    def parse_body(self, body: bytes) -> None:
+        src = BufferedReader(None, data=body)
+        self.atoms = mp4.Mp4Atom.load(src)
+
+    def save(self, body: bytes) -> None:
+        adp = self.parent.parent
+        if self.parent.id:
+            default = f'init-{adp.id}-{self.parent.id}'
+        else:
+            default = f'init-{adp.id}-{self.parent.bandwidth}'
+        filename = self.output_filename(
+            default=default, bandwidth=self.parent.bandwidth,
+            prefix=self.options.prefix, elt_id=self.parent.id,
+            makedirs=True)
+        self.log.debug('saving init segment: %s', filename)
+        with self.open_file(filename, self.options) as dest:
+            dest.write(body)
 
     async def validate(self, depth: int = -1) -> None:
         if not self.elt.check_not_none(self.url, msg='URL of init segment is missing'):

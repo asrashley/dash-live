@@ -6,17 +6,17 @@
 #
 #############################################################################
 import argparse
-import asyncio
 from concurrent.futures import ThreadPoolExecutor
 import logging
-from logging.config import dictConfig
+# from logging.config import dictConfig
 import sys
 import time
 
-from .gevent_http_client import GeventHttpClient
-from .gevent_pool import GeventWorkerPool
+# from .gevent_http_client import GeventHttpClient
+# from .gevent_pool import GeventWorkerPool
+from .requests_http_client import RequestsHttpClient
+from .concurrent_pool import ConcurrentWorkerPool
 from .options import ValidatorOptions
-from .pool import WorkerPool
 from .progress import ConsoleProgress
 from .validator import DashValidator
 
@@ -24,7 +24,7 @@ class BasicDashValidator(DashValidator):
     def __init__(self, url: str, options: ValidatorOptions) -> None:
         super().__init__(
             url,
-            GeventHttpClient(options),
+            RequestsHttpClient(options),
             options=options)
         self.representations = {}
         self.url = url
@@ -59,7 +59,7 @@ class BasicDashValidator(DashValidator):
             dest='threads',
             help='Use mulit-threaded validation with a maximum number of threads (0=auto)',
             type=int,
-            default=None,
+            default=0,
             required=False)
         parser.add_argument('--ivsize',
                             help='IV size (in bits or bytes)',
@@ -127,42 +127,47 @@ class BasicDashValidator(DashValidator):
         if args.verbose > 0:
             log.setLevel(logging.DEBUG)
         options = ValidatorOptions(log=log, progress=ConsoleProgress(), **kwargs)
-        if args.threads is not None:
-            options.pool = GeventWorkerPool(args.threads)
+        # options.pool = GeventWorkerPool(args.threads)
+        max_workers: int | None = args.threads
+        if max_workers < 1:
+            max_workers = None
         start_time = time.time()
-        bdv = cls(args.manifest, options=options)
-        log.info('Loading manifest: %s', args.manifest)
-        if not await bdv.load():
-            log.error('Failed to load manifest')
-            return 1
-        await bdv.prefetch_media_info()
-        if args.dest:
-            bdv.save_manifest()
-        while not bdv.finished() and not options.progress.aborted():
-            try:
-                log.info('Starting stream validation...')
-                await bdv.validate()
-                if not bdv.finished():
-                    await bdv.sleep()
-                    log.info('Refreshing manifest')
-                    await bdv.refresh()
-            except KeyboardInterrupt:
-                options.progress.abort()
+        with ThreadPoolExecutor(max_workers=max_workers) as pool:
+            options.pool = ConcurrentWorkerPool(pool)
+            bdv = cls(args.manifest, options=options)
+            log.info('Loading manifest: %s', args.manifest)
+            if not await bdv.load():
+                log.error('Failed to load manifest')
+                return 1
+            await bdv.prefetch_media_info()
+            if args.dest:
+                bdv.save_manifest()
+            while not bdv.finished() and not options.progress.aborted():
+                try:
+                    log.info('Starting stream validation...')
+                    await bdv.validate()
+                    if not bdv.finished():
+                        await bdv.sleep()
+                        log.info('Refreshing manifest')
+                        await bdv.refresh()
+                except KeyboardInterrupt:
+                    options.progress.abort()
         options.progress.finished(args.manifest)
         sys.stdout.write('\n')
         duration = time.time() - start_time
         if not bdv.has_errors():
             print(f'No errors found. Validation took {duration:#5.1f} seconds')
             return 0
+        errors = bdv.get_errors()
         if args.dest:
             filename = bdv.output_filename(
                 default='errors.txt', filename='errors.txt',
                 makedirs=True, bandwidth=None)
             with open(filename, 'wt') as err_file:
-                for err in bdv.get_errors():
+                for err in errors:
                     err_file.write(f'{err}\n')
         else:
-            for err in bdv.get_errors():
+            for err in errors:
                 print(err)
-        print(f'Finished with errors after {duration:#5.1f} seconds')
+        print(f'Finished with {len(errors)} errors after {duration:#5.1f} seconds')
         return 1

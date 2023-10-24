@@ -23,27 +23,39 @@
 import logging
 
 from dashlive.server import models
-from dashlive.mpeg.dash.validator import DashValidator, ValidatorOptions, WorkerPool
+from dashlive.mpeg.dash.validator import (
+    DashValidator, HttpClient, ValidatorOptions, WorkerPool
+)
+
 from .mixin import HideMixinsFilter
 
 class ViewsTestDashValidator(DashValidator):
-    def __init__(self, http_client, mode, url, encrypted=False, xml=None, debug=False,
-                 workers: int = 0):
-        opts = ValidatorOptions(encrypted=encrypted)
+    def __init__(self,
+                 http_client: HttpClient,
+                 mode: str,
+                 url: str,
+                 media_duration: int,
+                 pool: WorkerPool,
+                 encrypted: bool = False,
+                 debug: bool = False) -> None:
+        opts = ValidatorOptions(encrypted=encrypted, pool=pool)
+        if mode == 'live':
+            opts.duration = media_duration * 2
+        else:
+            opts.duration = media_duration // 2
         opts.log = logging.getLogger(__name__)
         opts.log.addFilter(HideMixinsFilter())
         if debug:
             opts.log.setLevel(logging.DEBUG)
-        opts.pool = None
-        if workers > 0:
-            opts.pool = WorkerPool(ThreadPoolExecutor(max_workers=workers))
         super().__init__(
             url=url,
             http_client=http_client,
             mode=mode,
             options=opts)
         self.log.debug('Check manifest: %s', url)
-        if xml is not None:
-            self.load(xml)
-            for mf in models.MediaFile.all():
-                self.set_representation_info(mf.representation)
+
+    async def load(self, xml=None) -> bool:
+        rv = await super().load(xml)
+        for mf in models.MediaFile.all():
+            self.set_representation_info(mf.representation)
+        return rv

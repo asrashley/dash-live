@@ -1,26 +1,53 @@
+#############################################################################
+#
+#  Project Name        :    Simulated MPEG DASH service
+#
+#  Author              :    Alex Ashley
+#
+#############################################################################
+import asyncio
 import concurrent.futures
-import traceback
 
 from .pool import WorkerPool
+
+class AsyncPoolContextManager:
+    def __init__(self, executor: concurrent.futures.Executor) -> None:
+        self.executor = executor
+        self.loop = asyncio.get_running_loop()
+        self.tasks = []
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        await asyncio.gather(*self.tasks)
+
+    def submit(self, fn, *args) -> asyncio.Future:
+        future = self.loop.run_in_executor(self.executor, fn, *args)
+        self.tasks.append(future)
+        return future
+
 
 class ConcurrentWorkerPool(WorkerPool):
     def __init__(self, executor: concurrent.futures.Executor) -> None:
         self.executor = executor
-        self.tasks: set[concurrent.futures.Future] = set()
 
-    def submit(self, fn, *args, **kwargs) -> concurrent.futures.Future:
-        future = self.executor.submit(fn, *args, **kwargs)
-        self.tasks.add(future)
+    def group(self) -> AsyncPoolContextManager:
+        """
+        Creates a new task group that will wait for their completion when
+        the context manager exits.
+        """
+        return AsyncPoolContextManager(self.executor)
+
+    def submit(self, fn, *args) -> asyncio.Future:
+        loop = asyncio.get_running_loop()
+        future = loop.run_in_executor(self.executor, fn, *args)
         return future
 
-    def wait_for_completion(self) -> list[str]:
+    async def wait_for_completion(self) -> list[str]:
         errors: list[Exception] = []
-        for future in concurrent.futures.as_completed(self.tasks):
-            try:
-                future.result()
-            except Exception as exc:
-                print(exc)
-                traceback.print_exc()
-                errors.append(f'{exc}')
+        for result in await asyncio.gather(*list(self.tasks), return_exceptions=True):
+            if result is not None:
+                errors.append(result)
         self.tasks = set()
         return errors

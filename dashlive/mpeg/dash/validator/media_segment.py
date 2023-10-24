@@ -12,12 +12,7 @@ import urllib.parse
 
 from dashlive.mpeg import mp4
 from dashlive.utils.buffered_reader import BufferedReader
-from dashlive.utils.date_time import (
-    scale_timedelta,
-    timecode_to_timedelta,
-    to_iso_datetime,
-    UTC
-)
+from dashlive.utils.date_time import timecode_to_timedelta, to_iso_datetime
 
 from .dash_element import DashElement
 from .events import InbandEventStream
@@ -48,6 +43,7 @@ class MediaSegment(DashElement):
         self.name = path.name
         if seg_range:
             self.name += f'?range={self.seg_range}'
+        self.elt.prefix = f'{self.name}: '
         self.log.debug(
             'MediaSegment: url=%s $Number$=%s $Time$=%s tolerance=%d',
             url, str(expected_seg_num), str(expected_decode_time), tolerance)
@@ -74,13 +70,13 @@ class MediaSegment(DashElement):
     async def validate(self) -> None:
         now = self.mpd.now()
         if self.availability_start_time and self.availability_start_time > now:
-            loc = ''
+            log = ''
             if self.expected_seg_num:
                 log = f'num={self.expected_seg_num} '
             elif self.expected_decode_time:
                 log = f'time={self.expected_decode_time} '
-            self.log.debug('%s: Segment is {log}not yet available. availability_start_time=%s',
-                           self.name, self.seg_num, self.availability_start_time)
+            self.log.debug('%s: Segment %snot yet available. availability_start_time=%s',
+                           self.name, log, self.seg_num, self.availability_start_time)
             return
         self.validated = True
         discard_before = now + datetime.timedelta(seconds=2)
@@ -92,10 +88,10 @@ class MediaSegment(DashElement):
         headers = None
         if self.seg_range is not None:
             headers = {"Range": f"bytes={self.seg_range}"}
-        self.log.debug('MediaSegment: url=%s headers=%s', self.url, headers)
+        # self.log.debug('MediaSegment: url=%s headers=%s', self.url, headers)
         response = await self.http.get(self.url, headers=headers)
-        self.log.debug('Status: %d  Length: %s', response.status_code,
-                       response.headers['Content-Length'])
+        # self.log.debug('Status: %d  Length: %s', response.status_code,
+        #               response.headers['Content-Length'])
         if self.seg_range is None:
             if not self.elt.check_equal(
                     response.status_code, 200,
@@ -110,50 +106,18 @@ class MediaSegment(DashElement):
             self.elt.check_starts_with(
                 response.headers['Content-Type'], self.parent.mimeType,
                 template=r'HTTP Content-Type "{0}" should match Representation MIME type "{1}"')
-        if self.options.save:
-            if self.parent.id:
-                default = f'media-{self.parent.id}-{self.parent.id}-{self.seg_num}'
-            else:
-                default = f'media-{self.parent.id}-{self.parent.bandwidth}-{self.seg_num}'
-            filename = self.output_filename(
-                default=default, bandwidth=self.parent.bandwidth,
-                prefix=self.options.prefix, elt_id=self.parent.id)
-            self.log.debug('saving media segment: %s', filename)
-            with self.open_file(filename, self.options) as dest:
-                dest.write(response.body)
-        src = BufferedReader(None, data=response.get_data(as_text=False))
-        options = {"strict": True}
-        info = self.parent.info
-        self.elt.check_equal(self.options.encrypted, info.encrypted)
-        if info.encrypted:
-            if not self.elt.check_not_none(
-                    info.iv_size, msg='IV size is unknown'):
-                return
-            options["iv_size"] = info.iv_size
-        atoms = mp4.Mp4Atom.load(src, options=options)
-        self.elt.check_greater_than(len(atoms), 1)
-        moof = None
-        mdat = None
-        for a in atoms:
-            if a.atom_type == 'emsg':
-                self.check_emsg_box(a)
-            elif a.atom_type == 'moof':
-                moof = a
-            elif a.atom_type == 'mdat':
-                mdat = a
-                self.elt.check_not_none(
-                    moof,
-                    msg='Failed to find moof box before mdat box')
+        async with self.pool.group() as tg:
+            body = response.get_data(as_text=False)
+            if self.options.save:
+                tg.submit(self.save, body)
+            parse_task = tg.submit(self.parse_data, body)
+        moof = parse_task.result()
         if not self.elt.check_not_none(
                 moof, msg='Failed to find MOOF box'):
             return
         self.seg_num = moof.mfhd.sequence_number
         self.decode_time = moof.traf.tfdt.base_media_decode_time
-        if not self.elt.check_not_none(
-                mdat, msg='Failed to find mdat box'):
-            self.log.info('MediaSegment contains atoms: %s', [a.atom_type for a in atoms])
-            return
-        if info.encrypted:
+        if self.parent.info.encrypted:
             self.check_saio_offset(moof)
         else:
             self.elt.check_not_in(
@@ -169,30 +133,16 @@ class MediaSegment(DashElement):
                 self.name, moof.mfhd.sequence_number,
                 self.expected_decode_time, moof.traf.tfdt.base_media_decode_time,
                 moof.traf.tfdt.base_media_decode_time - self.expected_decode_time)
+            tc_diff = moof.traf.tfdt.base_media_decode_time - self.expected_decode_time
+            tc_delta = timecode_to_timedelta(tc_diff, self.parent.timescale()).total_seconds()
             msg = (
-                f'Decode time {self.decode_time} should be {self.expected_decode_time} for ' +
-                f'segment {self.seg_num} in {self.name}')
+                f'Decode time {self.decode_time} should ' +
+                f'be {self.expected_decode_time} ({tc_diff}) [{tc_delta} seconds]')
             self.elt.check_almost_equal(
                 self.expected_decode_time,
                 self.decode_time,
                 delta=self.tolerance,
                 msg=msg)
-        first_sample_pos = moof.traf.tfhd.base_data_offset + moof.traf.trun.data_offset
-        last_sample_end = first_sample_pos
-        for samp in moof.traf.trun.samples:
-            last_sample_end += samp.size
-        msg = ' '.join([
-            r'trun.data_offset must point inside the MDAT box.',
-            r'trun points to {} but first sample of MDAT is {}'.format(
-                first_sample_pos, mdat.position + mdat.header_size),
-            r'trun last sample is {} but end of MDAT is {}'.format(
-                last_sample_end, mdat.position + mdat.size),
-        ])
-        self.elt.check_greater_or_equal(
-            first_sample_pos, mdat.position + mdat.header_size, msg=msg)
-        self.elt.check_less_than_or_equal(
-            last_sample_end, mdat.position + mdat.size, msg=msg)
-        self.elt.check_equal(first_sample_pos, mdat.position + mdat.header_size, msg=msg)
         moov = await self.parent.init_segment.get_moov()
         if not self.elt.check_not_none(
                 moov, msg='Failed to get MOOV box from init segment'):
@@ -216,6 +166,63 @@ class MediaSegment(DashElement):
         self.next_decode_time = dts
         self.log.debug('Segment %d duration %d. Next expected DTS %d',
                        self.seg_num, self.duration, dts)
+
+    def save(self, body: bytes) -> None:
+        if self.parent.id:
+            default = f'media-{self.parent.id}-{self.parent.id}-{self.seg_num}'
+        else:
+            default = f'media-{self.parent.id}-{self.parent.bandwidth}-{self.seg_num}'
+        filename = self.output_filename(
+            default=default, bandwidth=self.parent.bandwidth,
+            prefix=self.options.prefix, elt_id=self.parent.id)
+        self.log.debug('saving media segment: %s', filename)
+        with self.open_file(filename, self.options) as dest:
+            dest.write(body)
+
+    def parse_data(self, body: bytes) -> mp4.Mp4Atom | None:
+        src = BufferedReader(None, data=body)
+        options = {"strict": True}
+        info = self.parent.info
+        self.elt.check_equal(self.options.encrypted, info.encrypted)
+        if info.encrypted:
+            if not self.elt.check_not_none(
+                    info.iv_size, msg='IV size is unknown'):
+                return
+            options["iv_size"] = info.iv_size
+        atoms = mp4.Mp4Atom.load(src, options=options)
+        self.elt.check_greater_than(len(atoms), 1)
+        moof = None
+        mdat = None
+        for a in atoms:
+            if a.atom_type == 'emsg':
+                self.check_emsg_box(a)
+            elif a.atom_type == 'moof':
+                moof = a
+            elif a.atom_type == 'mdat':
+                mdat = a
+                self.elt.check_not_none(
+                    moof,
+                    msg='Failed to find moof box before mdat box')
+        if not self.elt.check_not_none(
+                mdat, msg='Failed to find mdat box'):
+            self.log.info('MediaSegment contains atoms: %s', [a.atom_type for a in atoms])
+            return moof
+        first_sample_pos = moof.traf.tfhd.base_data_offset + moof.traf.trun.data_offset
+        last_sample_end = first_sample_pos
+        for samp in moof.traf.trun.samples:
+            last_sample_end += samp.size
+        msg = (
+            'trun.data_offset must point inside the MDAT box. ' +
+            f'trun points to {first_sample_pos} but first sample of ' +
+            f'MDAT is {mdat.position + mdat.header_size}' +
+            f'trun last sample is {last_sample_end} but end of ' +
+            f'MDAT is {mdat.position + mdat.size}')
+        self.elt.check_greater_or_equal(
+            first_sample_pos, mdat.position + mdat.header_size, msg=msg)
+        self.elt.check_less_than_or_equal(
+            last_sample_end, mdat.position + mdat.size, msg=msg)
+        self.elt.check_equal(first_sample_pos, mdat.position + mdat.header_size, msg=msg)
+        return moof
 
     def check_emsg_box(self, emsg):
         found = False

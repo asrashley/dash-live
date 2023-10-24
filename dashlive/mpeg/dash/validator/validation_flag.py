@@ -7,7 +7,6 @@
 #############################################################################
 from enum import Flag, auto
 from functools import reduce
-from itertools import accumulate
 
 class ValidationFlag(Flag):
     MANIFEST = auto()
@@ -16,9 +15,9 @@ class ValidationFlag(Flag):
     REPRESENTATION = auto()
     MEDIA = auto()
     EVENTS = auto()
+    CONTENT_PROTECTION = auto()
 
     @classmethod
     def all(cls) -> "ValidationFlag":
-        return reduce(ValidationFlag.__or__, cls.__members__.values(), 
+        return reduce(ValidationFlag.__or__, cls.__members__.values(),
                       ValidationFlag(0))
-    
