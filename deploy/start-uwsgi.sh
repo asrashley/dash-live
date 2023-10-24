@@ -2,7 +2,6 @@
 source /home/dash/.venv/bin/activate
 
 if [ -z "${SERVER_NAME}" ]; then
-    echo "Using server name ${SERVER_NAME}"
     SERVER_NAME="_"
 fi
 
@@ -24,7 +23,7 @@ if [ -f /etc/uwsgi/sites/dash.ini ]; then
     uwsgi --ini /etc/uwsgi/sites/dash.ini &
     nginx -g "daemon off;"
 else
-    uwsgi --uid www-data --gid www-data --http localhost:80 --gevent 100 --http-websockets --module application:app
+    uwsgi --uid www-data --gid www-data --http localhost:80 --gevent 1000 --http-websockets --module application:app
 fi
 
 
