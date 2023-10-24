@@ -6,16 +6,13 @@
 #
 #############################################################################
 import asyncio
-from collections.abc import Iterable
 
 from dashlive.mpeg.dash.representation import Representation as ServerRepresentation
 
-from .dash_element import DashElement, ValidateTask
+from .dash_element import DashElement
 from .frame_rate_type import FrameRateType
-from .options import ValidationFlag
 from .representation_base_type import RepresentationBaseType
 from .representation import Representation
-from .roundrobin import roundrobin
 from .validation_flag import ValidationFlag
 
 class AdaptationSet(RepresentationBaseType):
@@ -47,9 +44,9 @@ class AdaptationSet(RepresentationBaseType):
 
     async def prefetch_media_info(self) -> None:
         self.progress.add_todo(len(self.representations))
-        futures = [
-            r.generate_segment_todo_list() for r in self.representations]
-        await asyncio.gather(*futures)
+        async with asyncio.TaskGroup() as tg:
+            for rep in self.representations:
+                tg.create_task(rep.generate_segment_todo_list())
 
     def num_tests(self) -> int:
         count = 0
@@ -78,6 +75,7 @@ class AdaptationSet(RepresentationBaseType):
             rid = make_rep_id(idx, r)
             rep_map[rid] = r
         futures = []
+        results = []
         for idx, r in enumerate(prev.representations):
             rid = make_rep_id(idx, r)
             try:
@@ -85,7 +83,8 @@ class AdaptationSet(RepresentationBaseType):
             except KeyError as err:
                 self.elt.add_error(
                     'Representations have changed within a Period: %s', err)
-        results = await asyncio.gather(*futures)
+                results.append(False)
+        results += await asyncio.gather(*futures)
         return False not in results
 
     def finished(self) -> bool:
@@ -102,19 +101,14 @@ class AdaptationSet(RepresentationBaseType):
         for r in self.representations:
             if r.id == info.id:
                 r.set_representation_info(info)
-    
+
     async def validate(self) -> None:
         if ValidationFlag.ADAPTATION_SET in self.options.verify:
             await self.validate_self()
-        futures = []
-        for rep in self.representations:
-            #if self.options.pool:
-            #    futures.append(self.options.pool.submit(
-            #        lambda: asyncio.run(rep.validate())))
-            #else:
-            futures.append(rep.validate())
-        await asyncio.gather(*futures)
-            
+            self.progress.inc()
+        tasks = {rep.validate() for rep in self.representations}
+        await asyncio.gather(*tasks)
+
     async def validate_self(self, depth: int = -1) -> None:
         if len(self.contentProtection):
             self.elt.check_not_none(
@@ -131,8 +125,10 @@ class AdaptationSet(RepresentationBaseType):
             self.elt.check_equal(
                 len(self.contentProtection), 0,
                 msg='At least one ContentProtection element is required for an encrypted stream')
+        futures = []
         for cp in self.contentProtection:
             if self.progress.aborted():
                 return
-            cp.validate()
+            futures.append(cp.validate())
             self.progress.inc()
+        await asyncio.gather(*futures)

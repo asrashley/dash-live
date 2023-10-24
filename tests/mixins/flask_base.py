@@ -32,7 +32,6 @@ from typing import Any, ClassVar, Optional, Type
 
 from bs4 import BeautifulSoup, element
 import flask
-from flask_testing import TestCase  # type: ignore
 
 from dashlive.drm.playready import PlayReady
 from dashlive.mpeg import mp4
@@ -41,10 +40,11 @@ from dashlive.server import models
 from dashlive.server.app import create_app
 from dashlive.utils.date_time import from_isodatetime
 
+from .async_flask_testing import AsyncFlaskTestCase
 from .context_filter import ContextFilter
 from .mixin import TestCaseMixin
 
-class FlaskTestBase(TestCaseMixin, TestCase):
+class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
     # duration of media in test/fixtures directory (in seconds)
     ADMIN_USER = 'admin'
     ADMIN_EMAIL = 'admin@dashlive.unit.test'
@@ -91,7 +91,7 @@ class FlaskTestBase(TestCaseMixin, TestCase):
         logging.disable(logging.NOTSET)
         super().tearDownClass()
 
-    def create_app(self):
+    def create_app(self) -> flask.Flask:
         config = {
             'BLOB_FOLDER': str(self.FIXTURES_PATH.parent),
             'DASH': {

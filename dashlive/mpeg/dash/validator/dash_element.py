@@ -6,27 +6,24 @@
 #
 #############################################################################
 from abc import ABC, abstractmethod
-import asyncio
-from collections.abc import Iterable
+from concurrent.futures import ThreadPoolExecutor
 import logging
 import os
-from typing import Callable, Never, Optional
+from typing import Optional
 import urllib.parse
 
 from lxml import etree as ET
 
 from dashlive.utils.date_time import to_iso_datetime
 
+from .concurrent_pool import ConcurrentWorkerPool
 from .errors import ErrorSource, LineRange, ValidationChecks, ValidationError
 from .options import ValidatorOptions
 from .progress import NullProgress
-from .pool import WorkerPool
-
-ValidateTask = Callable[[], None]
 
 class ContextAdapter(logging.LoggerAdapter):
     def process(self, msg: str, kwargs) -> tuple[str, dict]:
-        url = getattr(self.extra, "url", None)
+        # url = getattr(self.extra, "url", None)
         # if url is not None and 'http' not in msg:
         #    return (f'{msg}\n    "{url}"\n', kwargs,)
         return (msg, kwargs,)
@@ -54,7 +51,6 @@ class DashElement(ABC):
                  url: str | None = None) -> None:
         self.parent = parent
         self.url = url
-        self.pool: WorkerPool | None = None
         if parent:
             self.mode = parent.mode
             self.url = parent.url
@@ -72,6 +68,10 @@ class DashElement(ABC):
                 self.progress = NullProgress()
             else:
                 self.progress = options.progress
+            if self.options.pool:
+                self.pool = self.options.pool
+            else:
+                self.pool = ConcurrentWorkerPool(ThreadPoolExecutor())
         self.errors = []
         self.log = ContextAdapter(self.options.log, self)
         self.log.setLevel = self.options.log.setLevel
@@ -196,10 +196,6 @@ class DashElement(ABC):
 
     def finished(self) -> bool:
         return False
-
-    @abstractmethod
-    async def validate(self) -> None:
-        raise Exception("Not implemented")
 
     def unique_id(self) -> str:
         rv = [self.classname(), self.ID]

@@ -106,7 +106,7 @@ class Manifest(DashElement):
             self.validate_self()
         futures = [p.validate() for p in self.periods]
         await asyncio.gather(*futures)
-            
+
     def validate_self(self):
         self.elt.check_greater_than(
             len(self.periods), 0,

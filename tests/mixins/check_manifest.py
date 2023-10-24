@@ -20,6 +20,7 @@
 #
 #############################################################################
 
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 import datetime
 from functools import wraps
@@ -33,6 +34,7 @@ import flask
 from lxml import etree as ET
 
 from dashlive.mpeg.dash.profiles import primary_profiles
+from dashlive.mpeg.dash.validator import ConcurrentWorkerPool
 from dashlive.server import manifests, models
 from dashlive.server.options.container import OptionsContainer
 from dashlive.server.options.repository import OptionsRepository
@@ -69,16 +71,16 @@ class MockServeManifest(ServeManifest):
         raise ValueError(fr'Unsupported route name: {route}')
 
 class DashManifestCheckMixin:
-    def check_a_manifest_using_major_options(self, filename: str, mode: str) -> None:
+    async def check_a_manifest_using_major_options(self, filename: str, mode: str) -> None:
         """
         Exhaustive test of a manifest with every combination of options
         used by the manifest.
         This test might be _very_ slow (i.e. expect it to take several minutes)
         if the manifest uses lots of features.
         """
-        self.check_a_manifest_using_all_options(filename, mode, simplified=True)
+        await self.check_a_manifest_using_all_options(filename, mode, simplified=True)
 
-    def check_a_manifest_using_all_options(
+    async def check_a_manifest_using_all_options(
             self,
             filename: str,
             mode: str,
@@ -105,7 +107,7 @@ class DashManifestCheckMixin:
             manifest=filename,
             mode=mode,
             stream=self.FIXTURES_PATH.name)
-        self.check_manifest_url(url, mode, encrypted=False)
+        await self.check_manifest_url(url, mode, encrypted=False)
 
         # do the exhaustive check of every option
         options = manifest.get_cgi_query_combinations(
@@ -116,10 +118,10 @@ class DashManifestCheckMixin:
         for query in options:
             self.progress(count, total_tests)
             count += 1
-            self.check_manifest_using_options(mode, url, query)
+            await self.check_manifest_using_options(mode, url, query)
         self.progress(total_tests, total_tests)
 
-    def check_manifest_using_options(self, mode: str, url: str, query: str) -> None:
+    async def check_manifest_using_options(self, mode: str, url: str, query: str) -> None:
         """
         Check one manifest using a specific combination of options
         :mode: operating mode
@@ -128,20 +130,20 @@ class DashManifestCheckMixin:
         """
         mpd_url = f'{url}{query}'
         clear = ('drm=none' in query) or ('drm' not in query)
-        self.check_manifest_url(mpd_url, mode, not clear)
+        await self.check_manifest_url(mpd_url, mode, not clear)
 
-    def check_manifest_url(self, mpd_url: str, mode: str, encrypted: bool,
+    async def check_manifest_url(self, mpd_url: str, mode: str, encrypted: bool,
                            check_head=False) -> ViewsTestDashValidator:
         """
         Test one manifest for validity (wrapped in context of MPD url)
         """
         try:
             self.log_context.add_item('url', mpd_url)
-            return self.do_check_manifest_url(mpd_url, mode, encrypted, check_head)
+            return await self.do_check_manifest_url(mpd_url, mode, encrypted, check_head)
         finally:
             del self.log_context['url']
 
-    def do_check_manifest_url(self, mpd_url: str, mode: str, encrypted: bool,
+    async def do_check_manifest_url(self, mpd_url: str, mode: str, encrypted: bool,
                               check_head: bool = False) -> ViewsTestDashValidator:
         """
         Test one manifest for validity
@@ -159,13 +161,17 @@ class DashManifestCheckMixin:
         self.assertEqual(response.headers["Access-Control-Allow-Methods"], "HEAD, GET, POST")
         self.assertEqual(response.status_code, 200)
         xml = ET.parse(io.BytesIO(response.get_data(as_text=False)))
-        dv = ViewsTestDashValidator(
-            http_client=self.client, mode=mode, xml=xml.getroot(),
-            url=mpd_url, encrypted=encrypted)
-        dv.validate(depth=3)
-        if dv.has_errors():
-            for err in dv.get_errors():
-                print(err)
+        with ThreadPoolExecutor(max_workers=4) as tpe:
+            pool = ConcurrentWorkerPool(tpe)
+            dv = ViewsTestDashValidator(
+                http_client=self.async_client, mode=mode, pool=pool,
+                media_duration=self.MEDIA_DURATION, url=mpd_url,
+                encrypted=encrypted)
+            await dv.load(xml.getroot())
+            await dv.validate()
+            if dv.has_errors():
+                for err in dv.get_errors():
+                    print(err)
         self.assertFalse(dv.has_errors(), 'DASH stream validation failed')
         if check_head:
             head = self.client.head(mpd_url)

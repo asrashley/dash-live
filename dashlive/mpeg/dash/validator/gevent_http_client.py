@@ -11,7 +11,7 @@ import re
 
 from lxml import etree as ET
 
-from geventhttpclient.client import HTTPClientPool, HTTPClient, URL
+from geventhttpclient.client import HTTPClient, URL
 
 from .options import ValidatorOptions
 
@@ -26,13 +26,13 @@ class HttpResponse:
             name = '-'.join([k.title() for k in key.split('-')])
             self.headers[name] = value
         self.status = response.status_message
-        self.body = response.read()
+        self._body = response.read()
         response.release()
 
     @property
     def xml(self):
         if self._xml is None:
-            self._xml = ET.parse(self.body)
+            self._xml = ET.parse(self._body)
         return self._xml
 
     @property
@@ -41,7 +41,7 @@ class HttpResponse:
 
     @property
     def json(self):
-        js = json.load(self.body)
+        js = json.load(self._body)
         return js
 
     def get_data(self, as_text: bool) -> bytes | str:
@@ -52,17 +52,9 @@ class HttpResponse:
                 content_type = 'text/plain; charset=utf-8'
             match = self.CONTENT_TYPE_RE.match(content_type)
             if match:
-                return str(self.body, encoding=match.group('charset'))
-            return str(self.body, 'utf-8')
-        return self.body
-
-    def mustcontain(self, *strings):
-        txt = self.get_data(as_text=True)
-        for text in strings:
-            self.checkIn(text, txt)
-
-    def warning(self, fmt, *args):
-        logging.getLogger(__name__).warning(fmt, *args)
+                return str(self._body, encoding=match.group('charset'))
+            return str(self._body, 'utf-8')
+        return self._body
 
 
 class GeventHttpClient:
@@ -83,7 +75,7 @@ class GeventHttpClient:
             if headers is None:
                 headers = {'X-REQUESTED-WITH': 'XMLHttpRequest'}
             else:
-                h = {
+                headers = {
                     'X-REQUESTED-WITH': 'XMLHttpRequest',
                     **headers
                 }

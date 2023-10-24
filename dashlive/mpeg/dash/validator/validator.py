@@ -23,8 +23,6 @@ import asyncio
 import datetime
 import io
 import json
-import time
-from typing import Optional
 
 from lxml import etree as ET
 
@@ -56,7 +54,8 @@ class DashValidator(DashElement):
         self.prev_manifest = None
         self.xml = xml
         if self.xml is None:
-            await self.fetch_manifest()
+            if not await self.fetch_manifest():
+                return False
         if self.mode is None:
             if self.xml.get("type") == "dynamic":
                 self.mode = 'live'
@@ -103,7 +102,6 @@ class DashValidator(DashElement):
                 result.status_code, 200,
                 msg=f'Failed to load manifest: {result.status_code} {self.url}'):
             return False
-        # print(result.text)
         parser = ET.XMLParser(remove_blank_text=self.options.pretty)
         xml = ET.parse(
             io.BytesIO(result.get_data(as_text=False)), parser)
@@ -141,9 +139,6 @@ class DashValidator(DashElement):
                 age, 3 * self.manifest.minimumUpdatePeriod,
                 fmt.format(self.manifest.minimumUpdatePeriod, age.total_seconds()))
         await self.manifest.validate()
-        if self.pool:
-            for err in self.pool.wait_for_completion():
-                self.elt.add_error(f'Exception: {err}')
         if self.options.save and self.options.prefix:
             kids = set()
             for p in self.manifest.periods:
@@ -199,7 +194,7 @@ class DashValidator(DashElement):
             self.manifest.publishTime, self.manifest.minimumUpdatePeriod,
             next_refresh)
         diff = next_refresh - self.manifest.now()
-        self.log.info('Diff = %s', diff)
+        self.log.info('Diff = %s seconds', diff.total_seconds())
         if diff > datetime.timedelta(seconds=0):
             self.log.info('Wait %s', diff)
             await asyncio.sleep(diff.total_seconds())

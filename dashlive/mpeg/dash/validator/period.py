@@ -6,16 +6,14 @@
 #
 #############################################################################
 import asyncio
-from collections.abc import Iterable
 import datetime
 
 from dashlive.mpeg.dash.representation import Representation as ServerRepresentation
 from dashlive.utils.date_time import from_isodatetime
 
 from .adaptation_set import AdaptationSet
-from .dash_element import DashElement, ValidateTask
+from .dash_element import DashElement
 from .events import EventStream
-from .roundrobin import roundrobin
 from .validation_flag import ValidationFlag
 
 class Period(DashElement):
@@ -104,24 +102,17 @@ class Period(DashElement):
             count += evs.num_tests()
         return count
 
-    def validate(self) -> None:
-        for fn in self.validation_tasks():
-            fn()
-            if self.progress.aborted():
-                return
-        if self.pool is not None:
-            for err in self.pool.wait_for_completion():
-                self.elt.add_error(f'Exception: {err}')
-
     async def validate(self) -> None:
         if ValidationFlag.PERIOD in self.options.verify:
-            await self.validate_self()
+            self.validate_self()
         futures = []
         for adap_set in self.adaptation_sets:
             futures.append(adap_set.validate())
         for evs in self.event_streams:
             futures.append(evs.validate())
         await asyncio.gather(*futures)
-        
-    async def validate_self(self) -> None:
-        return
+
+    def validate_self(self) -> None:
+        if self.mode == 'live':
+            self.attrs.check_not_none(
+                self.id, msg='id is mandatory for a live stream', clause='5.3.2.2')

@@ -5,11 +5,13 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+from concurrent.futures import ThreadPoolExecutor
 import logging
 
 from lxml import etree as ET
 import requests
 
+from .concurrent_pool import ConcurrentWorkerPool
 from .options import ValidatorOptions
 
 class HttpResponse:
@@ -17,8 +19,10 @@ class HttpResponse:
         self.response = response
         self.status_int = self.status_code = response.status_code
         self._xml = None
-        self.headers = response.headers
-        self.headerlist = list(response.headers.keys())
+        self.headers = {}
+        for key, value in response.headers.items():
+            name = '-'.join([k.title() for k in key.split('-')])
+            self.headers[name] = value
         if response.ok:
             self.status = 'OK'
         else:
@@ -47,13 +51,6 @@ class HttpResponse:
             return self.response.text
         return self.response.content
 
-    def mustcontain(self, *strings):
-        for text in strings:
-            self.checkIn(text, self.response.text)
-
-    def warning(self, fmt, *args):
-        logging.getLogger(__name__).warning(fmt, *args)
-
 
 class RequestsHttpClient:
     """
@@ -63,6 +60,9 @@ class RequestsHttpClient:
     def __init__(self, options: ValidatorOptions) -> None:
         self.session = requests.Session()
         self.log = options.log
+        self.pool = options.pool
+        if self.pool is None:
+            self.pool = ConcurrentWorkerPool(ThreadPoolExecutor())
 
     async def get(self, url, headers=None, params=None, status=None, xhr=False) -> HttpResponse:
         try:
@@ -76,9 +76,10 @@ class RequestsHttpClient:
                 h = {'X-REQUESTED-WITH': 'XMLHttpRequest'}
                 h.update(headers)
                 headers = h
-        rv = HttpResponse(
-            self.session.get(
-                url,
-                data=params,
-                headers=headers))
-        return rv
+
+        def do_get():
+            return self.session.get(url, data=params, headers=headers)
+
+        async with self.pool.group() as tg:
+            resp = tg.submit(do_get)
+        return HttpResponse(resp.result())

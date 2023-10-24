@@ -54,20 +54,21 @@ class ValidationError:
 
 
 class ValidationChecks:
-    __slots__ = ('errors', 'source', 'location')
+    __slots__ = ('errors', 'source', 'location', 'prefix')
 
     def __init__(self, source: ErrorSource, location: LineRange) -> None:
         self.errors: list[ValidationError] = []
         self.source = source
         self.location = location
+        self.prefix = ''
 
     def has_errors(self) -> bool:
         return bool(self.errors)
 
     def add_error(self, msg: str, clause: str | None = None) -> None:
         self.errors.append(
-            ValidationError(source=self.source, location=self.location, msg=msg,
-                            clause=clause))
+            ValidationError(source=self.source, location=self.location,
+                            msg=f'{self.prefix}{msg}', clause=clause))
 
     def check_true(self, result: bool,
                    a: Any = None,
