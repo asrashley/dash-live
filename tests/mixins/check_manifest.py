@@ -177,10 +177,13 @@ class DashManifestCheckMixin:
                 encrypted=encrypted, debug=debug)
             await dv.load(xml.getroot())
             await dv.validate()
-            if dv.has_errors():
-                print(f'{mpd_url} has errors:')
-                for err in dv.get_errors():
-                    print(err)
+        if dv.has_errors():
+            for idx, line in enumerate(
+                    io.StringIO(response.get_data(as_text=True)), start=1):
+                print(f'{idx:03d}: {line}')
+            print(f'{mpd_url} has errors:')
+            for err in dv.get_errors():
+                print(err)
         self.assertFalse(dv.has_errors(), 'DASH stream validation failed')
         if check_head:
             head = self.client.head(mpd_url)
