@@ -179,7 +179,9 @@ manifest = {
     ),
     'manifest_a.mpd': DashManifest(
         title='Vendor A live profile',
-        features={'abr', 'audioCodec', 'useBaseUrls', 'mode', 'minimumUpdatePeriod'},
+        features={'abr', 'audioCodec', 'useBaseUrls', 'mode', 'minimumUpdatePeriod',
+                  'segmentTimeline'},
+        segment_timeline=True,
         restrictions={
             'mode': {'live', 'vod'},
             'drm': {'none'},

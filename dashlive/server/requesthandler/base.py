@@ -21,7 +21,7 @@
 #############################################################################
 
 from abc import abstractmethod
-from typing import Any, TypeAlias
+from typing import AbstractSet, Any, TypeAlias
 
 import base64
 import datetime
@@ -260,6 +260,7 @@ class RequestHandlerBase(MethodView):
                           mode: str,
                           args: dict[str, str],
                           stream: models.Stream | None = None,
+                          features: AbstractSet[str] | None = None,
                           restrictions: dict[str, tuple] | None = None) -> OptionsContainer:
         defaults = OptionsRepository.get_default_options()
         if stream is not None:
@@ -278,6 +279,8 @@ class RequestHandlerBase(MethodView):
                 except KeyError:
                     pass
         options = OptionsRepository.convert_cgi_options(args, defaults=defaults)
+        if features is not None:
+            options.remove_unsupported_features(features)
         options.add_field('mode', mode)
         return options
 
