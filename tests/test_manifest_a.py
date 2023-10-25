@@ -19,6 +19,7 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+import datetime
 import unittest
 
 from .mixins.check_manifest import DashManifestCheckMixin
@@ -28,8 +29,9 @@ class ManifestATest(FlaskTestBase, DashManifestCheckMixin):
     async def test_manifest_a_vod(self):
         await self.check_a_manifest_using_major_options('manifest_a.mpd', 'vod')
 
+    @FlaskTestBase.mock_datetime_now(datetime.datetime.fromisoformat("2023-10-25T07:56:58Z"))
     async def test_manifest_a_live(self):
-        await self.check_a_manifest_using_major_options('manifest_a.mpd', 'live')
+        await self.check_a_manifest_using_major_options('manifest_a.mpd', 'live', debug=False)
 
 
 if __name__ == '__main__':
