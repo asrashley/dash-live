@@ -19,17 +19,19 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+import datetime
 import unittest
 
 from .mixins.check_manifest import DashManifestCheckMixin
 from .mixins.flask_base import FlaskTestBase
 
 class ManifestETest(FlaskTestBase, DashManifestCheckMixin):
-    def test_manifest_e_vod(self):
-        self.check_a_manifest_using_major_options('manifest_e.mpd', 'vod')
+    async def test_manifest_e_vod(self):
+        await self.check_a_manifest_using_major_options('manifest_e.mpd', 'vod')
 
-    def test_manifest_e_live(self):
-        self.check_a_manifest_using_major_options('manifest_e.mpd', 'live')
+    @FlaskTestBase.mock_datetime_now(datetime.datetime.fromisoformat("2023-10-01T02:03:58Z"))
+    async def test_manifest_e_live(self):
+        await self.check_a_manifest_using_major_options('manifest_e.mpd', 'live')
 
 
 if __name__ == '__main__':
