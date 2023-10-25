@@ -19,22 +19,15 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-import os
 import unittest
 
 from .mixins.check_manifest import DashManifestCheckMixin
 from .mixins.flask_base import FlaskTestBase
 
 class ManifestBTest(FlaskTestBase, DashManifestCheckMixin):
-    def test_manifest_b(self):
-        self.check_a_manifest_using_major_options('vod_manifest_b.mpd', 'vod')
+    async def test_manifest_b(self):
+        await self.check_a_manifest_using_major_options('manifest_b.mpd', 'vod')
 
-
-if os.environ.get("TESTS"):
-    def load_tests(loader, tests, pattern):
-        return unittest.loader.TestLoader().loadTestsFromNames(
-            os.environ["TESTS"].split(','),
-            ManifestBTest)
 
 if __name__ == '__main__':
     unittest.main()

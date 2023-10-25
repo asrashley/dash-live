@@ -187,7 +187,7 @@ manifest = {
             'drm': {'none'},
         },
     ),
-    'vod_manifest_b.mpd': DashManifest(
+    'manifest_b.mpd': DashManifest(
         title='Vendor B VOD using live profile',
         features={'abr', 'audioCodec', 'useBaseUrls', 'drmSelection'},
         restrictions={
