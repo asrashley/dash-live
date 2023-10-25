@@ -17,7 +17,7 @@
 >
  {%- if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
     <UTCTiming schemeIdUri="urn:mpeg:dash:utc:direct:2014" value="{{now|isoDateTime}}"/>
-  <Period>
+  <Period id="{{ period.id }}">
     <AdaptationSet
         mimeType="video/mp4"
         segmentAlignment="true"
