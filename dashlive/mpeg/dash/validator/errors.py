@@ -7,6 +7,8 @@
 #############################################################################
 from dataclasses import dataclass
 from enum import IntEnum
+from pathlib import Path
+import traceback
 from typing import AbstractSet, Any, NamedTuple
 
 from dashlive.utils.json_object import JsonObject
@@ -24,12 +26,25 @@ class LineRange(NamedTuple):
     def __str__(self) -> str:
         return f'{self.start}->{self.end}'
 
+class StackFrame:
+    __slots__ = ('filename', 'lineno', 'qualname')
+
+    def __init__(self, item: tuple) -> None:
+        frame = item[0]
+        self.lineno = frame.f_lineno
+        self.filename = Path(frame.f_code.co_filename).name
+        self.qualname = frame.f_code.co_qualname
+
+    def __repr__(self):
+        return f'StackFrame({self.qualname}, {self.lineno}, {self.filename})'
+
 
 @dataclass(slots=True, kw_only=True)
 class ValidationError:
     """
     Container for one validation error
     """
+    assertion: StackFrame
     source: ErrorSource
     location: LineRange
     msg: str
@@ -50,7 +65,7 @@ class ValidationError:
             msg = f'{self.clause}: {self.msg}'
         else:
             msg = self.msg
-        return f'{self.location}: {msg}'
+        return f'{self.location}: {msg} [{self.assertion.filename}:{self.assertion.lineno}]'
 
 
 class ValidationChecks:
@@ -65,9 +80,20 @@ class ValidationChecks:
     def has_errors(self) -> bool:
         return bool(self.errors)
 
+    def find_caller(self, limit: int = 5) -> StackFrame:
+        for item in traceback.walk_stack(None):
+            sf = StackFrame(item)
+            if sf.filename != 'errors.py':
+                break
+            limit -= 1
+            if limit == 0:
+                break
+        return sf
+
     def add_error(self, msg: str, clause: str | None = None) -> None:
+        frame = self.find_caller()
         self.errors.append(
-            ValidationError(source=self.source, location=self.location,
+            ValidationError(source=self.source, location=self.location, assertion=frame,
                             msg=f'{self.prefix}{msg}', clause=clause))
 
     def check_true(self, result: bool,
