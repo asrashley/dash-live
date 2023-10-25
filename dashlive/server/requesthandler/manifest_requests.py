@@ -63,7 +63,8 @@ class ServeManifest(RequestHandlerBase):
         try:
             options = self.calculate_options(
                 mode=mode, args=flask.request.args, stream=current_stream,
-                restrictions=mft.restrictions)
+                restrictions=mft.restrictions,
+                features=mft.features)
         except ValueError as e:
             return flask.make_response(f'Invalid CGI parameters: {e}', 400)
         if 'segmentTimeline' not in mft.features:

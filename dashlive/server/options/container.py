@@ -190,6 +190,20 @@ class OptionsContainer(ObjectWithFields):
         return dict_to_cgi_params(self.generate_cgi_parameters(
             use=use, exclude=exclude))
 
+    def remove_unsupported_features(self, supported_features: AbstractSet[str]) -> None:
+        todo = {
+            'abr', 'audioCodec', 'useBaseUrls', 'drmSelection', 'eventTypes',
+            'minimumUpdatePeriod', 'numPeriods', 'segmentTimeline', 'utcMethod'
+        }
+        todo.difference_update(supported_features)
+        for name in todo:
+            if self._defaults is None:
+                self.remove_field(name)
+            else:
+                setattr(self, name, getattr(self._defaults, name))
+        #if 'eventTypes' not in supported_features:
+        #    self['eventTypes'] = []
+
     def remove_unused_parameters(self, mode: str, encrypted: bool | None = None,
                                  use: OptionUsage | None = None) -> None:
         if encrypted is None:
