@@ -102,17 +102,21 @@ class InitSegment(DashElement):
         if not self.elt.check_not_none(moov, msg=msg):
             self.logging.error(msg)
             return None
-        if not self.options.encrypted:
-            return
-        try:
-            self.validate_pssh(moov.pssh)
-        except (AttributeError) as ae:
+        pssh = moov.find_child('pssh')
+        if pssh is not None:
+            self.elt.check_true(
+                self.options.encrypted,
+                msg='PSSH should not be present in an unencrypted stream')
+            self.validate_pssh(pssh)
+        else:
+            if self.parent.parent.contentType != 'video':
+                return
             # A PSSH box is optional, as the DRM information might be in
             # the manifest
             if 'moov' in self.url and ('playready' in self.url or 'clearkey' in self.url):
                 self.elt.check_true(
                     'moov' not in self.url, None, None,
-                    f'PSSH box should be present in {self.url}\n{ae}')
+                    'PSSH box should be present in an encrypted stream')
 
     def validate_pssh(self, pssh) -> None:
         self.elt.check_equal(len(pssh.system_id), 16)

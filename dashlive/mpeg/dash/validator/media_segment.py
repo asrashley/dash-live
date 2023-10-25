@@ -183,7 +183,15 @@ class MediaSegment(DashElement):
         src = BufferedReader(None, data=body)
         options = {"strict": True}
         info = self.parent.info
-        self.elt.check_equal(self.options.encrypted, info.encrypted)
+        if self.options.encrypted:
+            msg = 'Expected an encrypted stream, but fragment is not encrypted'
+        else:
+            msg = 'Expected a clear stream, but fragment is encrypted'
+        # Only require the encryption of video AdaptationSet to match options.encrypted
+        if self.parent.parent.contentType == 'video':
+            self.elt.check_equal(self.options.encrypted, info.encrypted, msg=msg)
+        elif info.encrypted and not self.options.encrypted:
+            self.elt.check_equal(self.options.encrypted, info.encrypted, msg=msg)
         if info.encrypted:
             if not self.elt.check_not_none(
                     info.iv_size, msg='IV size is unknown'):
