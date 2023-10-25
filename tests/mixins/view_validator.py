@@ -52,7 +52,6 @@ class ViewsTestDashValidator(DashValidator):
             http_client=http_client,
             mode=mode,
             options=opts)
-        self.log.debug('Check manifest: %s', url)
 
     async def load(self, xml=None) -> bool:
         rv = await super().load(xml)
