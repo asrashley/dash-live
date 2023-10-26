@@ -19,7 +19,6 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-import os
 import unittest
 
 from dashlive.utils.date_time import from_isodatetime
@@ -28,29 +27,24 @@ from .mixins.check_manifest import DashManifestCheckMixin
 from .mixins.flask_base import FlaskTestBase
 
 class ManifestNTests(FlaskTestBase, DashManifestCheckMixin):
-    def test_manifest_n_vod(self):
-        self.check_a_manifest_using_all_options('manifest_n.mpd', 'vod')
+    async def test_manifest_n_vod(self):
+        await self.check_a_manifest_using_all_options('manifest_n.mpd', 'vod')
 
-    def test_manifest_n_live(self):
-        self.check_a_manifest_using_all_options('manifest_n.mpd', 'live')
+    @FlaskTestBase.mock_datetime_now(from_isodatetime("2022-09-06T09:59:02Z"))
+    async def test_manifest_n_live(self):
+        await self.check_a_manifest_using_all_options('manifest_n.mpd', 'live')
 
     @FlaskTestBase.mock_datetime_now(from_isodatetime("2022-09-06T09:59:02Z"))
     def test_generated_manifest_against_fixture(self):
         self.check_generated_manifest_against_fixture(
-            'manifest_n.mpd', mode='vod', acodec='mp4a')
+            'manifest_n.mpd', mode='vod', acodec='mp4a', encrypted=False)
 
     @FlaskTestBase.mock_datetime_now(from_isodatetime("2022-09-06T11:57:00Z"))
     def test_generated_drm_manifest_against_fixture(self):
         self.check_generated_manifest_against_fixture(
             'manifest_n.mpd', mode='vod', drm='all',
-            acodec='mp4a')
+            acodec='mp4a', encrypted=True)
 
-
-if os.environ.get("TESTS"):
-    def load_tests(loader, tests, pattern):
-        return unittest.loader.TestLoader().loadTestsFromNames(
-            os.environ["TESTS"].split(','),
-            ManifestNTests)
 
 if __name__ == '__main__':
     unittest.main()
