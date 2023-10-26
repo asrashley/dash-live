@@ -54,14 +54,15 @@ class DashManifest:
         """
         defaults = OptionsRepository.get_default_options()
         drm_opts = self.get_drm_options(mode)
-        exclude = {'abr', 'bugCompatibility', 'drmSelection',
-                   'mode', 'numPeriods', 'minimumUpdatePeriod'}
+        exclude = {'abr', 'bugCompatibility', 'dashjsVersion', 'drmSelection',
+                   'leeway', 'mode', 'numPeriods', 'minimumUpdatePeriod',
+                   'shakaVersion', 'videoPlayer'}
         if simplified:
-            exclude = exclude.union({
-                'useBaseUrls', 'playreadyVersion',
+            exclude.update({
+                'availabilityStartTime', 'useBaseUrls', 'playreadyVersion',
                 'playreadyPiff', 'utcMethod', 'clockDrift'})
         if mode != 'live':
-            exclude.add('minimumUpdatePeriod')
+            exclude.update({'clockDrift', 'minimumUpdatePeriod', 'timeShiftBufferDepth'})
         all_options = self.features.union(set(self.restrictions.keys()))
         if only is None:
             only = all_options
