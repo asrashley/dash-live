@@ -373,7 +373,7 @@ class HideMixinsFilter(logging.Filter):
         return True
 
     def find_caller(self):
-        n_frames_upper = 2
+        n_frames_upper = 3
         f = logging.currentframe()
         for _ in range(2 + n_frames_upper):
             if f is not None:
