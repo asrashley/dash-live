@@ -31,6 +31,9 @@
         par="16:9"
         segmentAlignment="true"
         startWithSAP="1">
+      {% with adp = video %}
+        {% include "events/adaptationset.xml" %}
+      {% endwith %}
       {% for rep in video.representations %}
         {% if loop.first %}
           {% include "drm/template.xml" %}

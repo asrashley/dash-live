@@ -21,7 +21,7 @@
       </ContentProtection>
       <SegmentTemplate initialization="$RepresentationID$/init.m4v?drm=all" media="$RepresentationID$/time/$Time$.m4v?drm=all" presentationTimeOffset="0" timescale="240">
         <SegmentTimeline>
-          <S r="10" t="0" d="960"/>
+          <S r="9" t="0" d="960"/>
         </SegmentTimeline>
       </SegmentTemplate>
       <Representation id="bbb_v7_enc" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="195003">
