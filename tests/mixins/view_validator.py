@@ -24,7 +24,7 @@ import logging
 
 from dashlive.server import models
 from dashlive.mpeg.dash.validator import (
-    DashValidator, HttpClient, ValidatorOptions, WorkerPool
+    DashValidator, HttpClient, ValidationFlag, ValidatorOptions, WorkerPool
 )
 
 from .mixin import HideMixinsFilter
@@ -37,8 +37,11 @@ class ViewsTestDashValidator(DashValidator):
                  media_duration: int,
                  pool: WorkerPool,
                  encrypted: bool = False,
+                 check_media: bool = True,
                  debug: bool = False) -> None:
         opts = ValidatorOptions(encrypted=encrypted, pool=pool)
+        if not check_media:
+            opts.verify &= ~ValidationFlag.MEDIA
         if mode == 'live':
             opts.duration = media_duration * 2
         else:

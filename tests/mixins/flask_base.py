@@ -62,6 +62,7 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
 
     LOG_LEVEL: ClassVar[Type[logging.WARNING]] = logging.WARNING
     log_context: ClassVar[Optional[ContextFilter]] = None
+    checked_urls: ClassVar[set[str]]
 
     _temp_dir = multiprocessing.Array(ctypes.c_char, 1024)
     current_url: str | None = None
@@ -69,6 +70,7 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
     @classmethod
     def setUpClass(cls) -> None:
         super().setUpClass()
+        cls.checked_urls = set()
         cls.log_context = ContextFilter({'url'})
         format = r"%(asctime)s %(levelname)-8s:%(filename)s@%(lineno)d: %(message)s"
         logging.basicConfig(level=cls.LOG_LEVEL, format=format,

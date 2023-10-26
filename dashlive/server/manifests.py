@@ -48,15 +48,16 @@ class DashManifest:
             simplified: bool = False,
             use: OptionUsage | None = None,
             only: AbstractSet | None = None,
-            extras: list[tuple] | None = None) -> list[str]:
+            extras: list[tuple] | None = None,
+            **kwargs) -> list[str]:
         """
         Returns a list of all possible combinations of CGI query parameters
         """
         defaults = OptionsRepository.get_default_options()
         drm_opts = self.get_drm_options(mode)
-        exclude = {'abr', 'bugCompatibility', 'dashjsVersion', 'drmSelection',
-                   'leeway', 'mode', 'numPeriods', 'minimumUpdatePeriod',
-                   'shakaVersion', 'videoPlayer'}
+        exclude = {'abr', 'bugCompatibility', 'drmSelection',
+                   'leeway', 'mode', 'numPeriods', 'minimumUpdatePeriod'}
+        exclude.update(set(kwargs.keys()))
         if simplified:
             exclude.update({
                 'availabilityStartTime', 'useBaseUrls', 'playreadyVersion',
@@ -65,10 +66,11 @@ class DashManifest:
             exclude.update({'clockDrift', 'minimumUpdatePeriod', 'timeShiftBufferDepth'})
         all_options = self.features.union(set(self.restrictions.keys()))
         if only is None:
-            only = all_options
+            only = all_options.difference(exclude)
         else:
             # only = all_options.intersection(only)
-            exclude.discard(only)
+            for item in only:
+                exclude.discard(item)
         logging.debug('exclude=%s', exclude)
         logging.debug('only=%s', only)
         queries: set[str] = set()
@@ -110,6 +112,7 @@ class DashManifest:
                 params[name] = val
             if allowed:
                 candidate = OptionsRepository.convert_cgi_options(params, defaults)
+                candidate.update(**kwargs)
                 candidate.remove_unused_parameters(mode)
                 queries.add(candidate.generate_cgi_parameters_string())
             idx = 0
