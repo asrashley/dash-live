@@ -547,11 +547,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
                     expected_traf['children'][index]['atom_type'], atom_type)
             # the newly encoded traf will start at position zero
             # patch the tfhd box to match this offset
-            delta = expected_traf['children'][0]["base_data_offset"]
             expected_traf['children'][0]["base_data_offset"] = 0
-            # the samples in the senc box also need patching
-            for sample in expected_traf['children'][2]['samples']:
-                sample['position'] -= delta
             self.assertObjectEqual(expected, actual)
 
     def test_insert_piff_box_before_saiz_box(self):
@@ -599,15 +595,12 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
                 if child.atom_name() not in boxes_to_patch:
                     continue
                 for j, sample in enumerate(expected_traf['children'][idx]['samples']):
-                    if child.atom_type == 'trun':
-                        sample['offset'] = new_moof.traf.children[idx].samples[j].offset
-                    else:
-                        sample['position'] = new_moof.traf.children[idx].samples[j].position
+                    sample['offset'] = new_moof.traf.children[idx].samples[j].offset
             self.assertObjectEqual(expected, actual)
             self.assertEqual(len(new_moof.traf.saio.offsets), 1)
             self.assertEqual(
                 new_moof.traf.tfhd.base_data_offset + new_moof.traf.saio.offsets[0],
-                new_moof.traf.senc.samples[0].position)
+                new_moof.traf.senc.position + new_moof.traf.senc.samples[0].offset)
 
     def test_parse_ebu_tt_d_subs(self):
         """Test parsing an init segment for a stream containing EBU-TT-D subtitles"""
@@ -763,7 +756,6 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
     @staticmethod
     def update_type_field(typename: str) -> str:
         typename = typename.replace('dashlive.mpeg.mp4.', '')
-        typename = typename.replace('dashlive.', '')
         return typename
 
     def update_atom(self, atom: JsonObject) -> None:
@@ -781,11 +773,13 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
                     self.update_atom(ch)
 
     def check_parsing_against_fixture(self, name: str) -> None:
+        # To re-create a JSON fixture:
+        # python -m dashlive.mpeg.mp4 --json --show "ftyp,moov+,moof+" .\tests\fixtures\bbb_v7_enc.mp4
         filename = self.FIXTURES_PATH / f'{name}.mp4'
         with open(filename, 'rb') as src:
             segments = mp4.Mp4Atom.load(BufferedReader(src))
         filename = self.FIXTURES_PATH / f'{name}.json'
-        with open(filename) as src:
+        with open(filename, 'rt') as src:
             expected = json.load(src)
         actual = []
         for atom in segments:

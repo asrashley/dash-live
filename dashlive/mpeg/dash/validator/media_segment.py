@@ -270,12 +270,12 @@ class MediaSegment(DashElement):
             base_data_offset = moof.position
         else:
             base_data_offset = tfhd.base_data_offset
+        sample_pos = senc.position + senc.samples[0].offset
         msg = (
             r'saio.offsets[0] should point to first ' +
             r'CencSampleAuxiliaryData entry. ' +
-            f'Expected {senc.samples[0].position}, ' +
+            f'Expected {sample_pos}, ' +
             f'got {saio.offsets[0] + base_data_offset}')
         self.elt.check_equal(
-            senc.samples[0].position, saio.offsets[0] + base_data_offset,
-            msg=msg)
+            sample_pos, saio.offsets[0] + base_data_offset, msg=msg)
         self.elt.check_equal(len(moof.traf.trun.samples), len(senc.samples))

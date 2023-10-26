@@ -2132,8 +2132,8 @@ class CencSampleAuxiliaryData(ObjectWithFields):
             else:
                 raise ValueError("Unable to determine IV size")
         rv = {
-            "position": src.tell(),
             "iv_size": iv_size,
+            "offset": src.tell() - parent['position'],
             "size": size,
         }
         r = FieldReader(clz.classname(), src, rv)
@@ -2201,7 +2201,7 @@ class CencSampleEncryptionBox(FullBox):
                 size = saiz.default_sample_info_size
             if size:
                 s = CencSampleAuxiliaryData.parse(
-                    src, size, rv["iv_size"], rv["flags"], parent)
+                    src, size, rv["iv_size"], rv["flags"], rv)
                 rv["samples"].append(s)
         return rv
 
@@ -2300,6 +2300,30 @@ class SampleAuxiliaryInformationOffsetsBox(FullBox):
             rv["offsets"].append(o)
         return rv
 
+    def encode_box_fields(self, dest):
+        w = FieldWriter(self, dest)
+        if self.flags & 0x01:
+            w.write('I', 'aux_info_type')
+            w.write('I', 'aux_info_type_parameter')
+        if self.offsets is None:
+            pos = self.find_first_cenc_sample()
+            if pos < 0:
+                # As the CENC box has not yet encoded, the pos might
+                # be negative, e.g. if the moof position has moved.
+                # the post_encode() function will fix this after the
+                # entire MP4 file has been generated.
+                pos = 0
+            if pos is not None:
+                self.offsets = [pos]
+            else:
+                self.offsets = []
+        w.write('I', 'entry_count', value=len(self.offsets))
+        for off in self.offsets:
+            if self.version == 0:
+                w.write('I', 'offset', value=off)
+            else:
+                w.write('Q', 'offset', value=off)
+
     def find_first_cenc_sample(self):
         senc = self.parent.find_child('senc')
         if senc is None:
@@ -2313,25 +2337,8 @@ class SampleAuxiliaryInformationOffsetsBox(FullBox):
         if base_data_offset is None:
             moof = self.find_atom('moof')
             base_data_offset = moof.position
-        return senc.samples[0].position - base_data_offset
-
-    def encode_box_fields(self, dest):
-        w = FieldWriter(self, dest)
-        if self.flags & 0x01:
-            w.write('I', 'aux_info_type')
-            w.write('I', 'aux_info_type_parameter')
-        if self.offsets is None:
-            pos = self.find_first_cenc_sample()
-            if pos is not None:
-                self.offsets = [pos]
-            else:
-                self.offsets = []
-        w.write('I', 'entry_count', value=len(self.offsets))
-        for off in self.offsets:
-            if self.version == 0:
-                w.write('I', 'offset', value=off)
-            else:
-                w.write('Q', 'offset', value=off)
+        senc_sample_pos = senc.position + senc.samples[0].offset
+        return senc_sample_pos - base_data_offset
 
     def post_encode(self, dest):
         if self.offsets is not None and len(self.offsets) != 1:
