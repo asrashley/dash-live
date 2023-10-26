@@ -93,6 +93,13 @@ class OptionsContainer(ObjectWithFields):
             args['defaults'] = self._defaults
         return OptionsContainer(**args)
 
+    def update(self, **kwargs) -> None:
+        """
+        Apply the provided values to this options container
+        """
+        for key, value in kwargs.items():
+            self.add_field(key, value)
+
     def convert_sub_options(self,
                             destination: dict[str, str],
                             prefix: str,
@@ -201,8 +208,6 @@ class OptionsContainer(ObjectWithFields):
                 self.remove_field(name)
             else:
                 setattr(self, name, getattr(self._defaults, name))
-        #if 'eventTypes' not in supported_features:
-        #    self['eventTypes'] = []
 
     def remove_unused_parameters(self, mode: str, encrypted: bool | None = None,
                                  use: OptionUsage | None = None) -> None:

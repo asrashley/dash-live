@@ -25,6 +25,7 @@ from contextlib import contextmanager
 import datetime
 from functools import wraps
 import io
+import json
 import os
 import logging
 from typing import AbstractSet
@@ -37,6 +38,7 @@ from dashlive.mpeg.dash.profiles import primary_profiles
 from dashlive.mpeg.dash.validator import ConcurrentWorkerPool
 from dashlive.server import manifests, models
 from dashlive.server.options.container import OptionsContainer
+from dashlive.server.options.utc_time_options import UTCMethod
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.requesthandler.manifest_requests import ServeManifest
 
@@ -73,7 +75,7 @@ class MockServeManifest(ServeManifest):
 class DashManifestCheckMixin:
     async def check_a_manifest_using_major_options(
             self, filename: str, mode: str, simplified: bool = True,
-            debug: bool = False) -> None:
+            debug: bool = False, **kwargs) -> None:
         """
         Exhaustive test of a manifest with every combination of options
         used by the manifest.
@@ -81,7 +83,7 @@ class DashManifestCheckMixin:
         if the manifest uses lots of features.
         """
         await self.check_a_manifest_using_all_options(
-            filename, mode, simplified=simplified, debug=debug)
+            filename, mode, simplified=simplified, debug=debug, **kwargs)
 
     async def check_a_manifest_using_all_options(
             self,
@@ -91,7 +93,8 @@ class DashManifestCheckMixin:
             debug: bool = False,
             with_subs: bool = False,
             only: AbstractSet | None = None,
-            extras: list[tuple] | None = None) -> None:
+            extras: list[tuple] | None = None,
+            **kwargs) -> None:
         """
         Exhaustive test of a manifest with every combination of options
         used by the manifest.
@@ -114,19 +117,48 @@ class DashManifestCheckMixin:
         await self.check_manifest_url(url, mode, encrypted=False, debug=debug)
 
         # do the exhaustive check of every option
+        utc_method = kwargs.get('utcMethod', '')
+        use_base_url = kwargs.get('useBaseUrls', True)
         options = manifest.get_cgi_query_combinations(
-            mode=mode, simplified=simplified, only=only, extras=extras)
+            mode=mode, simplified=simplified, only=only, extras=extras,
+            abr=False, utcMethod=utc_method, useBaseUrls=use_base_url, **kwargs)
         total_tests = len(options)
+        if 'utcMethod' not in kwargs:
+            total_tests *= len(UTCMethod.cgi_choices)
+        if 'useBaseUrls' not in kwargs:
+            total_tests *= 2
         count = 0
-        logging.debug('total %s tests for "%s" = %d', mode, filename, total_tests)
+        desc = json.dumps({'mode': mode, **kwargs})
+        logging.debug('total %s tests for "%s" = %d', desc, filename, total_tests)
+        self.progress(0, total_tests)
         for query in options:
-            self.progress(count, total_tests)
+            await self.check_manifest_using_options(
+                mode, url, query, debug=debug, check_media=True)
             count += 1
-            await self.check_manifest_using_options(mode, url, query, debug=debug)
+            self.progress(count, total_tests)
+            if 'utcMethod' in kwargs:
+                count += len(UTCMethod.cgi_choices) - 1
+                continue
+            for ubu in [True, False]:
+                if ubu == use_base_url:
+                    continue
+                for method in UTCMethod.cgi_choices:
+                    if method is None or method == utc_method:
+                        continue
+                    extra_q = f'time={method}&base={ubu}'
+                    if query:
+                        q = f'{query}&{extra_q}'
+                    else:
+                        q = f'?{extra_q}'
+                    await self.check_manifest_using_options(
+                        mode, url, q, debug=debug, check_media=False)
+                    count += 1
+                    self.progress(count, total_tests)
         self.progress(total_tests, total_tests)
 
     async def check_manifest_using_options(
-            self, mode: str, url: str, query: str, debug: bool = False) -> None:
+            self, mode: str, url: str, query: str, debug: bool,
+            check_media: bool) -> None:
         """
         Check one manifest using a specific combination of options
         :mode: operating mode
@@ -135,24 +167,31 @@ class DashManifestCheckMixin:
         """
         mpd_url = f'{url}{query}'
         clear = ('drm=none' in query) or ('drm' not in query)
-        await self.check_manifest_url(mpd_url, mode, encrypted=not clear, debug=debug)
+        await self.check_manifest_url(
+            mpd_url, mode, encrypted=not clear, debug=debug, check_media=check_media)
 
     async def check_manifest_url(
             self, mpd_url: str, mode: str, encrypted: bool,
-            debug: bool = False, check_head=False) -> ViewsTestDashValidator:
+            debug: bool = False, check_head: bool = False,
+            check_media: bool = True) -> ViewsTestDashValidator:
         """
         Test one manifest for validity (wrapped in context of MPD url)
         """
+        if mpd_url in self.__class__.checked_urls:
+            print(f'{mpd_url} already tested')
+            return
         try:
             self.log_context.add_item('url', mpd_url)
+            self.__class__.checked_urls.add(mpd_url)
             return await self.do_check_manifest_url(
-                mpd_url, mode, encrypted=encrypted, debug=debug, check_head=check_head)
+                mpd_url, mode, encrypted=encrypted, debug=debug, check_head=check_head,
+                check_media=check_media)
         finally:
             del self.log_context['url']
 
     async def do_check_manifest_url(
             self, mpd_url: str, mode: str, encrypted: bool, debug: bool,
-            check_head: bool = False) -> ViewsTestDashValidator:
+            check_head: bool, check_media: bool) -> ViewsTestDashValidator:
         """
         Test one manifest for validity
         """
@@ -174,7 +213,7 @@ class DashManifestCheckMixin:
             dv = ViewsTestDashValidator(
                 http_client=self.async_client, mode=mode, pool=pool,
                 media_duration=self.MEDIA_DURATION, url=mpd_url,
-                encrypted=encrypted, debug=debug)
+                encrypted=encrypted, debug=debug, check_media=check_media)
             await dv.load(xml.getroot())
             await dv.validate()
         if dv.has_errors():
