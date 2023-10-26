@@ -27,6 +27,12 @@ class HttpResponse(ABC):
 
 
 class HttpClient(Protocol):
+    async def head(self, url: str, headers: dict | None = None,
+                   params=None,
+                   status: int | None = None,
+                   xhr: bool = False) -> HttpResponse:
+        ...
+
     async def get(self, url: str, headers: dict | None = None,
                   params=None,
                   status: int | None = None,

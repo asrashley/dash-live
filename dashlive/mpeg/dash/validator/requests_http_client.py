@@ -6,7 +6,6 @@
 #
 #############################################################################
 from concurrent.futures import ThreadPoolExecutor
-import logging
 
 from lxml import etree as ET
 import requests
@@ -64,22 +63,35 @@ class RequestsHttpClient:
         if self.pool is None:
             self.pool = ConcurrentWorkerPool(ThreadPoolExecutor())
 
+    async def head(self, url, headers=None, params=None, status=None, xhr=False) -> HttpResponse:
+        def do_head():
+            return self.session.head(url, data=params, headers=headers)
+
+        if xhr:
+            headers = self.add_xhr_headers(headers)
+
+        async with self.pool.group() as tg:
+            resp = tg.submit(do_head)
+        return HttpResponse(resp.result())
+
     async def get(self, url, headers=None, params=None, status=None, xhr=False) -> HttpResponse:
+        def do_get():
+            return self.session.get(url, data=params, headers=headers)
+
         try:
             self.log.debug('GET %s', url)
         except AttributeError:
             print('GET %s' % (url))
         if xhr:
-            if headers is None:
-                headers = {'X-REQUESTED-WITH': 'XMLHttpRequest'}
-            else:
-                h = {'X-REQUESTED-WITH': 'XMLHttpRequest'}
-                h.update(headers)
-                headers = h
-
-        def do_get():
-            return self.session.get(url, data=params, headers=headers)
-
+            headers = self.add_xhr_headers(headers)
         async with self.pool.group() as tg:
             resp = tg.submit(do_get)
         return HttpResponse(resp.result())
+
+    def add_xhr_headers(self, headers: dict | None = None) -> dict:
+        if headers is None:
+            return {'X-REQUESTED-WITH': 'XMLHttpRequest'}
+        return {
+            'X-REQUESTED-WITH': 'XMLHttpRequest',
+            **headers
+        }
