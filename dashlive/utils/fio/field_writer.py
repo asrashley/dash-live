@@ -66,10 +66,10 @@ class FieldWriter:
             elif size[0] == 'D':
                 bsz, asz = list(map(int, size[1:].split('.')))
                 value = value * (1 << asz)
-                value = struct.pack('>' + format_bit_sizes[bsz + asz],
-                                    int(value))
+                fbs = format_bit_sizes[bsz + asz]
+                value = struct.pack(f'>{fbs}', int(value))
             else:
-                value = struct.pack('>' + size, value)
+                value = struct.pack(f'>{size}', value)
         elif isinstance(size, int):
             if isinstance(value, str):
                 value = bytes(value, 'utf-8')
@@ -89,7 +89,7 @@ class FieldWriter:
                 v = str(value)
             self.log.debug(
                 '%s: Write %s size=%s (%d) pos=%d value=%s',
-                self.obj.classname(), field, str(size), len(value),
+                self.obj.classname(), field, size, len(value),
                 self.dest.tell(), v)
         return self.dest.write(value)
 
