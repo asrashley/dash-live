@@ -22,6 +22,7 @@
 
 import base64
 import binascii
+from concurrent.futures import ThreadPoolExecutor
 import io
 import logging
 import os
@@ -34,8 +35,9 @@ import flask
 from lxml import etree
 
 from dashlive.drm.playready import PlayReady
-from dashlive.mpeg.dash.representation import Representation
 from dashlive.mpeg import mp4
+from dashlive.mpeg.dash.representation import Representation
+from dashlive.mpeg.dash.validator import ConcurrentWorkerPool
 from dashlive.server import manifests, models
 from dashlive.utils.binary import Binary
 from dashlive.utils.buffered_reader import BufferedReader
@@ -586,21 +588,21 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         for exp, act in zip(expected['children'], actual['children']):
             self.assertObjectEqual(exp, act, msg=exp["atom_type"])
 
-    def test_playready_la_url(self):
+    async def test_playready_la_url(self):
         """
         PlayReady LA_URL in the manifest
         """
         # TODO: don't hard code KID
         test_la_url = PlayReady.TEST_LA_URL.format(
             cfgs='(kid:QFS0GixTmUOU3Fxa2VhLrA==,persist:false,sl:150)')
-        self.check_playready_la_url_value(test_la_url, [])
+        await self.check_playready_la_url_value(test_la_url, [])
 
-    def test_playready_la_url_override(self):
+    async def test_playready_la_url_override(self):
         """
         Replace LA_URL in stream with CGI playready_la_url parameter
         """
         test_la_url = 'https://licence.url.override/'
-        self.check_playready_la_url_value(
+        await self.check_playready_la_url_value(
             test_la_url,
             [f'playready_la_url={urllib.parse.quote_plus(test_la_url)}'])
 
@@ -620,7 +622,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         self.assertFalse(PlayReady.is_supported_scheme_id(
             "urn:uuid:5e629af5-38da-4063-8977-97ffbd9902d4"))
 
-    def check_playready_la_url_value(self, test_la_url, args):
+    async def check_playready_la_url_value(self, test_la_url, args):
         """
         Check the LA_URL in the PRO element is correct
         """
@@ -637,10 +639,13 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         response = self.client.get(baseurl)
         self.assertEqual(response.status_code, 200)
         xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
-        mpd = ViewsTestDashValidator(
-            http_client=self.client, mode='vod', xml=xml.getroot(), url=baseurl,
-            encrypted=True)
-        mpd.validate()
+        with ThreadPoolExecutor(max_workers=4) as tpe:
+            pool = ConcurrentWorkerPool(tpe)
+            mpd = ViewsTestDashValidator(
+                http_client=self.async_client, mode='vod', url=baseurl, encrypted=True, check_media=False,
+                duration=self.SEGMENT_DURATION, pool=pool)
+            await mpd.load(xml=xml.getroot())
+            await mpd.validate()
         self.assertFalse(mpd.has_errors())
         self.assertEqual(len(mpd.manifest.periods), 1)
         schemeIdUri = "urn:uuid:" + PlayReady.SYSTEM_ID.lower()
@@ -660,16 +665,16 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
                         self.assertEqual(len(la_urls), 1)
                         self.assertEqual(la_urls[0].text, test_la_url)
 
-    def test_playready_v1_piff_sample_encryption(self):
+    async def test_playready_v1_piff_sample_encryption(self):
         """
         PiffSampleEncryptionBox is inserted when using PlayReady v1.0
         """
         self.setup_media()
         self.logout_user()
         args = ['drm=playready', 'playready_version=1.0']
-        self.check_piff_uuid_is_present(args)
+        await self.check_piff_uuid_is_present(args)
 
-    def test_playready_piff_sample_encryption_if_flag_present(self):
+    async def test_playready_piff_sample_encryption_if_flag_present(self):
         """
         PiffSampleEncryptionBox is inserted when playready_piff=true option is used
         """
@@ -677,12 +682,12 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         self.logout_user()
         args = ['drm=playready', 'playready_version=3.0',
                 'playready_piff=1']
-        self.check_piff_uuid_is_present(args)
+        await self.check_piff_uuid_is_present(args)
         args = ['drm=playready', 'playready_version=3.0',
                 'playready_piff=true']
-        self.check_piff_uuid_is_present(args)
+        await self.check_piff_uuid_is_present(args)
 
-    def test_playready_piff_sample_encryption_with_saio_bug(self):
+    async def test_playready_piff_sample_encryption_with_saio_bug(self):
         """
         PiffSampleEncryptionBox is inserted when playready_piff=true option is used
         """
@@ -691,9 +696,9 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         args = ['drm=playready', 'playready_version=3.0',
                 'playready_piff=1', 'bugs=saio']
         with self.assertRaises(AssertionError):
-            self.check_piff_uuid_is_present(args, expect_errors=True)
+            await self.check_piff_uuid_is_present(args, expect_errors=True)
 
-    def test_all_playready_options(self):
+    async def test_all_playready_options(self):
         filename = 'hand_made.mpd'
         manifest = manifests.manifest[filename]
         drm_opts = list(manifest.get_drm_options('vod', only={'playready'}))
@@ -701,13 +706,13 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             ('drm', len(drm_opts), drm_opts),
             ('playready_la_url', 2, ['https://some.server/pr', 'http://another.addr/abc']),
         ]
-        self.check_a_manifest_using_all_options(
+        await self.check_a_manifest_using_all_options(
             filename,
             mode='vod',
             only={'playreadyPiff', 'playreadyVersion'},
             extras=extras)
 
-    def check_piff_uuid_is_present(self, args: list[str], expect_errors: bool = False) -> None:
+    async def check_piff_uuid_is_present(self, args: list[str], expect_errors: bool = False) -> None:
         filename = 'hand_made.mpd'
         baseurl = flask.url_for(
             'dash-mpd-v3',
@@ -717,12 +722,15 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         baseurl += '?' + '&'.join(args)
         # response = self.client.get(baseurl)
         # xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
-        dv = ViewsTestDashValidator(
-            http_client=self.client, mode='vod', url=baseurl, encrypted=True)
-        self.assertTrue(dv.load())
-        for mf in models.MediaFile.all():
-            dv.set_representation_info(mf.representation)
-        dv.validate()
+        with ThreadPoolExecutor(max_workers=4) as tpe:
+            pool = ConcurrentWorkerPool(tpe)
+            dv = ViewsTestDashValidator(
+                http_client=self.async_client, mode='vod', url=baseurl, encrypted=True, check_media=True,
+                pool=pool, duration=int(self.MEDIA_DURATION // 2))
+            self.assertTrue(await dv.load())
+            for mf in models.MediaFile.all():
+                dv.set_representation_info(mf.representation)
+            await dv.validate()
         if dv.has_errors() and not expect_errors:
             for idx, line in enumerate(dv.manifest_text, start=1):
                 print(f'{idx:3d}: {line}')
