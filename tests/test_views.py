@@ -147,7 +147,7 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                     head.headers['Content-Length'],
                     response.headers['Content-Length'])
 
-    def test_create_manifest_error(self):
+    async def test_create_manifest_error(self):
         self.setup_media()
         self.logout_user()
         start = self.real_datetime_class(2022, 1, 1, 4, 2, 6, tzinfo=UTC())
@@ -172,8 +172,9 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                 xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
                 dv = ViewsTestDashValidator(
                     http_client=self.client, mode='live',
-                    xml=xml.getroot(), url=url, encrypted=False)
-                dv.validate(depth=2)
+                    url=url, encrypted=False)
+                await dv.load(xml.getroot())
+                await dv.validate(depth=2)
                 self.assertFalse(dv.has_errors())
             with self.mock_datetime_now(active):
                 response = self.client.get(url)
@@ -187,7 +188,7 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                 dv.validate(depth=2)
                 self.assertFalse(dv.has_errors())
 
-    def test_get_vod_media_using_live_profile(self):
+    async def test_get_vod_media_using_live_profile(self):
         """Get VoD segments for each DRM type (live profile)"""
         self.setup_media()
         self.logout_user()
@@ -210,9 +211,10 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
             encrypted = ('drm=none' not in drm_opt) and ('drm=' in drm_opt)
             xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
             mpd = ViewsTestDashValidator(
-                http_client=self.client, mode='vod', xml=xml.getroot(),
+                http_client=self.client, mode='vod',
                 url=mpd_url, encrypted=encrypted)
-            mpd.validate()
+            await mpd.load(xml.getroot())
+            await mpd.validate()
             if mpd.has_errors():
                 print(mpd.get_errors())
             self.assertFalse(mpd.has_errors())
@@ -289,7 +291,7 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
             self.assertFalse(mpd.has_errors(), msg='Stream validation failed')
         self.progress(total_tests, total_tests)
 
-    def test_get_vod_media_using_on_demand_profile(self):
+    async def test_get_vod_media_using_on_demand_profile(self):
         """Get VoD segments (on-demand profile)"""
         self.logout_user()
         self.setup_media()
@@ -307,9 +309,9 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                 "urn:mpeg:dash:profile:isoff-on-demand:2011",
                 xml.getroot().get('profiles'))
             mpd = ViewsTestDashValidator(
-                http_client=self.client, mode="odvod", xml=xml.getroot(),
-                url=baseurl, encrypted=False)
-            mpd.validate()
+                http_client=self.client, mode="odvod", url=baseurl, encrypted=False)
+            await mpd.load(xml.getroot())
+            await mpd.validate()
             if mpd.has_errors():
                 manifest_text: list[str] = []
                 for line in io.StringIO(response.get_data(as_text=True)):
@@ -460,7 +462,7 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
             self.assertNotIn("Access-Control-Allow-Methods", headers)
             self.assertNotIn("Access-Control-Allow-Origin", headers)
 
-    def test_get_vod_media_with_stream_defaults(self):
+    async def test_get_vod_media_with_stream_defaults(self):
         """
         Get VoD segments where the stream has defaults
         """
@@ -487,9 +489,9 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
         self.assertEqual(response.status_code, 200)
         xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
         mpd = ViewsTestDashValidator(
-            http_client=self.client, mode='vod', xml=xml.getroot(),
-            url=mpd_url, encrypted=True)
-        mpd.validate()
+            http_client=self.client, mode='vod', url=mpd_url, encrypted=True)
+        await mpd.load(xml.getroot())
+        await mpd.validate()
         if mpd.has_errors():
             print(mpd.get_errors())
         self.assertFalse(mpd.has_errors(), 'Stream validation failed')
@@ -506,7 +508,7 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
         mpd = ViewsTestDashValidator(
             http_client=self.client, mode='vod', xml=xml.getroot(),
             url=mpd_url, encrypted=False)
-        mpd.validate()
+        await mpd.validate()
         if mpd.has_errors():
             print(mpd.get_errors())
         self.assertFalse(mpd.has_errors(), 'Stream validation failed')
