@@ -91,6 +91,7 @@ class DashManifestCheckMixin:
             mode: str,
             simplified: bool = False,
             debug: bool = False,
+            check_head: bool = False,
             with_subs: bool = False,
             only: AbstractSet | None = None,
             extras: list[tuple] | None = None,
@@ -108,13 +109,19 @@ class DashManifestCheckMixin:
         self.setup_media(with_subs=with_subs)
         self.logout_user()
         self.assertGreaterThan(models.MediaFile.count(), 0)
+        if mode == 'live':
+            duration = self.SEGMENT_DURATION + self.MEDIA_DURATION * 2
+        else:
+            duration = 4 * self.SEGMENT_DURATION
         # do a first pass check with no CGI options
         url = flask.url_for(
             'dash-mpd-v3',
             manifest=filename,
             mode=mode,
             stream=self.FIXTURES_PATH.name)
-        await self.check_manifest_url(url, mode, encrypted=False, debug=debug)
+        await self.check_manifest_url(
+            url, mode, encrypted=False, debug=debug, duration=duration, check_media=True,
+            check_head=True)
 
         # do the exhaustive check of every option
         utc_method = kwargs.get('utcMethod', '')
@@ -132,8 +139,18 @@ class DashManifestCheckMixin:
         logging.debug('total %s tests for "%s" = %d', desc, filename, total_tests)
         self.progress(0, total_tests)
         for query in options:
+            if 'events=' in query:
+                duration = 9 * self.SEGMENT_DURATION
+                ev_interval = self.SEGMENT_DURATION * 300
+                if 'ping' in query:
+                    query += f'&ping_interval={ev_interval}&ping_timescale=100'
+                if 'scte35' in query:
+                    query += f'&scte35_interval={ev_interval}&scte35_timescale=100'
+            else:
+                duration = 3 * self.SEGMENT_DURATION
             await self.check_manifest_using_options(
-                mode, url, query, debug=debug, check_media=True)
+                mode, url, query, debug=debug, check_media=True, duration=duration,
+                check_head=check_head)
             count += 1
             self.progress(count, total_tests)
             if 'utcMethod' in kwargs:
@@ -151,14 +168,15 @@ class DashManifestCheckMixin:
                     else:
                         q = f'?{extra_q}'
                     await self.check_manifest_using_options(
-                        mode, url, q, debug=debug, check_media=False)
+                        mode, url, q, debug=debug, check_media=False, check_head=False,
+                        duration=duration)
                     count += 1
                     self.progress(count, total_tests)
         self.progress(total_tests, total_tests)
 
     async def check_manifest_using_options(
-            self, mode: str, url: str, query: str, debug: bool,
-            check_media: bool) -> None:
+            self, mode: str, url: str, query: str, debug: bool, duration: int,
+            check_media: bool, check_head: bool) -> None:
         """
         Check one manifest using a specific combination of options
         :mode: operating mode
@@ -168,51 +186,54 @@ class DashManifestCheckMixin:
         mpd_url = f'{url}{query}'
         clear = ('drm=none' in query) or ('drm' not in query)
         await self.check_manifest_url(
-            mpd_url, mode, encrypted=not clear, debug=debug, check_media=check_media)
+            mpd_url, mode, encrypted=not clear, debug=debug, check_media=check_media,
+            check_head=check_head, duration=duration)
 
     async def check_manifest_url(
-            self, mpd_url: str, mode: str, encrypted: bool,
-            debug: bool = False, check_head: bool = False,
-            check_media: bool = True) -> ViewsTestDashValidator:
+            self, mpd_url: str, mode: str, encrypted: bool, duration: int,
+            debug: bool, check_head: bool, check_media: bool) -> ViewsTestDashValidator:
         """
         Test one manifest for validity (wrapped in context of MPD url)
         """
         if mpd_url in self.__class__.checked_urls:
-            print(f'{mpd_url} already tested')
+            logging.debug('%s already tested', mpd_url)
             return
         try:
             self.log_context.add_item('url', mpd_url)
             self.__class__.checked_urls.add(mpd_url)
             return await self.do_check_manifest_url(
                 mpd_url, mode, encrypted=encrypted, debug=debug, check_head=check_head,
-                check_media=check_media)
+                check_media=check_media, duration=duration)
         finally:
             del self.log_context['url']
 
     async def do_check_manifest_url(
             self, mpd_url: str, mode: str, encrypted: bool, debug: bool,
-            check_head: bool, check_media: bool) -> ViewsTestDashValidator:
+            check_head: bool, check_media: bool, duration: int) -> ViewsTestDashValidator:
         """
         Test one manifest for validity
         """
         response = None
         logging.debug('Check manifest (%s, %s): %s', mode, encrypted, mpd_url)
+        self.assertIsInstance(mpd_url, str)
         response = self.client.get(mpd_url)
         if response.status_code == 302:
             # Handle redirect request
             mpd_url = response.headers['Location']
             self.current_url = mpd_url
             response = self.client.get(mpd_url)
+        if response.status_code != 200:
+            print(f'GET {mpd_url}: {response.status_code}')
+        self.assertEqual(response.status_code, 200)
         self.assertIn("Access-Control-Allow-Origin", response.headers)
         self.assertEqual(response.headers["Access-Control-Allow-Origin"], '*')
         self.assertEqual(response.headers["Access-Control-Allow-Methods"], "HEAD, GET, POST")
-        self.assertEqual(response.status_code, 200)
         xml = ET.parse(io.BytesIO(response.get_data(as_text=False)))
         with ThreadPoolExecutor(max_workers=4) as tpe:
             pool = ConcurrentWorkerPool(tpe)
             dv = ViewsTestDashValidator(
                 http_client=self.async_client, mode=mode, pool=pool,
-                media_duration=self.MEDIA_DURATION, url=mpd_url,
+                duration=duration, url=mpd_url,
                 encrypted=encrypted, debug=debug, check_media=check_media)
             await dv.load(xml.getroot())
             await dv.validate()

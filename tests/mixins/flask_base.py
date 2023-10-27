@@ -58,6 +58,7 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
     MEDIA_USER = 'media'
     MEDIA_EMAIL = 'media@dashlive.unit.test'
     MEDIA_PASSWORD = r'm3d!a'
+    SEGMENT_DURATION = 4
     STREAM_TITLE = 'Big Buck Bunny'
 
     LOG_LEVEL: ClassVar[Type[logging.WARNING]] = logging.WARNING

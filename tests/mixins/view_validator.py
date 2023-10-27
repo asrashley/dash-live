@@ -34,18 +34,14 @@ class ViewsTestDashValidator(DashValidator):
                  http_client: HttpClient,
                  mode: str,
                  url: str,
-                 media_duration: int,
+                 duration: int,
                  pool: WorkerPool,
                  encrypted: bool = False,
                  check_media: bool = True,
                  debug: bool = False) -> None:
-        opts = ValidatorOptions(encrypted=encrypted, pool=pool)
+        opts = ValidatorOptions(duration=duration, encrypted=encrypted, pool=pool)
         if not check_media:
             opts.verify &= ~ValidationFlag.MEDIA
-        if mode == 'live':
-            opts.duration = media_duration * 2
-        else:
-            opts.duration = media_duration // 2
         opts.log = logging.getLogger(__name__)
         opts.log.addFilter(HideMixinsFilter())
         if debug:
