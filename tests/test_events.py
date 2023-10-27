@@ -25,16 +25,17 @@ import unittest
 
 import flask
 
+from dashlive import scte35
 from dashlive.mpeg import MPEG_TIMEBASE, mp4
 from dashlive.server.events.ping_pong import PingPongEvents
 from dashlive.server.events.scte35_events import Scte35Events
-from dashlive import scte35
+from dashlive.utils.buffered_reader import BufferedReader
 
 from .mixins.flask_base import FlaskTestBase
 from .mixins.check_manifest import DashManifestCheckMixin
 
 class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
-    def test_inline_ping_pong_dash_events(self):
+    async def test_inline_ping_pong_dash_events(self):
         """
         Test DASH 'PingPong' events carried in the manifest
         """
@@ -52,7 +53,9 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
             mode='vod',
             stream=self.FIXTURES_PATH.name,
             **params)
-        dv = self.check_manifest_url(url, 'vod', encrypted=False)
+        dv = await self.check_manifest_url(
+            url, 'vod', encrypted=False, check_media=False, check_head=False, debug=False,
+            duration=self.SEGMENT_DURATION)
         for period in dv.manifest.periods:
             self.assertEqual(len(period.event_streams), 1)
             event_stream = period.event_streams[0]
@@ -67,7 +70,7 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
                 self.assertEqual(event.duration, PingPongEvents.DEFAULT_VALUES['duration'])
                 presentationTime += PingPongEvents.DEFAULT_VALUES['interval']
 
-    def test_inband_ping_pong_dash_events(self) -> None:
+    async def test_inband_ping_pong_dash_events(self) -> None:
         """
         Test DASH 'PingPong' events carried in the video media segments
         """
@@ -85,7 +88,9 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
             mode='vod',
             stream=self.FIXTURES_PATH.name,
             **params)
-        dv = self.check_manifest_url(url, 'vod', encrypted=False)
+        dv = await self.check_manifest_url(
+            url, 'vod', encrypted=False, check_media=True, check_head=False, debug=False,
+            duration=int(self.MEDIA_DURATION // 2))
         for period in dv.manifest.periods:
             for adp in period.adaptation_sets:
                 if adp.contentType != 'video':
@@ -96,22 +101,30 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
                 self.assertEqual(event_stream.value, PingPongEvents.DEFAULT_VALUES['value'])
                 # self.assertIsInstance(event_stream, InbandEventStream)
                 rep = adp.representations[0]
-                self.check_inband_events_for_representation(rep, params)
+                await self.check_inband_events_for_representation(rep, params)
 
-    def check_inband_events_for_representation(self, rep, params) -> None:
+    async def check_inband_events_for_representation(self, rep, params) -> None:
         """
         Check all of the fragments in the given representation
         """
-        rep.validate(depth=0)
+        await rep.validate()
         ev_presentation_time = params['ping_start']
         event_id = 0
         for seg in rep.media_segments:
+            if not seg.validated:
+                continue
             # print(seg.url)
+            response = self.client.get(seg.url)
+            src = BufferedReader(None, data=response.get_data(as_text=False))
+            options = {"strict": True}
             frag = mp4.Wrapper(
                 atom_type='wrap',
-                children=seg.validate(depth=1, all_atoms=True))
+                children=mp4.Mp4Atom.load(src, options=options))
             seg_presentation_time = (ev_presentation_time * rep.info.timescale /
                                      float(PingPongEvents.DEFAULT_VALUES['timescale']))
+            first_sample_pos = frag.moof.traf.tfhd.base_data_offset + frag.moof.traf.trun.data_offset
+            self.assertGreaterOrEqual(
+                first_sample_pos, frag.mdat.position + frag.mdat.header_size)
             decode_time = frag.moof.traf.tfdt.base_media_decode_time
             seg_end = decode_time + seg.duration
             if seg_presentation_time < decode_time or seg_presentation_time >= seg_end:
@@ -134,7 +147,7 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
             ev_presentation_time += PingPongEvents.DEFAULT_VALUES['interval']
             event_id += 1
 
-    def test_inline_scte35_dash_events(self) -> None:
+    async def test_inline_scte35_dash_events(self) -> None:
         """
         Test DASH scte35 events carried in the manifest
         """
@@ -153,8 +166,9 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
             mode='vod',
             stream=self.FIXTURES_PATH.name,
             **params)
-        dv = self.check_manifest_url(url, 'vod', encrypted=False)
-        dv.validate()
+        dv = await self.check_manifest_url(
+            url, 'vod', encrypted=False, check_media=False, check_head=False, debug=False,
+            duration=self.SEGMENT_DURATION)
         for period in dv.manifest.periods:
             self.assertEqual(len(period.event_streams), 1)
             event_stream = period.event_streams[0]
