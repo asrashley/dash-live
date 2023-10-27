@@ -5,6 +5,7 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+import asyncio
 import binascii
 
 from dashlive import scte35
@@ -31,7 +32,7 @@ class Scte35Binary(DashElement):
     def children(self) -> list[DashElement]:
         return []
 
-    def validate(self, depth: int = -1) -> None:
+    def validate(self) -> None:
         self.attrs.check_equal(
             self.schemeIdUri, EventStreamBase.SCTE35_XML_BIN_EVENTS)
         if self.signal is None:
@@ -87,7 +88,7 @@ class DashEvent(DashElement):
     def children(self) -> list[DashElement]:
         return self._children
 
-    def validate(self, depth: int = -1) -> None:
+    async def validate(self, depth: int = -1) -> None:
         if self._children:
             self.elt.check_none(
                 self.messageData,
@@ -129,21 +130,23 @@ class EventStream(EventStreamBase):
     An EventStream, where events are carried in the manifest
     """
 
-    def validate(self) -> None:
+    async def validate(self) -> None:
         if ValidationFlag.EVENTS not in self.options.verify:
             return
-        super().validate()
+        await super().validate()
         self.attrs.check_not_equal(self.schemeIdUri, self.SCTE35_INBAND_EVENTS)
+        futures = []
         for event in self.events:
-            event.validate()
+            futures.append(event.validate())
+        await asyncio.gather(*futures)
 
 
 class InbandEventStream(EventStreamBase):
     """
     An EventStream, where events are carried in the media
     """
-    def validate(self, depth: int = -1) -> None:
-        super().validate(depth)
+    async def validate(self, depth: int = -1) -> None:
+        await super().validate(depth)
         self.elt.check_equal(
             len(self._children), 0,
             msg='Event elements are not allowed in an inband EventStream element')
