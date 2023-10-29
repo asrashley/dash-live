@@ -123,21 +123,21 @@ class DashManifestCheckMixin:
             url, mode, encrypted=False, debug=debug, duration=duration, check_media=True,
             check_head=True)
 
-        # do the exhaustive check of every option
         utc_method = kwargs.get('utcMethod', '')
         use_base_url = kwargs.get('useBaseUrls', True)
         options = manifest.get_cgi_query_combinations(
             mode=mode, simplified=simplified, only=only, extras=extras,
             abr=False, utcMethod=utc_method, useBaseUrls=use_base_url, **kwargs)
         total_tests = len(options)
-        if 'utcMethod' not in kwargs:
-            total_tests *= len(UTCMethod.cgi_choices)
-        if 'useBaseUrls' not in kwargs:
-            total_tests *= 2
+        if 'utcMethod' in manifest.features and 'utcMethod' not in kwargs:
+            total_tests += len(UTCMethod.cgi_choices)
+        if 'useBaseUrls' in manifest.features and 'useBaseUrls' not in kwargs:
+            total_tests += 2
         count = 0
         desc = json.dumps({'mode': mode, **kwargs})
         logging.debug('total %s tests for "%s" = %d', desc, filename, total_tests)
         self.progress(0, total_tests)
+        # do an exhaustive check of every option
         for query in options:
             if 'events=' in query:
                 duration = 9 * self.SEGMENT_DURATION
@@ -153,25 +153,26 @@ class DashManifestCheckMixin:
                 check_head=check_head)
             count += 1
             self.progress(count, total_tests)
-            if 'utcMethod' in kwargs:
-                count += len(UTCMethod.cgi_choices) - 1
-                continue
+        if 'utcMethod' in manifest.features and 'utcMethod' not in kwargs:
+            for method in UTCMethod.cgi_choices:
+                if method is None or method == utc_method:
+                    continue
+                query = f'?time={method}'
+                await self.check_manifest_using_options(
+                    mode, url, query, debug=debug, check_media=False, check_head=False,
+                    duration=duration)
+                count += 1
+                self.progress(count, total_tests)
+        if 'useBaseUrls' in manifest.features and 'useBaseUrls' not in kwargs:
             for ubu in [True, False]:
                 if ubu == use_base_url:
                     continue
-                for method in UTCMethod.cgi_choices:
-                    if method is None or method == utc_method:
-                        continue
-                    extra_q = f'time={method}&base={ubu}'
-                    if query:
-                        q = f'{query}&{extra_q}'
-                    else:
-                        q = f'?{extra_q}'
-                    await self.check_manifest_using_options(
-                        mode, url, q, debug=debug, check_media=False, check_head=False,
-                        duration=duration)
-                    count += 1
-                    self.progress(count, total_tests)
+                query = f'?base={ubu}'
+                await self.check_manifest_using_options(
+                    mode, url, query, debug=debug, check_media=False, check_head=False,
+                    duration=duration)
+                count += 1
+                self.progress(count, total_tests)
         self.progress(total_tests, total_tests)
 
     async def check_manifest_using_options(
