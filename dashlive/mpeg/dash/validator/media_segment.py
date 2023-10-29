@@ -23,12 +23,14 @@ class MediaSegment(DashElement):
                  parent: DashElement,
                  url: str,
                  tolerance: int,
+                 expected_duration: int | None,
                  expected_seg_num: int | None = None,
                  expected_decode_time: int | None = None,
                  seg_range: Optional[HttpRange] = None) -> None:
         super().__init__(None, parent)
         self.expected_decode_time = expected_decode_time
         self.expected_seg_num = expected_seg_num
+        self.expected_duration = expected_duration
         self.tolerance = tolerance
         self.seg_range = seg_range
         self.url = url
@@ -123,16 +125,16 @@ class MediaSegment(DashElement):
             self.elt.check_not_in(
                 'senc', moof.traf,
                 msg='senc box should not be found in a clear stream')
+
+        self.log.debug(
+            '%s: num=%d expcted=%s base_media_decode_time=%d expected=%s',
+            self.name, moof.mfhd.sequence_number, self.expected_seg_num,
+            moof.traf.tfdt.base_media_decode_time, self.expected_decode_time)
         if self.expected_seg_num is not None:
             self.elt.check_equal(
                 self.expected_seg_num, moof.mfhd.sequence_number,
                 template=r'Sequence number error, expected {0}, got {1}')
         if self.expected_decode_time is not None:
-            self.log.debug(
-                '%s: num=%d expected_decode_time=%s base_media_decode_time=%d delta=%d',
-                self.name, moof.mfhd.sequence_number,
-                self.expected_decode_time, moof.traf.tfdt.base_media_decode_time,
-                moof.traf.tfdt.base_media_decode_time - self.expected_decode_time)
             tc_diff = moof.traf.tfdt.base_media_decode_time - self.expected_decode_time
             tc_delta = timecode_to_timedelta(tc_diff, self.parent.timescale()).total_seconds()
             msg = (
@@ -163,6 +165,10 @@ class MediaSegment(DashElement):
             dts += samp_dur
         # self.log.debug('Last sample duration %d', samp_dur)
         self.duration = dts - moof.traf.tfdt.base_media_decode_time
+        if self.expected_duration is not None:
+            self.elt.check_almost_equal(
+                self.expected_duration, self.duration, delta=self.parent.timescale(),
+                msg=f'Expected duration {self.expected_duration} but duration is {self.duration}')
         self.next_decode_time = dts
         self.log.debug('Segment %d duration %d. Next expected DTS %d',
                        self.seg_num, self.duration, dts)
