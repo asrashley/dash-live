@@ -20,6 +20,7 @@
 #
 #############################################################################
 
+from concurrent.futures import ThreadPoolExecutor
 import datetime
 import io
 import logging
@@ -30,6 +31,7 @@ from lxml import etree
 import flask
 
 from dashlive.drm.clearkey import ClearKey
+from dashlive.mpeg.dash.validator import ConcurrentWorkerPool
 from dashlive.server import manifests, models
 from dashlive.server.requesthandler.base import RequestHandlerBase
 from dashlive.server.options.drm_options import DrmLocation, PlayreadyVersion
@@ -75,7 +77,7 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 404)
 
-    def test_availability_start_time(self):
+    async def test_availability_start_time(self):
         """
         Control of MPD@availabilityStartTime using the start parameter
         """
@@ -127,10 +129,14 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                 self.assertEqual(response.status_code, 200,
                                  msg=f'Failed to fetch manifest {baseurl}')
                 xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
-                dv = ViewsTestDashValidator(
-                    http_client=self.client, mode='live', xml=xml.getroot(),
-                    url=baseurl, encrypted=False, debug=False)
-                dv.validate(depth=3)
+                with ThreadPoolExecutor(max_workers=4) as tpe:
+                    pool = ConcurrentWorkerPool(tpe)
+                    dv = ViewsTestDashValidator(
+                        http_client=self.async_client, mode='live', pool=pool,
+                        url=baseurl, encrypted=False, debug=False, check_media=False,
+                        duration=int(self.MEDIA_DURATION // 3))
+                    await dv.load(xml=xml.getroot())
+                    await dv.validate()
                 self.assertFalse(dv.has_errors())
                 if option == 'now':
                     start_time = dv.manifest.publishTime - dv.manifest.timeShiftBufferDepth
@@ -167,27 +173,29 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
             }
             url = baseurl + dict_to_cgi_params(params)
             with self.mock_datetime_now(before):
-                response = self.client.get(url)
-                self.assertEqual(response.status_code, 200)
-                xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
-                dv = ViewsTestDashValidator(
-                    http_client=self.client, mode='live',
-                    url=url, encrypted=False)
-                await dv.load(xml.getroot())
-                await dv.validate(depth=2)
-                self.assertFalse(dv.has_errors())
+                with ThreadPoolExecutor(max_workers=4) as tpe:
+                    pool = ConcurrentWorkerPool(tpe)
+                    dv = ViewsTestDashValidator(
+                        http_client=self.async_client, mode='live', pool=pool, check_media=False,
+                        url=url, encrypted=False, duration=int(self.MEDIA_DURATION * 1.5))
+                    self.assertTrue(await dv.load())
+                    await dv.validate()
+                self.assertFalse(dv.has_errors(), msg='stream validation failed')
             with self.mock_datetime_now(active):
                 response = self.client.get(url)
                 self.assertEqual(
                     response.status_code, code,
                     msg=f'{url}: Expected status code {code} but received {response.status_code}')
             with self.mock_datetime_now(after):
-                dv = ViewsTestDashValidator(
-                    http_client=self.client, mode='live',
-                    url=url, encrypted=False)
-                dv.validate(depth=2)
-                self.assertFalse(dv.has_errors())
+                with ThreadPoolExecutor(max_workers=4) as tpe:
+                    pool = ConcurrentWorkerPool(tpe)
+                    dv = ViewsTestDashValidator(
+                        http_client=self.async_client, mode='live', pool=pool, check_media=False,
+                        url=url, encrypted=False, duration=(2 * self.SEGMENT_DURATION))
+                    await dv.validate()
+                    self.assertFalse(dv.has_errors())
 
+    @FlaskTestBase.mock_datetime_now(datetime.datetime.fromisoformat("2000-10-07T07:56:58Z"))
     async def test_get_vod_media_using_live_profile(self):
         """Get VoD segments for each DRM type (live profile)"""
         self.setup_media()
@@ -210,13 +218,18 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
             self.assertEqual(response.status_code, 200)
             encrypted = ('drm=none' not in drm_opt) and ('drm=' in drm_opt)
             xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
-            mpd = ViewsTestDashValidator(
-                http_client=self.client, mode='vod',
-                url=mpd_url, encrypted=encrypted)
-            await mpd.load(xml.getroot())
-            await mpd.validate()
+            with ThreadPoolExecutor(max_workers=4) as tpe:
+                pool = ConcurrentWorkerPool(tpe)
+                mpd = ViewsTestDashValidator(
+                    http_client=self.async_client, mode='vod', check_media=True,
+                    url=mpd_url, encrypted=encrypted, pool=pool,
+                    duration=int(self.MEDIA_DURATION // 2))
+                await mpd.load(xml.getroot())
+                await mpd.validate()
             if mpd.has_errors():
-                print(mpd.get_errors())
+                print(mpd_url)
+                for err in mpd.get_errors():
+                    print(err)
             self.assertFalse(mpd.has_errors())
             head = self.client.head(mpd_url)
             msg = r'Expected HEAD.contentLength={} == GET.contentLength={} for URL {}'.format(
@@ -229,7 +242,7 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
         self.progress(total_tests, total_tests)
 
     @FlaskTestBase.mock_datetime_now(from_isodatetime("2022-10-04T12:00:00Z"))
-    def test_get_live_media_using_live_profile(self):
+    async def test_get_live_media_using_live_profile(self):
         """Get segments from a live stream for each DRM type (live profile)"""
         self.setup_media()
         self.logout_user()
@@ -257,6 +270,7 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
         self.assertGreaterThan(models.MediaFile.count(), 0)
         total_tests = len(drm_options)
         test_count = 0
+        # logging.getLogger('wsgi').setLevel(logging.DEBUG)
         for drm_opt in drm_options:
             self.progress(test_count, total_tests)
             test_count += 1
@@ -267,25 +281,20 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                 'dash-mpd-v3', mode='live', manifest=filename, stream=self.FIXTURES_PATH.name)
             options = [
                 drm_opt,
+                'abr=0',
                 'start=' + availabilityStartTime
             ]
             baseurl += '?' + '&'.join(options)
-            # 'dash-mpd-v2' will always return a redirect to the v3 URL
-            # response = self.client.get(baseurl, status=302)
-            # Handle redirect request
-            # baseurl = response.headers['Location']
-            response = self.client.get(baseurl)
-            self.assertEqual(response.status_code, 200)
             encrypted = drm_opt != "drm=none"
-            xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
-            # print(baseurl)
-            # print(response.text)
-            mpd = ViewsTestDashValidator(
-                http_client=self.client, mode="live", xml=xml.getroot(),
-                url=baseurl, encrypted=encrypted)
-            mpd.validate()
+            with ThreadPoolExecutor(max_workers=4) as tpe:
+                pool = ConcurrentWorkerPool(tpe)
+                mpd = ViewsTestDashValidator(
+                    http_client=self.async_client, mode="live", pool=pool, debug=False,
+                    url=baseurl, encrypted=encrypted, duration=(2 * self.MEDIA_DURATION))
+                self.assertTrue(await mpd.load())
+                await mpd.validate()
             if mpd.has_errors():
-                print(response.text)
+                print(baseurl)
                 for err in mpd.get_errors():
                     print(err)
             self.assertFalse(mpd.has_errors(), msg='Stream validation failed')
@@ -308,10 +317,13 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
             self.assertIn(
                 "urn:mpeg:dash:profile:isoff-on-demand:2011",
                 xml.getroot().get('profiles'))
-            mpd = ViewsTestDashValidator(
-                http_client=self.client, mode="odvod", url=baseurl, encrypted=False)
-            await mpd.load(xml.getroot())
-            await mpd.validate()
+            with ThreadPoolExecutor(max_workers=4) as tpe:
+                pool = ConcurrentWorkerPool(tpe)
+                mpd = ViewsTestDashValidator(
+                    http_client=self.async_client, mode="odvod", url=baseurl, encrypted=False,
+                    pool=pool, duration=int(self.MEDIA_DURATION // 2))
+                await mpd.load(xml.getroot())
+                await mpd.validate()
             if mpd.has_errors():
                 manifest_text: list[str] = []
                 for line in io.StringIO(response.get_data(as_text=True)):
@@ -471,6 +483,7 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
             bbb = models.Stream.get(title=self.STREAM_TITLE)
             self.assertIsNotNone(bbb, 'Failed to get stream model')
             bbb.defaults = flatten({
+                'abr': '0',
                 'availabilityStartTime': 'epoch',
                 'ping': {
                     'count': 5
@@ -485,15 +498,17 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
         self.logout_user()
         mpd_url = flask.url_for(
             'dash-mpd-v3', manifest='hand_made.mpd', stream=self.FIXTURES_PATH.name, mode='vod')
-        response = self.client.get(mpd_url)
-        self.assertEqual(response.status_code, 200)
-        xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
-        mpd = ViewsTestDashValidator(
-            http_client=self.client, mode='vod', url=mpd_url, encrypted=True)
-        await mpd.load(xml.getroot())
-        await mpd.validate()
+        with ThreadPoolExecutor(max_workers=4) as tpe:
+            pool = ConcurrentWorkerPool(tpe)
+            mpd = ViewsTestDashValidator(
+                http_client=self.async_client, mode='vod', url=mpd_url, encrypted=True,
+                pool=pool, check_media=True, duration=int(self.MEDIA_DURATION // 2))
+            self.assertTrue(await mpd.load())
+            await mpd.validate()
         if mpd.has_errors():
-            print(mpd.get_errors())
+            print(mpd_url)
+            for err in mpd.get_errors():
+                print(err)
         self.assertFalse(mpd.has_errors(), 'Stream validation failed')
         for adp in mpd.manifest.periods[0].adaptation_sets:
             if adp.contentType != 'video':
@@ -502,16 +517,6 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
             self.assertEqual(adp.event_streams[0].schemeIdUri, r'urn:dash-live:pingpong:2022')
             schemes = {cp.schemeIdUri for cp in adp.contentProtection}
             self.assertIn(f"urn:uuid:{ClearKey.MPD_SYSTEM_ID}", schemes)
-        response = self.client.get(f'{mpd_url}?drm=none')
-        self.assertEqual(response.status_code, 200)
-        xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
-        mpd = ViewsTestDashValidator(
-            http_client=self.client, mode='vod', xml=xml.getroot(),
-            url=mpd_url, encrypted=False)
-        await mpd.validate()
-        if mpd.has_errors():
-            print(mpd.get_errors())
-        self.assertFalse(mpd.has_errors(), 'Stream validation failed')
 
 
 if __name__ == '__main__':
