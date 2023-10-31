@@ -70,6 +70,10 @@ class MediaSegment(DashElement):
                        to_iso_datetime(self.availability_end_time))
 
     async def validate(self) -> None:
+        await self.validate_segment()
+        self.progress.inc()
+
+    async def validate_segment(self) -> None:
         now = self.mpd.now()
         if self.availability_start_time and self.availability_start_time > now:
             log = ''
@@ -108,7 +112,7 @@ class MediaSegment(DashElement):
             self.elt.check_starts_with(
                 response.headers['Content-Type'], self.parent.mimeType,
                 template=r'HTTP Content-Type "{0}" should match Representation MIME type "{1}"')
-        async with self.pool.group() as tg:
+        async with self.pool.group(self.progress) as tg:
             body = response.get_data(as_text=False)
             if self.options.save:
                 tg.submit(self.save, body)

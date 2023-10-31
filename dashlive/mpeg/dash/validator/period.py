@@ -77,9 +77,11 @@ class Period(DashElement):
     def finished(self) -> bool:
         for child in self.children():
             if not child.finished():
-                self.log.debug('Period %s not finished', self.id)
+                self.log.debug(
+                    'Period[%s]: AdaptationSet[%s] not finished', self.id, child.id)
                 return False
-        self.log.debug('Period %s finished', self.id)
+        self.log.debug(
+            'Period[%s}: Validation complete', self.id)
         return True
 
     def get_duration(self) -> datetime.timedelta:
@@ -117,3 +119,4 @@ class Period(DashElement):
         if self.mode == 'live':
             self.attrs.check_not_none(
                 self.id, msg='id is mandatory for a live stream', clause='5.3.2.2')
+        self.progress.inc()

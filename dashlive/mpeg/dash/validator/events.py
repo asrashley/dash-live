@@ -132,6 +132,7 @@ class EventStream(EventStreamBase):
 
     async def validate(self) -> None:
         if ValidationFlag.EVENTS not in self.options.verify:
+            self.progress.inc()
             return
         await super().validate()
         self.attrs.check_not_equal(self.schemeIdUri, self.SCTE35_INBAND_EVENTS)
@@ -139,6 +140,7 @@ class EventStream(EventStreamBase):
         for event in self.events:
             futures.append(event.validate())
         await asyncio.gather(*futures)
+        self.progress.inc()
 
 
 class InbandEventStream(EventStreamBase):

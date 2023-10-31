@@ -89,8 +89,8 @@ class InitSegment(DashElement):
             if not await self.load():
                 self.elt.add_error('Failed to load init segment')
                 return
-        if not self.elt.check_greater_than(len(self.atoms), 1):
-            print('atoms', type(self.atoms), len(self.atoms))
+        if not self.elt.check_greater_than(
+                len(self.atoms), 1, msg='Expected more than one MP4 atom in init segment'):
             return
         self.elt.check_equal(self.atoms[0].atom_type, 'ftyp')
         moov = None

@@ -22,8 +22,8 @@ class Progress(ABC):
     def add_todo(self, num: int) -> None:
         self.num_items += num
 
-    def inc(self) -> None:
-        self.count += 1
+    def inc(self, count: int = 1) -> None:
+        self.count += count
         self._send_output()
 
     def finished(self, text: str) -> None:
