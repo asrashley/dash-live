@@ -25,6 +25,7 @@ class ContentProtection(Descriptor):
     async def validate(self) -> None:
         await super().validate()
         if ValidationFlag.CONTENT_PROTECTION not in self.options.verify:
+            self.progress.inc()
             return
         if self.schemeIdUri == "urn:mpeg:dash:mp4protection:2011":
             self.attrs.check_equal(
@@ -33,12 +34,13 @@ class ContentProtection(Descriptor):
             self.attrs.check_starts_with(
                 self.schemeIdUri, "urn:uuid:",
                 template=r'Expected schemeIdUri to start with {1} but found {0}')
-        async with self.pool.group() as tg:
+        async with self.pool.group(self.progress) as tg:
             for child in self.children():
                 if child.tag == '{urn:mpeg:cenc:2013}pssh':
                     tg.submit(self.validate_cenc_element, child)
                 elif child.tag == '{urn:microsoft:playready}pro':
                     tg.submit(self.validate_pro_element, child)
+        self.progress.inc()
 
     def validate_cenc_element(self, child: DescriptorElement) -> None:
         data = base64.b64decode(child.text)

@@ -409,6 +409,7 @@ class Representation(RepresentationBaseType):
     async def validate(self) -> None:
         if ValidationFlag.REPRESENTATION in self.options.verify:
             await self.validate_self()
+            self.progress.inc()
         if len(self.media_segments) == 0:
             return
         if ValidationFlag.MEDIA not in self.options.verify:
@@ -454,7 +455,6 @@ class Representation(RepresentationBaseType):
                 next_seg_num = seg.seg_num + 1
             if seg.duration is not None:
                 total_dur += seg.duration
-            self.progress.inc()
             if need_duration is not None and total_dur >= need_duration:
                 return
 

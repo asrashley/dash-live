@@ -93,10 +93,10 @@ class AdaptationSet(RepresentationBaseType):
         for child in self.representations:
             if not child.finished():
                 self.log.debug(
-                    'AdaptationSet %s not finished, as Representation %s not finished',
+                    'AdaptationSet[%s]: Representation[%s] not finished',
                     self.id, child.id)
                 return False
-        self.log.debug('AdaptationSet %s finished', self.id)
+        self.log.debug('AdaptationSet[%s] validation complete', self.id)
         return True
 
     def set_representation_info(self, info: ServerRepresentation):
@@ -127,10 +127,5 @@ class AdaptationSet(RepresentationBaseType):
             self.elt.check_equal(
                 len(self.contentProtection), 0,
                 msg='At least one ContentProtection element is required for an encrypted stream')
-        futures = []
-        for cp in self.contentProtection:
-            if self.progress.aborted():
-                return
-            futures.append(cp.validate())
-            self.progress.inc()
+        futures = {cp.validate() for cp in self.contentProtection}
         await asyncio.gather(*futures)
