@@ -150,8 +150,8 @@ class DashManifestCheckMixin:
             else:
                 duration = 3 * self.SEGMENT_DURATION
             await self.check_manifest_using_options(
-                mode, url, query, debug=debug, check_media=True, duration=duration,
-                check_head=check_head)
+                mode, url, query, debug=debug, check_media=not simplified,
+                duration=duration, check_head=check_head)
             count += 1
             self.progress(count, total_tests)
         if 'utcMethod' in manifest.features and 'utcMethod' not in kwargs:
