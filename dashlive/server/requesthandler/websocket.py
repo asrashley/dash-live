@@ -85,7 +85,7 @@ class WebsocketHandler(Progress):
             self.sockio.emit('log', {
                 "level": "error",
                 "test": f'Invalid command: {err}'
-            })
+            }, to=flask.request.sid)
             return
         if cmd == 'validate':
             self.validate_cmd(data)
@@ -97,7 +97,8 @@ class WebsocketHandler(Progress):
             self.save_cmd(data)
 
     def send_progress(self, pct: float, text: str) -> None:
-        self.sockio.emit('progress', {'pct': round(pct), 'text': text})
+        self.sockio.emit(
+            'progress', {'pct': round(pct), 'text': text}, to=flask.request.sid)
 
     def aborted(self) -> bool:
         return self._aborted
@@ -122,7 +123,7 @@ class WebsocketHandler(Progress):
                     errs['prefix'] = f'"{data["directory"]}" directory already exists'
             if data['title'] == '':
                 errs['title'] = 'Title is required'
-        self.sockio.emit('manifest-validation', errs)
+        self.sockio.emit('manifest-validation', errs, to=flask.request.sid)
         if errs:
             return
         upload_dir = flask.current_app.config['UPLOAD_FOLDER']
@@ -130,7 +131,7 @@ class WebsocketHandler(Progress):
             self.sockio.emit('log', {
                 'level': 'error',
                 'text': 'Saving stream already in progress'
-            })
+            }, to=flask.request.sid)
             return
 
         asyncio_loop.run_coroutine(
@@ -140,7 +141,7 @@ class WebsocketHandler(Progress):
         self.sockio.emit('log', {
             'level': 'info',
             'text': 'Cancelled validation'
-        })
+        }, to=flask.request.sid)
         self._aborted = True
 
     def save_cmd(self, data) -> None:
@@ -148,7 +149,7 @@ class WebsocketHandler(Progress):
         self.sockio.emit('log', {
             'level': 'info',
             'text': 'Creating stream'
-        })
+        }, to=flask.request.sid)
         del data['method']
         self.save_stream_task(**data)
 
@@ -159,7 +160,7 @@ class WebsocketHandler(Progress):
             self.sockio.emit('log', {
                 'level': 'error',
                 'text': 'Saving stream already in progress'
-            })
+            }, to=flask.request.sid)
             return
         start_time = time.time()
         opts = ValidatorOptions(log=self.dash_log, progress=self, pool=pool, **kwargs)
@@ -178,7 +179,7 @@ class WebsocketHandler(Progress):
             self.dash_log.debug('loading manifest complete')
             self.sockio.emit('manifest', {
                 'text': dv.get_manifest_lines()
-            })
+            }, to=flask.request.sid)
             await dv.run()
             if dv.has_errors():
                 errs = [e.to_dict() for e in dv.get_errors()]
@@ -191,13 +192,13 @@ class WebsocketHandler(Progress):
                 'pct': 100,
                 'text': txt,
                 'finished': True
-            })
+            }, to=flask.request.sid)
             if opts.save:
                 self.sockio.emit('script', {
                     'filename': dv.get_json_script_filename(),
                     'prefix': opts.prefix,
                     'title': opts.title,
-                })
+                }, to=flask.request.sid)
         except Exception as err:
             self.dash_log.error('%s', err)
 
@@ -214,7 +215,7 @@ class WebsocketHandler(Progress):
             'pct': 100,
             'text': f'Added stream "{title}" ({prefix}) to this server',
             'finished': True
-        })
+        }, to=flask.request.sid)
 
     def join_finished_tasks(self) -> None:
         done: set[Thread] = set()
