@@ -54,11 +54,12 @@ class Manifest(DashElement):
         # TODO: implement clock drift compensation
         return datetime.datetime.now(tz=UTC())
 
-    async def prefetch_media_info(self) -> None:
+    async def prefetch_media_info(self) -> bool:
         self.progress.add_todo(len(self.periods))
         futures = [
             p.prefetch_media_info() for p in self.periods]
-        await asyncio.gather(*futures)
+        results = await asyncio.gather(*futures)
+        return False not in results
 
     def set_representation_info(self, info: ServerRepresentation):
         for p in self.periods:
