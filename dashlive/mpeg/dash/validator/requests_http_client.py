@@ -80,8 +80,8 @@ class RequestsHttpClient:
 
         try:
             self.log.debug('GET %s', url)
-        except AttributeError:
-            print('GET %s' % (url))
+        except AttributeError as err:
+            self.log.error('GET %s: attribute error:', url, err)
         if xhr:
             headers = self.add_xhr_headers(headers)
         async with self.pool.group() as tg:
