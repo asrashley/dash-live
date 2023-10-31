@@ -6,7 +6,6 @@
 #
 #############################################################################
 
-from concurrent.futures import ThreadPoolExecutor
 import queue
 import logging
 from logging.handlers import QueueHandler, QueueListener
@@ -15,16 +14,24 @@ from threading import Thread
 import time
 from typing import Optional
 
+# import asyncio_gevent
+# from gevent.threadpool import ThreadPoolExecutor
 import flask
 
 from dashlive.utils.json_object import JsonObject
 from dashlive.management.populate import PopulateDatabase
 from dashlive.management.backend_db import BackendDatabaseAccess
+from dashlive.mpeg.dash.validator.concurrent_pool import ConcurrentWorkerPool
+# from dashlive.mpeg.dash.validator.gevent_http_client import GeventHttpClient
+# from dashlive.mpeg.dash.validator.gevent_pool import GeventWorkerPool
 from dashlive.mpeg.dash.validator.options import ValidatorOptions
 from dashlive.mpeg.dash.validator.basic import BasicDashValidator
 from dashlive.mpeg.dash.validator.pool import WorkerPool
 from dashlive.mpeg.dash.validator.progress import Progress
+from dashlive.mpeg.dash.validator.requests_http_client import RequestsHttpClient
 from dashlive.server import models
+from dashlive.server.asyncio_loop import asyncio_loop
+from dashlive.server.thread_pool import pool_executor
 
 from .ws_log_handler import WebsocketLogHandler
 
@@ -47,6 +54,8 @@ class WebsocketHandler(Progress):
             self.listener.stop()
         if self.queue_handler:
             self.dash_log.removeHandler(self.queue_handler)
+        # self.pool = GeventWorkerPool(pool_executor)
+        self.pool = ConcurrentWorkerPool(pool_executor)
         log_queue = queue.Queue(-1)
         self.queue_handler = QueueHandler(log_queue)
         self.dash_log.addHandler(self.queue_handler)
@@ -117,8 +126,15 @@ class WebsocketHandler(Progress):
         if errs:
             return
         upload_dir = flask.current_app.config['UPLOAD_FOLDER']
-        self.tasks.add(self.sockio.start_background_task(
-            self.dash_validator_task, upload_dir=upload_dir, **data))
+        if self.tmpdir is not None:
+            self.sockio.emit('log', {
+                'level': 'error',
+                'text': 'Saving stream already in progress'
+            })
+            return
+
+        asyncio_loop.run_coroutine(
+            self.dash_validator_task, pool=self.pool, upload_dir=upload_dir, **data)
 
     def cancel_cmd(self, data) -> None:
         self.sockio.emit('log', {
@@ -136,11 +152,9 @@ class WebsocketHandler(Progress):
         del data['method']
         self.save_stream_task(**data)
 
-    def dash_validator_task(self,
-                            method: str,
-                            manifest: str,
-                            upload_dir: str,
-                            **kwargs) -> None:
+    async def dash_validator_task(
+            self, method: str, manifest: str, upload_dir: str, pool: WorkerPool,
+            **kwargs) -> None:
         if self.tmpdir is not None:
             self.sockio.emit('log', {
                 'level': 'error',
@@ -148,8 +162,6 @@ class WebsocketHandler(Progress):
             })
             return
         start_time = time.time()
-        self.dash_log.info('Fetching manifest: %s', manifest)
-        pool = WorkerPool(ThreadPoolExecutor(max_workers=8))
         opts = ValidatorOptions(log=self.dash_log, progress=self, pool=pool, **kwargs)
         if opts.save:
             self.tmpdir = tempfile.TemporaryDirectory(dir=upload_dir)
@@ -158,14 +170,16 @@ class WebsocketHandler(Progress):
             self.dash_log.setLevel(logging.DEBUG)
         else:
             self.dash_log.setLevel(logging.INFO)
-        dv = BasicDashValidator(manifest, opts)
+        dv = BasicDashValidator(manifest, options=opts, http_client=RequestsHttpClient(opts))
         try:
-            dv.load()
+            if not await dv.load():
+                self.dash_log.error('loading manifest failed')
+                return
+            self.dash_log.debug('loading manifest complete')
             self.sockio.emit('manifest', {
                 'text': dv.get_manifest_lines()
             })
-            self.dash_log.info('Starting stream validation...')
-            dv.validate()
+            await dv.run()
             if dv.has_errors():
                 errs = [e.to_dict() for e in dv.get_errors()]
                 self.dash_log.info('Found %d errors', len(errs))
@@ -185,7 +199,6 @@ class WebsocketHandler(Progress):
                     'title': opts.title,
                 })
         except Exception as err:
-            print(err)
             self.dash_log.error('%s', err)
 
     def save_stream_task(self, filename: str, prefix: str, title: str):

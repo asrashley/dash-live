@@ -14,20 +14,42 @@ import time
 
 # from .gevent_http_client import GeventHttpClient
 # from .gevent_pool import GeventWorkerPool
-from .requests_http_client import RequestsHttpClient
 from .concurrent_pool import ConcurrentWorkerPool
+from .http_client import HttpClient
 from .options import ValidatorOptions
 from .progress import ConsoleProgress
+from .requests_http_client import RequestsHttpClient
 from .validator import DashValidator
 
 class BasicDashValidator(DashValidator):
-    def __init__(self, url: str, options: ValidatorOptions) -> None:
-        super().__init__(
-            url,
-            RequestsHttpClient(options),
-            options=options)
+    def __init__(self, url: str, http_client: HttpClient,
+                 options: ValidatorOptions) -> None:
+        super().__init__(url, http_client, options=options)
         self.representations = {}
         self.url = url
+
+    async def run(self) -> bool:
+        log = logging.getLogger('DashValidator')
+        if self.xml is None:
+            log.info('Loading manifest: %s', self.url)
+            if not await self.load():
+                log.error('Failed to load manifest')
+                return False
+        if not await self.prefetch_media_info():
+            log.error('Prefetch of media info failed')
+            return False
+        if self.options.dest:
+            self.save_manifest()
+        while not self.finished() and not self.progress.aborted():
+            try:
+                log.info('Starting stream validation...')
+                await self.validate()
+                if not self.finished():
+                    await self.sleep()
+                    log.info('Refreshing manifest')
+                    await self.refresh()
+            except KeyboardInterrupt:
+                self.progress.abort()
 
     @classmethod
     async def main(cls) -> int:
@@ -134,24 +156,8 @@ class BasicDashValidator(DashValidator):
         start_time = time.time()
         with ThreadPoolExecutor(max_workers=max_workers) as pool:
             options.pool = ConcurrentWorkerPool(pool)
-            bdv = cls(args.manifest, options=options)
-            log.info('Loading manifest: %s', args.manifest)
-            if not await bdv.load():
-                log.error('Failed to load manifest')
-                return 1
-            await bdv.prefetch_media_info()
-            if args.dest:
-                bdv.save_manifest()
-            while not bdv.finished() and not options.progress.aborted():
-                try:
-                    log.info('Starting stream validation...')
-                    await bdv.validate()
-                    if not bdv.finished():
-                        await bdv.sleep()
-                        log.info('Refreshing manifest')
-                        await bdv.refresh()
-                except KeyboardInterrupt:
-                    options.progress.abort()
+            bdv = cls(args.manifest, http_client=RequestsHttpClient(options), options=options)
+            await bdv.run()
         options.progress.finished(args.manifest)
         sys.stdout.write('\n')
         duration = time.time() - start_time

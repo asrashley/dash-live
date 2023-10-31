@@ -29,11 +29,12 @@ from lxml import etree as ET
 from dashlive.mpeg.dash.representation import Representation as ServerRepresentation
 
 from .dash_element import DashElement
+from .http_client import HttpClient
 from .manifest import Manifest
 from .options import ValidatorOptions
 
 class DashValidator(DashElement):
-    def __init__(self, url, http_client,
+    def __init__(self, url: str, http_client: HttpClient,
                  mode: str | None = None,
                  options: ValidatorOptions | None = None) -> None:
         DashElement.init_xml_namespaces()

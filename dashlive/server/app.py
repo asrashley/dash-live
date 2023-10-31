@@ -39,9 +39,12 @@ from werkzeug.routing import BaseConverter  # type: ignore
 from dashlive.server import models
 from dashlive.server.requesthandler.websocket import WebsocketHandler
 from dashlive.utils.json_object import JsonObject
+
 from .anonymous_user import AnonymousUser
+from .asyncio_loop import asyncio_loop
 from .routes import routes
 from .template_tags import custom_tags
+# from .thread_pool import pool_executor
 
 login_manager = LoginManager()
 
@@ -146,6 +149,7 @@ def create_app(config: JsonObject | None = None,
         if not media_folder.exists():
             media_folder.mkdir()
     instance_path = Path(instance_path).resolve()
+    asyncio_loop.start()
     app = Flask(
         __name__,
         instance_path=instance_path,
@@ -217,7 +221,7 @@ def create_app(config: JsonObject | None = None,
 
     app.register_blueprint(custom_tags)
     if wss:
-        socketio = SocketIO(app)
+        socketio = SocketIO(app, async_mode='threading')
         wss = WebsocketHandler(socketio)
         socketio.on_event('connect', wss.connect)
         socketio.on_event('disconnect', wss.disconnect)
