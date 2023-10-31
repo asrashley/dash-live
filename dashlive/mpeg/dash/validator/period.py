@@ -45,12 +45,13 @@ class Period(DashElement):
                 adp.id = next_id
                 next_id += 1
 
-    async def prefetch_media_info(self) -> None:
+    async def prefetch_media_info(self) -> bool:
         self.progress.add_todo(len(self.adaptation_sets))
-        futures = [
-            adp.prefetch_media_info() for adp in self.adaptation_sets]
-        await asyncio.gather(*futures)
+        futures = {
+            adp.prefetch_media_info() for adp in self.adaptation_sets}
+        results = await asyncio.gather(*futures)
         self.progress.inc()
+        return False not in results
 
     async def merge_previous_element(self, prev: "Period") -> bool:
         self.log.debug('Merging previous Period element')

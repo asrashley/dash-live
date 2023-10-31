@@ -87,10 +87,10 @@ class DashValidator(DashElement):
             return False
         return self.manifest.finished()
 
-    async def prefetch_media_info(self) -> None:
+    async def prefetch_media_info(self) -> bool:
         self.log.info('Prefetching media files required before validation can start')
         self.progress.text('Prefetching media files')
-        await self.manifest.prefetch_media_info()
+        return await self.manifest.prefetch_media_info()
 
     def get_manifest_lines(self) -> list[str]:
         return self.manifest_text

@@ -42,11 +42,13 @@ class AdaptationSet(RepresentationBaseType):
                 break
         self.representations = [Representation(r, self) for r in reps]
 
-    async def prefetch_media_info(self) -> None:
+    async def prefetch_media_info(self) -> bool:
         self.progress.add_todo(len(self.representations))
-        async with asyncio.TaskGroup() as tg:
-            for rep in self.representations:
-                tg.create_task(rep.generate_segment_todo_list())
+        futures = {
+            rep.generate_segment_todo_list() for rep in self.representations}
+        results = await asyncio.gather(*futures)
+        self.progress.inc()
+        return False not in results
 
     def num_tests(self) -> int:
         count = 0

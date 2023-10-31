@@ -79,12 +79,13 @@ class Representation(RepresentationBaseType):
         self.media_segments = merged_segments
         return True
 
-    async def generate_segment_todo_list(self) -> None:
+    async def generate_segment_todo_list(self) -> bool:
         if self.mode == "odvod":
-            await self.generate_segments_on_demand_profile()
+            rv = await self.generate_segments_on_demand_profile()
         else:
-            await self.generate_segments_live_profile()
+            rv = await self.generate_segments_live_profile()
         self.progress.inc()
+        return rv
 
     def set_representation_info(self, info: ServerRepresentation):
         self.info = info
@@ -116,20 +117,20 @@ class Representation(RepresentationBaseType):
         url = self.format_url_template(self.segmentTemplate.initialization)
         return urllib.parse.urljoin(self.baseurl, url)
 
-    async def generate_segments_live_profile(self) -> None:
+    async def generate_segments_live_profile(self) -> bool:
         if not self.elt.check_not_equal(self.mode, 'odvod'):
-            return
+            return False
         if not self.elt.check_not_none(
                 self.segmentTemplate,
                 msg='SegmentTemplate is required when using live profile'):
             self.init_segment = InitSegment(self, None, None)
-            return
+            return False
         if self.init_segment is None:
             self.init_segment = InitSegment(self, self.init_seg_url(), None)
         if self.info is None:
             await self.load_representation_info()
         if not self.elt.check_not_none(self.info, msg='Failed to get Representation info'):
-            return
+            return False
         frameRate = 24
         if self.frameRate is not None:
             frameRate = self.frameRate.value
@@ -142,6 +143,7 @@ class Representation(RepresentationBaseType):
             self.generate_segments_using_segment_timeline(frameRate)
         else:
             self.generate_segments_using_segment_template(frameRate)
+        return True
 
     def generate_segments_using_segment_template(self, frameRate: float) -> None:
         now = self.mpd.now()
@@ -294,9 +296,9 @@ class Representation(RepresentationBaseType):
                     total_duration, tsb,
                     template=r'SegmentTimeline has duration {0}, expected {1} based upon timeshiftbufferdepth')
 
-    async def generate_segments_on_demand_profile(self):
+    async def generate_segments_on_demand_profile(self) -> bool:
         if not self.elt.check_equal(self.mode, 'odvod'):
-            return
+            return False
         self.media_segments = []
         self.init_segment = None
         if self.segmentBase and self.segmentBase.initializationList:
@@ -319,11 +321,12 @@ class Representation(RepresentationBaseType):
             self.init_segment = InitSegment(
                 self, url, sl.initializationList[0].range)
         if not self.elt.check_not_none(self.init_segment, msg='failed to find init segment URL'):
-            return
+            return False
         if self.info is None:
-            await self.load_representation_info()
+            if not await self.load_representation_info():
+                return False
         if not self.elt.check_not_none(self.info, msg='Failed to get Representation init segment'):
-            return
+            return False
         decode_time = self.info.start_time
         seg_list = []
         for sl in self.segmentList:
@@ -371,6 +374,7 @@ class Representation(RepresentationBaseType):
                 decode_time += self.info.segments[idx + 1].duration
             else:
                 decode_time = None
+        return True
 
     def num_tests(self) -> int:
         count = 0
