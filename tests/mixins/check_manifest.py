@@ -92,6 +92,7 @@ class DashManifestCheckMixin:
             simplified: bool = False,
             debug: bool = False,
             check_head: bool = False,
+            abr: bool = False,
             with_subs: bool = False,
             only: AbstractSet | None = None,
             extras: list[tuple] | None = None,
@@ -127,7 +128,7 @@ class DashManifestCheckMixin:
         use_base_url = kwargs.get('useBaseUrls', True)
         options = manifest.get_cgi_query_combinations(
             mode=mode, simplified=simplified, only=only, extras=extras,
-            abr=False, utcMethod=utc_method, useBaseUrls=use_base_url, **kwargs)
+            abr=abr, utcMethod=utc_method, useBaseUrls=use_base_url, **kwargs)
         total_tests = len(options)
         if 'utcMethod' in manifest.features and 'utcMethod' not in kwargs:
             total_tests += len(UTCMethod.cgi_choices)

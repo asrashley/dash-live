@@ -84,7 +84,7 @@ class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
     @FlaskTestBase.mock_datetime_now(from_isodatetime("2020-10-07T09:59:02Z"))
     async def test_hand_made_manifest_live_abr(self):
         await self.check_a_manifest_using_all_options(
-            'hand_made.mpd', 'live', only={'abr', 'audioCodec', 'minimumupdateperiod'})
+            'hand_made.mpd', 'live', abr=True, only={'audioCodec', 'minimumupdateperiod'})
 
     async def test_hand_made_manifest_odvod_aac(self):
         await self.check_a_manifest_using_all_options(
