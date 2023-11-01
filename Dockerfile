@@ -47,7 +47,6 @@ COPY dashlive/server/events/*.py $HOME/dash-live/dashlive/server/events/
 COPY dashlive/server/models/*.py $HOME/dash-live/dashlive/server/models/
 COPY dashlive/server/options/*.py $HOME/dash-live/dashlive/server/options/
 COPY dashlive/server/requesthandler/*.py $HOME/dash-live/dashlive/server/requesthandler/
-COPY dashlive/testcase/*.py $HOME/dash-live/dashlive/testcase/
 COPY dashlive/utils/*.py $HOME/dash-live/dashlive/utils/
 COPY dashlive/utils/fio/*.py $HOME/dash-live/dashlive/utils/fio/
 COPY *.py $HOME/dash-live/
