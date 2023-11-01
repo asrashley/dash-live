@@ -68,7 +68,7 @@ class MainPage(HTMLHandlerBase):
             })
         extras = [DrmLocation]
         cgi_options = OptionsRepository.get_cgi_options(
-            hidden=False, omit_empty=False, extras=extras)
+            featured=True, omit_empty=False, extras=extras)
         for idx, opt in enumerate(cgi_options):
             try:
                 row = context['rows'][idx]

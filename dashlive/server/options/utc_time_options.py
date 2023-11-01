@@ -29,7 +29,7 @@ UTCMethod = DashOption(
     from_string=DashOption.string_or_none,
     cgi_name='time',
     cgi_choices=(None, 'direct', 'head', 'http-ntp', 'iso', 'ntp', 'sntp', 'xsd'),
-    hidden=False)
+    featured=True)
 
 UTCValue = DashOption(
     usage=(OptionUsage.MANIFEST | OptionUsage.TIME),

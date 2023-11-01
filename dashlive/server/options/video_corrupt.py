@@ -35,7 +35,7 @@ VideoCorruption = DashOption(
     from_string=DashOption.list_without_none_from_string,
     cgi_name='vcorrupt',
     cgi_type='<time>,..',
-    hidden=True)
+    featured=False)
 
 CorruptionFrameCount = DashOption(
     usage=(OptionUsage.MANIFEST | OptionUsage.VIDEO),

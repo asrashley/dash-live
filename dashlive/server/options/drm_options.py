@@ -73,7 +73,7 @@ DrmLocation = DashOption(
         ('mspr:pro MPD + PSSH init', 'moov-pro'),
         ('dash:cenc MPD + PSSH init', 'cenc-moov'),
     ),
-    hidden=False)
+    featured=True)
 
 
 # TODO: get this list from dashlive.drm
@@ -133,7 +133,7 @@ DrmSelection = DashOption(
     cgi_type='<drm>,.. or <drm>-<location>,..',
     input_type='multipleSelect',
     cgi_choices=(None, 'all', 'clearkey', 'marlin', 'playready'),
-    hidden=False)
+    featured=True)
 
 MarlinLicenseUrl = DashOption(
     usage=(OptionUsage.MANIFEST | OptionUsage.AUDIO | OptionUsage.VIDEO),

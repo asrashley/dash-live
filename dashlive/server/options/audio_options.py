@@ -22,7 +22,7 @@ AudioCodec = DashOption(
         ('EAC3 codec', 'ec-3'),
         ('Any codec', 'any'),
     ),
-    hidden=False)
+    featured=True)
 
 AudioDescriptionTrack = DashOption(
     usage=OptionUsage.MANIFEST,

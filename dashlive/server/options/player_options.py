@@ -8,8 +8,7 @@ DashjsVersion = DashOption(
     title='dash.js version',
     description='dash.js DASH player version',
     cgi_name='dashjs',
-    cgi_choices=(None, '4.7.1'),
-    hidden=True)
+    cgi_choices=(None, '4.7.1'))
 
 PLAYBACK_HTML = '''
 <p>Only relevant when using the Video Player page.</p>
@@ -33,7 +32,7 @@ NativePlayback = DashOption(
         ('dash.js', 'dashjs'),
     ),
     html=PLAYBACK_HTML,
-    hidden=False)
+    featured=True)
 
 ShakaVersion = DashOption(
     usage=OptionUsage.HTML,
@@ -42,8 +41,7 @@ ShakaVersion = DashOption(
     title='Shaka version',
     description='Shaka DASH player version',
     cgi_name='shaka',
-    cgi_choices=(None, '4.3.8', '2.5.4',),
-    hidden=True)
+    cgi_choices=(None, '4.3.8', '2.5.4',))
 
 player_options = [
     DashjsVersion,
