@@ -6,4 +6,5 @@ fi
 python3 -m venv /home/dash/.venv
 source /home/dash/.venv/bin/activate
 pip3 install --prefix /home/dash/.venv -r /home/dash/dash-live/requirements.txt
-pip3 install uwsgi==2.0.22
+#pip3 install uwsgi==2.0.22
+pip3 install gunicorn==21.2.0
