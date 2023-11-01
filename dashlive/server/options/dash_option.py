@@ -49,7 +49,7 @@ class DashOption:
     from_string: Callable[[str], Any] = field(default_factory=lambda: DashOption.string_or_none)
     to_string: Callable[[str], Any] = field(default_factory=lambda: flatten)
     prefix: str = field(default='')
-    hidden: bool = True
+    featured: bool = False
     html: str | None = None
 
     def get_cgi_option(self, omit_empty: bool = True) -> CgiOption | None:
@@ -95,7 +95,7 @@ class DashOption:
         return CgiOption(
             name=self.cgi_name,
             title=self.title,
-            hidden=self.hidden,
+            featured=self.featured,
             html=html,
             syntax=syntax,
             options=ocs,

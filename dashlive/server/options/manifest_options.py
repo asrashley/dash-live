@@ -26,7 +26,7 @@ AbrControl = DashOption(
         ('Enabled', '1'),
         ('Disabled', '0'),
     ),
-    hidden=False)
+    featured=True)
 
 AST_HTML = '''
 <p>
@@ -86,8 +86,7 @@ UseBaseUrl = DashOption(
     cgi_choices=(
         ('Yes', '1'),
         ('No', '0')
-    ),
-    hidden=False)
+    ))
 
 Bugs = DashOption(
     usage=OptionUsage.MANIFEST + OptionUsage.VIDEO + OptionUsage.AUDIO + OptionUsage.TEXT,
@@ -123,7 +122,7 @@ OperatingMode = DashOption(
         ('Live stream', 'live'),
         ('VOD OnDemand profile', 'odvod'),
     ),
-    hidden=False)
+    featured=True)
 
 MinimumUpdatePeriod = DashOption(
     usage=OptionUsage.MANIFEST,
@@ -152,7 +151,7 @@ Periods = DashOption(
     cgi_name='periods',
     cgi_type='<number>',
     cgi_choices=(None, '2', '3'),
-    hidden=False)
+    featured=True)
 
 SegmentTimeline = DashOption(
     usage=OptionUsage.MANIFEST,
@@ -163,7 +162,10 @@ SegmentTimeline = DashOption(
     from_string=DashOption.bool_from_string,
     to_string=DashOption.bool_to_string,
     cgi_name='timeline',
-    cgi_choices=('0', '1'))
+    cgi_choices=(
+        ('No (use $Number$)', '0'),
+        ('Yes (use $Time$)', '1')),
+    featured=True)
 
 TimeshiftBufferDepth = DashOption(
     usage=OptionUsage.MANIFEST + OptionUsage.VIDEO + OptionUsage.AUDIO + OptionUsage.TEXT,

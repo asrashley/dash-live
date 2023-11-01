@@ -68,12 +68,12 @@ class CgiOption:
     syntax: str = ''
     usage: set[str] = field(default_factory=lambda: set())
     html: str = ''
-    hidden: bool = False
+    featured: bool = False
 
     def toJSON(self, pure: bool = False,
                exclude: AbstractSet | None = None) -> JsonObject:
         rv = {
-            'hidden': self.hidden,
+            'featured': self.featured,
             'html': self.html,
             'name': self.name,
             'options': self.options,
