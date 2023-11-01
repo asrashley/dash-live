@@ -66,7 +66,7 @@ def run_migrations_online() -> None:
     """
     from sqlalchemy import create_engine
     from dotenv import load_dotenv
-    from dashlive.server.app import make_db_connection_string
+    from dashlive.server.models.connection import make_db_connection_string
  
     load_dotenv(os.getenv('DASHLIVE_SETTINGS', '.env'))
     instance_path = Path(os.getenv('FLASK_INSTANCE_PATH', '.'))
