@@ -1,6 +1,7 @@
 FROM python:3.11 as base
 EXPOSE 5000
 ENV HOME=/home/dash
+ENV FLASK_INSTANCE_PATH=/home/dash/instance
 ENV LOG_LEVEL="info"
 ENV VIRTUAL_ENV="/home/dash/.venv"
 RUN apt-get update && \

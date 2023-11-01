@@ -1,5 +1,7 @@
 #!/bin/bash
+
 source /home/dash/.venv/bin/activate
+source /home/dash/dash-live/.env
 
 if [ -z "${SERVER_NAME}" ]; then
     SERVER_NAME="_"
@@ -15,15 +17,17 @@ if [ "x${USER_UID}" != "x" -a "x${USER_GID}" != "x" ]; then
 fi
 echo "server_name ${SERVER_NAME};" > /etc/nginx/snippets/server_name.conf
 
+cd /home/dash/dash-live
+
 python -m alembic upgrade head
 
+GUNICORN_OPTIONS="-w 1 --threads 100 --user www-data --group www-data --worker-class gthread"
+
 if [ -f /etc/uwsgi/sites/dash.ini ]; then
-    mkdir /run/uwsgi
-    chown www-data:www-data /run/uwsgi
-    uwsgi --ini /etc/uwsgi/sites/dash.ini &
+    gunicorn ${GUNICORN_OPTIONS} -b 127.0.0.1:5000 --daemon application:app
     nginx -g "daemon off;"
 else
-    uwsgi --uid www-data --gid www-data --http localhost:80 --gevent 1000 --http-websockets --module application:app
+    gunicorn ${GUNICORN_OPTIONS} -b 127.0.0.1:80 application:app
 fi
 
 

@@ -9,4 +9,6 @@ sys.path.append(os.path.abspath(os.path.dirname(__file__)))
 # pylint: disable=wrong-import-position
 from dashlive.server.app import create_app
 
-app = create_app(instance_path='/home/dash/instance')
+instance_path = os.environ.get('FLASK_INSTANCE_PATH', '/home/dash/instance')
+
+app = create_app(instance_path=instance_path)
