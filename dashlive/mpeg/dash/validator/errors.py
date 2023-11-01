@@ -38,6 +38,12 @@ class StackFrame:
     def __repr__(self):
         return f'StackFrame({self.qualname}, {self.lineno}, {self.filename})'
 
+    def to_dict(self) -> dict:
+        return {
+            'filename': self.filename,
+            'line': self.lineno,
+            'module': self.qualname,
+        }
 
 @dataclass(slots=True, kw_only=True)
 class ValidationError:
@@ -51,13 +57,12 @@ class ValidationError:
     clause: str | None = None
 
     def to_dict(self) -> JsonObject:
-        if self.clause:
-            msg = f'{self.clause}: {self.msg}'
-        else:
-            msg = self.msg
         return {
+            'assertion': self.assertion.to_dict(),
+            'clause': self.clause,
             'location': list(self.location),
-            'text': msg,
+            'msg': self.msg,
+            'source': self.source.name,
         }
 
     def __str__(self) -> str:
