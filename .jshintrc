@@ -1,0 +1,11 @@
+{
+  "browser": true,
+  "curly": true,
+  "esversion": 11,
+  "futurehostile": true,
+  "noreturnawait": true,
+  "trailingcomma": true,
+  "undef": true,
+  "unused": true,
+  "varstmt": true
+}
