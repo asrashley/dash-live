@@ -1,3 +1,4 @@
+/* globals $, io */
 $(document).ready(function(){
     'use strict';
     const socket = io();
@@ -45,8 +46,11 @@ $(document).ready(function(){
             $('.progress-text').text(text);
         }
         if (finished === true) {
-            $('.progress-bar').removeClass(['progress-bar-animated', 'bg-info']).addClass('bg-success');
-            socket.emit('cmd', {method: 'done'});
+            $('.progress-bar').removeClass([
+                'progress-bar-animated',
+                'bg-info',
+            ]).addClass('bg-success');
+            socket.emit('cmd', {method: 'done',});
         }
     });
 
@@ -110,7 +114,7 @@ $(document).ready(function(){
         const { filename, title, prefix } = data;
         addLogMessage({
             level: 'info',
-            text: `Installing ${filename}`
+            text: `Installing ${filename}`,
         });
         socket.emit('cmd', {
             method: 'save',
@@ -131,7 +135,7 @@ $(document).ready(function(){
             ev.stopPropagation();
             addLogMessage({
                 level: 'error',
-                text: 'Form has errors'
+                text: 'Form has errors',
             });
             $(form).removeClass('was-validated').addClass('is-invalid');
             return;
@@ -146,7 +150,10 @@ $(document).ready(function(){
         });
         $('#btn-validate').attr('disabled', 'disabled');
         $('#btn-cancel').attr('disabled', false);
-        $('.progress-bar').addClass(['progress-bar-animated', 'bg-info']).removeClass('bg-success');
+        $('.progress-bar').addClass([
+            'progress-bar-animated',
+            'bg-info',
+        ]).removeClass('bg-success');
         $('.progress-bar').css('width', '0').text('0%').attr('aria-valuenow', '0');
         $('.progress-bar').css('visibility', 'visible');
         $('#validator .results').text('');

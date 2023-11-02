@@ -1,3 +1,5 @@
+/* jshint esversion: 5, varstmt: false */
+/* globals $, console */
 $(document).ready(function(){
   'use strict';
   var pageState = {
@@ -5,7 +7,7 @@ $(document).ready(function(){
     url: location.href,
     baseurl: location.href.split('#')[0],
   };
-  var cursor = { row:0, col:0, stream:0 };
+  var cursor = { row:0, col:0, stream:0, };
 
   function cycleOption(cell) {
     var sel, options, cur, i;
@@ -81,7 +83,7 @@ $(document).ready(function(){
     var params;
 
     params = {
-        mode: "mode=vod"
+        mode: "mode=vod",
     };
     $('#buttons tbody .option select').each(function(idx, sel) {
 	var defaultVal, val;
@@ -117,7 +119,7 @@ $(document).ready(function(){
   }
 
   function updateManifestURL() {
-    var manifest, dest, url, params, params_str;
+    var dest, url, params, params_str;
 
     dest = $('#dashurl');
     params = buildCGI();
@@ -247,13 +249,7 @@ $(document).ready(function(){
       updateManifestURL();
       return false;
     });
-    $('th.manifest, th.option').on('click', function(ev) {
-      if ($(ev.target).hasClass('active')) {
-        return;
-      }
-      toggleActiveRow();
-    });
-    $('#buttons tbody .option select').on('change', function(ev) {
+    $('#buttons tbody .option select').on('change', function() {
       updateManifestURL();
     });
     $('#play-button select').on('change', function(ev) {
@@ -276,7 +272,7 @@ $(document).ready(function(){
           }
         }
         return rv;
-      }
+      };
       Object.keys = function(obj) {
         var k, rv = [];
         for (k in obj) {
@@ -285,7 +281,7 @@ $(document).ready(function(){
           }
         }
         return rv;
-      }
+      };
     }
 
     cursor.numRows = $('#buttons tbody tr').length;
@@ -293,7 +289,7 @@ $(document).ready(function(){
     pageState.streams = [];
     $('#play-button option').each(function(idx, opt) {
         opt = $(opt);
-        pageState.streams.push({title: opt.text(), directory: opt.val()});
+        pageState.streams.push({title: opt.text(), directory: opt.val(),});
         if (opt.val() == $(".play-select").val()) {
             cursor.stream = idx;
         }
