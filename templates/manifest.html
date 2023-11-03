@@ -20,31 +20,27 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
-  {{import_script("jquery-3.7.1")}}
-  <script type="text/javascript">
-$(document).ready(function(){
-  'use strict';
-    function displayMpd(data) {
-      var ser;
-      ser = new XMLSerializer();
-      $('#manifest-xml').text(ser.serializeToString(data));
-    }
-    $('#mpd-form').on('submit', function(ev) {
-        var mpd_url;
+{% block extrascripts %}
+<script type="module">
+import $ from '/libs/jquery.js';
 
-        ev.preventDefault();
-        console.log('form submit');
-        mpd_url = $('#id_mpd_url').val();
-        $.ajax(mpd_url, {
-            success: displayMpd,
-            dataType: "xml"
-        });
-    });
-    $.ajax("{{ mpd_url }}", {
-       success: displayMpd,
-       dataType: "xml"
+function displayMpd(data) {
+    const ser = new XMLSerializer();
+    $('#manifest-xml').text(ser.serializeToString(data));
+}
+
+$('#mpd-form').on('submit', function(ev) {
+    ev.preventDefault();
+    const mpd_url = $('#id_mpd_url').val();
+    $.ajax(mpd_url, {
+        success: displayMpd,
+        dataType: "xml"
     });
 });
-  </script>
+
+$.ajax("{{ mpd_url }}", {
+    success: displayMpd,
+    dataType: "xml",
+});
+</script>
 {% endblock %}

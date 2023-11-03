@@ -6,6 +6,7 @@
 {% block extraheaders %}
 <link rel="stylesheet" href="{{ url_for('static', filename='css/font-awesome.css') }}" />
 <link rel="stylesheet" href="{{ url_for('static', filename='css/validator.css') }}" />
+<script src="{{ url_for('static', filename='js/validator.js')}}" type="module"></script>
 {% endblock %}
 
 {% block content %}
@@ -47,10 +48,4 @@
   <div class="card results"></div>
   </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-{{ import_script("jquery-3.7.1") }}
-{{ import_script("socket.io") }}
-<script src="{{ url_for('static', filename='js/validator.js')}}" type="text/javascript"></script>
 {% endblock %}

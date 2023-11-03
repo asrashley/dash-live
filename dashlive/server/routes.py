@@ -205,6 +205,10 @@ routes = {
         r'/users/<int:upk>/delete',
         handler='user_management.DeleteUser',
         title='Delete User'),
+    "esm-wrapper": Route(
+        r'/libs/<filename>',
+        handler='htmlpage.ModuleWrapper',
+        title='ESM JavaScript wrapper'),
     "home": Route(
         r'/',
         handler='htmlpage.MainPage',

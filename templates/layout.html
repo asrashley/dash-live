@@ -6,7 +6,7 @@
         <title>{% block title %}{{ title }}{% endblock %}</title>
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="shortcut icon" href="{{url_for('static', filename='favicon.ico')}}">
+        <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
         <link href="{{url_for('static', filename='css/comfortaa.css')}}"
               rel='stylesheet' type='text/css'>
         {% block firstscript %}{% endblock %}
@@ -14,9 +14,18 @@
         {% block stylesheet %}
         <link rel="stylesheet" href="{{url_for('static', filename='css/main.css')}}" />
         {% endblock %}
+        {% block scripts %}
         <script nomodule
-          src="{{url_for('static', filename='js/legacy/modernizr-3.5.0-custom.js')}}">
+          src="{{ url_for('static', filename='js/legacy/modernizr-3.5.0-custom.js') }}">
         </script>
+        <script src="{{ url_for('static', filename='js/prod/bootstrap.bundle.min.js') }}" defer
+                type="text/javascript"></script>
+        <script
+          src="'{{ url_for("static", filename="js/prod/jquery-3.7.1.min.js") }}'"
+          nomodule type="text/javascript"></script>
+        <script nomodule src="{{ url_for('static', filename='js/legacy/css.js') }}"
+                type="text/javascript"></script>
+        {% endblock %}
         {% block extraheaders %}{% endblock %}
     </head>
     <body>
@@ -47,11 +56,6 @@
         {% endblock %}
       </div>
       <div class="modal-backdrop hidden"></div>
-      {% block scripts %}
-      {{import_script("jquery-3.7.1")}}
-      {{import_script("bootstrap.bundle")}}
-      <script src="{{url_for('static', filename='js/main.js')}}" type="text/javascript"></script>
-      {% endblock %}
       {% block extrascripts %}{% endblock %}
     </body>
 </html>

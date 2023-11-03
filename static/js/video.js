@@ -1,8 +1,10 @@
+/* jshint esversion: 5, varstmt: false */
+/* globals $, console, dashlive */
 $(document).ready(function(){
   'use strict';
     var statusEvents=[
 	'stalled','loadedmetadata', 'error', 'canplay', 'canplaythrough',
-	'playing', 'ended', 'pause', 'resize', 'loadstart', 'seeking', 'seeked'];
+	'playing', 'ended', 'pause', 'resize', 'loadstart', 'seeking', 'seeked',];
     var hideMenuTimer = null;
 
     $('body').on('keydown', function(ev){
@@ -10,10 +12,11 @@ $(document).ready(function(){
 	case 32: /* space */
 	    $('#vid-window').toggleClass('paused');
 	    $('video').each(function(){
-		if(this.paused)
+		if(this.paused) {
 		    this.play();
-		else
+		} else {
 		    this.pause();
+                }
 	    });
 	    break;
 	case 49: /* 1 key */

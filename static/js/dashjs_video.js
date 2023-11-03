@@ -1,12 +1,15 @@
+/* jshint esversion: 5, varstmt: false */
+/* globals $, console, dashjs */
+
 (function(){
     'use strict';
     var dashlive = window.dashlive;
 
-    if (dashlive === undefined) {
+    if (window.dashlive === undefined) {
         window.dashlive = dashlive = {};
     }
 
-    dashlive.setupDashjsPlayer = function(vid, source, mimeType) {
+    dashlive.setupDashjsPlayer = function(vid, source) {
 	var $vid, player;
 
 	$vid = $(vid);

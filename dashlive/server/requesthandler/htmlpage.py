@@ -27,6 +27,7 @@ import urllib.error
 import urllib.parse
 
 import flask
+from flask.views import MethodView  # type: ignore
 from flask_login import current_user
 
 from dashlive.server import manifests, models
@@ -286,3 +287,16 @@ class DashValidator(HTMLHandlerBase):
                 'newRow': True,
             })
         return flask.render_template('validator.html', **context)
+
+
+class ModuleWrapper(MethodView):
+    """
+    Handler that is used to wrap conventional JS libraries into ESM modules
+    """
+
+    def get(self, filename: str) -> flask.Response:
+        headers = {
+            'Content-Type': 'application/javascript',
+        }
+        body = flask.render_template(f'esm/{filename}')
+        return flask.make_response((body, 200, headers))

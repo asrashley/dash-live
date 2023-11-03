@@ -1,3 +1,5 @@
+/* jshint esversion: 5, varstmt: false */
+/* globals $, console */
 (function(){
     'use strict';
     var dashlive = window.dashlive;
@@ -40,7 +42,7 @@
             secs = Math.floor(secs) % 60;
         }
         if(asString===false){
-            return {hours:hrs, minutes:mins, seconds:secs};
+            return {hours:hrs, minutes:mins, seconds:secs,};
         }
         rv = (('00'+mins).slice(-2))+':'+(('00'+secs).slice(-2));
         rv = (('00'+hrs).slice(-2))+':'+rv;

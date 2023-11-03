@@ -55,6 +55,6 @@
 {% include "dialogbox.html" %}
 {% endblock %}
 
-{% block extrascripts %}
-  <script src="{{ url_for('static', filename='js/media.js') }}" type="text/javascript"></script>
+{% block extraheaders %}
+  <script src="{{ url_for('static', filename='js/media.js') }}" type="module"></script>
 {% endblock %}

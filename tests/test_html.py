@@ -268,7 +268,7 @@ class TestHtmlPageHandlers(FlaskTestBase):
                 text = script.get_text()
                 if not text:
                     text = script.string
-                self.assertIn('var dashParameters', text)
+                self.assertIn('window.dashParameters', text)
                 start = text.index('{')
                 end = text.rindex('}') + 1
                 data = json.loads(text[start:end])
