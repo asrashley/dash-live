@@ -1,3 +1,6 @@
+/* jshint esversion: 5, varstmt: false */
+/* globals $, console */
+
 (function () {
     'use strict';
     var dashlive = window.dashlive;

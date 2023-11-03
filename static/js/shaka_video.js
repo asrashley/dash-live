@@ -1,18 +1,22 @@
+/* jshint esversion: 5, varstmt: false */
+/* globals $, console, shaka */
+
 (function(){
     'use strict';
     var dashlive = window.dashlive;
+    var dashParameters = window.dashParameters || {};
 
     if (dashlive === undefined) {
 	window.dashlive = dashlive = {};
     }
 
-    dashlive.setupShakaPlayer = function(vid, source, mimeType) {
+    dashlive.setupShakaPlayer = function(vid, source) {
         var player, laURL, laParams, parm, kid, shakaConfig;
 
         shakaConfig = {
             drm: {
-                servers: {}
-            }
+                servers: {},
+            },
         };
         shaka.polyfill.installAll();
         if (shaka.log && shaka.log.setLevel) {
@@ -21,7 +25,7 @@
         if (dashParameters.encrypted===true) {
             if (typeof(dashParameters.DRM.playready) !== "undefined") {
                 laURL = 'https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg=';
-                laParams = []
+                laParams = [];
                 for (kid in dashParameters.keys) {
                     parm = '(kid:'+dashParameters.keys[kid].guidKid;
                     if (dashParameters.keys[kid].computed !== true) {
@@ -54,7 +58,7 @@
         $(vid).on('canplay',function(){
             vid.play();
         });
-    }
+    };
     if (dashlive.setupVideoPlayer === undefined) {
 	dashlive.setupVideoPlayer = dashlive.setupShakaPlayer;
     }
