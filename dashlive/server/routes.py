@@ -209,6 +209,10 @@ routes = {
         r'/libs/<filename>',
         handler='htmlpage.ModuleWrapper',
         title='ESM JavaScript wrapper'),
+    "favicon": Route(
+        r'/favicon.ico',
+        handler='htmlpage.favicon',
+        title='favicon'),
     "home": Route(
         r'/',
         handler='htmlpage.MainPage',

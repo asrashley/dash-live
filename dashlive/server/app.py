@@ -75,7 +75,11 @@ def add_routes(app: Flask) -> None:
         module_name = full_path[:pos]
         handler_name = full_path[pos + 1:]
         module = importlib.import_module(module_name)
-        view_func = getattr(module, handler_name).as_view(name)
+        view = getattr(module, handler_name)
+        try:
+            view_func = view.as_view(name)
+        except AttributeError:
+            view_func = view
         app.add_url_rule(route.template, endpoint=name,
                          view_func=view_func)
 
