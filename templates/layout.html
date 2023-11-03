@@ -14,8 +14,8 @@
         {% block stylesheet %}
         <link rel="stylesheet" href="{{url_for('static', filename='css/main.css')}}" />
         {% endblock %}
-        <script
-          src="{{url_for('static', filename='js/modernizr-3.5.0-custom.js')}}">
+        <script nomodule
+          src="{{url_for('static', filename='js/legacy/modernizr-3.5.0-custom.js')}}">
         </script>
         {% block extraheaders %}{% endblock %}
     </head>
