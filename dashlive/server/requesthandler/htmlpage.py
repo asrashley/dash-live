@@ -19,7 +19,6 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-
 import logging
 import urllib.request
 import urllib.parse
@@ -300,3 +299,8 @@ class ModuleWrapper(MethodView):
         }
         body = flask.render_template(f'esm/{filename}')
         return flask.make_response((body, 200, headers))
+
+def favicon() -> flask.Response:
+    return flask.send_from_directory(
+        flask.current_app.static_folder,
+        'favicon.ico', mimetype='image/vnd.microsoft.icon', conditional=True)
