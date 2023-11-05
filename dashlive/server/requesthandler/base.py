@@ -452,7 +452,7 @@ class RequestHandlerBase(MethodView):
             except KeyError:
                 audio = AdaptationSet(
                     mode=options.mode, content_type='audio', id=(100 + r.track_id),
-                    segment_timeline=options.segmentTimeline)
+                    segment_timeline=options.segmentTimeline, numChannels=r.numChannels)
                 adap_sets[r.track_id] = audio
             if len(audio_files) == 1 or options.mainAudio == r.id:
                 audio.role = 'main'
