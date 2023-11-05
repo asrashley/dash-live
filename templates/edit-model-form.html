@@ -11,7 +11,7 @@
   {% if field_groups %}
   <div class="accordion">
     {% for group in field_groups %}
-    <div class="accordion-item mb-4">
+    <div class="accordion-item mb-4 {{ group.className }}" id="group-{{ loop.index0 }}">
       <div class="accordion-header">
         <button class="accordion-button" type="button" data-bs-toggle="collapse"
                 data-bs-target="#model-group-{{ loop.index }}" aria-expanded="true"
@@ -33,6 +33,7 @@
     {% include 'input-field.html' %}
     {% endfor %}
   {% endif %}
+  {%- if not exclude_buttons %}
   <div class="form-actions">
     {% if current_user.has_permission('MEDIA') %}
     <button type="submit" class="btn btn-primary">Save Changes</button>
@@ -44,4 +45,5 @@
     {{ extra_buttons }}
     {% endif %}
   </div>
+  {% endif %}
 </form>

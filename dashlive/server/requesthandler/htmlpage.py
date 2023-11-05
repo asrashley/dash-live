@@ -48,10 +48,91 @@ class MainPage(HTMLHandlerBase):
         context = self.create_context(**kwargs)
         context.update({
             'rows': [],
-            'streams': models.Stream.all(),
+            'streams': list(models.Stream.all()),
+            'exclude_buttons': True,
         })
+        if context['streams']:
+            context.update({
+                'default_stream': context['streams'][0],
+                'default_url': flask.url_for(
+                    'dash-mpd-v3', mode='vod', manifest='hand_made.mpd',
+                    stream=context['streams'][0].directory),
+            })
+        defaults = OptionsRepository.get_default_options()
+        field_choices = {
+            'representation': [
+                dict(value=mf.name, title=mf.name) for mf in models.MediaFile.all()],
+            'audio_representation': [
+                dict(value=mf.name, title=mf.name) for mf in models.MediaFile.search(
+                    content_type='audio')],
+            'text_representation': [
+                dict(value=mf.name, title=mf.name) for mf in models.MediaFile.search(
+                    content_type='text')],
+        }
+        for name in ['representation', 'audio_representation', 'text_representation']:
+            field_choices[name].insert(0, {
+                'title': '--',
+                'value': '',
+            })
+        context['field_groups'] = defaults.generate_input_field_groups(
+            field_choices,
+            exclude={'mode', 'dashjsVersion', 'marlin.licenseUrl',
+                     'audioErrors', 'manifestErrors', 'textErrors', 'videoErrors',
+                     'numPeriods', 'playready.licenseUrl', 'shakaVersion', 'failureCount',
+                     'videoCorruption', 'videoCorruptionFrameCount',
+                     'updateCount', 'utcValue'})
+        dash_options = OptionsRepository.get_cgi_map()
+        for idx, group in enumerate(context['field_groups']):
+            if idx > 0:
+                group.className = 'advanced hidden'
+            for field in group.fields:
+                field['rowClass'] = 'row advanced hidden'
+                try:
+                    if dash_options[field['name']].featured:
+                        field['rowClass'] = 'row featured'
+                except KeyError:
+                    pass
         filenames = list(manifests.manifest.keys())
         filenames.sort(key=lambda name: manifests.manifest[name].title)
+        context['field_groups'][0].fields.insert(0, {
+            "name": "manifest",
+            "title": "Manifest",
+            "text": "Manifest template to use",
+            "type": "select",
+            "options": [{
+                "title": f'{name}: {manifests.manifest[name].title}',
+                "value": name,
+                "selected": name == "hand_made.mpd",
+            } for name in filenames],
+        })
+        context['field_groups'][0].fields.insert(0, {
+            "name": "stream",
+            "title": "Stream",
+            "type": "radio",
+            "options": [{
+                "title": stream.title,
+                "value": stream.directory,
+                "selected": stream.directory == context['streams'][0].directory,
+            } for stream in context['streams']],
+        })
+        context['field_groups'][0].fields.insert(0, {
+            "name": "mode",
+            "title": "Playback Mode",
+            "type": "radio",
+            "options": [{
+                "title": 'Video On Demand (using live profile)',
+                "value": 'vod',
+                "selected": True,
+            }, {
+                "title": 'Live stream (using live profile)',
+                "value": 'live',
+                "selected": False,
+            }, {
+                "title": 'Video On Demand (using on-demand profile)',
+                "value": 'odvod',
+                "selected": False,
+            }],
+        })
         for name in filenames:
             url = flask.url_for(
                 'dash-mpd-v3',
@@ -66,6 +147,14 @@ class MainPage(HTMLHandlerBase):
                 'manifest': manifests.manifest[name],
                 'option': [],
             })
+        url = flask.url_for(
+            'dash-mpd-v3',
+            manifest='manifest',
+            stream='directory',
+            mode='mode').replace('/manifest', '/{manifest}')
+        url = url.replace('/directory/', '/{directory}/')
+        url = url.replace('/mode/', '/{mode}/')
+        context['url_template'] = url
         extras = [DrmLocation]
         cgi_options = OptionsRepository.get_cgi_options(
             featured=True, omit_empty=False, extras=extras)
@@ -297,7 +386,11 @@ class ModuleWrapper(MethodView):
         headers = {
             'Content-Type': 'application/javascript',
         }
-        body = flask.render_template(f'esm/{filename}')
+        context = {}
+        if 'default' in filename:
+            context['defaults'] = OptionsRepository.get_default_options().generate_cgi_parameters(
+                exclude={'_type'})
+        body = flask.render_template(f'esm/{filename}', **context)
         return flask.make_response((body, 200, headers))
 
 def favicon() -> flask.Response:

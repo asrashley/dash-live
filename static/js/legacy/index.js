@@ -238,6 +238,8 @@ $(document).ready(function(){
   function init() {
     var params, i, p;
 
+    $('#buttons').css('display', 'block');
+    $('#with-modules').remove();
     $('a.manifest-title').on('click', function(ev) {
       var cell = ev.target;
       ev.preventDefault();

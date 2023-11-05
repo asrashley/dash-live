@@ -782,6 +782,8 @@ class HTMLHandlerBase(RequestHandlerBase):
 
     def create_context(self, **kwargs):
         context = super().create_context(**kwargs)
+        if 'nomodule' not in flask.request.args:
+            context['nomodule'] = 'nomodule'
         route = routes[flask.request.endpoint]
         navbar = [{
             'title': 'Home', 'href': flask.url_for('home')

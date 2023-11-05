@@ -15,3 +15,4 @@ class InputFieldGroup:
     title: str
     fields: list[JsonObject]
     show: bool = False
+    className: str = ''
