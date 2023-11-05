@@ -472,8 +472,10 @@ class Representation(RepresentationBaseType):
             msg = ('Failed to generate any segments for Representation ' +
                    f'{self.unique_id()} for MPD {self.mpd.url}')
             self.elt.check_greater_than(len(self.media_segments), 0, msg=msg)
-        self.attrs.check_not_none(self.bandwidth, msg='bandwidth is a mandatory attribute')
-        self.attrs.check_not_none(self.id, msg='id is a mandatory attribute')
+        self.attrs.check_not_none(
+            self.bandwidth, msg='bandwidth is a mandatory attribute', clause='5.3.5.2')
+        self.attrs.check_not_none(
+            self.id, msg='id is a mandatory attribute', clause='5.3.5.2')
         self.attrs.check_not_none(
             self.mimeType, msg='Representation@mimeType is a mandatory attribute',
             clause='5.3.7.2')

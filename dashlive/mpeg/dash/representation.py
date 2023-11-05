@@ -196,7 +196,7 @@ class Representation(ObjectWithFields):
                     if verbose == 1:
                         sys.stdout.write('M')
                         sys.stdout.flush()
-                    clz.process_moov(atom, rv, key_ids)
+                    rv.process_moov(atom, key_ids)
                     moov = atom
         if rv.encrypted:
             rv.kids = list(key_ids)
@@ -226,11 +226,10 @@ class Representation(ObjectWithFields):
     def set_dash_timing(self, timing: DashTiming) -> None:
         self._timing = timing
 
-    @classmethod
-    def process_moov(clz, moov: Mp4Atom, rv: Mp4Atom, key_ids: Mp4Atom) -> None:
-        rv.timescale = moov.trak.mdia.mdhd.timescale
-        rv.lang = moov.trak.mdia.mdhd.language
-        rv.track_id = moov.trak.tkhd.track_id
+    def process_moov(self, moov: Mp4Atom, key_ids: set[KeyMaterial]) -> None:
+        self.timescale = moov.trak.mdia.mdhd.timescale
+        self.lang = moov.trak.mdia.mdhd.language
+        self.track_id = moov.trak.tkhd.track_id
         try:
             default_sample_duration = moov.mvex.trex.default_sample_duration
         except AttributeError:
@@ -238,7 +237,7 @@ class Representation(ObjectWithFields):
             default_sample_duration = 0
         avc = None
         avc_type = None
-        for box in clz.KNOWN_CODEC_BOXES:
+        for box in self.KNOWN_CODEC_BOXES:
             try:
                 avc = getattr(moov.trak.mdia.minf.stbl.stsd, box)
                 avc_type = avc.atom_type
@@ -247,16 +246,16 @@ class Representation(ObjectWithFields):
                 pass
         if avc_type == 'enca' or avc_type == 'encv':
             avc_type = avc.sinf.frma.data_format
-            rv.encrypted = True
-            rv.default_kid = avc.sinf.schi.tenc.default_kid.encode('hex')
-            rv.iv_size = avc.sinf.schi.tenc.iv_size
-            key_ids.add(KeyMaterial(hex=rv.default_kid))
+            self.encrypted = True
+            self.default_kid = avc.sinf.schi.tenc.default_kid.encode('hex')
+            self.iv_size = avc.sinf.schi.tenc.iv_size
+            key_ids.add(KeyMaterial(hex=self.default_kid))
         if moov.trak.mdia.hdlr.handler_type == 'vide':
-            rv.process_video_moov(avc, avc_type, default_sample_duration)
+            self.process_video_moov(avc, avc_type, default_sample_duration)
         elif moov.trak.mdia.hdlr.handler_type == 'soun':
-            rv.process_audio_moov(avc, avc_type)
+            self.process_audio_moov(avc, avc_type)
         elif moov.trak.mdia.hdlr.handler_type in {'text', 'subt'}:
-            rv.process_text_moov(avc, avc_type)
+            self.process_text_moov(avc, avc_type)
 
     def process_video_moov(self, avc: Mp4Atom, avc_type: str | None,
                            default_sample_duration: int) -> None:

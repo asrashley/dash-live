@@ -10,6 +10,7 @@ import urllib.parse
 
 from dashlive.drm.playready import PlayReady
 from dashlive.mpeg import mp4
+from dashlive.mpeg.dash.representation import Representation as DashRepresentation
 from dashlive.utils.buffered_reader import BufferedReader
 
 from .dash_element import DashElement
@@ -102,6 +103,7 @@ class InitSegment(DashElement):
         if not self.elt.check_not_none(moov, msg=msg):
             self.logging.error(msg)
             return None
+        self.validate_moov(moov)
         pssh = moov.find_child('pssh')
         if pssh is not None:
             self.elt.check_true(
@@ -117,6 +119,42 @@ class InitSegment(DashElement):
                 self.elt.check_true(
                     'moov' not in self.url, None, None,
                     'PSSH box should be present in an encrypted stream')
+
+    def validate_moov(self, moov: mp4.Mp4Atom) -> None:
+        dash_rep = DashRepresentation()
+        key_ids = set()
+        dash_rep.process_moov(moov, key_ids)
+        timescale = self.parent.timescale()
+        self.elt.check_equal(
+            dash_rep.timescale, self.parent.timescale(),
+            msg=f'Expected timescale to be {timescale} but found {dash_rep.timescale}')
+        if self.parent.codecs:
+            self.elt.check_equal(
+                dash_rep.codecs, self.parent.codecs,
+                msg=f'Expected codec to be {self.parent.codecs} but found {dash_rep.codecs}')
+        if self.parent.parent.contentType == 'video':
+            self.elt.check_less_than_or_equal(
+                self.parent.height, dash_rep.height,
+                msg=f'Expected height to be {self.parent.height} but found {dash_rep.height}')
+            self.elt.check_less_than_or_equal(
+                self.parent.width, dash_rep.width,
+                msg=f'Expected width to be {self.parent.width} but found {dash_rep.width}')
+            framerate = self.parent.frameRate
+            if framerate is None:
+                framerate = self.parent.parent.frameRate
+            if framerate is not None:
+                msg = f'Expected frame rate {framerate.value} but found {dash_rep.frameRate}'
+                self.elt.check_almost_equal(
+                    framerate.value, dash_rep.frameRate, msg=msg, clause='5.3.12.2')
+
+        elif self.parent.parent.contentType == 'audio':
+            audioSamplingRate = self.parent.audioSamplingRate
+            if audioSamplingRate is None:
+                audioSamplingRate = self.parent.parent.audioSamplingRate
+            if audioSamplingRate is not None:
+                msg = (f'Expected audio sampling rate to be {audioSamplingRate} ' +
+                       f'but found {dash_rep.sampleRate}')
+                self.elt.check_equal(audioSamplingRate, dash_rep.sampleRate, msg=msg)
 
     def validate_pssh(self, pssh) -> None:
         self.elt.check_equal(len(pssh.system_id), 16)
