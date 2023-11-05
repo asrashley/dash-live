@@ -5,11 +5,35 @@
 {% endblock %}
 
 {% block content %}
-<div class="manifest-url">
-  <a id="view-manifest" href="" class="btn btn-light btn-sm disabled">View Manifest</a>
-  <a id="dashurl" href=""></a>
+<div class="manifest-url rounded border">
+  <span class="fw-semibold">Manifest URL: </span>
+  <a id="dashurl" href="{{ default_url }}">{{ default_url }}</a>
 </div>
-<div id="buttons" data-page="{{page}}">
+<div id="with-modules" style="display: none" data-url-template="{{ url_template }}">
+  <div class="row">
+    <div class="play-button col-6" >
+      <a class="btn btn-primary selected-stream" href="{{ default_url }}">
+        <span class="fa fa-play icon"></span>
+        <span class="title">
+          {%- if default_stream %}
+          {{ default_stream.title }}
+          {%- endif %}
+        </span>
+      </a>
+    </div>
+    <div class="col-6 view-manifest-button">
+      <a class="view-manifest btn btn-light" href="" class="btn btn-light btn-sm disabled">
+        <span class="fa fa-search icon"></span>View Manifest
+      </a>
+    </div>
+  </div>
+  <div class="form-check form-switch form-check-inline" id="show-all-options">
+    <input class="form-check-input" type="checkbox" name="advanced" id="advanced-options" role="switch">
+    <label class="form-check-label" for="advanced-options">Show all options</label>
+  </div>
+  {% include 'edit-model-form.html' %}
+</div>
+<div id="buttons" data-page="{{page}}" style="display: none">
   <table class="btn-grid table table-striped table-bordered table-sm">
     <thead>
       <tr>
@@ -38,11 +62,11 @@
           <span class="option-title">{{ row.option.title }}</span>
           {% if row.option.name %}
           <select name="{{row.option.name}}"
-		  data-default="{{ row.option.options[0].value }}">
+                  data-default="{{ row.option.options[0].value }}">
             {% for opt in row.option.options %}
             <option value="{{opt[1]}}" {%- if loop.first %}selected{% endif -%}>
-	      {{ opt[0] }}
-	    </option>
+              {{ opt[0] }}
+            </option>
             {% endfor %}
           </select>
           {% endif %}
@@ -50,18 +74,25 @@
         </tr>
       {% endfor %}
       <tr class="play-row">
-        <td colspan="2" class="play-cell">
+        <td class="play-cell">
           <div id="play-button" class="disabled" >
             <a class="button play-icon"><span class="fa fa-play icon"></span></a>
             <select name="stream" class="play-select">
-            {% for stream in streams %}
-            <option value="{{stream.directory}}">Play {{stream.title}}</option>
-            {% endfor %}
+              {% for stream in streams %}
+              <option value="{{stream.directory}}">Play {{stream.title}}</option>
+              {% endfor %}
             </select>
           </div>
-      </td></tr>
+        </td>
+        <td>
+          <div class="view-manifest-wrapper">
+            <a id="view-manifest" href="" class="btn btn-light disabled">View Manifest</a>
+          </div>
+        </td>
+      </tr>
     </tbody>
   </table>
+</div>
   <p class="info">
     The MPD files for live streams are dynamically
     generated so that they appear to be live sources, using static media files.
@@ -69,10 +100,11 @@
     using various CGI parameters, which are documented on the
     <a href="{{url_for('cgi-options')}}" class="link">CGI options</a> page.
   </p>
-</div>
 {% endblock %}
 
 {% block extrascripts %}
-  <script src="{{url_for('static', filename='js/index.js')}}" type="module" ></script>
-  <script src="{{url_for('static', filename='js/legacy/index.js')}}" nomodule type="text/javascript" defer></script>
+{% if nomodule %}
+<script src="{{url_for('static', filename='js/index.js')}}" type="module" ></script>
+{% endif %}
+<script src="{{url_for('static', filename='js/legacy/index.js')}}" {{ nomodule }} type="text/javascript" defer></script>
 {% endblock %}

@@ -33,6 +33,7 @@
   </label>
   <div class="{{ middle }}">
   {% endif %}
+  {% if field.type != "radio" %}
     {% if field.type == "select" %}
       <select
     {% elif field.type == "link" %}
@@ -71,8 +72,19 @@
       {% endfor %}
       </select>
       {% else %}
-    />
-      {% endif %}
+      />
+    {% endif %} <!-- type == select -->
+    {% else %} <!-- type == radio -->
+      {% for option in field.options %}
+      <div class="form-check">
+        <input class="form-check-input" type="radio" name="{{ field.name }}"
+               id="radio-{{ field.name }}-{{ option.value }}"
+               value="{{ option.value }}" {%- if option.selected %}checked {%- endif %} />
+        <label class="form-check-label"
+               for="radio-{{ field.name }}-{{ option.value }}" >{{ option.title }}</label>
+      </div>
+      {% endfor %}
+    {% endif %}
   {% if field.type != "hidden" %}
     <div class="invalid-feedback"></div>
     {%- if field.type == "link" %}
