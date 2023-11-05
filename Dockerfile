@@ -18,9 +18,10 @@ RUN $HOME/dash-live/create_virtenv.sh
 COPY static/favicon.ico $HOME/dash-live/static/
 COPY static/fonts/* $HOME/dash-live/static/fonts/
 COPY static/img/* $HOME/dash-live/static/img/
-COPY static/js/prod/* $HOME/dash-live/static/js/prod/
-COPY static/js/dev/* $HOME/dash-live/static/js/dev/
 COPY static/js/*.js $HOME/dash-live/static/js/
+COPY static/js/dev/* $HOME/dash-live/static/js/dev/
+COPY static/js/legacy/* $HOME/dash-live/static/js/legacy/
+COPY static/js/prod/* $HOME/dash-live/static/js/prod/
 COPY templates/manifests/*.mpd $HOME/dash-live/templates/manifests/
 COPY templates/*.html $HOME/dash-live/templates/
 COPY templates/drm/*.xml $HOME/dash-live/templates/drm/
