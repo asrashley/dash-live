@@ -65,6 +65,7 @@ class AdaptationSet(ObjectWithFields):
             defaults['mimeType'] = "audio/mp4"
             defaults['lang'] = 'und'
             defaults['role'] = 'main'
+            defaults['numChannels'] = 2
             suffix = 'm4a'
         elif self.content_type == 'video':
             defaults['mimeType'] = "video/mp4"

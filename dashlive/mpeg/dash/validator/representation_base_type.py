@@ -15,6 +15,8 @@ from .segment_template import SegmentTemplate
 
 class RepresentationBaseType(DashElement):
     attributes = [
+        ('audioSamplingRate', int, None),
+        ('codecs', str, None),
         ('profiles', str, None),
         ('width', int, None),
         ('height', int, None),

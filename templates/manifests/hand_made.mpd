@@ -64,6 +64,11 @@
              value="{{adp.role}}"
            />
          {%- endif %}
+         {%- if adp.content_type == "audio" %}
+         <AudioChannelConfiguration
+             schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011"
+             value="{{ adp.numChannels }}" />
+         {%- endif %}
          {%- if adp.accessibility %}
          <Accessibility
              schemeIdUri="{{adp.accessibility.schemeIdUri}}"
@@ -97,8 +102,7 @@
                  width="{{rep.width}}"
                  height="{{rep.height}}"
                {%- elif adp.content_type == "audio" %}
-                   sampleRate="{{rep.sampleRate}}"
-                   numChannels="{{rep.numChannels}}"
+                   audioSamplingRate="{{rep.sampleRate}}"
                {%- endif %}
                {%- if rep.lang and rep.lang != "und" %}
                    lang="{{rep.lang}}"
