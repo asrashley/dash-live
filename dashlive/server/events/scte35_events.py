@@ -60,6 +60,7 @@ class Scte35Events(RepeatingEventBase):
 
     def create_binary_signal(self, event_id: int, presentation_time: int) -> BinarySignal:
         pts = presentation_time * MPEG_TIMEBASE // self.timescale
+        pts &= 0x1FFFFFFFF  # PTS field is 33 bits
         duration = self.duration * MPEG_TIMEBASE // self.timescale
         # auto_return is True for the OUT and False for the IN
         auto_return = (event_id & 1) == 0
