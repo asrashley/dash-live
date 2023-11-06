@@ -89,7 +89,8 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
         ref_today = self.real_datetime_class(2019, 1, 1, tzinfo=UTC())
         ref_yesterday = ref_today - datetime.timedelta(days=1)
         testcases = [
-            ('', ref_now, ref_today),
+            ('year', ref_now, ref_today),
+            ('month', ref_now, ref_today),
             ('today', ref_now, ref_today),
             ('2019-09-invalid-iso-datetime', ref_now, ref_today),
             ('now', ref_now, ref_now),
@@ -138,7 +139,11 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                     await dv.load(xml=xml.getroot())
                     await dv.validate()
                 self.assertFalse(dv.has_errors())
-                if option == 'now':
+                today = now.replace(hour=0, minute=0, second=0, microsecond=0)
+                # print('option=', option, 'now=', now, 'start=', start_time, 'today=', today)
+                if option != 'today' and today == start_time:
+                    start_time -= datetime.timedelta(days=1)
+                elif option == 'now':
                     start_time = dv.manifest.publishTime - dv.manifest.timeShiftBufferDepth
                 self.assertEqual(
                     dv.manifest.availabilityStartTime,
