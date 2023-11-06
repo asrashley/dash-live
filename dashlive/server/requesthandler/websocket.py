@@ -6,11 +6,11 @@
 #
 #############################################################################
 
+from concurrent.futures import Future
 import queue
 import logging
 from logging.handlers import QueueHandler, QueueListener
 import tempfile
-from threading import Thread
 import time
 from typing import Optional
 
@@ -29,6 +29,7 @@ from dashlive.mpeg.dash.validator.basic import BasicDashValidator
 from dashlive.mpeg.dash.validator.pool import WorkerPool
 from dashlive.mpeg.dash.validator.progress import Progress
 from dashlive.mpeg.dash.validator.requests_http_client import RequestsHttpClient
+from dashlive.mpeg.dash.validator.validation_flag import ValidationFlag
 from dashlive.server import models
 from dashlive.server.asyncio_loop import asyncio_loop
 from dashlive.server.thread_pool import pool_executor
@@ -43,7 +44,7 @@ class ClientConnection(Progress):
         self.dash_log = logging.getLogger('DashValidator')
         self.dash_log.propagate = False
         self._aborted = False
-        self.tasks: set[Thread] = set()
+        self.tasks: set[Future] = set()
         self.tmpdir: Optional[tempfile.TemporaryDirectory] = None
         self.pool = ConcurrentWorkerPool(pool_executor)
         log_queue = queue.Queue(-1)
@@ -98,7 +99,7 @@ class ClientConnection(Progress):
 
     def validate_cmd(self, data) -> None:
         self._aborted = False
-        for field in ['pretty', 'encrypted', 'save']:
+        for field in ['pretty', 'encrypted', 'media', 'save']:
             data[field] = data.get(field, '').lower() == 'on'
         if data.get('verbose', '').lower() == 'on':
             data['verbose'] = 1
@@ -116,8 +117,8 @@ class ClientConnection(Progress):
                     errs['prefix'] = f'"{data["directory"]}" directory already exists'
             if data['title'] == '':
                 errs['title'] = 'Title is required'
-        self.emit('manifest-validation', errs)
         if errs:
+            self.emit('manifest-validation', errs)
             return
         upload_dir = flask.current_app.config['UPLOAD_FOLDER']
         if self.tmpdir is not None:
@@ -126,8 +127,8 @@ class ClientConnection(Progress):
                 'text': 'Saving stream already in progress'
             })
             return
-        asyncio_loop.run_coroutine(
-            self.dash_validator_task, pool=self.pool, upload_dir=upload_dir, **data)
+        self.tasks.add(asyncio_loop.run_coroutine(
+            self.dash_validator_task, pool=self.pool, upload_dir=upload_dir, **data))
 
     def cancel_cmd(self, data) -> None:
         self.emit('log', {
@@ -147,7 +148,7 @@ class ClientConnection(Progress):
 
     async def dash_validator_task(
             self, method: str, manifest: str, upload_dir: str, pool: WorkerPool,
-            **kwargs) -> None:
+            media: bool, **kwargs) -> None:
         if self.tmpdir is not None:
             self.emit('log', {
                 'level': 'error',
@@ -163,6 +164,8 @@ class ClientConnection(Progress):
             self.dash_log.setLevel(logging.DEBUG)
         else:
             self.dash_log.setLevel(logging.INFO)
+        if not media:
+            opts.verify &= ~ValidationFlag.MEDIA
         dv = BasicDashValidator(manifest, options=opts, http_client=RequestsHttpClient(opts))
         try:
             if not await dv.load():
@@ -210,19 +213,18 @@ class ClientConnection(Progress):
         })
 
     def join_finished_tasks(self) -> None:
-        done: set[Thread] = set()
+        done: set[Future] = set()
         for tsk in self.tasks:
-            try:
-                if not tsk.is_alive():
-                    done.add(tsk)
-            except AttributeError:
-                # a greenlet task
-                if tsk.dead:
-                    done.add(tsk)
+            if not tsk.done():
+                done.add(tsk)
         for tsk in done:
             self.tasks.remove(tsk)
         for tsk in done:
-            tsk.join()
+            try:
+                tsk.result()
+            except Exception as err:
+                self.dash_log.error('Validation error: %s', err)
+
 
 class WebsocketHandler:
     def __init__(self, sockio) -> None:

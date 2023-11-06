@@ -319,10 +319,10 @@ class DashValidator(HTMLHandlerBase):
         context = self.create_context()
         context['form'] = [{
             "name": "manifest",
-            "title": "Select Manifest",
+            "title": "Manifest to check",
             "type": "url",
             "required": True,
-            "placeholder": "DASH manifest URL",
+            "placeholder": "... manifest URL ...",
         }, {
             'name': 'duration',
             'title': 'Maximum duration',
@@ -351,6 +351,17 @@ class DashValidator(HTMLHandlerBase):
                 "maxlength": 119,
             }]
         context['form'] += [{
+            'name': 'encrypted',
+            'title': 'Stream is encrypted?',
+            'type': 'checkbox',
+            'inline': True
+        }, {
+            'name': 'media',
+            'title': 'Check media segments',
+            'type': 'checkbox',
+            'inline': True,
+            'value': True,
+        }, {
             'name': 'verbose',
             'title': 'Verbose output',
             'type': 'checkbox',
@@ -359,12 +370,8 @@ class DashValidator(HTMLHandlerBase):
             'name': 'pretty',
             'title': 'Pretty print XML before validation',
             'type': 'checkbox',
-            'inline': True
-        }, {
-            'name': 'encrypted',
-            'title': 'Stream is encrypted?',
-            'type': 'checkbox',
-            'inline': True
+            'inline': True,
+            'newRow': True,
         }]
         if current_user.has_permission(models.Group.MEDIA):
             context['form'].append({
@@ -372,7 +379,6 @@ class DashValidator(HTMLHandlerBase):
                 'title': 'Add stream to this server?',
                 'type': 'checkbox',
                 'inline': True,
-                'newRow': True,
             })
         return flask.render_template('validator.html', **context)
 

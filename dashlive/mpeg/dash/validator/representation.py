@@ -42,9 +42,10 @@ class Representation(RepresentationBaseType):
         self.init_segment: Optional[InitSegment] = None
         self.media_segments: list[MediaSegment] = []
         self.segmentBase: Optional[MultipleSegmentBaseType] = None
+        self._validated = False
         if self.id:
-            self.attrs.prefix = self.id
-            self.elt.prefix = self.id
+            self.attrs.prefix = f'{self.id}: '
+            self.elt.prefix = f'{self.id}: '
         if self.segmentTemplate is None:
             self.segmentTemplate = parent.segmentTemplate
         if self.mode == "odvod":
@@ -91,8 +92,6 @@ class Representation(RepresentationBaseType):
         self.info = info
 
     async def load_representation_info(self) -> bool:
-        if ValidationFlag.MEDIA not in self.options.verify:
-            return True
         if not self.elt.check_not_none(
                 self.init_segment, msg='Failed to find init segment'):
             return False
@@ -393,6 +392,8 @@ class Representation(RepresentationBaseType):
         return rv
 
     def finished(self) -> bool:
+        if ValidationFlag.MEDIA not in self.options.verify:
+            return self._validated
         total_dur = 0
         for seg in self.media_segments:
             if seg.validated and seg.duration is not None:
@@ -410,6 +411,7 @@ class Representation(RepresentationBaseType):
         if ValidationFlag.REPRESENTATION in self.options.verify:
             await self.validate_self()
             self.progress.inc()
+            self._validated = True
         if len(self.media_segments) == 0:
             return
         if ValidationFlag.MEDIA not in self.options.verify:
