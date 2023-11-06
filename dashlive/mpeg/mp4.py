@@ -1094,6 +1094,8 @@ class MovieHeaderBox(FullBox):
 
     def encode_box_fields(self, dest):
         d = FieldWriter(self, dest)
+        if self.duration.bit_length() > 32:
+            self.version = 1
         if self.version == 1:
             sz = 'Q'
         else:
