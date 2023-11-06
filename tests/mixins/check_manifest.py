@@ -281,7 +281,8 @@ class DashManifestCheckMixin:
             flask.request.host_url = r'http://unit.test/'
             yield context
 
-    def check_generated_manifest_against_fixture(self, mpd_filename, mode, **kwargs):
+    def check_generated_manifest_against_fixture(
+            self, mpd_filename: str, mode: str, encrypted: bool, **kwargs):
         """
         Check a freshly generated manifest against a "known good" previous example
         """
@@ -301,12 +302,10 @@ class DashManifestCheckMixin:
         url += options.generate_cgi_parameters_string()
         stream = models.Stream.get(directory=self.FIXTURES_PATH.name)
         self.assertIsNotNone(stream)
-        # with self.app.test_request_context(url, method='GET'):
         with self.create_mock_request_context(url, stream):
             context = self.generate_manifest_context(
                 mpd_filename, mode=mode, stream=stream, options=options)
             text = flask.render_template(f'manifests/{mpd_filename}', **context)
-        encrypted = kwargs.get('drm', 'none') != 'none'
         fixture = self.fixture_filename(mpd_filename, mode, encrypted)
         expected = ET.parse(fixture).getroot()
         actual = ET.fromstring(bytes(text, 'utf-8'))

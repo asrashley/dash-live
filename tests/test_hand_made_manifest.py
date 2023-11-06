@@ -122,26 +122,28 @@ class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
             debug=False, duration=(2 * self.SEGMENT_DURATION))
 
     @FlaskTestBase.mock_datetime_now(from_isodatetime("2022-09-06T15:10:02Z"))
-    def test_generated_manifest_against_fixture(self):
+    def test_generated_vod_manifest_against_fixture(self):
         self.check_generated_manifest_against_fixture(
-            'hand_made.mpd', mode='vod', acodec='mp4a')
+            'hand_made.mpd', mode='vod', acodec='mp4a', start='today', drm='none',
+            encrypted=False)
 
     @FlaskTestBase.mock_datetime_now(from_isodatetime("2022-09-06T15:10:00Z"))
-    def test_generated_drm_manifest_against_fixture(self):
+    def test_generated_vod_drm_manifest_against_fixture(self):
         self.check_generated_manifest_against_fixture(
-            'hand_made.mpd', mode='vod', drm='all',
-            acodec='mp4a')
+            'hand_made.mpd', mode='vod', drm='all', encrypted=True,
+            acodec='mp4a', start='today')
 
     @FlaskTestBase.mock_datetime_now(from_isodatetime("2022-09-06T15:10:02Z"))
     def test_generated_live_manifest_against_fixture(self):
         self.check_generated_manifest_against_fixture(
-            'hand_made.mpd', mode='live', acodec='mp4a', time='xsd')
+            'hand_made.mpd', mode='live', acodec='mp4a', time='xsd', start='today',
+            drm='none', encrypted=False)
 
     @FlaskTestBase.mock_datetime_now(from_isodatetime("2022-09-06T15:10:00Z"))
     def test_generated_live_drm_manifest_against_fixture(self):
         self.check_generated_manifest_against_fixture(
-            'hand_made.mpd', mode='live', drm='all',
-            acodec='mp4a', time='xsd')
+            'hand_made.mpd', mode='live', drm='all', encrypted=True,
+            acodec='mp4a', time='xsd', start='today')
 
 
 if __name__ == '__main__':

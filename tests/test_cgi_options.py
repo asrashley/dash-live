@@ -212,7 +212,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
         expected = {
             '_type': 'dashlive.server.options.container.OptionsContainer',
             'abr': True,
-            'availabilityStartTime': 'today',
+            'availabilityStartTime': 'year',
             'audioCodec': 'mp4a',
             'audioDescription': None,
             'audioErrors': [],

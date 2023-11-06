@@ -70,7 +70,7 @@ AvailabilityStartTime = DashOption(
     to_string=ast_to_string,
     cgi_name='start',
     cgi_type='(today|month|year|epoch|now|<iso-datetime>)',
-    cgi_choices=('today', 'month', 'year', 'epoch', 'now'),
+    cgi_choices=('year', 'today', 'month', 'epoch', 'now'),
     html=AST_HTML,
     input_type='textList')
 
