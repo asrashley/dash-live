@@ -26,6 +26,7 @@ from concurrent.futures import ThreadPoolExecutor
 import io
 import logging
 import os
+from typing import Any
 import unittest
 import urllib.request
 import urllib.parse
@@ -544,16 +545,17 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         """
         self.assertEqual(len(self.keys), 1)
         filename = self.FIXTURES_PATH / 'bbb_a1_enc.mp4'
-        with filename.open('rb') as src:
-            segments = mp4.Mp4Atom.load(BufferedReader(src))
-        options = mp4.Options(debug=True)
+        options = mp4.Options(mode='rw')
+        with filename.open('rb') as f:
+            with io.BufferedReader(f) as src:
+                segments = mp4.Mp4Atom.load(src, options=options)
         init_seg = mp4.Wrapper(atom_type='wrap', options=options)
         for seg in segments:
             if seg.atom_type == 'moof':
                 break
             init_seg.append_child(seg)
         # Expecting boxes: ftyp, free, free, moov, styp, sidx
-        self.assertEqual(len(init_seg.children), 6)
+        self.assertEqual(len(init_seg._children), 6)
         mspr = PlayReady(
             la_url=self.la_url,
             header_version=4.1)
@@ -568,17 +570,13 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         init_seg.moov.append_child(pssh)
         self.assertEqual(len(init_seg.moov.children), before + 1)
         data = init_seg.encode()
-        data = data[8:]  # [8:] is to skip the fake "wrap" box
         # with open('new_init_seg.mp4', 'wb') as tmp:
         #     tmp.write(data)
         src = BufferedReader(None, data=data)
-        new_init_seg = mp4.Wrapper(options=options, size=len(data),
-                                   children=mp4.Mp4Atom.load(src))
-        self.assertEqual(new_init_seg.children[0].atom_type, 'ftyp')
-        self.assertEqual(len(new_init_seg.moov.children), len(init_seg.moov.children))
+        new_init_seg = mp4.Mp4Atom.load(src, options=options, use_wrapper=True)
+        self.assertEqual(new_init_seg._children[0].atom_type, 'ftyp')
+        self.assertEqual(len(new_init_seg.moov._children), len(init_seg.moov._children))
         expected = init_seg.toJSON()
-        expected['size'] -= 8
-        self._patch_position_values(expected, -8)
         actual = new_init_seg.toJSON()
         self.maxDiff = None
         self.assertEqual(len(expected['children']), len(actual['children']))
@@ -586,7 +584,19 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             if atom['atom_type'] == 'pssh':
                 atom['header_size'] = 8
         for exp, act in zip(expected['children'], actual['children']):
-            self.assertObjectEqual(exp, act, msg=exp["atom_type"])
+            self.assertObjectEqual(
+                exp, act, msg=exp["atom_type"],
+                list_key=self.list_key_fn)
+
+    @staticmethod
+    def list_key_fn(item: Any, index: int) -> str:
+        if isinstance(item, dict):
+            if '_type' in item:
+                item_type = item["_type"].split('.')[-1]
+                return f'{index}={item_type}'
+            print(item.keys())
+            return f'{index}={item["atom_type"]}'
+        return f'{index}'
 
     async def test_playready_la_url(self):
         """
