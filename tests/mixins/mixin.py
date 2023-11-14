@@ -28,6 +28,8 @@ import sys
 from typing import Any
 from unittest import mock
 
+from dashlive.utils.hexdump import hexdump_buffer
+
 class TestCaseMixin:
     real_datetime_class = datetime.datetime
 
@@ -73,7 +75,7 @@ class TestCaseMixin:
     def assertGreaterOrEqual(self, a, b, msg=None):
         self._assert_true(a >= b, a, b, msg, r'{} < {}')
 
-    def assertObjectEqual(self, expected, actual, msg=None, strict=False):
+    def assertObjectEqual(self, expected, actual, msg=None, strict=False, list_key=None):
         for key, value in expected.items():
             if msg is None:
                 key_name = key
@@ -89,7 +91,7 @@ class TestCaseMixin:
                 self.assertIn(key, actual, f'{key_name}: key "{key}" missing')
                 self.assertObjectEqual(value, actual[key], msg=key_name, strict=strict)
             elif isinstance(value, list):
-                self.assertListEqual(value, actual[key], msg=key_name)
+                self.assertListEqual(value, actual[key], msg=key_name, list_key=list_key)
             else:
                 self.assertIn(key, actual,
                               f'{key_name}: missing key {key}')
@@ -100,7 +102,7 @@ class TestCaseMixin:
             for key in list(actual.keys()):
                 self.assertIn(key, expected)
 
-    def assertListEqual(self, expected, actual, msg=None):
+    def assertListEqual(self, expected: list, actual: list, msg=None, list_key=None) -> None:
         if msg is None:
             msg = ''
         assert_msg = '{}: expected length {} got {}'.format(
@@ -108,17 +110,21 @@ class TestCaseMixin:
         self.assertEqual(len(expected), len(actual), assert_msg)
         idx = 0
         for exp, act in zip(expected, actual):
-            if isinstance(exp, list):
-                self.assertListEqual(exp, act, f'{msg:s}[{idx:d}]')
-            elif isinstance(exp, dict):
-                self.assertObjectEqual(exp, act, f'{msg:s}[{idx:d}]')
+            if list_key is None:
+                item_msg = f'{msg:s}[{idx:d}]'
             else:
-                assert_msg = f'{msg}[{idx}] expected "{exp}" got "{act}"'
+                lk = list_key(exp, idx)
+                item_msg = f'{msg:s}[{lk}]'
+            if isinstance(exp, list):
+                self.assertListEqual(exp, act, msg=item_msg, list_key=list_key)
+            elif isinstance(exp, dict):
+                self.assertObjectEqual(exp, act, msg=item_msg, list_key=list_key)
+            else:
+                assert_msg = f'{item_msg} expected "{exp}" got "{act}"'
                 if exp != act:
                     print(type(exp), type(act))
-                    print(len(exp), len(act))
-                    print(f'exp="${exp}"')
-                    print(f'act="${act}"')
+                    print(f'expected="{exp}"')
+                    print(f'actual="{act}"')
                 self.assertEqual(exp, act, assert_msg)
             idx += 1
 
@@ -232,52 +238,20 @@ class TestCaseMixin:
     def checkGreaterOrEqual(self, a, b, msg=None) -> bool:
         return self._check_true(a >= b, a, b, msg, r'{} < {}')
 
-    @staticmethod
-    def _print_line(start, hex_line, ascii_line):
-        if len(hex_line) < 8:
-            hex_line += ['   '] * (8 - len(hex_line))
-        print('{:04d}: {}   {}'.format(
-            start,
-            ' '.join(hex_line),
-            ' '.join(ascii_line)))
-
-    def hexdumpBuffer(self, label, data, max_length=256):
-        print(f'==={label}===')
-        hex_line = []
-        ascii_line = []
-        for idx, d in enumerate(data):
-            asc = chr(d) if d >= ord(' ') and d <= ord('z') else ' '
-            hex_line.append(f'{d:02x} ')
-            ascii_line.append(f'{asc} ')
-            if len(hex_line) == 8:
-                self._print_line(idx - 7, hex_line, ascii_line)
-                hex_line = []
-                ascii_line = []
-            if idx == max_length:
-                break
-        if hex_line:
-            self._print_line(idx - 7, hex_line, ascii_line)
-        if idx < len(data):
-            print('.......')
-        print('==={}==='.format('=' * len(label)))
-
-    def assertBuffersEqual(self, a, b, name=None, max_length=256, dump=True):
+    def assertBuffersEqual(self, a, b, name=None, max_length=256, dump=True, width=16):
         lmsg = r'Expected length {expected:d} does not match {actual:d}'
         dmsg = r'Expected 0x{expected:02x} got 0x{actual:02x} at byte position {position:d} (bit {bitpos:d})'
         if name is not None:
             lmsg = ': '.join([name, lmsg])
             dmsg = ': '.join([name, dmsg])
         if len(a) != len(b):
-            self.hexdumpBuffer('expected', a)
-            self.hexdumpBuffer('actual', b)
+            hexdump_buffer(f'expected {name}', a, width=width)
+            hexdump_buffer(f'actual {name}', b, width=width)
         self.assertEqual(
             len(a), len(b), lmsg.format(
                 expected=len(a), actual=len(b)))
         if a == b:
             return
-        if dump:
-            self.hexdumpBuffer(f'expected {name}', a, max_length=max_length)
-            self.hexdumpBuffer(f'actual {name}', b, max_length=max_length)
         for idx in range(len(a)):
             exp = a[idx]
             act = b[idx]
@@ -288,6 +262,12 @@ class TestCaseMixin:
                     break
                 mask = mask >> 1
                 bitpos += 1
+            if dump and exp != act:
+                start = max(0, idx - max_length // 2)
+                hexdump_buffer(
+                    f'expected {name}', a, max_length=max_length, offset=start, width=width)
+                hexdump_buffer(
+                    f'actual {name}', b, max_length=max_length, offset=start, width=width)
             self.assertEqual(
                 exp, act,
                 dmsg.format(
@@ -321,6 +301,16 @@ class TestCaseMixin:
     @staticmethod
     def to_base64(data: bytes) -> str:
         return str(binascii.b2a_base64(data, newline=False), 'ascii')
+
+    @staticmethod
+    def list_key_fn(item: Any, index: int) -> str:
+        if isinstance(item, dict):
+            if '_type' in item:
+                item_type = item["_type"].split('.')[-1]
+                return f'{index}={item_type}'
+            print(item.keys())
+            return f'{index}={item["atom_type"]}'
+        return f'{index}'
 
     @classmethod
     def mock_datetime_now(cls, target):
