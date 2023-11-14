@@ -164,14 +164,13 @@ class LiveMedia(RequestHandlerBase):
         assert mod_segment >= 0 and mod_segment <= representation.num_media_segments
         frag = representation.segments[mod_segment]
         mp4_options = mp4.Options(
-            cache_encoded=True, bug_compatibility=options.bugCompatibility)
+            mode='rw', lazy_load=True, bug_compatibility=options.bugCompatibility)
         if representation.encrypted:
             mp4_options.iv_size = representation.iv_size
         with current_media_file.open_file(start=frag.pos, buffer_size=16384) as reader:
             src = BufferedReader(
                 reader, offset=frag.pos, size=frag.size, buffersize=16384)
-            atom = mp4.Wrapper(
-                atom_type='wrap', children=mp4.Mp4Atom.load(src, options=mp4_options))
+            atom = mp4.Mp4Atom.load(src, options=mp4_options, use_wrapper=True)
         if adp_set.content_type == 'video' and options.videoCorruption:
             atom.moof.traf.trun.parse_samples(
                 src, representation.nalLengthFieldLength)
@@ -251,12 +250,11 @@ class LiveMedia(RequestHandlerBase):
             if saio is not None and senc is not None:
                 # force re-calculation of SAIO offset to SENC box
                 saio.offsets = None
-        data = io.BytesIO()
-        for child in atom.children:
-            child.encode(data)
+        dest = io.BytesIO()
+        atom.encode(dest)
         if mf.content_type == 'video' and options.videoCorruption:
-            self.apply_video_corruption(representation, segment_num, atom, data, options)
-        data = data.getvalue()
+            self.apply_video_corruption(representation, segment_num, atom, dest, options)
+        data = dest.getvalue()
         headers = {
             'Accept-Ranges': 'bytes',
             'Content-Type': adp_set.mimeType,
