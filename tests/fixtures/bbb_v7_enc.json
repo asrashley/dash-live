@@ -18,7 +18,6 @@
     "children": [
       {
         "_type": "MovieHeaderBox",
-        "children": null,
         "creation_time": "2019-09-04T14:43:12Z",
         "duration": 0,
         "flags": 0,
@@ -48,7 +47,6 @@
         "children": [
           {
             "_type": "MovieExtendsHeaderBox",
-            "children": null,
             "flags": 0,
             "fragment_duration": 354875,
             "header_size": 8,
@@ -58,7 +56,6 @@
           },
           {
             "_type": "TrackExtendsBox",
-            "children": null,
             "default_sample_description_index": 1,
             "default_sample_duration": 10,
             "default_sample_flags": 65536,
@@ -81,7 +78,6 @@
           {
             "_type": "TrackHeaderBox",
             "alternate_group": 0,
-            "children": null,
             "creation_time": "1904-01-01T00:00:00Z",
             "duration": 0,
             "flags": 3,
@@ -113,7 +109,6 @@
           },
           {
             "_type": "UnknownBox",
-            "children": null,
             "data": {
               "_type": "dashlive.utils.binary.Binary",
               "b64": "AAAAHGVsc3QAAAAAAAAAAQAAAAAAAAAAAAEAAA=="
@@ -127,7 +122,6 @@
             "children": [
               {
                 "_type": "MediaHeaderBox",
-                "children": null,
                 "creation_time": "1904-01-01T00:00:00Z",
                 "duration": 0,
                 "flags": 0,
@@ -141,7 +135,6 @@
               },
               {
                 "_type": "HandlerBox",
-                "children": null,
                 "flags": 0,
                 "handler_type": "vide",
                 "header_size": 8,
@@ -155,7 +148,6 @@
                 "children": [
                   {
                     "_type": "UnknownBox",
-                    "children": null,
                     "data": {
                       "_type": "dashlive.utils.binary.Binary",
                       "b64": "AAAAAQAAAAAAAAAA"
@@ -166,7 +158,6 @@
                   },
                   {
                     "_type": "UnknownBox",
-                    "children": null,
                     "data": {
                       "_type": "dashlive.utils.binary.Binary",
                       "b64": "AAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQ=="
@@ -189,7 +180,6 @@
                                 "AVCLevelIndication": 40,
                                 "AVCProfileIndication": 100,
                                 "_type": "AVCConfigurationBox",
-                                "children": null,
                                 "chroma_bit_depth": 8,
                                 "chroma_format": 1,
                                 "configurationVersion": 1,
@@ -205,7 +195,6 @@
                               },
                               {
                                 "_type": "PixelAspectRatioBox",
-                                "children": null,
                                 "h_spacing": 1,
                                 "header_size": 8,
                                 "position": 702,
@@ -217,7 +206,6 @@
                                 "children": [
                                   {
                                     "_type": "OriginalFormatBox",
-                                    "children": null,
                                     "data_format": "avc3",
                                     "header_size": 8,
                                     "position": 726,
@@ -225,7 +213,6 @@
                                   },
                                   {
                                     "_type": "ProtectionSchemeTypeBox",
-                                    "children": null,
                                     "flags": 0,
                                     "header_size": 8,
                                     "position": 738,
@@ -240,7 +227,6 @@
                                     "children": [
                                       {
                                         "_type": "TrackEncryptionBox",
-                                        "children": null,
                                         "default_kid": {
                                           "_type": "dashlive.utils.binary.HexBinary",
                                           "hx": "1ab45440532c439994dc5c5ad9584bac"
@@ -267,7 +253,6 @@
                                 "_type": "BitRateBox",
                                 "avgBitrate": 188528,
                                 "bufferSizeDB": 30194,
-                                "children": null,
                                 "header_size": 8,
                                 "maxBitrate": 674064,
                                 "position": 798,
@@ -302,7 +287,6 @@
                       },
                       {
                         "_type": "UnknownBox",
-                        "children": null,
                         "data": {
                           "_type": "dashlive.utils.binary.Binary",
                           "b64": "AAAAAAAAAAA="
@@ -313,7 +297,6 @@
                       },
                       {
                         "_type": "UnknownBox",
-                        "children": null,
                         "data": {
                           "_type": "dashlive.utils.binary.Binary",
                           "b64": "AAAAAAAAAAA="
@@ -324,7 +307,6 @@
                       },
                       {
                         "_type": "UnknownBox",
-                        "children": null,
                         "data": {
                           "_type": "dashlive.utils.binary.Binary",
                           "b64": "AAAAAAAAAAAAAAAA"
@@ -335,7 +317,6 @@
                       },
                       {
                         "_type": "UnknownBox",
-                        "children": null,
                         "data": {
                           "_type": "dashlive.utils.binary.Binary",
                           "b64": "AAAAAAAAAAA="
@@ -375,7 +356,6 @@
     "children": [
       {
         "_type": "MovieFragmentHeaderBox",
-        "children": null,
         "flags": 0,
         "header_size": 8,
         "position": 962,
@@ -389,7 +369,6 @@
           {
             "_type": "TrackFragmentHeaderBox",
             "base_data_offset": 954,
-            "children": null,
             "default_sample_duration": 0,
             "default_sample_flags": 0,
             "default_sample_size": 0,
@@ -404,7 +383,6 @@
           {
             "_type": "TrackFragmentDecodeTimeBox",
             "base_media_decode_time": 0,
-            "children": null,
             "flags": 0,
             "header_size": 8,
             "position": 1002,
@@ -413,7 +391,6 @@
           },
           {
             "_type": "SampleAuxiliaryInformationSizesBox",
-            "children": null,
             "default_sample_info_size": 16,
             "flags": 0,
             "header_size": 8,
@@ -425,7 +402,6 @@
           },
           {
             "_type": "SampleAuxiliaryInformationOffsetsBox",
-            "children": null,
             "flags": 0,
             "header_size": 8,
             "offsets": [
@@ -437,7 +413,6 @@
           },
           {
             "_type": "CencSampleEncryptionBox",
-            "children": null,
             "flags": 2,
             "header_size": 8,
             "iv_size": 8,
@@ -2081,7 +2056,6 @@
           },
           {
             "_type": "TrackFragmentRunBox",
-            "children": null,
             "data_offset": 2073,
             "first_sample_flags": 0,
             "flags": 517,
@@ -2877,7 +2851,6 @@
     "children": [
       {
         "_type": "MovieFragmentHeaderBox",
-        "children": null,
         "flags": 0,
         "header_size": 8,
         "position": 92553,
@@ -2891,7 +2864,6 @@
           {
             "_type": "TrackFragmentHeaderBox",
             "base_data_offset": 92545,
-            "children": null,
             "default_sample_duration": 0,
             "default_sample_flags": 0,
             "default_sample_size": 0,
@@ -2906,7 +2878,6 @@
           {
             "_type": "TrackFragmentDecodeTimeBox",
             "base_media_decode_time": 960,
-            "children": null,
             "flags": 0,
             "header_size": 8,
             "position": 92593,
@@ -2915,7 +2886,6 @@
           },
           {
             "_type": "SampleAuxiliaryInformationSizesBox",
-            "children": null,
             "default_sample_info_size": 16,
             "flags": 0,
             "header_size": 8,
@@ -2927,7 +2897,6 @@
           },
           {
             "_type": "SampleAuxiliaryInformationOffsetsBox",
-            "children": null,
             "flags": 0,
             "header_size": 8,
             "offsets": [
@@ -2939,7 +2908,6 @@
           },
           {
             "_type": "CencSampleEncryptionBox",
-            "children": null,
             "flags": 2,
             "header_size": 8,
             "iv_size": 8,
@@ -4583,7 +4551,6 @@
           },
           {
             "_type": "TrackFragmentRunBox",
-            "children": null,
             "data_offset": 2073,
             "first_sample_flags": 0,
             "flags": 517,
@@ -5379,7 +5346,6 @@
     "children": [
       {
         "_type": "MovieFragmentHeaderBox",
-        "children": null,
         "flags": 0,
         "header_size": 8,
         "position": 202797,
@@ -5393,7 +5359,6 @@
           {
             "_type": "TrackFragmentHeaderBox",
             "base_data_offset": 202789,
-            "children": null,
             "default_sample_duration": 0,
             "default_sample_flags": 0,
             "default_sample_size": 0,
@@ -5408,7 +5373,6 @@
           {
             "_type": "TrackFragmentDecodeTimeBox",
             "base_media_decode_time": 1920,
-            "children": null,
             "flags": 0,
             "header_size": 8,
             "position": 202837,
@@ -5417,7 +5381,6 @@
           },
           {
             "_type": "SampleAuxiliaryInformationSizesBox",
-            "children": null,
             "default_sample_info_size": 16,
             "flags": 0,
             "header_size": 8,
@@ -5429,7 +5392,6 @@
           },
           {
             "_type": "SampleAuxiliaryInformationOffsetsBox",
-            "children": null,
             "flags": 0,
             "header_size": 8,
             "offsets": [
@@ -5441,7 +5403,6 @@
           },
           {
             "_type": "CencSampleEncryptionBox",
-            "children": null,
             "flags": 2,
             "header_size": 8,
             "iv_size": 8,
@@ -7085,7 +7046,6 @@
           },
           {
             "_type": "TrackFragmentRunBox",
-            "children": null,
             "data_offset": 2073,
             "first_sample_flags": 0,
             "flags": 517,
@@ -7881,7 +7841,6 @@
     "children": [
       {
         "_type": "MovieFragmentHeaderBox",
-        "children": null,
         "flags": 0,
         "header_size": 8,
         "position": 287647,
@@ -7895,7 +7854,6 @@
           {
             "_type": "TrackFragmentHeaderBox",
             "base_data_offset": 287639,
-            "children": null,
             "default_sample_duration": 0,
             "default_sample_flags": 0,
             "default_sample_size": 0,
@@ -7910,7 +7868,6 @@
           {
             "_type": "TrackFragmentDecodeTimeBox",
             "base_media_decode_time": 2880,
-            "children": null,
             "flags": 0,
             "header_size": 8,
             "position": 287687,
@@ -7919,7 +7876,6 @@
           },
           {
             "_type": "SampleAuxiliaryInformationSizesBox",
-            "children": null,
             "default_sample_info_size": 16,
             "flags": 0,
             "header_size": 8,
@@ -7931,7 +7887,6 @@
           },
           {
             "_type": "SampleAuxiliaryInformationOffsetsBox",
-            "children": null,
             "flags": 0,
             "header_size": 8,
             "offsets": [
@@ -7943,7 +7898,6 @@
           },
           {
             "_type": "CencSampleEncryptionBox",
-            "children": null,
             "flags": 2,
             "header_size": 8,
             "iv_size": 8,
@@ -9587,7 +9541,6 @@
           },
           {
             "_type": "TrackFragmentRunBox",
-            "children": null,
             "data_offset": 2073,
             "first_sample_flags": 0,
             "flags": 517,
@@ -10383,7 +10336,6 @@
     "children": [
       {
         "_type": "MovieFragmentHeaderBox",
-        "children": null,
         "flags": 0,
         "header_size": 8,
         "position": 358690,
@@ -10397,7 +10349,6 @@
           {
             "_type": "TrackFragmentHeaderBox",
             "base_data_offset": 358682,
-            "children": null,
             "default_sample_duration": 0,
             "default_sample_flags": 0,
             "default_sample_size": 0,
@@ -10412,7 +10363,6 @@
           {
             "_type": "TrackFragmentDecodeTimeBox",
             "base_media_decode_time": 3840,
-            "children": null,
             "flags": 0,
             "header_size": 8,
             "position": 358730,
@@ -10421,7 +10371,6 @@
           },
           {
             "_type": "SampleAuxiliaryInformationSizesBox",
-            "children": null,
             "default_sample_info_size": 16,
             "flags": 0,
             "header_size": 8,
@@ -10433,7 +10382,6 @@
           },
           {
             "_type": "SampleAuxiliaryInformationOffsetsBox",
-            "children": null,
             "flags": 0,
             "header_size": 8,
             "offsets": [
@@ -10445,7 +10393,6 @@
           },
           {
             "_type": "CencSampleEncryptionBox",
-            "children": null,
             "flags": 2,
             "header_size": 8,
             "iv_size": 8,
@@ -12089,7 +12036,6 @@
           },
           {
             "_type": "TrackFragmentRunBox",
-            "children": null,
             "data_offset": 2073,
             "first_sample_flags": 0,
             "flags": 517,
@@ -12885,7 +12831,6 @@
     "children": [
       {
         "_type": "MovieFragmentHeaderBox",
-        "children": null,
         "flags": 0,
         "header_size": 8,
         "position": 480042,
@@ -12899,7 +12844,6 @@
           {
             "_type": "TrackFragmentHeaderBox",
             "base_data_offset": 480034,
-            "children": null,
             "default_sample_duration": 0,
             "default_sample_flags": 0,
             "default_sample_size": 0,
@@ -12914,7 +12858,6 @@
           {
             "_type": "TrackFragmentDecodeTimeBox",
             "base_media_decode_time": 4800,
-            "children": null,
             "flags": 0,
             "header_size": 8,
             "position": 480082,
@@ -12923,7 +12866,6 @@
           },
           {
             "_type": "SampleAuxiliaryInformationSizesBox",
-            "children": null,
             "default_sample_info_size": 16,
             "flags": 0,
             "header_size": 8,
@@ -12935,7 +12877,6 @@
           },
           {
             "_type": "SampleAuxiliaryInformationOffsetsBox",
-            "children": null,
             "flags": 0,
             "header_size": 8,
             "offsets": [
@@ -12947,7 +12888,6 @@
           },
           {
             "_type": "CencSampleEncryptionBox",
-            "children": null,
             "flags": 2,
             "header_size": 8,
             "iv_size": 8,
@@ -14591,7 +14531,6 @@
           },
           {
             "_type": "TrackFragmentRunBox",
-            "children": null,
             "data_offset": 2073,
             "first_sample_flags": 0,
             "flags": 517,
@@ -15387,7 +15326,6 @@
     "children": [
       {
         "_type": "MovieFragmentHeaderBox",
-        "children": null,
         "flags": 0,
         "header_size": 8,
         "position": 612745,
@@ -15401,7 +15339,6 @@
           {
             "_type": "TrackFragmentHeaderBox",
             "base_data_offset": 612737,
-            "children": null,
             "default_sample_duration": 0,
             "default_sample_flags": 0,
             "default_sample_size": 0,
@@ -15416,7 +15353,6 @@
           {
             "_type": "TrackFragmentDecodeTimeBox",
             "base_media_decode_time": 5760,
-            "children": null,
             "flags": 0,
             "header_size": 8,
             "position": 612785,
@@ -15425,7 +15361,6 @@
           },
           {
             "_type": "SampleAuxiliaryInformationSizesBox",
-            "children": null,
             "default_sample_info_size": 16,
             "flags": 0,
             "header_size": 8,
@@ -15437,7 +15372,6 @@
           },
           {
             "_type": "SampleAuxiliaryInformationOffsetsBox",
-            "children": null,
             "flags": 0,
             "header_size": 8,
             "offsets": [
@@ -15449,7 +15383,6 @@
           },
           {
             "_type": "CencSampleEncryptionBox",
-            "children": null,
             "flags": 2,
             "header_size": 8,
             "iv_size": 8,
@@ -17093,7 +17026,6 @@
           },
           {
             "_type": "TrackFragmentRunBox",
-            "children": null,
             "data_offset": 2073,
             "first_sample_flags": 0,
             "flags": 517,
@@ -17889,7 +17821,6 @@
     "children": [
       {
         "_type": "MovieFragmentHeaderBox",
-        "children": null,
         "flags": 0,
         "header_size": 8,
         "position": 739685,
@@ -17903,7 +17834,6 @@
           {
             "_type": "TrackFragmentHeaderBox",
             "base_data_offset": 739677,
-            "children": null,
             "default_sample_duration": 0,
             "default_sample_flags": 0,
             "default_sample_size": 0,
@@ -17918,7 +17848,6 @@
           {
             "_type": "TrackFragmentDecodeTimeBox",
             "base_media_decode_time": 6720,
-            "children": null,
             "flags": 0,
             "header_size": 8,
             "position": 739725,
@@ -17927,7 +17856,6 @@
           },
           {
             "_type": "SampleAuxiliaryInformationSizesBox",
-            "children": null,
             "default_sample_info_size": 16,
             "flags": 0,
             "header_size": 8,
@@ -17939,7 +17867,6 @@
           },
           {
             "_type": "SampleAuxiliaryInformationOffsetsBox",
-            "children": null,
             "flags": 0,
             "header_size": 8,
             "offsets": [
@@ -17951,7 +17878,6 @@
           },
           {
             "_type": "CencSampleEncryptionBox",
-            "children": null,
             "flags": 2,
             "header_size": 8,
             "iv_size": 8,
@@ -19595,7 +19521,6 @@
           },
           {
             "_type": "TrackFragmentRunBox",
-            "children": null,
             "data_offset": 2073,
             "first_sample_flags": 0,
             "flags": 517,
@@ -20391,7 +20316,6 @@
     "children": [
       {
         "_type": "MovieFragmentHeaderBox",
-        "children": null,
         "flags": 0,
         "header_size": 8,
         "position": 819523,
@@ -20405,7 +20329,6 @@
           {
             "_type": "TrackFragmentHeaderBox",
             "base_data_offset": 819515,
-            "children": null,
             "default_sample_duration": 0,
             "default_sample_flags": 0,
             "default_sample_size": 0,
@@ -20420,7 +20343,6 @@
           {
             "_type": "TrackFragmentDecodeTimeBox",
             "base_media_decode_time": 7680,
-            "children": null,
             "flags": 0,
             "header_size": 8,
             "position": 819563,
@@ -20429,7 +20351,6 @@
           },
           {
             "_type": "SampleAuxiliaryInformationSizesBox",
-            "children": null,
             "default_sample_info_size": 16,
             "flags": 0,
             "header_size": 8,
@@ -20441,7 +20362,6 @@
           },
           {
             "_type": "SampleAuxiliaryInformationOffsetsBox",
-            "children": null,
             "flags": 0,
             "header_size": 8,
             "offsets": [
@@ -20453,7 +20373,6 @@
           },
           {
             "_type": "CencSampleEncryptionBox",
-            "children": null,
             "flags": 2,
             "header_size": 8,
             "iv_size": 8,
@@ -22097,7 +22016,6 @@
           },
           {
             "_type": "TrackFragmentRunBox",
-            "children": null,
             "data_offset": 2073,
             "first_sample_flags": 0,
             "flags": 517,
@@ -22893,7 +22811,6 @@
     "children": [
       {
         "_type": "MovieFragmentHeaderBox",
-        "children": null,
         "flags": 0,
         "header_size": 8,
         "position": 893991,
@@ -22907,7 +22824,6 @@
           {
             "_type": "TrackFragmentHeaderBox",
             "base_data_offset": 893983,
-            "children": null,
             "default_sample_duration": 0,
             "default_sample_flags": 0,
             "default_sample_size": 0,
@@ -22922,7 +22838,7 @@
           {
             "_type": "TrackFragmentDecodeTimeBox",
             "base_media_decode_time": 8640,
-            "children": null,
+            
             "flags": 0,
             "header_size": 8,
             "position": 894031,
@@ -22931,7 +22847,7 @@
           },
           {
             "_type": "SampleAuxiliaryInformationSizesBox",
-            "children": null,
+            
             "default_sample_info_size": 16,
             "flags": 0,
             "header_size": 8,
@@ -22943,7 +22859,7 @@
           },
           {
             "_type": "SampleAuxiliaryInformationOffsetsBox",
-            "children": null,
+            
             "flags": 0,
             "header_size": 8,
             "offsets": [
@@ -22955,7 +22871,7 @@
           },
           {
             "_type": "CencSampleEncryptionBox",
-            "children": null,
+            
             "flags": 2,
             "header_size": 8,
             "iv_size": 8,
@@ -24599,7 +24515,7 @@
           },
           {
             "_type": "TrackFragmentRunBox",
-            "children": null,
+            
             "data_offset": 2073,
             "first_sample_flags": 0,
             "flags": 517,

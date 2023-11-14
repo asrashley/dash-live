@@ -286,14 +286,13 @@ class MediaSegmentInfo(HTMLHandlerBase):
         else:
             context['breadcrumbs'][-1]['title'] = f'Segment {segnum}'
         frag = current_media_file.representation.segments[int(segnum)]
-        options = mp4.Options(cache_encoded=True)
+        options = mp4.Options(lazy_load=False)
         if current_media_file.representation.encrypted:
             options.iv_size = current_media_file.representation.iv_size
         with current_media_file.open_file(start=frag.pos, buffer_size=16384) as reader:
             src = BufferedReader(
                 reader, offset=frag.pos, size=frag.size, buffersize=16384)
-            atom = mp4.Wrapper(
-                atom_type='wrap', children=mp4.Mp4Atom.load(src, options=options))
+            atom = mp4.Mp4Atom.load(src, options=options, use_wrapper=True)
         exclude = {'parent', 'options'}
         atoms = [ch.toJSON(exclude=exclude) for ch in atom.children]
         for ch in atoms:
