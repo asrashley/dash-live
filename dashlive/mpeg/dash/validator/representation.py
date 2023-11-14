@@ -581,29 +581,27 @@ class Representation(RepresentationBaseType):
     def check_on_demand_profile(self):
         pass
 
+    URL_TEMPLATE_RE = re.compile(r'\$(Bandwidth|Number|RepresentationID|Time)(%0\d+d)?\$')
+
     def format_url_template(self, url: str, seg_num: int = 0, decode_time: int = 0) -> str:
         """
         Replaces the template variables according the DASH template syntax
         """
-        def repfn(matchobj, value):
-            if isinstance(value, str):
-                return value
-            fmt = matchobj.group(1)
+        def repfn(matchobj) -> str:
+            value = params[matchobj.group(1)]
+            fmt = matchobj.group(2)
             if fmt is None:
-                if isinstance(value, str):
-                    fmt = r'%s'
-                else:
-                    fmt = r'%d'
-            fmt = '{0' + fmt.replace('%', ':') + '}'
+                return f'{value}'
+            fmt = r'{0' + fmt.replace('%', ':') + r'}'
             return fmt.format(value)
-        for name, value in [('RepresentationID', self.ID),
-                            ('Bandwidth', self.bandwidth),
-                            ('Number', seg_num),
-                            ('Time', decode_time),
-                            ('', '$')]:
-            rx = re.compile(fr'\${name}(%0\d+d)?\$')
-            url = rx.sub(lambda match: repfn(match, value), url)
-        return url
+        params = {
+            'RepresentationID': self.ID,
+            'Bandwidth': self.bandwidth,
+            'Number': seg_num,
+            'Time': decode_time,
+            '': '$',
+        }
+        return self.URL_TEMPLATE_RE.sub(repfn, url)
 
     def timescale(self) -> int:
         if self.info:
