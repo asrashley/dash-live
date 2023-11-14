@@ -31,25 +31,25 @@ import logging
 import os
 import re
 import struct
-import sys
-from typing import Optional
+from typing import AbstractSet, Any, Optional, Union
 
-try:
-    import bitstring
-except ImportError:
-    sys.path.append(os.path.join(os.path.dirname(__file__), "..", "lib"))
-    import bitstring
+import bitstring
 
-from dashlive.utils.fio import FieldReader, BitsFieldReader, FieldWriter, BitsFieldWriter
 from dashlive.utils.binary import Binary, HexBinary
 from dashlive.utils.date_time import DateTimeField, from_iso_epoch, to_iso_epoch
-from dashlive.utils.object_with_fields import ObjectWithFields
+from dashlive.utils.fio import FieldReader, BitsFieldReader, FieldWriter, BitsFieldWriter
+from dashlive.utils.hexdump import hexdump_buffer
+from dashlive.utils.json_object import JsonObject
 from dashlive.utils.list_of import ListOf
+from dashlive.utils.object_with_fields import ObjectWithFields
+
+from .event_bus import EventBus
 from .nal import Nal
 
 @dataclass(slots=True, kw_only=True)
 class Options:
-    cache_encoded: bool = False
+    mode: str = 'r'
+    lazy_load: bool = True
     debug: bool = False
     iv_size: int | None = None
     strict: bool = False
@@ -88,12 +88,27 @@ def mp4descriptor(tag: int):
 
 mp4descriptor.DESCRIPTORS: dict[int, "Descriptor"] = {}  # map from descriptor tag to class
 
+class BytesIoWithOffset(io.BufferedReader):
+    def __init__(self, data: bytes, offset: int) -> None:
+        super().__init__(io.BytesIO(data))
+        self.offset = offset
+
+    def tell(self) -> int:
+        return self.offset + super().tell()
+
+    def seek(self, pos: int, whence: int = os.SEEK_SET) -> None:
+        if whence == os.SEEK_SET:
+            return super().seek(pos - self.offset, whence)
+        return super().seek(pos, whence)
+
+
 class Mp4Atom(ObjectWithFields):
+    _init_complete = False
     parse_children = False
     include_atom_type = False
 
     OBJECT_FIELDS = {
-        'children': ListOf(ObjectWithFields),
+        '_children': ListOf(ObjectWithFields),
         'options': Options,
         'parent': ObjectWithFields,
     }
@@ -102,14 +117,20 @@ class Mp4Atom(ObjectWithFields):
     # list of box names required for parsing
     REQUIRED_PEERS = None
 
+    # set of boxes that this atom depends upon
+    DEPENDS_UPON = set()
+
     MODULE_PREFIX = 'dashlive.mpeg.mp4.'
 
     def __init__(self, **kwargs):
+        if 'children' in kwargs:
+            kwargs['_children'] = kwargs['children']
+            del kwargs['children']
         super().__init__(**kwargs)
         children_default = [] if self.parse_children else None
         self.apply_defaults({
             '_encoded': None,
-            'children': children_default,
+            '_children': children_default,
             'options': Options(),
             'parent': None,
             'size': 0,
@@ -135,23 +156,37 @@ class Mp4Atom(ObjectWithFields):
             self._fullname = fr'{self.parent._fullname}.{self.atom_type}'
         else:
             self._fullname = self.atom_type
-        if self.children:
-            for ch in self.children:
+        if self._children is not None:
+            for idx, ch in enumerate(self._children):
+                if isinstance(ch, dict):
+                    ch = Mp4Atom.fromJSON(ch)
+                    self._children[idx] = ch
                 ch.parent = self
+        self._init_complete = True
 
     def __getattr__(self, name: str) -> "Mp4Atom":
         if name in self._fields:
             # __getattribute__ should have responded before __getattr__ called
             raise AttributeError(name)
-        if not self.children:
+        if self._children is None:
             raise AttributeError(name)
-        for c in self.children:
-            if c.atom_type == name:
+
+        for idx, c in enumerate(self._children):
+            if c.atom_type.replace('-', '_') == name:
+                if isinstance(c, LazyLoadedBox):
+                    # print(f'__getattr__({name}) requires loading')
+                    self._children[idx] = c.lazy_load()
+                    return self._children[idx]
                 return c
-            if '-' in c.atom_type:
-                if c.atom_type.replace('-', '_') == name:
-                    return c
         raise AttributeError(name)
+
+    def trigger_change(self) -> None:
+        if self.atom_type == 'wrap':
+            return
+        try:
+            self._ev_bus.trigger(f'change.{self.atom_type}', self)
+        except AttributeError:
+            pass
 
     def _invalidate(self):
         if self._encoded is not None:
@@ -160,20 +195,28 @@ class Mp4Atom(ObjectWithFields):
                 self.parent._invalidate()
 
     def __setattr__(self, name, value):
-        if name[0] != '_' and name in self._fields:
-            self._invalidate()
+        if self._init_complete:
+            if name[0] != '_' and name in self._fields:
+                self._invalidate()
+                self.trigger_change()
         object.__setattr__(self, name, value)
 
     def __delattr__(self, name: str) -> None:
+        if name[0] == '_':
+            object.__delattr__(self, name)
+            return
         if name in self._fields:
             raise AttributeError(f'Unable to delete field {name} ')
-        for idx, c in enumerate(self.children):
+        if self._children is None:
+            raise AttributeError(name)
+        for idx, c in enumerate(self._children):
             if c.atom_type == name:
                 self.remove_child(idx)
                 return
             if '-' in c.atom_type and c.atom_type.replace('-', '_') == name:
                 self.remove_child(idx)
                 return
+            self.trigger_change()
         raise AttributeError(name)
 
     def _field_repr(self, exclude):
@@ -181,76 +224,150 @@ class Mp4Atom(ObjectWithFields):
             exclude = exclude.union({'atom_type', 'options'})
         return super()._field_repr(exclude)
 
-    def _int_field_repr(self, fields, names):
+    def _int_field_repr(self, fields: list[str], names: AbstractSet[str]) -> list[str]:
         for name in names:
             fields.append('%s=%d' % (name, self.__getattribute__(name)))
         return fields
 
+    def get_children(self) -> list["Mp4Atom"]:
+        if self._children is None:
+            return []
+        return self._children
+
+    def set_children(self, children: list["Mp4Atom"]) -> None:
+        self._children = children
+
+    children = property(get_children, set_children)
+
     def find_atom(self, atom_type: bytes | str,
-                  check_parent: bool = True) -> Optional["Mp4Atom"]:
+                  check_parent: bool = True,
+                  recurse_children: bool = False,
+                  no_exception: bool = False,
+                  max_recursion: int = 100) -> Optional["Mp4Atom"]:
+        # print(f'find_atom self={self.atom_type} search={atom_type} ' + f
+        #       'up={check_parent} down={recurse_children}')
         if isinstance(atom_type, bytes):
             atom_type = str(atom_type, 'ascii')
         if self.atom_type == atom_type:
             return self
-        if self.children is not None:
-            for ch in self.children:
+        if self._children is not None:
+            for idx, ch in enumerate(self._children):
                 if ch.atom_type == atom_type:
+                    if isinstance(ch, LazyLoadedBox):
+                        # print(f'find_atom({atom_type}) requires loading')
+                        self._children[idx] = ch.lazy_load()
+                        return self._children[idx]
                     return ch
+                if recurse_children and max_recursion > 0:
+                    c = ch.find_atom(
+                        atom_type, check_parent=check_parent,
+                        recurse_children=True, no_exception=True,
+                        max_recursion=(max_recursion - 1))
+                    if c is not None:
+                        return c
         if check_parent and self.parent:
-            return self.parent.find_atom(atom_type, True)
+            return self.parent.find_atom(
+                atom_type, check_parent=True, recurse_children=False,
+                no_exception=no_exception)
+        if no_exception:
+            return None
         raise AttributeError(atom_type)
 
     def find_child(self, atom_type: str | bytes) -> Optional["Mp4Atom"]:
-        if self.children is None:
+        if self._children is None:
             return None
         if isinstance(atom_type, bytes):
             atom_type = str(atom_type, 'ascii')
-        for child in self.children:
-            if child.atom_type == atom_type:
-                return child
-            child = child.find_child(atom_type)
-            if child:
-                return child
-        return None
+        return self.find_atom(
+            atom_type, check_parent=False, recurse_children=True, no_exception=True)
 
-    def index(self, atom_type: str | bytes) -> "Mp4Atom":
+    def find_peer(self, atom_type: str) -> Optional["Mp4Atom"]:
+        if self.parent is None:
+            return None
+        return self.parent.find_atom(
+            atom_type, check_parent=False, recurse_children=True,
+            no_exception=True, max_recursion=0)
+
+    def index(self, atom_type: str | bytes) -> int:
+        if self._children is None:
+            raise ValueError(atom_type)
         if isinstance(atom_type, bytes):
             atom_type = str(atom_type, 'ascii')
-        for idx, c in enumerate(self.children):
+        for idx, c in enumerate(self._children):
             if c.atom_type == atom_type:
                 return idx
         raise ValueError(atom_type)
 
     def append_child(self, child: "Mp4Atom") -> None:
+        if self.options.mode == 'r':
+            raise PermissionError(
+                'Removing atoms is not allowed for an MP4 file opened in read-only mode')
         self.options.log.debug(
             '%s: append_child "%s"', self._fullname, child.atom_type)
-        if self.children is None:
-            self.children = [child]
+        if self._children is None:
+            self._children = [child]
         else:
-            self.children.append(child)
+            self._children.append(child)
         if child.size:
-            self.size += child.size
-        else:
-            self.size = 0
+            self.update_size(child.size)
+        self.trigger_change()
         self._invalidate()
 
     def insert_child(self, index: int, child: "Mp4Atom") -> None:
-        self.children.insert(index, child)
+        if self.options.mode == 'r':
+            raise PermissionError(
+                'Removing atoms is not allowed for an MP4 file opened in read-only mode')
+        if self._children is None:
+            self._children = []
+        self._children.insert(index, child)
         if child.size:
-            self.size += child.size
+            self.update_size(child.size)
+        self.trigger_change()
         self._invalidate()
 
     def remove_child(self, idx: int) -> None:
-        child = self.children[idx]
-        del self.children[idx]
+        if self.options.mode == 'r':
+            raise PermissionError(
+                'Removing atoms is not allowed for an MP4 file opened in read-only mode')
+        child = self._children[idx]
+        # print(f'remove child {child.atom_type} idx={idx} size={child.size}')
+        del self._children[idx]
         if child.size:
-            self.size += child.size
-        else:
-            self.size = 0
+            self.update_size(-child.size)
+        self.trigger_change()
         self._invalidate()
 
+    def replace_child(self, atom: "Mp4Atom", replacement: "Mp4Atom") -> None:
+        # print('replace child', atom.atom_type)
+        if self._children is None:
+            raise ValueError('Trying to replace an atom with no children')
+        for idx, ch in enumerate(self._children):
+            if ch == atom:
+                # print(f'{self.atom_type}: replacing atom at index {idx}', type(replacement))
+                self._children[idx] = replacement
+                if replacement.size != ch.size:
+                    self.update_size(replacement.size - ch.size)
+                # print([f'{type(ch)}={ch.size}' for ch in self._children])
+                return
+        raise AttributeError('Failed to find atom to replace')
+
+    def update_size(self, delta: int) -> None:
+        self.size += delta
+        self.trigger_change()
+        if self.parent:
+            self.parent.update_size(delta)
+            if self.parent._children:
+                idx = self.parent.index(self.atom_type)
+                for ch in self.parent._children[idx + 1:]:
+                    ch.position += delta
+
     @classmethod
-    def load(cls, src, parent=None, options=None):
+    def load(cls,
+             src,
+             parent: Optional["Mp4Atom"] = None,
+             options: Options | None = None,
+             lazy_load_atoms: bool = False,
+             use_wrapper: bool = False) -> Union["Mp4Atom", list["Mp4Atom"]]:
         """
         Parse the given source to create MP4 atoms.
         :src: a readable (file) source
@@ -266,16 +383,19 @@ class Mp4Atom(ObjectWithFields):
             cursor = parent.payload_start
             end = parent.position + parent.size
             prefix = fr'{parent._fullname}: '
+            ev_bus = parent._ev_bus
         else:
-            parent = Wrapper(position=src.tell())
+            parent = Wrapper(position=src.tell(), options=options)
             end = None
             cursor = 0
             prefix = ''
+            ev_bus = EventBus["Mp4Atom"]()
+            parent._ev_bus = ev_bus
         if options.iv_size and options.iv_size > 16:
             # assume user has provided IV size in bits rather than bytes
             options.iv_size = options.iv_size // 8
             assert options.iv_size in {8, 16}
-        rv = parent.children
+        rv = parent._children
         if end is None:
             options.log.debug('%sLoad start=%d end=None', prefix, cursor)
         else:
@@ -299,10 +419,10 @@ class Mp4Atom(ObjectWithFields):
                               hdr['atom_type'], Box.__name__,
                               hdr['position'], hdr['size'])
             encoded = None
-            if options.cache_encoded and not Box.parse_children:
+            if options.mode == 'rw' and not Box.parse_children:
                 sz = hdr["size"] - hdr["header_size"]
                 if sz == 0:
-                    encoded = ''
+                    encoded = b''
                 else:
                     encoded = src.peek(sz)[:sz]
                     if len(encoded) < sz:
@@ -322,21 +442,37 @@ class Mp4Atom(ObjectWithFields):
                                                index=len(rv)))
                     cursor += hdr['size']
                     continue
-            kwargs = Box.parse(src, parent, options=options, initial_data=hdr)
+            if lazy_load_atoms and Box != UnknownBox:
+                options.log.debug(
+                    'lazy loading parent=%s this=%s pos=%d', parent.atom_type,
+                    hdr["atom_type"], hdr["position"])
+                kwargs = LazyLoadedBox.parse(src, parent, options=options, initial_data=hdr)
+                # hexdump_buffer(
+                #    f'lazy {kwargs["atom_type"]}@{kwargs["position"]}', kwargs['buffer'], 32)
+            else:
+                del hdr['_buffer']
+                kwargs = Box.parse(src, parent, options=options, initial_data=hdr)
             kwargs['parent'] = parent
             kwargs['options'] = options
             try:
-                atom = Box(**kwargs)
+                if lazy_load_atoms and Box != UnknownBox:
+                    atom = LazyLoadedBox(**kwargs)
+                    atom._box_class = Box
+                    if Box.DEPENDS_UPON:
+                        for name in Box.DEPENDS_UPON:
+                            ev_bus.on(f'change.{name}', atom.atom_changed)
+                else:
+                    atom = Box(**kwargs)
+                    atom.payload_start = src.tell()
             except TypeError:
                 print(kwargs)
                 raise
-            atom.payload_start = src.tell()
+            atom._encoded = encoded
+            atom._ev_bus = ev_bus
             rv.append(atom)
             if atom.parse_children:
                 # options.log.debug('Parse %s children', hdr['atom_type'])
-                Mp4Atom.load(src, atom, options)
-            else:
-                atom._encoded = encoded
+                Mp4Atom.load(src, atom, options, lazy_load_atoms=options.lazy_load)
             if (src.tell() - atom.position) != atom.size:
                 msg = r'{}: expected "{}" to contain {:d} bytes but parsed {:d} bytes'.format(
                     prefix, atom.atom_type, atom.size, src.tell() - atom.position)
@@ -345,6 +481,8 @@ class Mp4Atom(ObjectWithFields):
                     raise ValueError(msg)
             cursor += atom.size
         if not deferred_boxes:
+            if use_wrapper:
+                return parent
             return rv
         cur_pos = src.tell()
         for item in deferred_boxes:
@@ -366,10 +504,13 @@ class Mp4Atom(ObjectWithFields):
                               new_atom.atom_type)
             rv.insert(item['index'], new_atom)
         src.seek(cur_pos)
+        if use_wrapper:
+            return parent
         return rv
 
     @classmethod
-    def fromJSON(cls, src, parent=None, options=None):
+    def fromJSON(cls, src: dict[str, Any], parent: Optional["Mp4Atom"] = None,
+                 options: Options | dict | None = None) -> "Mp4Atom":
         assert src is not None
         if options is None:
             options = Options()
@@ -389,22 +530,23 @@ class Mp4Atom(ObjectWithFields):
             Box = UnknownBox
         src['parent'] = parent
         src['options'] = options
-        if 'children' not in src:
+        if 'children' not in src and '_children' not in src:
             return Box(**src)
-
-        children = src['children']
-        if children is not None:
-            src['children'] = []
+        try:
+            children = src['_children']
+        except KeyError:
+            children = src['children']
         rv = Box(**src)
+        rv._children = []
         if children is None:
             return rv
         for child in children:
             if isinstance(child, dict):
                 child['parent'] = rv
                 child['options'] = options
-                rv.children.append(cls.fromJSON(child))
+                rv._children.append(cls.fromJSON(child))
             else:
-                rv.children.append(child)
+                rv._children.append(child)
         return rv
 
     @classmethod
@@ -414,17 +556,18 @@ class Mp4Atom(ObjectWithFields):
         except KeyError:
             pass
         position = src.tell()
-        size = src.read(4)
-        if not size or len(size) != 4:
+        data = src.read(8)
+        # hexdump_buffer(f'header position={position}', data)
+        if not data or len(data) != 8:
             if options:
-                if len(size) == 0:
+                if len(data) == 0:
                     options.log.debug("EOS at %d", position)
                 else:
                     options.log.debug(
                         'Failed to read box length. pos=%d', position)
             return None
-        size = struct.unpack('>I', size)[0]
-        atom_type = src.read(4)
+        buf = [data]
+        size, atom_type = struct.unpack('>I4s', data)
         if not atom_type or len(atom_type) != 4:
             if options:
                 options.log.debug('Failed to read atom type. pos=%d', position)
@@ -435,14 +578,18 @@ class Mp4Atom(ObjectWithFields):
             size = src.tell() - pos
             src.seek(pos)
         elif size == 1:
-            size = struct.unpack('>Q', src.read(8))[0]
+            size_ext = src.read(8)
+            buf.append(size_ext)
+            size = struct.unpack('>Q', size_ext)[0]
             if not size:
                 if options:
                     options.log.debug(
                         'Failed to read atom size. pos=%d', position)
                 return None
         if atom_type == b'uuid':
-            uuid = str(binascii.b2a_hex(src.read(16)), 'ascii')
+            uuid_data = src.read(16)
+            buf.append(uuid_data)
+            uuid = str(binascii.b2a_hex(uuid_data), 'ascii')
             atom_type = f'UUID({uuid})'
         else:
             atom_type = str(atom_type, 'ascii')
@@ -451,6 +598,7 @@ class Mp4Atom(ObjectWithFields):
             "position": position,
             "size": size,
             "header_size": src.tell() - position,
+            "_buffer": b''.join(buf),
         }
 
     def encode(self, dest=None, depth=0):
@@ -486,8 +634,9 @@ class Mp4Atom(ObjectWithFields):
         out.write(struct.pack('>I', 0))
         out.write(fourcc)
         self.encode_fields(dest=out)
-        if self.children:
-            for child in self.children:
+        if self._children:
+            for idx, child in enumerate(self._children):
+                # print(f'{self.atom_type}: encode {idx}={child.atom_type}', type(child))
                 child.encode(dest=out, depth=(depth + 1))
         self.size = out.tell() - self.position
         # replace the length field
@@ -508,18 +657,18 @@ class Mp4Atom(ObjectWithFields):
         pass
 
     def post_encode_all(self, dest):
-        if self.children is not None:
-            for child in self.children:
+        if self._children is not None:
+            for child in self._children:
                 child.post_encode_all(dest)
         self.post_encode(dest)
 
-    def post_encode(self, dest):
+    def post_encode(self, dest) -> None:
         return
 
     def atom_name(self) -> str:
         return self.atom_type
 
-    def dump(self, indent=''):
+    def dump(self, indent: str = '') -> None:
         atom_type = self.atom_name()
         print('{}{}: {:d} -> {:d} [{:d} bytes]'.format(
             indent, atom_type, self.position,
@@ -527,24 +676,32 @@ class Mp4Atom(ObjectWithFields):
         if 'descriptors' in self._fields:
             for d in self.descriptors:
                 d.dump(indent + '  ')
-        if self.children is not None:
-            for c in self.children:
+        if self._children is not None:
+            for c in self._children:
                 c.dump(indent + '  ')
 
+    def _to_json(self, exclude: AbstractSet) -> JsonObject:
+        rv = super()._to_json(exclude)
+        if self._children is not None:
+            rv['children'] = [
+                ch.toJSON(exclude=exclude) for ch in self._children]
+        return rv
 
-Mp4Atom.OBJECT_FIELDS['children'] = ListOf(Mp4Atom)
+
+Mp4Atom.OBJECT_FIELDS['_children'] = ListOf(Mp4Atom)
 
 class WrapperIterator:
     def __init__(self, wrapper):
         self._wrapper = wrapper
         self._current = 0
+        self._end = len(wrapper._children)
 
     def __next__(self):
-        if self._current < len(self._wrapper.children):
-            rv = self._wrapper.children[self._current]
-            self._current += 1
-            return rv
-        raise StopIteration
+        if self._current >= self._end:
+            raise StopIteration
+        rv = self._wrapper.children[self._current]
+        self._current += 1
+        return rv
 
 
 class Wrapper(Mp4Atom):
@@ -555,6 +712,22 @@ class Wrapper(Mp4Atom):
     }
 
     parse_children = True
+
+    def encode(self, dest=None, depth: int = 0):
+        # print('======== encode wrap start ======')
+        assert depth == 0
+        out = dest
+        if out is None:
+            out = io.BytesIO()
+        if self._children:
+            for idx, child in enumerate(self._children):
+                # print(f'{self.atom_type}: encode {idx}={child.atom_type}', type(child))
+                child.encode(dest=out, depth=(depth + 1))
+            self.post_encode_all(dest=out)
+        # print('======== encode wrap done ======')
+        if dest is None:
+            return out.getvalue()
+        return dest
 
     def encode_fields(self, dest):
         pass
@@ -590,6 +763,119 @@ class UnknownBox(Mp4Atom):
 
 
 fourcc.BOX_TYPES['UnknownBox'] = UnknownBox
+
+class LazyLoadedBox(Mp4Atom):
+    include_atom_type = True
+    debug = False
+    OBJECT_FIELDS = {
+        '_buffer': bytes,
+    }
+    OBJECT_FIELDS.update(Mp4Atom.OBJECT_FIELDS)
+
+    def __init__(self, **kwargs):
+        self._real_atom: Mp4Atom | None = None
+        super().__init__(**kwargs)
+        self._init_complete = True
+
+    @classmethod
+    def parse(clz, src, parent, options, initial_data):
+        rv = initial_data
+        size = rv["size"] - rv["header_size"]
+        if size > 0:
+            rv['_buffer'] += src.read(size)
+        return rv
+
+    def encode(self, dest=None, depth: int = 0):
+        if self._real_atom:
+            return self._real_atom.encode(dest, depth)
+        if dest is None:
+            self.position = 0
+        else:
+            self.position = dest.tell()
+        self.options.log.debug('%s: encode lazy %s pos=%d', self._fullname,
+                               self.atom_type, self.position)
+        if dest is None:
+            return self._buffer
+        # print(f'encode {self.atom_type} LazyLoadedBox before', self.position)
+        dest.write(self._buffer)
+        # print('encode LazyLoadedBox after', dest.tell())
+        if depth == 0:
+            self.post_encode_all(dest)
+        return dest
+
+    def encode_fields(self, dest):
+        raise RuntimeError(
+            'encode_fields should not be called for LazyLoadedBox')
+
+    def _to_json(self, exclude: AbstractSet) -> JsonObject:
+        if self._real_atom:
+            return self._real_atom._to_json(exclude=exclude)
+        atom = self.lazy_load()
+        return atom._to_json(exclude=exclude)
+
+    def get_children(self) -> list["Mp4Atom"]:
+        if self._real_atom:
+            return self._real_atom._children
+        if not self._box_class.parse_children:
+            return []
+        atom = self.lazy_load()
+        return atom._children
+
+    def __setattr__(self, name, value):
+        if name[0] == '_' or not self.__getattribute__("_init_complete"):
+            object.__setattr__(self, name, value)
+            return
+        if name == 'position':
+            object.__setattr__(self, name, value)
+            return
+        if self.__getattribute__("_real_atom") is None:
+            self.lazy_load()
+        setattr(self._real_atom, name, value)
+        object.__setattr__(self, name, value)
+
+    def atom_changed(self, ev_name: str, atom: Mp4Atom) -> None:
+        if not self._real_atom:
+            self.lazy_load()
+
+    def lazy_load(self) -> Mp4Atom:
+        if self._real_atom:
+            return self._real_atom
+        for name in self._box_class.DEPENDS_UPON:
+            self._ev_bus.off(f'change.{name}', self.atom_changed)
+        hdr = {
+            "atom_type": self.atom_type,
+            "position": self.position,
+            "size": self.size,
+            "header_size": self.header_size,
+        }
+
+        if self.options.log.isEnabledFor(logging.DEBUG):
+            self.options.log.debug('lazy loading %s', self.atom_type)
+            if self.debug:
+                hexdump_buffer('self.buffer', self.buffer, 32)
+
+        src = BytesIoWithOffset(self._buffer, self.position)
+        src.seek(self.header_size, os.SEEK_CUR)
+        kwargs = self._box_class.parse(
+            src, self.parent, options=self.options, initial_data=hdr)
+        kwargs['parent'] = self.parent
+        kwargs['options'] = self.options
+        atom = self._box_class(**kwargs)
+        atom._ev_bus = self._ev_bus
+        self._real_atom = atom
+        if self.parent:
+            self.parent.replace_child(self, atom)
+        if atom.parse_children:
+            atom.payload_start = src.tell()
+            Mp4Atom.load(src, atom, options=self.options, lazy_load_atoms=True)
+        self._children = atom._children
+        for name in atom._fields:
+            object.__setattr__(
+                self, name, object.__getattribute__(atom, name))
+        del self._buffer
+        assert src.tell() == self.position + self.size
+        return atom
+
 
 @fourcc('ftyp')
 class FileTypeBox(Mp4Atom):
@@ -654,6 +940,7 @@ class Descriptor(ObjectWithFields):
     def load(clz, src, parent, options=None, **kwargs):
         if options is None:
             options = Options()
+        position = src.tell()
         kw = Descriptor.parse_header(src)
         try:
             Desc = mp4descriptor.DESCRIPTORS[kw["tag"]]
@@ -662,31 +949,20 @@ class Descriptor(ObjectWithFields):
         total_size = kw["size"] + kw["header_size"]
         options.log.debug(
             'load descriptor: tag=%s type=%s pos=%d size=%d',
-            kw["tag"], Desc.__name__, kw["position"], total_size)
-        encoded = src.peek(kw["size"])[:kw["size"]]
-        if len(encoded) < kw["size"]:
-            p = src.tell()
-            encoded = src.read(kw["size"])
-            src.seek(p)
+            kw["tag"], Desc.__name__, position, total_size)
         Desc.parse_payload(src, kw, parent=parent, options=options)
         rv = Desc(parent=parent, options=options, **kw)
-        rv._encoded = encoded
-        end = rv.position + rv.size + rv.header_size
+        end = position + rv.size + rv.header_size
         while src.tell() < end:
             options.log.debug(
                 'Descriptor: parse descriptor pos=%d end=%d',
                 src.tell(), end)
             dc = Descriptor.load(src, parent=rv, options=options)
             rv.children.append(dc)
-            if (src.tell() - dc.position) != (dc.size + dc.header_size):
-                options.log.warning(
-                    'expected tag %d to contain %d bytes but parsed %d bytes',
-                    dc.tag, dc.size, src.tell() - dc.position)
-                src.seek(dc.position + dc.size + dc.header_size)
         return rv
 
     @classmethod
-    def from_kwargs(clz, tag, **kwargs):
+    def from_kwargs(clz, tag: int, **kwargs) -> "Descriptor":
         assert isinstance(tag, int)
         try:
             Desc = mp4descriptor.DESCRIPTORS[tag]
@@ -701,10 +977,10 @@ class Descriptor(ObjectWithFields):
         return Desc(**args)
 
     @classmethod
-    def parse_header(clz, src):
-        position = src.tell()
+    def parse_header(clz, src) -> dict:
         b = src.read(1)
         if len(b) == 0:
+            position = src.tell()
             raise ValueError(
                 f"Failed to read tag byte: pos={position}")
         tag = struct.unpack('B', b)[0]
@@ -717,7 +993,6 @@ class Descriptor(ObjectWithFields):
             more_bytes = (b & 0x80) == 0x80
             size = (size << 7) + (b & 0x7f)
         return {
-            "position": position,
             "tag": tag,
             "header_size": header_size,
             "size": size,
@@ -728,25 +1003,15 @@ class Descriptor(ObjectWithFields):
         d = FieldWriter(self, dest, debug=self.options.debug)
         self.options.log.debug(
             r'%s: encode descriptor pos=%d', self._fullname, start)
-        if self._encoded is not None:
-            if self.options.log.isEnabledFor(logging.DEBUG):
-                self.options.log.debug(
-                    r'%s: using pre-encoded data size=%d', self.classname(), len(self._encoded))
-                for child in self.children:
-                    self.options.log.debug(
-                        r'%s: skipping descriptor %s size=%d',
-                        self.classname(), child._fullname, child.size)
-            payload = self._encoded
-        else:
-            payload = io.BytesIO()
-            self.encode_fields(payload)
-            self.options.log.debug(
-                r'%s: fields produced %d bytes', self._fullname, payload.tell())
-            for ch in self.children:
-                ch.encode(payload)
-            self.options.log.debug(
-                r'%s: Total payload size %d bytes', self._fullname, payload.tell())
-            payload = payload.getvalue()
+        payload = io.BytesIO()
+        self.encode_fields(payload)
+        self.options.log.debug(
+            r'%s: fields produced %d bytes', self._fullname, payload.tell())
+        for ch in self.children:
+            ch.encode(payload)
+        self.options.log.debug(
+            r'%s: Total payload size %d bytes', self._fullname, payload.tell())
+        payload = payload.getvalue()
         if self.size == 0:
             self.size = len(payload)
         elif self.size != len(payload):
@@ -797,7 +1062,7 @@ class Descriptor(ObjectWithFields):
                        self.position + self.size + self.header_size,
                        self.header_size,
                        self.size))
-        for c in self.children:
+        for c in self._children:
             c.dump(indent + '  ')
 
 
@@ -1092,10 +1357,18 @@ class MovieHeaderBox(FullBox):
         r.read('I', 'next_track_id')
         return rv
 
+    def __setattr__(self, name, value):
+        if name == 'duration':
+            if self.version == 0 and self.duration.bit_length() > 32:
+                self.version = 1
+                self.update_size(4)
+        elif name == 'version':
+            if value == 0 and self.duration.bit_length() > 32:
+                raise ValueError('Duration is too large to use version 0 header')
+        super().__setattr__(name, value)
+
     def encode_box_fields(self, dest):
         d = FieldWriter(self, dest)
-        if self.duration.bit_length() > 32:
-            self.version = 1
         if self.version == 1:
             sz = 'Q'
         else:
@@ -1676,9 +1949,10 @@ class MP4AudioSampleEntry(Mp4Atom):
         r = FieldReader(clz.classname(), src, rv)
         r.get(6, 'reserved')  # (8)[6] reserved
         r.read('H', "data_reference_index")
-        r.get(8 + 4 + 4, 'reserved')  # (8)[6] reserved
+        r.get(16, 'reserved')  # reserved 8,2,2,4
         r.read('H', "timescale")
         r.get(2, 'reserved')  # (16) reserved
+        # an ESDBox should follow on from this header
         return rv
 
     def encode_fields(self, dest):
@@ -1722,16 +1996,10 @@ class ESDescriptorBox(FullBox):
                 'ESDescriptorBox: parse descriptor pos=%d end=%d', src.tell(), end)
             d = Descriptor.load(src, parent=parent, options=options)
             descriptors.append(d)
-            if src.tell() != (d.position + d.size + d.header_size):
-                options.log.warning(
-                    "Expected descriptor %s to be %d bytes, but read %d bytes",
-                    d.classname(), d.size + d.header_size,
-                    src.tell() - d.position)
-                src.seek(d.position + d.size + d.header_size)
         rv["descriptors"] = descriptors
         return rv
 
-    def descriptor(self, name):
+    def descriptor(self, name: str) -> Descriptor | None:
         for d in self.descriptors:
             if type(d).__name__ == name:
                 return d
@@ -1740,7 +2008,10 @@ class ESDescriptorBox(FullBox):
                 return v
         return None
 
-    def remove_descriptor(self, name):
+    def remove_descriptor(self, name: str) -> None:
+        if self.options.mode == 'r':
+            raise PermissionError(
+                'Removing descriptors is not allowed for an MP4 file opened in read-only mode')
         for idx, d in enumerate(self._fields['descriptors']):
             if type(d).__name__ == name:
                 del self._fields['descriptors'][idx]
@@ -1750,7 +2021,7 @@ class ESDescriptorBox(FullBox):
                 return
         raise AttributeError(name)
 
-    def encode_box_fields(self, dest):
+    def encode_box_fields(self, dest) -> None:
         for d in self.descriptors:
             d.encode(dest)
 
@@ -1772,6 +2043,7 @@ class SampleDescriptionBox(FullBox):
 
 @fourcc('tfhd')
 class TrackFragmentHeaderBox(FullBox):
+    DEPENDS_UPON = {'moof'}
     base_data_offset_present = 0x000001
     sample_description_index_present = 0x000002
     default_sample_duration_present = 0x000008
@@ -1779,12 +2051,6 @@ class TrackFragmentHeaderBox(FullBox):
     default_sample_flags_present = 0x000020
     duration_is_empty = 0x010000
     default_base_is_moof = 0x020000
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        # default base offset = first byte of moof
-        if self.base_data_offset is None:
-            self.base_data_offset = self.find_atom('moof').position
 
     @classmethod
     def parse(clz, src, parent, **kwargs):
@@ -1808,6 +2074,8 @@ class TrackFragmentHeaderBox(FullBox):
             r.read('I', 'default_sample_size')
         if rv["flags"] & clz.default_sample_flags_present:
             r.read('I', 'default_sample_flags')
+        if rv["base_data_offset"] is None:
+            rv["base_data_offset"] = parent.find_atom('moof').position
         return rv
 
     def encode_box_fields(self, dest):
@@ -1918,12 +2186,16 @@ class TrackFragmentDecodeTimeBox(FullBox):
             rv["base_media_decode_time"] = struct.unpack('>I', src.read(4))[0]
         return rv
 
-    def encode_fields(self, dest):
-        if self.base_media_decode_time > int(1 << 32):
-            self.version = 1
-        else:
-            self.version = 0
-        super().encode_fields(dest)
+    def __setattr__(self, name, value):
+        if name == 'base_media_decode_time':
+            if self.version == 0 and value.bit_length() > 32:
+                object.__setattr__(self, 'version', 1)
+                self.update_size(4)
+        elif name == 'version':
+            if value == 0 and self.base_media_decode_time.bit_length() > 32:
+                raise ValueError(
+                    'base media decode time is too large to use version 0 header')
+        super().__setattr__(name, value)
 
     def encode_box_fields(self, dest):
         d = FieldWriter(self, dest)
@@ -2170,6 +2442,7 @@ class CencSampleEncryptionBox(FullBox):
     }
     OBJECT_FIELDS.update(FullBox.OBJECT_FIELDS)
     REQUIRED_PEERS = ['saiz']
+    DEPENDS_UPON = {'moov', 'tenc'}
 
     @classmethod
     def parse(clz, src, parent, **kwargs):
@@ -2193,7 +2466,7 @@ class CencSampleEncryptionBox(FullBox):
         rv["samples"] = []
         saiz = parent.find_child('saiz')
         if saiz is None:
-            kwargs['options'].log.error('Failed to find saiz box')
+            kwargs['options'].log.warning('Failed to find saiz box')
             kwargs['error'] = 'Failed to find required saiz box'
             return rv
         for i in range(num_entries):
@@ -2286,6 +2559,8 @@ class ProtectionSchemeTypeBox(FullBox):
 
 @fourcc('saio')
 class SampleAuxiliaryInformationOffsetsBox(FullBox):
+    DEPENDS_UPON = {'moof', 'senc', 'tfhd'}
+
     @classmethod
     def parse(clz, src, parent, **kwargs):
         rv = FullBox.parse(src, parent, **kwargs)
@@ -2432,6 +2707,7 @@ class TrackFragmentRunBox(FullBox):
         'samples': ListOf(TrackSample),
     }
     OBJECT_FIELDS.update(FullBox.OBJECT_FIELDS)
+    DEPENDS_UPON = {'moof', 'mdat', 'tfhd'}
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -2476,11 +2752,11 @@ class TrackFragmentRunBox(FullBox):
 
     def encode_box_fields(self, dest):
         self._first_field_pos = dest.tell()
-        self.ouput_box_fields(dest)
+        self.output_box_fields(dest)
         for sample in self.samples:
             sample.encode(dest)
 
-    def ouput_box_fields(self, dest):
+    def output_box_fields(self, dest):
         w = FieldWriter(self, dest)
         w.write('I', 'sample_count')
         if self.flags & self.data_offset_present:
@@ -2492,23 +2768,30 @@ class TrackFragmentRunBox(FullBox):
         if (self.flags & self.data_offset_present) == 0:
             return
         pos = getattr(self, '_first_field_pos', None)
+        assert pos is not None
         if pos is None:
             return
-        try:
-            moof = self.find_atom('moof')
-        except AttributeError:
+        moof = self.find_atom(
+            'moof', check_parent=True, recurse_children=False,
+            no_exception=True)
+        if moof is None:
+            self.options.log.info('%s: Failed to find moof box', self._fullname)
             return
-        # assume mdat header size is 8 bytes
-        mdat_sample_start = moof.position + moof.size + 8
+        mdat = moof.find_peer('mdat')
+        if mdat is None:
+            self.options.log.info('%s: Failed to find mdat box', self._fullname)
+            return
+        mdat_sample_start = moof.position + moof.size + mdat.header_size
         first_sample_pos = moof.traf.tfhd.base_data_offset + self.data_offset
         if first_sample_pos != mdat_sample_start:
             self.options.log.debug(
                 'rewriting trun data_offset from %d to %d',
                 self.data_offset, mdat_sample_start - moof.traf.tfhd.base_data_offset)
             self.data_offset = mdat_sample_start - moof.traf.tfhd.base_data_offset
+            assert self.data_offset >= 0
             cur = dest.tell()
             dest.seek(pos)
-            self.ouput_box_fields(dest)
+            self.output_box_fields(dest)
             dest.seek(cur)
 
 
