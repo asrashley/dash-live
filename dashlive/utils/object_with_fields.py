@@ -86,7 +86,8 @@ class ObjectWithFields(MutableMapping):
     def apply_defaults(self, defaults: dict) -> None:
         for key, value in defaults.items():
             if key not in self._fields:
-                setattr(self, key, value)
+                if key not in self.__dict__:
+                    setattr(self, key, value)
                 self._fields.add(key)
 
     def add_field(self, name: str, value: Any) -> None:
