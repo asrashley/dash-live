@@ -242,6 +242,7 @@ class DashManifestCheckMixin:
         if dv.has_errors():
             for idx, line in enumerate(
                     io.StringIO(response.get_data(as_text=True)), start=1):
+                line = line.rstrip()
                 print(f'{idx:03d}: {line}')
             print(f'{mpd_url} has errors:')
             for err in dv.get_errors():
