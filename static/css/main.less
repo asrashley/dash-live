@@ -640,8 +640,17 @@ div.representations, div.cgi-parameters {
 }
 
 .media-info {
-    .card-body .row {
-        padding-bottom: 0.25em;
+    .mp4-atom {
+        margin-bottom: 1em;
+    }
+    .card-body {
+        padding-top: 0.25em;
+        & > .row {
+            padding-bottom: 0;
+        }
+        & > .row:nth-child(even) {
+            background-color: lighten(@lightGrey, 5%);
+        }
     }
 
     .field-title {
