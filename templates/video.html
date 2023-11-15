@@ -24,13 +24,11 @@
 
 {% block content %}
 {% if source %}
-<div id="status" ></div>
 <div id="vid-window" data-src="{{source}}" data-type="{{mimeType}}">
   <span class="fa fa-4x fa-pause icon"></span>
   <span class="fa fa-4x fa-step-forward icon"></span>
   <span class="fa fa-4x fa-step-backward icon"></span>
   <span class="fa fa-4x fa-stop icon"></span>
-  <div class="timecode">00:00:00</div>
 </div>
 {% else %}
 <div id="vid">
@@ -39,8 +37,8 @@
     <span class="fa fa-4x fa-step-backward icon"></span>
     <span class="fa fa-4x fa-stop icon"></span>
 </div>
-<div id="status" ><span class="timecode">00:00:00</span></div>
 {% endif %}
+<div id="status" ><span class="timecode">00:00:00</span></div>
 {% endblock %}
 
 {% block extrascripts %}

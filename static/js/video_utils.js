@@ -22,9 +22,9 @@
                     msg += ' '+ev.message;
                 }
             }
-            $('#status').append('<p>'+msg+'</p>');
-            while($('#status > p').length>5){
-                $('#status > p').first().remove();
+            $('#status').prepend('<p>'+msg+'</p>');
+            while($('#status > p').length > 10){
+                $('#status > p').last().remove();
             }
         };
     };
