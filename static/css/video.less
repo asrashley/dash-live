@@ -8,6 +8,21 @@ header {
     z-index: 4;
     transition: height 0.5s;
     transition: opacity 0.5s;
+
+    .breadcrumbs {
+        background-color: rgb(240, 241, 242);
+        border: none;
+        opacity: 0.7;
+        .breadcrumb-item {
+            visibility: hidden;
+        }
+        .breadcrumb-item::before {
+            content: none;
+        }
+        .breadcrumb-item.active {
+            visibility: visible;
+        }
+    }
 }
 
 header.rollup {
@@ -18,9 +33,9 @@ header.rollup {
 
 
 #vid-window {
-    width: 640px;
     height: 266px;
-    margin: 1em;
+    margin: 0;
+    width: 640px;
     z-index: 0;
 }
 
@@ -49,21 +64,16 @@ header.rollup {
 #status, .textbox, .source, .timecode {
     position: absolute;
     height: 1em;
+    height: 2vh;
     left: 2em;
-    font-size: 2em;
+    font-size: 1.5em;
     line-height: 1em;
+    line-height: 2.3vh;
     padding: 0 0.2em;
     color: white;
     text-align: center;
     background-color: rgba(63,63,63,0.4);
     z-index: 2;
-}
-
-#vid-window .timecode {
-    left: auto;
-    right: 2em;
-    width: 5em;
-    top: 4em;
 }
 
 .source {
@@ -81,15 +91,28 @@ header.rollup {
 }
 
 #status {
-    font-size: 1.5rem;
     bottom: 4em;
-    width: 35em;
+    font-size: 1rem;
     height: 5em;
+    line-height: 1.25rem;
+    overflow: hidden;
     text-align: left;
     text-overflow: ellipsis;
-    overflow: hidden;
+    width: 35em;
+
+    > p {
+        margin: 0;
+    }
+
     .target, .actual {
       margin-right: 1em;
+    }
+
+    .timecode {
+        left: auto;
+        right: 1em;
+        top: 0.5em;
+        width: 6em;
     }
 }
 
@@ -151,17 +174,28 @@ header.rollup {
       left: 0;
       width: 1024px;
       height: 576px;
+      height: 85vh;
+      width: 100vw;
       background: black;
+  }
+  #status {
+      bottom: 0vh;
+      height: 14vh;
+      left: 5vw;
+      width: 90vw;
+  }
+}
+
+@media screen and (width: 1280px) and (height: 720px) {
+  #vid-window {
+      width: 1280px;
+      height: 720px;
     }
 }
 
-@media only screen and (min-width: 1280px) {
+@media screen and (width: 1920px) and (height: 1080px) {
   #vid-window {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 1280px;
-      height: 720px;
-      background: black;
+      width: 1920px;
+      height: 1080px;
     }
 }
