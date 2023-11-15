@@ -6,12 +6,12 @@
 #
 #############################################################################
 import datetime
+import io
 from pathlib import Path
 from typing import Optional
 import urllib.parse
 
 from dashlive.mpeg import mp4
-from dashlive.utils.buffered_reader import BufferedReader
 from dashlive.utils.date_time import timecode_to_timedelta, to_iso_datetime
 
 from .dash_element import DashElement
@@ -190,8 +190,8 @@ class MediaSegment(DashElement):
             dest.write(body)
 
     def parse_data(self, body: bytes) -> mp4.Mp4Atom | None:
-        src = BufferedReader(None, data=body)
-        options = {"strict": True}
+        src = io.BytesIO(body)
+        options = {"strict": True, "lazy_load": True, "mode": "r"}
         info = self.parent.info
         if self.options.encrypted:
             msg = 'Expected an encrypted stream, but fragment is not encrypted'
@@ -207,24 +207,22 @@ class MediaSegment(DashElement):
                     info.iv_size, msg='IV size is unknown'):
                 return
             options["iv_size"] = info.iv_size
-        atoms = mp4.Mp4Atom.load(src, options=options)
+        atoms = mp4.Mp4Atom.load(src, options=options, use_wrapper=True)
         self.elt.check_greater_than(len(atoms), 1)
-        moof = None
-        mdat = None
-        for a in atoms:
-            if a.atom_type == 'emsg':
-                self.check_emsg_box(a)
-            elif a.atom_type == 'moof':
-                moof = a
-            elif a.atom_type == 'mdat':
-                mdat = a
-                self.elt.check_not_none(
-                    moof,
-                    msg='Failed to find moof box before mdat box')
-        if not self.elt.check_not_none(
-                mdat, msg='Failed to find mdat box'):
-            self.log.info('MediaSegment contains atoms: %s', [a.atom_type for a in atoms])
-            return moof
+        try:
+            moof = atoms.moof
+        except AttributeError:
+            self.elt.add_error('MOOF box missing from media segment')
+            return
+        try:
+            mdat = atoms.mdat
+        except AttributeError:
+            self.elt.add_error('MDAT box missing from media segment')
+            return
+        try:
+            self.check_emsg_box(atoms.emsg)
+        except AttributeError:
+            pass
         first_sample_pos = moof.traf.tfhd.base_data_offset + moof.traf.trun.data_offset
         last_sample_end = first_sample_pos
         for samp in moof.traf.trun.samples:
