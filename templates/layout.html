@@ -55,6 +55,15 @@
 	<p>Welcome to {{ title }}</p>
         {% endblock %}
       </div>
+      {% block footer %}
+      <footer class="bg-body-tertiary footer row border-top border-secondary-subtle">
+        <div class="col-3 github-link">
+          <a href="https://github.com/asrashley/dash-live">github.com/asrashley/dash-live</a>
+        </div>
+        <div class="col-6 text-center service-name">Simulated MPEG DASH service</div>
+        <div class="col-3 text-end copyright">&copy;2023 Alexis Ashley</div>
+      </footer>
+      {% endblock %}
       <div class="modal-backdrop hidden"></div>
       {% block extrascripts %}{% endblock %}
     </body>
