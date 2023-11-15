@@ -22,6 +22,15 @@ body {
     padding: 0;
 }
 
+.content {
+    padding-left: 1em;
+    padding-right: 1em;
+
+    .info {
+        padding: 0.5em 1em;
+    }
+}
+
 header {
     height: 6rem;
     font-size: 1.25rem;
@@ -584,7 +593,7 @@ div.representations, div.cgi-parameters {
           border-bottom-width: 0;
       }
       .stream-actions {
-          width: 12em;
+          width: 10em;
           text-align: center;
           .btn {
               margin: 0.2em;
@@ -595,7 +604,7 @@ div.representations, div.cgi-parameters {
           }
       }
       .title {
-          width: 18em;
+          width: 16em;
       }
       .title > input {
           width: 17em;
@@ -607,13 +616,9 @@ div.representations, div.cgi-parameters {
           width: 6em;
       }
       .playready_la_url, .marlin_la_url {
+          font-size: 0.9rem;
           font-stretch: extra-condensed;
           width: 20em;
-          max-width: 20em;
-          & > input {
-              width: 19em;
-              max-width: 19em;
-          }
       }
   }
   #exampleManifestTabs {
