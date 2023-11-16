@@ -78,7 +78,7 @@ class Period(DashElement):
         for child in self.children():
             if not child.finished():
                 self.log.debug(
-                    'Period[%s]: AdaptationSet[%s] not finished', self.id, child.id)
+                    'Period[%s]: child[%s] not finished', self.id, child.id)
                 return False
         self.log.debug(
             'Period[%s}: Validation complete', self.id)
