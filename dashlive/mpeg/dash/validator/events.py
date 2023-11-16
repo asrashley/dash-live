@@ -124,6 +124,12 @@ class EventStreamBase(Descriptor):
     def children(self) -> list[DashEvent]:
         return super().children() + self.events
 
+    @property
+    def id(self) -> str:
+        if self.value:
+            return f'{self.schemeIdUri}@{self.value}'
+        return f'{self.schemeIdUri}'
+
 
 class EventStream(EventStreamBase):
     """
