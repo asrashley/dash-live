@@ -142,11 +142,11 @@ class InitSegment(DashElement):
             framerate = self.parent.frameRate
             if framerate is None:
                 framerate = self.parent.parent.frameRate
-            if framerate is not None:
+            if framerate is not None and 'frameRate' in dash_rep._fields:
                 msg = f'Expected frame rate {framerate.value} but found {dash_rep.frameRate}'
                 self.elt.check_almost_equal(
-                    framerate.value, dash_rep.frameRate, msg=msg, clause='5.3.12.2')
-
+                    framerate.value, dash_rep.frameRate,
+                    msg=msg, clause='5.3.12.2')
         elif self.parent.parent.contentType == 'audio':
             audioSamplingRate = self.parent.audioSamplingRate
             if audioSamplingRate is None:
