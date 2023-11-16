@@ -130,7 +130,7 @@ class InitSegment(DashElement):
             msg=f'Expected timescale to be {timescale} but found {dash_rep.timescale}')
         if self.parent.codecs:
             self.elt.check_equal(
-                dash_rep.codecs, self.parent.codecs,
+                dash_rep.codecs.lower(), self.parent.codecs.lower(),
                 msg=f'Expected codec to be {self.parent.codecs} but found {dash_rep.codecs}')
         if self.parent.parent.contentType == 'video':
             self.elt.check_less_than_or_equal(
