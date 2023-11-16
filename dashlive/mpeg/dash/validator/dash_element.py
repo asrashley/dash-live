@@ -195,7 +195,7 @@ class DashElement(ABC):
         return 0
 
     def finished(self) -> bool:
-        return False
+        return True
 
     def unique_id(self) -> str:
         rv = [self.classname(), self.ID]
