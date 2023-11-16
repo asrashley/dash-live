@@ -267,7 +267,10 @@ class Representation(RepresentationBaseType):
         else:
             tolerance = self.timescale() // frameRate
         total_duration = 0
-        self.log.debug('Generating %d MediaSegments using SegmentTimeline', len(timeline.segments))
+        self.log.debug('Generating up to %d MediaSegments using SegmentTimeline', len(timeline.segments))
+        need_duration = None
+        if self.options.duration is not None:
+            need_duration = self.options.duration * self.timescale()
         for idx, seg in enumerate(timeline.segments):
             decode_time = seg.start - self.segmentTemplate.presentationTimeOffset
             if self.mode == 'vod':
@@ -286,6 +289,11 @@ class Representation(RepresentationBaseType):
                     seg_duration, self.segmentTemplate.presentationTimeOffset, self.timescale())
             self.media_segments.append(ms)
             total_duration += seg.duration
+            if self.mode != 'live' and need_duration and total_duration > need_duration:
+                self.log.debug(
+                    '%s: generated %d segments to reach requested duration %d',
+                    self.id, idx + 1, need_duration)
+                break
         if self.mode == 'live':
             tsb = self.mpd.timeShiftBufferDepth.total_seconds() * self.timescale()
             if (
@@ -458,6 +466,9 @@ class Representation(RepresentationBaseType):
             if seg.duration is not None:
                 total_dur += seg.duration
             if need_duration is not None and total_dur >= need_duration:
+                self.log.debug(
+                    '%s: reached required validation duration %d',
+                    self.id, need_duration)
                 return
 
     async def validate_self(self) -> None:
