@@ -2214,11 +2214,12 @@ class TrackExtendsBox(FullBox):
     @classmethod
     def parse(clz, src, parent, **kwargs):
         rv = FullBox.parse(src, parent, **kwargs)
-        rv["track_id"] = struct.unpack('>I', src.read(4))[0]
-        rv["default_sample_description_index"] = struct.unpack('>I', src.read(4))[0]
-        rv["default_sample_duration"] = struct.unpack('>I', src.read(4))[0]
-        rv["default_sample_size"] = struct.unpack('>I', src.read(4))[0]
-        rv["default_sample_flags"] = struct.unpack('>I', src.read(4))[0]
+        r = FieldReader(clz.classname(), src, rv)
+        r.read('I', "track_id")
+        r.read('I', "default_sample_description_index")
+        r.read('I', "default_sample_duration")
+        r.read('I', "default_sample_size")
+        r.read('I', "default_sample_flags")
         return rv
 
     def encode_box_fields(self, dest):
