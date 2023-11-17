@@ -25,3 +25,6 @@ class SegmentReference(DashElement):
 
     def __repr__(self):
         return self.REPR_FMT.format(**self.__dict__)
+
+    def children(self) -> list[DashElement]:
+        return []

@@ -54,13 +54,13 @@ class InitSegment(DashElement):
                 response.status_code, expected_status,
                 msg=f'Failed to load init segment: {response.status_code}: {self.url}'):
             return False
-        async with self.pool.group() as tg:
-            body = response.get_data(as_text=False)
-            if self.options.save:
-                tg.submit(self.save, body)
-            parse_task = tg.submit(self.parse_body, body)
-        exc = parse_task.exception()
-        if exc:
+        try:
+            async with self.pool.group() as tg:
+                body = response.get_data(as_text=False)
+                if self.options.save:
+                    tg.submit(self.save, body)
+                tg.submit(self.parse_body, body)
+        except Exception as exc:
             self.elt.add_error(f'Failed to load init segment: {exc}')
             self.log.error('Failed to load init segment: %s', exc)
             return False
@@ -68,7 +68,7 @@ class InitSegment(DashElement):
 
     def parse_body(self, body: bytes) -> None:
         src = BufferedReader(None, data=body)
-        self.atoms = mp4.Mp4Atom.load(src)
+        self.atoms = mp4.Mp4Atom.load(src, options={'lazy_load': False})
 
     def save(self, body: bytes) -> None:
         adp = self.parent.parent
