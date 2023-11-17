@@ -95,6 +95,11 @@ class DashValidator(DashElement):
     def get_manifest_lines(self) -> list[str]:
         return self.manifest_text
 
+    def get_codecs(self) -> set[str]:
+        if self.manifest is None:
+            return set()
+        return self.manifest.get_codecs()
+
     async def fetch_manifest(self) -> bool:
         self.progress.text(self.url)
         self.log.debug('Fetch manifest %s', self.url)

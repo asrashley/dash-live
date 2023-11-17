@@ -3,7 +3,8 @@ import { decode } from './prod/codec-string.js';
 
 function setCodecDescription() {
     const codecDescription = decode($('.codec-string').text());
-    $('.codec-description').html(codecDescription);
+    const details = codecDescription.split('<br>').filter((line) => line !== "");
+    $('.codec-description').html(details.join('<br>'));
 }
 
 setCodecDescription();
