@@ -873,7 +873,11 @@ class LazyLoadedBox(Mp4Atom):
             object.__setattr__(
                 self, name, object.__getattribute__(atom, name))
         del self._buffer
-        assert src.tell() == self.position + self.size
+        if src.tell() != (self.position + self.size):
+            if self.options.strict:
+                raise RuntimeError(
+                    f'Expected position {self.position + self.size} but actual position {src.tell()}')
+            src.seek(self.position + self.size)
         return atom
 
 
