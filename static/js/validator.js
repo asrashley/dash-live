@@ -1,5 +1,6 @@
 import $ from '/libs/jquery.js';
 import { io } from '/libs/socket.io.js';
+import { decode } from './prod/codec-string.js';
 
 function updateDirectoryState(target) {
     if (target === null) {
@@ -62,6 +63,20 @@ socket.on('manifest', function(data) {
         item.append(text_elt);
         $('#manifest-text').append(item);
     });
+});
+
+socket.on('codecs', function(codecs) {
+    const thead = '<tr><th class="codec-string">Codec</th>' +
+          '<th class="codec-detail">Details</th>';
+    const rows = codecs.map(codec => {
+        const details = decode(codec).split('<br>').filter((line) => line !== "");
+        return (
+            `<tr><td class="codec-string">${codec}</td>` +
+                `<td class="codec-detail">${details.join('<br>')}</td></tr>`
+        );
+    });
+    $('#validator .results').append(
+        `<table class="table table-striped manifest-codecs"><thead>${thead}</thead><tbody>${rows.join('')}</tbody></table>`);
 });
 
 socket.on('manifest-validation', function(fields) {

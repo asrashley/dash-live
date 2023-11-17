@@ -104,6 +104,14 @@ class AdaptationSet(RepresentationBaseType):
             if r.id == info.id:
                 r.set_representation_info(info)
 
+    def get_codecs(self) -> set[str]:
+        codecs = set()
+        for r in self.representations:
+            cd = r.get_codec()
+            if cd is not None:
+                codecs.add(cd)
+        return codecs
+
     async def validate(self) -> None:
         if ValidationFlag.ADAPTATION_SET in self.options.verify:
             await self.validate_self()

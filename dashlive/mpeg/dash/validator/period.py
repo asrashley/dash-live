@@ -67,6 +67,12 @@ class Period(DashElement):
         results = await asyncio.gather(*futures)
         return False not in results
 
+    def get_codecs(self) -> set[str]:
+        codecs = set()
+        for adp in self.adaptation_sets:
+            codecs.update(adp.get_codecs())
+        return codecs
+
     def set_representation_info(self, info: ServerRepresentation):
         for a in self.adaptation_sets:
             a.set_representation_info(info)

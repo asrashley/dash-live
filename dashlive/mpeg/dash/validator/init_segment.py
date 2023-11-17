@@ -23,6 +23,7 @@ class InitSegment(DashElement):
         self.atoms: list[mp4.Mp4Atom] | None = None
         path = Path(urllib.parse.urlparse(url).path)
         self.name = path.name
+        self.codecs: str | None = None
         if seg_range:
             self.name += f'?range={self.seg_range}'
 
@@ -124,6 +125,7 @@ class InitSegment(DashElement):
         dash_rep = DashRepresentation()
         key_ids = set()
         dash_rep.process_moov(moov, key_ids)
+        self.codecs = dash_rep.codecs
         timescale = self.parent.timescale()
         self.elt.check_equal(
             dash_rep.timescale, self.parent.timescale(),

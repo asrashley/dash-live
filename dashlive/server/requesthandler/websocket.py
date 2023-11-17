@@ -176,6 +176,7 @@ class ClientConnection(Progress):
                 'text': dv.get_manifest_lines()
             })
             await dv.run()
+            self.emit('codecs', sorted(list(dv.get_codecs())))
             if dv.has_errors():
                 errs = [e.to_dict() for e in dv.get_errors()]
                 self.dash_log.info('Found %d errors', len(errs))

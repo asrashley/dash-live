@@ -73,6 +73,12 @@ class Manifest(DashElement):
             return self.mediaPresentationDuration
         return datetime.timedelta(seconds=0)
 
+    def get_codecs(self) -> set[str]:
+        codecs = set()
+        for period in self.periods:
+            codecs.update(period.get_codecs())
+        return codecs
+
     def num_tests(self) -> int:
         count = 0
         if ValidationFlag.MANIFEST in self.options.verify:

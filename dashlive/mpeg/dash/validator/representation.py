@@ -415,6 +415,11 @@ class Representation(RepresentationBaseType):
                        self.id, total_dur, need_duration)
         return total_dur >= need_duration
 
+    def get_codec(self) -> str | None:
+        if self.init_segment:
+            return self.init_segment.codecs
+        return None
+
     async def validate(self) -> None:
         if ValidationFlag.REPRESENTATION in self.options.verify:
             await self.validate_self()
