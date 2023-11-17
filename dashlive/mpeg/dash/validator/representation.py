@@ -339,7 +339,7 @@ class Representation(RepresentationBaseType):
         for sl in self.segmentList:
             seg_list += sl.segmentURLs
         if not seg_list and self.segmentBase and self.segmentBase.indexRange:
-            seg_list = self.segmentBase.load_segment_index(self.baseurl)
+            seg_list = await self.segmentBase.load_segment_index(self.baseurl)
             decode_time = seg_list[0].decode_time
         frameRate = 24
         if self.frameRate is not None:
