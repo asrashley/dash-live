@@ -77,6 +77,7 @@ class DashElement(ABC):
         self.log.setLevel = self.options.log.setLevel
         self.baseurl = None
         self.ID = None
+
         sourceline: int | None = None
         line_range: tuple | None = None
         if elt is not None:
@@ -195,6 +196,9 @@ class DashElement(ABC):
         return 0
 
     def finished(self) -> bool:
+        """
+        Checks if validating this element is complete.
+        """
         return True
 
     def unique_id(self) -> str:

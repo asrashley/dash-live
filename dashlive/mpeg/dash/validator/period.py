@@ -40,6 +40,11 @@ class Period(DashElement):
             if adp.id is not None:
                 next_id = max(next_id, adp.id)
         next_id += 1
+        self.target_duration: datetime.timedelta | None = None
+        if self.options.duration:
+            self.target_duration = datetime.timedelta(seconds=self.options.duration)
+            if self.duration is not None:
+                self.target_duration = min(self.target_duration, self.duration)
         for adp in self.adaptation_sets:
             if adp.id is None:
                 adp.id = next_id
@@ -83,11 +88,7 @@ class Period(DashElement):
     def finished(self) -> bool:
         for child in self.children():
             if not child.finished():
-                self.log.debug(
-                    'Period[%s]: child[%s] not finished', self.id, child.id)
                 return False
-        self.log.debug(
-            'Period[%s}: Validation complete', self.id)
         return True
 
     def get_duration(self) -> datetime.timedelta:
