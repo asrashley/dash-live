@@ -3,7 +3,13 @@ import io
 from typing import AbstractSet
 import unittest
 
-from dashlive.utils.date_time import from_isodatetime, toIsoDuration, parse_date, UTC
+from dashlive.utils.date_time import (
+    from_isodatetime,
+    toIsoDuration,
+    parse_date,
+    UTC,
+    timecode_to_timedelta,
+)
 from dashlive.utils.buffered_reader import BufferedReader
 from dashlive.utils import objects, timezone
 from dashlive.utils.json_object import JsonObject
@@ -227,6 +233,15 @@ class ObjectTests(unittest.TestCase):
                          datetime.timedelta(seconds=3600))
         self.assertEqual(fot.dst(datetime.datetime(2020, 1, 2)),
                          datetime.timedelta(seconds=0))
+
+    def test_timecode_to_timedelta(self) -> None:
+        test_cases = [
+            (240, 25, datetime.timedelta(seconds=9.6)),
+            (461824, 48000, datetime.timedelta(seconds=9, microseconds=621333)),
+        ]
+        for timecode, timescale, expected in test_cases:
+            actual = timecode_to_timedelta(timecode, timescale)
+            self.assertEqual(expected, actual)
 
 
 if __name__ == "__main__":
