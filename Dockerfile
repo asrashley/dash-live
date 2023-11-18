@@ -69,14 +69,13 @@ ENV USER_GID=""
 RUN apt-get -y -q --force-yes install nginx
 RUN rm /etc/nginx/sites-enabled/default
 COPY deploy/application.py $HOME/dash-live/
-COPY deploy/start-uwsgi.sh $HOME/dash-live/
+COPY deploy/start-server.sh $HOME/dash-live/
 COPY deploy/dashlive.conf /etc/nginx/sites-available/
-COPY deploy/dash.ini /etc/uwsgi/sites/
 RUN echo "client_max_body_size 1024M;" > /etc/nginx/conf.d/maxsize.conf
 RUN ln -s /etc/nginx/sites-available/dashlive.conf /etc/nginx/sites-enabled/dashlive.conf
 RUN chmod +x $HOME/dash-live/*.sh
 RUN chown www-data:www-data $HOME/instance
 RUN echo "server_name _;" > /etc/nginx/snippets/server_name.conf
 STOPSIGNAL SIGQUIT
-ENTRYPOINT ["/home/dash/dash-live/start-uwsgi.sh"]
+ENTRYPOINT ["/home/dash/dash-live/start-server.sh"]
 

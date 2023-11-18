@@ -23,7 +23,7 @@ python -m alembic upgrade head
 
 GUNICORN_OPTIONS="-w 1 --threads 100 --user www-data --group www-data --worker-class gthread"
 
-if [ -f /etc/uwsgi/sites/dash.ini ]; then
+if [ -f /etc/nginx/sites-available/dashlive.conf ]; then
     gunicorn ${GUNICORN_OPTIONS} -b 127.0.0.1:5000 --daemon application:app
     nginx -g "daemon off;"
 else
