@@ -66,7 +66,7 @@ class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
             segmentTimeline=True)
 
     @FlaskTestBase.mock_datetime_now(from_isodatetime("2021-09-06T09:59:02Z"))
-    async def test_hand_made_manifest_live_ec3_timline(self):
+    async def test_hand_made_manifest_live_ec3_timeline(self):
         await self.check_a_manifest_using_all_options(
             'hand_made.mpd', 'live', with_subs=True, audioCodec='ec-3',
             segmentTimeline=True)
