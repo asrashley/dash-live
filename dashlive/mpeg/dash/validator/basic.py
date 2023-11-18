@@ -17,7 +17,7 @@ import time
 from .concurrent_pool import ConcurrentWorkerPool
 from .http_client import HttpClient
 from .options import ValidatorOptions
-from .progress import ConsoleProgress
+from .progress import ConsoleProgress, NullProgress
 from .requests_http_client import RequestsHttpClient
 from .validator import DashValidator
 
@@ -146,10 +146,11 @@ class BasicDashValidator(DashValidator):
         except KeyError:
             pass
         log = logging.getLogger('DashValidator')
+        progress = ConsoleProgress()
         if args.verbose > 0:
             log.setLevel(logging.DEBUG)
-        options = ValidatorOptions(log=log, progress=ConsoleProgress(), **kwargs)
-        # options.pool = GeventWorkerPool(args.threads)
+            progress = NullProgress()
+        options = ValidatorOptions(log=log, progress=progress, **kwargs)
         max_workers: int | None = args.threads
         if max_workers < 1:
             max_workers = None
