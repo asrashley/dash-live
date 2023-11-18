@@ -14,16 +14,12 @@ import tempfile
 import time
 from typing import Optional
 
-# import asyncio_gevent
-# from gevent.threadpool import ThreadPoolExecutor
 import flask
 
 from dashlive.utils.json_object import JsonObject
 from dashlive.management.populate import PopulateDatabase
 from dashlive.management.backend_db import BackendDatabaseAccess
 from dashlive.mpeg.dash.validator.concurrent_pool import ConcurrentWorkerPool
-# from dashlive.mpeg.dash.validator.gevent_http_client import GeventHttpClient
-# from dashlive.mpeg.dash.validator.gevent_pool import GeventWorkerPool
 from dashlive.mpeg.dash.validator.options import ValidatorOptions
 from dashlive.mpeg.dash.validator.basic import BasicDashValidator
 from dashlive.mpeg.dash.validator.pool import WorkerPool

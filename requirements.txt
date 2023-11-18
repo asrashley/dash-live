@@ -10,7 +10,6 @@ Flask-SocketIO==5.3.6
 Flask-SQLAlchemy==3.0.3
 flask_jwt_extended==4.5.2
 flask-login==0.6.2
-gevent==23.9.1
 idna==2.8
 itsdangerous==2.1.2
 Jinja2==3.1.2
