@@ -45,6 +45,32 @@ class Manifest(DashElement):
             self.publishTime = datetime.datetime.now(tz=UTC())
         self.mpd_type = xml.get("type", "static")
         self.periods = [Period(p, self) for p in xml.findall('./dash:Period', self.xmlNamespaces)]
+        for idx, period in enumerate(self.periods, start=1):
+            if period.id is None:
+                # Period@id is a string. Setting it to a number is therefore safely unique
+                period.id = idx
+        self.set_target_durations()
+
+    def set_target_durations(self) -> None:
+        if self.options.duration is None:
+            return
+        todo = datetime.timedelta(seconds=self.options.duration)
+        for period in self.periods:
+            if period.duration is None:
+                self.log.debug(
+                    'Using target duration %s for last period %s', todo, period.id)
+                period.target_duration = todo
+                break
+            if todo < period.duration:
+                period.target_duration = todo
+            else:
+                period.target_duration = period.duration
+            self.log.debug(
+                'Using target duration %s for period %s',
+                period.target_duration, period.id)
+            todo -= period.target_duration
+            if todo.total_seconds() < 0:
+                todo = datetime.timedelta(seconds=0)
 
     @property
     def mpd(self):
@@ -89,22 +115,24 @@ class Manifest(DashElement):
 
     def finished(self) -> bool:
         for period in self.periods:
-            if not period.finished():
+            if (
+                    (period.target_duration is None or
+                     period.target_duration.total_seconds() > 0) and
+                    not period.finished()):
                 return False
         return True
 
     async def merge_previous_element(self, prev: "Manifest") -> bool:
         period_map = {}
         for idx, period in enumerate(self.periods):
-            pid = f'{idx}' if period.id is None else period.id
-            period_map[pid] = period
+            period_map[period.id] = period
+        self.set_target_durations()
         futures = []
         for idx, period in enumerate(prev.periods):
-            pid = f'{idx}' if period.id is None else period.id
             try:
-                futures.append(period_map[pid].merge_previous_element(period))
+                futures.append(period_map[period.id].merge_previous_element(period))
             except KeyError:
-                self.log.debug('New period %s', pid)
+                self.log.debug('New period %s', period.id)
         result = await asyncio.gather(*futures)
         return False not in result
 

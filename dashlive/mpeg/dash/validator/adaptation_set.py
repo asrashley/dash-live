@@ -6,6 +6,7 @@
 #
 #############################################################################
 import asyncio
+import datetime
 
 from dashlive.mpeg.dash.representation import Representation as ServerRepresentation
 
@@ -61,6 +62,10 @@ class AdaptationSet(RepresentationBaseType):
     def children(self) -> list[DashElement]:
         return super().children() + self.representations
 
+    @property
+    def target_duration(self) -> datetime.timedelta | None:
+        return self.parent.target_duration
+
     async def merge_previous_element(self, prev: "AdaptationSet") -> bool:
         def make_rep_id(idx, r):
             if r.id is not None:
@@ -90,13 +95,14 @@ class AdaptationSet(RepresentationBaseType):
         return False not in results
 
     def finished(self) -> bool:
+        if (
+                self.target_duration is not None and
+                self.target_duration.total_seconds() == 0):
+            return True
         for child in self.representations:
             if not child.finished():
-                self.log.debug(
-                    'AdaptationSet[%s]: Representation[%s] not finished',
-                    self.id, child.id)
+                self.log.debug('representation %s not finished', child.id)
                 return False
-        self.log.debug('AdaptationSet[%s] validation complete', self.id)
         return True
 
     def set_representation_info(self, info: ServerRepresentation):

@@ -19,6 +19,8 @@ from dashlive.mpeg.dash.representation import Representation as ServerRepresenta
 from dashlive.utils.date_time import (
     multiply_timedelta,
     scale_timedelta,
+    timecode_to_timedelta,
+    timedelta_to_timecode,
 )
 
 from .dash_element import DashElement
@@ -54,6 +56,10 @@ class Representation(RepresentationBaseType):
             if len(segmentBase):
                 self.segmentBase = MultipleSegmentBaseType(
                     segmentBase[0], self)
+
+    @property
+    def target_duration(self) -> datetime.timedelta | None:
+        return self.parent.parent.target_duration
 
     async def merge_previous_element(self, prev: "Representation") -> bool:
         self.log.debug('Merging previous representation %s', prev.id)
@@ -269,21 +275,24 @@ class Representation(RepresentationBaseType):
         total_duration = 0
         self.log.debug('Generating up to %d MediaSegments using SegmentTimeline', len(timeline.segments))
         need_duration = None
-        if self.options.duration is not None:
-            need_duration = self.options.duration * self.timescale()
+        if self.target_duration is not None:
+            need_duration = timedelta_to_timecode(self.target_duration, self.timescale())
         for idx, seg in enumerate(timeline.segments):
             decode_time = seg.start - self.segmentTemplate.presentationTimeOffset
             if self.mode == 'vod':
                 seg_num = idx + 1
             else:
                 seg_num = self.segmentTemplate.startNumber + int(decode_time // seg_duration)
+            expected_seg_num = None
+            if '$Number$' in self.segmentTemplate.media:
+                expected_seg_num = seg_num
             self.log.debug('%d: seg_num=%d decode_time=%d', idx, seg_num, decode_time)
             url = self.format_url_template(
                 self.segmentTemplate.media, seg_num, decode_time)
             url = urllib.parse.urljoin(self.baseurl, url)
             ms = MediaSegment(
                 self, url, expected_decode_time=decode_time, expected_duration=seg.duration,
-                tolerance=tolerance)
+                expected_seg_num=expected_seg_num, tolerance=tolerance)
             if self.mode == 'live':
                 ms.set_segment_availability(
                     seg_duration, self.segmentTemplate.presentationTimeOffset, self.timescale())
@@ -295,10 +304,8 @@ class Representation(RepresentationBaseType):
                     self.id, idx + 1, need_duration)
                 break
         if self.mode == 'live':
-            tsb = self.mpd.timeShiftBufferDepth.total_seconds() * self.timescale()
-            if (
-                    self.options.duration is None or
-                    self.options.duration >= self.mpd.timeShiftBufferDepth.total_seconds()):
+            if self.target_duration is None or self.target_duration >= self.mpd.timeShiftBufferDepth:
+                tsb = self.mpd.timeShiftBufferDepth.total_seconds() * self.timescale()
                 self.elt.check_greater_or_equal(
                     total_duration, tsb,
                     template=r'SegmentTimeline has duration {0}, expected {1} based upon timeshiftbufferdepth')
@@ -402,18 +409,34 @@ class Representation(RepresentationBaseType):
     def finished(self) -> bool:
         if ValidationFlag.MEDIA not in self.options.verify:
             return self._validated
+        total_dur = self.get_validated_duration()
+        if self.target_duration is None:
+            if self.mode != 'live' and total_dur.total_seconds() > 0:
+                return True
+            return False
+        self.log.debug('%s: Total media duration %s, need %s %s',
+                       self.unique_id(), total_dur, self.target_duration,
+                       total_dur >= self.target_duration)
+        return total_dur >= self.target_duration
+
+    def get_validated_duration(self) -> datetime.timedelta:
+        """
+        Get the amount of time (in timescale units) that has been checked
+        """
         total_dur = 0
         for seg in self.media_segments:
-            if seg.validated and seg.duration is not None:
-                total_dur += seg.duration
-        if self.mode != 'live' and total_dur > 0:
-            return True
-        if self.options.duration is None:
-            return False
-        need_duration = self.options.duration * self.timescale()
-        self.log.debug('%s: Total media duration %d, need %d',
-                       self.id, total_dur, need_duration)
-        return total_dur >= need_duration
+            if seg.validated:
+                if seg.duration is not None:
+                    total_dur += seg.duration
+                    # self.log.debug(
+                    #    '%s: seg[%s] duration=%d total=%d', self.id,
+                    #    seg.name, seg.duration, total_dur)
+                elif seg.expected_duration is not None:
+                    total_dur += seg.expected_duration
+                    # self.log.debug(
+                    #    '%s: seg[%s] expected_duration=%d total=%d', self.id,
+                    #    seg.name, seg.expected_duration, total_dur)
+        return timecode_to_timedelta(total_dur, self.timescale())
 
     def get_codec(self) -> str | None:
         if self.init_segment:
@@ -432,10 +455,10 @@ class Representation(RepresentationBaseType):
         next_decode_time = None
         next_seg_num = None
         total_dur = 0
-        if self.options.duration is None:
+        if self.target_duration is None:
             need_duration = None
         else:
-            need_duration = self.options.duration * self.timescale()
+            need_duration = timedelta_to_timecode(self.target_duration, self.timescale())
         for idx, seg in enumerate(self.media_segments):
             self.log.debug(
                 '%s[%d]: num=%s time=%s', self.id, idx, next_seg_num, next_decode_time)
