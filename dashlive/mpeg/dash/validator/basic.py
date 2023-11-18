@@ -12,8 +12,6 @@ import logging
 import sys
 import time
 
-# from .gevent_http_client import GeventHttpClient
-# from .gevent_pool import GeventWorkerPool
 from .concurrent_pool import ConcurrentWorkerPool
 from .http_client import HttpClient
 from .options import ValidatorOptions
