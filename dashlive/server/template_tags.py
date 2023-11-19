@@ -248,4 +248,4 @@ def sort_icon(name: str, order: str, reverse: bool) -> str:
         entity = '&and;'
     else:
         entity = '&or;'
-    return HtmlSafeString(f'<span class="float-right sort-arrow">{entity}</span>')
+    return HtmlSafeString(f'<span class="float-end sort-arrow">{entity}</span>')

@@ -184,11 +184,11 @@ class TestTemplateTags(unittest.TestCase):
 
     def test_sort_icon(self) -> None:
         actual = tags.sort_icon('name', 'name', True)
-        expected = r'<span class="float-right sort-arrow">&and;</span>'
+        expected = r'<span class="float-end sort-arrow">&and;</span>'
         self.assertEqual(expected, actual.html)
 
         actual = tags.sort_icon('name', 'name', False)
-        expected = r'<span class="float-right sort-arrow">&or;</span>'
+        expected = r'<span class="float-end sort-arrow">&or;</span>'
         self.assertEqual(expected, actual.html)
 
         actual = tags.sort_icon('name', 'other', True)
