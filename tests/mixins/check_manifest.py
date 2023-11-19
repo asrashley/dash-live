@@ -126,10 +126,16 @@ class DashManifestCheckMixin:
 
         utc_method = kwargs.get('utcMethod', '')
         use_base_url = kwargs.get('useBaseUrls', True)
-        options = manifest.get_cgi_query_combinations(
-            mode=mode, simplified=simplified, only=only, extras=extras,
-            abr=abr, utcMethod=utc_method, useBaseUrls=use_base_url, **kwargs)
-        total_tests = len(options)
+        manifest_kwargs = {
+            **kwargs,
+            'abr': abr,
+            'utcMethod': utc_method,
+            'useBaseUrls': use_base_url,
+        }
+        options = manifest.get_supported_dash_options(
+            mode=mode, simplified=simplified, only=only, extras=extras, **manifest_kwargs)
+        logging.debug('Testing options: %s', options)
+        total_tests = options.num_tests
         if 'utcMethod' in manifest.features and 'utcMethod' not in kwargs:
             total_tests += len(UTCMethod.cgi_choices)
         if 'useBaseUrls' in manifest.features and 'useBaseUrls' not in kwargs:
@@ -139,7 +145,7 @@ class DashManifestCheckMixin:
         logging.debug('total %s tests for "%s" = %d', desc, filename, total_tests)
         self.progress(0, total_tests)
         # do an exhaustive check of every option
-        for query in options:
+        for query in options.cgi_query_combinations():
             if 'events=' in query:
                 duration = 9 * self.SEGMENT_DURATION
                 ev_interval = self.SEGMENT_DURATION * 300
@@ -225,7 +231,7 @@ class DashManifestCheckMixin:
             self.current_url = mpd_url
             response = self.client.get(mpd_url)
         if response.status_code != 200:
-            print(f'GET {mpd_url}: {response.status_code}')
+            logging.warning('GET %s: %d', mpd_url, response.status_code)
         self.assertEqual(response.status_code, 200)
         self.assertIn("Access-Control-Allow-Origin", response.headers)
         self.assertEqual(response.headers["Access-Control-Allow-Origin"], '*')

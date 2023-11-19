@@ -218,15 +218,15 @@ class TestHtmlPageHandlers(FlaskTestBase):
         use = OptionUsage.AUDIO + OptionUsage.VIDEO + OptionUsage.MANIFEST + OptionUsage.HTML
         for filename, manifest in manifests.manifest.items():
             for mode in manifest.supported_modes():
-                options = manifest.get_cgi_query_combinations(
+                options = manifest.get_supported_dash_options(
                     mode, simplified=True, only=only, use=use)
-                num_tests += len(options) * models.Stream.count()
+                num_tests += options.num_tests * models.Stream.count()
         count = 0
         for filename, manifest in manifests.manifest.items():
             for mode in manifest.supported_modes():
-                options = manifest.get_cgi_query_combinations(
+                options = manifest.get_supported_dash_options(
                     mode, simplified=True, only=only, use=use)
-                for opt in options:
+                for opt in options.cgi_query_combinations():
                     for stream in models.Stream.all():
                         self.progress(count, num_tests)
                         self.check_video_html_page(filename, manifest, mode, stream, opt)
