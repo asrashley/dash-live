@@ -16,7 +16,7 @@ The docker container can then be used by:
 
 ```sh
 docker run -i -t \
-    -v instance:/home/dash/instance \
+    -v ${PWD}/instance:/home/dash/instance \
     -p 5000:80/tcp -e SERVER_NAME=`hostname -f` \
     -e USER_GID=`id -g` -e USER_UID=`id -u` \
     dashlive
