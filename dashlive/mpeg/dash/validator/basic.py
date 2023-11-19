@@ -38,11 +38,16 @@ class BasicDashValidator(DashValidator):
             return False
         if self.options.dest:
             self.save_manifest()
-        while not self.finished() and not self.progress.aborted():
+        if self.mode == 'live':
+            max_loops = 100
+        else:
+            max_loops = 2
+        while not self.finished() and not self.progress.aborted() and max_loops > 0:
             try:
                 log.info('Starting stream validation...')
                 await self.validate()
                 if not self.finished():
+                    max_loops -= 1
                     await self.sleep()
                     log.info('Refreshing manifest')
                     await self.refresh()
