@@ -19,7 +19,9 @@ echo "server_name ${SERVER_NAME};" > /etc/nginx/snippets/server_name.conf
 
 cd /home/dash/dash-live
 
-python -m alembic upgrade head
+if [ -f /home/dash/instance/models.db3 ]; then
+	python -m alembic upgrade head
+fi
 
 GUNICORN_OPTIONS="-w 1 --threads 100 --user www-data --group www-data --worker-class gthread"
 
