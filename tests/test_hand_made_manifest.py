@@ -31,15 +31,33 @@ from .mixins.check_manifest import DashManifestCheckMixin
 class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
     async def test_hand_made_manifest_aac_vod(self):
         await self.check_a_manifest_using_all_options(
-            'hand_made.mpd', 'vod', with_subs=True, audioCodec='mp4a')
+            'hand_made.mpd', 'vod', with_subs=True, audioCodec='mp4a',
+            segmentTimeline=False)
+
+    async def test_hand_made_manifest_aac_vod_timeline(self):
+        await self.check_a_manifest_using_all_options(
+            'hand_made.mpd', 'vod', with_subs=True, audioCodec='mp4a',
+            segmentTimeline=True)
 
     async def test_hand_made_manifest_ec3_vod(self):
         await self.check_a_manifest_using_all_options(
-            'hand_made.mpd', 'vod', with_subs=True, audioCodec='ec-3')
+            'hand_made.mpd', 'vod', with_subs=True, audioCodec='ec-3',
+            segmentTimeline=False)
+
+    async def test_hand_made_manifest_ec3_vod_timeline(self):
+        await self.check_a_manifest_using_all_options(
+            'hand_made.mpd', 'vod', with_subs=True, audioCodec='ec-3',
+            segmentTimeline=True)
 
     async def test_hand_made_manifest_all_audio_codecs_vod(self):
         await self.check_a_manifest_using_all_options(
-            'hand_made.mpd', 'vod', with_subs=True, audioCodec='any')
+            'hand_made.mpd', 'vod', with_subs=True, audioCodec='any',
+            segmentTimeline=False)
+
+    async def test_hand_made_manifest_all_audio_codecs_vod_timeline(self):
+        await self.check_a_manifest_using_all_options(
+            'hand_made.mpd', 'vod', with_subs=True, audioCodec='any',
+            segmentTimeline=True)
 
     @FlaskTestBase.mock_datetime_now(from_isodatetime("2023-09-06T09:59:02Z"))
     async def test_hand_made_manifest_live_aac(self):

@@ -21,8 +21,9 @@
 #############################################################################
 
 from dataclasses import dataclass, field
+import hashlib
 import logging
-from typing import AbstractSet
+from typing import AbstractSet, Iterator, NamedTuple
 
 from dashlive.mpeg.dash.profiles import primary_profiles
 from dashlive.server.options.drm_options import DrmLocation, DrmSelection
@@ -31,6 +32,91 @@ from dashlive.server.options.types import OptionUsage
 from dashlive.utils.json_object import JsonObject
 
 DashCgiOption = tuple[str, list[str]]
+
+class SupportedOptionTuple(NamedTuple):
+    cgi_name: str
+    num_options: int
+    options: list[str]
+
+    def __str__(self) -> str:
+        return f'{self.cgi_name}={self.options}'
+
+
+class SupportedOptionTupleList:
+    __dict__ = ('options', 'mode', 'title', 'restrictions', 'num_tests', 'kwargs')
+
+    def __init__(self, mode: str, title: str,
+                 restrictions: dict[str, tuple],
+                 options: list[SupportedOptionTuple], **kwargs) -> None:
+        self.options = options
+        self.mode = mode
+        self.title = title
+        self.restrictions = restrictions
+        self.num_tests = SupportedOptionTupleList.num_tests(options)
+        self.kwargs = kwargs
+
+    def __str__(self) -> str:
+        lines = [
+            self.title,
+            f'mode={self.mode}',
+            f'num_tests={self.num_tests}',
+        ]
+        for opt in self.options:
+            lines.append(str(opt))
+        return '\n'.join(lines)
+
+    @staticmethod
+    def num_tests(options: list[SupportedOptionTuple]) -> int:
+        count = 0
+        for opt in options:
+            if count:
+                count *= opt.num_options
+            else:
+                count = opt.num_options
+        return count
+
+    def cgi_query_combinations(self) -> Iterator[str]:
+        """
+        Returns an interator that yields of all possible combinations of CGI query parameters
+        """
+        defaults = OptionsRepository.get_default_options()
+        indexes = [0] * len(self.options)
+        done = False
+        num_options = len(self.options)
+        checked: set[bytes] = set()
+        while not done:
+            params: dict[str, str] = {}
+            allowed = True
+            for opt, idx in zip(self.options, indexes):
+                name, length, param_options = opt
+                val = param_options[idx]
+                try:
+                    allowed = val in self.restrictions[name]
+                except KeyError:
+                    pass
+                if not allowed:
+                    break
+                params[name] = val
+            if allowed:
+                candidate = OptionsRepository.convert_cgi_options(params, defaults)
+                candidate.update(**self.kwargs)
+                candidate.remove_unused_parameters(self.mode)
+                cgi_str = candidate.generate_cgi_parameters_string()
+                digest = hashlib.sha1(bytes(cgi_str, 'ascii')).digest()
+                if digest not in checked:
+                    checked.add(digest)
+                    yield cgi_str
+            idx = 0
+            while idx < num_options:
+                indexes[idx] += 1
+                if indexes[idx] < self.options[idx][1]:
+                    break
+                indexes[idx] = 0
+                idx += 1
+            if idx == num_options:
+                done = True
+        logging.debug('%s total tests=%d', self.title, len(checked))
+
 
 @dataclass(slots=True, frozen=True)
 class DashManifest:
@@ -42,18 +128,17 @@ class DashManifest:
     def supported_modes(self) -> list[str]:
         return self.restrictions.get('mode', primary_profiles.keys())
 
-    def get_cgi_query_combinations(
+    def get_supported_dash_options(
             self,
             mode: str,
             simplified: bool = False,
             use: OptionUsage | None = None,
             only: AbstractSet | None = None,
             extras: list[tuple] | None = None,
-            **kwargs) -> list[str]:
+            **kwargs) -> SupportedOptionTupleList:
         """
-        Returns a list of all possible combinations of CGI query parameters
+        Returns an list of support DASH options
         """
-        defaults = OptionsRepository.get_default_options()
         drm_opts = self.get_drm_options(mode)
         exclude = {'abr', 'bugCompatibility', 'drmSelection',
                    'leeway', 'mode', 'numPeriods', 'minimumUpdatePeriod'}
@@ -73,8 +158,7 @@ class DashManifest:
                 exclude.discard(item)
         logging.debug('exclude=%s', exclude)
         logging.debug('only=%s', only)
-        queries: set[str] = set()
-        options: list[tuple] = []
+        options: list[SupportedOptionTuple] = []
         if use is None:
             use = ~OptionUsage.HTML
         for dash_opt in OptionsRepository.get_dash_options(only=only, exclude=exclude, use=use):
@@ -87,47 +171,16 @@ class DashManifest:
                 if value in {None, '', 'none'}:
                     continue
                 choices.append(value)
-            options.append((dash_opt.cgi_name, len(choices), choices))
+            options.append(SupportedOptionTuple(dash_opt.cgi_name, len(choices), choices))
         if drm_opts != {'drm=none'} and 'drm' not in exclude:
-            options.append(('drm', len(drm_opts), list(drm_opts)))
+            options.append(SupportedOptionTuple('drm', len(drm_opts), list(drm_opts)))
         if extras:
             options += extras
         logging.debug(
             'options len=%d, counts=%s', len(options),
             [f'{name}={leng}' for name, leng, choices in options])
-        indexes = [0] * len(options)
-        done = False
-        while not done:
-            params: dict[str, str] = {}
-            allowed = True
-            for opt, idx in zip(options, indexes):
-                name, length, param_options = opt
-                val = param_options[idx]
-                try:
-                    allowed = val in self.restrictions[name]
-                except KeyError:
-                    pass
-                if not allowed:
-                    break
-                params[name] = val
-            if allowed:
-                candidate = OptionsRepository.convert_cgi_options(params, defaults)
-                candidate.update(**kwargs)
-                candidate.remove_unused_parameters(mode)
-                queries.add(candidate.generate_cgi_parameters_string())
-            idx = 0
-            while idx < len(options):
-                indexes[idx] += 1
-                if indexes[idx] < options[idx][1]:
-                    break
-                indexes[idx] = 0
-                idx += 1
-            if idx == len(options):
-                done = True
-        result = list(queries)
-        result.sort()
-        logging.debug('%s total tests=%d', self.title, len(result))
-        return result
+        return SupportedOptionTupleList(
+            mode=mode, options=options, title=self.title, restrictions=self.restrictions, **kwargs)
 
     def get_drm_options(self, mode: str, only: AbstractSet | None = None) -> set[str]:
         """

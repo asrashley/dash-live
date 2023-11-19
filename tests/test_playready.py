@@ -713,8 +713,9 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         manifest = manifests.manifest[filename]
         drm_opts = list(manifest.get_drm_options('vod', only={'playready'}))
         extras = [
-            ('drm', len(drm_opts), drm_opts),
-            ('playready_la_url', 2, ['https://some.server/pr', 'http://another.addr/abc']),
+            manifests.SupportedOptionTuple('drm', len(drm_opts), drm_opts),
+            manifests.SupportedOptionTuple(
+                'playready_la_url', 2, ['https://some.server/pr', 'http://another.addr/abc']),
         ]
         await self.check_a_manifest_using_all_options(
             filename,

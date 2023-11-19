@@ -207,15 +207,14 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
         self.logout_user()
         filename = 'hand_made.mpd'
         manifest = manifests.manifest[filename]
-        drm_options = manifest.get_cgi_query_combinations('vod', only={'drmSelection'})
-        self.assertIsNotNone(drm_options)
+        drm_options = manifest.get_supported_dash_options('vod', only={'drmSelection'})
+        self.assertGreaterThan(drm_options.num_tests, 0)
         self.assertGreaterThan(models.MediaFile.count(), 0)
-        total_tests = len(drm_options)
         test_count = 0
         baseurl = flask.url_for(
             'dash-mpd-v3', manifest=filename, stream=self.FIXTURES_PATH.name, mode='vod')
-        for drm_opt in drm_options:
-            self.progress(test_count, total_tests)
+        for drm_opt in drm_options.cgi_query_combinations():
+            self.progress(test_count, drm_options.num_tests)
             test_count += 1
             mpd_url = baseurl + drm_opt
             # print('test_get_vod_media_using_live_profile', mpd_url)
@@ -244,7 +243,7 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                 head.headers['Content-Length'],
                 response.headers['Content-Length'],
                 msg)
-        self.progress(total_tests, total_tests)
+        self.progress(drm_options.num_tests, drm_options.num_tests)
 
     @FlaskTestBase.mock_datetime_now(from_isodatetime("2022-10-04T12:00:00Z"))
     async def test_get_live_media_using_live_profile(self):
