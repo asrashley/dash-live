@@ -5,7 +5,9 @@ manifests. These manifests are dynamically generated from templates of various
 vendor's packaging output.
 
 The principal use for this service is to test live DASH streams using
-non-live, rights cleared material.
+non-live, rights cleared material. There are a large number of configuration
+options that can be applied to these streams and manifests, giving millions
+of different combinations.
 
 ## Installation
 
@@ -41,7 +43,7 @@ value of "*" tells the server to allow any JavaScript request from any domain.
 The `FLASK_DASH__DEFAULT_ADMIN_PASSWORD` setting controls the default password
 to use for the admin user account when creating a new blank database.
 
-### Running the development server directly on the host machine
+## Running the development server directly on the host machine
 
 Create a Python virtual environment and install the dependencies:
 
@@ -57,188 +59,40 @@ The CSS files need to be compiled:
 python -m lesscpy static/css -o static/css/
 ```
 
-Use [runserver.bat](./runserver.bat) or [runserver.sh](./runserver.sh)
-depending upon whether you are developing on Windows or Linux.
-
-It will start an HTTP server on port 9080
-
-### Running server using a Docker image
-
-The [Dockerfile](./Dockerfile) can be used to create a Docker image
-that contains all the required packages to run the server. It uses
-nginx to serve static files and the Python Flask app to serve all other
-HTTP requests.
+To start the server:
 
 ```sh
-docker build -t dashlive .
-mkdir instance
+python -m flask --app dashlive.server.app run --host=0.0.0.0 --debug
 ```
 
-The docker container can then be used by:
+It will start an HTTP server on port 5000
 
-```sh
-docker run -i -t \
-    -v instance:/home/dash/instance \
-    -p 5000:80/tcp -e SERVER_NAME=`hostname -f` \
-    -e USER_GID=`id -g` -e USER_UID=`id -u` \
-    dashlive
-```
-
-The above example will use port 5000 on the Docker host to provide
-access to the application (which uses port 80 inside the Docker
-container). The environment variable `USER_UID` controls the user
-ID to use inside the Docker container. `USER_GID` controls the group
-ID to use inside the Docker container.
-
-The service should now be available from:
-
-[http://localhost:5000/]([http://localhost:5000/])
-
-### Running development server using a Docker image
-
-To run the development server, so that changes in the source code are
-automatically re-loaded into the server, you can tell docker to use
-the [runserver.sh](./runserver.sh) script as its entry point:
-
-```sh
-docker run -i -t  \
-  -v instance:/home/dash/instance \
-  --mount \
-    type=bind,source=`pwd`/dashlive,destination=/home/dash/dash-live/dashlive \
-  -p 9090:5000/tcp -e SERVER_NAME=`hostname -f` \
-  -e USER_GID=`id -g` -e USER_UID=`id -u` \
-  --entrypoint=/home/dash/dash-live/runserver.sh \
-  dashlive
-```
-
-Note that this causes the docker container to run the DEVELOPMENT
-ENVIRONMENT and is NOT for use in a production environment! The
-above example will use port 9090 on the Docker host to provide
-access to the application (port 5000 inside the container).
-
-The service should now be available at:
-
-[http://localhost:9090/]([http://localhost:9090/])
-
-
-If you only need to run the development version in a Docker container,
-you can speed up the build process by telling docker to stop after
-installing the app, before it installs the files used for normal usage.
-
-```sh
-docker build --tag=dashlive --target=base .
-```
+See [docs/deploy.md](./docs/deploy.md) for more information on the various
+options for deploying this service.
 
 ## Adding User Accounts
 
 By default, the server will create a new admin account using the username
-and password values defined in `dashlive/server/settings.py`. You will need
-to use that username and password to log into the server and then change the
-password. From the [users](http://localhost:8080/users) page can then be
-used to add additional users to the system.
+and password values defined in `.env`. You will need to use that username
+and password to log into the server and then change the password. From the
+[users](http://localhost:5000/users) page can then be used to add additional
+users to the system.
 
-## Media Files
+See [docs/users.md](./docs/users.md) for more information about the user
+authentication system.
 
-The application expects there to be at least one video and one audio
-MP4 file for each available stream. Each file belonging to a stream
-must be uploaded and associated with that stream. When the
-file is parsed by the server it will auto-detect if the file is
-encrypted. It is recommended however to choose a naming convention
-that makes it easier to tell which streams are encrypted and which
-ones are in the clear. For example:
+## Streams
 
-* bbb_a1.mp4
-* bbb_a1_enc.mp4
-* bbb_a2.mp4
-* bbb_a2_enc.mp4
-* bbb_v1.mp4
-* bbb_v1_enc.mp4
-* bbb_v2.mp4
-* bbb_v2_enc.mp4
-* bbb_v3.mp4
-* bbb_v3_enc.mp4
-* bbb_v4.mp4
-* bbb_v4_enc.mp4
-* bbb_v5.mp4
-* bbb_v5_enc.mp4
-* bbb_v6.mp4
-* bbb_v6_enc.mp4
-* bbb_v7.mp4
-* bbb_v7_enc.mp4
+Each stream entry represents a playable audio/video stream. Each stream
+must have at least one video and one audio MP4 file. Typically each
+stream will have multiple video files associated with it, one for
+each available bitrate.
 
-These file needs to have been encoded for DASH, with a MOOV and MOOF boxes
-and each MOOF of a fixed duration. There is a
-[create_media.py](./dashlive/media/create_media.py)
-Python script which gives an example of how to encode and package the media files.
+See [docs/streams](./docs/streams.md) for more information about DASH
+streams.
 
-```sh
-test -e "BigBuckBunny.mp4" || curl -o "BigBuckBunny.mp4" "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-python -m dashlive.media.create -i "BigBuckBunny.mp4" -p bbb --kid '1ab45440532c439994dc5c5ad9584bac' -o bbb
-```
-
-The media files need to be uploaded once the dash server is running. Go to
-[streams](http://localhost:8080/streams) to create a stream entry. Once the stream
-has been created, click on the title of the stream to view a page that allows
-media files to be uploaded.
-
-Upload the media files, one at a time. After uploading, each media file needs
-to be indexed, using the "index" button beside each media item. The index process
-finds each segment in the file and other information such as codecs, timescale and
-duration.
-
-The [dashlive.upload](./dashlive/upload.py) script can be used to automate the installation
-of streams, files and keys:
-
-```sh
-python -m dashlive.upload --username=admin --password=secret --host http://localhost:5000/ bbb.json
-```
-
-Where bbb.json is a JSON file that looks like this:
-
-```json
-{
-    "keys": [{
-            "computed": false,
-            "key": "533a583a843436a536fbe2a5821c4b6c",
-            "kid": "c001de8e567b5fcfbc22c565ed5bda24"
-        }, {
-            "computed": true,
-            "kid": "1ab45440532c439994dc5c5ad9584bac"
-        }
-    ],
-    "streams": [{
-            "directory": "bbb",
-            "title": "Big Buck Bunny",
-            "marlin_la_url": "ms3://ms3.test.expressplay.com:8443/hms/ms3/rights/?b=...",
-            "playready_la_url": "https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg={cfgs}",
-            "files": [
-                "bbb_a1.mp4", "bbb_a1_enc.mp4", "bbb_a2.mp4", "bbb_a2_enc.mp4",
-                "bbb_v1.mp4", "bbb_v1_enc.mp4", "bbb_v2.mp4", "bbb_v2_enc.mp4",
-                "bbb_v3.mp4", "bbb_v3_enc.mp4", "bbb_v4.mp4", "bbb_v4_enc.mp4",
-                "bbb_v5.mp4", "bbb_v5_enc.mp4", "bbb_v6.mp4", "bbb_v6_enc.mp4",
-                "bbb_v7.mp4", "bbb_v7_enc.mp4"
-            ],
-	        "timing_ref": "bbb_v1.mp4"
-    }]
-}
-```
-
-The [dashlive.upload](./dashlive/upload.py) script will upload all of the
-keys, streams and files listed in the JSON file that don't already exist
-on the server.
-
-If there are encrypted streams, the key IDs (KID) and encryption key
-need to be configured. The media index process will automatically add new
-key entries for each KID found in the media file.
-
-It is possible to omit the encryption key and just provide the KID.
-In this case, the server will auto-generate the encryption key using
-the key generation algorithm provided by MicroSoft PlayReady using
-the test key seed. Click on the `Edit` button for the appropriate KID and
-then click the "Key is auto-computed?" check box.
-
-Alternatively, the value of the key can be provided manually using the
-"Key" input text field.
+See [docs/media](./docs/media.md) for more information about media
+file requirements and how to upload and download files from the server.
 
 ### Viewing Media Details
 
@@ -250,65 +104,27 @@ about each segment.
 Clicking on the link for one of those segments will show every MP4 atom
 that has been parsed from the file.
 
-## Unit Tests
+## DASH Stream Validation
 
-Install the required test libraries:
+The [/validate](http://localhost:5000/validate/) page allows the checking
+the validity of a DASH stream. It will inspect the contents of the DASH
+manifest and all the requested segments in the stream. If it finds
+any values that don't adhere to the DASH specification, they will be
+logged in the output summary.
 
-```sh
-pip install -r dev-requirements.txt
-```
-
-The quickest way to run the unit tests is to use pytest to run
-multiple tests in parallel.
-
-```sh
-pytest -n auto
-```
-
-It is also possible run all unit tests using Python's built-in test
-framework. This will take quite a long time (e.g. 6 minutes) to
-complete:
-
-```sh
-python -m unittest
-```
-
-
-It is also possible to run the set of tests for one area by providing
-the name of the Python file containing the tests:
-
-```sh
-python -m tests.test_mp4
-```
-
-Will run every test in the [tests/test_mp4.py](./tests/test_mp4.py) file.
-
-To specify one or more tests within that test file, a list of test
-functions can also be added to the command line:
-
-```sh
-python -m tests.test_views TestHandlers.test_availability_start_time
-```
-
-To run the unit tests inside a Docker container:
-
-```sh
-docker build -t dashlive  .
-docker run --mount type=bind,source=`pwd`/tests,destination=/home/dash/dash-live/tests \
-    -it --entrypoint /home/dash/dash-live/runtests.py dashlive
-```
+See [docs/validate](./docs/validate.md) for more information about the
+DASH validator.
 
 ## Migrating from Python 2 version
 
-This version is incompatible with the previous Python 2
-version. Migrating the Python 2 version requires complete re-creation
-of the database and re-uploading media files.
+This version is incompatible with the previous Python 2 version.
+Migrating the Python 2 version requires complete re-creation of the
+database and re-uploading media files.
 
-The old version of this application has a `download-db.py` script that
-can be used to extract all of the data from the old server. The
-[dashlive.upload](./dashlive/upload.py) script from this version can be
-used to take this extracted data and upload it to the new server. This
-process should preserve all of the information between versions.
+The old [python-2.7](https://github.com/asrashley/dash-live/tree/python-2.7)
+branch of this application has a
+[download-db.py](https://github.com/asrashley/dash-live/blob/python-2.7/download-db.py)
+script that can be used to extract all of the data from the old server.
 
 Using a checkout of the `python-2.7` branch to download the data from
 a running Python 2 version of this app into a `tmp` directory:
@@ -316,6 +132,12 @@ a running Python 2 version of this app into a `tmp` directory:
 ```sh
 python2 download-db.py --host http://localhost:9080/ tmp
 ```
+
+The [dashlive.upload](./dashlive/upload.py) script from this version can
+be used to take this extracted data and upload it to the new server. This
+process should preserve all of the information between versions. The
+`Timing reference` property of each uploaded stream needs to be set before
+the streams are playable.
 
 Using a checkout of the main branch to upload this data to a new
 server:
@@ -325,12 +147,23 @@ python3 -m dashlive.upload --username=admin --password=mysecret \
     --host http://localhost:5000/ tmp/downloaded.json
 ```
 
+## Testing
+
+See [docs/testing](./docs/testing.md) for information about running the
+unit tests and coverage reports. At the time of writing, there is just
+under 80% code test coverage.
+
+| statements | missing | excluded | branches | partial | coverage |
+| --- | --- | --- | --- | --- | --- |
+| 12484 | 2342 | 94 | 5216 | 741 | 79% |
+
 ## License
+
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+<http://www.apache.org/licenses/LICENSE-2.0>
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
