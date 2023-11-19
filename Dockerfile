@@ -13,6 +13,7 @@ RUN apt-get update && \
     python3-pip \
     python3-venv
 COPY requirements.txt $HOME/dash-live/
+COPY dev-requirements.txt $HOME/dash-live/
 COPY deploy/create_virtenv.sh $HOME/dash-live/
 RUN chmod +x $HOME/dash-live/create_virtenv.sh
 RUN $HOME/dash-live/create_virtenv.sh
@@ -71,6 +72,7 @@ RUN apt-get -y -q --force-yes install nginx
 RUN rm /etc/nginx/sites-enabled/default
 COPY deploy/application.py $HOME/dash-live/
 COPY deploy/start-server.sh $HOME/dash-live/
+COPY deploy/runtests.sh $HOME/dash-live/
 COPY deploy/dashlive.conf /etc/nginx/sites-available/
 RUN echo "client_max_body_size 1024M;" > /etc/nginx/conf.d/maxsize.conf
 RUN ln -s /etc/nginx/sites-available/dashlive.conf /etc/nginx/sites-enabled/dashlive.conf
