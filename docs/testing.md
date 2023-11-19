@@ -44,7 +44,7 @@ To run the unit tests inside a Docker container:
 ```sh
 docker build -t dashlive  .
 docker run --mount type=bind,source=`pwd`/tests,destination=/home/dash/dash-live/tests \
-    -it --entrypoint /home/dash/dash-live/runtests.py dashlive
+    -it --entrypoint /home/dash/dash-live/runtests.sh dashlive
 ```
 
 ## Code Coverage
