@@ -3,6 +3,7 @@
 import random
 import string
 import os
+import sys
 
 TEMPLATE="""
 FLASK_SECRET_KEY='{cookie}'
@@ -21,7 +22,10 @@ def make_random_string(length: int) -> str:
 
 cookie = make_random_string(20)
 csrf = make_random_string(20)
-password = make_random_string(10)
+if len(sys.argv) > 1:
+    password = sys.argv[1]
+else:
+    password = make_random_string(10)
 
 if not os.path.exists(".env"):
     print(f'Creating .env with default admin account username="admin" password ="{password}"')
