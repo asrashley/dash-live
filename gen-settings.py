@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 
+import argparse
 import random
 import string
 import os
@@ -13,6 +14,7 @@ FLASK_DASH__DEFAULT_ADMIN_USERNAME='admin'
 FLASK_DASH__DEFAULT_ADMIN_PASSWORD='{password}'
 FLASK_DASH__ALLOWED_DOMAINS='*'
 FLASK_DASH__STRICT_CSRF_ORIGIN='False'
+FLASK_DASH__PROXY_DEPTH='{proxy_depth}'
 """
 
 def make_random_string(length: int) -> str:
@@ -22,15 +24,19 @@ def make_random_string(length: int) -> str:
         rv.append(random.choice(chars))
     return ''.join(rv)
 
-cookie = make_random_string(20)
-csrf = make_random_string(20)
-if len(sys.argv) > 1:
-    password = sys.argv[1]
-else:
-    password = make_random_string(10)
+parser = argparse.ArgumentParser(description='Generate dash-live server settings')
+parser.add_argument(
+    '--proxy-depth', type=int, dest='proxy_depth', default=0,
+    help='Number of proxy servers to trust when checking X-Forwarded- headers')
+parser.add_argument('--password', help='Default admin password', default=make_random_string(10))
+args = parser.parse_args()
 
 if not os.path.exists(".env"):
-    print(f'Creating .env with default admin account username="admin" password ="{password}"')
+    cookie = make_random_string(20)
+    csrf = make_random_string(20)
+    print(f'Creating .env with default admin account username="admin" password="{args.password}"')
     with open('.env', 'w', encoding='ascii') as out:
-        out.write(TEMPLATE.format(**locals()))
+        out.write(TEMPLATE.format(
+            cookie=cookie, csrf=csrf, password=args.password,
+            proxy_depth=args.proxy_depth))
 
