@@ -705,6 +705,8 @@ class RequestHandlerBase(MethodView):
             return True
         if environ.get('HTTPS', 'off') == 'on':
             return True
+        if flask.request.headers.get('X-Forwarded-Proto', 'http') == 'https':
+            return True
         return flask.request.headers.get('X-HTTP-Scheme', 'http') == 'https'
 
     def is_ajax(self) -> bool:
