@@ -11,6 +11,7 @@ FLASK_DASH__CSRF_SECRET='{csrf}'
 FLASK_DASH__DEFAULT_ADMIN_USERNAME='admin'
 FLASK_DASH__DEFAULT_ADMIN_PASSWORD='{password}'
 FLASK_DASH__ALLOWED_DOMAINS='*'
+FLASK_DASH__STRICT_CSRF_ORIGIN='False'
 """
 
 def make_random_string(length: int) -> str:

@@ -117,6 +117,8 @@ class RequestHandlerBase(MethodView):
         # logging.debug(
         # 'generate_csrf User-Agent: "{}"'.format(flask.request.headers['User-Agent']))
         cfg = flask.current_app.config['DASH']
+        strict_origin  = cfg.get('STRICT_CSRF_ORIGIN', 'False').lower() == 'true'
+
         sig = hmac.new(
             bytes(cfg['CSRF_SECRET'], 'utf-8'),
             bytes(csrf_key, 'utf-8'),
@@ -129,9 +131,8 @@ class RequestHandlerBase(MethodView):
         logging.debug(f'generate_csrf salt: "{salt}"')
         # print('generate', service, csrf_key, origin, flask.request.headers['User-Agent'], salt)
         sig.update(bytes(service, 'utf-8'))
-        sig.update(bytes(origin, 'utf-8'))
-        # sig.update(flask.request.url)
-        # sig.update(bytes(flask.request.headers['User-Agent'], 'utf-8'))
+        if strict_origin:
+            sig.update(bytes(origin, 'utf-8'))
         sig.update(bytes(salt, 'utf-8'))
         rv = urllib.parse.quote(salt + str(base64.b64encode(sig.digest())))
         # print('csrf', service, rv)
@@ -184,19 +185,17 @@ class RequestHandlerBase(MethodView):
         logging.debug(f'check_csrf salt: "{salt}"')
         token = token[models.Token.CSRF_SALT_LENGTH:]
         cfg = flask.current_app.config['DASH']
+        strict_origin  = cfg.get('STRICT_CSRF_ORIGIN', 'False').lower() == 'true'
         sig = hmac.new(
             bytes(cfg['CSRF_SECRET'], 'utf-8'),
             bytes(csrf_key, 'utf-8'),
             hashlib.sha1)
         sig.update(bytes(service, 'utf-8'))
-        sig.update(bytes(origin, 'utf-8'))
+        if strict_origin:
+            sig.update(bytes(origin, 'utf-8'))
         # logging.debug("check_csrf Referer: {}".format(flask.request.headers['Referer']))
-        # sig.update(flask.request.headers['Referer'])
-        # sig.update(bytes(flask.request.headers['User-Agent'], 'utf-8'))
         sig.update(bytes(salt, 'utf-8'))
         b64_sig = str(base64.b64encode(sig.digest()))
-        # sig_hex = sig.hexdigest()
-        # tk_hex = binascii.b2a_hex(base64.b64decode(token))
         if token != b64_sig:
             logging.debug("signatures do not match: %s %s", token, b64_sig)
             raise CsrfFailureException("signatures do not match")
