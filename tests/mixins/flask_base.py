@@ -108,6 +108,7 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
             'SQLALCHEMY_DATABASE_URI': "sqlite:///:memory:",
             'TESTING': True,
             'LOG_LEVEL': 'critical',
+            'PREFERRED_URL_SCHEME': 'http',
         }
         app = create_app(config=config, create_default_user=False, wss=self.ENABLE_WSS)
         with app.app_context():

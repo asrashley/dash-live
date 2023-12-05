@@ -22,6 +22,7 @@
 
 import json
 import unittest
+from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 import flask
@@ -229,7 +230,8 @@ class TestHtmlPageHandlers(FlaskTestBase):
                 for opt in options.cgi_query_combinations():
                     for stream in models.Stream.all():
                         self.progress(count, num_tests)
-                        self.check_video_html_page(filename, manifest, mode, stream, opt)
+                        scheme = 'http' if count & 1 else 'https'
+                        self.check_video_html_page(filename, manifest, mode, stream, opt, scheme=scheme)
                         count += 1
         self.progress(num_tests, num_tests)
 
@@ -244,16 +246,23 @@ class TestHtmlPageHandlers(FlaskTestBase):
             models.db.session.commit()
         self.check_video_html_page(
             'hand_made.mpd', manifests.manifest['hand_made.mpd'], 'vod',
-            models.Stream.get(title=self.STREAM_TITLE), '')
+            models.Stream.get(title=self.STREAM_TITLE), '', scheme='http')
 
     def check_video_html_page(self, filename: str, manifest: manifests.DashManifest,
-                              mode: str, stream: models.Stream, query: str) -> None:
-        html_url = flask.url_for(
+                              mode: str, stream: models.Stream, query: str, scheme: str) -> None:
+        self.app.config['PREFERRED_URL_SCHEME'] = scheme
+        html_url = f'{scheme}://localhost' + flask.url_for(
             "video",
             mode=mode,
             stream=self.FIXTURES_PATH.name,
             manifest=filename[:-4])
         html_url += query
+        html_parsed = urlparse(html_url)
+        mpd_url = f'{scheme}://localhost' + flask.url_for(
+            'dash-mpd-v3',
+            manifest=filename,
+            stream=self.FIXTURES_PATH.name,
+            mode=mode) + query
         try:
             self.current_url = html_url
             response = self.client.get(html_url)
@@ -262,6 +271,13 @@ class TestHtmlPageHandlers(FlaskTestBase):
                 msg=f'Failed to fetch video player HTML page {html_url}')
             html = BeautifulSoup(response.text, 'lxml')
             self.assertEqual(html.title.string, manifest.title)
+            div = html.find(id='vid-window')
+            breadcrumb = html.find(id='manifest-url')
+            self.assertEqual(div['data-src'], breadcrumb['href'])
+            parsed = urlparse(div['data-src'])
+            if parsed.scheme != 'ms3':
+                self.assertEqual(parsed.scheme, html_parsed.scheme)
+                self.assertEqual(parsed.scheme, scheme)
             for script in html.find_all('script'):
                 if script.get("src"):
                     continue
