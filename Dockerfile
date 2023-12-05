@@ -1,6 +1,7 @@
 FROM python:3.11 as base
 EXPOSE 5000
 ARG DEFAULT_PASSWORD=""
+ARG PROXY_DEPTH="1"
 ENV HOME=/home/dash
 ENV FLASK_INSTANCE_PATH=/home/dash/instance
 ENV LOG_LEVEL="info"
@@ -57,7 +58,7 @@ COPY *.py $HOME/dash-live/
 RUN mkdir $HOME/instance
 RUN ln -s /usr/bin/python3 /usr/bin/python
 WORKDIR /home/dash/dash-live
-RUN python ./gen-settings.py ${DEFAULT_PASSWORD}
+RUN python ./gen-settings.py --password=${DEFAULT_PASSWORD} --proxy-depth=${PROXY_DEPTH}
 RUN echo "#!/bin/bash" > $HOME/dash-live/lesscpy.sh
 RUN echo "source $HOME/.venv/bin/activate && python -m lesscpy static/css -o static/css/" >> $HOME/dash-live/lesscpy.sh
 RUN chmod +x $HOME/dash-live/lesscpy.sh

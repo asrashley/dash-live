@@ -32,6 +32,7 @@ from flask import Flask, request  # type: ignore
 from flask_login import LoginManager
 from flask_socketio import SocketIO
 from werkzeug.routing import BaseConverter  # type: ignore
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from dashlive.server import models
 from dashlive.server.models.connection import make_db_connection_string
@@ -176,6 +177,14 @@ def create_app(config: JsonObject | None = None,
         models.Token.prune_database(all_csrf=True)
 
     app.register_blueprint(custom_tags)
+    proxy_depth = app.config['DASH'].get('PROXY_DEPTH', 0)
+    if isinstance(proxy_depth, str):
+        proxy_depth = int(proxy_depth, 10)
+    if proxy_depth > 0:
+        app.wsgi_app = ProxyFix(
+            app.wsgi_app, x_for=proxy_depth, x_proto=proxy_depth,
+            x_host=proxy_depth, x_prefix=proxy_depth
+        )
     if wss:
         socketio = SocketIO(app, async_mode='threading')
         wss = WebsocketHandler(socketio)
