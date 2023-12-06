@@ -168,7 +168,12 @@ class MainPage(HTMLHandlerBase):
                     'option': opt
                 }
                 context['rows'].append(row)
-        return flask.render_template('index.html', **context)
+        headers = {
+            'X-Frame-Options': 'SAMEORIGIN',
+        }
+        body = flask.render_template('index.html', **context)
+        self.add_allowed_origins(headers)
+        return flask.make_response((body, 200, headers))
 
 
 class CgiOptionsPage(HTMLHandlerBase):
