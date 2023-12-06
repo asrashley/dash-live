@@ -92,18 +92,20 @@ class RequestHandlerBase(MethodView):
         generate a secure cookie if not already present
         """
         try:
-            csrf_key = flask.request.cookies[self.CSRF_COOKIE_NAME]
+            return flask.request.cookies[self.CSRF_COOKIE_NAME]
         except KeyError:
-            csrf_key = None
-        if csrf_key is None:
-            csrf_key = secrets.token_urlsafe(models.Token.CSRF_KEY_LENGTH)
+            pass
+        csrf_key = secrets.token_urlsafe(models.Token.CSRF_KEY_LENGTH)
+        secure = None
+        if self.is_https_request:
+            secure = True
 
-            @flask.after_this_request
-            def set_csrf_cookie(response):
-                response.set_cookie(
-                    self.CSRF_COOKIE_NAME, csrf_key, httponly=True,
-                    max_age=self.CSRF_EXPIRY)
-                return response
+        @flask.after_this_request
+        def set_csrf_cookie(response):
+            response.set_cookie(
+                self.CSRF_COOKIE_NAME, csrf_key, httponly=True,
+                samesite='Strict', max_age=self.CSRF_EXPIRY, secure=secure)
+            return response
 
         return csrf_key
 
