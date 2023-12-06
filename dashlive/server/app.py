@@ -127,7 +127,8 @@ def create_app(config: JsonObject | None = None,
         SQLALCHEMY_DATABASE_URI=database_uri,
         UPLOAD_FOLDER=str(media_folder / "blobs"),
         DASH=dash_settings,
-        SECRET_KEY=secrets.token_urlsafe(16)
+        SECRET_KEY=secrets.token_urlsafe(16),
+        SESSION_COOKIE_SAMESITE='Strict'
     )
     app.config.from_prefixed_env()
 
