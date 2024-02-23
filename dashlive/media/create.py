@@ -450,7 +450,7 @@ class DashMediaCreator:
             self, source: Path, dest_filename: Path,
             kid: KeyMaterial, key: KeyMaterial, iv: InitialisationVector,
             tmpdir: Path) -> None:
-        representation = self.parse_representation(source)
+        representation = self.parse_representation(str(source))
         basename = source.stem
         moov_filename = tmpdir / f'{basename}-moov-enc.mp4'
         xmlfile = tmpdir / "drm.xml"
