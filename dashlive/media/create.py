@@ -623,4 +623,4 @@ class DashMediaCreator:
 
 
 if __name__ == "__main__":
-    sys.exit(DashMediaCreator.main(sys.argv))
+    sys.exit(DashMediaCreator.main(sys.argv[1:]))
