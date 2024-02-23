@@ -27,9 +27,8 @@ import os
 import sys
 from typing import NamedTuple, Optional
 
-import bitstring
-
 from dashlive.drm.keymaterial import KeyMaterial
+from dashlive.mpeg.codec_strings import codec_string_from_avc_box
 from dashlive.mpeg.mp4 import Mp4Atom
 from dashlive.utils.date_time import scale_timedelta, timecode_to_timedelta, timedelta_to_timecode
 from dashlive.utils.list_of import ListOf
@@ -276,65 +275,22 @@ class Representation(ObjectWithFields):
         self.add_field('scanType', "progressive")
         # TODO: work out sample aspect ratio
         self.add_field('sar', "1:1")
+        self.codecs = codec_string_from_avc_box(avc_type, avc)
         if avc_type in {'avc1', 'avc3'}:
-            self.codecs = '{}.{:02x}{:02x}{:02x}'.format(
-                avc_type,
-                avc.avcC.AVCProfileIndication,
-                avc.avcC.profile_compatibility,
-                avc.avcC.AVCLevelIndication)
             self.add_field('nalLengthFieldLength',
                            avc.avcC.lengthSizeMinusOne + 1)
         elif avc_type in {'hev1', 'hvc1'}:
-            # According to ISO 14496-15, the codec string for hev1 and hvc1
-            # should be:
-            # * the general_profile_space, encoded as no character
-            #   (general_profile_space == 0), or 'A', 'B', 'C' for
-            #   general_profile_space 1, 2, 3, followed by the general_profile_idc
-            #   encoded as a decimal number;
-            # * the general_profile_compatibility_flags, encoded in hexadecimal
-            #   (leading zeroes may be omitted);
-            # * the general_tier_flag, encoded as 'L' (general_tier_flag==0) or
-            #   'H' (general_tier_flag==1), followed by the general_level_idc,
-            #   encoded as a decimal number;
-            # * each of the 6 bytes of the constraint flags, starting from the byte
-            #   containing the general_progressive_source_flag, each encoded as a
-            #   hexadecimal number, and the encoding of each byte separated by a
-            #   period; trailing bytes that are zero may be omitted.
-            gps = ['', 'A', 'B', 'C'][avc.hvcC.general_profile_space]
-            tier = '{}{}'.format(
-                'LH'[avc.hvcC.general_tier_flag],
-                avc.hvcC.general_level_idc)
-            gpcf = bitstring.BitArray(
-                uint=avc.hvcC.general_profile_compatibility_flags, length=32)
-            gpcf.reverse()
-            parts = [
-                str(avc_type),
-                f'{gps}{avc.hvcC.general_profile_idc:d}',
-                f'{gpcf.uint:x}',
-                tier,
-            ]
-            gcif = avc.hvcC.general_constraint_indicator_flags
-            pos = 40
-            while gcif > 0:
-                mask = 0xFF << pos
-                parts.append(fr'{(gcif & mask) >> pos:x}')
-                gcif = gcif & ~mask
-                pos -= 8
-            self.codecs = '.'.join(parts)
             self.add_field('nalLengthFieldLength',
                            avc.hvcC.length_size_minus_one + 1)
 
     def process_audio_moov(self, avc: Mp4Atom, avc_type: str | None) -> None:
         self.content_type = "audio"
         self.mimeType = "audio/mp4"
-        self.codecs = avc_type
+        self.codecs = codec_string_from_avc_box(avc_type, avc)
         if avc_type == 'mp4a':
             dsi = avc.esds.descriptor("DecoderSpecificInfo")
             self.add_field('sampleRate', dsi.sampling_frequency)
             self.add_field('numChannels', dsi.channel_configuration)
-            self.codecs = "{}.{:02x}.{:x}".format(
-                avc_type, dsi.object_type,
-                dsi.audio_object_type)
             if self.numChannels == 7:
                 # 7 is a special case that means 7.1
                 self.numChannels = 8
