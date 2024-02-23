@@ -105,20 +105,24 @@ class Representation(RepresentationBaseType):
             self.log.debug('%s: Loading init segment', self.id)
             if not await self.init_segment.load():
                 return False
-        parsed = urllib.parse.urlparse(self.init_seg_url())
+        seg_url = self.init_seg_url()
+        if not seg_url:
+            return False
+        parsed = urllib.parse.urlparse(seg_url)
         filename = PurePath(parsed.path)
         self.info = ServerRepresentation.load(filename.name, self.init_segment.atoms)
         self.info.segments = None
         self.info.start_time = None
         return True
 
-    def init_seg_url(self) -> str:
+    def init_seg_url(self) -> str | None:
         if self.mode == 'odvod':
             return self.format_url_template(self.baseurl)
         self.elt.check_not_none(self.segmentTemplate, msg='SegmentTemplate missing')
-        self.elt.check_not_none(
+        if not self.elt.check_not_none(
             self.segmentTemplate.initialization,
-            msg='SegmentTemplate failed to find initialization URL')
+            msg='SegmentTemplate failed to find initialization URL'):
+            return None
         url = self.format_url_template(self.segmentTemplate.initialization)
         return urllib.parse.urljoin(self.baseurl, url)
 
@@ -131,7 +135,10 @@ class Representation(RepresentationBaseType):
             self.init_segment = InitSegment(self, None, None)
             return False
         if self.init_segment is None:
-            self.init_segment = InitSegment(self, self.init_seg_url(), None)
+            seg_url = self.init_seg_url()
+            if not seg_url:
+                return False
+            self.init_segment = InitSegment(self, seg_url, None)
         if self.info is None:
             await self.load_representation_info()
         if not self.elt.check_not_none(self.info, msg='Failed to get Representation info'):
