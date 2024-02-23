@@ -3,9 +3,11 @@ import json
 from pathlib import Path
 import logging
 import multiprocessing
+import re
 import shutil
 import subprocess
 import tempfile
+from typing import Pattern
 import unittest
 from unittest.mock import patch
 
@@ -25,42 +27,32 @@ class DashMediaCreatorWithoutParser(TestCaseMixin, DashMediaCreator):
 
 class MockFfmpeg(TestCaseMixin):
     def __init__(self, tmpdir: Path) -> None:
-        self.stage: int = 0
+        self.bitrate_index = 0
         self.tmpdir = tmpdir
         self.aspect = 16.0 / 9.0
 
     def check_output(self, args: list[str], stderr: int | None = None,
                      universal_newlines: bool = False, text: bool = False) -> str:
-        self.assertEqual(self.stage % 2, 0)
-        if self.stage == 0:
-            rv = self.ffprobe_source_stream_info(args, stderr, universal_newlines, text)
-        else:
-            rv = self.ffprobe_check_frames(args, stderr, universal_newlines, text)
-        self.stage += 1
-        return rv
+        if '-show_format' in ' '.join(args):
+            return self.ffprobe_source_stream_info(args, stderr, universal_newlines, text)
+        return self.ffprobe_check_frames(args, stderr, universal_newlines, text)
 
     def check_call(self, args: list[str]) -> int:
-        if self.stage < 15:
-            self.assertEqual(self.stage % 2, 1)
-            rv = self.ffmpeg_video_encode(args)
-        elif self.stage == 15:
-            rv = self.mp4box_build(args)
-        else:
-            phase = (self.stage - 16) % 2
-            if phase == 0:
-                rv = self.mp4box_encrypt(args)
-            else:
-                rv = self.mp4box_build_encrypted(args)
-        self.stage += 1
-        return rv
+        if args[0] == 'MP4Box':
+            if args[1] == '-crypt':
+                return self.mp4box_encrypt(args)
+            if 'moov-enc' in args[-1]:
+                return self.mp4box_build_encrypted(args)
+            return self.mp4box_build(args)
+        return self.ffmpeg_video_encode(args)
 
     def mkdtemp(self) -> str:
-        rv = self.tmpdir / f'{self.stage}'
+        rv = self.tmpdir / f'{self.bitrate_index}'
         rv.mkdir()
         return str(rv)
 
     def ffmpeg_video_encode(self, args: list[str]) -> int:
-        width, height, bitrate = DashMediaCreator.BITRATE_LADDER[(self.stage - 1) // 2]
+        width, height, bitrate, codec = DashMediaCreator.BITRATE_LADDER[self.bitrate_index]
         height = 4 * (int(float(height) / self.aspect) // 4)
         minrate = (bitrate * 10) // 14
         assert args[0] == 'ffmpeg'
@@ -123,30 +115,18 @@ class MockFfmpeg(TestCaseMixin):
                 self.make_fake_mp4_file(mp4_dir / f'dash_{rep_id}_{segment:03d}.mp4')
         return 0
 
-    def mp4_prefix(self) -> str:
-        rep_id = 1 + ((self.stage - 16) // 2)
-        av = 'v'
-        if rep_id > len(DashMediaCreator.BITRATE_LADDER):
-            av = 'a'
-            rep_id -= len(DashMediaCreator.BITRATE_LADDER)
-        return f'bbb_{av}{rep_id}'
-
     def mp4box_encrypt(self, args: list[str]) -> int:
-        prefix = self.mp4_prefix()
-        enc_tmp = self.tmpdir / f'{self.stage}'
         expected = [
             'MP4Box',
-            '-crypt', str(enc_tmp / 'drm.xml'),
-            '-out', str(enc_tmp / f'{prefix}-moov-enc.mp4'),
+            '-crypt', re.compile(r'drm.xml$'),
+            '-out', re.compile(r'-moov-enc.mp4$'),
             '-fps', '24',
-            str(self.tmpdir / f'{prefix}.mp4')
+            re.compile(r'(bbb_[av]\d+).mp4$'),
         ]
-        self.assertListEqual(expected, args)
+        self.assertRegexListEqual(expected, args)
         return 0
 
     def mp4box_build_encrypted(self, args: list[str]) -> int:
-        enc_tmp = self.tmpdir / f'{self.stage - 1}'
-        prefix = self.mp4_prefix()
         expected = [
             'MP4Box',
             '-dash', '960',
@@ -159,9 +139,10 @@ class MockFfmpeg(TestCaseMixin):
             '-timescale', '240',
             '-rap',
             '-out', 'manifest',
-            str(enc_tmp / f'{prefix}-moov-enc.mp4')
+            re.compile(r'-moov-enc.mp4$'),
         ]
-        self.assertListEqual(expected, args)
+        self.assertRegexListEqual(expected, args)
+        enc_tmp = Path(args[-1]).parent
         self.make_fake_mp4_file(enc_tmp / 'dash_enc_init.mp4')
         for segment in range(1, 6):
             self.make_fake_mp4_file(enc_tmp / f'dash_enc_{segment:03d}.mp4')
@@ -194,7 +175,7 @@ class MockFfmpeg(TestCaseMixin):
 
     def ffprobe_check_frames(self, args: list[str], stderr: int | None,
                              universal_newlines: bool, text: bool) -> str:
-        width, height, bitrate = DashMediaCreator.BITRATE_LADDER[(self.stage - 2) // 2]
+        width, height, bitrate, codec = DashMediaCreator.BITRATE_LADDER[self.bitrate_index]
         expected = [
             'ffprobe',
             '-show_frames',
@@ -204,6 +185,7 @@ class MockFfmpeg(TestCaseMixin):
         self.assertEqual(expected, args)
         self.assertIsNotNone(stderr)
         self.assertTrue(text)
+        self.bitrate_index += 1
         result: list[str] = []
         for num in range(60 * 24 * 10):
             pts = num * 100
@@ -221,6 +203,18 @@ class MockFfmpeg(TestCaseMixin):
             ]
             result.append('|'.join(frame_info))
         return '\r\n'.join(result)
+
+    def assertRegexListEqual(self, expected: list[str, Pattern[str]],
+                             actual: list[str]) -> None:
+        self.assertEqual(len(expected), len(actual))
+        index = 0
+        for exp, act in zip(expected, actual):
+            msg = f'item[{index}]: expected "{exp}" got "{act}"'
+            if isinstance(exp, str):
+                self.assertEqual(exp, act, msg=msg)
+            else:
+                match = exp.search(act)
+                self.assertIsNotNone(match, msg)
 
 class TestMediaCreation(unittest.TestCase):
     _temp_dir = multiprocessing.Array(ctypes.c_char, 1024)
@@ -258,7 +252,7 @@ class TestMediaCreation(unittest.TestCase):
         files = [
             'bbb_a1.mp4', 'bbb_a1_enc.mp4',
             'bbb_a2.mp4', 'bbb_a2_enc.mp4']
-        for idx in range(1, 8):
+        for idx in range(1, len(DashMediaCreator.BITRATE_LADDER) + 1):
             files.append(f'bbb_v{idx}.mp4')
             files.append(f'bbb_v{idx}_enc.mp4')
         files.sort()
