@@ -75,6 +75,7 @@ from typing import NamedTuple
 from dashlive.drm.keymaterial import KeyMaterial
 from dashlive.drm.playready import PlayReady
 from dashlive.mpeg import mp4
+from dashlive.mpeg.codec_strings import codec_data_from_string
 from dashlive.mpeg.dash.representation import Representation
 
 class EncodedRepresentation(NamedTuple):
@@ -87,15 +88,18 @@ class InitialisationVector(KeyMaterial):
 
 
 class DashMediaCreator:
-    # each item is (width, height, bitrate)
+    # each item is (width, height, bitrate, codec)
     BITRATE_LADDER = [
-        (384, 216, 230),
-        (512, 288, 450),
-        (640, 360, 690),
-        (768, 432, 800),
-        (1024, 576, 1250),
-        (1280, 720, 2204),
-        (1920, 1080, 3600),
+        (1920, 1080, 8600, "avc1.64002A"),
+        (1280, 720, 4900, "avc1.640020"),
+        (1280, 720, 3200, "avc1.64001F"),
+        (1024, 576, 2300, "avc1.64001F"),
+        (800, 450, 1650, "avc1.64001E"),
+        (640, 360, 1150, "avc1.64001E"),
+        (512, 288, 800, "avc1.640015"),
+        (352, 198, 500, "avc1.640014"),
+        (320, 180, 300, "avc1.640014"),
+        (320, 180, 200, "avc1.4D4014"),
     ]
 
     XML_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
@@ -123,13 +127,14 @@ class DashMediaCreator:
             ]
         }
 
-    def encode_all(self, srcfile):
+    def encode_all(self, srcfile: str) -> None:
         first = True
-        for width, height, bitrate in self.BITRATE_LADDER:
-            self.encode_representation(srcfile, width, height, bitrate, first)
+        for width, height, bitrate, codec in self.BITRATE_LADDER:
+            self.encode_representation(srcfile, width, height, bitrate, codec, first)
             first = False
 
-    def encode_representation(self, srcfile, width, height, bitrate, first):
+    def encode_representation(self, srcfile:str, width: int, height: int,
+                              bitrate: int, codec: str | None, first: bool) -> None:
         """
         Encode the stream and check key frames are in the correct place
         """
@@ -146,31 +151,41 @@ class DashMediaCreator:
             aspect = float(self.options.aspect)
         height = 4 * (int(float(height) / aspect) // 4)
         logging.debug("%s: %dx%d %d Kbps", dest, width, height, bitrate)
-        profile = "baseline"
         cbr = (bitrate * 10) // 12
         minrate = (bitrate * 10) // 14
-        level = 3.1
+        vcodec = "libx264"
         # buffer_size is set to 75% of VBV limit
         buffer_size = 4000
-        if width > 640:
-            profile = "main"
-        if height > 720:
-            profile = "high"
-            level = 4.0
-            # buffer_size is set to 75% of VBV limit
-            buffer_size = 25000
-        keyframes = list(
-            map(
-                str, list(
-                    range(0, self.options.duration + self.options.segment_duration,
-                          self.options.segment_duration))))
+        if codec is None:
+            profile = "baseline"
+            level = 3.1
+            if height > 720:
+                profile = "high"
+                level = 4.0
+                # buffer_size is set to 75% of VBV limit
+                buffer_size = 25000
+            elif width > 640:
+                profile = "main"
+        else:
+            codec_data = codec_data_from_string(codec)
+            profile = codec_data.profile_string()
+            level = codec_data.level
+            if level >= 4.0:
+                buffer_size = 25000
+            if codec_data.codec == 'h.265':
+                vcodec = 'hevc'
+        keyframes = []
+        pos = 0
+        end = self.options.duration + self.options.segment_duration
+        while pos < end:
+            keyframes.append(f'{pos}')
+            pos += self.options.segment_duration
         keyframes = ','.join(keyframes)
         ffmpeg_args = [
             "ffmpeg",
             "-ss", "5",
             "-ec", "deblock",
             "-i", srcfile,
-            "-vf",
             "-video_track_timescale", str(self.timescale),
             "-map", "0:v:0",
         ]
@@ -184,14 +199,15 @@ class DashMediaCreator:
                 'fontcolor=white',
                 'box=1',
                 'boxcolor=0x000000@0.7'])
-            ffmpeg_args.append("drawtext=" + drawtext)
+            ffmpeg_args.append("-vf")
+            ffmpeg_args.append(f"drawtext={drawtext}")
         if first:
             ffmpeg_args += [
                 "-map", "0:a:0",
                 "-map", "0:a:0",
             ]
         ffmpeg_args += [
-            "-codec:v", "libx264",
+            "-codec:v", vcodec,
             "-aspect", self.options.aspect,
             "-profile:v", profile,
             "-level:v", str(level),
