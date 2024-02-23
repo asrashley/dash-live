@@ -519,7 +519,10 @@ class DashMediaCreator:
         ]))
         if not self.options.aspect:
             for s in info["streams"]:
-                if s["codec_type"] != "video":
+                try:
+                    if s["codec_type"] != "video":
+                        continue
+                except KeyError:
                     continue
                 try:
                     self.options.aspect = s["display_aspect_ratio"]
@@ -555,7 +558,8 @@ class DashMediaCreator:
         assert self.options.segment_duration > 0
 
         # Duration of a segment (in frames)
-        self.frame_segment_duration = self.options.segment_duration * self.options.framerate
+        self.frame_segment_duration = math.floor(
+            self.options.segment_duration * self.options.framerate)
         assert self.frame_segment_duration > 0
 
         # The MP4 timescale to use for video
@@ -579,7 +583,7 @@ class DashMediaCreator:
                         action="store_true")
         ap.add_argument('--font', help='Truetype font file to use to show bitrate', type=str,
                         dest='font', default=None)
-        ap.add_argument('--frag', help='Fragment duration (in seconds)', type=int,
+        ap.add_argument('--frag', help='Fragment duration (in seconds)', type=float,
                         dest='segment_duration', default=4)
         ap.add_argument('--fps', help='Frames per second (0=auto)', type=int,
                         dest='framerate', default=0)
