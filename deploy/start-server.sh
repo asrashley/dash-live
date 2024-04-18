@@ -20,7 +20,15 @@ echo "server_name ${SERVER_NAME};" > /etc/nginx/snippets/server_name.conf
 cd /home/dash/dash-live
 
 if [ -f /home/dash/instance/models.db3 ]; then
-	python -m alembic upgrade head
+    if [ -f /home/dash/instance/.NEWDB ]; then
+        # if the DB was created last time the server was started,
+        # tell Alembic that the DB is upto date
+        python -m alembic stamp head && rm /home/dash/instance/.NEWDB
+    else
+        python -m alembic upgrade head
+    fi
+else
+    touch /home/dash/instance/.NEWDB
 fi
 
 GUNICORN_OPTIONS="-w 1 --threads 100 --user www-data --group www-data --worker-class gthread"
