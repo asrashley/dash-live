@@ -61,6 +61,7 @@
 #
 
 import argparse
+from dataclasses import dataclass, field, InitVar
 import json
 import logging
 import os
@@ -86,20 +87,55 @@ class EncodedRepresentation(NamedTuple):
 class InitialisationVector(KeyMaterial):
     length = 8
 
+class VideoEncodingParameters(NamedTuple):
+    width: int
+    height: int
+    bitrate: int
+    codecString: str | None
+
+@dataclass
+class MediaCreateOptions:
+    duration: int
+    aspect: str | None
+    avc3: bool
+    font: str
+    framerate: int
+    kid: list[str]
+    key: list[str]
+    segment_duration: float
+    verbose: bool
+    prefix: str
+    source: str
+    output: InitVar[str]
+    aspect_ratio: float = field(init=False)
+    destdir: Path = field(init=False)
+
+    def __post_init__(self, output: str) -> None:
+        self.destdir = Path(output).resolve(strict=True)
+        if self.aspect is not None:
+            self.set_aspect(self.aspect)
+
+    def set_aspect(self, aspect: str) -> None:
+        self.aspect = aspect
+        if ':' in aspect:
+            n, d = aspect.split(':')
+            self.aspect_ratio = float(n) / float(d)
+        else:
+            self.aspect_ratio = float(aspect)
+ 
 
 class DashMediaCreator:
-    # each item is (width, height, bitrate, codec)
-    BITRATE_LADDER = [
-        (1920, 1080, 8600, "avc1.64002A"),
-        (1280, 720, 4900, "avc1.640020"),
-        (1280, 720, 3200, "avc1.64001F"),
-        (1024, 576, 2300, "avc1.64001F"),
-        (800, 450, 1650, "avc1.64001E"),
-        (640, 360, 1150, "avc1.64001E"),
-        (512, 288, 800, "avc1.640015"),
-        (352, 198, 500, "avc1.640014"),
-        (320, 180, 300, "avc1.640014"),
-        (320, 180, 200, "avc1.4D4014"),
+    BITRATE_LADDER: list[VideoEncodingParameters] = [
+        VideoEncodingParameters(1920, 1080, 8600, "avc1.64002A"),
+        VideoEncodingParameters(1280, 720, 4900, "avc1.640020"),
+        VideoEncodingParameters(1280, 720, 3200, "avc1.64001F"),
+        VideoEncodingParameters(1024, 576, 2300, "avc1.64001F"),
+        VideoEncodingParameters(800, 450, 1650, "avc1.64001E"),
+        VideoEncodingParameters(640, 360, 1150, "avc1.64001E"),
+        VideoEncodingParameters(512, 288, 800, "avc1.640015"),
+        VideoEncodingParameters(352, 198, 500, "avc1.640014"),
+        VideoEncodingParameters(320, 180, 300, "avc1.640014"),
+        VideoEncodingParameters(320, 180, 200, "avc1.4D4014"),
     ]
 
     XML_TEMPLATE = """<?xml version="1.0" encoding="UTF-8"?>
@@ -111,7 +147,7 @@ class DashMediaCreator:
     </GPACDRM>
     """
 
-    def __init__(self, options) -> None:
+    def __init__(self, options: MediaCreateOptions) -> None:
         self.options = options
         self.frame_segment_duration = None
         self.timescale = None
@@ -127,29 +163,23 @@ class DashMediaCreator:
             ]
         }
 
-    def encode_all(self, srcfile: str) -> None:
+    def encode_all(self) -> None:
         first = True
         for width, height, bitrate, codec in self.BITRATE_LADDER:
-            self.encode_representation(srcfile, width, height, bitrate, codec, first)
+            self.encode_representation(width, height, bitrate, codec, first)
             first = False
 
-    def encode_representation(self, srcfile:str, width: int, height: int,
+    def encode_representation(self, width: int, height: int,
                               bitrate: int, codec: str | None, first: bool) -> None:
         """
         Encode the stream and check key frames are in the correct place
         """
-        destdir = os.path.join(self.options.destdir, str(bitrate))
-        dest = os.path.join(destdir, self.options.prefix + '.mp4')
-        if os.path.exists(dest):
+        destdir = self.options.destdir / f'{bitrate}'
+        dest = destdir / f'{self.options.prefix}.mp4'
+        if dest.exists():
             return
-        if not os.path.exists(destdir):
-            os.makedirs(destdir)
-        if ':' in self.options.aspect:
-            n, d = self.options.aspect.split(':')
-            aspect = float(n) / float(d)
-        else:
-            aspect = float(self.options.aspect)
-        height = 4 * (int(float(height) / aspect) // 4)
+        destdir.mkdir(parents=True, exist_ok=True)
+        height = 4 * (int(float(height) / self.options.aspect_ratio) // 4)
         logging.debug("%s: %dx%d %d Kbps", dest, width, height, bitrate)
         cbr = (bitrate * 10) // 12
         minrate = (bitrate * 10) // 14
@@ -185,7 +215,7 @@ class DashMediaCreator:
             "ffmpeg",
             "-ss", "5",
             "-ec", "deblock",
-            "-i", srcfile,
+            "-i", self.options.source,
             "-video_track_timescale", str(self.timescale),
             "-map", "0:v:0",
         ]
@@ -240,16 +270,16 @@ class DashMediaCreator:
                 "-b:a:1", "320k",
                 "-ac:a:1", "6",
             ]
-        ffmpeg_args += [dest]
+        ffmpeg_args.append(str(dest))
         logging.debug(ffmpeg_args)
         subprocess.check_call(ffmpeg_args)
 
-        logging.info('Checking key frames in ' + dest)
+        logging.info('Checking key frames in %s', dest)
         ffmpeg_args = [
             "ffprobe",
             "-show_frames",
             "-print_format", "compact",
-            dest
+            str(dest)
         ]
         idx = 0
         probe = subprocess.check_output(
@@ -300,42 +330,39 @@ class DashMediaCreator:
         logging.info(r'Generated file %s', dest_filename)
 
     def package_all(self) -> bool:
-        destdir = Path(os.path.abspath(self.options.destdir))
         bitrates: list[int] = [br[2] for br in self.BITRATE_LADDER]
         source_files: list[EncodedRepresentation] = []
         nothing_to_do = True
         for idx in range(len(bitrates)):
-            dest_file = destdir / self.destination_filename('v', idx + 1, False)
+            dest_file = self.options.destdir / self.destination_filename('v', idx + 1, False)
             if not dest_file.exists():
                 nothing_to_do = False
-        dest_file = destdir / self.destination_filename('a', 1, False)
+        dest_file = self.options.destdir / self.destination_filename('a', 1, False)
         if not dest_file.exists():
             nothing_to_do = False
-        dest_file = destdir / self.destination_filename('a', 2, False)
+        dest_file = self.options.destdir / self.destination_filename('a', 2, False)
         if not dest_file.exists():
             nothing_to_do = False
         if nothing_to_do:
             return False
 
         for index, bitrate in enumerate(bitrates):
-            src_file = destdir / f'{bitrate}' / f'{self.options.prefix}.mp4#video'
+            src_file = self.options.destdir / f'{bitrate}' / f'{self.options.prefix}.mp4#video'
             source_files.append(EncodedRepresentation(
                 source=src_file, contentType='v', index=(index + 1)))
         # Add AAC audio track
-        src_file = destdir / f'{bitrates[0]}' / f'{self.options.prefix}.mp4#trackID=2:role=main'
+        src_file = self.options.destdir / f'{bitrates[0]}' / f'{self.options.prefix}.mp4#trackID=2:role=main'
         source_files.append(EncodedRepresentation(source=src_file, contentType='a', index=1))
         # Add E-AC3 audio track
-        src_file = destdir / f'{bitrates[0]}' / f'{self.options.prefix}.mp4#trackID=3:role=alternate'
+        src_file = self.options.destdir / f'{bitrates[0]}' / f'{self.options.prefix}.mp4#trackID=3:role=alternate'
         source_files.append(EncodedRepresentation(source=src_file, contentType='a', index=2))
 
         self.package_sources(source_files)
         return True
 
     def package_sources(self, source_files: list[EncodedRepresentation]) -> None:
-        destdir = Path(self.options.destdir).resolve(strict=True)
-        tmpdir = destdir / "dash"
-        if not tmpdir.exists():
-            tmpdir.mkdir(parents=True)
+        tmpdir = self.options.destdir / "dash"
+        tmpdir.mkdir(parents=True, exist_ok=True)
         bs_switching = 'inband' if self.options.avc3 else 'merge'
         mp4box_args = [
             "MP4Box",
@@ -366,7 +393,7 @@ class DashMediaCreator:
             source, contentType, num = source
             dest_file = self.destination_filename(contentType, num, False)
             self.media_info['streams'][0]['files'].append(dest_file)
-            dest_file = destdir / dest_file
+            dest_file = self.options.destdir / dest_file
             if dest_file.exists():
                 logging.debug('File %s exists, skipping generation', dest_file)
                 continue
@@ -378,11 +405,11 @@ class DashMediaCreator:
             if os.path.exists(prefix + 'init.mp4'):
                 os.remove(moov)
 
-    def destination_filename(self, contentType, index, encrypted):
+    def destination_filename(self, contentType: str, index: int, encrypted: bool) -> str:
         enc = '_enc' if encrypted else ''
         return f'{self.options.prefix}_{contentType}{index:d}{enc}.mp4'
 
-    def create_key_ids(self):
+    def create_key_ids(self) -> list[str]:
         rv = []
         for kid in self.options.kid:
             if kid == 'random':
@@ -390,8 +417,7 @@ class DashMediaCreator:
             rv.append(kid)
         return rv
 
-    def encrypt_all(self):
-        destdir = Path(self.options.destdir).resolve(strict=True)
+    def encrypt_all(self) -> None:
         kids = self.create_key_ids()
         assert len(kids) > 0
         kid_map = {
@@ -427,17 +453,18 @@ class DashMediaCreator:
         files.append(('a', 1))
         files.append(('a', 2))
         for contentType, index in files:
-            src_file = destdir / self.destination_filename(contentType, index, False)
+            src_file = self.options.destdir / self.destination_filename(contentType, index, False)
             dest_file = self.destination_filename(contentType, index, True)
             self.media_info['streams'][0]['files'].append(dest_file)
             iv = InitialisationVector(raw=os.urandom(8))
             self.encrypt_representation(
-                src_file, destdir / dest_file, kid_map[contentType], key_map[contentType], iv)
+                src_file, self.options.destdir / dest_file, kid_map[contentType],
+                key_map[contentType], iv)
 
     def encrypt_representation(
             self, source: Path, destfile: Path,
             kid: KeyMaterial, key: KeyMaterial, iv: InitialisationVector) -> None:
-        if os.path.exists(destfile):
+        if destfile.exists():
             logging.debug('File "%s" already exists, nothing to do', destfile)
             return
         try:
@@ -517,7 +544,9 @@ class DashMediaCreator:
             "-show_streams",
             self.options.source
         ]))
-        if not self.options.aspect:
+        if self.options.aspect is None:
+            self.options.aspect = '1'
+            self.options.aspect_ratio = 1.0
             for s in info["streams"]:
                 try:
                     if s["codec_type"] != "video":
@@ -525,7 +554,7 @@ class DashMediaCreator:
                 except KeyError:
                     continue
                 try:
-                    self.options.aspect = s["display_aspect_ratio"]
+                    self.options.set_aspect(s["display_aspect_ratio"])
                 except KeyError:
                     width = s["width"]
                     height = s["height"]
@@ -533,6 +562,7 @@ class DashMediaCreator:
                     width /= m
                     height /= m
                     self.options.aspect = f'{width}:{height}'
+                    self.options.aspect_ratio = width / height
         if self.options.duration == 0:
             self.options.duration = math.floor(float(info["format"]["duration"]))
         # round duration to be a multiple of fragment duration
@@ -592,7 +622,7 @@ class DashMediaCreator:
         ap.add_argument('--kid', help='Key ID ("random" = auto generate KID)', nargs="*")
         ap.add_argument('--key', help='Encryption Key', nargs="*")
         ap.add_argument('-v', '--verbose', help='Verbose mode', action="store_true")
-        ap.add_argument('--output', '-o', help='Output directory', dest='destdir', required=True)
+        ap.add_argument('--output', '-o', help='Output directory', dest='output', required=True)
         ap.add_argument('--prefix', '-p', help='Prefix for output files', required=True)
         args = ap.parse_args(args)
 
@@ -605,17 +635,13 @@ class DashMediaCreator:
             logging.getLogger().setLevel(logging.DEBUG)
             mp4_log.setLevel(logging.DEBUG)
 
-        dmc = cls(args)
+        dmc = cls(MediaCreateOptions(**vars(args)))
         dmc.probe_media_info()
-
-        if not os.path.exists(args.destdir):
-            os.makedirs(args.destdir)
-
-        dmc.encode_all(args.source)
+        dmc.encode_all()
         dmc.package_all()
         if args.kid:
             dmc.encrypt_all()
-        mi = Path(args.destdir) / f'{args.prefix}.json'
+        mi = dmc.options.destdir / f'{args.prefix}.json'
         dmc.media_info['streams'][0]['files'].sort()
         with mi.open('wt', encoding='utf-8') as f:
             json.dump(dmc.media_info, f, indent=2)

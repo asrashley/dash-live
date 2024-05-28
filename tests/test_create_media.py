@@ -55,8 +55,8 @@ class MockFfmpeg(TestCaseMixin):
         width, height, bitrate, codec = DashMediaCreator.BITRATE_LADDER[self.bitrate_index]
         height = 4 * (int(float(height) / self.aspect) // 4)
         minrate = (bitrate * 10) // 14
-        assert args[0] == 'ffmpeg'
-        assert args[-1] == str(self.tmpdir / f'{bitrate}' / 'bbb.mp4')
+        self.assertEqual(args[0], 'ffmpeg')
+        self.assertEqual(args[-1], str(self.tmpdir / f'{bitrate}' / 'bbb.mp4'))
         expected = {
             '-i': 'BigBuckBunny.mp4',
             '-video_track_timescale': '240',
@@ -77,13 +77,14 @@ class MockFfmpeg(TestCaseMixin):
             '-ac:a:1': '6',
         }
         for idx, arg in enumerate(args):
-            if arg[0] == '-':
-                try:
-                    val = expected[arg]
-                    msg = f'Expected {arg} to have value "{val}" but found "{args[idx + 1]}"'
-                    self.assertEqual(val, args[idx + 1], msg=msg)
-                except KeyError:
-                    pass
+            if arg[0] != '-':
+                continue
+            try:
+                val = expected[arg]
+                msg = f'Expected {arg} to have value "{val}" but found "{args[idx + 1]}"'
+                self.assertEqual(val, args[idx + 1], msg=msg)
+            except KeyError:
+                pass
         return 0
 
     def mp4box_build(self, args: list[str]) -> int:
