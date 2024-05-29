@@ -29,7 +29,7 @@
 #
 # test -e "BigBuckBunny.mp4" || curl -o "BigBuckBunny.mp4" \
 #    "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
-# python create_media.py -i "BigBuckBunny.mp4" -p bbb \
+# python -m dashlive.media.create -i "BigBuckBunny.mp4" -p bbb \
 #    --font /usr/share/fonts/truetype/freefont/FreeSansBold.ttf \
 #    --kid '1ab45440532c439994dc5c5ad9584bac' -o output
 #
@@ -43,7 +43,7 @@
 # test -e tearsofsteel.mp4 || curl -o tearsofsteel.mp4 \
 #    'http://profficialsite.origin.mediaservices.windows.net/aac2a25c-0dbc-46bd-be5f-68f3df1fc1f6/tearsofsteel_1080p_60s_24fps.6000kbps.1920x1080.h264-8b.2ch.128kbps.aac.mp4'
 #
-# python create_media.py -i "tearsofsteel.mp4" -p tears \
+# python -m dashlive.media.create -i "tearsofsteel.mp4" -p tears \
 #    --kid a2c786d0-f9ef-4cb3-b333-cd323a4284a5 db06a8fe-ec16-4de2-9228-2c71e9b856ab -o tears
 #
 #
@@ -52,7 +52,7 @@
 # curl -o ToS-4k-1920.mov http://ftp.nluug.nl/pub/graphics/blender/demo/movies/ToS/ToS-4k-1920.mov
 # curl -o ToS-Dolby-5.1.ac3 'http://media.xiph.org/tearsofsteel/Surround-TOS_DVDSURROUND-Dolby%205.1.ac3'
 # ffmpeg -i ToS-4k-1920.mov -i ToS-Dolby-5.1.ac3 -c:v copy -c:a copy -map 0:v:0 -map 1:a:0 ToS-4k-1920-Dolby.5.1.mp4
-# python create_media.py -d 61 -i ToS-4k-1920-Dolby.5.1.mp4 -p tears \
+# python -m dashlive.media.create -d 61 -i ToS-4k-1920-Dolby.5.1.mp4 -p tears --surround \
 #    --kid a2c786d0-f9ef-4cb3-b333-cd323a4284a5 db06a8fe-ec16-4de2-9228-2c71e9b856ab -o tears-v2
 #
 #
@@ -95,14 +95,15 @@ class VideoEncodingParameters(NamedTuple):
 
 @dataclass
 class MediaCreateOptions:
-    duration: int
     aspect: str | None
     avc3: bool
+    duration: int
     font: str
     framerate: int
     kid: list[str]
     key: list[str]
     segment_duration: float
+    surround: bool
     verbose: bool
     prefix: str
     source: str
@@ -122,7 +123,7 @@ class MediaCreateOptions:
             self.aspect_ratio = float(n) / float(d)
         else:
             self.aspect_ratio = float(aspect)
- 
+
 
 class DashMediaCreator:
     BITRATE_LADDER: list[VideoEncodingParameters] = [
@@ -232,10 +233,9 @@ class DashMediaCreator:
             ffmpeg_args.append("-vf")
             ffmpeg_args.append(f"drawtext={drawtext}")
         if first:
-            ffmpeg_args += [
-                "-map", "0:a:0",
-                "-map", "0:a:0",
-            ]
+            ffmpeg_args += ["-map", "0:a:0"]
+            if self.options.surround:
+                ffmpeg_args += ["-map", "0:a:0"]
         ffmpeg_args += [
             "-codec:v", vcodec,
             "-aspect", self.options.aspect,
@@ -266,10 +266,13 @@ class DashMediaCreator:
                 "-b:a:0", "96k",
                 "-ac:a:0", "2",
                 "-strict", "-2",
-                "-codec:a:1", "eac3",
-                "-b:a:1", "320k",
-                "-ac:a:1", "6",
             ]
+            if self.options.surround:
+                ffmpeg_args += [
+                    "-codec:a:1", "eac3",
+                    "-b:a:1", "320k",
+                    "-ac:a:1", "6",
+                ]
         ffmpeg_args.append(str(dest))
         logging.debug(ffmpeg_args)
         subprocess.check_call(ffmpeg_args)
@@ -575,7 +578,7 @@ class DashMediaCreator:
                     fps = s["avg_frame_rate"]
                     if '/' in fps:
                         n, d = fps.split('/')
-                        if d == 0:
+                        if float(d) == 0:
                             continue
                         fps = int(round(float(n) / float(d)))
                     else:
@@ -610,6 +613,8 @@ class DashMediaCreator:
                         type=int, default=0)
         ap.add_argument('--aspect', help='Aspect ratio (default=same as source)')
         ap.add_argument('--avc3', help='Use in-band (AVC3 format) init segments',
+                        action="store_true")
+        ap.add_argument('--surround', help='Add E-AC3 surround-sound audio track',
                         action="store_true")
         ap.add_argument('--font', help='Truetype font file to use to show bitrate', type=str,
                         dest='font', default=None)

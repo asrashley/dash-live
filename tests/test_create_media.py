@@ -69,22 +69,30 @@ class MockFfmpeg(TestCaseMixin):
             '-force_key_frames': '0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60',
             '-t': '60',
             '-r': '24',
-            '-codec:a:0': 'aac',
-            '-b:a:0': '96k',
-            '-ac:a:0': '2',
-            '-codec:a:1': 'eac3',
-            '-b:a:1': '320k',
-            '-ac:a:1': '6',
         }
+        if self.bitrate_index == 0:
+            expected.update({
+                '-codec:a:0': 'aac',
+                '-b:a:0': '96k',
+                '-ac:a:0': '2',
+                '-codec:a:1': 'eac3',
+                '-b:a:1': '320k',
+                '-ac:a:1': '6',
+                '-y': None,
+            })
+        required = set(expected.keys())
         for idx, arg in enumerate(args):
             if arg[0] != '-':
                 continue
             try:
                 val = expected[arg]
-                msg = f'Expected {arg} to have value "{val}" but found "{args[idx + 1]}"'
-                self.assertEqual(val, args[idx + 1], msg=msg)
+                if val is not None:
+                    msg = f'Expected {arg} to have value "{val}" but found "{args[idx + 1]}"'
+                    self.assertEqual(val, args[idx + 1], msg=msg)
+                required.remove(arg)
             except KeyError:
-                pass
+                self.assertNotIn(arg, required)
+        self.assertEqual(required, set())
         return 0
 
     def mp4box_build(self, args: list[str]) -> int:
@@ -238,6 +246,7 @@ class TestMediaCreation(unittest.TestCase):
             '-p', 'bbb',
             '--font', '/usr/share/fonts/truetype/freefont/FreeSansBold.ttf',
             '--kid', kid,
+            '--surround',
             '-o', str(tmpdir)
         ]
         ffmpeg = MockFfmpeg(tmpdir)
