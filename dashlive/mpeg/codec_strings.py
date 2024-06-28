@@ -150,7 +150,7 @@ class H265Codec(CodecData):
         if self.tier_flag:
             return f'high.{self.profile_idc}'
         return f'main.{self.profile_idc}'
-    
+
     @classmethod
     def from_string(cls, codec_string: str) -> CodecData:
         parts = codec_string.split('.')
@@ -177,6 +177,23 @@ class H265Codec(CodecData):
 
 @dataclass(slots=True)
 class Mp4AudioCodec(CodecData):
+    MP2_OBJECT_TYPE: ClassVar[int] = 0x67
+    MP2_PROFILE_NAMES: ClassVar[dict[int, str]] = {
+        0x67: 'LC',
+    }
+    MP4_OBJECT_TYPE: ClassVar[int] = 0x40
+    MP4_PROFILE_NAMES: ClassVar[dict[int, str]] = {
+        1: 'main',
+        2: 'LC',
+        3: 'SSR',
+        4: 'LTP',
+        5: 'SBR',
+        6: 'scalable',
+        7: 'twin VQ',
+        8: 'CELP',
+        9: 'HVXC',
+        29: 'LC + SBR + PS'
+    }
     codec: str = field(default='mp4a', init=False)
     avc_type: str
     object_type: int
@@ -192,16 +209,30 @@ class Mp4AudioCodec(CodecData):
 
     @classmethod
     def from_string(cls, codec_string: str) -> CodecData:
-        codec_name, object_type, audio_object_type = codec_string.split('.')
+        try:
+            codec_name, object_type, audio_object_type = codec_string.split('.')
+        except ValueError:
+            codec_name, object_type = codec_string.split('.')
+            audio_object_type = '0'
         return Mp4AudioCodec(
             avc_type=codec_name, object_type=int(object_type, 16),
-            audio_object_type=int(audio_object_type, 16))
+            audio_object_type=int(audio_object_type, 10))
 
     def to_string(self) -> str:
-        return f"{self.avc_type}.{self.object_type:02x}.{self.audio_object_type:x}"
+        return f"{self.avc_type}.{self.object_type:02x}.{self.audio_object_type:d}"
 
     def profile_string(self) -> str:
-        return ''
+        if self.object_type == Mp4AudioCodec.MP4_OBJECT_TYPE:
+            try:
+                return f'MPEG-4 AAC {Mp4AudioCodec.MP4_PROFILE_NAMES[self.audio_object_type]}'
+            except KeyError:
+                return f'MPEG-4 AAC 0x{self.audio_object_type:x}'
+        if self.object_type == Mp4AudioCodec.MP2_OBJECT_TYPE:
+            try:
+                return f'MPEG-2 AAC {Mp4AudioCodec.MP2_PROFILE_NAMES[self.object_type]}'
+            except KeyError:
+                return f'MPEG-2 AAC 0x{self.object_type:x}'
+        return self.to_string()
 
 
 @dataclass(slots=True)
