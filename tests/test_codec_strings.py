@@ -20,10 +20,9 @@
 #
 #############################################################################
 
-import os
 import unittest
 
-from dashlive.mpeg.codec_strings import H264Codec, H265Codec
+from dashlive.mpeg.codec_strings import H264Codec, H265Codec, Mp4AudioCodec
 
 from .mixins.flask_base import FlaskTestBase
 
@@ -51,6 +50,22 @@ class CodecStringTests(FlaskTestBase, unittest.TestCase):
         for tc in test_cases:
             codec_data = H265Codec.from_string(tc)
             self.assertEqual(tc, codec_data.to_string())
+
+    def test_aac(self) -> None:
+        test_cases = [
+            ("mp4a.40.2", 0x40, 2, "MPEG-4 AAC LC"),
+            ("mp4a.40.02", 0x40, 2, "MPEG-4 AAC LC"),
+            ("mp4a.40.5", 0x40, 5, "MPEG-4 AAC SBR"),
+            ("mp4a.40.05", 0x40, 5, "MPEG-4 AAC SBR"),
+            ("mp4a.40.29", 0x40, 29, "MPEG-4 AAC LC + SBR + PS"),
+            ("mp4a.67", 0x67, 0, "MPEG-2 AAC LC"),
+        ]
+        for tc, object_type, audio_object_type, profile in test_cases:
+            codec_data = Mp4AudioCodec.from_string(tc)
+            self.assertEqual(codec_data.object_type, object_type)
+            self.assertEqual(codec_data.audio_object_type, audio_object_type)
+            self.assertEqual(codec_data.profile_string(), profile)
+
 
 if __name__ == "__main__":
     unittest.main()
