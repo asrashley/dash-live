@@ -22,7 +22,7 @@
 
 import json
 import unittest
-from urllib.parse import urlparse
+from urllib.parse import urlparse, parse_qs
 
 from bs4 import BeautifulSoup
 import flask
@@ -258,11 +258,13 @@ class TestHtmlPageHandlers(FlaskTestBase):
             manifest=filename[:-4])
         html_url += query
         html_parsed = urlparse(html_url)
-        mpd_url = f'{scheme}://localhost' + flask.url_for(
+        mpd_path = flask.url_for(
             'dash-mpd-v3',
             manifest=filename,
             stream=self.FIXTURES_PATH.name,
-            mode=mode) + query
+            mode=mode)
+        mpd_parts = urlparse(f'{scheme}://localhost{mpd_path}{query}')
+        mpd_query = parse_qs(mpd_parts.query)
         try:
             self.current_url = html_url
             response = self.client.get(html_url)
@@ -278,6 +280,14 @@ class TestHtmlPageHandlers(FlaskTestBase):
             if parsed.scheme != 'ms3':
                 self.assertEqual(parsed.scheme, html_parsed.scheme)
                 self.assertEqual(parsed.scheme, scheme)
+                self.assertEqual(parsed.scheme, mpd_parts.scheme)
+                self.assertEqual(parsed.netloc, mpd_parts.netloc)
+                self.assertEqual(parsed.path, mpd_parts.path)
+                query = parse_qs(parsed.query)
+                for key, value in mpd_query.items():
+                    if key == 'player':
+                        continue
+                    self.assertEqual(value, query[key])
             for script in html.find_all('script'):
                 if script.get("src"):
                     continue
