@@ -119,7 +119,7 @@ class RequestHandlerBase(MethodView):
         # logging.debug(
         # 'generate_csrf User-Agent: "{}"'.format(flask.request.headers['User-Agent']))
         cfg = flask.current_app.config['DASH']
-        strict_origin  = cfg.get('STRICT_CSRF_ORIGIN', 'False').lower() == 'true'
+        strict_origin = cfg.get('STRICT_CSRF_ORIGIN', 'False').lower() == 'true'
 
         sig = hmac.new(
             bytes(cfg['CSRF_SECRET'], 'utf-8'),
@@ -187,7 +187,7 @@ class RequestHandlerBase(MethodView):
         logging.debug(f'check_csrf salt: "{salt}"')
         token = token[models.Token.CSRF_SALT_LENGTH:]
         cfg = flask.current_app.config['DASH']
-        strict_origin  = cfg.get('STRICT_CSRF_ORIGIN', 'False').lower() == 'true'
+        strict_origin = cfg.get('STRICT_CSRF_ORIGIN', 'False').lower() == 'true'
         sig = hmac.new(
             bytes(cfg['CSRF_SECRET'], 'utf-8'),
             bytes(csrf_key, 'utf-8'),
