@@ -120,8 +120,8 @@ class Representation(RepresentationBaseType):
             return self.format_url_template(self.baseurl)
         self.elt.check_not_none(self.segmentTemplate, msg='SegmentTemplate missing')
         if not self.elt.check_not_none(
-            self.segmentTemplate.initialization,
-            msg='SegmentTemplate failed to find initialization URL'):
+                self.segmentTemplate.initialization,
+                msg='SegmentTemplate failed to find initialization URL'):
             return None
         url = self.format_url_template(self.segmentTemplate.initialization)
         return urllib.parse.urljoin(self.baseurl, url)
