@@ -80,7 +80,10 @@ class ContentProtection(Descriptor):
 
     def validate_playready_pro(self, pro) -> None:
         self.elt.check_equal(len(pro), 1)
-        xml = pro[0]['xml'].getroot()
+        if not self.elt.check_not_none(
+                pro[0].xml, msg='Failed to parse PlayReady header'):
+            return
+        xml = pro[0].xml.getroot()
         self.elt.check_equal(
             xml.tag,
             '{http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader}WRMHEADER')
