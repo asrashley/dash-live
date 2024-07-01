@@ -178,8 +178,8 @@ class LiveMedia(RequestHandlerBase):
             keys = models.Key.get_kids(representation.kids)
             drms = self.generate_drm_dict(stream, keys, options)
             for drm in list(drms.values()):
-                if 'moov' in drm:
-                    pssh = drm["moov"](representation, keys)
+                if drm.moov is not None:
+                    pssh = drm.moov(representation.default_kid)
                     atom.moov.append_child(pssh)
         if mode == 'live':
             if segment_num == 0:

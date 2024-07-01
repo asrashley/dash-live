@@ -31,7 +31,7 @@ import logging
 import os
 import re
 import struct
-from typing import AbstractSet, Any, Optional, Union
+from typing import AbstractSet, Any, ClassVar, Optional, Union
 
 import bitstring
 
@@ -1826,6 +1826,7 @@ class EAC3SubStream(ObjectWithFields):
         r.read(5, 'bsmod')
         r.read(3, 'acmod')
         r.kwargs['channel_count'] = EAC3SpecificBox.ACMOD_NUM_CHANS[r.kwargs['acmod']]
+        r.kwargs['sampling_frequency'] = EAC3SpecificBox.FSCOD_SAMPLE_RATE[r.kwargs['fscod']]
         r.read(1, 'lfeon')
         r.get(3, 'reserved')
         r.read(4, 'num_dep_sub')
@@ -1850,6 +1851,7 @@ class EAC3SubStream(ObjectWithFields):
 @fourcc('dec3')
 class EAC3SpecificBox(Mp4Atom):
     ACMOD_NUM_CHANS = [2, 1, 2, 3, 3, 4, 4, 5]
+    FSCOD_SAMPLE_RATE: ClassVar[list[int]] = [48000, 44100, 32000, 0]
 
     OBJECT_FIELDS = {
         "substreams": ListOf(EAC3SubStream),

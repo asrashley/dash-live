@@ -41,7 +41,7 @@ class Key(db.Model, ModelMixin):
         return self.halg
 
     @classmethod
-    def get_kids(clz, kids: list[KeyMaterial | str]) -> dict[str, "Key"]:
+    def get_kids(clz, kids: AbstractSet[KeyMaterial | str]) -> dict[str, "Key"]:
         def to_hex(kid: KeyMaterial | str) -> str:
             if isinstance(kid, KeyMaterial):
                 return kid.hex

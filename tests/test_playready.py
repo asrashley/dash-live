@@ -35,9 +35,9 @@ import urllib.error
 import flask
 from lxml import etree
 
+from dashlive.drm.keymaterial import KeyMaterial
 from dashlive.drm.playready import PlayReady
 from dashlive.mpeg import mp4
-from dashlive.mpeg.dash.representation import Representation
 from dashlive.mpeg.dash.validator import ConcurrentWorkerPool
 from dashlive.server import manifests, models
 from dashlive.utils.binary import Binary
@@ -84,6 +84,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         for kid, key in [
                 ("1AB45440532C439994DC5C5AD9584BAC", "ccc0f2b3b279926496a7f5d25da692f6")]:
             self.keys[kid.lower()] = KeyStub(kid, key)
+        self.default_kid: str = list(self.keys.keys())[0]
 
     def test_guid_generation(self):
         default_kid = '1AB45440-532C-4399-94DC-5C5AD9584BAC'.lower()
@@ -162,11 +163,9 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             la_url=self.la_url,
             version=2.0,
             header_version=4.0)
-        representation = Representation(
-            id='V1', default_kid=list(self.keys.keys())[0])
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
-        wrm = mspr.generate_wrmheader(self.la_url, representation, self.keys, None)
+        wrm = mspr.generate_wrmheader(self.la_url, self.default_kid, self.keys, None)
         self.assertEqual(expected_wrm.decode('utf-16'), wrm.decode('utf-16'))
         if expected_wrm[0] == 0xFF and expected_wrm[1] == 0xFE:
             # remove UTF-16 byte order mark
@@ -187,12 +186,10 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             la_url=self.la_url,
             version=2.0,
             header_version=4.0)
-        representation = Representation(
-            id='V1', default_kid=list(self.keys.keys())[0])
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
         wrm = mspr.generate_wrmheader(
-            self.la_url, representation, self.keys, self.custom_attributes)
+            self.la_url, self.default_kid, self.keys, self.custom_attributes)
         self.assertEqual(expected_wrm.decode('utf-16'), wrm.decode('utf-16'))
         if expected_wrm[0] == 0xFF and expected_wrm[1] == 0xFE:
             # remove UTF-16 byte order mark
@@ -213,15 +210,13 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             la_url=self.la_url,
             version=2.0,
             header_version=4.0)
-        representation = Representation(
-            id='V1', default_kid=list(self.keys.keys())[0])
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
         custom_attributes = [
             dict(tag='MyNode', value='', attributes=dict(FooAttribute="Foo", BarAttribute="Bar"))
         ]
         wrm = mspr.generate_wrmheader(
-            self.la_url, representation, self.keys, custom_attributes)
+            self.la_url, self.default_kid, self.keys, custom_attributes)
         self.assertEqual(expected_wrm.decode('utf-16'), wrm.decode('utf-16'))
         if expected_wrm[0] == 0xFF and expected_wrm[1] == 0xFE:
             # remove UTF-16 byte order mark
@@ -234,12 +229,10 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             la_url=self.la_url,
             version=2.0,
             header_version=4.0)
-        representation = Representation(
-            id='V1', default_kid=list(self.keys.keys())[0])
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
         pro = mspr.generate_pro(
-            self.la_url, representation, self.keys, self.custom_attributes)
+            self.la_url, self.default_kid, self.keys, self.custom_attributes)
         self.assertBuffersEqual(base64.b64decode(self.expected_pro), pro,
                                 name="PlayReady Object")
 
@@ -256,7 +249,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             BufferedReader(
                 None, data=base64.b64decode(
                     self.expected_pro)))
-        xml = e_pro[0]['xml']
+        xml = e_pro[0].xml
         self.assertEqual(xml.getroot().get("version"),
                          f'{mspr.header_version:02.1f}.0.0')
         algid = xml.findall(
@@ -282,12 +275,10 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         mspr = PlayReady(
             la_url=self.la_url,
             header_version=4.0)
-        representation = Representation(id='V1', default_kid=list(self.keys.keys())[0],
-                                        kids=list(self.keys.keys()))
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
         pssh = mspr.generate_pssh(
-            self.la_url, representation, self.keys, self.custom_attributes).encode()
+            self.la_url, self.default_kid, self.keys, self.custom_attributes).encode()
         self.check_generated_pssh_v4_0(self.keys, mspr, pssh)
 
     def check_generated_pssh_v4_0(self, keys, mspr, pssh):
@@ -315,17 +306,17 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             self.to_hex(expected_pro))
         actual_pro = mspr.parse_pro(
             BufferedReader(None, data=atoms[0].data.data))
-        self.assertEqual(actual_pro[0]['xml'].getroot().get("version"),
+        self.assertEqual(actual_pro[0].xml.getroot().get("version"),
                          '4.0.0.0')
-        algid = actual_pro[0]['xml'].findall('./prh:DATA/prh:PROTECTINFO/prh:ALGID',
-                                             self.namespaces)
+        algid = actual_pro[0].xml.findall(
+            './prh:DATA/prh:PROTECTINFO/prh:ALGID', self.namespaces)
         self.assertEqual(len(algid), 1)
         self.assertEqual(algid[0].text, "AESCTR")
-        keylen = actual_pro[0]['xml'].findall('./prh:DATA/prh:PROTECTINFO/prh:KEYLEN',
-                                              self.namespaces)
+        keylen = actual_pro[0].xml.findall(
+            './prh:DATA/prh:PROTECTINFO/prh:KEYLEN', self.namespaces)
         self.assertEqual(len(keylen), 1)
         self.assertEqual(keylen[0].text, "16")
-        kid = actual_pro[0]['xml'].findall(
+        kid = actual_pro[0].xml.findall(
             './prh:DATA/prh:KID', self.namespaces)
         self.assertEqual(len(kid), 1)
         guid = PlayReady.hex_to_le_guid(list(keys.keys())[0], raw=False)
@@ -339,11 +330,9 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         mspr = PlayReady(
             la_url=self.la_url,
             header_version=4.1)
-        representation = Representation(id='V1', default_kid=list(self.keys.keys())[0],
-                                        kids=list(self.keys.keys()))
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
-        pssh = mspr.generate_pssh(self.la_url, representation, self.keys).encode()
+        pssh = mspr.generate_pssh(self.la_url, self.default_kid, self.keys).encode()
         self.check_generated_pssh_v4_1(self.keys, mspr, pssh)
 
     def check_generated_pssh_v4_1(self, keys, mspr, pssh):
@@ -363,9 +352,9 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         actual_pro = mspr.parse_pro(
             BufferedReader(None, data=atoms[0].data.data))
         self.assertEqual(
-            actual_pro[0]['xml'].getroot().get("version"),
+            actual_pro[0].xml.getroot().get("version"),
             '4.1.0.0')
-        kid = actual_pro[0]['xml'].findall(
+        kid = actual_pro[0].xml.findall(
             './prh:DATA/prh:PROTECTINFO/prh:KID', self.namespaces)
         self.assertEqual(len(kid), 1)
         self.assertEqual(kid[0].get("ALGID"), "AESCTR")
@@ -386,9 +375,8 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         mspr = PlayReady(
             la_url=self.la_url,
             header_version=4.2)
-        representation = Representation(
-            id='V1', default_kid=list(keys.keys())[0], kids=list(keys.keys()))
-        pssh = mspr.generate_pssh(self.la_url, representation, keys).encode()
+        default_kid = list(keys.keys())[0]
+        pssh = mspr.generate_pssh(self.la_url, default_kid, keys).encode()
         self.check_generated_pssh_v4_2(keys, mspr, pssh)
 
     def check_generated_pssh_v4_2(self, keys, mspr, pssh):
@@ -408,10 +396,10 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             BufferedReader(
                 None, data=atoms[0].data.data))
         self.assertEqual(
-            actual_pro[0]['xml'].getroot().get("version"),
+            actual_pro[0].xml.getroot().get("version"),
             '4.2.0.0')
-        kids = actual_pro[0]['xml'].findall('./prh:DATA/prh:PROTECTINFO/prh:KIDS/prh:KID',
-                                            self.namespaces)
+        kids = actual_pro[0].xml.findall(
+            './prh:DATA/prh:PROTECTINFO/prh:KIDS/prh:KID', self.namespaces)
         self.assertGreaterThan(len(keys), 0)
         guid_map = {}
         for keypair in list(keys.values()):
@@ -442,9 +430,8 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         mspr = PlayReady(
             la_url=self.la_url,
             header_version=4.3)
-        representation = Representation(
-            id='V1', default_kid=list(keys.keys())[0], kids=list(keys.keys()))
-        pssh = mspr.generate_pssh(self.la_url, representation, keys).encode()
+        default_kid = list(keys.keys())[0]
+        pssh = mspr.generate_pssh(self.la_url, default_kid, keys).encode()
         self.check_generated_pssh_v4_3(keys, mspr, pssh)
 
     def check_generated_pssh_v4_3(self, keys, mspr, pssh):
@@ -464,11 +451,11 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             BufferedReader(
                 None, data=atoms[0].data.data))
         self.assertEqual(
-            actual_pro[0]['xml'].getroot().get("version"),
+            actual_pro[0].xml.getroot().get("version"),
             '4.3.0.0')
 
-        kids = actual_pro[0]['xml'].findall('./prh:DATA/prh:PROTECTINFO/prh:KIDS/prh:KID',
-                                            self.namespaces)
+        kids = actual_pro[0].xml.findall(
+            './prh:DATA/prh:PROTECTINFO/prh:KIDS/prh:KID', self.namespaces)
         guid_map = {}
         for keypair in list(keys.values()):
             guid = PlayReady.hex_to_le_guid(keypair.KID.raw, raw=True)
@@ -489,24 +476,22 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         """
         self.assertEqual(len(self.keys), 1)
         mspr = PlayReady(la_url=self.la_url, version=1.0)
-        representation = Representation(id='V1', default_kid=list(self.keys.keys())[0],
-                                        kids=list(self.keys.keys()))
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
 
         # check v4.0 (as defined in PlayReady v1.0)
         pssh = mspr.generate_pssh(
-            self.la_url, representation, self.keys, self.custom_attributes).encode()
+            self.la_url, self.default_kid, self.keys, self.custom_attributes).encode()
         self.check_generated_pssh_v4_0(self.keys, mspr, pssh)
         mspr.version = None
         pssh = mspr.generate_pssh(
-            self.la_url, representation, self.keys, self.custom_attributes).encode()
+            self.la_url, self.default_kid, self.keys, self.custom_attributes).encode()
         self.check_generated_pssh_v4_0(self.keys, mspr, pssh)
 
         # check v4.1 (as defined in PlayReady v2.0)
         mspr.version = 2.0
         pssh = mspr.generate_pssh(
-            self.la_url, representation, self.keys).encode()
+            self.la_url, self.default_kid, self.keys).encode()
         self.check_generated_pssh_v4_1(self.keys, mspr, pssh)
 
         # check v4.2 (as defined in PlayReady v3.0)
@@ -517,11 +502,11 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             keys[kid.lower()] = KeyStub(kid, key, alg='AESCTR')
         mspr.version = 3.0
         pssh = mspr.generate_pssh(
-            self.la_url, representation, keys).encode()
+            self.la_url, "1AB45440532C439994DC5C5AD9584BAC", keys).encode()
         self.check_generated_pssh_v4_2(keys, mspr, pssh)
         mspr.version = None
         pssh = mspr.generate_pssh(
-            self.la_url, representation, keys).encode()
+            self.la_url, "1AB45440532C439994DC5C5AD9584BAC", keys).encode()
         self.check_generated_pssh_v4_2(keys, mspr, pssh)
 
         # check v4.3 (as defined in PlayReady v4.0)
@@ -532,11 +517,11 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             keys[kid.lower()] = KeyStub(kid, key, alg='AESCBC')
         mspr.version = 4.0
         pssh = mspr.generate_pssh(
-            self.la_url, representation, keys).encode()
+            self.la_url, "1AB45440532C439994DC5C5AD9584BAC", keys).encode()
         self.check_generated_pssh_v4_3(keys, mspr, pssh)
         mspr.version = None
         pssh = mspr.generate_pssh(
-            self.la_url, representation, keys).encode()
+            self.la_url, "1AB45440532C439994DC5C5AD9584BAC", keys).encode()
         self.check_generated_pssh_v4_3(keys, mspr, pssh)
 
     def test_insert_pssh(self):
@@ -559,12 +544,10 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         mspr = PlayReady(
             la_url=self.la_url,
             header_version=4.1)
-        representation = Representation(id='A1', default_kid=list(self.keys.keys())[0],
-                                        kids=list(self.keys.keys()))
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
         pssh = mspr.generate_pssh(
-            self.la_url, representation, self.keys)
+            self.la_url, self.default_kid, self.keys)
         self.check_generated_pssh_v4_1(self.keys, mspr, pssh.encode())
         before = len(init_seg.moov.children)
         init_seg.moov.append_child(pssh)
@@ -632,7 +615,8 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         self.assertFalse(PlayReady.is_supported_scheme_id(
             "urn:uuid:5e629af5-38da-4063-8977-97ffbd9902d4"))
 
-    async def check_playready_la_url_value(self, test_la_url, args):
+    async def check_playready_la_url_value(self, test_la_url: str,
+                                           args: list[str]) -> None:
         """
         Check the LA_URL in the PRO element is correct
         """
@@ -652,7 +636,8 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         with ThreadPoolExecutor(max_workers=4) as tpe:
             pool = ConcurrentWorkerPool(tpe)
             mpd = ViewsTestDashValidator(
-                http_client=self.async_client, mode='vod', url=baseurl, encrypted=True, check_media=False,
+                http_client=self.async_client, mode='vod', url=baseurl,
+                encrypted=True, check_media=False,
                 duration=self.SEGMENT_DURATION, pool=pool)
             await mpd.load(xml=xml.getroot())
             await mpd.validate()
@@ -670,7 +655,8 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
                     pro = base64.b64decode(elt.text)
                     for record in PlayReady.parse_pro(
                             BufferedReader(None, data=pro)):
-                        la_urls = record['xml'].findall(
+                        self.assertIsNotNone(record.xml)
+                        la_urls = record.xml.findall(
                             './prh:DATA/prh:LA_URL', mpd.xmlNamespaces)
                         self.assertEqual(len(la_urls), 1)
                         self.assertEqual(la_urls[0].text, test_la_url)
@@ -769,6 +755,71 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         if 'children' in expected and expected['children'] is not None:
             for child in expected['children']:
                 self._patch_position_values(child, delta)
+
+    async def test_different_kids(self) -> None:
+        """
+        Check that each AdaptationSet has different ContentProtection
+        descriptors when the Representations use different KIDs
+        """
+        self.setup_media()
+        await self.check_number_unique_pro_headers(1)
+
+        new_kids: list[str] = [
+            'a2c786d0-f9ef-4cb3-b333-cd323a4284a5',
+            'db06a8fe-ec16-4de2-9228-2c71e9b856ab',
+        ]
+        with self.app.app_context():
+            for kid in new_kids:
+                km_kid = KeyMaterial(hex=kid)
+                key = binascii.b2a_hex(PlayReady.generate_content_key(km_kid.raw))
+                keypair = models.Key(hkid=km_kid.hex, hkey=key, computed=True)
+                models.db.session.add(keypair)
+            for idx, name in enumerate(['bbb_a1_enc', 'bbb_a2_enc']):
+                mf = models.MediaFile.get(name=name)
+                self.assertIsNotNone(mf)
+                self.assertIsNotNone(mf.rep)
+                rep = mf.get_representation()
+                self.assertIsNotNone(rep)
+                rep.kids = [new_kids[idx]]
+                mf.set_representation(rep)
+            models.db.session.commit()
+        await self.check_number_unique_pro_headers(3)
+
+    async def check_number_unique_pro_headers(self, expected_pros: int) -> None:
+        self.logout_user()
+        baseurl = flask.url_for(
+            'dash-mpd-v3',
+            manifest='hand_made.mpd',
+            stream=self.FIXTURES_PATH.name,
+            mode='vod')
+        args = ['drm=playready-pro', 'acodec=any']
+        baseurl += '?' + '&'.join(args)
+        response = self.client.get(baseurl)
+        self.assertEqual(response.status_code, 200)
+        xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
+        with ThreadPoolExecutor(max_workers=4) as tpe:
+            pool = ConcurrentWorkerPool(tpe)
+            mpd = ViewsTestDashValidator(
+                http_client=self.async_client, mode='vod', url=baseurl,
+                encrypted=True, check_media=False,
+                duration=self.SEGMENT_DURATION, pool=pool)
+            await mpd.load(xml=xml.getroot())
+            await mpd.validate()
+        self.assertFalse(mpd.has_errors())
+        self.assertEqual(len(mpd.manifest.periods), 1)
+        schemeIdUri = "urn:uuid:" + PlayReady.SYSTEM_ID.lower()
+        pro_tag = "{{{0}}}pro".format(mpd.xmlNamespaces['mspr'])
+        pro_data: set[bytes] = set()
+        for adap_set in mpd.manifest.periods[0].adaptation_sets:
+            for prot in adap_set.contentProtection:
+                if prot.schemeIdUri != schemeIdUri:
+                    continue
+                for elt in prot.children():
+                    if elt.tag != pro_tag:
+                        continue
+                    pro = base64.b64decode(elt.text)
+                    pro_data.add(pro)
+        self.assertEqual(len(pro_data), expected_pros)
 
 
 if os.environ.get("TESTS"):

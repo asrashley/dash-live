@@ -199,6 +199,8 @@ class Representation(ObjectWithFields):
                     moov = atom
         if rv.encrypted:
             rv.kids = list(key_ids)
+            if rv.default_kid is None and rv.kids:
+                rv.default_kid = rv.kids[0]
         if representation_start_time is None:
             rv.start_time = 0
         else:
@@ -296,14 +298,16 @@ class Representation(ObjectWithFields):
                 self.numChannels = 8
         elif avc_type == 'ec-3':
             try:
-                self.add_field('sampleRate', avc.sampling_frequency)
+                self.add_field('sampleRate', 48000)
                 self.add_field('numChannels', 0)
                 for s in avc.dec3.substreams:
+                    self.sampleRate = s.sampling_frequency
                     self.numChannels += s.channel_count
                     if s.lfeon:
                         self.numChannels += 1
             except AttributeError:
-                pass
+                self.add_field('sampleRate', avc.sampling_frequency)
+                self.add_field('numChannels', 0)
         elif avc_type == 'ac-3':
             try:
                 self.add_field('sampleRate', avc.dac3.sampling_frequency)
