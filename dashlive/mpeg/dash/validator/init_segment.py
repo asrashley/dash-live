@@ -164,7 +164,10 @@ class InitSegment(DashElement):
             return
         for pro in PlayReady.parse_pro(
                 BufferedReader(None, data=pssh.data.data)):
-            root = pro['xml'].getroot()
+            if not self.elt.check_not_none(
+                    pro.xml, msg='Failed to parse PlayReady header XML'):
+                continue
+            root = pro.xml.getroot()
             version = root.get("version")
             self.elt.check_includes(
                 ["4.0.0.0", "4.1.0.0", "4.2.0.0", "4.3.0.0"], version)

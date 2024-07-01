@@ -35,6 +35,7 @@ import urllib.error
 import flask
 from lxml import etree
 
+from dashlive.drm.keymaterial import KeyMaterial
 from dashlive.drm.playready import PlayReady
 from dashlive.mpeg import mp4
 from dashlive.mpeg.dash.validator import ConcurrentWorkerPool
@@ -248,7 +249,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             BufferedReader(
                 None, data=base64.b64decode(
                     self.expected_pro)))
-        xml = e_pro[0]['xml']
+        xml = e_pro[0].xml
         self.assertEqual(xml.getroot().get("version"),
                          f'{mspr.header_version:02.1f}.0.0')
         algid = xml.findall(
@@ -305,17 +306,17 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             self.to_hex(expected_pro))
         actual_pro = mspr.parse_pro(
             BufferedReader(None, data=atoms[0].data.data))
-        self.assertEqual(actual_pro[0]['xml'].getroot().get("version"),
+        self.assertEqual(actual_pro[0].xml.getroot().get("version"),
                          '4.0.0.0')
-        algid = actual_pro[0]['xml'].findall('./prh:DATA/prh:PROTECTINFO/prh:ALGID',
-                                             self.namespaces)
+        algid = actual_pro[0].xml.findall(
+            './prh:DATA/prh:PROTECTINFO/prh:ALGID', self.namespaces)
         self.assertEqual(len(algid), 1)
         self.assertEqual(algid[0].text, "AESCTR")
-        keylen = actual_pro[0]['xml'].findall('./prh:DATA/prh:PROTECTINFO/prh:KEYLEN',
-                                              self.namespaces)
+        keylen = actual_pro[0].xml.findall(
+            './prh:DATA/prh:PROTECTINFO/prh:KEYLEN', self.namespaces)
         self.assertEqual(len(keylen), 1)
         self.assertEqual(keylen[0].text, "16")
-        kid = actual_pro[0]['xml'].findall(
+        kid = actual_pro[0].xml.findall(
             './prh:DATA/prh:KID', self.namespaces)
         self.assertEqual(len(kid), 1)
         guid = PlayReady.hex_to_le_guid(list(keys.keys())[0], raw=False)
@@ -351,9 +352,9 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         actual_pro = mspr.parse_pro(
             BufferedReader(None, data=atoms[0].data.data))
         self.assertEqual(
-            actual_pro[0]['xml'].getroot().get("version"),
+            actual_pro[0].xml.getroot().get("version"),
             '4.1.0.0')
-        kid = actual_pro[0]['xml'].findall(
+        kid = actual_pro[0].xml.findall(
             './prh:DATA/prh:PROTECTINFO/prh:KID', self.namespaces)
         self.assertEqual(len(kid), 1)
         self.assertEqual(kid[0].get("ALGID"), "AESCTR")
@@ -395,10 +396,10 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             BufferedReader(
                 None, data=atoms[0].data.data))
         self.assertEqual(
-            actual_pro[0]['xml'].getroot().get("version"),
+            actual_pro[0].xml.getroot().get("version"),
             '4.2.0.0')
-        kids = actual_pro[0]['xml'].findall('./prh:DATA/prh:PROTECTINFO/prh:KIDS/prh:KID',
-                                            self.namespaces)
+        kids = actual_pro[0].xml.findall(
+            './prh:DATA/prh:PROTECTINFO/prh:KIDS/prh:KID', self.namespaces)
         self.assertGreaterThan(len(keys), 0)
         guid_map = {}
         for keypair in list(keys.values()):
@@ -450,11 +451,11 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             BufferedReader(
                 None, data=atoms[0].data.data))
         self.assertEqual(
-            actual_pro[0]['xml'].getroot().get("version"),
+            actual_pro[0].xml.getroot().get("version"),
             '4.3.0.0')
 
-        kids = actual_pro[0]['xml'].findall('./prh:DATA/prh:PROTECTINFO/prh:KIDS/prh:KID',
-                                            self.namespaces)
+        kids = actual_pro[0].xml.findall(
+            './prh:DATA/prh:PROTECTINFO/prh:KIDS/prh:KID', self.namespaces)
         guid_map = {}
         for keypair in list(keys.values()):
             guid = PlayReady.hex_to_le_guid(keypair.KID.raw, raw=True)
@@ -614,7 +615,8 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         self.assertFalse(PlayReady.is_supported_scheme_id(
             "urn:uuid:5e629af5-38da-4063-8977-97ffbd9902d4"))
 
-    async def check_playready_la_url_value(self, test_la_url, args):
+    async def check_playready_la_url_value(self, test_la_url: str,
+                                           args: list[str]) -> None:
         """
         Check the LA_URL in the PRO element is correct
         """
@@ -634,7 +636,8 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         with ThreadPoolExecutor(max_workers=4) as tpe:
             pool = ConcurrentWorkerPool(tpe)
             mpd = ViewsTestDashValidator(
-                http_client=self.async_client, mode='vod', url=baseurl, encrypted=True, check_media=False,
+                http_client=self.async_client, mode='vod', url=baseurl,
+                encrypted=True, check_media=False,
                 duration=self.SEGMENT_DURATION, pool=pool)
             await mpd.load(xml=xml.getroot())
             await mpd.validate()
@@ -652,7 +655,8 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
                     pro = base64.b64decode(elt.text)
                     for record in PlayReady.parse_pro(
                             BufferedReader(None, data=pro)):
-                        la_urls = record['xml'].findall(
+                        self.assertIsNotNone(record.xml)
+                        la_urls = record.xml.findall(
                             './prh:DATA/prh:LA_URL', mpd.xmlNamespaces)
                         self.assertEqual(len(la_urls), 1)
                         self.assertEqual(la_urls[0].text, test_la_url)

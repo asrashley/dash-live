@@ -26,7 +26,7 @@ import re
 import io
 import struct
 import sys
-from typing import AbstractSet
+from typing import AbstractSet, BinaryIO, NamedTuple
 import urllib.request
 import urllib.parse
 import urllib.error
@@ -44,6 +44,25 @@ from dashlive.utils.buffered_reader import BufferedReader
 from .base import DrmBase, CreateDrmData, CreatePsshBox, ManifestContext
 from .key_tuple import KeyTuple
 from .keymaterial import KeyMaterial
+
+class PlayReadyRecord(NamedTuple):
+    record_type: int
+    length: int
+    header: str | None
+    xml: ElementTree.Element | None
+
+    def __repr__(self) -> str:
+        rv = f'PlayReadyRecord(type={self.record_type}, length={self.length}'
+        if self.header is not None:
+            rv += f', header="{self.header}"'
+        return f'{rv})'
+
+    def __str__(self) -> str:
+        rv = [f'PlayReadyRecord: type={self.record_type} length={self.length}']
+        if self.header is not None:
+            rv.append(self.header)
+        return '\n'.join(rv)
+
 
 class PlayReady(DrmBase):
     MAJOR_VERSIONS = [1.0, 2.0, 3.0, 4.0]
@@ -227,30 +246,31 @@ class PlayReady(DrmBase):
         return pro
 
     @classmethod
-    def parse_pro(clz, src):
+    def parse_pro(clz, src: BinaryIO) -> list[PlayReadyRecord]:
         """Parse a PlayReady Object (PRO)"""
         data = src.read(6)
         if len(data) != 6:
             raise OSError("PlayReady Object too small")
         length, object_count = struct.unpack("<IH", data)
-        objects = []
+        objects: list[PlayReadyRecord] = []
         for idx in range(object_count):
             data = src.read(4)
             if len(data) != 4:
                 raise OSError("PlayReady Object too small")
             record_type, record_length = struct.unpack("<HH", data)
-            record = {
-                'type': record_type,
-                'length': record_length,
-            }
+            header: str | None = None
+            xml: ElementTree.Element | None = None
             if record_type == 1:
                 prh = src.read(record_length)
                 if len(prh) != record_length:
                     raise OSError("PlayReady Object too small")
-                record['PlayReadyHeader'] = prh.decode('utf-16')
-                record['xml'] = ElementTree.parse(
-                    io.StringIO(record['PlayReadyHeader']))
-            objects.append(record)
+                header = prh.decode('utf-16')
+                xml = ElementTree.parse(io.StringIO(header))
+            objects.append(PlayReadyRecord(
+                record_type=record_type,
+                length=record_length,
+                header=header,
+                xml=xml))
         return objects
 
     def generate_manifest_context(
