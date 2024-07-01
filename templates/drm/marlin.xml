@@ -1,7 +1,7 @@
-   <ContentProtection xmlns:mas="urn:marlin:mas:1-0:services:schemas:mpd" schemeIdUri="urn:uuid:5e629af5-38da-4063-8977-97ffbd9902d4">
-    <mas:MarlinContentIds>
-    {% for kid in rep.kids -%}
-    <mas:MarlinContentId>urn:marlin:kid:{{kid.hex}}</mas:MarlinContentId>
+<ContentProtection xmlns:mas="urn:marlin:mas:1-0:services:schemas:mpd" schemeIdUri="urn:uuid:5e629af5-38da-4063-8977-97ffbd9902d4">
+  <mas:MarlinContentIds>
+    {% for kid in DRM.kids -%}
+      <mas:MarlinContentId>urn:marlin:kid:{{kid.hex}}</mas:MarlinContentId>
     {%- endfor %}
-    </mas:MarlinContentIds>
-   </ContentProtection>
+  </mas:MarlinContentIds>
+</ContentProtection>

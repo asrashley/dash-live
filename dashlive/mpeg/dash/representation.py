@@ -25,7 +25,7 @@ from dataclasses import dataclass
 import logging
 import os
 import sys
-from typing import NamedTuple, Optional
+from typing import NamedTuple, Optional, Set
 
 from dashlive.drm.keymaterial import KeyMaterial
 from dashlive.mpeg.codec_strings import codec_string_from_avc_box
@@ -135,7 +135,7 @@ class Representation(ObjectWithFields):
         rv = Representation(id=rep_id.lower(),
                             filename=filename,
                             version=Representation.VERSION)
-        key_ids = set()
+        key_ids: Set[KeyMaterial] = set()
         for atom in atoms:
             seg = Segment(pos=atom.position, size=atom.size)
             if verbose > 2:
@@ -199,6 +199,8 @@ class Representation(ObjectWithFields):
                     moov = atom
         if rv.encrypted:
             rv.kids = list(key_ids)
+            if rv.default_kid is None and rv.kids:
+                rv.default_kid = rv.kids[0]
         if representation_start_time is None:
             rv.start_time = 0
         else:
