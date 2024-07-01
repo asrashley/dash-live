@@ -101,6 +101,38 @@ class RepresentationTests(FlaskTestBase, unittest.TestCase):
         self.assertEqual(rep.numChannels, 6)
         self.assertEqual(rep.sampleRate, 48000)
 
+    def test_load_eac3(self):
+        filename = self.FIXTURES_PATH / "bbb_a2.mp4"
+        with filename.open('rb') as src:
+            atoms = Mp4Atom.load(BufferedReader(src))
+        rep = Representation.load(filename, atoms)
+        self.assertEqual(rep.content_type, 'audio')
+        self.assertEqual(rep.timescale, 44100)
+        self.assertEqual(rep.mimeType, 'audio/mp4')
+        self.assertEqual(rep.codecs, 'ec-3')
+        self.assertEqual(rep.segment_duration, 176298)
+        self.assertEqual(rep.mediaDuration, 1763328)
+        self.assertEqual(rep.encrypted, False)
+        self.assertEqual(rep.lang, "und")
+        self.assertEqual(rep.numChannels, 6)
+        self.assertEqual(rep.sampleRate, 44100)
+
+    def test_load_encrypted_eac3(self):
+        filename = self.FIXTURES_PATH / "bbb_a2_enc.mp4"
+        with filename.open('rb') as src:
+            atoms = Mp4Atom.load(BufferedReader(src))
+        rep = Representation.load(filename, atoms)
+        self.assertEqual(rep.content_type, 'audio')
+        self.assertEqual(rep.timescale, 44100)
+        self.assertEqual(rep.mimeType, 'audio/mp4')
+        self.assertEqual(rep.codecs, 'ec-3')
+        self.assertEqual(rep.segment_duration, 176298)
+        self.assertEqual(rep.mediaDuration, 1763328)
+        self.assertEqual(rep.encrypted, True)
+        self.assertEqual(rep.lang, "und")
+        self.assertEqual(rep.numChannels, 6)
+        self.assertEqual(rep.sampleRate, 44100)
+
 
 if os.environ.get("TESTS"):
     def load_tests(loader, tests, pattern):

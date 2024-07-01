@@ -148,7 +148,7 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
         )
         fixture_files = [
             "bbb_v6", "bbb_v6_enc", "bbb_v7", "bbb_v7_enc",
-            "bbb_a1", "bbb_a1_enc", "bbb_a2"]
+            "bbb_a1", "bbb_a1_enc", "bbb_a2", "bbb_a2_enc"]
         if with_subs:
             fixture_files.append("bbb_t1")
         media_files = []
