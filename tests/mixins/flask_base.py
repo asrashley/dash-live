@@ -171,36 +171,41 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
                 auto_delete=False)
             blobs.append(blob)
             js_filename = self.FIXTURES_PATH / f'rep-{rid}.json'
-            rep = None
+            rep: Representation | None = None
             if js_filename.exists():
                 with js_filename.open('rt', encoding='utf-8') as src:
-                    rep = json.load(src)
-                if rep['version'] != Representation.VERSION:
+                    rep_js = json.load(src)
+                if rep_js['version'] == Representation.VERSION:
+                    rep = Representation(**rep_js)
+                else:
                     rep = None
             if rep is None:
+                print(f'Creating Representation cache: {js_filename}')
                 with src_file.open(mode="rb", buffering=16384) as src:
                     atoms = mp4.Mp4Atom.load(src)
                 rep = Representation.load(filename, atoms)
-                rep = rep.toJSON(pure=True)
+                rep_js = rep.toJSON(pure=True)
                 with js_filename.open('wt', encoding='utf-8') as dest:
-                    json.dump(rep, dest)
+                    json.dump(rep_js, dest)
+            self.assertIsNotNone(rep)
+            self.assertIsInstance(rep, Representation)
             encrypted = rid.endswith('_enc')
-            self.assertEqual(encrypted, rep['encrypted'])
+            self.assertEqual(encrypted, rep.encrypted)
             self.assertAlmostEqual(
-                rep['mediaDuration'],
-                self.MEDIA_DURATION * rep['timescale'],
-                delta=(rep['timescale'] / 5.0),
+                rep.mediaDuration,
+                self.MEDIA_DURATION * rep.timescale,
+                delta=(rep.timescale / 5.0),
                 msg='Invalid duration for {}. Expected {} got {}'.format(
-                    filename, self.MEDIA_DURATION * rep['timescale'],
-                    rep['mediaDuration']))
+                    filename, self.MEDIA_DURATION * rep.timescale,
+                    rep.mediaDuration))
             mf = models.MediaFile(
                 name=rid,
                 stream=bbb,
-                rep=rep,
-                bitrate=rep['bitrate'],
-                content_type=rep['content_type'],
-                encrypted=rep['encrypted'],
+                bitrate=rep.bitrate,
+                content_type=rep.content_type,
+                encrypted=rep.encrypted,
                 blob=blob)
+            mf.set_representation(rep)
             media_files.append(mf)
             if idx == 0:
                 bbb.set_timing_reference(mf.as_stream_timing_reference())
@@ -216,7 +221,8 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
             self.assertGreaterThan(models.MediaFile.count(), 0)
             for mf in models.MediaFile.all():
                 r = mf.representation
-                self.assertIsNotNone(r, f'Failed to get Representation for MediaFile {mf.name}')
+                self.assertIsNotNone(
+                    r, f'Failed to get Representation for MediaFile {mf.name}')
                 if not r.encrypted:
                     continue
                 for kid in r.kids:
