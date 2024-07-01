@@ -26,17 +26,16 @@
     >
     {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
     {% include "events/period.xml" %}
+   {%- with adp = video %}
     <AdaptationSet
         mimeType="video/mp4"
         par="16:9"
         segmentAlignment="true"
         startWithSAP="1">
-      {% with adp = video %}
         {% include "events/adaptationset.xml" %}
-      {% endwith %}
-      {% for rep in video.representations %}
-        {% if loop.first %}
-          {% include "drm/template.xml" %}
+        {% include "drm/template.xml" %}
+      {%- for rep in video.representations %}
+        {%- if loop.first %}
           <SegmentTemplate
               initialization="{{video.initURL|xmlSafe}}"
               media="{{video.mediaURL|xmlSafe}}"
@@ -58,22 +57,23 @@
         </Representation>
       {% endfor %}
     </AdaptationSet>
-  {%- for audio in audio_sets %}
+   {%- endwith %}
+  {%- for adp in audio_sets %}
       <AdaptationSet
-          lang="{{ audio.lang }}"
-	  id="{{ audio.id }}"
+          lang="{{ adp.lang }}"
+	  id="{{ adp.id }}"
           mimeType="audio/mp4"
           segmentAlignment="true"
           startWithSAP="1"
         >
-      {%- for rep in audio.representations %}
+      {%- for rep in adp.representations %}
       {%- if loop.first %}
       {% include "drm/template.xml" %}
       <SegmentTemplate
-          initialization="{{audio.initURL|xmlSafe}}"
-          media="{{audio.mediaURL|xmlSafe}}"
-          presentationTimeOffset="{{audio.presentationTimeOffset}}"
-          timescale="{{audio.timescale}}"
+          initialization="{{adp.initURL|xmlSafe}}"
+          media="{{adp.mediaURL|xmlSafe}}"
+          presentationTimeOffset="{{adp.presentationTimeOffset}}"
+          timescale="{{adp.timescale}}"
           >
         {% include "segment/timeline.xml" %}
       </SegmentTemplate>

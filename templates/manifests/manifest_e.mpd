@@ -22,6 +22,7 @@ type="dynamic"
   duration="{{mediaDuration|isoDuration}}"
   {% endif %}
 >
+   {%- with adp = video %}
 <AdaptationSet
     mimeType="video/mp4"
     contentType="video"
@@ -53,22 +54,23 @@ type="dynamic"
           scanType="{{rep.scanType}}" />
     {% endfor %}
     </AdaptationSet>
-      {% for audio in audio_sets %}
+   {%- endwith %}
+      {% for adp in audio_sets %}
       <AdaptationSet
 	  mimeType="audio/mp4"
 	  contentType="audio"
-	  lang="{{ audio.language }}"
+	  lang="{{ adp.language }}"
 	  segmentAlignment="true"
-	  startWithSAP="{{audio.startWithSAP}}">
-          <Role schemeIdUri="urn:mpeg:dash:role:2011" value="{{audio.role}}"/>
+	  startWithSAP="{{adp.startWithSAP}}">
+          <Role schemeIdUri="urn:mpeg:dash:role:2011" value="{{adp.role}}"/>
           <SegmentTemplate
-              presentationTimeOffset="{{audio.presentationTimeOffset}}"
-              timescale="{{audio.timescale}}"
-              initialization="{{audio.initURL|xmlSafe}}"
-              media="{{audio.mediaURL|xmlSafe}}"
-              duration="{{audio.segment_duration}}"
-              startNumber="{{audio.start_number}}"/>
-	  {% for rep in audio.representations %}
+              presentationTimeOffset="{{adp.presentationTimeOffset}}"
+              timescale="{{adp.timescale}}"
+              initialization="{{adp.initURL|xmlSafe}}"
+              media="{{adp.mediaURL|xmlSafe}}"
+              duration="{{adp.segment_duration}}"
+              startNumber="{{adp.start_number}}"/>
+	  {% for rep in adp.representations %}
       {%- if loop.first %}{% include "drm/template.xml" %}{% endif %}
           <Representation id="{{rep.id}}" mimeType="audio/mp4" codecs="{{rep.codecs}}" audioSamplingRate="{{rep.sampleRate}}" numChannels="{{rep.numChannels}}" lang="{{rep.language}}" startWithSAP="{{rep.startWithSAP}}" bandwidth="{{rep.bitrate}}">
             <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="{{rep.numChannels}}"/>

@@ -299,7 +299,6 @@ class RequestHandlerBase(MethodView):
         if options.clockDrift:
             now -= datetime.timedelta(seconds=options.clockDrift)
         rv = {
-            "DRM": {},
             "minBufferTime": datetime.timedelta(seconds=1.5),
             "mode": options.mode,
             "mpd_url": mpd_url,
@@ -314,7 +313,6 @@ class RequestHandlerBase(MethodView):
         }
         if options.mode != 'odvod':
             rv['profiles'].append(additional_profiles['dvb'])
-        encrypted = options.encrypted
         period = Period(start=datetime.timedelta(0), id="p0")
         audio_adps = self.calculate_audio_adaptation_sets(stream, options)
         text_adps = self.calculate_text_adaptation_sets(stream, options)
@@ -380,9 +378,9 @@ class RequestHandlerBase(MethodView):
                     segment_num='init',
                     ext='m4v')
                 prefix = prefix.replace('RepresentationID/init.m4v', '')
-        kids = set()
         rv["maxSegmentDuration"] = 0
         for idx, adp in enumerate(period.adaptationSets):
+            kids = set()
             adp.id = idx + 1
             if options.mode != 'odvod':
                 adp.initURL = prefix + adp.initURL
@@ -393,16 +391,14 @@ class RequestHandlerBase(MethodView):
             for rep in adp.representations:
                 if rep.encrypted:
                     kids.update(rep.kids)
+            if adp.encrypted:
+                keys = models.Key.get_kids(kids)
+                adp.drm = self.generate_drm_dict(stream, keys, options)
+                adp.default_kid = list(keys.keys())[0]
 
         rv["periods"].append(period)
         rv["kids"] = kids
         rv["mediaDuration"] = rv["timing_ref"].media_duration_timedelta().total_seconds()
-        if encrypted:
-            if not kids:
-                rv["keys"] = models.Key.all_as_dict()
-            else:
-                rv["keys"] = models.Key.get_kids(kids)
-            rv["DRM"] = self.generate_drm_dict(stream, rv["keys"], options)
         rv["timeSource"] = self.choose_time_source_method(options, cgi_params, now)
         if 'numPeriods' not in manifest_info.features:
             rv["video"] = video  # TODO: support multiple video tracks

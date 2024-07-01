@@ -199,6 +199,8 @@ class Representation(ObjectWithFields):
                     moov = atom
         if rv.encrypted:
             rv.kids = list(key_ids)
+            if rv.default_kid is None and rv.kids:
+                rv.default_kid = rv.kids[0]
         if representation_start_time is None:
             rv.start_time = 0
         else:

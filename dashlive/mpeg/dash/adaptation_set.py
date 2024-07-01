@@ -21,10 +21,12 @@
 #############################################################################
 
 import time
+from typing import ClassVar
 
 from dashlive.utils.objects import dict_to_cgi_params
 from dashlive.utils.list_of import ListOf
 from dashlive.utils.object_with_fields import ObjectWithFields
+from dashlive.drm.base import DrmBase
 
 from .event_stream import EventStream
 from .representation import Representation
@@ -37,16 +39,19 @@ class ContentComponent:
 
 
 class AdaptationSet(ObjectWithFields):
-    _NEXT_ID: int | None = None
+    _NEXT_ID: ClassVar[int | None] = None
     OBJECT_FIELDS = {
         'event_streams': ListOf(EventStream),
         'representations': ListOf(Representation),
+        'drm': DrmBase | None,
     }
     DEFAULT_VALUES = {
         'maxSegmentDuration': 1,
         'timescale': 1,
         'segmentAlignment': True,
         'segment_timeline': False,
+        'drm': None,
+        'default_kid': None,
     }
 
     def __init__(self, **kwargs) -> None:
@@ -117,6 +122,13 @@ class AdaptationSet(ObjectWithFields):
         if self.representations:
             return self.representations[0].segment_duration
         return 0
+
+    @property
+    def encrypted(self) -> bool:
+        for rep in self.representations:
+            if rep.encrypted:
+                return True
+        return False
 
     def key_ids(self):
         kids = set()

@@ -37,9 +37,12 @@ from Crypto.Hash import SHA256
 from flask import render_template
 
 from dashlive.mpeg import mp4
+from dashlive.server.models import Stream
 from dashlive.server.options.container import OptionsContainer
 from dashlive.utils.buffered_reader import BufferedReader
-from .base import DrmBase
+
+from .base import DrmBase, CreateDrmData, CreatePsshBox, ManifestContext
+from .key_tuple import KeyTuple
 from .keymaterial import KeyMaterial
 
 class PlayReady(DrmBase):
@@ -143,7 +146,11 @@ class PlayReady(DrmBase):
                 ^ sha_C_Output[i] ^ sha_C_Output[i + PlayReady.DRM_AES_KEYSIZE_128]
         return contentKey
 
-    def generate_wrmheader(self, la_url, representation, keys, custom_attributes):
+    def generate_wrmheader(self,
+                           la_url: str | None,
+                           default_kid: str,
+                           keys: dict[str, KeyTuple],
+                           custom_attributes: list | None) -> bytes:
         """Generate WRMHEADER XML document"""
         cfgs = []
         kids = []
@@ -166,7 +173,7 @@ class PlayReady(DrmBase):
         cfgs = ','.join(cfgs)
         if la_url is None:
             la_url = self.TEST_LA_URL
-        default_keypair = keys[representation.default_kid.lower()]
+        default_keypair = keys[default_kid.lower()]
         default_key = default_keypair.KEY.raw
         default_kid = PlayReady.hex_to_le_guid(
             default_keypair.KID.raw, raw=True)
@@ -207,9 +214,14 @@ class PlayReady(DrmBase):
             wrm = wrm[2:]
         return wrm
 
-    def generate_pro(self, la_url, representation, keys, custom_attributes):
+    def generate_pro(self,
+                     la_url: str | None,
+                     default_kid: str,
+                     keys: dict[str, KeyTuple],
+                     custom_attributes: list | None) -> bytes:
         """Generate PlayReady Object (PRO)"""
-        wrm = self.generate_wrmheader(la_url, representation, keys, custom_attributes)
+        wrm = self.generate_wrmheader(
+            la_url, default_kid, keys, custom_attributes)
         record = struct.pack('<HH', 0x001, len(wrm)) + wrm
         pro = struct.pack('<IH', len(record) + 6, 1) + record
         return pro
@@ -242,14 +254,18 @@ class PlayReady(DrmBase):
         return objects
 
     def generate_manifest_context(
-            self, stream, keys, options: OptionsContainer,
+            self, stream: Stream,
+            keys: dict[str, KeyTuple],
+            options: OptionsContainer,
             la_url: str | None = None,
             https_request: bool = False,
-            locations: AbstractSet[str] | None = None) -> dict:
-        version = options.version
-        if version is None:
+            locations: AbstractSet[str] | None = None) -> ManifestContext:
+
+        if options.version is None:
             header_version = self.minimum_header_version(keys)
-            version = self.minimum_playready_version(header_version)
+            version: float = self.minimum_playready_version(header_version)
+        else:
+            version = options.version
         if la_url is None:
             la_url = options.licenseUrl
             if la_url is not None:
@@ -260,29 +276,39 @@ class PlayReady(DrmBase):
                 la_url = self.la_url
         if locations is None:
             locations = {'pro', 'cenc', 'moov'}
-        rv = {
-            'laurl': la_url,
-            'scheme_id': self.dash_scheme_id(version),
-            'version': version,
-        }
+
+        def generate_pssh_box(default_kid: str, cattr: list | None = None) -> bytes:
+            return self.generate_pssh(la_url, default_kid, keys, cattr)
+
+        def generate_pro_data(default_kid: str, cattr: list | None = None) -> bytes:
+            return self.generate_pro(la_url, default_kid, keys, cattr)
+
+        cenc: CreatePsshBox | None = None
+        moov: CreatePsshBox | None = None
+        pro: CreateDrmData | None = None
         if 'moov' in locations:
-            rv['moov'] = lambda rep, keys, cattr=None: self.generate_pssh(
-                la_url, rep, keys, cattr)
+            moov = generate_pssh_box
         if 'pro' in locations:
-            rv['pro'] = lambda rep, keys, cattr=None: self.generate_pro(
-                la_url, rep, keys, cattr)
-        if version > 1.0:
+            pro = generate_pro_data
+        if 'cenc' in locations and version > 1.0:
             # PlayReady v1.0 (PIFF) mode only allows an mspr:pro element in
             # the manifest
-            if 'cenc' in locations:
-                rv['cenc'] = lambda rep, keys, cattr=None: self.generate_pssh(
-                    la_url, rep, keys, cattr)
-        return rv
+            cenc = generate_pssh_box
+        return ManifestContext(
+            laurl=la_url,
+            scheme_id=self.dash_scheme_id(version),
+            version=version,
+            cenc=cenc,
+            moov=moov,
+            pro=pro)
 
-    def generate_pssh(self, la_url: str, representation, keys,
+    def generate_pssh(self,
+                      la_url: str,
+                      default_kid: str,
+                      keys: dict[str, KeyTuple],
                       custom_attributes=None) -> mp4.ContentProtectionSpecificBox:
         """Generate a PlayReady Object (PRO) inside a PSSH box"""
-        pro = self.generate_pro(la_url, representation, keys, custom_attributes)
+        pro = self.generate_pro(la_url, default_kid, keys, custom_attributes)
         if len(keys) < 2:
             return mp4.ContentProtectionSpecificBox(
                 version=0, flags=0, system_id=PlayReady.RAW_SYSTEM_ID,
@@ -320,7 +346,7 @@ class PlayReady(DrmBase):
         traf.trun._invalidate()
         return True
 
-    def minimum_header_version(self, keys):
+    def minimum_header_version(self, keys: dict[str, KeyTuple]) -> float:
         """
         Calculate the mimimum playready header version that supports the supplied keys
         """

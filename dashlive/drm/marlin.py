@@ -20,28 +20,37 @@
 #
 #############################################################################
 
+from typing import AbstractSet
+
 from dashlive.mpeg.mp4 import ContentProtectionSpecificBox
+from dashlive.server.models import Stream
 from dashlive.server.options.container import OptionsContainer
 
-from .base import DrmBase
+from .base import DrmBase, ManifestContext
+from .key_tuple import KeyTuple
 
 class Marlin(DrmBase):
     MPD_SYSTEM_ID = '5e629af5-38da-4063-8977-97ffbd9902d4'
 
-    def generate_manifest_context(self, stream, keys,
-                                  options: OptionsContainer,
-                                  la_url: str | None = None,
-                                  https_request: bool = False,
-                                  locations: str | None = None) -> dict:
+    def generate_manifest_context(
+            self, stream: Stream,
+            keys: dict[str, KeyTuple],
+            options: OptionsContainer,
+            la_url: str | None = None,
+            https_request: bool = False,
+            locations: AbstractSet[str] | None = None) -> ManifestContext:
         if la_url is None:
             la_url = options.licenseUrl
             if la_url is None:
                 la_url = stream.marlin_la_url
-        return {
-            'MarlinContentIds': True,
-            'laurl': la_url,
-            'scheme_id': self.dash_scheme_id(),
-        }
+        return ManifestContext(
+            laurl=la_url,
+            version=0,
+            scheme_id=self.dash_scheme_id(),
+            cenc=None,
+            moov=None,
+            pro=None,
+        )
 
     def generate_pssh(self, representation, keys) -> ContentProtectionSpecificBox:
         raise RuntimeError('generate_pssh has not been implemented for Marlin')

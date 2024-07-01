@@ -4,24 +4,26 @@
   <Title>{{title}}</Title>
  </ProgramInformation>
  <Period start="PT0S" duration="{{mediaDuration|isoDuration}}">
- {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
-  <AdaptationSet mimeType="video/mp4">
-   <ContentComponent id="1" contentType="video"/>
-   {% for rep in video.representations %}
-   {% if loop.first %}{% include "drm/template.xml" %}{% endif %}
-   <Representation id="{{rep.id}}" mimeType="video/mp4" codecs="{{rep.codecs}}" width="{{rep.width}}" height="{{rep.height}}" startWithSAP="{{rep.startWithSAP}}" bandwidth="{{rep.bitrate}}">
-      <SegmentTemplate startNumber="{{ rep.start_number}}"
+   {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
+   {%- with adp = video %}
+     <AdaptationSet mimeType="video/mp4">
+       {% include "drm/template.xml" %}
+       <ContentComponent id="1" contentType="video"/>
+       {%- for rep in video.representations %}
+         <Representation id="{{rep.id}}" mimeType="video/mp4" codecs="{{rep.codecs}}" width="{{rep.width}}" height="{{rep.height}}" startWithSAP="{{rep.startWithSAP}}" bandwidth="{{rep.bitrate}}">
+           <SegmentTemplate startNumber="{{ rep.start_number}}"
                        timescale="{{video.timescale}}"
                        duration="{{rep.segment_duration}}"
                        initialization="{{video.initURL|xmlSafe}}"
                        media="{{video.mediaURL|xmlSafe}}"/>
-   </Representation>
-   {% endfor %}
-  </AdaptationSet>
-  {%- for audio in audio_sets %}
-  <AdaptationSet mimeType="audio/mp4" id="{{ audio.id }}">
+         </Representation>
+       {% endfor %}
+     </AdaptationSet>
+   {%- endwith %}
+  {%- for adp in audio_sets %}
+  <AdaptationSet mimeType="audio/mp4" id="{{ adp.id }}">
      <ContentComponent id="1" contentType="audio" lang="eng"/>
-     {% for rep in audio.representations %}
+     {% for rep in adp.representations %}
       {%- if loop.first %}{% include "drm/template.xml" %}{% endif %}
      <Representation
 	 id="{{rep.id}}"
@@ -32,11 +34,11 @@
 	 lang="{{ rep.lang }}"
 	 startWithSAP="{{ rep.startWithSAP }}"
 	 bandwidth="{{ rep.bitrate }}">
-       <SegmentTemplate startNumber="{{ audio.start_number }}"
-                        timescale="{{audio.timescale}}"
+       <SegmentTemplate startNumber="{{ adp.start_number }}"
+                        timescale="{{adp.timescale}}"
                         duration="{{rep.segment_duration}}"
-                        initialization="{{audio.initURL|xmlSafe}}"
-                        media="{{audio.mediaURL|xmlSafe}}"/>
+                        initialization="{{adp.initURL|xmlSafe}}"
+                        media="{{adp.mediaURL|xmlSafe}}"/>
      </Representation>
      {% endfor %}
   </AdaptationSet>
