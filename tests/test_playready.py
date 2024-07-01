@@ -756,6 +756,71 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             for child in expected['children']:
                 self._patch_position_values(child, delta)
 
+    async def test_different_kids(self) -> None:
+        """
+        Check that each AdaptationSet has different ContentProtection
+        descriptors when the Representations use different KIDs
+        """
+        self.setup_media()
+        await self.check_number_unique_pro_headers(1)
+
+        new_kids: list[str] = [
+            'a2c786d0-f9ef-4cb3-b333-cd323a4284a5',
+            'db06a8fe-ec16-4de2-9228-2c71e9b856ab',
+        ]
+        with self.app.app_context():
+            for kid in new_kids:
+                km_kid = KeyMaterial(hex=kid)
+                key = binascii.b2a_hex(PlayReady.generate_content_key(km_kid.raw))
+                keypair = models.Key(hkid=km_kid.hex, hkey=key, computed=True)
+                models.db.session.add(keypair)
+            for idx, name in enumerate(['bbb_a1_enc', 'bbb_a2_enc']):
+                mf = models.MediaFile.get(name=name)
+                self.assertIsNotNone(mf)
+                self.assertIsNotNone(mf.rep)
+                rep = mf.get_representation()
+                self.assertIsNotNone(rep)
+                rep.kids = [new_kids[idx]]
+                mf.set_representation(rep)
+            models.db.session.commit()
+        await self.check_number_unique_pro_headers(3)
+
+    async def check_number_unique_pro_headers(self, expected_pros: int) -> None:
+        self.logout_user()
+        baseurl = flask.url_for(
+            'dash-mpd-v3',
+            manifest='hand_made.mpd',
+            stream=self.FIXTURES_PATH.name,
+            mode='vod')
+        args = ['drm=playready-pro', 'acodec=any']
+        baseurl += '?' + '&'.join(args)
+        response = self.client.get(baseurl)
+        self.assertEqual(response.status_code, 200)
+        xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
+        with ThreadPoolExecutor(max_workers=4) as tpe:
+            pool = ConcurrentWorkerPool(tpe)
+            mpd = ViewsTestDashValidator(
+                http_client=self.async_client, mode='vod', url=baseurl,
+                encrypted=True, check_media=False,
+                duration=self.SEGMENT_DURATION, pool=pool)
+            await mpd.load(xml=xml.getroot())
+            await mpd.validate()
+        self.assertFalse(mpd.has_errors())
+        self.assertEqual(len(mpd.manifest.periods), 1)
+        schemeIdUri = "urn:uuid:" + PlayReady.SYSTEM_ID.lower()
+        pro_tag = "{{{0}}}pro".format(mpd.xmlNamespaces['mspr'])
+        pro_data: set[bytes] = set()
+        for adap_set in mpd.manifest.periods[0].adaptation_sets:
+            for prot in adap_set.contentProtection:
+                if prot.schemeIdUri != schemeIdUri:
+                    continue
+                for elt in prot.children():
+                    if elt.tag != pro_tag:
+                        continue
+                    pro = base64.b64decode(elt.text)
+                    pro_data.add(pro)
+        self.assertEqual(len(pro_data), expected_pros)
+
 
 if os.environ.get("TESTS"):
     def load_tests(loader, tests, pattern):
