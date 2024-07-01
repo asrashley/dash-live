@@ -7,6 +7,6 @@
 {% endif %}
 {% if DRM.clearkey.cenc %}
 <ContentProtection schemeIdUri="urn:uuid:1077efec-c0b2-4d02-ace3-3c1e52e2fb4b">
-  <cenc:pssh>{{DRM.clearkey.cenc(repr, keys).encode()|base64}}</cenc:pssh>
+  <cenc:pssh>{{DRM.clearkey.cenc(adp.default_kid).encode()|base64}}</cenc:pssh>
 </ContentProtection>
 {% endif %}

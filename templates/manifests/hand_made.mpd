@@ -54,6 +54,7 @@
          {%- endif %}
          >
          {% include "events/adaptationset.xml" %}
+         {% include "drm/template.xml" %}
          <ContentComponent
              id="{{adp.contentComponent.id}}"
              contentType="{{adp.contentComponent.contentType}}"
@@ -76,7 +77,6 @@
          {%- endif %}
          {%- for rep in adp.representations %}
            {%- if loop.first %}
-             {% include "drm/template.xml" %}
              {%- if mode=='odvod' %}
                <SegmentTemplate timescale="{{adp.timescale}}">
                  {% include "segment/timeline.xml" %}

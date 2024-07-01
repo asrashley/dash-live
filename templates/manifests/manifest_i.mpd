@@ -18,21 +18,20 @@
  {%- if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
     <UTCTiming schemeIdUri="urn:mpeg:dash:utc:direct:2014" value="{{now|isoDateTime}}"/>
   <Period id="{{ period.id }}">
+   {%- with adp = video %}
     <AdaptationSet
         mimeType="video/mp4"
         segmentAlignment="true"
         bitstreamSwitching="true">
-      {% for rep in video.representations %}
-        {% if loop.first %}
-          {% include "drm/template.xml" %}
-         <SegmentTemplate
+      {% include "drm/template.xml" %}
+      <SegmentTemplate
             timescale="{{video.timescale}}"
-            duration="{{rep.segment_duration}}"
+            duration="{{video.segment_duration}}"
             initialization="{{video.initURL|xmlSafe}}"
             media="{{video.mediaURL|xmlSafe}}"
             startNumber="{{ video.start_number }}" >
-        </SegmentTemplate>
-        {% endif %}
+      </SegmentTemplate>
+      {%- for rep in video.representations %}
         <Representation
             id="{{rep.id}}"
             mimeType="video/mp4"
@@ -43,18 +42,19 @@
             bandwidth="{{rep.bitrate}}" />
     {% endfor %}
     </AdaptationSet>
-    {%- for audio in audio_sets %}
+   {%- endwith %}
+    {%- for adp in audio_sets %}
     <AdaptationSet
-        lang="{{ audio.lang }}"
+        lang="{{ adp.lang }}"
         mimeType="audio/mp4"
         segmentAlignment="true">
        <SegmentTemplate
-          timescale="{{ audio.timescale }}"
-          duration="{{ audio.segment_duration }}"
-          initialization="{{ audio.initURL|xmlSafe }}"
-          media="{{ audio.mediaURL|xmlSafe }}"
-          startNumber="{{ audio.start_number }}" />
-       {%- for rep in audio.representations %}
+          timescale="{{ adp.timescale }}"
+          duration="{{ adp.segment_duration }}"
+          initialization="{{ adp.initURL|xmlSafe }}"
+          media="{{ adp.mediaURL|xmlSafe }}"
+          startNumber="{{ adp.start_number }}" />
+       {%- for rep in adp.representations %}
        {%- if loop.first %}{% include "drm/template.xml" %}{% endif %}
        <Representation
           id="{{rep.id}}"

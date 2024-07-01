@@ -19,18 +19,17 @@
      {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
    <UTCTiming schemeIdUri="urn:mpeg:dash:utc:ntp:2014" value="0.europe.pool.ntp.org 1.europe.pool.ntp.org 2.europe.pool.ntp.org 3.europe.pool.ntp.org"/>
   <Period start="PT0S" id="{{ period.id }}">
-       {%- for rep in video.representations %}
-         {%- if loop.first %}
-      <AdaptationSet mimeType="video/mp4" startWithSAP="{{rep.startWithSAP}}" segmentAlignment="true">
-           {% include "drm/template.xml" %}
-            <SegmentTemplate
+   {%- with adp = video %}
+     <AdaptationSet mimeType="video/mp4" startWithSAP="{{adp.startWithSAP}}" segmentAlignment="true">
+       {% include "drm/template.xml" %}
+       <SegmentTemplate
                 presentationTimeOffset="{{video.presentationTimeOffset}}"
                 timescale="{{video.timescale}}"
                 initialization="{{video.initURL|xmlSafe}}"
                 media="{{video.mediaURL|xmlSafe}}"
-                duration="{{rep.segment_duration}}"
-                startNumber="{{ rep.start_number }}"/>
-          {% endif %}
+                duration="{{ video.segment_duration }}"
+                startNumber="{{ video.start_number }}"/>
+       {%- for rep in video.representations %}
           <Representation
               id="{{rep.id}}"
               mimeType="video/mp4"
@@ -41,25 +40,24 @@
               frameRate="{{ rep.frameRate | frameRateFraction }}"
               sar="{{rep.sar}}"
               scanType="{{rep.scanType}}" />
-          {%- if loop.last %}
-        </AdaptationSet>
-          {% endif %}
        {%- endfor %}
-       {%- for audio in audio_sets %}
-	 <AdaptationSet
+     </AdaptationSet>
+   {%- endwith %}
+   {%- for adp in audio_sets %}
+     <AdaptationSet
 	     mimeType="audio/mp4"
-	     lang="{{audio.language}}"
+	     lang="{{adp.language}}"
 	     segmentAlignment="true"
-	     startWithSAP="{{ audio.startWithSAP }}">
-          <SegmentTemplate
-              presentationTimeOffset="{{ audio.presentationTimeOffset }}"
-              timescale="{{ audio.timescale }}"
-              initialization="{{ audio.initURL|xmlSafe }}"
-              media="{{ audio.mediaURL|xmlSafe }}"
-              duration="{{ audio.segment_duration }}"
-              startNumber="{{ audio.start_number }}"/>
-	  {%- for rep in audio.representations %}
-      {%- if loop.first %}{% include "drm/template.xml" %}{% endif %}
+	     startWithSAP="{{ adp.startWithSAP }}">
+     {%- include "drm/template.xml" %}
+     <SegmentTemplate
+              presentationTimeOffset="{{ adp.presentationTimeOffset }}"
+              timescale="{{ adp.timescale }}"
+              initialization="{{ adp.initURL|xmlSafe }}"
+              media="{{ adp.mediaURL|xmlSafe }}"
+              duration="{{ adp.segment_duration }}"
+              startNumber="{{ adp.start_number }}"/>
+       {%- for rep in adp.representations %}
           <Representation
               id="{{rep.id}}"
               mimeType="audio/mp4"
@@ -68,6 +66,6 @@
               bandwidth="{{rep.bitrate}}" />
        {%- endfor %}
       </AdaptationSet>
-       {%- endfor %}
+    {%- endfor %}
   </Period>
 </MPD>

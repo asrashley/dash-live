@@ -19,6 +19,7 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+import html
 import logging
 import urllib.request
 import urllib.parse
@@ -34,7 +35,6 @@ from dashlive.server.options.drm_options import DrmLocation, DrmSelection
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.options.player_options import ShakaVersion, DashjsVersion
 from dashlive.server.options.types import OptionUsage
-from dashlive.drm.playready import PlayReady
 
 from .base import HTMLHandlerBase
 from .decorators import uses_stream, current_stream
@@ -213,7 +213,7 @@ class VideoPlayer(HTMLHandlerBase):
 
     decorators = [uses_stream]
 
-    def get(self, mode, stream, manifest, **kwargs):
+    def get(self, mode: str, stream: str, manifest: str, **kwargs):
         if current_stream.timing_reference is None:
             flask.flash(
                 f'The timing reference needs to be set for stream "{current_stream.title}"',
@@ -227,20 +227,16 @@ class VideoPlayer(HTMLHandlerBase):
         except ValueError as err:
             logging.error('Invalid CGI parameters: %s', err)
             return flask.make_response(f'Invalid CGI parameters: {err}', 400)
+        stream_model = models.Stream.get(directory=stream)
+        if stream_model is None:
+            logging.error('Unknown stream: %s', stream)
+            return flask.make_response(f'Unknown stream: {html.escape(stream)}', 404)
         dash_parms = self.calculate_manifest_params(mpd_url=manifest, options=options)
         for item in {'periods', 'period', 'ref_representation', 'audio', 'video'}:
             try:
                 del dash_parms[item]
             except KeyError:
                 pass
-        if options.encrypted:
-            keys = dash_parms['keys']
-            for kid in list(keys.keys()):
-                item = keys[kid].toJSON()
-                item['guidKid'] = PlayReady.hex_to_le_guid(
-                    keys[kid].hkid, raw=False)
-                item['b64Key'] = keys[kid].KEY.b64
-                keys[kid] = item
         context['dash'] = dash_parms
         mpd_url = flask.url_for(
             'dash-mpd-v3', stream=stream, manifest=manifest, mode=mode)
@@ -278,16 +274,14 @@ class VideoPlayer(HTMLHandlerBase):
         if self.is_https_request():
             context['source'] = context['source'].replace(
                 'http://', 'https://')
-        else:
-            if (
-                    context["drm"] and
-                    "marlin" in context["drm"] and
-                    context['dash']['DRM']['marlin']['laurl']
-            ):
-                context['source'] = '#'.join([
-                    context['dash']['DRM']['marlin']['laurl'],
-                    context['source']
-                ])
+        if options.drmSelection and context["drm"] and "marlin" in context["drm"]:
+            licenseUrl: str | None = None
+            if options.marlin and options.marlin.licenseUrl:
+                licenseUrl = options.marlin.licenseUrl
+            elif stream_model.marlin_la_url:
+                licenseUrl = stream_model.marlin_la_url
+            if licenseUrl:
+                context['source'] = f'{licenseUrl}#{context["source"]}'
         return flask.render_template('video.html', **context)
 
 

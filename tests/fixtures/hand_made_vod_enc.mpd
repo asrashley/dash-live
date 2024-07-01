@@ -7,7 +7,6 @@
   <Period start="PT0S" id="p0">
     <BaseURL>http://unit.test/dash/vod/fixtures/</BaseURL>
     <AdaptationSet mimeType="video/mp4" contentType="video" segmentAlignment="true" startWithSAP="1" maxWidth="1920" maxHeight="1080" maxFrameRate="24" par="16:9">
-      <ContentComponent id="1" contentType="video"/>
       <ContentProtection schemeIdUri="urn:mpeg:dash:mp4protection:2011" value="cenc" cenc:default_KID="1AB45440-532C-4399-94DC-5C5AD9584BAC"/>
       <ContentProtection xmlns:mas="urn:marlin:mas:1-0:services:schemas:mpd" schemeIdUri="urn:uuid:5e629af5-38da-4063-8977-97ffbd9902d4">
         <mas:MarlinContentIds>
@@ -24,6 +23,7 @@
       <ContentProtection schemeIdUri="urn:uuid:1077efec-c0b2-4d02-ace3-3c1e52e2fb4b">
         <cenc:pssh>AAAANHBzc2gBAAAAEHfv7MCyTQKs4zweUuL7SwAAAAEatFRAUyxDmZTcXFrZWEusAAAAAA==</cenc:pssh>
       </ContentProtection>
+      <ContentComponent id="1" contentType="video"/>
       <SegmentTemplate startNumber="1" timescale="240" duration="960" initialization="$RepresentationID$/init.m4v?drm=all" media="$RepresentationID$/$Number$.m4v?drm=all"/>
       <Representation id="bbb_v7_enc" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="195003">
       </Representation>
@@ -31,9 +31,6 @@
       </Representation>
     </AdaptationSet>
     <AdaptationSet mimeType="audio/mp4" contentType="audio" segmentAlignment="true" startWithSAP="" >
-      <ContentComponent id="2" contentType="audio"/>
-      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
-      <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
       <ContentProtection schemeIdUri="urn:mpeg:dash:mp4protection:2011" value="cenc" cenc:default_KID="1AB45440-532C-4399-94DC-5C5AD9584BAC"/>
       <ContentProtection xmlns:mas="urn:marlin:mas:1-0:services:schemas:mpd" schemeIdUri="urn:uuid:5e629af5-38da-4063-8977-97ffbd9902d4">
         <mas:MarlinContentIds>
@@ -50,6 +47,9 @@
       <ContentProtection schemeIdUri="urn:uuid:1077efec-c0b2-4d02-ace3-3c1e52e2fb4b">
         <cenc:pssh>AAAANHBzc2gBAAAAEHfv7MCyTQKs4zweUuL7SwAAAAEatFRAUyxDmZTcXFrZWEusAAAAAA==</cenc:pssh>
       </ContentProtection>
+      <ContentComponent id="2" contentType="audio"/>
+      <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+      <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
       <SegmentTemplate startNumber="1" timescale="44100" duration="176355" initialization="$RepresentationID$/init.m4a?drm=all" media="$RepresentationID$/$Number$.m4a?drm=all"/>
       <Representation id="bbb_a1_enc" mimeType="audio/mp4" codecs="mp4a.40.2" audioSamplingRate="44100" startWithSAP="1" bandwidth="101243">
       </Representation>

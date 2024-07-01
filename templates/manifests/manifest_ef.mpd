@@ -20,12 +20,14 @@
          duration="{{mediaDuration|isoDuration}}"
      {% endif %}
          start="PT0.000S">
-     {% for rep in video.representations %}
-       {% if loop.first %}
-    <AdaptationSet mimeType="video/mp4" codecs="{{rep.codecs}}"
+
+     {%- with adp = video %}
+       {%- for rep in adp.representations %}
+         {%- if loop.first %}
+           <AdaptationSet mimeType="video/mp4" codecs="{{rep.codecs}}"
                    startWithSAP="1" segmentAlignment="true">
-      {% include "drm/template.xml" %}
-      {% endif %}
+           {% include "drm/template.xml" %}
+         {%- endif %}
       <Representation
           bandwidth="{{rep.bitrate}}"
           id="{{rep.id}}"
@@ -39,17 +41,18 @@
          initialization="{{video.initURL|xmlSafe}}" media="{{video.mediaURL|xmlSafe}}" 
          timescale="{{video.timescale}}"/>
       </Representation>
-	  {% if loop.last %}</AdaptationSet>{% endif %}
+	  {%- if loop.last %}</AdaptationSet>{% endif %}
       {% endfor %}
-    {% for audio in audio_sets %}
+    {% endwith %}
+    {% for adp in audio_sets %}
     <AdaptationSet
 	mimeType="audio/mp4"
-        codecs="{{ audio.codecs }}"
-        startWithSAP="{{audio.startWithSAP}}"
+        codecs="{{ adp.codecs }}"
+        startWithSAP="{{adp.startWithSAP}}"
         segmentAlignment="true"
-        lang="{{audio.language|default('und')}}">
-        <Role schemeIdUri="urn:mpeg:dash:role:2011" value="{{ audio.role }}"/>
-	{% for rep in audio.representations %}
+        lang="{{adp.language|default('und')}}">
+        <Role schemeIdUri="urn:mpeg:dash:role:2011" value="{{ adp.role }}"/>
+	{% for rep in adp.representations %}
       {%- if loop.first %}{% include "drm/template.xml" %}{% endif %}
         <Representation
             bandwidth="{{rep.bitrate}}"
@@ -57,11 +60,11 @@
             mimeType="audio/mp4"
             audioSamplingRate="{{rep.sampleRate}}">
           <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="{{rep.numChannels}}"/>
-          <SegmentTemplate startNumber="{{audio.start_number}}"
+          <SegmentTemplate startNumber="{{adp.start_number}}"
                            duration="{{rep.segment_duration}}"
-                           initialization="{{audio.initURL|xmlSafe}}"
-                           media="{{audio.mediaURL|xmlSafe}}"
-                           timescale="{{audio.timescale}}"/>
+                           initialization="{{adp.initURL|xmlSafe}}"
+                           media="{{adp.mediaURL|xmlSafe}}"
+                           timescale="{{adp.timescale}}"/>
         </Representation>
 	{% endfor %}
       </AdaptationSet>
