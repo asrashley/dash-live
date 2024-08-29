@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "jshint": "^2.13.6"
+  },
+  "scripts": {
+    "lint": "jshint ./static/js/*.js ./static/js/legacy/*.js"
+  }
+}
