@@ -21,6 +21,7 @@
 #############################################################################
 
 from abc import abstractmethod
+import math
 from typing import AbstractSet, Any, Set, TypeAlias
 
 import base64
@@ -41,6 +42,7 @@ from flask.views import MethodView  # type: ignore
 from flask_login import current_user
 
 from dashlive.mpeg.dash.adaptation_set import AdaptationSet
+from dashlive.mpeg.dash.patch_location import PatchLocation
 from dashlive.mpeg.dash.period import Period
 from dashlive.mpeg.dash.profiles import primary_profiles, additional_profiles
 from dashlive.mpeg.dash.representation import Representation
@@ -286,23 +288,24 @@ class RequestHandlerBase(MethodView):
         options.add_field('mode', mode)
         return options
 
-    def calculate_manifest_params(self, mpd_url: str,
+    def calculate_manifest_params(self, mpd_name: str,
                                   options: OptionsContainer,
                                   stream: models.Stream | None = None) -> dict:
-        if mpd_url is None:
+        if mpd_name is None:
             raise ValueError("Unable to determin MPD URL")
         if stream is None:
             stream = current_stream
         if not bool(stream):
             raise ValueError('Stream model is not available')
-        manifest_info = manifests.manifest[mpd_url]
+        manifest_info = manifests.manifest[mpd_name]
         now = datetime.datetime.now(tz=UTC())
         if options.clockDrift:
             now -= datetime.timedelta(seconds=options.clockDrift)
         rv = {
             "minBufferTime": datetime.timedelta(seconds=1.5),
             "mode": options.mode,
-            "mpd_url": mpd_url,
+            "mpd_url": mpd_name,
+            "mpd_id": stream.directory,
             "now": now,
             "options": options,
             "periods": [],
@@ -351,6 +354,16 @@ class RequestHandlerBase(MethodView):
         period.adaptationSets.append(video)
         period.adaptationSets += audio_adps
         period.adaptationSets += text_adps
+        if options.patch:
+            patch_loc = flask.url_for(
+                'mpd-patch',
+                stream=stream.directory,
+                manifest=mpd_name.replace('.mpd', ''),
+                publish=int(timing.publishTime.timestamp()))
+            ttl = max(
+                timing.timeShiftBufferDepth,
+                int(math.ceil(timing.minimumUpdatePeriod)))
+            rv['patch'] = PatchLocation(location=patch_loc, ttl=ttl)
         prefix = ''
         if options.useBaseUrls:
             if options.mode == 'odvod':

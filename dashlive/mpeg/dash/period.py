@@ -21,6 +21,7 @@
 #############################################################################
 
 import datetime
+from typing import Any, ClassVar
 
 from dashlive.utils.list_of import ListOf
 from dashlive.utils.object_with_fields import ObjectWithFields
@@ -31,12 +32,15 @@ class Period(ObjectWithFields):
     """
     Class used to hold data about one Period
     """
+    id: str
+    adaptationSets: list[AdaptationSet]
+    start: datetime.timedelta
 
-    OBJECT_FIELDS = {
+    OBJECT_FIELDS: ClassVar[dict[str, Any]] = {
         'adaptationSets': ListOf(AdaptationSet),
         'start': datetime.timedelta,
     }
-    DEFAULT_VALUES = {
+    DEFAULT_VALUES: ClassVar[dict[str, Any]] = {
         'start': datetime.timedelta(0),
         'id': 'p0',
     }

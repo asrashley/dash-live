@@ -2,8 +2,8 @@
 <SegmentTimeline>
   {%- for seg in segTimeline %}
     <S d="{{seg.duration}}"
-      {%- if seg.repeat > 0 %} r="{{seg.repeat}}" {%- endif %}
-      {%- if seg.start != None %} t="{{seg.start}}" {%- endif %}
+      {%- if seg.repeat > 0 %} r="{{seg.repeat}}" {%- endif -%}
+      {%- if seg.start != None %} t="{{seg.start}}" {% endif -%}
     />
   {%- endfor %}
 </SegmentTimeline>  

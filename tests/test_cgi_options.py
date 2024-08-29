@@ -237,6 +237,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             },
             'minimumUpdatePeriod': None,
             'numPeriods': None,
+            'patch': False,
             'ping': {
                 '_type': 'dashlive.server.options.container.OptionsContainer',
                 'count': 0,
@@ -403,6 +404,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             "minimumUpdatePeriod": None,
             "mode": "vod",
             "numPeriods": None,
+            "patch": False,
             "ping": {
                 "_type": "dashlive.server.options.container.OptionsContainer",
                 "count": 5,

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Patch
+    xmlns="urn:mpeg:dash:schema:mpd-patch:2020"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="urn:mpeg:dash:schema:mpd-patch:2020 DASH-MPD-PATCH.xsd"
+    mpdId="{{ mpd_id }}"
+    originalPublishTime="{{ original_publish_time|isoDateTime }}"
+    publishTime="{{ publishTime|isoDateTime }}">
+  <replace sel="/MPD/@publishTime">{{ publishTime|isoDateTime }}</replace>
+  <replace sel="/MPD/PatchLocation[0]">
+    <PatchLocation ttl="{{ patch.ttl }}">{{ patch.location }}</PatchLocation>
+  </replace>
+  {%- for period in periods %}
+    {%- for adp in period.adaptationSets %}
+      {%- if adp.representations %}
+        {%- with rep=adp.representations[0] %}
+  <replace
+      sel="/MPD/Period[@id='{{ period.id }}']/AdaptationSet[@id='{{ adp.id }}']/SegmentTemplate/SegmentTimeline">
+    {% include "segment/timeline.xml" %}
+  </replace>
+        {% endwith -%}
+      {%- endif %}
+    {%- endfor %} {# adaptationSets #}
+  {%- endfor %} {# periods #}
+</Patch>
