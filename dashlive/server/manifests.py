@@ -23,7 +23,7 @@
 from dataclasses import dataclass, field
 import hashlib
 import logging
-from typing import AbstractSet, Iterator, NamedTuple
+from typing import AbstractSet, Iterator, NamedTuple, Set
 
 from dashlive.mpeg.dash.profiles import primary_profiles
 from dashlive.server.options.drm_options import DrmLocation, DrmSelection
@@ -140,13 +140,15 @@ class DashManifest:
         Returns an list of support DASH options
         """
         drm_opts = self.get_drm_options(mode)
-        exclude = {'abr', 'bugCompatibility', 'drmSelection',
-                   'leeway', 'mode', 'numPeriods', 'minimumUpdatePeriod'}
+        exclude: Set[str] = {
+            'abr', 'bugCompatibility', 'drmSelection',
+            'leeway', 'mode', 'numPeriods', 'minimumUpdatePeriod',
+        }
         exclude.update(set(kwargs.keys()))
         if simplified:
             exclude.update({
                 'availabilityStartTime', 'useBaseUrls', 'playreadyVersion',
-                'playreadyPiff', 'utcMethod', 'clockDrift'})
+                'playreadyPiff', 'utcMethod', 'clockDrift', 'patch'})
         if mode != 'live':
             exclude.update({'clockDrift', 'minimumUpdatePeriod', 'timeShiftBufferDepth'})
         all_options = self.features.union(set(self.restrictions.keys()))
@@ -222,8 +224,9 @@ manifest = {
     'hand_made.mpd': DashManifest(
         title='Hand-made manifest',
         features={
-            'abr', 'audioCodec', 'useBaseUrls', 'drmSelection', 'eventTypes', 'mode',
-            'minimumUpdatePeriod', 'numPeriods', 'segmentTimeline', 'utcMethod'},
+            'abr', 'audioCodec', 'useBaseUrls', 'drmSelection', 'eventTypes',
+            'mode', 'minimumUpdatePeriod', 'numPeriods', 'patch',
+            'segmentTimeline', 'utcMethod'},
     ),
     'manifest_vod_aiv.mpd': DashManifest(
         title='AIV on demand profile',

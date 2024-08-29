@@ -189,6 +189,20 @@ UpdateCount = DashOption(
     cgi_name='update',
     cgi_type='<number>')
 
+UsePatches = DashOption(
+    usage=OptionUsage.MANIFEST,
+    short_name='patch',
+    full_name='patch',
+    title='Use MPD patches',
+    description='Use MPD patches for live streams',
+    from_string=DashOption.bool_from_string,
+    to_string=DashOption.bool_to_string,
+    cgi_name='patch',
+    cgi_choices=(
+        ('No', '0'),
+        ('Yes', '1'),
+    ))
+
 manifest_options = [
     AbrControl,
     AvailabilityStartTime,
@@ -202,5 +216,6 @@ manifest_options = [
     SegmentTimeline,
     TimeshiftBufferDepth,
     UpdateCount,
-    UseBaseUrl
+    UseBaseUrl,
+    UsePatches,
 ]

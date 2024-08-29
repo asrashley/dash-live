@@ -96,6 +96,10 @@ routes = {
         r'/dash/<regex("(live|vod|odvod)"):mode>/<stream>/<manifest>',
         handler='manifest_requests.ServeManifest',
         title='DASH test stream'),
+    "mpd-patch": Route(
+        r'/patch/<stream>/<manifest>/<int:publish>',
+        handler='manifest_requests.ServePatch',
+        title='DASH manifest patch'),
     "dash-media": Route(
         r'/dash/<regex("(live|vod)"):mode>/<stream>/<filename>/' +
         r'<regex("(\d+|init)"):segment_num>.<regex("(mp4|m4v|m4a|m4s)"):ext>',

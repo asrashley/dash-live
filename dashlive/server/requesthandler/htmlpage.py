@@ -231,7 +231,7 @@ class VideoPlayer(HTMLHandlerBase):
         if stream_model is None:
             logging.error('Unknown stream: %s', stream)
             return flask.make_response(f'Unknown stream: {html.escape(stream)}', 404)
-        dash_parms = self.calculate_manifest_params(mpd_url=manifest, options=options)
+        dash_parms = self.calculate_manifest_params(mpd_name=manifest, options=options)
         for item in {'periods', 'period', 'ref_representation', 'audio', 'video'}:
             try:
                 del dash_parms[item]
