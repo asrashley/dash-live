@@ -1,0 +1,25 @@
+name: jshint JavaScript source
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+       TZ: 'UTC'
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+      - name: Use Node.js 20.14
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.14
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: JS lint checks
+        run: npm run lint
