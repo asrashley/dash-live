@@ -8,25 +8,42 @@
 
 import asyncio
 import datetime
+from typing import Any, ClassVar
 import urllib.parse
+
+from lxml import etree as ET
 
 from dashlive.mpeg.dash.representation import Representation as ServerRepresentation
 from dashlive.utils.date_time import from_isodatetime, UTC
 
 from .dash_element import DashElement
+from .patch_location import PatchLocation
 from .period import Period
 from .validation_flag import ValidationFlag
 
 class Manifest(DashElement):
-    attributes = [
+    attributes: ClassVar[list[tuple[str, Any, Any]]] = [
         ('availabilityStartTime', from_isodatetime, None),
+        ('id', str, None),
         ('minimumUpdatePeriod', from_isodatetime, None),
         ('timeShiftBufferDepth', from_isodatetime, None),
         ('mediaPresentationDuration', from_isodatetime, None),
         ('publishTime', from_isodatetime, None),
     ]
 
-    def __init__(self, parent, url, mode, xml):
+    baseurl: str
+    url: str
+    mode: str
+    periods: list[Period]
+    params: dict[str, Any]
+    patches: list[PatchLocation]
+    publishTime: datetime.datetime
+
+    def __init__(self,
+                 parent: DashElement | None,
+                 url: str,
+                 mode: str,
+                 xml: ET.ElementBase) -> None:
         super().__init__(xml, parent)
         self.url = url
         parsed = urllib.parse.urlparse(url)
@@ -49,6 +66,8 @@ class Manifest(DashElement):
             if period.id is None:
                 # Period@id is a string. Setting it to a number is therefore safely unique
                 period.id = idx
+        self.patches = [PatchLocation(loc, self) for loc in xml.findall(
+            './dash:PatchLocation', self.xmlNamespaces)]
         self.set_target_durations()
 
     def set_target_durations(self) -> None:
@@ -92,7 +111,7 @@ class Manifest(DashElement):
             p.set_representation_info(info)
 
     def children(self) -> list[DashElement]:
-        return self.periods
+        return self.periods + self.patches
 
     def get_duration(self) -> datetime.timedelta:
         if self.mediaPresentationDuration:
@@ -140,6 +159,7 @@ class Manifest(DashElement):
         if ValidationFlag.MANIFEST in self.options.verify:
             self.validate_self()
         futures = [p.validate() for p in self.periods]
+        futures += [p.validate() for p in self.patches]
         await asyncio.gather(*futures)
 
     def validate_self(self):
@@ -180,4 +200,7 @@ class Manifest(DashElement):
             self.attrs.check_none(
                 self.availabilityStartTime,
                 msg=f"MPD@availabilityStartTime must not be present for VOD manifest: {self.url}")
+            self.elt.check_equal(
+                self.patches, [],
+                msg='PatchLocation elements should only be used in live streams')
         self.progress.inc()
