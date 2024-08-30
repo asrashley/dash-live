@@ -23,6 +23,7 @@ import asyncio
 import datetime
 import io
 import json
+from typing import Optional
 
 from lxml import etree as ET
 
@@ -50,13 +51,25 @@ class DashValidator(DashElement):
         self.prev_manifest = None
         self.pool = options.pool
 
-    async def load(self, xml=None) -> bool:
+    async def load(self,
+                   xml: Optional[ET.ElementBase] = None,
+                   data: Optional[bytes] = None) -> bool:
         self.progress.reset(1)
         self.prev_manifest = None
         self.xml = xml
+
+        if self.xml is None and data:
+            doc = ET.parse(io.BytesIO(data))
+            self.xml = doc.getroot()
+            self.manifest_text = []
+            encoding = doc.docinfo.encoding
+            for line in io.StringIO(str(data, encoding)):
+                self.manifest_text.append(line.rstrip())
+
         if self.xml is None:
             if not await self.fetch_manifest():
                 return False
+
         if self.mode is None:
             if self.xml.get("type") == "dynamic":
                 self.mode = 'live'
@@ -168,6 +181,13 @@ class DashValidator(DashElement):
             with open(filename, 'wt', encoding='ascii') as dest:
                 json.dump(config, dest, indent=2)
         return self.has_errors()
+
+    def print_manifest_text(self) -> None:
+        print(f'=== {self.url} ===')
+        for idx, line in enumerate(self.manifest_text, start=1):
+            print(f'{idx:03d}: {line}')
+        for patch in self.manifest.patches:
+            patch.print_patch_text()
 
     def get_json_script_filename(self) -> str:
         return self.output_filename(

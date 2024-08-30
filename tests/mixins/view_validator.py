@@ -21,6 +21,9 @@
 #############################################################################
 
 import logging
+from typing import Optional
+
+from lxml import etree as ET
 
 from dashlive.server import models
 from dashlive.mpeg.dash.validator import (
@@ -52,8 +55,10 @@ class ViewsTestDashValidator(DashValidator):
             mode=mode,
             options=opts)
 
-    async def load(self, xml=None) -> bool:
-        rv = await super().load(xml)
+    async def load(self,
+                   xml: Optional[ET.ElementBase] = None,
+                   data: Optional[bytes] = None) -> bool:
+        rv = await super().load(xml=xml, data=data)
         for mf in models.MediaFile.all():
             self.set_representation_info(mf.representation)
         return rv

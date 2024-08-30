@@ -163,6 +163,12 @@ class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
             'hand_made.mpd', mode='live', drm='all', encrypted=True,
             acodec='mp4a', time='xsd', start='today')
 
+    @FlaskTestBase.mock_datetime_now(from_isodatetime("2023-09-06T09:59:02Z"))
+    async def test_manifest_patch_live_aac(self):
+        await self.check_a_manifest_using_all_options(
+            'hand_made.mpd', 'live', simplified=True, audioCodec='mp4a',
+            segmentTimeline=True, patch=True)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -33,13 +33,14 @@ class DashElement(ABC):
     class Parent:
         pass
 
-    xmlNamespaces = {
+    xmlNamespaces: ClassVar[dict[str, str]] = {
         'cenc': 'urn:mpeg:cenc:2013',
         'dash': 'urn:mpeg:dash:schema:mpd:2011',
         'mspr': 'urn:microsoft:playready',
+        'patch': 'urn:mpeg:dash:schema:mpd-patch:2020',
+        'prh': 'http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader',
         'scte35': "http://www.scte.org/schemas/35/2016",
         'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
-        'prh': 'http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader',
     }
 
     attributes = []
