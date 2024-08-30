@@ -184,6 +184,30 @@ class DashElement(ABC):
         return None
 
     @classmethod
+    def xpath(cls, xml: ET.ElementBase, path: str) -> list[ET.ElementBase | str]:
+        """
+        Find an element using XPath. In addition to the XPath features of
+        lxml, this function also supports using the DASH namespace for
+        any selector that doesn't specify a namespace.
+        """
+        ns_sel = []
+        for part in path.split('/'):
+            if part == '' or part[0] == '@' or ':' in part:
+                ns_sel.append(part)
+            else:
+                ns_sel.append(f'dash:{part}')
+        sel = '/'.join(ns_sel)
+        match = cls.INDEX_RE.search(sel)
+        if match:
+            sel = sel[:match.start('index') - 1]
+        xml = xml.xpath(sel, namespaces=cls.xmlNamespaces)
+        if xml and match:
+            return [xml[int(match['index'])]]
+        if isinstance(xml, str):
+            return [xml]
+        return xml
+
+    @classmethod
     def init_xml_namespaces(clz) -> None:
         for prefix, url in clz.xmlNamespaces.items():
             ET.register_namespace(prefix, url)
