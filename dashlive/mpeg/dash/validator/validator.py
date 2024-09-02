@@ -20,10 +20,10 @@
 #
 #############################################################################
 import asyncio
+from copy import deepcopy
 import datetime
 import io
 import json
-from typing import Optional
 
 from lxml import etree as ET
 
@@ -35,7 +35,19 @@ from .manifest import Manifest
 from .options import ValidatorOptions
 
 class DashValidator(DashElement):
-    def __init__(self, url: str, http_client: HttpClient,
+    baseurl: str
+    http_client: HttpClient
+    manifest: Manifest | None
+    manifest_text: list[str]
+    mode: str | None
+    options: ValidatorOptions
+    prev_manifest: Manifest | None
+    xml: ET.ElementBase | None
+    url: str
+
+    def __init__(self,
+                 url: str,
+                 http_client: HttpClient,
                  mode: str | None = None,
                  options: ValidatorOptions | None = None) -> None:
         DashElement.init_xml_namespaces()
@@ -47,13 +59,13 @@ class DashValidator(DashElement):
         self.validator = self
         self.xml = None
         self.manifest: Manifest | None = None
-        self.manifest_text: list[tuple[int, str]] = []
+        self.manifest_text = []
         self.prev_manifest = None
         self.pool = options.pool
 
     async def load(self,
-                   xml: Optional[ET.ElementBase] = None,
-                   data: Optional[bytes] = None) -> bool:
+                   xml: ET.ElementBase | None = None,
+                   data: bytes | None = None) -> bool:
         self.progress.reset(1)
         self.prev_manifest = None
         self.xml = xml
@@ -89,9 +101,14 @@ class DashValidator(DashElement):
         if self.mode != 'live':
             self.log.debug('Not a live stream, no need to reload manifest')
             return True
+        self.log.debug('Refreshing manifest')
         self.prev_manifest = self.manifest
-        if not await self.fetch_manifest():
-            return False
+        need_fetch = True
+        if self.manifest.patches:
+            need_fetch = not await self.patch_manifest()
+        if need_fetch:
+            if not await self.fetch_manifest():
+                return False
         self.manifest = Manifest(self, self.url, self.mode, self.xml)
         return await self.manifest.merge_previous_element(self.prev_manifest)
 
@@ -137,6 +154,30 @@ class DashValidator(DashElement):
                 self.manifest_text.append(line.rstrip())
         self.xml = xml.getroot()
         self.progress.text('')
+        return True
+
+    async def patch_manifest(self) -> bool:
+        """
+        Apply an MPD patch to the current manifest. This is used to
+        avoid reloading the manifest. If the MPD patch fails to validate,
+        it will fall-back to loading the manifest, as described in clause
+        5.15.5 of the DASH specification.
+        """
+        patch_loc = self.manifest.patches[0]
+        self.progress.text(patch_loc.url)
+        if not await patch_loc.load():
+            self.log.error('Failed to load MPD patch %s', patch_loc.url)
+            return False
+        xml = deepcopy(self.xml)
+        if not patch_loc.patch.apply_patch(xml):
+            self.log.warning('MPD patch failed to apply')
+            return False
+        pp_txt = ET.tostring(xml, pretty_print=True, xml_declaration=True,
+                             encoding='utf-8')
+        self.manifest_text = []
+        for line in io.StringIO(str(pp_txt, 'utf-8')):
+            self.manifest_text.append(line.rstrip())
+        self.xml = ET.parse(io.BytesIO(pp_txt)).getroot()
         return True
 
     async def validate(self) -> bool:
