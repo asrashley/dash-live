@@ -9,7 +9,7 @@
   minimumUpdatePeriod="PT8S"
   timeShiftBufferDepth="PT30M0S"
     
-  publishTime="2023-10-25T07:56:58Z"
+  publishTime="2023-10-25T07:56:56Z"
   maxSegmentDuration="PT4S"
   minBufferTime="PT10S"
   profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:com:dashif:dash264,urn:hbbtv:dash:profile:isoff-live:2012">

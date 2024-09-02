@@ -21,18 +21,14 @@
 #############################################################################
 
 import binascii
-import datetime
 import logging
 import os
 import sys
 from typing import Any
-from unittest import mock
 
 from dashlive.utils.hexdump import hexdump_buffer
 
 class TestCaseMixin:
-    real_datetime_class = datetime.datetime
-
     @classmethod
     def classname(clz):
         if clz.__module__.startswith('__'):
@@ -311,42 +307,6 @@ class TestCaseMixin:
             print(item.keys())
             return f'{index}={item["atom_type"]}'
         return f'{index}'
-
-    @classmethod
-    def mock_datetime_now(cls, target):
-        """
-        Override ``datetime.datetime.now()`` with a custom target value.
-        This creates a new datetime.datetime class, and alters its now()/utcnow()
-        methods.
-        Returns:
-        A mock.patch context, can be used as a decorator or in a with.
-        """
-        # See http://bugs.python.org/msg68532
-        # And
-        # http://docs.python.org/reference/datamodel.html#customizing-instance-and-subclass-checks
-        class DatetimeSubclassMeta(type):
-            """
-            We need to customize the __instancecheck__ method for isinstance().
-            This must be performed at a metaclass level.
-            """
-            @classmethod
-            def __instancecheck__(mcs, obj):
-                return isinstance(obj, cls.real_datetime_class)
-
-        class BaseMockedDatetime(cls.real_datetime_class):
-            @classmethod
-            def now(cls, tz=None):
-                return target.replace(tzinfo=tz)
-
-            @classmethod
-            def utcnow(cls):
-                return target
-
-        # Python2 & Python3-compatible metaclass
-        MockedDatetime = DatetimeSubclassMeta(
-            'datetime', (BaseMockedDatetime,), {})
-        return mock.patch.object(datetime, 'datetime', MockedDatetime)
-
 
 class HideMixinsFilter(logging.Filter):
     """A logging.Filter that hides mixin.py in log messages.

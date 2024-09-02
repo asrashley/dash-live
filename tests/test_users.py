@@ -27,13 +27,12 @@ from bs4 import BeautifulSoup
 import flask
 from werkzeug.test import TestResponse
 
-from dashlive.utils.date_time import from_isodatetime
 from dashlive.server.models import Group, User, db
 
 from .mixins.flask_base import FlaskTestBase
+from .mixins.mock_time import MockTime
 
 class TestUserManagementHandlers(FlaskTestBase):
-    NOW = from_isodatetime("2023-07-18T20:10:02Z")
 
     def test_html_login_page(self):
         url = flask.url_for('login')
@@ -93,7 +92,7 @@ class TestUserManagementHandlers(FlaskTestBase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("Wrong username or password", response.text)
 
-    @FlaskTestBase.mock_datetime_now(NOW)
+    @MockTime("2023-07-18T20:10:02Z")
     def test_ajax_login_page(self):
         url = flask.url_for('login', ajax=1)
         response = self.client.get(url)

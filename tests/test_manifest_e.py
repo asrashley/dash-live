@@ -19,7 +19,6 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-import datetime
 import unittest
 
 from .mixins.check_manifest import DashManifestCheckMixin
@@ -29,19 +28,19 @@ class ManifestETest(FlaskTestBase, DashManifestCheckMixin):
     async def test_manifest_e_vod(self):
         await self.check_a_manifest_using_major_options('manifest_e.mpd', 'vod')
 
-    @FlaskTestBase.mock_datetime_now(datetime.datetime.fromisoformat("2023-10-01T02:03:58Z"))
     async def test_manifest_e_live(self):
-        await self.check_a_manifest_using_major_options('manifest_e.mpd', 'live')
+        await self.check_a_manifest_using_major_options(
+            'manifest_e.mpd', 'live', now="2023-10-01T02:03:58Z")
 
-    @FlaskTestBase.mock_datetime_now(datetime.datetime.fromisoformat("2023-10-01T02:03:58Z"))
     def test_generated_manifest_against_fixture_vod(self):
         self.check_generated_manifest_against_fixture(
-            'manifest_e.mpd', mode='vod', acodec='mp4a', encrypted=False)
+            'manifest_e.mpd', mode='vod', acodec='mp4a', encrypted=False,
+            now="2023-10-01T02:03:58Z")
 
-    @FlaskTestBase.mock_datetime_now(datetime.datetime.fromisoformat("2023-10-01T02:03:58Z"))
     def test_generated_manifest_against_fixture_live(self):
         self.check_generated_manifest_against_fixture(
-            'manifest_e.mpd', mode='live', acodec='mp4a', encrypted=False)
+            'manifest_e.mpd', mode='live', acodec='mp4a', encrypted=False,
+            now="2023-10-01T02:03:58Z")
 
 
 if __name__ == '__main__':

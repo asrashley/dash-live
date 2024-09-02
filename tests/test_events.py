@@ -54,8 +54,9 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
             stream=self.FIXTURES_PATH.name,
             **params)
         dv = await self.check_manifest_url(
-            url, 'vod', encrypted=False, check_media=False, check_head=False, debug=False,
-            duration=self.SEGMENT_DURATION)
+            url, mode='vod', encrypted=False, check_media=False, check_head=False,
+            debug=False, duration=self.SEGMENT_DURATION,
+            now='2024-09-03T10:07:00Z')
         for period in dv.manifest.periods:
             self.assertEqual(len(period.event_streams), 1)
             event_stream = period.event_streams[0]
@@ -89,7 +90,8 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
             stream=self.FIXTURES_PATH.name,
             **params)
         dv = await self.check_manifest_url(
-            url, 'vod', encrypted=False, check_media=True, check_head=False, debug=False,
+            url, 'vod', encrypted=False, check_media=True, check_head=False,
+            debug=False, now='2024-09-03T10:07:00Z',
             duration=int(self.MEDIA_DURATION // 2))
         for period in dv.manifest.periods:
             for adp in period.adaptation_sets:
@@ -167,7 +169,8 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
             stream=self.FIXTURES_PATH.name,
             **params)
         dv = await self.check_manifest_url(
-            url, 'vod', encrypted=False, check_media=False, check_head=False, debug=False,
+            url, 'vod', encrypted=False, check_media=False, check_head=False,
+            debug=False, now='2024-09-03T10:07:00Z',
             duration=self.SEGMENT_DURATION)
         for period in dv.manifest.periods:
             self.assertEqual(len(period.event_streams), 1)
