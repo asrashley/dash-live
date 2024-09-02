@@ -19,7 +19,6 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-import datetime
 import unittest
 
 from .mixins.check_manifest import DashManifestCheckMixin
@@ -29,10 +28,10 @@ class ManifestBTest(FlaskTestBase, DashManifestCheckMixin):
     async def test_manifest_b(self):
         await self.check_a_manifest_using_major_options('manifest_b.mpd', 'vod')
 
-    @FlaskTestBase.mock_datetime_now(datetime.datetime.fromisoformat("2023-10-25T08:56:58Z"))
     def test_generated_manifest_against_fixture_vod(self):
         self.check_generated_manifest_against_fixture(
-            'manifest_b.mpd', mode='vod', acodec='mp4a', encrypted=False)
+            'manifest_b.mpd', mode='vod', acodec='mp4a', encrypted=False,
+            now="2023-10-25T08:56:58Z")
 
 
 if __name__ == '__main__':

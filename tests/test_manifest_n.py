@@ -21,8 +21,6 @@
 #############################################################################
 import unittest
 
-from dashlive.utils.date_time import from_isodatetime
-
 from .mixins.check_manifest import DashManifestCheckMixin
 from .mixins.flask_base import FlaskTestBase
 
@@ -30,20 +28,19 @@ class ManifestNTests(FlaskTestBase, DashManifestCheckMixin):
     async def test_manifest_n_vod(self):
         await self.check_a_manifest_using_all_options('manifest_n.mpd', 'vod')
 
-    @FlaskTestBase.mock_datetime_now(from_isodatetime("2022-09-06T09:59:02Z"))
     async def test_manifest_n_live(self):
-        await self.check_a_manifest_using_all_options('manifest_n.mpd', 'live')
+        await self.check_a_manifest_using_all_options(
+            'manifest_n.mpd', 'live', now="2022-09-06T09:59:02Z")
 
-    @FlaskTestBase.mock_datetime_now(from_isodatetime("2022-09-06T09:59:02Z"))
     def test_generated_manifest_against_fixture(self):
         self.check_generated_manifest_against_fixture(
-            'manifest_n.mpd', mode='vod', acodec='mp4a', encrypted=False)
+            'manifest_n.mpd', mode='vod', acodec='mp4a', encrypted=False,
+            now="2022-09-06T09:59:02Z")
 
-    @FlaskTestBase.mock_datetime_now(from_isodatetime("2022-09-06T11:57:00Z"))
     def test_generated_drm_manifest_against_fixture(self):
         self.check_generated_manifest_against_fixture(
             'manifest_n.mpd', mode='vod', drm='all',
-            acodec='mp4a', encrypted=True)
+            acodec='mp4a', encrypted=True, now="2022-09-06T11:57:00Z")
 
 
 if __name__ == '__main__':

@@ -40,6 +40,7 @@ from dashlive.utils.objects import dict_to_cgi_params, flatten
 
 from .mixins.check_manifest import DashManifestCheckMixin
 from .mixins.flask_base import FlaskTestBase
+from .mixins.mock_time import MockTime, async_mock_time
 from .mixins.view_validator import ViewsTestDashValidator
 
 class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
@@ -85,27 +86,24 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
         self.logout_user()
         filename = 'hand_made.mpd'
         self.assertGreaterThan(models.MediaFile.count(), 0)
-        ref_now = self.real_datetime_class(2019, 1, 1, 4, 5, 6, tzinfo=UTC())
-        ref_today = self.real_datetime_class(2019, 1, 1, tzinfo=UTC())
-        ref_yesterday = ref_today - datetime.timedelta(days=1)
+        ref_now = '2019-01-01T04:05:06Z'
+        ref_today = '2019-01-01T00:00:00Z'
+        ref_yesterday = '2018-12-31T00:00:00Z'
         testcases = [
             ('year', ref_now, ref_today),
             ('month', ref_now, ref_today),
             ('today', ref_now, ref_today),
             ('2019-09-invalid-iso-datetime', ref_now, ref_today),
             ('now', ref_now, ref_now),
-            ('epoch', ref_now, datetime.datetime(
-                1970, 1, 1, 0, 0, tzinfo=UTC())),
-            ('2009-02-27T10:00:00Z', ref_now,
-             datetime.datetime(2009, 2, 27, 10, 0, 0, tzinfo=UTC())),
-            ('2013-07-25T09:57:31Z', ref_now,
-             datetime.datetime(2013, 7, 25, 9, 57, 31, tzinfo=UTC())),
+            ('epoch', ref_now, '1970-01-01T00:00:00Z'),
+            ('2009-02-27T10:00:00Z', ref_now, '2009-02-27T10:00:00Z'),
+            ('2013-07-25T09:57:31Z', ref_now, '2013-07-25T09:57:31Z'),
             # special case when "now" is midnight, use yesterday midnight as
             # availabilityStartTime
             ('', ref_today, ref_yesterday),
         ]
         msg = r'When start="{}" is used, expected MPD@availabilityStartTime to be {} but was {}'
-        for option, now, start_time in testcases:
+        for option, now, start in testcases:
             def mocked_warning(*args):
                 self.assertEqual(option, '2019-09-invalid-iso-datetime')
 
@@ -113,7 +111,7 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                 self.assertIn('moving availabilityStartTime back one day', args[0])
                 self.assertEqual(now, ref_today)
 
-            with self.mock_datetime_now(now):
+            with MockTime(now):
                 baseurl = flask.url_for(
                     'dash-mpd-v3',
                     manifest=filename,
@@ -139,8 +137,9 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                     await dv.load(xml=xml.getroot())
                     await dv.validate()
                 self.assertFalse(dv.has_errors())
-                today = now.replace(hour=0, minute=0, second=0, microsecond=0)
-                # print('option=', option, 'now=', now, 'start=', start_time, 'today=', today)
+                today = from_isodatetime(now).replace(
+                    hour=0, minute=0, second=0, microsecond=0)
+                start_time = from_isodatetime(start)
                 if option != 'today' and today == start_time:
                     start_time -= datetime.timedelta(days=1)
                 elif option == 'now':
@@ -161,10 +160,10 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
     async def test_create_manifest_error(self):
         self.setup_media()
         self.logout_user()
-        start = self.real_datetime_class(2022, 1, 1, 4, 2, 6, tzinfo=UTC())
-        before = self.real_datetime_class(2022, 1, 1, 4, 4, 6, tzinfo=UTC())
-        active = self.real_datetime_class(2022, 1, 1, 4, 5, 6, tzinfo=UTC())
-        after = self.real_datetime_class(2022, 1, 1, 4, 7, 6, tzinfo=UTC())
+        start = '2022-01-01T04:02:06Z'
+        before = '2022-01-01T04:04:06Z'
+        active = '2022-01-01T04:05:06Z'
+        after = '2022-01-01T04:07:06Z'
         baseurl = flask.url_for(
             'dash-mpd-v3',
             manifest='hand_made.mpd',
@@ -172,12 +171,12 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
             mode='live')
         for code in [404, 410, 503, 504]:
             params = {
-                'merr': f'{code:3d}={to_iso_datetime(active)}',
-                'start': to_iso_datetime(start),
+                'merr': f'{code:3d}={active}',
+                'start': start,
                 'mup': '45',
             }
             url = baseurl + dict_to_cgi_params(params)
-            with self.mock_datetime_now(before):
+            with MockTime(before):
                 with ThreadPoolExecutor(max_workers=4) as tpe:
                     pool = ConcurrentWorkerPool(tpe)
                     dv = ViewsTestDashValidator(
@@ -186,12 +185,12 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                     self.assertTrue(await dv.load())
                     await dv.validate()
                 self.assertFalse(dv.has_errors(), msg='stream validation failed')
-            with self.mock_datetime_now(active):
+            with MockTime(active):
                 response = self.client.get(url)
                 self.assertEqual(
                     response.status_code, code,
                     msg=f'{url}: Expected status code {code} but received {response.status_code}')
-            with self.mock_datetime_now(after):
+            with MockTime(after):
                 with ThreadPoolExecutor(max_workers=4) as tpe:
                     pool = ConcurrentWorkerPool(tpe)
                     dv = ViewsTestDashValidator(
@@ -200,7 +199,7 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                     await dv.validate()
                     self.assertFalse(dv.has_errors())
 
-    @FlaskTestBase.mock_datetime_now(datetime.datetime.fromisoformat("2000-10-07T07:56:58Z"))
+    @async_mock_time("2000-10-07T07:56:58Z")
     async def test_get_vod_media_using_live_profile(self):
         """Get VoD segments for each DRM type (live profile)"""
         self.setup_media()
@@ -245,8 +244,8 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                 msg)
         self.progress(drm_options.num_tests, drm_options.num_tests)
 
-    @FlaskTestBase.mock_datetime_now(from_isodatetime("2022-10-04T12:00:00Z"))
-    async def test_get_live_media_using_live_profile(self):
+    @async_mock_time("2022-10-04T12:00:00Z")
+    async def test_get_live_media_using_live_profile(self) -> None:
         """Get segments from a live stream for each DRM type (live profile)"""
         self.setup_media()
         self.logout_user()
@@ -293,8 +292,9 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
             with ThreadPoolExecutor(max_workers=4) as tpe:
                 pool = ConcurrentWorkerPool(tpe)
                 mpd = ViewsTestDashValidator(
-                    http_client=self.async_client, mode="live", pool=pool, debug=False,
-                    url=baseurl, encrypted=encrypted, duration=(2 * self.MEDIA_DURATION))
+                    http_client=self.async_client, mode="live", pool=pool,
+                    debug=False, url=baseurl, encrypted=encrypted,
+                    duration=(2 * self.MEDIA_DURATION))
                 self.assertTrue(await mpd.load())
                 await mpd.validate()
             if mpd.has_errors():

@@ -25,8 +25,9 @@ import flask
 
 from dashlive.utils.date_time import from_isodatetime
 
-from .mixins.flask_base import FlaskTestBase
 from .mixins.check_manifest import DashManifestCheckMixin
+from .mixins.flask_base import FlaskTestBase
+from .mixins.mock_time import MockTime
 
 class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
     async def test_hand_made_manifest_aac_vod(self):
@@ -59,50 +60,44 @@ class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
             'hand_made.mpd', 'vod', with_subs=True, audioCodec='any',
             segmentTimeline=True)
 
-    @FlaskTestBase.mock_datetime_now(from_isodatetime("2023-09-06T09:59:02Z"))
     async def test_hand_made_manifest_live_aac(self):
         await self.check_a_manifest_using_all_options(
             'hand_made.mpd', 'live', with_subs=True, audioCodec='mp4a',
-            segmentTimeline=False)
+            segmentTimeline=False, now="2023-09-06T09:59:02Z")
 
-    @FlaskTestBase.mock_datetime_now(from_isodatetime("2021-09-06T09:59:02Z"))
     async def test_hand_made_manifest_live_ec3(self):
         await self.check_a_manifest_using_all_options(
             'hand_made.mpd', 'live', with_subs=True, audioCodec='ec-3',
-            segmentTimeline=False)
+            segmentTimeline=False, now="2021-09-06T09:59:02Z")
 
-    @FlaskTestBase.mock_datetime_now(from_isodatetime("2020-09-06T09:59:02Z"))
     async def test_hand_made_manifest_live_all_audio(self):
         await self.check_a_manifest_using_all_options(
             'hand_made.mpd', 'live', with_subs=True, audioCodec='any',
-            segmentTimeline=False)
+            segmentTimeline=False, now="2020-09-06T09:59:02Z")
 
-    @FlaskTestBase.mock_datetime_now(from_isodatetime("2023-09-06T09:59:02Z"))
     async def test_hand_made_manifest_live_aac_timeline(self):
         await self.check_a_manifest_using_all_options(
             'hand_made.mpd', 'live', with_subs=True, audioCodec='mp4a',
-            segmentTimeline=True)
+            segmentTimeline=True, now="2023-09-06T09:59:02Z")
 
-    @FlaskTestBase.mock_datetime_now(from_isodatetime("2021-09-06T09:59:02Z"))
     async def test_hand_made_manifest_live_ec3_timeline(self):
         await self.check_a_manifest_using_all_options(
             'hand_made.mpd', 'live', with_subs=True, audioCodec='ec-3',
-            segmentTimeline=True)
+            segmentTimeline=True, now="2021-09-06T09:59:02Z")
 
-    @FlaskTestBase.mock_datetime_now(from_isodatetime("2020-09-06T09:59:02Z"))
     async def test_hand_made_manifest_live_all_audio_timeline(self):
         await self.check_a_manifest_using_all_options(
             'hand_made.mpd', 'live', with_subs=True, audioCodec='any',
-            segmentTimeline=True)
+            now="2020-09-06T09:59:02Z", segmentTimeline=True)
 
     async def test_hand_made_manifest_vod_abr(self):
         await self.check_a_manifest_using_all_options(
             'hand_made.mpd', 'vod', only={'abr', 'audioCodec'})
 
-    @FlaskTestBase.mock_datetime_now(from_isodatetime("2020-10-07T09:59:02Z"))
     async def test_hand_made_manifest_live_abr(self):
         await self.check_a_manifest_using_all_options(
-            'hand_made.mpd', 'live', abr=True, only={'audioCodec', 'minimumupdateperiod'})
+            'hand_made.mpd', 'live', abr=True, now="2020-10-07T09:59:02Z",
+            only={'audioCodec', 'minimumupdateperiod'})
 
     async def test_hand_made_manifest_odvod_aac(self):
         await self.check_a_manifest_using_all_options(
@@ -121,53 +116,53 @@ class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
         url = flask.url_for('dash-mpd-v1', manifest='manifest_vod.mpd')
         await self.check_manifest_url(
             url, mode="vod", encrypted=False, check_head=True, debug=False,
-            check_media=False, duration=(2 * self.SEGMENT_DURATION))
+            check_media=False, duration=(2 * self.SEGMENT_DURATION),
+            now='2024-09-03T10:07:00Z')
 
     async def test_legacy_encrypted_manifest_name_vod(self):
         self.setup_media()
         url = flask.url_for('dash-mpd-v1', manifest='enc.mpd')
         await self.check_manifest_url(
             url, mode="vod", encrypted=True, check_head=True, check_media=False,
-            debug=False, duration=(2 * self.SEGMENT_DURATION))
+            debug=False, duration=(2 * self.SEGMENT_DURATION),
+            now='2024-09-03T10:07:00Z')
 
-    @FlaskTestBase.mock_datetime_now(from_isodatetime("2020-10-07T09:59:02Z"))
     async def test_legacy_encrypted_manifest_name_live(self):
         self.setup_media()
         url = flask.url_for('dash-mpd-v1', manifest='enc.mpd')
         url += '?mode=live'
-        await self.check_manifest_url(
-            url, mode="live", encrypted=True, check_head=True, check_media=False,
-            debug=False, duration=(2 * self.SEGMENT_DURATION))
+        with MockTime("2020-10-07T09:59:02Z"):
+            await self.check_manifest_url(
+                url, mode="live", encrypted=True, check_head=True,
+                check_media=False, debug=False,
+                duration=(2 * self.SEGMENT_DURATION),
+                now='2024-09-03T10:07:00Z')
 
-    @FlaskTestBase.mock_datetime_now(from_isodatetime("2022-09-06T15:10:02Z"))
     def test_generated_vod_manifest_against_fixture(self):
         self.check_generated_manifest_against_fixture(
             'hand_made.mpd', mode='vod', acodec='mp4a', start='today', drm='none',
-            encrypted=False)
+            encrypted=False, now="2022-09-06T15:10:02Z")
 
-    @FlaskTestBase.mock_datetime_now(from_isodatetime("2022-09-06T15:10:00Z"))
     def test_generated_vod_drm_manifest_against_fixture(self):
         self.check_generated_manifest_against_fixture(
             'hand_made.mpd', mode='vod', drm='all', encrypted=True,
-            acodec='mp4a', start='today')
+            acodec='mp4a', start='today', now="2022-09-06T15:10:00Z")
 
-    @FlaskTestBase.mock_datetime_now(from_isodatetime("2022-09-06T15:10:02Z"))
     def test_generated_live_manifest_against_fixture(self):
         self.check_generated_manifest_against_fixture(
             'hand_made.mpd', mode='live', acodec='mp4a', time='xsd', start='today',
-            drm='none', encrypted=False)
+            now="2022-09-06T15:10:02Z", drm='none', encrypted=False)
 
-    @FlaskTestBase.mock_datetime_now(from_isodatetime("2022-09-06T15:10:00Z"))
     def test_generated_live_drm_manifest_against_fixture(self):
         self.check_generated_manifest_against_fixture(
             'hand_made.mpd', mode='live', drm='all', encrypted=True,
+            now="2022-09-06T15:10:00Z",
             acodec='mp4a', time='xsd', start='today')
 
-    @FlaskTestBase.mock_datetime_now(from_isodatetime("2023-09-06T09:59:02Z"))
     async def test_manifest_patch_live_aac(self):
         await self.check_a_manifest_using_all_options(
             'hand_made.mpd', 'live', simplified=True, audioCodec='mp4a',
-            segmentTimeline=True, patch=True)
+            segmentTimeline=True, patch=True, now="2023-09-06T09:59:02Z")
 
 
 if __name__ == '__main__':

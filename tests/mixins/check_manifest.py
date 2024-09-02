@@ -24,7 +24,6 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 import datetime
 from functools import wraps
-import json
 import os
 import logging
 from pathlib import Path
@@ -38,10 +37,12 @@ from dashlive.mpeg.dash.profiles import primary_profiles
 from dashlive.mpeg.dash.validator import ConcurrentWorkerPool
 from dashlive.server import manifests, models
 from dashlive.server.options.container import OptionsContainer
+from dashlive.server.options.dash_option import DashOption
 from dashlive.server.options.utc_time_options import UTCMethod
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.requesthandler.manifest_requests import ServeManifest
 
+from .mock_time import MockTime
 from .view_validator import ViewsTestDashValidator
 
 def add_url(method, url):
@@ -74,8 +75,13 @@ class MockServeManifest(ServeManifest):
 
 class DashManifestCheckMixin:
     async def check_a_manifest_using_major_options(
-            self, filename: str, mode: str, simplified: bool = True,
-            debug: bool = False, **kwargs) -> None:
+            self,
+            filename: str,
+            mode: str,
+            simplified: bool = True,
+            debug: bool = False,
+            now: str | None = None,
+            **kwargs) -> None:
         """
         Exhaustive test of a manifest with every combination of options
         used by the manifest.
@@ -83,7 +89,7 @@ class DashManifestCheckMixin:
         if the manifest uses lots of features.
         """
         await self.check_a_manifest_using_all_options(
-            filename, mode, simplified=simplified, debug=debug, **kwargs)
+            filename, mode, simplified=simplified, debug=debug, now=now, **kwargs)
 
     async def check_a_manifest_using_all_options(
             self,
@@ -92,10 +98,13 @@ class DashManifestCheckMixin:
             simplified: bool = False,
             debug: bool = False,
             check_head: bool = False,
+            check_media: bool | None = None,
             abr: bool = False,
             with_subs: bool = False,
             only: AbstractSet | None = None,
-            extras: list[tuple] | None = None,
+            extras: list[DashOption] | None = None,
+            now: str | None = None,
+            duration: int = 0,
             **kwargs) -> None:
         """
         Exhaustive test of a manifest with every combination of options
@@ -110,19 +119,30 @@ class DashManifestCheckMixin:
         self.setup_media(with_subs=with_subs)
         self.logout_user()
         self.assertGreaterThan(models.MediaFile.count(), 0)
-        if mode == 'live':
-            duration = self.SEGMENT_DURATION + self.MEDIA_DURATION * 2
-        else:
-            duration = 4 * self.SEGMENT_DURATION
-        # do a first pass check with no CGI options
+        test_duration = duration
+        if test_duration == 0:
+            if mode == 'live':
+                test_duration = self.SEGMENT_DURATION + self.MEDIA_DURATION * 2
+            else:
+                test_duration = 4 * self.SEGMENT_DURATION
+
+        if now is None:
+            now = "2024-09-02T09:57:02Z"
+
         url = flask.url_for(
             'dash-mpd-v3',
             manifest=filename,
             mode=mode,
             stream=self.FIXTURES_PATH.name)
-        await self.check_manifest_url(
-            url, mode, encrypted=False, debug=debug, duration=duration, check_media=True,
-            check_head=True)
+
+        if not kwargs:
+            # do a first pass check with no CGI options
+            await self.check_manifest_url(
+                url, mode, encrypted=False, debug=debug, duration=test_duration,
+                check_media=(check_media in {True, None}), check_head=True, now=now)
+
+        if check_media is None:
+            check_media = not simplified
 
         utc_method = kwargs.get('utcMethod', '')
         use_base_url = kwargs.get('useBaseUrls', True)
@@ -133,31 +153,33 @@ class DashManifestCheckMixin:
             'useBaseUrls': use_base_url,
         }
         options = manifest.get_supported_dash_options(
-            mode=mode, simplified=simplified, only=only, extras=extras, **manifest_kwargs)
+            mode=mode, simplified=simplified, only=only, extras=extras,
+            **manifest_kwargs)
         logging.debug('Testing options: %s', options)
         total_tests = options.num_tests
         if 'utcMethod' in manifest.features and 'utcMethod' not in kwargs:
             total_tests += len(UTCMethod.cgi_choices)
         if 'useBaseUrls' in manifest.features and 'useBaseUrls' not in kwargs:
             total_tests += 2
+
         count = 0
-        desc = json.dumps({'mode': mode, **kwargs})
-        logging.debug('total %s tests for "%s" = %d', desc, filename, total_tests)
         self.progress(0, total_tests)
+
         # do an exhaustive check of every option
         for query in options.cgi_query_combinations():
             if 'events=' in query:
-                duration = 9 * self.SEGMENT_DURATION
+                if duration == 0:
+                    test_duration = 9 * self.SEGMENT_DURATION
                 ev_interval = self.SEGMENT_DURATION * 300
                 if 'ping' in query:
                     query += f'&ping_interval={ev_interval}&ping_timescale=100'
                 if 'scte35' in query:
                     query += f'&scte35_interval={ev_interval}&scte35_timescale=100'
-            else:
-                duration = 3 * self.SEGMENT_DURATION
+            elif duration == 0:
+                test_duration = 3 * self.SEGMENT_DURATION
             await self.check_manifest_using_options(
-                mode, url, query, debug=debug, check_media=not simplified,
-                duration=duration, check_head=check_head)
+                mode, url, query, debug=debug, check_media=check_media,
+                now=now, duration=test_duration, check_head=check_head)
             count += 1
             self.progress(count, total_tests)
         if 'utcMethod' in manifest.features and 'utcMethod' not in kwargs:
@@ -166,8 +188,8 @@ class DashManifestCheckMixin:
                     continue
                 query = f'?time={method}'
                 await self.check_manifest_using_options(
-                    mode, url, query, debug=debug, check_media=False, check_head=False,
-                    duration=duration)
+                    mode, url, query, debug=debug, check_media=False,
+                    check_head=False, now=now, duration=test_duration)
                 count += 1
                 self.progress(count, total_tests)
         if 'useBaseUrls' in manifest.features and 'useBaseUrls' not in kwargs:
@@ -176,17 +198,18 @@ class DashManifestCheckMixin:
                     continue
                 query = f'?base={ubu}'
                 await self.check_manifest_using_options(
-                    mode, url, query, debug=debug, check_media=False, check_head=False,
-                    duration=duration)
+                    mode, url, query, debug=debug, check_media=False,
+                    check_head=False, now=now, duration=test_duration)
                 count += 1
                 self.progress(count, total_tests)
         self.progress(total_tests, total_tests)
 
     async def check_manifest_using_options(
-            self, mode: str, url: str, query: str, debug: bool, duration: int,
+            self, mode: str, url: str, query: str, debug: bool,
+            now: str, duration: int,
             check_media: bool, check_head: bool) -> None:
         """
-        Check one manifest using a specific combination of options
+        Check one manifest using a specific combination of options.
         :mode: operating mode
         :filename: the filename of the manifest
         :query: the query string
@@ -195,10 +218,10 @@ class DashManifestCheckMixin:
         clear = ('drm=none' in query) or ('drm' not in query)
         await self.check_manifest_url(
             mpd_url, mode, encrypted=not clear, debug=debug, check_media=check_media,
-            check_head=check_head, duration=duration)
+            check_head=check_head, now=now, duration=duration)
 
     async def check_manifest_url(
-            self, mpd_url: str, mode: str, encrypted: bool, duration: int,
+            self, mpd_url: str, mode: str, encrypted: bool, now: str, duration: int,
             debug: bool, check_head: bool, check_media: bool) -> ViewsTestDashValidator:
         """
         Test one manifest for validity (wrapped in context of MPD url)
@@ -209,9 +232,11 @@ class DashManifestCheckMixin:
         try:
             self.log_context.add_item('url', mpd_url)
             self.__class__.checked_urls.add(mpd_url)
-            return await self.do_check_manifest_url(
-                mpd_url, mode, encrypted=encrypted, debug=debug, check_head=check_head,
-                check_media=check_media, duration=duration)
+            with MockTime(now):
+                return await self.do_check_manifest_url(
+                    mpd_url, mode, encrypted=encrypted, debug=debug,
+                    check_head=check_head, check_media=check_media,
+                    duration=duration)
         finally:
             del self.log_context['url']
 
@@ -236,6 +261,7 @@ class DashManifestCheckMixin:
         self.assertIn("Access-Control-Allow-Origin", response.headers)
         self.assertEqual(response.headers["Access-Control-Allow-Origin"], '*')
         self.assertEqual(response.headers["Access-Control-Allow-Methods"], "HEAD, GET, POST")
+        max_loops: int = 100 if mode == 'live' else 2
         with ThreadPoolExecutor(max_workers=4) as tpe:
             pool = ConcurrentWorkerPool(tpe)
             dv = ViewsTestDashValidator(
@@ -243,7 +269,13 @@ class DashManifestCheckMixin:
                 duration=duration, url=mpd_url,
                 encrypted=encrypted, debug=debug, check_media=check_media)
             await dv.load(data=response.get_data(as_text=False))
-            await dv.validate()
+            while not dv.finished() and max_loops > 0:
+                await dv.validate()
+                if not dv.finished():
+                    max_loops -= 1
+                    await dv.sleep()
+                    logging.info('Refreshing manifest timeout=%d', max_loops)
+                    await dv.refresh()
         if dv.has_errors():
             dv.print_manifest_text()
             print(f'{mpd_url} has errors:')
@@ -285,7 +317,8 @@ class DashManifestCheckMixin:
             yield context
 
     def check_generated_manifest_against_fixture(
-            self, mpd_filename: str, mode: str, encrypted: bool, **kwargs):
+            self, mpd_filename: str, mode: str, encrypted: bool,
+            now: str, **kwargs):
         """
         Check a freshly generated manifest against a "known good" previous example
         """
@@ -305,10 +338,11 @@ class DashManifestCheckMixin:
         url += options.generate_cgi_parameters_string()
         stream = models.Stream.get(directory=self.FIXTURES_PATH.name)
         self.assertIsNotNone(stream)
-        with self.create_mock_request_context(url, stream):
-            context = self.generate_manifest_context(
-                mpd_filename, mode=mode, stream=stream, options=options)
-            text = flask.render_template(f'manifests/{mpd_filename}', **context)
+        with MockTime(now):
+            with self.create_mock_request_context(url, stream):
+                context = self.generate_manifest_context(
+                    mpd_filename, mode=mode, stream=stream, options=options)
+                text = flask.render_template(f'manifests/{mpd_filename}', **context)
         fixture = self.fixture_filename(mpd_filename, mode, encrypted)
         if not fixture.exists():
             with fixture.open('wt', encoding='utf-8') as dest:
@@ -317,8 +351,12 @@ class DashManifestCheckMixin:
         actual = ET.fromstring(bytes(text, 'utf-8'))
         self.assertXmlEqual(expected, actual)
 
-    def generate_manifest_context(self, mpd_filename: str, mode: str,
-                                  stream: models.Stream, options: OptionsContainer) -> dict:
+    def generate_manifest_context(
+            self,
+            mpd_filename: str,
+            mode: str,
+            stream: models.Stream,
+            options: OptionsContainer) -> dict:
         mock = MockServeManifest(flask.request)
         context = mock.calculate_manifest_params(
             mpd_name=mpd_filename, options=options)

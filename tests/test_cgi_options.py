@@ -1,4 +1,3 @@
-import datetime
 import unittest
 
 from dashlive.server.options.drm_options import DrmSelection
@@ -7,6 +6,7 @@ from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.options.types import OptionUsage
 from dashlive.server.requesthandler.base import RequestHandlerBase
 
+from .mixins.mock_time import MockTime
 from .mixins.mixin import TestCaseMixin
 
 class TestServerOptions(TestCaseMixin, unittest.TestCase):
@@ -70,7 +70,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             self.assertNotIn(opt.name, names)
             names.add(opt.name)
 
-    @TestCaseMixin.mock_datetime_now(datetime.datetime(2023, 4, 5, 6, 30))
+    @MockTime("2023-04-05T06:30:00Z")
     def test_convert_cgi_options(self) -> None:
         params = {
             'abr': '1',
@@ -207,7 +207,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
                 ('playready', {'cenc', 'moov'})
             ])
 
-    @TestCaseMixin.mock_datetime_now(datetime.datetime(2023, 4, 5, 6, 30))
+    @MockTime("2023-04-05T06:30:00Z")
     def test_default_values(self) -> None:
         expected = {
             '_type': 'dashlive.server.options.container.OptionsContainer',
