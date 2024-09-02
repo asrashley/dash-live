@@ -18,6 +18,8 @@ class Change(DashElement):
     attributes: ClassVar[list[tuple[str, Any, Any]]] = [
         ('sel', str, None),
     ]
+    PATCH_NS_PREFIX: ClassVar[str] = f'{{{DashElement.xmlNamespaces["patch"]}}}'
+    DASH_NS_PREFIX: ClassVar[str] = f'{{{DashElement.xmlNamespaces["dash"]}}}'
 
     patch_type: str
     sel: str
@@ -26,13 +28,56 @@ class Change(DashElement):
                  xml: ET.ElementBase,
                  parent: DashElement) -> None:
         super().__init__(xml, parent)
-        prefix = f'{{{self.xmlNamespaces["patch"]}}}'
         self.patch_type = xml.tag
-        if self.patch_type.startswith(prefix):
-            self.patch_type = xml.tag[len(prefix):]
+        self.xml = xml
+        if self.patch_type.startswith(self.PATCH_NS_PREFIX):
+            self.patch_type = xml.tag[len(self.PATCH_NS_PREFIX):]
 
     def children(self) -> list[DashElement]:
         return []
+
+    def attribute_target(self) -> str | None:
+        if self.sel is None:
+            return None
+        parts = self.sel.split('/')
+        if not parts:
+            return None
+        if parts[-1][0] != '@':
+            return None
+        return parts[-1][1:]
+
+    def apply_patch(self, dest: ET.ElementBase) -> bool:
+        target = DashElement.xpath(dest, self.sel)
+        if target is None or len(target) == 0:
+            return False
+        attr = self.attribute_target()
+        elt: ET.ElementBase
+        parent_sel = '/'.join(self.sel.split('/')[:-1])
+        parent = DashElement.xpath(dest, parent_sel)[0]
+        if attr:
+            elt = parent
+        else:
+            elt = target[0]
+        self.log.debug('change=%s sel=%s', self.patch_type, self.sel)
+        if self.patch_type == 'add':
+            if attr:
+                self.elt.add_error('adding to an attribute not supported')
+                return False
+            for child in self.xml:
+                elt.append(self.clone_to_dash_namespace(child))
+        elif self.patch_type == 'replace':
+            if attr:
+                elt.set(attr, self.xml.text)
+            else:
+                for child in self.xml:
+                    elt.addnext(self.clone_to_dash_namespace(child))
+                parent.remove(elt)
+        elif self.patch_type == 'remove':
+            if attr:
+                del elt.attrib[attr]
+            else:
+                parent.remove(target)
+        return True
 
     def validate(self) -> None:
         self.elt.check_includes(
@@ -55,6 +100,19 @@ class Change(DashElement):
             msg='XPath must only select a single node',
             clause='5.15.3.4')
 
+    @classmethod
+    def clone_to_dash_namespace(cls, elt: ET.ElementBase) -> ET.ElementBase:
+        """
+        Clone the specified element, converted from the MPD patch
+        namespace to the DASH namespace.
+        """
+        tag = elt.tag.replace(cls.PATCH_NS_PREFIX, cls.DASH_NS_PREFIX)
+        rv = ET.Element(tag, **elt.attrib)
+        if elt.text:
+            rv.text = elt.text
+        for child in elt:
+            rv.append(cls.clone_to_dash_namespace(child))
+        return rv
 
 class Patch(DashElement):
     attributes: ClassVar[list[tuple[str, Any, Any]]] = [
@@ -88,6 +146,13 @@ class Patch(DashElement):
         print(f'=== {self.url} ===')
         for idx, line in enumerate(self.xml_text, start=1):
             print(f'{idx:03d}: {line}')
+
+    def apply_patch(self, dest: ET.ElementBase) -> bool:
+        result = True
+        for change in self.changes:
+            r = change.apply_patch(dest)
+            result = result and r
+        return result
 
     def validate(self) -> None:
         self.attrs.check_not_none(

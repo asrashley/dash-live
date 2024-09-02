@@ -35,23 +35,26 @@ class PatchLocation(DashElement):
             return [self.patch]
         return []
 
-    async def validate(self):
+    async def validate(self) -> None:
         if ValidationFlag.MANIFEST not in self.options.verify:
             return
-        self.elt.check_not_none(
-            self.url,
-            'PatchLocation must contain a URL',
-            clause='5.15.2')
+        if not self.elt.check_not_none(
+                self.url,
+                'PatchLocation must contain a URL',
+                clause='5.15.2'):
+            return
         try:
             parsed = urllib.parse.urlparse(self.url, scheme='http')
             self.elt.check_includes(
                 ['http', 'https'],
                 parsed.scheme.lower(),
                 msg=f'Expected HTTP or HTTPS for Patch URL, got "{self.url}"')
-            if not await self.load():
-                self.elt.add_error('Failed to load patch')
-                return
-            self.patch.validate()
+            now = self.mpd.now()
+            if now > self.mpd.publishTime:
+                if not await self.load():
+                    self.elt.add_error('Failed to load patch')
+                    return
+                self.patch.validate()
         except ValueError as err:
             self.elt.add_error(
                 f'Failed to parse PatchLocation URL: {err}',
@@ -62,6 +65,7 @@ class PatchLocation(DashElement):
         if not self.elt.check_not_none(
                 self.url, msg='URL of PatchLocation is missing'):
             return False
+        self.log.debug('Fetching MPD patch: %s', self.url)
         response = await self.http.get(self.url)
         if not self.elt.check_equal(
                 response.status_code, 200,
