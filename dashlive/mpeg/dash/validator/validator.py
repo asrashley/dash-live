@@ -30,6 +30,7 @@ from lxml import etree as ET
 from dashlive.mpeg.dash.representation import Representation as ServerRepresentation
 
 from .dash_element import DashElement
+from .errors import ValidationError, ValidationHistory
 from .http_client import HttpClient
 from .manifest import Manifest
 from .options import ValidatorOptions
@@ -37,6 +38,7 @@ from .options import ValidatorOptions
 class DashValidator(DashElement):
     baseurl: str
     http_client: HttpClient
+    history: list[ValidationHistory]
     manifest: Manifest | None
     manifest_text: list[str]
     mode: str | None
@@ -62,6 +64,7 @@ class DashValidator(DashElement):
         self.manifest_text = []
         self.prev_manifest = None
         self.pool = options.pool
+        self.history = []
 
     async def load(self,
                    xml: ET.ElementBase | None = None,
@@ -109,8 +112,33 @@ class DashValidator(DashElement):
         if need_fetch:
             if not await self.fetch_manifest():
                 return False
+        self.history.append(ValidationHistory(
+            url=self.url, publishTime=self.prev_manifest.publishTime,
+            errors=self.prev_manifest.get_errors()))
+        self.prev_manifest.reset_errors()
         self.manifest = Manifest(self, self.url, self.mode, self.xml)
         return await self.manifest.merge_previous_element(self.prev_manifest)
+
+    def has_errors(self) -> bool:
+        if super().has_errors():
+            return True
+        for hist in self.history:
+            if hist.has_errors():
+                return True
+        return False
+
+    def get_errors(self) -> list[ValidationError]:
+        result: list[ValidationError] = []
+        for hist in self.history:
+            result += hist.errors
+        result += super().get_errors()
+        return result
+
+    def get_validation_history(self) -> list[ValidationHistory]:
+        vh = ValidationHistory(
+            url=self.url, publishTime=self.manifest.publishTime,
+            errors=self.manifest.get_errors())
+        return self.history + [vh]
 
     def finished(self) -> bool:
         if self.manifest is None:
@@ -167,6 +195,13 @@ class DashValidator(DashElement):
         self.progress.text(patch_loc.url)
         if not await patch_loc.load():
             self.log.error('Failed to load MPD patch %s', patch_loc.url)
+            return False
+        if patch_loc.patch is None:
+            self.log.error('Failed to load MPD patch %s', patch_loc.url)
+            return False
+        await patch_loc.validate()
+        if patch_loc.has_errors():
+            self.log.warning('MPD patch failed validation')
             return False
         xml = deepcopy(self.xml)
         if not patch_loc.patch.apply_patch(xml):

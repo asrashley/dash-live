@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 import logging
 import os
-from typing import Optional
+from typing import Any, ClassVar, Optional
 import urllib.parse
 
 from lxml import etree as ET
@@ -22,7 +22,7 @@ from .options import ValidatorOptions
 from .progress import NullProgress
 
 class ContextAdapter(logging.LoggerAdapter):
-    def process(self, msg: str, kwargs) -> tuple[str, dict]:
+    def process(self, msg: str, kwargs: dict) -> tuple[str, dict]:
         # url = getattr(self.extra, "url", None)
         # if url is not None and 'http' not in msg:
         #    return (f'{msg}\n    "{url}"\n', kwargs,)
@@ -43,7 +43,7 @@ class DashElement(ABC):
         'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
     }
 
-    attributes = []
+    attributes: ClassVar[list[tuple[str, Any, Any]]] = []
 
     def __init__(self,
                  elt: ET.ElementBase,
@@ -137,6 +137,12 @@ class DashElement(ABC):
         for child in self.children():
             result += child.get_errors()
         return result
+
+    def reset_errors(self) -> None:
+        self.attrs.reset()
+        self.elt.reset()
+        for child in self.children():
+            child.reset_errors()
 
     @abstractmethod
     def children(self) -> list["DashElement"]:

@@ -261,7 +261,7 @@ class DashManifestCheckMixin:
         self.assertIn("Access-Control-Allow-Origin", response.headers)
         self.assertEqual(response.headers["Access-Control-Allow-Origin"], '*')
         self.assertEqual(response.headers["Access-Control-Allow-Methods"], "HEAD, GET, POST")
-        max_loops: int = 100 if mode == 'live' else 2
+        timeout: int = 100 if mode == 'live' else 2
         with ThreadPoolExecutor(max_workers=4) as tpe:
             pool = ConcurrentWorkerPool(tpe)
             dv = ViewsTestDashValidator(
@@ -269,19 +269,23 @@ class DashManifestCheckMixin:
                 duration=duration, url=mpd_url,
                 encrypted=encrypted, debug=debug, check_media=check_media)
             await dv.load(data=response.get_data(as_text=False))
-            while not dv.finished() and max_loops > 0:
+            while not dv.finished() and timeout > 0:
                 await dv.validate()
+                if dv.has_errors():
+                    break
                 if not dv.finished():
-                    max_loops -= 1
+                    timeout -= 1
                     await dv.sleep()
-                    logging.info('Refreshing manifest timeout=%d', max_loops)
+                    logging.info('Refreshing manifest timeout=%d', timeout)
                     await dv.refresh()
         if dv.has_errors():
             dv.print_manifest_text()
             print(f'{mpd_url} has errors:')
-            for err in dv.get_errors():
-                print(err)
+            for hist in dv.get_validation_history():
+                print(hist)
         self.assertFalse(dv.has_errors(), 'DASH stream validation failed')
+        self.assertGreaterThan(
+            timeout, 0, 'Timeout waiting for validation to complete')
         if check_head:
             head = self.client.head(mpd_url)
         if mode != 'live':

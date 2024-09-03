@@ -5,7 +5,8 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime
 from enum import IntEnum
 from pathlib import Path
 import traceback
@@ -73,6 +74,26 @@ class ValidationError:
         return f'{self.location}: {msg} [{self.assertion.filename}:{self.assertion.lineno}]'
 
 
+@dataclass(slots=True, kw_only=True)
+class ValidationHistory:
+    url: str
+    publishTime: datetime
+    errors: list[ValidationError] = field(default_factory=list)
+
+    def has_errors(self) -> bool:
+        if self.errors:
+            return True
+        return False
+
+    def __str__(self) -> str:
+        lines: list[str] = [
+            f'{self.publishTime.isoformat()}: {self.url}',
+        ]
+        for err in self.errors:
+            lines.append(str(err))
+        return '\n'.join(lines)
+
+
 class ValidationChecks:
     __slots__ = ('errors', 'source', 'location', 'prefix')
 
@@ -84,6 +105,9 @@ class ValidationChecks:
 
     def has_errors(self) -> bool:
         return bool(self.errors)
+
+    def reset(self) -> None:
+        self.errors = []
 
     def find_caller(self, limit: int = 5) -> StackFrame:
         for item in traceback.walk_stack(None):
