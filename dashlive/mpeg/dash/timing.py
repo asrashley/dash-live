@@ -120,6 +120,7 @@ class DashTiming:
             self.availabilityStartTime -= self.elapsedTime
         if self.elapsedTime.total_seconds() < self.timeShiftBufferDepth:
             self.timeShiftBufferDepth = int(self.elapsedTime.total_seconds())
+        logging.debug('timeShiftBufferDepth: %d seconds', self.timeShiftBufferDepth)
         default_mup = 2.0 * self.stream_reference.segment_duration / self.stream_reference.timescale
         self.minimumUpdatePeriod = options.minimumUpdatePeriod
         if self.minimumUpdatePeriod is None:
