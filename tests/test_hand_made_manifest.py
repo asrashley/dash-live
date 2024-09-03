@@ -19,11 +19,15 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+import logging
 import unittest
 
 import flask
 
-from dashlive.utils.date_time import from_isodatetime
+from dashlive.server import models
+from dashlive.server.options.repository import OptionsRepository
+from dashlive.server.options.drm_options import ALL_DRM_TYPES
+from dashlive.utils import objects
 
 from .mixins.check_manifest import DashManifestCheckMixin
 from .mixins.flask_base import FlaskTestBase
@@ -159,11 +163,42 @@ class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
             now="2022-09-06T15:10:00Z",
             acodec='mp4a', time='xsd', start='today')
 
-    async def test_manifest_patch_live_aac(self):
-        await self.check_a_manifest_using_all_options(
-            'hand_made.mpd', 'live', simplified=True, audioCodec='mp4a',
-            segmentTimeline=True, patch=True, now="2023-09-06T09:59:02Z")
+    async def test_manifest_patch_live(self):
+        await self.check_manifest_patch_live(False)
+
+    async def test_manifest_patch_live_with_subs(self):
+        await self.check_manifest_patch_live(True)
+
+    async def check_manifest_patch_live(self, with_subs: bool):
+        self.setup_media(with_subs=with_subs)
+        self.logout_user()
+        self.assertGreaterThan(models.MediaFile.count(), 0)
+        args = {
+            'patch': '1',
+            'abr': '0',
+            'depth': '20',
+            'drm': 'none',
+            'timeline': '1',
+        }
+        defaults = OptionsRepository.get_default_options()
+        url = flask.url_for(
+            'dash-mpd-v3',
+            manifest='hand_made.mpd',
+            mode='live',
+            stream=self.FIXTURES_PATH.name)
+        drm_checks = ['none'] + ALL_DRM_TYPES
+        for drm in drm_checks:
+            args['drm'] = drm
+            options = OptionsRepository.convert_cgi_options(args, defaults=defaults)
+            params = options.generate_cgi_parameters(exclude={'mode'})
+            query = objects.dict_to_cgi_params(params)
+            await self.check_manifest_using_options(
+                mode='live', url=url, query=query, debug=False,
+                now="2023-09-06T09:59:02Z", duration=45,
+                check_media=True, check_head=False)
 
 
 if __name__ == '__main__':
+    logging.basicConfig()
+    logging.getLogger().setLevel(logging.DEBUG)
     unittest.main()
