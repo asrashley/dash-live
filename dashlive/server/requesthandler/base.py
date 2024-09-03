@@ -22,7 +22,7 @@
 
 from abc import abstractmethod
 import math
-from typing import AbstractSet, Any, Set, TypeAlias
+from typing import AbstractSet, Any, NamedTuple, Set, TypeAlias
 
 import base64
 import datetime
@@ -67,6 +67,14 @@ from .decorators import current_stream, is_ajax
 from .exceptions import CsrfFailureException
 
 DrmLocationTuple: TypeAlias = tuple[str, DrmBase, set[str]]
+
+class CgiParameterCollection(NamedTuple):
+    audio: dict[str, str]
+    video: dict[str, str]
+    text: dict[str, str]
+    manifest: dict[str, str]
+    patch: dict[str, str]
+    time: dict[str, str]
 
 class RequestHandlerBase(MethodView):
     CLIENT_COOKIE_NAME = 'dash'
@@ -331,16 +339,16 @@ class RequestHandlerBase(MethodView):
         rv.update(timing.generate_manifest_context())
         cgi_params = self.calculate_cgi_parameters(
             options=options, now=now, audio=audio_adps, video=video)
-        video.append_cgi_params(cgi_params['video'])
+        video.append_cgi_params(cgi_params.video)
         for audio in audio_adps:
-            audio.append_cgi_params(cgi_params['audio'])
+            audio.append_cgi_params(cgi_params.audio)
         for text in text_adps:
-            text.append_cgi_params(cgi_params['text'])
-        if cgi_params['manifest']:
+            text.append_cgi_params(cgi_params.text)
+        if cgi_params.manifest:
             locationURL = flask.request.url
             if '?' in locationURL:
                 locationURL = locationURL[:flask.request.url.index('?')]
-            locationURL = locationURL + objects.dict_to_cgi_params(cgi_params['manifest'])
+            locationURL = locationURL + objects.dict_to_cgi_params(cgi_params.manifest)
             rv["locationURL"] = locationURL
         event_generators = EventFactory.create_event_generators(options)
         for evgen in event_generators:
@@ -363,6 +371,8 @@ class RequestHandlerBase(MethodView):
             ttl = max(
                 timing.timeShiftBufferDepth,
                 int(math.ceil(timing.minimumUpdatePeriod)))
+            if cgi_params.manifest:
+                patch_loc += objects.dict_to_cgi_params(cgi_params.patch)
             rv['patch'] = PatchLocation(location=patch_loc, ttl=ttl)
         prefix = ''
         if options.useBaseUrls:
@@ -546,12 +556,14 @@ class RequestHandlerBase(MethodView):
     def calculate_cgi_parameters(self, options: OptionsContainer,
                                  now: datetime.datetime,
                                  audio: list[AdaptationSet],
-                                 video: AdaptationSet) -> dict[str, dict]:
+                                 video: AdaptationSet) -> CgiParameterCollection:
         exclude = {'encrypted', 'mode'}
         vid_cgi_params = options.generate_cgi_parameters(use=OptionUsage.VIDEO, exclude=exclude)
         aud_cgi_params = options.generate_cgi_parameters(use=OptionUsage.AUDIO, exclude=exclude)
         txt_cgi_params = options.generate_cgi_parameters(use=OptionUsage.TEXT, exclude=exclude)
         mft_cgi_params = options.generate_cgi_parameters(exclude=exclude)
+        patch_cgi_params = options.generate_cgi_parameters(
+            exclude=exclude.union({'timeline', 'patch'}))
         clk_cgi_params = options.generate_cgi_parameters(use=OptionUsage.TIME, exclude=exclude)
         if options.videoErrors:
             times = self.calculate_injected_error_segments(
@@ -582,13 +594,13 @@ class RequestHandlerBase(MethodView):
         if options.updateCount is not None:
             mft_cgi_params['update'] = str(options.updateCount + 1)
 
-        return {
-            'audio': aud_cgi_params,
-            'video': vid_cgi_params,
-            'text': txt_cgi_params,
-            'manifest': mft_cgi_params,
-            'time': clk_cgi_params,
-        }
+        return CgiParameterCollection(
+            audio=aud_cgi_params,
+            video=vid_cgi_params,
+            text=txt_cgi_params,
+            manifest=mft_cgi_params,
+            patch=patch_cgi_params,
+            time=clk_cgi_params)
 
     def choose_time_source_method(self, options: OptionsContainer, cgi_params: dict,
                                   now: datetime.datetime) -> dict | None:
@@ -624,7 +636,7 @@ class RequestHandlerBase(MethodView):
             timeSource['value'] = urllib.parse.urljoin(
                 flask.request.host_url,
                 flask.url_for('time', format=format))
-            timeSource['value'] += objects.dict_to_cgi_params(cgi_params['time'])
+            timeSource['value'] += objects.dict_to_cgi_params(cgi_params.time)
         return timeSource
 
     def add_allowed_origins(self, headers):
