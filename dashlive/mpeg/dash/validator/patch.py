@@ -6,7 +6,9 @@
 #
 #############################################################################
 
-from typing import Any, ClassVar
+import asyncio
+import re
+from typing import Any, ClassVar, Pattern
 
 from lxml import etree as ET
 
@@ -20,6 +22,8 @@ class Change(DashElement):
     ]
     PATCH_NS_PREFIX: ClassVar[str] = f'{{{DashElement.xmlNamespaces["patch"]}}}'
     DASH_NS_PREFIX: ClassVar[str] = f'{{{DashElement.xmlNamespaces["dash"]}}}'
+    FINAL_PATH_RE: ClassVar[Pattern] = re.compile(
+        r'^(?P<element>\w+)\[(?P<addr>[^]]+)\]$')
 
     patch_type: str
     sel: str
@@ -79,7 +83,7 @@ class Change(DashElement):
                 parent.remove(target)
         return True
 
-    def validate(self) -> None:
+    async def validate(self) -> None:
         self.elt.check_includes(
             ['add', 'replace', 'remove'],
             self.patch_type,
@@ -99,6 +103,22 @@ class Change(DashElement):
             len(target), 1,
             msg='XPath must only select a single node',
             clause='5.15.3.4')
+        for part in self.sel.split('/'):
+            if part in {'', 'MPD'}:
+                continue
+            match = self.FINAL_PATH_RE.match(part)
+            if not match:
+                if part[0] != '@':
+                    self.attrs.add_error(
+                        f'Elements must be addressed by position: {part} in {self.sel}',
+                        clause='5.15.3.4')
+                continue
+            if match['element'] in {'Period', 'AdaptationSet', 'Representation', 'SubRepresentation'}:
+                msg = (
+                    f'{match["element"]} selector must be addressed by ID: ' +
+                    f'{part} in {self.sel}')
+                self.attrs.check_starts_with(
+                    match['addr'], '@id=', msg=msg, clause='5.15.3.4')
 
     @classmethod
     def clone_to_dash_namespace(cls, elt: ET.ElementBase) -> ET.ElementBase:
@@ -122,6 +142,7 @@ class Patch(DashElement):
     ]
 
     changes: list[Change]
+    mpdId: str
     xml_text: list[str]
     url: str
 
@@ -139,6 +160,12 @@ class Patch(DashElement):
             xml.tag, tag,
             msg=f'must have a Patch element as toplevel element not {xml.tag}')
 
+    def __str__(self) -> str:
+        changes = [ch.sel for ch in self.changes]
+        return (
+            f'Patch({self.originalPublishTime.isoformat()} -> '
+            f'{self.publishTime} changes={changes}')
+
     def children(self) -> list[DashElement]:
         return self.changes
 
@@ -154,7 +181,7 @@ class Patch(DashElement):
             result = result and r
         return result
 
-    def validate(self) -> None:
+    async def validate(self) -> None:
         self.attrs.check_not_none(
             self.mpdId,
             msg='Patch@mpdId is a mandatory attribute',
@@ -182,5 +209,22 @@ class Patch(DashElement):
             self.originalPublishTime,
             msg='publishTime must be greater than originalPublishTime',
             clause='5.15.5')
+        publish_time_change: Change | None = None
+        futures = set()
         for child in self.changes:
-            child.validate()
+            futures.add(child.validate())
+            if child.sel == '/MPD/@publishTime':
+                publish_time_change = child
+        await asyncio.gather(*futures)
+        if not self.elt.check_not_none(
+                publish_time_change,
+                msg='The Patch must contain a replace element for MPD@publishTime'):
+            return
+        try:
+            new_publish_time = from_isodatetime(publish_time_change.xml.text)
+            self.elt.check_greater_than(
+                new_publish_time, self.mpd.publishTime,
+                msg='Patched MPD@publishTime must be greater than current publishTime')
+        except ValueError as err:
+            self.elt.add_error(
+                f'/MPD/@publishTime patch must contain a valid ISO date-time: {err}')

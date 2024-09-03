@@ -22,13 +22,14 @@ class PatchLocation(DashElement):
     ]
 
     url: str
-    patch: Patch | None = None
+    patch: Patch | None
 
     def __init__(self,
                  xml: ET.ElementBase,
                  parent: DashElement | None) -> None:
         super().__init__(xml, parent)
         self.url = xml.text
+        self.patch = None
 
     def children(self) -> list[DashElement]:
         if self.patch:
@@ -45,16 +46,18 @@ class PatchLocation(DashElement):
             return
         try:
             parsed = urllib.parse.urlparse(self.url, scheme='http')
-            self.elt.check_includes(
-                ['http', 'https'],
-                parsed.scheme.lower(),
-                msg=f'Expected HTTP or HTTPS for Patch URL, got "{self.url}"')
+            if not self.elt.check_includes(
+                    ['http', 'https'],
+                    parsed.scheme.lower(),
+                    msg=f'Expected HTTP or HTTPS for Patch URL, got "{self.url}"'):
+                return
             now = self.mpd.now()
-            if now > self.mpd.publishTime:
+            if now > self.mpd.publishTime and self.patch is None:
                 if not await self.load():
                     self.elt.add_error('Failed to load patch')
                     return
-                self.patch.validate()
+            if self.patch:
+                await self.patch.validate()
         except ValueError as err:
             self.elt.add_error(
                 f'Failed to parse PatchLocation URL: {err}',
