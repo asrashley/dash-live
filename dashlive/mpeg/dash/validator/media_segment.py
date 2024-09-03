@@ -81,8 +81,9 @@ class MediaSegment(DashElement):
                 log = f'num={self.expected_seg_num} '
             elif self.expected_decode_time:
                 log = f'time={self.expected_decode_time} '
-            self.log.debug('%s: Segment %snot yet available. availability_start_time=%s',
-                           self.name, log, self.seg_num, self.availability_start_time)
+            self.log.debug(
+                '%s: Segment %s not yet available. availability_start_time=%s',
+                self.name, log, self.availability_start_time)
             return
         self.validated = True
         discard_before = now + datetime.timedelta(seconds=2)
