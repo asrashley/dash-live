@@ -204,15 +204,10 @@ class DashElement(ABC):
             else:
                 ns_sel.append(f'dash:{part}')
         sel = '/'.join(ns_sel)
-        match = cls.INDEX_RE.search(sel)
-        if match:
-            sel = sel[:match.start('index') - 1]
-        xml = xml.xpath(sel, namespaces=cls.xmlNamespaces)
-        if xml and match:
-            return [xml[int(match['index'])]]
-        if isinstance(xml, str):
-            return [xml]
-        return xml
+        result = xml.xpath(sel, namespaces=cls.xmlNamespaces)
+        if isinstance(result, str):
+            return [result]
+        return result
 
     @classmethod
     def init_xml_namespaces(clz) -> None:
