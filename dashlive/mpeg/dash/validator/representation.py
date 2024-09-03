@@ -10,7 +10,7 @@ import datetime
 import math
 import re
 from pathlib import PurePath
-from typing import Optional
+from typing import Optional, Set
 import urllib.parse
 
 from lxml import etree as ET
@@ -62,6 +62,9 @@ class Representation(RepresentationBaseType):
         return self.parent.parent.target_duration
 
     async def merge_previous_element(self, prev: "Representation") -> bool:
+        if self.mode != 'live':
+            self.log.error('merge_previous_element called for a non-live stream')
+            return False
         self.log.debug('Merging previous representation %s', prev.id)
         if prev.init_segment is not None:
             self.init_segment = prev.init_segment
@@ -69,28 +72,34 @@ class Representation(RepresentationBaseType):
                 '%s: Reusing previous init segment. has_atoms=%s',
                 self.id, self.init_segment.atoms is not None)
         self.info = prev.info
-        await self.generate_segment_todo_list()
-        seg_map = {}
-        for seg in prev.media_segments:
-            seg_map[seg.name] = seg
+        self.media_segments = []
+        if not await self.generate_segments_live_profile():
+            return False
+        seg_names: Set[str] = set()
         merged_segments = []
+        for seg in prev.media_segments:
+            merged_segments.append(seg)
+            self.log.debug(
+                '%s: preserve media segment %s', self.id, seg.name)
+            seg_names.add(seg.name)
         for seg in self.media_segments:
-            try:
-                merged_segments.append(seg_map[seg.name])
-                self.log.debug(
-                    '%s: Re-use existing media segment %s', self.id, seg.name)
-            except KeyError as err:
-                self.log.debug('%s: Adding new media segment %s (%s)',
-                               self.id, seg.name, err)
+            if seg.name not in seg_names:
+                self.log.debug('%s: add media segment %s', self.id, seg.name)
                 merged_segments.append(seg)
+        self.log.debug('%s: Merged %d media segments', self.id,
+                       len(merged_segments))
         self.media_segments = merged_segments
         return True
 
-    async def generate_segment_todo_list(self) -> bool:
-        if self.mode == "odvod":
-            rv = await self.generate_segments_on_demand_profile()
-        else:
-            rv = await self.generate_segments_live_profile()
+    async def prefetch_media_info(self) -> bool:
+        rv: bool = True
+        if len(self.media_segments) == 0:
+            if self.mode == "odvod":
+                rv = await self.generate_segments_on_demand_profile()
+            else:
+                rv = await self.generate_segments_live_profile()
+        if rv:
+            rv = await self.load_representation_info()
         self.progress.inc()
         return rv
 
@@ -577,10 +586,13 @@ class Representation(RepresentationBaseType):
             return
         if not self.elt.check_equal(self.mode, 'live'):
             return
+        if self.mpd.timeShiftBufferDepth is None:
+            # missing MPD@timeShiftBufferDepth error is reported by manifest.py
+            return
         seg_duration = self.segmentTemplate.duration
         timeline = self.segmentTemplate.segmentTimeline
         timescale = self.segmentTemplate.timescale
-        decode_time = None
+        decode_time: int | None = None
         if seg_duration is None:
             if not self.elt.check_not_none(timeline, msg='SegmentTimeline missing'):
                 return
@@ -589,10 +601,6 @@ class Representation(RepresentationBaseType):
             num_segments = len(self.segmentTemplate.segmentTimeline.segments)
             decode_time = timeline.segments[0].start
         else:
-            if not self.attrs.check_not_none(
-                    self.mpd.timeShiftBufferDepth,
-                    msg='MPD@timeShiftBufferDepth is a required attribute for a live stream'):
-                return
             num_segments = math.floor(self.mpd.timeShiftBufferDepth.total_seconds() *
                                       timescale / seg_duration)
             num_segments = int(num_segments)
@@ -615,12 +623,6 @@ class Representation(RepresentationBaseType):
         self.elt.check_not_none(decode_time, msg='Failed to calculate decode time')
         pos = (self.mpd.availabilityStartTime +
                datetime.timedelta(seconds=(decode_time / float(timescale))))
-        earliest_pos = (now - self.mpd.timeShiftBufferDepth -
-                        datetime.timedelta(seconds=(seg_duration / float(timescale))))
-        self.elt.check_greater_or_equal(
-            pos,
-            earliest_pos,
-            msg=f'Position {pos} is before first available fragment time {earliest_pos}')
         self.elt.check_less_than(
             pos, now, template=r'Pos {0} is after current time of day {1}')
 

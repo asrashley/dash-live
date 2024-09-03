@@ -88,7 +88,10 @@ class Period(DashElement):
     def finished(self) -> bool:
         for child in self.children():
             if not child.finished():
+                self.log.debug('AdaptationSet %d in period %s not finished',
+                               child.id, self.id)
                 return False
+        self.log.debug('period %s has finished', self.id)
         return True
 
     def get_duration(self) -> datetime.timedelta:
