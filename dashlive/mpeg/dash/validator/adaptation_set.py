@@ -46,7 +46,7 @@ class AdaptationSet(RepresentationBaseType):
     async def prefetch_media_info(self) -> bool:
         self.progress.add_todo(len(self.representations))
         futures = {
-            rep.generate_segment_todo_list() for rep in self.representations}
+            rep.prefetch_media_info() for rep in self.representations}
         results = await asyncio.gather(*futures)
         self.progress.inc()
         return False not in results
@@ -98,11 +98,16 @@ class AdaptationSet(RepresentationBaseType):
         if (
                 self.target_duration is not None and
                 self.target_duration.total_seconds() == 0):
+            self.log.debug('AdaptationSet %d finished (total_seconds==0)',
+                           self.id)
             return True
         for child in self.representations:
             if not child.finished():
-                self.log.debug('representation %s not finished', child.id)
+                self.log.debug(
+                    'Representation %s in AdaptationSet %d not finished',
+                    child.id, self.id)
                 return False
+        self.log.debug('AdaptationSet %d finished', self.id)
         return True
 
     def set_representation_info(self, info: ServerRepresentation):
