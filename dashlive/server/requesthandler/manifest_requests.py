@@ -70,7 +70,8 @@ class ServeManifest(RequestHandlerBase):
                 restrictions=mft.restrictions,
                 features=mft.features)
         except ValueError as e:
-            return flask.make_response(f'Invalid CGI parameters: {e}', 400)
+            logging.info('Invalid CGI parameters: %s', e)
+            return flask.make_response('Invalid CGI parameters', 400)
         if mode != 'live':
             # Patch elements are ignored if MPD@type == 'static'
             options.update(patch=False)
@@ -218,6 +219,7 @@ class ServePatch(RequestHandlerBase):
         except ValueError as e:
             logging.info('Invalid CGI parameters: %s', e)
             return flask.make_response('Invalid CGI parameters', 400)
+
         options.update(patch=True, segmentTimeline=True)
         options.remove_unused_parameters('live')
         original_publish_time = datetime.datetime.fromtimestamp(

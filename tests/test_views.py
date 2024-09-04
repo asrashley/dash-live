@@ -108,8 +108,12 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                 self.assertEqual(option, '2019-09-invalid-iso-datetime')
 
             def mocked_info(*args):
-                self.assertIn('moving availabilityStartTime back one day', args[0])
-                self.assertEqual(now, ref_today)
+                if 'Invalid CGI parameters' in args[0]:
+                    self.assertIn('invalid-iso', option)
+                    self.assertIn(option, ' '.join([str(a) for a in args]))
+                elif 'availabilityStartTime' in args[0]:
+                    self.assertIn('moving availabilityStartTime back one day', args[0])
+                    self.assertEqual(now, ref_today)
 
             with MockTime(now):
                 baseurl = flask.url_for(
