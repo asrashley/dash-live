@@ -6,7 +6,7 @@
 .env
 .project
 .pydevproject
-./media
+media
 node_modules
 runner.py
 settings.py
