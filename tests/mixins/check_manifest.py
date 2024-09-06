@@ -436,7 +436,7 @@ class DashManifestCheckMixin:
             act_value = actual.attrib[name]
             self.assertEqual(
                 exp_value, act_value,
-                msg='attribute {} should be "{}" but was "{}"'.format(
+                msg='attribute {} expected "{}" found "{}"'.format(
                     key_name, exp_value, act_value))
         counts = {}
         for exp, act in zip(expected, actual):
