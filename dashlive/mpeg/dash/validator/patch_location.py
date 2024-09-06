@@ -51,8 +51,12 @@ class PatchLocation(DashElement):
                     parsed.scheme.lower(),
                     msg=f'Expected HTTP or HTTPS for Patch URL, got "{self.url}"'):
                 return
-            now = self.mpd.now()
-            if now > self.mpd.publishTime and self.patch is None:
+            mpd = self.mpd
+            elapsed = mpd.now() - mpd.publishTime
+            if (
+                    self.patch is None and
+                    mpd.minimumUpdatePeriod is not None and
+                    elapsed >= mpd.minimumUpdatePeriod):
                 if not await self.load():
                     self.elt.add_error('Failed to load patch')
                     return

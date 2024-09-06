@@ -131,6 +131,14 @@ class DashTiming:
             seconds=self.timeShiftBufferDepth)
         if options.leeway is not None:
             self.leeway = datetime.timedelta(seconds=options.leeway)
+        if self.minimumUpdatePeriod is not None:
+            num_refreshes = int(
+                self.elapsedTime.total_seconds() // self.minimumUpdatePeriod)
+            self.publishTime = (
+                self.availabilityStartTime +
+                datetime.timedelta(seconds=(
+                    num_refreshes * self.minimumUpdatePeriod)))
+            self.publishTime = self.publishTime.replace(microsecond=0)
 
     def generate_manifest_context(self):
         if self.mode == 'live':
