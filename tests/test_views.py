@@ -131,14 +131,13 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                     continue
                 self.assertEqual(response.status_code, 200,
                                  msg=f'Failed to fetch manifest {baseurl}')
-                xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
                 with ThreadPoolExecutor(max_workers=4) as tpe:
                     pool = ConcurrentWorkerPool(tpe)
                     dv = ViewsTestDashValidator(
                         http_client=self.async_client, mode='live', pool=pool,
                         url=baseurl, encrypted=False, debug=False, check_media=False,
                         duration=int(self.MEDIA_DURATION // 3))
-                    await dv.load(xml=xml.getroot())
+                    await dv.load(data=response.get_data(as_text=False))
                     await dv.validate()
                 self.assertFalse(dv.has_errors())
                 today = from_isodatetime(now).replace(
@@ -147,7 +146,7 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                 if option != 'today' and today == start_time:
                     start_time -= datetime.timedelta(days=1)
                 elif option == 'now':
-                    start_time = dv.manifest.publishTime - dv.manifest.timeShiftBufferDepth
+                    start_time = from_isodatetime(now) - dv.manifest.timeShiftBufferDepth
                 self.assertEqual(
                     dv.manifest.availabilityStartTime,
                     start_time,
