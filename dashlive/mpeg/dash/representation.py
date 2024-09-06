@@ -21,7 +21,7 @@
 #############################################################################
 
 import datetime
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import logging
 import os
 import sys
@@ -59,6 +59,24 @@ class SegmentTimelineElement:
     @property
     def repeat(self) -> int:
         return self.count - 1
+
+
+@dataclass(slots=True)
+class SegmentDurations:
+    timescale: int
+    segments: list[SegmentTimelineElement] = field(default_factory=list)
+
+
+class SegmentPosition(NamedTuple):
+    start: int
+    end: int
+
+@dataclass(slots=True)
+class SegmentIndexList:
+    timescale: int
+    duration: int
+    init: SegmentPosition
+    media: list[SegmentPosition] = field(default_factory=list)
 
 
 class Representation(ObjectWithFields):
@@ -335,54 +353,44 @@ class Representation(ObjectWithFields):
             except AttributeError:
                 pass
 
-    def generateSegmentDurations(self):
+    def generateSegmentDurations(self) -> SegmentDurations:
         # TODO: support live profile
-        def output_s_node(sn):
-            if sn["duration"] is None:
+        def output_s_node(sn: SegmentTimelineElement) -> None:
+            if sn.duration is None:
                 return
-            rv['segments'].append(sn)
-        rv = dict(timescale=self.timescale, segments=[])
-        s_node = {
-            "duration": None,
-            "count": 0,
-        }
+            rv.segments.append(sn)
+        rv = SegmentDurations(timescale=self.timescale)
+        s_node = SegmentTimelineElement()
         for seg in self.segments:
             try:
-                if seg.duration != s_node["duration"]:
+                if seg.duration != s_node.duration:
                     output_s_node(s_node)
-                    s_node["count"] = 0
-                s_node["duration"] = seg.duration
-                s_node["count"] += 1
+                    s_node.count = 0
+                s_node.duration = seg.duration
+                s_node.count += 1
             except AttributeError:
                 # init segment does not have a duration
                 pass
         output_s_node(s_node)
         return rv
 
-    def generateSegmentList(self):
-        # TODO: support live profile
-        rv = {
-            'timescale': self.timescale,
-            'duration': self.mediaDuration,
-            'media': [],
-        }
+    def generateSegmentList(self) -> SegmentIndexList:
+        rv = SegmentIndexList(
+            timescale=self.timescale, duration=self.mediaDuration,
+            init=SegmentPosition(0, 0))
         first = True
         for seg in self.segments:
+            end = seg.pos + seg.size - 1
+            sp = SegmentPosition(start=seg.pos, end=end)
             if first:
-                rv['init'] = {
-                    'start': seg.pos,
-                    'end': seg.pos + seg.size - 1,
-                }
+                rv.init = sp
                 first = False
             else:
-                rv['media'].append({
-                    'start': seg.pos,
-                    'end': seg.pos + seg.size - 1,
-                })
+                rv.media.append(sp)
         return rv
 
     def generateSegmentTimeline(self) -> list[SegmentTimelineElement]:
-        def output_s_node(sn):
+        def output_s_node(sn: SegmentTimelineElement) -> None:
             if sn.duration is not None:
                 rv.append(sn)
 
@@ -394,6 +402,7 @@ class Representation(ObjectWithFields):
             mod_segment, origin_time, seg_start_time = self.calculate_segment_from_timecode(
                 timeline_start, True)
             drift = ref_duration_tc - self.mediaDuration
+            end = self._timing.timeShiftBufferDepth * self.timescale
             logging.debug(
                 'target=%d start=%d origin=%d mod_segment=%d drift=%d',
                 timeline_start, seg_start_time, origin_time, mod_segment, drift)
@@ -403,9 +412,6 @@ class Representation(ObjectWithFields):
             origin_time = 0
             mod_segment = 1
             drift = 0
-        if self._timing.mode == 'live':
-            end = self._timing.timeShiftBufferDepth * self.timescale
-        else:
             end = ref_duration_tc
         rv = []
         dur = 0
