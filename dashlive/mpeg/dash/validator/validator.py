@@ -225,6 +225,10 @@ class DashValidator(DashElement):
             self.save_manifest()
         if self.mode == 'live' and self.prev_manifest is not None:
             self.attrs.check_equal(
+                self.prev_manifest.id, self.manifest.id,
+                template=r'MPD@id has changed from {} to {}',
+                clause='5.4.1')
+            self.attrs.check_equal(
                 self.prev_manifest.availabilityStartTime, self.manifest.availabilityStartTime,
                 template=r'availabilityStartTime has changed from {} to {}')
             age = self.manifest.publishTime - self.prev_manifest.publishTime
