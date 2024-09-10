@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<MPD profiles="urn:mpeg:dash:profile:isoff-live:2011"
+     xmlns="urn:mpeg:dash:schema:mpd:2011"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xmlns:cenc="urn:mpeg:cenc:2013"
+     xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011"
+  
+     type="static"
+     mediaPresentationDuration="PT40S"
+  
+     minBufferTime="PT1S"  >
+     <BaseURL>http://unit.test/dash/vod/fixtures/</BaseURL>
+   <UTCTiming schemeIdUri="urn:mpeg:dash:utc:ntp:2014" value="0.europe.pool.ntp.org 1.europe.pool.ntp.org 2.europe.pool.ntp.org 3.europe.pool.ntp.org"/>
+  <Period start="PT0S" id="p0">
+     <AdaptationSet mimeType="video/mp4" startWithSAP="1" segmentAlignment="true">
+       
+       <SegmentTemplate
+                presentationTimeOffset="0"
+                timescale="240"
+                initialization="$RepresentationID$/init.m4v"
+                media="$RepresentationID$/$Number$.m4v"
+                duration="960"
+                startNumber="1"/>
+          <Representation
+              id="bbb_v7"
+              mimeType="video/mp4"
+              codecs="avc3.640028"
+              width="1920"
+              height="1080"
+              bandwidth="191821"
+              frameRate="24"
+              sar="1:1"
+              scanType="progressive" />
+          <Representation
+              id="bbb_v6"
+              mimeType="video/mp4"
+              codecs="avc3.640028"
+              width="1920"
+              height="1080"
+              bandwidth="374782"
+              frameRate="24"
+              sar="1:1"
+              scanType="progressive" />
+     </AdaptationSet>
+     <AdaptationSet
+	     mimeType="audio/mp4"
+	     lang=""
+	     segmentAlignment="true"
+	     startWithSAP="">
+     <SegmentTemplate
+              presentationTimeOffset="0"
+              timescale="44100"
+              initialization="$RepresentationID$/init.m4a"
+              media="$RepresentationID$/$Number$.m4a"
+              duration="176355"
+              startNumber="1"/>
+          <Representation
+              id="bbb_a1"
+              mimeType="audio/mp4"
+              codecs="mp4a.40.2"
+              audioSamplingRate="44100"
+              bandwidth="98381" />
+      </AdaptationSet>
+  </Period>
+</MPD>
