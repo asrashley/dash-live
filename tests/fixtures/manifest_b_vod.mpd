@@ -1,0 +1,50 @@
+<MPD type="static" xmlns="urn:mpeg:dash:schema:mpd:2011" profiles="urn:mpeg:dash:profile:isoff-live:2011" minBufferTime="PT1.5S" xmlns:cenc="urn:mpeg:cenc:2013" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  mediaPresentationDuration="PT40S">
+ <ProgramInformation>
+  <Title>Big Buck Bunny</Title>
+ </ProgramInformation>
+ <Period start="PT0S" duration="PT40S">
+   <BaseURL>http://unit.test/dash/vod/fixtures/</BaseURL>
+     <AdaptationSet mimeType="video/mp4">
+       
+       <ContentComponent id="1" contentType="video"/>
+         <Representation id="bbb_v7" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="191821">
+           <SegmentTemplate startNumber="1"
+                       timescale="240"
+                       duration="960"
+                       initialization="$RepresentationID$/init.m4v"
+                       media="$RepresentationID$/$Number$.m4v"/>
+         </Representation>
+       
+         <Representation id="bbb_v6" mimeType="video/mp4" codecs="avc3.640028" width="1920" height="1080" startWithSAP="1" bandwidth="374782">
+           <SegmentTemplate startNumber="1"
+                       timescale="240"
+                       duration="960"
+                       initialization="$RepresentationID$/init.m4v"
+                       media="$RepresentationID$/$Number$.m4v"/>
+         </Representation>
+       
+     </AdaptationSet>
+  <AdaptationSet mimeType="audio/mp4" id="2">
+     <ContentComponent id="1" contentType="audio" lang="eng"/>
+     
+     <Representation
+	 id="bbb_a1"
+	 mimeType="audio/mp4"
+	 codecs="mp4a.40.2"
+	 sampleRate="44100"
+	 numChannels="2"
+	 lang="und"
+	 startWithSAP="1"
+	 bandwidth="98381">
+       <SegmentTemplate startNumber="1"
+                        timescale="44100"
+                        duration="176355"
+                        initialization="$RepresentationID$/init.m4a"
+                        media="$RepresentationID$/$Number$.m4a"/>
+     </Representation>
+     
+  </AdaptationSet>
+     
+ </Period>
+</MPD>
