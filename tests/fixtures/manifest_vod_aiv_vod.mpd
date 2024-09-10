@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<MPD
+    xmlns="urn:mpeg:dash:schema:mpd:2011"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    mediaPresentationDuration="PT40S"
+    minBufferTime="PT10S"
+    profiles="urn:mpeg:dash:profile:isoff-on-demand:2011"
+    type="static"
+    xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd"
+>
+
+  <Period
+      id="p0"
+      start="PT0S"
+      duration="PT40S">
+      
+      <AdaptationSet
+        mimeType="video/mp4"
+        contentType="video"
+        group="1"
+        segmentAlignment="true"
+        subsegmentAlignment="true"
+        subsegmentStartsWithSAP="1"
+        
+           maxWidth="1920"
+           maxHeight="1080"
+           maxFrameRate="24"
+           par="16:9"
+         
+      >
+      
+        <Representation
+          bandwidth="191821"
+          codecs="avc3.640028"
+          mimeType="video/mp4"
+          id="bbb_v7"
+          
+            frameRate="24"
+            height="1080"
+            scanType="progressive"
+            width="1920"
+          
+        >
+          <BaseURL>http://unit.test/dash/vod/fixtures/bbb_v7.m4v</BaseURL>
+        
+<SegmentList timescale="240" duration="9600">
+  <Initialization range="0-853" />
+  <SegmentURL mediaRange="854-90863"/>
+  <SegmentURL mediaRange="90864-199526"/>
+  <SegmentURL mediaRange="199527-282795"/>
+  <SegmentURL mediaRange="282796-352257"/>
+  <SegmentURL mediaRange="352258-472028"/>
+  <SegmentURL mediaRange="472029-603150"/>
+  <SegmentURL mediaRange="603151-728509"/>
+  <SegmentURL mediaRange="728510-806766"/>
+  <SegmentURL mediaRange="806767-879653"/>
+  <SegmentURL mediaRange="879654-959105"/>
+</SegmentList>
+      </Representation>
+   
+        <Representation
+          bandwidth="374782"
+          codecs="avc3.640028"
+          mimeType="video/mp4"
+          id="bbb_v6"
+          
+            frameRate="24"
+            height="1080"
+            scanType="progressive"
+            width="1920"
+          
+        >
+          <BaseURL>http://unit.test/dash/vod/fixtures/bbb_v6.m4v</BaseURL>
+        
+<SegmentList timescale="240" duration="9600">
+  <Initialization range="0-853" />
+  <SegmentURL mediaRange="854-183678"/>
+  <SegmentURL mediaRange="183679-397108"/>
+  <SegmentURL mediaRange="397109-560937"/>
+  <SegmentURL mediaRange="560938-688008"/>
+  <SegmentURL mediaRange="688009-934591"/>
+  <SegmentURL mediaRange="934592-1194934"/>
+  <SegmentURL mediaRange="1194935-1434350"/>
+  <SegmentURL mediaRange="1434351-1580284"/>
+  <SegmentURL mediaRange="1580285-1716812"/>
+  <SegmentURL mediaRange="1716813-1873909"/>
+</SegmentList>
+      </Representation>
+      
+<SegmentDurations timescale="%d">
+  <S d="960"
+     r="9"
+  />
+</SegmentDurations>
+      
+     
+    </AdaptationSet>
+   
+      <AdaptationSet
+        mimeType="audio/mp4"
+        contentType="audio"
+        group="2"
+        segmentAlignment="true"
+        subsegmentAlignment="true"
+        subsegmentStartsWithSAP="1"
+        
+           lang="und"
+         
+      >
+      
+        <Representation
+          bandwidth="98381"
+          codecs="mp4a.40.2"
+          mimeType="audio/mp4"
+          id="bbb_a1"
+          
+            audioSamplingRate="44100"
+          
+        >
+          <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
+        
+          <BaseURL>http://unit.test/dash/vod/fixtures/bbb_a1.m4a</BaseURL>
+        
+<SegmentList timescale="44100" duration="1763328">
+  <Initialization range="0-938" />
+  <SegmentURL mediaRange="939-49843"/>
+  <SegmentURL mediaRange="49844-98730"/>
+  <SegmentURL mediaRange="98731-147710"/>
+  <SegmentURL mediaRange="147711-197076"/>
+  <SegmentURL mediaRange="197077-246439"/>
+  <SegmentURL mediaRange="246440-295354"/>
+  <SegmentURL mediaRange="295355-344357"/>
+  <SegmentURL mediaRange="344358-393779"/>
+  <SegmentURL mediaRange="393780-442688"/>
+  <SegmentURL mediaRange="442689-491719"/>
+</SegmentList>
+      </Representation>
+      
+<SegmentDurations timescale="%d">
+  <S d="176128"
+     r="1"
+  />
+  <S d="176128"
+     r="1"
+  />
+  <S d="176128"
+     r="1"
+  />
+  <S d="176128"
+     r="1"
+  />
+  <S d="176128"
+     r="1"
+  />
+</SegmentDurations>
+      
+     
+    </AdaptationSet>
+    
+  </Period>
+   
+</MPD>

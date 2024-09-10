@@ -1,0 +1,64 @@
+<MPD
+ xmlns="urn:mpeg:dash:schema:mpd:2011"
+ xmlns:cenc="urn:mpeg:cenc:2013"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ profiles="urn:mpeg:dash:profile:isoff-live:2011"
+ minBufferTime="PT9S"
+    type="static"
+    mediaPresentationDuration="PT40S"
+
+><BaseURL>http://unit.test/dash/vod/fixtures/</BaseURL>
+    <UTCTiming schemeIdUri="urn:mpeg:dash:utc:direct:2014" value="2023-08-07T17:56:43Z"/>
+  <Period id="p0">
+    <AdaptationSet
+        mimeType="video/mp4"
+        segmentAlignment="true"
+        bitstreamSwitching="true">
+      
+      <SegmentTemplate
+            timescale="240"
+            duration="960"
+            initialization="$RepresentationID$/init.m4v"
+            media="$RepresentationID$/$Number$.m4v"
+            startNumber="1" >
+      </SegmentTemplate>
+        <Representation
+            id="bbb_v7"
+            mimeType="video/mp4"
+            codecs="avc3.640028"
+            width="1920"
+            height="1080"
+            startWithSAP="1"
+            bandwidth="191821" />
+    
+        <Representation
+            id="bbb_v6"
+            mimeType="video/mp4"
+            codecs="avc3.640028"
+            width="1920"
+            height="1080"
+            startWithSAP="1"
+            bandwidth="374782" />
+    
+    </AdaptationSet>
+    <AdaptationSet
+        lang="und"
+        mimeType="audio/mp4"
+        segmentAlignment="true">
+       <SegmentTemplate
+          timescale="44100"
+          duration="176355"
+          initialization="$RepresentationID$/init.m4a"
+          media="$RepresentationID$/$Number$.m4a"
+          startNumber="1" />
+       <Representation
+          id="bbb_a1"
+          mimeType="audio/mp4"
+          codecs="mp4a.40.2"
+          audioSamplingRate="44100"
+          startWithSAP="1"
+          bandwidth="98381">
+       </Representation>
+    </AdaptationSet>
+  </Period>
+</MPD>

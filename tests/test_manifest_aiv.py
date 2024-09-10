@@ -19,6 +19,7 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+import datetime
 import unittest
 
 import flask
@@ -35,6 +36,11 @@ class ManifestAIVTest(FlaskTestBase, DashManifestCheckMixin):
             'dash-mpd-v3', manifest='manifest_vod_aiv.mpd',
             stream=self.FIXTURES_PATH.name, mode='live')
         self.app.get(baseurl, status=404)
+
+    @FlaskTestBase.mock_datetime_now(datetime.datetime.fromisoformat("2023-10-05T20:19:58Z"))
+    def test_generated_manifest_against_fixture(self):
+        self.check_generated_manifest_against_fixture(
+            'manifest_vod_aiv.mpd', mode='vod', acodec='mp4a', encrypted=False)
 
 
 if __name__ == '__main__':
