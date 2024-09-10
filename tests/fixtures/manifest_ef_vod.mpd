@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011"
+     xmlns:cenc="urn:mpeg:cenc:2013"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     minBufferTime="PT4.00S"
+     profiles="urn:dvb:dash:profile:dvb-dash:2014,urn:dvb:dash:profile:dvb-dash:isoff-ext-live:2014"
+     publishTime="2023-10-01T02:03:58Z"
+     
+     type="static"
+     mediaPresentationDuration="PT40S"
+     
+     >
+ <BaseURL>http://unit.test/dash/vod/fixtures/</BaseURL>
+ <Period id="p1"
+     
+         duration="PT40S"
+     
+         start="PT0.000S">
+           <AdaptationSet mimeType="video/mp4" codecs="avc3.640028"
+                   startWithSAP="1" segmentAlignment="true">
+           
+      <Representation
+          bandwidth="191821"
+          id="bbb_v7"
+          frameRate="24"
+          mimeType="video/mp4"
+          width="1920"
+          sar="1:1"
+          height="1080"
+          scanType="progressive">
+        <SegmentTemplate startNumber="1" duration="960"
+         initialization="$RepresentationID$/init.m4v" media="$RepresentationID$/$Number$.m4v" 
+         timescale="240"/>
+      </Representation>
+      
+      <Representation
+          bandwidth="374782"
+          id="bbb_v6"
+          frameRate="24"
+          mimeType="video/mp4"
+          width="1920"
+          sar="1:1"
+          height="1080"
+          scanType="progressive">
+        <SegmentTemplate startNumber="1" duration="960"
+         initialization="$RepresentationID$/init.m4v" media="$RepresentationID$/$Number$.m4v" 
+         timescale="240"/>
+      </Representation></AdaptationSet>
+      
+    
+    
+    <AdaptationSet
+	mimeType="audio/mp4"
+        codecs=""
+        startWithSAP=""
+        segmentAlignment="true"
+        lang="und">
+        <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+	
+        <Representation
+            bandwidth="98381"
+            id="bbb_a1"
+            mimeType="audio/mp4"
+            audioSamplingRate="44100">
+          <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
+          <SegmentTemplate startNumber="1"
+                           duration="176355"
+                           initialization="$RepresentationID$/init.m4a"
+                           media="$RepresentationID$/$Number$.m4a"
+                           timescale="44100"/>
+        </Representation>
+	
+      </AdaptationSet>
+    
+  </Period>
+</MPD>
