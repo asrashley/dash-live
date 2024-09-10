@@ -24,9 +24,9 @@ import unittest
 
 import flask
 
+from dashlive.drm.system import DrmSystem
 from dashlive.server import models
 from dashlive.server.options.repository import OptionsRepository
-from dashlive.server.options.drm_options import ALL_DRM_TYPES
 from dashlive.utils import objects
 
 from .mixins.check_manifest import DashManifestCheckMixin
@@ -186,7 +186,7 @@ class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
             manifest='hand_made.mpd',
             mode='live',
             stream=self.FIXTURES_PATH.name)
-        drm_checks = ['none'] + ALL_DRM_TYPES
+        drm_checks = ['none'] + DrmSystem.values()
         for drm in drm_checks:
             args['drm'] = drm
             options = OptionsRepository.convert_cgi_options(args, defaults=defaults)

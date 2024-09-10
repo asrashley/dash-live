@@ -33,6 +33,7 @@ from dashlive.server.models import Stream
 from .base import CreateDrmData, DrmBase, DrmManifestContext
 from .keymaterial import KeyMaterial
 from .key_tuple import KeyTuple
+from .location import DrmLocation
 from .system import DrmSystem
 
 class ClearKey(DrmBase):
@@ -49,9 +50,9 @@ class ClearKey(DrmBase):
             options: OptionsContainer,
             la_url: str | None = None,
             https_request: bool = False,
-            locations: AbstractSet[str] | None = None) -> DrmManifestContext:
+            locations: AbstractSet[DrmLocation] | None = None) -> DrmManifestContext:
         if locations is None:
-            locations = {'cenc', 'moov'}
+            locations = {DrmLocation.CENC, DrmLocation.MOOV}
         if la_url is None:
             la_url = urllib.parse.urljoin(
                 flask.request.host_url, flask.url_for('clearkey'))
@@ -63,9 +64,9 @@ class ClearKey(DrmBase):
 
         cenc: CreateDrmData | None = None
         moov: CreateDrmData | None = None
-        if 'cenc' in locations:
+        if DrmLocation.CENC in locations:
             cenc = generate_pssh_box
-        if 'moov' in locations:
+        if DrmLocation.MOOV in locations:
             moov = generate_pssh_box
         return DrmManifestContext(
             system=DrmSystem.CLEARKEY,

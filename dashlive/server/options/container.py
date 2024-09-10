@@ -23,10 +23,10 @@
 from collections import defaultdict
 from typing import AbstractSet, Any, Optional
 
+from dashlive.drm.location import DrmLocation
+from dashlive.drm.system import DrmSystem
 from dashlive.server.options.drm_options import (
-    ALL_DRM_LOCATIONS,
-    ALL_DRM_TYPES,
-    DrmLocation,
+    DrmLocationOption,
     DrmSelectionTuple
 )
 from dashlive.components.field_group import InputFieldGroup
@@ -282,13 +282,20 @@ class OptionsContainer(ObjectWithFields):
         fields.sort(key=lambda item: item['title'])
         return fields
 
-    def generate_drm_fields(self, value: list[DrmSelectionTuple] | None) -> list[JsonObject]:
+    def generate_drm_fields(self, value: list[DrmSelectionTuple | str] | None) -> list[JsonObject]:
         fields: list[JsonObject] = []
-        drms: dict[str, set[str]] = {}
+        drms: dict[str, set[DrmLocation]] = {}
+        all_locations = '-'.join(DrmLocation.values())
         if value:
             for item in value:
-                drms[item[0]] = item[1]
-        for name in ALL_DRM_TYPES:
+                locs: set[DrmLocation] = set()
+                for drm_loc in item[1]:
+                    if isinstance(drm_loc, str):
+                        locs.add(DrmLocation.from_string(drm_loc))
+                    else:
+                        locs.add(drm_loc)
+                drms[item[0]] = locs
+        for name in DrmSystem.values():
             fields.append({
                 "name": f'drm_{name}',
                 "title": f'{name.title()} DRM',
@@ -298,12 +305,11 @@ class OptionsContainer(ObjectWithFields):
                 "className": "drm-checkbox",
                 "prefix": name,
             })
-            locs = drms.get(name, ALL_DRM_LOCATIONS)
-            if locs == ALL_DRM_LOCATIONS:
+            locs = drms.get(name, set())
+            val = '-'.join(sorted([loc.to_json() for loc in locs]))
+            if val == all_locations:
                 val = ''
-            else:
-                val = '-'.join(sorted(list(locs)))
-            input = DrmLocation.input_field(val, {})
+            input = DrmLocationOption.input_field(val, {})
             input.update({
                 'name': f'{name}_{input["name"]}',
                 'title': f'{name.title()} location',

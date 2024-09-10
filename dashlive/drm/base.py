@@ -28,6 +28,7 @@ from dashlive.server.models import Stream
 from dashlive.server.options.container import OptionsContainer
 
 from .key_tuple import KeyTuple
+from .location import DrmLocation
 from .system import DrmSystem
 
 class CustomAttribute(NamedTuple):
@@ -77,7 +78,7 @@ class DrmBase(ABC):
                                   options: OptionsContainer,
                                   la_url: str | None = None,
                                   https_request: bool = False,
-                                  locations: AbstractSet[str] | None = None) -> DrmManifestContext:
+                                  locations: AbstractSet[DrmLocation] | None = None) -> DrmManifestContext:
         raise RuntimeError('generate_manifest_context has not been implemented')
 
     def update_traf_if_required(self, options: OptionsContainer,

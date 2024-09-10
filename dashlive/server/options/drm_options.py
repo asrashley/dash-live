@@ -22,6 +22,9 @@
 
 from typing import TypeAlias
 
+from dashlive.drm.location import DrmLocation
+from dashlive.drm.system import DrmSystem
+
 from .dash_option import DashOption
 from .types import OptionUsage
 
@@ -56,7 +59,7 @@ HTML_DESCRIPTION = '''
 <p>For example: <span class="pre">drm=playready-pro-cenc,clearkey-moov</span></p>
 '''
 
-DrmLocation = DashOption(
+DrmLocationOption = DashOption(
     usage=(OptionUsage.MANIFEST | OptionUsage.AUDIO | OptionUsage.VIDEO | OptionUsage.TEXT),
     short_name='dloc',
     full_name='drmLocation',
@@ -76,28 +79,29 @@ DrmLocation = DashOption(
     featured=True)
 
 
-# TODO: get this list from dashlive.drm
-ALL_DRM_TYPES: list[str] = ['clearkey', 'marlin', 'playready']
-ALL_DRM_LOCATIONS: set[str] = {'pro', 'cenc', 'moov'}
+ALL_DRM_NAMES: set[str] = set(DrmSystem.values())
+ALL_DRM_LOCATIONS: set[DrmLocation] = set(DrmLocation.all())
 
-DrmSelectionTuple: TypeAlias = tuple[str, set[str]]
+DrmSelectionTuple: TypeAlias = tuple[str, set[DrmLocation]]
 
 def _drm_selection_from_string(value: str) -> list[DrmSelectionTuple]:
+    locations: set[DrmLocation]
+
     value = value.lower()
     if value.startswith('none') or value == '':
         return []
     if value.startswith('all'):
         if '-' in value:
-            locations = set(value.split('-')[1:])
+            locations = {DrmLocation.from_string(loc) for loc in value.split('-')[1:]}
         else:
             locations = ALL_DRM_LOCATIONS
-        return [(drm, locations) for drm in ALL_DRM_TYPES]
-    result = []
+        return [(drm, locations) for drm in DrmSystem.values()]
+    result: list[DrmSelectionTuple] = []
     for item in value.split(','):
         if '-' in item:
             parts = item.split('-')
             drm = parts[0]
-            locations = set(parts[1:])
+            locations = {DrmLocation(loc) for loc in parts[1:]}
         else:
             drm = item
             locations = ALL_DRM_LOCATIONS
@@ -111,9 +115,9 @@ def _drm_selection_to_string(value: list[DrmSelectionTuple]) -> str:
         if locations == ALL_DRM_LOCATIONS:
             result.append(drm)
         else:
-            parts = [drm] + sorted(list(locations))
+            parts = [drm] + sorted([loc.to_json() for loc in locations])
             result.append('-'.join(parts))
-    if set(result) == set(ALL_DRM_TYPES):
+    if set(result) == ALL_DRM_NAMES:
         return 'all'
     return ','.join(result)
 
@@ -132,7 +136,7 @@ DrmSelection = DashOption(
     cgi_name='drm',
     cgi_type='<drm>,.. or <drm>-<location>,..',
     input_type='multipleSelect',
-    cgi_choices=(None, 'all', 'clearkey', 'marlin', 'playready'),
+    cgi_choices=tuple([None, 'all'] + DrmSystem.values()),
     featured=True)
 
 MarlinLicenseUrl = DashOption(
