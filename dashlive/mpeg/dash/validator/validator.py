@@ -74,7 +74,11 @@ class DashValidator(DashElement):
         self.xml = xml
 
         if self.xml is None and data:
-            doc = ET.parse(io.BytesIO(data))
+            try:
+                doc = ET.parse(io.BytesIO(data))
+            except ET.XMLSyntaxError as err:
+                self.elt.add_error(f'XML parsing failed: {err}')
+                return False
             self.xml = doc.getroot()
             self.manifest_text = []
             encoding = doc.docinfo.encoding
@@ -135,9 +139,16 @@ class DashValidator(DashElement):
         return result
 
     def get_validation_history(self) -> list[ValidationHistory]:
-        vh = ValidationHistory(
-            url=self.url, publishTime=self.manifest.publishTime,
-            errors=self.manifest.get_errors())
+        vh: ValidationHistory
+
+        if self.manifest is None:
+            vh = ValidationHistory(
+                url=self.url, publishTime=datetime.datetime.now(),
+                errors=[])
+        else:
+            vh = ValidationHistory(
+                url=self.url, publishTime=self.manifest.publishTime,
+                errors=self.manifest.get_errors())
         return self.history + [vh]
 
     def finished(self) -> bool:
@@ -266,8 +277,9 @@ class DashValidator(DashElement):
         print(f'=== {self.url} ===')
         for idx, line in enumerate(self.manifest_text, start=1):
             print(f'{idx:03d}: {line}')
-        for patch in self.manifest.patches:
-            patch.print_patch_text()
+        if self.manifest is not None:
+            for patch in self.manifest.patches:
+                patch.print_patch_text()
 
     def get_json_script_filename(self) -> str:
         return self.output_filename(
