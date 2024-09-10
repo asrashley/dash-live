@@ -24,6 +24,8 @@ import datetime
 import html
 import logging
 import math
+from typing import cast
+
 import flask
 
 from dashlive.mpeg.dash.profiles import primary_profiles
@@ -33,7 +35,7 @@ from dashlive.server.options.container import OptionsContainer
 from dashlive.utils.objects import dict_to_cgi_params
 from dashlive.utils.timezone import UTC
 
-from .base import RequestHandlerBase
+from .base import RequestHandlerBase, TemplateContext
 from .decorators import uses_stream, current_stream
 from .manifest_context import ManifestContext
 
@@ -75,7 +77,6 @@ class ServeManifest(RequestHandlerBase):
                 mode, manifest, modes)
             return flask.make_response(
                 f'{html.escape(manifest)} not found', 404)
-        context = self.create_context(title=current_stream.title)
         try:
             options = self.calculate_options(
                 mode=mode, args=flask.request.args, stream=current_stream,
@@ -97,7 +98,9 @@ class ServeManifest(RequestHandlerBase):
             options.update(segmentTimeline=True)
         options.remove_unused_parameters(mode)
         dash = ManifestContext(manifest=mft, options=options)
-        context.update(dash.to_dict())
+        context = cast(ManifestTemplateContext, self.create_context(
+            title=current_stream.title, mpd=dash, options=options, mode=mode,
+            stream=current_stream))
         response = self.check_for_synthetic_manifest_error(options, context)
         if response is not None:
             return response
@@ -114,8 +117,10 @@ class ServeManifest(RequestHandlerBase):
         self.add_allowed_origins(headers)
         return flask.make_response((body, 200, headers))
 
-    def check_for_synthetic_manifest_error(self, options: OptionsContainer,
-                                           context: dict) -> flask.Response | None:
+    def check_for_synthetic_manifest_error(
+            self,
+            options: OptionsContainer,
+            context: ManifestTemplateContext) -> flask.Response | None:
         for item in options.manifestErrors:
             code, pos = item
             if isinstance(pos, int):
@@ -125,7 +130,7 @@ class ServeManifest(RequestHandlerBase):
                 tm = options.availabilityStartTime.replace(
                     hour=pos.hour, minute=pos.minute, second=pos.second)
                 tm2 = tm + datetime.timedelta(seconds=options.minimumUpdatePeriod)
-                if context['now'] < tm or context['now'] > tm2:
+                if context['mpd'].now < tm or context['mpd'].now > tm2:
                     continue
             if (
                     code >= 500 and
@@ -221,7 +226,6 @@ class ServePatch(RequestHandlerBase):
                 f'{html.escape(manifest)} live mode not supported',
                 400)
 
-        context = self.create_context(title=current_stream.title)
         try:
             options = self.calculate_options(
                 mode='live', args=flask.request.args, stream=current_stream,
@@ -235,12 +239,11 @@ class ServePatch(RequestHandlerBase):
         options.remove_unused_parameters('live')
         original_publish_time = datetime.datetime.fromtimestamp(
             publish, tz=UTC())
-        context.update({
-            'options': options,
-            'original_publish_time': original_publish_time,
-        })
         dash = ManifestContext(manifest=mft, options=options)
-        context.update(dash.to_dict())
+        context = cast(PatchTemplateContext, self.create_context(
+            title=current_stream.title, mpd=dash, options=options,
+            stream=current_stream,
+            original_publish_time=original_publish_time))
 
         body = flask.render_template(f'patches/{manifest}.xml', **context)
         try:

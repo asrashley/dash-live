@@ -3,14 +3,14 @@
     xmlns="urn:mpeg:dash:schema:mpd-patch:2020"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="urn:mpeg:dash:schema:mpd-patch:2020 DASH-MPD-PATCH.xsd"
-    mpdId="{{ mpd_id }}"
+    mpdId="{{ mpd.mpd_id }}"
     originalPublishTime="{{ original_publish_time|isoDateTime }}"
-    publishTime="{{ publishTime|isoDateTime }}">
-  <replace sel="/MPD/@publishTime">{{ publishTime|isoDateTime }}</replace>
+    publishTime="{{ mpd.publishTime|isoDateTime }}">
+  <replace sel="/MPD/@publishTime">{{ mpd.publishTime|isoDateTime }}</replace>
   <replace sel="/MPD/PatchLocation[1]">
-    <PatchLocation ttl="{{ patch.ttl }}">{{ patch.location }}</PatchLocation>
+    <PatchLocation ttl="{{ mpd.patch.ttl }}">{{ mpd.patch.location }}</PatchLocation>
   </replace>
-  {%- for period in periods %}
+  {%- for period in mpd.periods %}
     {%- for adp in period.adaptationSets %}
       {%- if adp.representations %}
         {%- with rep=adp.representations[0] %}

@@ -7,26 +7,37 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="urn:mpeg:schema:mpd:2011 DASH-MPD.xsd"
     profiles="urn:mpeg:profile:isoff-live:2011"
-    publishTime="{{publishTime|isoDateTime}}"
+    publishTime="{{ mpd.publishTime|isoDateTime }}"
     minBufferTime="PT8.0S"
-  {% if mode=='live' %}
+  {% if mode == 'live' %}
     type="dynamic"
-    {% if availabilityStartTime %}availabilityStartTime="{{availabilityStartTime|isoDateTime}}"{% endif %}
-    {% if minimumUpdatePeriod %}minimumUpdatePeriod="{{minimumUpdatePeriod|isoDuration}}"{% endif %}
-    {% if timeShiftBufferDepth %}timeShiftBufferDepth="{{timeShiftBufferDepth|isoDuration}}"{% endif %}
+    {%- if mpd.availabilityStartTime %}
+    availabilityStartTime="{{ mpd.availabilityStartTime|isoDateTime }}"
+    {%- endif %}
+    {%- if mpd.minimumUpdatePeriod %}
+    minimumUpdatePeriod="{{ mpd.minimumUpdatePeriod|isoDuration}}"
+    {%- endif %}
+    {%- if mpd.timeShiftBufferDepth %}
+    timeShiftBufferDepth="{{ mpd.timeShiftBufferDepth|isoDuration }}"
+    {%- endif %}
   {% else %}
     type="static"
-    mediaPresentationDuration="{{mediaDuration|isoDuration}}"
-  {% endif %}
-    >
+    mediaPresentationDuration="{{ mpd.mediaDuration|isoDuration }}"
+  {%- endif %}
+  >
+  {%- with period = mpd.period %}
     <Period
-     start="{{period.start|isoDuration}}"
-     id="{{period.id}}"
-     {% if period.duration %}duration="{{period.duration|isoDuration}}"{% endif %}
+     start="{{ period.start|isoDuration}}"
+     id="{{ period.id}}"
+     {%- if period.duration %}
+     duration="{{period.duration|isoDuration}}"
+     {%- endif %}
     >
-    {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
+    {%- if mpd.baseURL %}
+    <BaseURL>{{ mpd.baseURL }}</BaseURL>
+    {%- endif %}
     {% include "events/period.xml" %}
-   {%- with adp = video %}
+   {%- with adp = period.video_track %}
     <AdaptationSet
         mimeType="video/mp4"
         par="16:9"
@@ -34,13 +45,13 @@
         startWithSAP="1">
         {% include "events/adaptationset.xml" %}
         {% include "drm/template.xml" %}
-      {%- for rep in video.representations %}
+      {%- for rep in adp.representations %}
         {%- if loop.first %}
           <SegmentTemplate
-              initialization="{{video.initURL|xmlSafe}}"
-              media="{{video.mediaURL|xmlSafe}}"
-              presentationTimeOffset="{{video.presentationTimeOffset}}"
-              timescale="{{video.timescale}}"
+              initialization="{{adp.initURL|xmlSafe}}"
+              media="{{adp.mediaURL|xmlSafe}}"
+              presentationTimeOffset="{{adp.presentationTimeOffset}}"
+              timescale="{{adp.timescale}}"
               >
             {% include "segment/timeline.xml" %}
           </SegmentTemplate>
@@ -58,7 +69,7 @@
       {% endfor %}
     </AdaptationSet>
    {%- endwith %}
-  {%- for adp in audio_sets %}
+  {%- for adp in mpd.audio_sets %}
       <AdaptationSet
           lang="{{ adp.lang }}"
 	  id="{{ adp.id }}"
@@ -87,5 +98,6 @@
       {%- endfor %}
       </AdaptationSet>
   {%- endfor %}
-  </Period>
+</Period>
+{%- endwith %}
 </MPD>

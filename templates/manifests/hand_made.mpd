@@ -3,42 +3,44 @@
      xmlns:cenc="urn:mpeg:cenc:2013"
      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
      xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd"
-     publishTime="{{publishTime|isoDateTime}}"
-     id="{{ mpd_id }}"
-  {%- if mode=='live' %}
+     publishTime="{{ mpd.publishTime|isoDateTime }}"
+     id="{{ mpd.mpd_id }}"
+  {%- if mode == 'live' %}
     type="dynamic"
-    {%- if minimumUpdatePeriod %}
-    minimumUpdatePeriod="{{minimumUpdatePeriod|isoDuration}}"
+    {%- if mpd.minimumUpdatePeriod %}
+    minimumUpdatePeriod="{{ mpd.minimumUpdatePeriod|isoDuration }}"
     {%- endif %}
-    {%- if suggestedPresentationDelay %}
-    suggestedPresentationDelay="{{suggestedPresentationDelay|isoDuration}}"
+    {%- if mpd.suggestedPresentationDelay %}
+    suggestedPresentationDelay="{{ mpd.suggestedPresentationDelay|isoDuration}}"
     {%- endif %}
-    availabilityStartTime="{{availabilityStartTime|isoDateTime}}"
-    timeShiftBufferDepth="{{timeShiftBufferDepth|isoDuration}}"
+    availabilityStartTime="{{ mpd.availabilityStartTime|isoDateTime }}"
+    timeShiftBufferDepth="{{ mpd.timeShiftBufferDepth|isoDuration }}"
   {%- else %}
     type="static"
   {%- endif %}
-  {%- if mode!='live' %}
-    mediaPresentationDuration="{{mediaDuration|isoDuration}}"
+  {%- if mode != 'live' %}
+    mediaPresentationDuration="{{ mpd.mediaDuration|isoDuration }}"
   {%- endif %}
-  profiles="{{ profiles | join(',') }}"
-  minBufferTime="{{minBufferTime|isoDuration}}"
+  profiles="{{ mpd.profiles | join(',') }}"
+  minBufferTime="{{ mpd.minBufferTime|isoDuration }}"
 >
  <ProgramInformation>
-  <Title>{{title}}</Title>
+  <Title>{{ title }} </Title>
  </ProgramInformation>
- <Location>{{request_uri|xmlSafe}}</Location>
- {%- if timeSource %}<UTCTiming schemeIdUri="{{timeSource.method}}" value="{{timeSource.value}}"/>{% endif %}
+ <Location>{{ request_uri|xmlSafe }}</Location>
+ {%- if mpd.timeSource %}
+ <UTCTiming schemeIdUri="{{mpd.timeSource.method}}" value="{{mpd.timeSource.value}}"/>
+ {% endif %}
  {%- if options.patch %}
-   <PatchLocation ttl="{{ patch.ttl }}">{{ patch.location|xmlSafe }}</PatchLocation>
+   <PatchLocation ttl="{{ mpd.patch.ttl }}">{{ mpd.patch.location|xmlSafe }}</PatchLocation>
  {% endif -%}
- {%- for period in periods %}
+ {%- for period in mpd.periods %}
    <Period
      start="{{period.start|isoDuration}}"
      id="{{ period.id }}"
      {%- if period.duration %}duration="{{period.duration|isoDuration}}"{% endif %}
    >
-     {%- if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
+     {%- if mpd.baseURL %}<BaseURL>{{ mpd.baseURL }}</BaseURL>{% endif %}
      {% include "events/period.xml" %}
      {%- for adp in period.adaptationSets %}
        <AdaptationSet

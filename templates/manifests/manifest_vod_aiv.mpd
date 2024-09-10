@@ -2,17 +2,17 @@
 <MPD
     xmlns="urn:mpeg:dash:schema:mpd:2011"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    mediaPresentationDuration="{{mediaDuration|isoDuration}}"
     minBufferTime="PT10S"
     profiles="urn:mpeg:dash:profile:isoff-on-demand:2011"
     type="static"
     xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd"
+    mediaPresentationDuration="{{ mpd.mediaDuration|isoDuration }}"
 >
-{% for period in periods %}
+{% for period in mpd.periods %}
   <Period
       id="{{period.id}}"
       start="{{period.start|isoDuration}}"
-      duration="{{mediaDuration|isoDuration}}">
+      duration="{{ mpd.mediaDuration|isoDuration }}">
       {% for adp in period.adaptationSets %}
       <AdaptationSet
         mimeType="{{adp.mimeType}}"
@@ -48,8 +48,8 @@
         {%- if adp.content_type == "audio" %}
           <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
         {% endif %}
-        {%- if baseURL %}
-          <BaseURL>{{baseURL|xmlSafe}}{{rep.id|xmlSafe}}.{{adp.fileSuffix}}</BaseURL>
+        {%- if mpd.baseURL %}
+          <BaseURL>{{ mpd.baseURL|xmlSafe }}{{rep.id|xmlSafe}}.{{adp.fileSuffix}}</BaseURL>
         {%- else %}
           <BaseURL>{{url_for('dash-od-media', stream=stream.directory,
           filename=rep.id, ext=adp.fileSuffix)|xmlSafe}}</BaseURL>
