@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011"
+     xmlns:cenc="urn:mpeg:cenc:2013" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd"
+  
+    type="static"
+  
+  minBufferTime="PT5.000S" maxSegmentDuration="PT4S"
+  publishTime="2023-10-01T02:03:58Z"
+  profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014">
+ <BaseURL>http://unit.test/dash/vod/fixtures/</BaseURL>
+ 
+ <Location>http://unit.test/dash/vod/fixtures/manifest_e.mpd</Location>
+ <Period id="0" start="PT0S"
+  
+  duration="PT40S"
+  
+>
+<AdaptationSet
+    mimeType="video/mp4"
+    contentType="video"
+    segmentAlignment="true"
+    startWithSAP="1"
+    maxWidth="1920"
+    maxHeight="1080"
+    maxFrameRate="24"
+    par="16:9">
+        <SegmentTemplate
+            presentationTimeOffset="0"
+            timescale="240"
+            startNumber="1"
+            initialization="$RepresentationID$/init.m4v"
+            media="$RepresentationID$/$Number$.m4v"
+            duration="960"/>
+      
+      <Representation
+          id="bbb_v7"
+          codecs="avc3.640028"
+          width="1920"
+          height="1080"
+          mimeType="video/mp4"
+          startWithSAP="1"
+          bandwidth="191821"
+          frameRate="24"
+          sar="1:1"
+          scanType="progressive" />
+    
+      <Representation
+          id="bbb_v6"
+          codecs="avc3.640028"
+          width="1920"
+          height="1080"
+          mimeType="video/mp4"
+          startWithSAP="1"
+          bandwidth="374782"
+          frameRate="24"
+          sar="1:1"
+          scanType="progressive" />
+    
+    </AdaptationSet>
+      
+      <AdaptationSet
+	  mimeType="audio/mp4"
+	  contentType="audio"
+	  lang=""
+	  segmentAlignment="true"
+	  startWithSAP="">
+          <Role schemeIdUri="urn:mpeg:dash:role:2011" value="main"/>
+          <SegmentTemplate
+              presentationTimeOffset="0"
+              timescale="44100"
+              initialization="$RepresentationID$/init.m4a"
+              media="$RepresentationID$/$Number$.m4a"
+              duration="176355"
+              startNumber="1"/>
+	  
+          <Representation id="bbb_a1" mimeType="audio/mp4" codecs="mp4a.40.2" audioSamplingRate="44100" numChannels="2" lang="" startWithSAP="1" bandwidth="98381">
+            <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
+          </Representation>
+	  
+      </AdaptationSet>
+      
+  </Period>
+</MPD>
