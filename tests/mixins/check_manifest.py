@@ -28,6 +28,7 @@ import io
 import json
 import os
 import logging
+from pathlib import Path
 from typing import AbstractSet
 import urllib.parse
 
@@ -314,7 +315,10 @@ class DashManifestCheckMixin:
                 mpd_filename, mode=mode, stream=stream, options=options)
             text = flask.render_template(f'manifests/{mpd_filename}', **context)
         fixture = self.fixture_filename(mpd_filename, mode, encrypted)
-        expected = ET.parse(fixture).getroot()
+        if not fixture.exists():
+            with fixture.open('wt', encoding='utf-8') as dest:
+                dest.write(text)
+        expected = ET.parse(str(fixture)).getroot()
         actual = ET.fromstring(bytes(text, 'utf-8'))
         self.assertXmlEqual(expected, actual)
 
@@ -337,12 +341,12 @@ class DashManifestCheckMixin:
         return context
 
     @staticmethod
-    def fixture_filename(mpd_name, mode, encrypted):
+    def fixture_filename(mpd_name: str, mode: str, encrypted: bool) -> Path:
         """returns absolute file path of the given fixture"""
         name, ext = os.path.splitext(mpd_name)
         enc = '_enc' if encrypted else ''
-        filename = fr'{name}_{mode}{enc}{ext}'
-        return os.path.join(os.path.dirname(__file__), '..', 'fixtures', filename)
+        filename = f'{name}_{mode}{enc}{ext}'
+        return Path(__file__).parent.parent / 'fixtures' / filename
 
     xmlNamespaces = {
         'cenc': 'urn:mpeg:cenc:2013',
