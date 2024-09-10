@@ -269,8 +269,10 @@ class DashManifestCheckMixin:
                 http_client=self.async_client, mode=mode, pool=pool,
                 duration=duration, url=mpd_url,
                 encrypted=encrypted, debug=debug, check_media=check_media)
-            await dv.load(data=response.get_data(as_text=False))
-            while not dv.finished() and timeout > 0:
+            loaded = await dv.load(data=response.get_data(as_text=False))
+            if not loaded:
+                print(response.get_data(as_text=True))
+            while loaded and not dv.finished() and timeout > 0:
                 await dv.validate()
                 if dv.has_errors():
                     break
