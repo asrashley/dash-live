@@ -195,14 +195,6 @@ class RequestHandlerBase(MethodView):
             return default
         return value.lower() in {"1", "true", "on"}
 
-    @staticmethod
-    def drm_locations_for_drm(drm: str) -> set[str]:
-        if drm == 'playready':
-            return {'pro', 'cenc', 'moov'}
-        if drm == 'clearkey':
-            return {'cenc', 'moov'}
-        return {'cenc'}
-
     def calculate_options(self,
                           mode: str,
                           args: dict[str, str],

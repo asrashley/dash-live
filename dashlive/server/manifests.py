@@ -26,7 +26,7 @@ import logging
 from typing import AbstractSet, Iterator, NamedTuple, Set
 
 from dashlive.mpeg.dash.profiles import primary_profiles
-from dashlive.server.options.drm_options import DrmLocation, DrmSelection
+from dashlive.server.options.drm_options import DrmLocationOption, DrmSelection
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.options.types import OptionUsage
 from dashlive.utils.json_object import JsonObject
@@ -203,7 +203,7 @@ class DashManifest:
             if only is not None and opt not in only:
                 continue
             d_opts.append(f'{opt}')
-            for loc in DrmLocation.cgi_choices:
+            for loc in DrmLocationOption.cgi_choices:
                 if loc[1] is None:
                     continue
                 if mode == 'odvod' and 'moov' in loc[1]:

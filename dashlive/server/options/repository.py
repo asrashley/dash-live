@@ -78,7 +78,7 @@ class OptionsRepository:
     def get_cgi_options(cls, use: OptionUsage | None = None,
                         only: AbstractSet[str] | None = None,
                         exclude: AbstractSet[str] | None = None,
-                        extras: DashOption | None = None,
+                        extras: list[DashOption] | None = None,
                         omit_empty: bool = False,
                         **filter) -> list[CgiOption]:
         """
@@ -99,6 +99,8 @@ class OptionsRepository:
         result: list[CgiOption] = []
         todo = cls.get_dash_options(use=use)
         if extras:
+            for e in extras:
+                assert isinstance(e, DashOption)
             todo += extras
         for item in todo:
             if not matches(item):

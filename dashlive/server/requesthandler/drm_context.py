@@ -14,6 +14,7 @@ from dashlive.drm.base import DrmBase, DrmManifestContext
 from dashlive.drm.clearkey import ClearKey
 from dashlive.drm.playready import PlayReady
 from dashlive.drm.marlin import Marlin
+from dashlive.drm.system import DrmSystem
 from dashlive.server.models import Stream
 from dashlive.server.options.container import OptionsContainer
 
@@ -68,7 +69,7 @@ class DrmContext:
         """
         rv = []
         for drm_name, locations in options.drmSelection:
-            assert drm_name in {'playready', 'marlin', 'clearkey'}
+            assert drm_name in DrmSystem.values()
             if drm_name == 'playready':
                 drm = PlayReady()
             elif drm_name == 'marlin':

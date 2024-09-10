@@ -1,5 +1,6 @@
 import unittest
 
+from dashlive.drm.location import DrmLocation
 from dashlive.server.options.drm_options import DrmSelection
 from dashlive.server.options.container import OptionsContainer
 from dashlive.server.options.repository import OptionsRepository
@@ -95,7 +96,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             'availabilityStartTime': 'epoch',
             'bugCompatibility': ['saio'],
             'clockDrift': 20,
-            'drmSelection': [('playready', {'pro', 'moov', 'cenc'})],
+            'drmSelection': [('playready', set(DrmLocation.all()))],
             'minimumUpdatePeriod': None,
             'numPeriods': 2,
             'playready': {
@@ -180,31 +181,32 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
                 msg=f'Expected {key} to be "{value}" but found "{actual}"')
 
     def test_drm_locations(self) -> None:
+        all_locations: set[DrmLocation] = set(DrmLocation.all())
         self.assertEqual(
             DrmSelection.from_string('marlin'),
-            [('marlin', {'pro', 'moov', 'cenc'})])
+            [('marlin', all_locations)])
         self.assertEqual(
             DrmSelection.from_string('MARLIN'),
-            [('marlin', {'pro', 'moov', 'cenc'})])
+            [('marlin', all_locations)])
         self.assertEqual(
             DrmSelection.from_string('ClearKey'),
-            [('clearkey', {'pro', 'moov', 'cenc'})])
+            [('clearkey', all_locations)])
         self.assertEqual(
             DrmSelection.from_string('playready,marlin'),
-            [('playready', {'pro', 'moov', 'cenc'}), ('marlin', {'pro', 'moov', 'cenc'})])
+            [('playready', all_locations), ('marlin', all_locations)])
         self.assertEqual(
             DrmSelection.from_string('all'),
             [
-                ('clearkey', {'pro', 'moov', 'cenc'}),
-                ('marlin', {'pro', 'moov', 'cenc'}),
-                ('playready', {'pro', 'moov', 'cenc'})
+                ('clearkey', all_locations),
+                ('marlin', all_locations),
+                ('playready', all_locations)
             ])
         self.assertEqual(
             DrmSelection.from_string('all-cenc-moov'),
             [
-                ('clearkey', {'cenc', 'moov'}),
-                ('marlin', {'cenc', 'moov'}),
-                ('playready', {'cenc', 'moov'})
+                ('clearkey', {DrmLocation.CENC, DrmLocation.MOOV}),
+                ('marlin', {DrmLocation.CENC, DrmLocation.MOOV}),
+                ('playready', {DrmLocation.CENC, DrmLocation.MOOV})
             ])
 
     @MockTime("2023-04-05T06:30:00Z")

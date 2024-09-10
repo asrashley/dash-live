@@ -44,6 +44,7 @@ from dashlive.utils.buffered_reader import BufferedReader
 from .base import DrmBase, CreateDrmData, CreatePsshBox, DrmManifestContext
 from .key_tuple import KeyTuple
 from .keymaterial import KeyMaterial
+from .location import DrmLocation
 from .system import DrmSystem
 
 class PlayReadyRecord(NamedTuple):
@@ -280,7 +281,7 @@ class PlayReady(DrmBase):
             options: OptionsContainer,
             la_url: str | None = None,
             https_request: bool = False,
-            locations: AbstractSet[str] | None = None) -> DrmManifestContext:
+            locations: AbstractSet[DrmLocation] | None = None) -> DrmManifestContext:
 
         if options.version is None:
             header_version = self.minimum_header_version(keys)
@@ -296,7 +297,7 @@ class PlayReady(DrmBase):
             else:
                 la_url = self.la_url
         if locations is None:
-            locations = {'pro', 'cenc', 'moov'}
+            locations = set(DrmLocation.all())
 
         def generate_pssh_box(default_kid: str, cattr: list | None = None) -> bytes:
             return self.generate_pssh(la_url, default_kid, keys, cattr)
@@ -307,11 +308,11 @@ class PlayReady(DrmBase):
         cenc: CreatePsshBox | None = None
         moov: CreatePsshBox | None = None
         pro: CreateDrmData | None = None
-        if 'moov' in locations:
+        if DrmLocation.MOOV in locations:
             moov = generate_pssh_box
-        if 'pro' in locations:
+        if DrmLocation.PRO in locations:
             pro = generate_pro_data
-        if 'cenc' in locations and version > 1.0:
+        if DrmLocation.CENC in locations and version > 1.0:
             # PlayReady v1.0 (PIFF) mode only allows an mspr:pro element in
             # the manifest
             cenc = generate_pssh_box

@@ -34,7 +34,7 @@ from dashlive.drm.clearkey import ClearKey
 from dashlive.mpeg.dash.validator import ConcurrentWorkerPool
 from dashlive.server import manifests, models
 from dashlive.server.requesthandler.base import RequestHandlerBase
-from dashlive.server.options.drm_options import DrmLocation, PlayreadyVersion
+from dashlive.server.options.drm_options import DrmLocationOption, PlayreadyVersion
 from dashlive.utils.date_time import UTC, to_iso_datetime, from_isodatetime
 from dashlive.utils.objects import dict_to_cgi_params, flatten
 
@@ -258,7 +258,7 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
         filename = 'hand_made.mpd'
         drm_options = ['drm=all', 'drm=marlin']
         # add all combinations of PlayReady options
-        for choice in DrmLocation.cgi_choices:
+        for choice in DrmLocationOption.cgi_choices:
             if choice[1] is None:
                 drm_options.append('drm=playready')
                 continue
@@ -269,7 +269,7 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                 if float(version) < 2.0 and choice[1] != 'pro':
                     continue
                 drm_options.append(f'drm=playready-{choice[1]}&playready_version={version}')
-        for choice in DrmLocation.cgi_choices:
+        for choice in DrmLocationOption.cgi_choices:
             if choice[1] is None:
                 drm_options.append('drm=clearkey')
                 continue

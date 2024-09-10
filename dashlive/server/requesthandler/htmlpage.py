@@ -31,7 +31,7 @@ from flask.views import MethodView  # type: ignore
 from flask_login import current_user
 
 from dashlive.server import manifests, models
-from dashlive.server.options.drm_options import DrmLocation, DrmSelection
+from dashlive.server.options.drm_options import DrmLocationOption, DrmSelection
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.options.player_options import ShakaVersion, DashjsVersion
 from dashlive.server.options.types import OptionUsage
@@ -157,7 +157,7 @@ class MainPage(HTMLHandlerBase):
         url = url.replace('/directory/', '/{directory}/')
         url = url.replace('/mode/', '/{mode}/')
         context['url_template'] = url
-        extras = [DrmLocation]
+        extras = [DrmLocationOption]
         cgi_options = OptionsRepository.get_cgi_options(
             featured=True, omit_empty=False, extras=extras)
         for idx, opt in enumerate(cgi_options):
