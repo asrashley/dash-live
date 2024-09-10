@@ -32,6 +32,7 @@ from bs4 import BeautifulSoup
 import flask
 
 from dashlive.server import models
+from dashlive.server.requesthandler.streams import ViewStreamAjaxResponse
 from dashlive.utils.date_time import to_iso_datetime
 
 from .mixins.flask_base import FlaskTestBase
@@ -630,8 +631,9 @@ class TestRestApi(FlaskTestBase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         if ajax:
-            upload_url = response.json['upload_url']
-            csrf_token = response.json['csrf_tokens']['upload']
+            vsap: ViewStreamAjaxResponse = response.json
+            upload_url = vsap['upload_url']
+            csrf_token = vsap['csrf_tokens']['upload']
             content_type = "multipart/form-data"
         else:
             html = BeautifulSoup(response.text, 'lxml')

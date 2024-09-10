@@ -21,7 +21,7 @@
 #############################################################################
 
 from abc import abstractmethod
-from typing import AbstractSet, Any
+from typing import AbstractSet, Any, TypedDict
 
 import base64
 import datetime
@@ -49,6 +49,13 @@ from dashlive.utils.json_object import JsonObject
 from .exceptions import CsrfFailureException
 from .utils import is_https_request
 
+class TemplateContext(TypedDict):
+    http_protocol: str
+    is_current_user_admin: bool
+    remote_addr: str
+    request_uri: str
+    title: str
+
 class RequestHandlerBase(MethodView):
     CLIENT_COOKIE_NAME = 'dash'
     CSRF_COOKIE_NAME = 'csrf'
@@ -57,18 +64,22 @@ class RequestHandlerBase(MethodView):
         r'^http://(dashif\.org)|(shaka-player-demo\.appspot\.com)|(mediapm\.edgesuite\.net)')
     INJECTED_ERROR_CODES = [404, 410, 503, 504]
 
-    def create_context(self, **kwargs):
-        context = {
-            "http_protocol": flask.request.scheme,
-        }
-        context.update(kwargs)
+    def create_context(self, title: str | None = None, **kwargs) -> TemplateContext:
+        if title is None:
+            title = 'DASH'
+        is_admin: bool = False
         if current_user.is_authenticated:
-            context["is_current_user_admin"] = current_user.is_admin
-        context['remote_addr'] = flask.request.remote_addr
-        context['request_uri'] = flask.request.url
+            is_admin = current_user.is_admin
+        context: TemplateContext = dict(
+            http_protocol=flask.request.scheme,
+            is_current_user_admin=is_admin,
+            remote_addr=flask.request.remote_addr,
+            request_uri=flask.request.url,
+            title=title)
         if is_https_request():
             context['request_uri'] = context['request_uri'].replace(
                 'http://', 'https://')
+        context.update(kwargs)
         return context
 
     def generate_csrf_cookie(self) -> str:
