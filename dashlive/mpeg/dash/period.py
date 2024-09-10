@@ -58,3 +58,16 @@ class Period(ObjectWithFields):
         for adp in self.adaptationSets:
             kids.update(adp.key_ids())
         return kids
+
+    def video_track(self) -> AdaptationSet:
+        for adp in self.adaptationSets:
+            if adp.content_type == 'video':
+                return adp
+        raise AttributeError('Failed to find a video AdaptationSet')
+
+    def audio_tracks(self) -> list[AdaptationSet]:
+        rv: list[AdaptationSet] = []
+        for adp in self.adaptationSets:
+            if adp.content_type == 'audio':
+                rv.append(adp)
+        return rv

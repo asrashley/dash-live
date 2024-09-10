@@ -35,6 +35,7 @@ from dashlive.utils.timezone import UTC
 
 from .base import RequestHandlerBase
 from .decorators import uses_stream, current_stream
+from .manifest_context import ManifestContext
 
 class ServeManifest(RequestHandlerBase):
     """handler for generating MPD files"""
@@ -84,9 +85,8 @@ class ServeManifest(RequestHandlerBase):
         elif mft.segment_timeline or options.patch:
             options.update(segmentTimeline=True)
         options.remove_unused_parameters(mode)
-        context['options'] = options
-        dash = self.calculate_manifest_params(mpd_name=manifest, options=options)
-        context.update(dash)
+        dash = ManifestContext(manifest=mft, options=options)
+        context.update(dash.to_dict())
         response = self.check_for_synthetic_manifest_error(options, context)
         if response is not None:
             return response
@@ -228,9 +228,8 @@ class ServePatch(RequestHandlerBase):
             'options': options,
             'original_publish_time': original_publish_time,
         })
-        dash = self.calculate_manifest_params(
-            mpd_name=f'{manifest}.mpd', options=options)
-        context.update(dash)
+        dash = ManifestContext(manifest=mft, options=options)
+        context.update(dash.to_dict())
 
         body = flask.render_template(f'patches/{manifest}.xml', **context)
         try:

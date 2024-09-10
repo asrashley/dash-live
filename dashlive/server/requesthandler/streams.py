@@ -27,9 +27,10 @@ import flask
 from flask_login import current_user
 
 from dashlive.drm.playready import PlayReady
+from dashlive.drm.system import DrmSystem
 from dashlive.server import models
-from dashlive.server.options.drm_options import ALL_DRM_TYPES
 from dashlive.server.options.repository import OptionsRepository
+from dashlive.server.options.drm_options import DrmSelection
 from dashlive.server.routes import Route
 from dashlive.utils.json_object import JsonObject
 from dashlive.utils.objects import flatten
@@ -37,6 +38,8 @@ from dashlive.utils.objects import flatten
 from .base import HTMLHandlerBase, DeleteModelBase
 from .decorators import login_required, uses_stream, current_stream
 from .exceptions import CsrfFailureException
+from .manifest_context import ManifestContext
+from .utils import is_ajax
 
 class ListStreams(HTMLHandlerBase):
     """
@@ -69,7 +72,7 @@ class ListStreams(HTMLHandlerBase):
                 'laurl': ''
             }
         }
-        if self.is_ajax():
+        if is_ajax():
             exclude = set()
             if not current_user.has_permission(models.Group.MEDIA):
                 exclude.add('key')
@@ -122,7 +125,7 @@ class AddStream(HTMLHandlerBase):
         try:
             self.check_csrf('streams', params)
         except (ValueError, CsrfFailureException) as err:
-            if self.is_ajax():
+            if is_ajax():
                 return self.jsonify({'error': f'{err}'}, 401)
             flask.flash(f'CSRF error: {err}', 'error')
             return self.get(error=str(err))
@@ -138,7 +141,7 @@ class AddStream(HTMLHandlerBase):
             models.db.session.delete(st)
         st = models.Stream(**data)
         st.add(commit=True)
-        if not self.is_ajax():
+        if not is_ajax():
             flask.flash(f'Added new stream "{data["title"]}"', 'success')
             return flask.redirect(flask.url_for('list-streams'))
         result["id"] = st.pk
@@ -177,7 +180,7 @@ class EditStream(HTMLHandlerBase):
             for mk in mf.encryption_keys:
                 kids[mk.hkid] = mk
         result['keys'] = [kids[hkid] for hkid in sorted(kids.keys())]
-        if self.is_ajax():
+        if is_ajax():
             exclude = set()
             if current_user.has_permission(models.Group.MEDIA):
                 result['upload_url'] = context['upload_url']
@@ -189,13 +192,12 @@ class EditStream(HTMLHandlerBase):
         options.audioCodec = 'any'
         options.textCodec = None
         options.drmSelection = []
-        clear_adaptation_sets = [self.calculate_video_adaptation_set(current_stream, options)]
-        clear_adaptation_sets += self.calculate_audio_adaptation_sets(current_stream, options)
-        clear_adaptation_sets += self.calculate_text_adaptation_sets(current_stream, options)
-        enc_options = options.clone(drmSelection=['playready', 'marlin', 'clearkey'])
-        enc_adaptation_sets = [self.calculate_video_adaptation_set(current_stream, enc_options)]
-        enc_adaptation_sets += self.calculate_audio_adaptation_sets(current_stream, enc_options)
-        enc_adaptation_sets += self.calculate_text_adaptation_sets(current_stream, enc_options)
+        mc = ManifestContext(options=options, stream=current_stream)
+        clear_adaptation_sets = [mc.video] + mc.audio_sets + mc.text_sets
+        drmSelection = DrmSelection.from_string(','.join(DrmSystem.values()))
+        enc_options = options.clone(drmSelection=drmSelection)
+        mc = ManifestContext(options=enc_options, stream=current_stream)
+        enc_adaptation_sets = [mc.video] + mc.audio_sets + mc.text_sets
         if 'fragment' in flask.request.args:
             layout = 'fragment.html'
         else:
@@ -224,7 +226,7 @@ class EditStream(HTMLHandlerBase):
 
         context = self.create_context(**kwargs)
         context['error'] = None
-        if self.is_ajax():
+        if is_ajax():
             params = flask.request.json
         else:
             params = flask.request.form
@@ -255,7 +257,7 @@ class EditStream(HTMLHandlerBase):
             }
             return flask.render_template('media/stream.html', **context)
         models.db.session.commit()
-        if self.is_ajax():
+        if is_ajax():
             return self.jsonify(current_stream.toJSON())
         flask.flash(f'Saved changes to "{current_stream.title}"', 'success')
         return flask.redirect(flask.url_for('list-streams'))
@@ -268,7 +270,7 @@ class EditStream(HTMLHandlerBase):
         models.db.session.delete(current_stream)
         models.db.session.commit()
         flask.flash(f'Deleted stream "{current_stream.title}"', 'success')
-        if self.is_ajax():
+        if is_ajax():
             return self.jsonify({
                 'success': True,
                 'message': f'Deleted {current_stream.title}',
@@ -403,7 +405,7 @@ class EditStreamDefaults(HTMLHandlerBase):
         try:
             self.check_csrf('streams', flask.request.form)
         except (ValueError, CsrfFailureException) as err:
-            if self.is_ajax():
+            if is_ajax():
                 return self.jsonify({'error': f'{err}'}, 401)
             flask.flash(f'CSRF error: {err}', 'error')
             return self.get(spk)
@@ -411,7 +413,7 @@ class EditStreamDefaults(HTMLHandlerBase):
         form = {**flask.request.form}
         del form['csrf_token']
         drms = []
-        for name in ALL_DRM_TYPES:
+        for name in DrmSystem.values():
             if flask.request.form.get(f'drm_{name}', '') != 'on':
                 continue
             loc = flask.request.form.get(f'{name}_drmloc', 'all')

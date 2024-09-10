@@ -160,6 +160,16 @@ def toHtmlString(item, className=None):
             rv = str(rv)
     return HtmlSafeString(rv)
 
+def json_encoder(value: Any) -> Any:
+    if isinstance(value, set):
+        lst = list(value)
+        lst.sort()
+        return lst
+    to_json = getattr(value, 'to_json', None)
+    if to_json and callable(to_json):
+        return value.to_json()
+    raise TypeError(f'Unable to encode value of type {type(value)}')
+
 @custom_tags.app_template_filter()
 def toJson(value, indent: int | None = None):
     if value is None:
@@ -167,7 +177,7 @@ def toJson(value, indent: int | None = None):
     try:
         if isinstance(value, (dict, list, set, tuple)):
             value = flatten_iterable(value)
-        return json.dumps(value, indent=indent)
+        return json.dumps(value, indent=indent, default=json_encoder)
     except ValueError as err:
         return str(err)
 

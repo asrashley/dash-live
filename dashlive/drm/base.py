@@ -28,6 +28,7 @@ from dashlive.server.models import Stream
 from dashlive.server.options.container import OptionsContainer
 
 from .key_tuple import KeyTuple
+from .system import DrmSystem
 
 class CustomAttribute(NamedTuple):
     tag: str
@@ -51,9 +52,10 @@ class CreatePsshBox(Protocol):
         ...
 
 
-class ManifestContext(NamedTuple):
+class DrmManifestContext(NamedTuple):
     laurl: str
     scheme_id: str
+    system: DrmSystem
     version: float
     cenc: CreatePsshBox | None
     moov: CreatePsshBox | None
@@ -75,7 +77,7 @@ class DrmBase(ABC):
                                   options: OptionsContainer,
                                   la_url: str | None = None,
                                   https_request: bool = False,
-                                  locations: AbstractSet[str] | None = None) -> ManifestContext:
+                                  locations: AbstractSet[str] | None = None) -> DrmManifestContext:
         raise RuntimeError('generate_manifest_context has not been implemented')
 
     def update_traf_if_required(self, options: OptionsContainer,

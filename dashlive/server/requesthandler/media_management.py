@@ -41,11 +41,12 @@ from .decorators import (
     uses_stream, current_stream
 )
 from .exceptions import CsrfFailureException
+from .utils import is_ajax
 
 class UploadHandler(RequestHandlerBase):
     decorators = [uses_stream, login_required(permission=models.Group.MEDIA)]
 
-    def post(self, spk, **kwargs):
+    def post(self, spk: int) -> flask.Response:
         if 'file' not in flask.request.files:
             return self.return_error('File not specified')
         if len(flask.request.files) == 0:
@@ -65,7 +66,7 @@ class UploadHandler(RequestHandlerBase):
 
     def return_error(self, error: str) -> flask.Response:
         logging.warning('Upload error: %s', error)
-        if self.is_ajax():
+        if is_ajax():
             result = {"error": error}
             return self.jsonify(result)
         flask.flash(error)
@@ -82,7 +83,7 @@ class UploadHandler(RequestHandlerBase):
             title=f'File {mf.name} uploaded',
             media=result)
         context['stream'] = current_stream
-        if self.is_ajax():
+        if is_ajax():
             csrf_key = self.generate_csrf_cookie()
             result['upload_url'] = flask.url_for('upload-blob', spk=stream.pk)
             result['csrf_token'] = self.generate_csrf_token(
@@ -103,7 +104,7 @@ class MediaInfo(HTMLHandlerBase):
         mf = current_media_file
         csrf_key = self.generate_csrf_cookie()
         csrf_token = self.generate_csrf_token('files', csrf_key)
-        if self.is_ajax():
+        if is_ajax():
             result = {
                 "representation": mf.rep,
                 "name": mf.name,
@@ -242,7 +243,7 @@ class MediaSegmentList(HTMLHandlerBase):
                     'start_time': None,
                 })
             segments.append(item)
-        if self.is_ajax():
+        if is_ajax():
             return self.jsonify({
                 'stream': current_stream.to_dict(with_collections=False),
                 'mediafile': current_media_file.to_dict(
@@ -297,7 +298,7 @@ class MediaSegmentInfo(HTMLHandlerBase):
         atoms = [ch.toJSON(exclude=exclude) for ch in atom.children]
         for ch in atoms:
             self.filter_atom(ch)
-        if self.is_ajax():
+        if is_ajax():
             return self.jsonify({
                 'segmentNumber': segnum,
                 'atoms': atoms,

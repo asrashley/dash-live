@@ -26,8 +26,9 @@ from dashlive.mpeg.mp4 import ContentProtectionSpecificBox
 from dashlive.server.models import Stream
 from dashlive.server.options.container import OptionsContainer
 
-from .base import DrmBase, ManifestContext
+from .base import DrmBase, DrmManifestContext
 from .key_tuple import KeyTuple
+from .system import DrmSystem
 
 class Marlin(DrmBase):
     MPD_SYSTEM_ID = '5e629af5-38da-4063-8977-97ffbd9902d4'
@@ -38,12 +39,13 @@ class Marlin(DrmBase):
             options: OptionsContainer,
             la_url: str | None = None,
             https_request: bool = False,
-            locations: AbstractSet[str] | None = None) -> ManifestContext:
+            locations: AbstractSet[str] | None = None) -> DrmManifestContext:
         if la_url is None:
             la_url = options.licenseUrl
             if la_url is None:
                 la_url = stream.marlin_la_url
-        return ManifestContext(
+        return DrmManifestContext(
+            system=DrmSystem.MARLIN,
             laurl=la_url,
             version=0,
             scheme_id=self.dash_scheme_id(),

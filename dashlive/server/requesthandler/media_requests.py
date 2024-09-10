@@ -42,6 +42,7 @@ from .decorators import (
     current_media_file,
     current_stream
 )
+from .drm_context import DrmContext
 
 class OnDemandMedia(RequestHandlerBase):
     """
@@ -176,8 +177,8 @@ class LiveMedia(RequestHandlerBase):
                 src, representation.nalLengthFieldLength)
         if segment_num == 0 and representation.encrypted:
             keys = models.Key.get_kids(representation.kids)
-            drms = self.generate_drm_dict(stream, keys, options)
-            for drm in list(drms.values()):
+            drms = DrmContext(stream, keys, options)
+            for drm in drms:
                 if drm.moov is not None:
                     pssh = drm.moov(representation.default_kid)
                     atom.moov.append_child(pssh)
@@ -275,7 +276,7 @@ class LiveMedia(RequestHandlerBase):
         Insert DRM specific data into the traf box, if required
         """
         modified = False
-        for name, drm, __ in self.generate_drm_location_tuples(options):
+        for name, drm, __ in DrmContext.generate_drm_location_tuples(options):
             modif = drm.update_traf_if_required(getattr(options, name), traf)
             modified = modified or modif
         return modified
