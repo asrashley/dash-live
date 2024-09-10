@@ -1,26 +1,30 @@
-<MPD type="static" xmlns="urn:mpeg:dash:schema:mpd:2011" profiles="urn:mpeg:dash:profile:isoff-live:2011" minBufferTime="PT1.5S" xmlns:cenc="urn:mpeg:cenc:2013" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  mediaPresentationDuration="{{mediaDuration|isoDuration}}">
+<MPD type="static" xmlns="urn:mpeg:dash:schema:mpd:2011"
+     profiles="urn:mpeg:dash:profile:isoff-live:2011"
+     minBufferTime="PT1.5S"
+     xmlns:cenc="urn:mpeg:cenc:2013"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     mediaPresentationDuration="{{ mpd.mediaDuration|isoDuration }}">
  <ProgramInformation>
   <Title>{{title}}</Title>
  </ProgramInformation>
- <Period start="PT0S" duration="{{mediaDuration|isoDuration}}">
-   {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
-   {%- with adp = video %}
+ <Period start="PT0S" duration="{{ mpd.mediaDuration|isoDuration }}">
+   {%- if mpd.baseURL %}<BaseURL>{{ mpd.baseURL }}</BaseURL>{%- endif %}
+   {%- with adp = mpd.video %}
      <AdaptationSet mimeType="video/mp4">
        {% include "drm/template.xml" %}
        <ContentComponent id="1" contentType="video"/>
-       {%- for rep in video.representations %}
+       {%- for rep in adp.representations %}
          <Representation id="{{rep.id}}" mimeType="video/mp4" codecs="{{rep.codecs}}" width="{{rep.width}}" height="{{rep.height}}" startWithSAP="{{rep.startWithSAP}}" bandwidth="{{rep.bitrate}}">
            <SegmentTemplate startNumber="{{ rep.start_number}}"
-                       timescale="{{video.timescale}}"
+                       timescale="{{adp.timescale}}"
                        duration="{{rep.segment_duration}}"
-                       initialization="{{video.initURL|xmlSafe}}"
-                       media="{{video.mediaURL|xmlSafe}}"/>
+                       initialization="{{adp.initURL|xmlSafe}}"
+                       media="{{adp.mediaURL|xmlSafe}}"/>
          </Representation>
        {% endfor %}
      </AdaptationSet>
    {%- endwith %}
-  {%- for adp in audio_sets %}
+  {%- for adp in mpd.audio_sets %}
   <AdaptationSet mimeType="audio/mp4" id="{{ adp.id }}">
      <ContentComponent id="1" contentType="audio" lang="eng"/>
      {% for rep in adp.representations %}

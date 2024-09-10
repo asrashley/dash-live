@@ -40,6 +40,7 @@ from dashlive.server.options.container import OptionsContainer
 from dashlive.server.options.dash_option import DashOption
 from dashlive.server.options.utc_time_options import UTCMethod
 from dashlive.server.options.repository import OptionsRepository
+from dashlive.server.requesthandler.base import TemplateContext
 from dashlive.server.requesthandler.manifest_context import ManifestContext
 from dashlive.server.requesthandler.manifest_requests import ServeManifest
 
@@ -365,11 +366,16 @@ class DashManifestCheckMixin:
             stream: models.Stream,
             options: OptionsContainer) -> dict:
         mock = MockServeManifest(flask.request)
-        context = ManifestContext(
-            manifest=manifests.manifest[mpd_filename], options=options,
-            stream=stream).to_dict()
-        context['remote_addr'] = mock.request.remote_addr
-        context['request_uri'] = mock.request.url
+        context: TemplateContext = {
+            'mpd': ManifestContext(
+                manifest=manifests.manifest[mpd_filename], options=options,
+                stream=stream),
+            'mode': mode,
+            'options': options,
+            'title': stream.title,
+            'remote_addr': mock.request.remote_addr,
+            'request_uri': mock.request.url,
+        }
         return context
 
     @staticmethod

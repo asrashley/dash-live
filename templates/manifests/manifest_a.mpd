@@ -3,40 +3,42 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns="urn:mpeg:dash:schema:mpd:2011"
   xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd"
-  {% if mode=='live' %}
+  {%- if mode=='live' %}
   type="dynamic"
-  availabilityStartTime="{{availabilityStartTime|isoDateTime}}"
-  {% if minimumUpdatePeriod %}minimumUpdatePeriod="{{minimumUpdatePeriod|isoDuration}}"{% endif %}
-  timeShiftBufferDepth="{{timeShiftBufferDepth|isoDuration}}"
+  availabilityStartTime="{{ mpd.availabilityStartTime|isoDateTime }}"
+  {%- if mpd.minimumUpdatePeriod %}
+  minimumUpdatePeriod="{{ mpd.minimumUpdatePeriod|isoDuration }}"
+  {%- endif %}
+  timeShiftBufferDepth="{{ mpd.timeShiftBufferDepth|isoDuration }}"
   {% else %}
   type="static"
-  mediaPresentationDuration="{{mediaDuration|isoDuration}}"
-  {% endif %}  
-  publishTime="{{publishTime|isoDateTime}}"
-  maxSegmentDuration="{{maxSegmentDuration|isoDuration}}"
+  mediaPresentationDuration="{{ mpd.mediaDuration|isoDuration }}"
+  {%- endif %}  
+  publishTime="{{ mpd.publishTime|isoDateTime }}"
+  maxSegmentDuration="{{ mpd.maxSegmentDuration|isoDuration }}"
   minBufferTime="PT10S"
   profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:com:dashif:dash264,urn:hbbtv:dash:profile:isoff-live:2012">
   <Period
     id="1"
     start="PT0S">
-    {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
+    {% if mpd.baseURL %}<BaseURL>{{ mpd.baseURL }}</BaseURL>{% endif %}
     <AdaptationSet
       group="2"
       mimeType="video/mp4"
       par="16:9"
-      minBandwidth="{{video.minBitrate}}"
-      maxBandwidth="{{video.maxBitrate}}"
-      minWidth="{{video.minWidth}}"
-      maxWidth="{{video.maxWidth}}"
-      minHeight="{{video.minHeight}}"
-      maxHeight="{{video.maxHeight}}"
+      minBandwidth="{{mpd.video.minBitrate}}"
+      maxBandwidth="{{mpd.video.maxBitrate}}"
+      minWidth="{{mpd.video.minWidth}}"
+      maxWidth="{{mpd.video.maxWidth}}"
+      minHeight="{{mpd.video.minHeight}}"
+      maxHeight="{{mpd.video.maxHeight}}"
       segmentAlignment="true"
       startWithSAP="1">
-      {% for rep in video.representations %}
+      {% for rep in mpd.video.representations %}
       {% if loop.first %}
       <SegmentTemplate timescale="{{rep.timescale}}"
-              initialization="{{video.initURL|xmlSafe}}"
-              media="{{video.mediaURL|xmlSafe}}">
+              initialization="{{mpd.video.initURL|xmlSafe}}"
+              media="{{mpd.video.mediaURL|xmlSafe}}">
         {% include "segment/timeline.xml" %}
       </SegmentTemplate>
         {% endif %}
@@ -51,7 +53,7 @@
         </Representation>
       {% endfor %}
     </AdaptationSet>
-    {% for audio in audio_sets %}
+    {% for audio in mpd.audio_sets %}
     <AdaptationSet
 	id="{{ audio.id }}"
 	group="2"

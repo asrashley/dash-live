@@ -4,34 +4,38 @@
  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
  profiles="urn:mpeg:dash:profile:isoff-live:2011"
  minBufferTime="PT9S"
-  {%- if mode=='live' %}
+  {%- if mode == 'live' %}
     type="dynamic"
-    availabilityStartTime="{{availabilityStartTime|isoDateTime}}"
-    timeShiftBufferDepth="{{timeShiftBufferDepth|isoDuration}}"
-    {% if minimumUpdatePeriod %}minimumUpdatePeriod="{{minimumUpdatePeriod|isoDuration}}"{% endif %}
+    availabilityStartTime="{{ mpd.availabilityStartTime|isoDateTime }}"
+    timeShiftBufferDepth="{{ mpd.timeShiftBufferDepth|isoDuration }}"
+    {%- if mpd.minimumUpdatePeriod %}
+      minimumUpdatePeriod="{{ mpd.minimumUpdatePeriod|isoDuration }}"
+    {%- endif %}
   {%- else %}
     type="static"
-    mediaPresentationDuration="{{mediaDuration|isoDuration}}"
+    mediaPresentationDuration="{{ mpd.mediaDuration|isoDuration }}"
   {%- endif %}
 
 >
- {%- if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
-    <UTCTiming schemeIdUri="urn:mpeg:dash:utc:direct:2014" value="{{now|isoDateTime}}"/>
-  <Period id="{{ period.id }}">
-   {%- with adp = video %}
+{%- if mpd.baseURL %}
+<BaseURL>{{ mpd.baseURL }}</BaseURL>
+{%- endif %}
+    <UTCTiming schemeIdUri="urn:mpeg:dash:utc:direct:2014" value="{{ mpd.now|isoDateTime}}"/>
+  <Period id="{{ mpd.period.id }}">
+   {%- with adp = mpd.video %}
     <AdaptationSet
         mimeType="video/mp4"
         segmentAlignment="true"
         bitstreamSwitching="true">
       {% include "drm/template.xml" %}
       <SegmentTemplate
-            timescale="{{video.timescale}}"
-            duration="{{video.segment_duration}}"
-            initialization="{{video.initURL|xmlSafe}}"
-            media="{{video.mediaURL|xmlSafe}}"
-            startNumber="{{ video.start_number }}" >
+            timescale="{{adp.timescale}}"
+            duration="{{adp.segment_duration}}"
+            initialization="{{adp.initURL|xmlSafe}}"
+            media="{{adp.mediaURL|xmlSafe}}"
+            startNumber="{{ adp.start_number }}" >
       </SegmentTemplate>
-      {%- for rep in video.representations %}
+      {%- for rep in adp.representations %}
         <Representation
             id="{{rep.id}}"
             mimeType="video/mp4"
@@ -43,7 +47,7 @@
     {% endfor %}
     </AdaptationSet>
    {%- endwith %}
-    {%- for adp in audio_sets %}
+    {%- for adp in mpd.audio_sets %}
     <AdaptationSet
         lang="{{ adp.lang }}"
         mimeType="audio/mp4"

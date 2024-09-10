@@ -4,32 +4,34 @@
      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
      xmlns:cenc="urn:mpeg:cenc:2013"
      xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011"
-  {% if mode=='live' %}
+  {%- if mode == 'live' %}
      type="dynamic"
-     availabilityStartTime="{{availabilityStartTime|isoDateTime}}"
-     {% if minimumUpdatePeriod %}
-     minimumUpdatePeriod="{{minimumUpdatePeriod|isoDuration}}"
-     {% endif %}
-     timeShiftBufferDepth="{{timeShiftBufferDepth|isoDuration}}"
+     availabilityStartTime="{{ mpd.availabilityStartTime|isoDateTime }}"
+     {%- if mpd.minimumUpdatePeriod %}
+       minimumUpdatePeriod="{{ mpd.minimumUpdatePeriod|isoDuration }}"
+     {%- endif %}
+     timeShiftBufferDepth="{{ mpd.timeShiftBufferDepth|isoDuration }}"
   {% else %}
      type="static"
-     mediaPresentationDuration="{{mediaDuration|isoDuration}}"
-  {% endif %}
+     mediaPresentationDuration="{{ mpd.mediaDuration|isoDuration }}"
+  {%- endif %}
      minBufferTime="PT1S"  >
-     {% if baseURL %}<BaseURL>{{baseURL}}</BaseURL>{% endif %}
-   <UTCTiming schemeIdUri="urn:mpeg:dash:utc:ntp:2014" value="0.europe.pool.ntp.org 1.europe.pool.ntp.org 2.europe.pool.ntp.org 3.europe.pool.ntp.org"/>
-  <Period start="PT0S" id="{{ period.id }}">
-   {%- with adp = video %}
+  {%- if mpd.baseURL %}
+     <BaseURL>{{ mpd.baseURL}}</BaseURL>
+  {%- endif %}
+  <UTCTiming schemeIdUri="urn:mpeg:dash:utc:ntp:2014" value="0.europe.pool.ntp.org 1.europe.pool.ntp.org 2.europe.pool.ntp.org 3.europe.pool.ntp.org"/>
+  <Period start="PT0S" id="{{ mpd.period.id }}">
+   {%- with adp = mpd.video %}
      <AdaptationSet mimeType="video/mp4" startWithSAP="{{adp.startWithSAP}}" segmentAlignment="true">
        {% include "drm/template.xml" %}
        <SegmentTemplate
-                presentationTimeOffset="{{video.presentationTimeOffset}}"
-                timescale="{{video.timescale}}"
-                initialization="{{video.initURL|xmlSafe}}"
-                media="{{video.mediaURL|xmlSafe}}"
-                duration="{{ video.segment_duration }}"
-                startNumber="{{ video.start_number }}"/>
-       {%- for rep in video.representations %}
+                presentationTimeOffset="{{adp.presentationTimeOffset}}"
+                timescale="{{adp.timescale}}"
+                initialization="{{adp.initURL|xmlSafe}}"
+                media="{{adp.mediaURL|xmlSafe}}"
+                duration="{{ adp.segment_duration }}"
+                startNumber="{{ adp.start_number }}"/>
+       {%- for rep in adp.representations %}
           <Representation
               id="{{rep.id}}"
               mimeType="video/mp4"
@@ -43,7 +45,7 @@
        {%- endfor %}
      </AdaptationSet>
    {%- endwith %}
-   {%- for adp in audio_sets %}
+   {%- for adp in mpd.audio_sets %}
      <AdaptationSet
 	     mimeType="audio/mp4"
 	     lang="{{adp.language}}"

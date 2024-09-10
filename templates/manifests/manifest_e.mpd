@@ -1,45 +1,58 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="urn:mpeg:dash:schema:mpd:2011"
-     xmlns:cenc="urn:mpeg:cenc:2013" xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd"
-  {% if mode=='live' %}
-type="dynamic"
-  {% if minimumUpdatePeriod %}minimumUpdatePeriod="{{minimumUpdatePeriod|isoDuration}}"{% endif %}
-  {% if suggestedPresentationDelay %}suggestedPresentationDelay="{{suggestedPresentationDelay|isoDuration}}"{%endif%}
-  availabilityStartTime="{{availabilityStartTime|isoDateTime}}"
-  timeShiftBufferDepth="{{timeShiftBufferDepth|isoDuration}}"
-  {% else %}
+<MPD xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xmlns="urn:mpeg:dash:schema:mpd:2011"     
+     xmlns:cenc="urn:mpeg:cenc:2013"
+     xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd"
+{%- if mode=='live' %}
+  type="dynamic"
+  {%- if mpd.minimumUpdatePeriod %}
+    minimumUpdatePeriod="{{ mpd.minimumUpdatePeriod|isoDuration }}"
+  {%- endif %}
+  {%- if mpd.suggestedPresentationDelay %}
+  suggestedPresentationDelay="{{ mpd.suggestedPresentationDelay|isoDuration}}"
+  {%- endif %}
+  availabilityStartTime="{{ mpd.availabilityStartTime|isoDateTime}}"
+  timeShiftBufferDepth="{{ mpd.timeShiftBufferDepth|isoDuration}}"
+{% else %}
     type="static"
-  {% endif %}
-  minBufferTime="PT5.000S" maxSegmentDuration="{{maxSegmentDuration|isoDuration}}"
-  publishTime="{{publishTime|isoDateTime}}"
+{%- endif %}
+  minBufferTime="PT5.000S"
+  maxSegmentDuration="{{ mpd.maxSegmentDuration|isoDuration }}"
+  publishTime="{{ mpd.publishTime|isoDateTime }}"
   profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014">
- {% if baseURL %}<BaseURL>{{baseURL|xmlSafe}}</BaseURL>{% endif %}
- {% if locationURL %}<Location>{{locationURL|xmlSafe}}</Location>{% endif %}
- <Location>{{request_uri|xmlSafe}}</Location>
- {%- if timeSource %}<UTCTiming schemeIdUri="{{timeSource.method}}" value="{{timeSource.value}}"/>{% endif %}
+  {%- if mpd.baseURL %}
+  <BaseURL>{{ mpd.baseURL|xmlSafe}}</BaseURL>
+  {%- endif %}
+ {%- if mpd.locationURL %}<Location>{{
+ mpd.locationURL|xmlSafe}}</Location>
+ {%- endif %}
+ <Location>{{ request_uri|xmlSafe }}</Location>
+ {%- if mpd.timeSource %}
+ <UTCTiming schemeIdUri="{{ mpd.timeSource.method}}" value="{{mpd.timeSource.value}}"/>
+ {%- endif %}
  <Period id="0" start="PT0S"
-  {% if mode!='live' %}
-  duration="{{mediaDuration|isoDuration}}"
+  {% if mode != 'live' %}
+  duration="{{ mpd.mediaDuration|isoDuration }}"
   {% endif %}
 >
-   {%- with adp = video %}
+   {%- with adp = mpd.video %}
 <AdaptationSet
     mimeType="video/mp4"
     contentType="video"
     segmentAlignment="true"
     startWithSAP="1"
-    maxWidth="{{ video.maxWidth }}"
-    maxHeight="{{ video.maxHeight }}"
-    maxFrameRate="{{ video.maxFrameRate | frameRateFraction }}"
+    maxWidth="{{ adp.maxWidth }}"
+    maxHeight="{{ adp.maxHeight }}"
+    maxFrameRate="{{ adp.maxFrameRate | frameRateFraction }}"
     par="16:9">
         <SegmentTemplate
-            presentationTimeOffset="{{ video.presentationTimeOffset }}"
-            timescale="{{ video.timescale }}"
-            startNumber="{{ video.start_number }}"
-            initialization="{{ video.initURL|xmlSafe }}"
-            media="{{ video.mediaURL|xmlSafe }}"
-            duration="{{ video.segment_duration }}"/>
-      {% for rep in video.representations %}
+            presentationTimeOffset="{{ adp.presentationTimeOffset }}"
+            timescale="{{ adp.timescale }}"
+            startNumber="{{ adp.start_number }}"
+            initialization="{{ adp.initURL|xmlSafe }}"
+            media="{{ adp.mediaURL|xmlSafe }}"
+            duration="{{ adp.segment_duration }}"/>
+      {% for rep in adp.representations %}
       {%- if loop.first %}{% include "drm/template.xml" %}{% endif %}
       <Representation
           id="{{rep.id}}"
@@ -55,7 +68,7 @@ type="dynamic"
     {% endfor %}
     </AdaptationSet>
    {%- endwith %}
-      {% for adp in audio_sets %}
+      {% for adp in mpd.audio_sets %}
       <AdaptationSet
 	  mimeType="audio/mp4"
 	  contentType="audio"
