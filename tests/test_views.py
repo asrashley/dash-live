@@ -139,7 +139,9 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                         duration=int(self.MEDIA_DURATION // 3))
                     await dv.load(data=response.get_data(as_text=False))
                     await dv.validate()
-                self.assertFalse(dv.has_errors())
+                if dv.has_errors():
+                    dv.print_manifest_text()
+                self.assertFalse(dv.has_errors(), 'Validation failed')
                 today = from_isodatetime(now).replace(
                     hour=0, minute=0, second=0, microsecond=0)
                 start_time = from_isodatetime(start)
@@ -234,9 +236,10 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                 await mpd.validate()
             if mpd.has_errors():
                 print(mpd_url)
+                mpd.print_manifest_text()
                 for err in mpd.get_errors():
                     print(err)
-            self.assertFalse(mpd.has_errors())
+            self.assertFalse(mpd.has_errors(), 'DASH validation failed')
             head = self.client.head(mpd_url)
             msg = r'Expected HEAD.contentLength={} == GET.contentLength={} for URL {}'.format(
                 head.headers['Content-Length'], response.headers['Content-Length'],

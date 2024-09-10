@@ -20,6 +20,7 @@
 #
 #############################################################################
 
+from dataclasses import dataclass
 import datetime
 import logging
 from typing import ClassVar
@@ -29,6 +30,23 @@ from dashlive.utils.date_time import timecode_to_timedelta
 from dashlive.server.options.container import OptionsContainer
 
 from .reference import StreamTimingReference
+
+@dataclass(slots=True, kw_only=True)
+class DynamicManifestTimingContext:
+    availabilityStartTime: datetime.datetime
+    elapsedTime: datetime.timedelta
+    minimumUpdatePeriod: int
+    now: datetime.datetime
+    publishTime: datetime.datetime
+    timeShiftBufferDepth: int
+
+
+@dataclass(slots=True, kw_only=True)
+class StaticManifestTimingContext:
+    mediaDuration: datetime.timedelta
+    now: datetime.datetime
+    publishTime: datetime.datetime
+
 
 class DashTiming:
     DEFAULT_TIMESHIFT_BUFFER_DEPTH: ClassVar[int] = 60  # in seconds
@@ -140,18 +158,17 @@ class DashTiming:
                     num_refreshes * self.minimumUpdatePeriod)))
             self.publishTime = self.publishTime.replace(microsecond=0)
 
-    def generate_manifest_context(self):
+    def generate_manifest_context(self) -> DynamicManifestTimingContext | StaticManifestTimingContext:
         if self.mode == 'live':
-            return {
-                "availabilityStartTime": self.availabilityStartTime,
-                "elapsedTime": self.elapsedTime,
-                "now": self.now,
-                "publishTime": self.publishTime,
-                "minimumUpdatePeriod": self.minimumUpdatePeriod,
-                "timeShiftBufferDepth": self.timeShiftBufferDepth,
-            }
-        return {
-            "mediaDuration": self.mediaDuration,
-            "now": self.now,
-            "publishTime": self.publishTime,
-        }
+            return DynamicManifestTimingContext(
+                availabilityStartTime=self.availabilityStartTime,
+                elapsedTime=self.elapsedTime,
+                now=self.now,
+                publishTime=self.publishTime,
+                minimumUpdatePeriod=self.minimumUpdatePeriod,
+                timeShiftBufferDepth=self.timeShiftBufferDepth)
+
+        return StaticManifestTimingContext(
+            mediaDuration=self.mediaDuration,
+            now=self.now,
+            publishTime=self.publishTime)

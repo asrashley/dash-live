@@ -41,9 +41,10 @@ from dashlive.server.models import Stream
 from dashlive.server.options.container import OptionsContainer
 from dashlive.utils.buffered_reader import BufferedReader
 
-from .base import DrmBase, CreateDrmData, CreatePsshBox, ManifestContext
+from .base import DrmBase, CreateDrmData, CreatePsshBox, DrmManifestContext
 from .key_tuple import KeyTuple
 from .keymaterial import KeyMaterial
+from .system import DrmSystem
 
 class PlayReadyRecord(NamedTuple):
     record_type: int
@@ -279,7 +280,7 @@ class PlayReady(DrmBase):
             options: OptionsContainer,
             la_url: str | None = None,
             https_request: bool = False,
-            locations: AbstractSet[str] | None = None) -> ManifestContext:
+            locations: AbstractSet[str] | None = None) -> DrmManifestContext:
 
         if options.version is None:
             header_version = self.minimum_header_version(keys)
@@ -314,7 +315,8 @@ class PlayReady(DrmBase):
             # PlayReady v1.0 (PIFF) mode only allows an mspr:pro element in
             # the manifest
             cenc = generate_pssh_box
-        return ManifestContext(
+        return DrmManifestContext(
+            system=DrmSystem.PLAYREADY,
             laurl=la_url,
             scheme_id=self.dash_scheme_id(version),
             version=version,

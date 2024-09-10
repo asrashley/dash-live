@@ -120,6 +120,7 @@ class SupportedOptionTupleList:
 
 @dataclass(slots=True, frozen=True)
 class DashManifest:
+    name: str
     title: str
     features: set[str]
     restrictions: dict[str, tuple] | None = field(default_factory=lambda: dict())
@@ -222,6 +223,7 @@ class DashManifest:
 
 manifest = {
     'hand_made.mpd': DashManifest(
+        name='hand_made',
         title='Hand-made manifest',
         features={
             'abr', 'audioCodec', 'useBaseUrls', 'drmSelection', 'eventTypes',
@@ -229,6 +231,7 @@ manifest = {
             'segmentTimeline', 'utcMethod'},
     ),
     'manifest_vod_aiv.mpd': DashManifest(
+        name='manifest_vod_aiv',
         title='AIV on demand profile',
         features={'abr', 'useBaseUrls', 'numPeriods'},
         restrictions={
@@ -238,6 +241,7 @@ manifest = {
         },
     ),
     'manifest_a.mpd': DashManifest(
+        name='manifest_a',
         title='Vendor A live profile',
         features={'abr', 'audioCodec', 'useBaseUrls', 'mode', 'minimumUpdatePeriod',
                   'segmentTimeline'},
@@ -248,6 +252,7 @@ manifest = {
         },
     ),
     'manifest_b.mpd': DashManifest(
+        name='manifest_b',
         title='Vendor B VOD using live profile',
         features={'abr', 'audioCodec', 'useBaseUrls', 'drmSelection'},
         restrictions={
@@ -255,6 +260,7 @@ manifest = {
         },
     ),
     'manifest_e.mpd': DashManifest(
+        name='manifest_e',
         title='Vendor E live profile',
         features={
             'abr', 'audioCodec', 'useBaseUrls', 'drmSelection', 'mode', 'minimumUpdatePeriod',
@@ -264,6 +270,7 @@ manifest = {
         },
     ),
     'manifest_h.mpd': DashManifest(
+        name='manifest_h',
         title='Vendor H live profile',
         features={'abr', 'audioCodec', 'useBaseUrls', 'drmSelection', 'mode',
                   'minimumUpdatePeriod', 'utcMethod'},
@@ -272,6 +279,7 @@ manifest = {
         },
     ),
     'manifest_i.mpd': DashManifest(
+        name='manifest_i',
         title='Vendor I live profile',
         features={'abr', 'useBaseUrls', 'audioCodec', 'drmSelection', 'mode',
                   'minimumUpdatePeriod', 'utcMethod'},
@@ -281,6 +289,7 @@ manifest = {
         },
     ),
     'manifest_ef.mpd': DashManifest(
+        name='manifest_ef',
         title='Vendor EF live profile',
         features={'abr', 'useBaseUrls', 'drmSelection', 'mode'},
         restrictions={
@@ -289,6 +298,7 @@ manifest = {
         },
     ),
     'manifest_n.mpd': DashManifest(
+        name='manifest_n',
         title='Provider N live profile',
         features={'abr', 'audioCodec', 'useBaseUrls', 'drmSelection', 'eventTypes',
                   'mode', 'minimumUpdatePeriod', 'segmentTimeline'},

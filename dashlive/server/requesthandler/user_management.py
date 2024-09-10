@@ -31,6 +31,7 @@ from dashlive.utils.json_object import JsonObject
 from .base import HTMLHandlerBase, DeleteModelBase
 from .decorators import login_required, modifies_user_model, modifying_user
 from .exceptions import CsrfFailureException
+from .utils import is_ajax
 
 def decorate_user(user: models.User) -> JsonObject:
     js = user.to_dict()
@@ -50,14 +51,14 @@ class LoginPage(HTMLHandlerBase):
         context = self.create_context()
         csrf_key = self.generate_csrf_cookie()
         context['csrf_token'] = self.generate_csrf_token('login', csrf_key)
-        if self.is_ajax():
+        if is_ajax():
             return self.jsonify({
                 'csrf_token': context['csrf_token']
             })
         return flask.render_template('users/login.html', **context)
 
     def post(self):
-        if self.is_ajax():
+        if is_ajax():
             data = flask.request.json
             try:
                 self.check_csrf('login', data)
@@ -84,7 +85,7 @@ class LoginPage(HTMLHandlerBase):
             csrf_key = self.generate_csrf_cookie()
             context['csrf_token'] = self.generate_csrf_token('login', csrf_key)
             context['username'] = username
-            if self.is_ajax():
+            if is_ajax():
                 result = {}
                 for field in ['error', 'csrf_token']:
                     result[field] = context[field]
@@ -93,7 +94,7 @@ class LoginPage(HTMLHandlerBase):
         login_user(user, remember=rememberme)
         user.last_login = datetime.datetime.now()
         models.db.session.commit()
-        if self.is_ajax():
+        if is_ajax():
             csrf_key = self.generate_csrf_cookie()
             result = {
                 'success': True,
@@ -261,7 +262,7 @@ class DeleteUser(DeleteModelBase):
 
     def delete_model(self) -> JsonObject:
         if current_user.pk == modifying_user.pk:
-            if not self.is_ajax():
+            if not is_ajax():
                 flask.flash('You cannot delete your own account', 'error')
             return {
                 'error': 'You cannot delete your own account'

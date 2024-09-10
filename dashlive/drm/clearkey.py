@@ -30,9 +30,10 @@ from dashlive.mpeg.mp4 import ContentProtectionSpecificBox
 from dashlive.server.options.container import OptionsContainer
 from dashlive.server.models import Stream
 
-from .base import CreateDrmData, DrmBase, ManifestContext
+from .base import CreateDrmData, DrmBase, DrmManifestContext
 from .keymaterial import KeyMaterial
 from .key_tuple import KeyTuple
+from .system import DrmSystem
 
 class ClearKey(DrmBase):
     MPD_SYSTEM_ID = "e2719d58-a985-b3c9-781a-b030af78d30e"
@@ -48,7 +49,7 @@ class ClearKey(DrmBase):
             options: OptionsContainer,
             la_url: str | None = None,
             https_request: bool = False,
-            locations: AbstractSet[str] | None = None) -> ManifestContext:
+            locations: AbstractSet[str] | None = None) -> DrmManifestContext:
         if locations is None:
             locations = {'cenc', 'moov'}
         if la_url is None:
@@ -66,7 +67,8 @@ class ClearKey(DrmBase):
             cenc = generate_pssh_box
         if 'moov' in locations:
             moov = generate_pssh_box
-        return ManifestContext(
+        return DrmManifestContext(
+            system=DrmSystem.CLEARKEY,
             scheme_id=self.dash_scheme_id(),
             laurl=la_url,
             cenc=cenc,

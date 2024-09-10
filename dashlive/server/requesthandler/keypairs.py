@@ -29,6 +29,7 @@ from dashlive.server import models
 from .base import HTMLHandlerBase
 from .decorators import login_required, uses_keypair, current_keypair
 from .exceptions import CsrfFailureException
+from .utils import is_ajax
 
 class KeyHandler(HTMLHandlerBase):
     """
@@ -159,7 +160,7 @@ class DeleteKeyHandler(HTMLHandlerBase):
         Returns HTML form to confirm deletion of key pair
         """
         csrf_key = self.generate_csrf_cookie()
-        if self.is_ajax():
+        if is_ajax():
             return self.jsonify({
                 'model': current_keypair.to_dict(),
                 'csrf_token': self.generate_csrf_token('keys', csrf_key),

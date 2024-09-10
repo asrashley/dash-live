@@ -1,3 +1,10 @@
+#############################################################################
+#
+#  Project Name        :    Simulated MPEG DASH service
+#
+#  Author              :    Alex Ashley
+#
+#############################################################################
 from functools import wraps
 from typing import cast
 
@@ -6,13 +13,7 @@ from flask_login import current_user
 from werkzeug.local import LocalProxy  # type: ignore
 
 from dashlive.server.models import Group, Key, MediaFile, Stream, User
-
-def is_ajax() -> bool:
-    # print('content_type', flask.request.content_type, flask.request.url)
-    return (
-        flask.request.is_json or
-        flask.request.form.get("ajax", "0") == "1" or
-        flask.request.args.get("ajax", "0") == "1")
+from .utils import is_ajax
 
 def needs_login_response(admin: bool, html: bool, permission: Group | None) -> flask.Response:
     if is_ajax():

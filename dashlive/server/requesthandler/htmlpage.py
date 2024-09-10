@@ -38,6 +38,8 @@ from dashlive.server.options.types import OptionUsage
 
 from .base import HTMLHandlerBase
 from .decorators import uses_stream, current_stream
+from .manifest_context import ManifestContext
+from .utils import is_https_request
 
 class MainPage(HTMLHandlerBase):
     """
@@ -231,13 +233,11 @@ class VideoPlayer(HTMLHandlerBase):
         if stream_model is None:
             logging.error('Unknown stream: %s', stream)
             return flask.make_response(f'Unknown stream: {html.escape(stream)}', 404)
-        dash_parms = self.calculate_manifest_params(mpd_name=manifest, options=options)
-        for item in {'periods', 'period', 'ref_representation', 'audio', 'video'}:
-            try:
-                del dash_parms[item]
-            except KeyError:
-                pass
-        context['dash'] = dash_parms
+        dash_parms = ManifestContext(
+            manifest=manifests.manifest[manifest], options=options,
+            stream=stream_model)
+        context['dash'] = dash_parms.to_dict(exclude={
+            'periods', 'period', 'ref_representation', 'audio', 'video'})
         mpd_url = flask.url_for(
             'dash-mpd-v3', stream=stream, manifest=manifest, mode=mode)
         options.remove_unused_parameters(mode)
@@ -271,7 +271,7 @@ class VideoPlayer(HTMLHandlerBase):
             else:
                 cdn_template = app_cfg.get('SHAKA_CDN_TEMPLATE', VideoPlayer.SHAKA_CDN_TEMPLATE)
                 context['shakaUrl'] = cdn_template.format(shakaVersion=options.shakaVersion)
-        if self.is_https_request():
+        if is_https_request():
             context['source'] = context['source'].replace(
                 'http://', 'https://')
         if options.drmSelection and context["drm"] and "marlin" in context["drm"]:
