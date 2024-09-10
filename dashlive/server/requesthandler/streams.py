@@ -19,8 +19,10 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+from dataclasses import dataclass
 import logging
 from pathlib import Path
+from typing import cast, TypedDict
 import urllib
 
 import flask
@@ -28,6 +30,7 @@ from flask_login import current_user
 
 from dashlive.drm.playready import PlayReady
 from dashlive.drm.system import DrmSystem
+from dashlive.mpeg.dash.adaptation_set import AdaptationSet
 from dashlive.server import models
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.options.drm_options import DrmSelection
@@ -35,11 +38,29 @@ from dashlive.server.routes import Route
 from dashlive.utils.json_object import JsonObject
 from dashlive.utils.objects import flatten
 
-from .base import HTMLHandlerBase, DeleteModelBase
+from .base import HTMLHandlerBase, DeleteModelBase, TemplateContext
 from .decorators import login_required, uses_stream, current_stream
 from .exceptions import CsrfFailureException
 from .manifest_context import ManifestContext
 from .utils import is_ajax
+
+@dataclass(slots=True, kw_only=True)
+class CsrfTokenCollection:
+    files: str
+    kids: str
+    streams: str
+    upload: str | None = None
+
+@dataclass(slots=True, kw_only=True)
+class DrmLicenseContext:
+    laurl: str
+
+class ListStreamsTemplateContext(TemplateContext):
+    csrf_tokens: CsrfTokenCollection
+    drm: dict[str, DrmLicenseContext]
+    keys: list[models.Key]
+    streams: list[dict]
+    user_can_modify: bool
 
 class ListStreams(HTMLHandlerBase):
     """
@@ -48,42 +69,57 @@ class ListStreams(HTMLHandlerBase):
     """
     decorators = []
 
-    def get(self, **kwargs):
+    def get(self) -> flask.Response:
         """
         Get list of all streams
         """
-        context = self.create_context(**kwargs)
-        context['keys'] = models.Key.all(order_by=[models.Key.hkid])
-        context['streams'] = [s.to_dict(with_collections=True) for s in models.Stream.all()]
-        context['user_can_modify'] = current_user.has_permission(models.Group.MEDIA)
+        user_can_modify: bool = current_user.has_permission(models.Group.MEDIA)
+
         csrf_key = self.generate_csrf_cookie()
-        context['csrf_tokens'] = {
-            'files': self.generate_csrf_token('files', csrf_key),
-            'kids': self.generate_csrf_token('keys', csrf_key),
-            'streams': self.generate_csrf_token('streams', csrf_key),
-        }
-        if context['user_can_modify']:
-            context['upload'] = self.generate_csrf_token('upload', csrf_key),
-        context['drm'] = {
-            'playready': {
-                'laurl': PlayReady.TEST_LA_URL
-            },
-            'marlin': {
-                'laurl': ''
-            }
-        }
+        upload: str | None = None
+        if user_can_modify:
+            upload = self.generate_csrf_token('upload', csrf_key),
+        csrf_tokens = CsrfTokenCollection(
+            files=self.generate_csrf_token('files', csrf_key),
+            kids=self.generate_csrf_token('keys', csrf_key),
+            streams=self.generate_csrf_token('streams', csrf_key),
+            upload=upload)
+
+        keys = models.Key.all(order_by=[models.Key.hkid])
+        streams = models.Stream.all()
+
         if is_ajax():
-            exclude = set()
+            exclude: set[str] = set()
             if not current_user.has_permission(models.Group.MEDIA):
                 exclude.add('key')
             result = {
-                'keys': [k.toJSON(pure=True, exclude=exclude) for k in context['keys']]
+                'keys': [
+                    k.toJSON(pure=True, exclude=exclude) for k in keys
+                ],
+                'csrf_tokens': csrf_tokens,
+                'streams': [
+                    s.to_dict(with_collections=True) for s in streams
+                ],
             }
-            for item in ['csrf_tokens', 'streams']:
-                result[item] = context[item]
             return self.jsonify(result)
+
+        context = cast(ListStreamsTemplateContext, self.create_context(
+            csrf_tokens=csrf_tokens,
+            drm={
+                'playready': DrmLicenseContext(laurl=PlayReady.TEST_LA_URL),
+                'marlin': DrmLicenseContext(laurl=''),
+            },
+            keys=keys,
+            streams=streams,
+            title='All DASH streams',
+            user_can_modify=user_can_modify))
         return flask.render_template('media/index.html', **context)
 
+
+class AddStreamTemplateContext(TemplateContext):
+    csrf_token: str
+    model: models.Stream
+    fields: list[JsonObject]
 
 class AddStream(HTMLHandlerBase):
     """
@@ -91,18 +127,17 @@ class AddStream(HTMLHandlerBase):
     """
     decorators = [login_required(permission=models.Group.MEDIA)]
 
-    def get(self, error: str | None = None):
+    def get(self, error: str | None = None) -> flask.Response:
         """
         Returns an HTML form to add a new stream
         """
-        context = self.create_context()
         csrf_key = self.generate_csrf_cookie()
         model = models.Stream()
-        context.update({
-            'csrf_token': self.generate_csrf_token('streams', csrf_key),
-            'model': model.to_dict(),
-            "fields": model.get_fields(**flask.request.args),
-        })
+        context = cast(AddStreamTemplateContext, self.create_context(
+            title='Add new stream',
+            csrf_token=self.generate_csrf_token('streams', csrf_key),
+            model=model.to_dict(),
+            fields=model.get_fields(**flask.request.args)))
         return flask.render_template('media/add_stream.html', **context)
 
     def post(self) -> flask.Response:
@@ -151,42 +186,82 @@ class AddStream(HTMLHandlerBase):
         return self.jsonify(result)
 
 
+class EditStreamTemplateContext(TemplateContext):
+    clear_adaptation_sets: list[AdaptationSet]
+    csrf_key: str
+    csrf_token: str
+    csrf_tokens: CsrfTokenCollection | None
+    encrypted_adaptation_sets: list[AdaptationSet]
+    error: str | None
+    keys: list[models.Key]
+    layout: str
+    media_files: list[dict]
+    next: str
+    stream: models.Stream
+    upload_url: str
+    user_can_modify: bool
+
+class StreamTimingReferenceAjaxResponse(TypedDict):
+    media_name: str
+    media_duration: int
+    num_media_segments: int
+    segment_duration: int
+    timescale: int
+
+class StreamAjaxResponse(TypedDict):
+    """
+    The JSON response that describes a stream
+    """
+    defaults: JsonObject | None
+    directory: str
+    keys: list[JsonObject]
+    marlin_la_url: str | None
+    media_files: []
+    pk: int
+    playready_la_url: str | None
+    timing_ref: StreamTimingReferenceAjaxResponse | None
+    title: str
+
+class ViewStreamAjaxResponse(StreamAjaxResponse):
+    """
+    The JSON response to a GET request to the EditStream handler
+    """
+    upload_url: str
+    csrf_tokens: CsrfTokenCollection
+
 class EditStream(HTMLHandlerBase):
     """
     Handler that allows viewing and updating a stream
     """
     decorators = [uses_stream]
 
-    def get(self, **kwargs):
+    def get(self, spk: int) -> flask.Response:
         """
         Get information about a stream
         """
-        context = self.create_context(**kwargs)
-        csrf_key = context['csrf_key']
-        result = current_stream.to_dict(with_collections=True, exclude={'media_files'})
-        result.update({
-            'csrf_tokens': {
-                'files': self.generate_csrf_token('files', csrf_key),
-                'kids': self.generate_csrf_token('keys', csrf_key),
-                'streams': context['csrf_token'],
-            },
+        context = self.create_context(current_stream.title, True)
+        stream = current_stream.to_dict(with_collections=True, exclude={'media_files'})
+        stream.update({
             'media_files': [],
         })
-        if current_user.has_permission(models.Group.MEDIA):
-            result['csrf_tokens']['upload'] = self.generate_csrf_token('upload', csrf_key)
         kids: dict[str, models.Key] = {}
         for mf in current_stream.media_files:
-            result['media_files'].append(mf.toJSON(convert_date=False))
+            stream['media_files'].append(mf.toJSON(convert_date=False))
             for mk in mf.encryption_keys:
                 kids[mk.hkid] = mk
-        result['keys'] = [kids[hkid] for hkid in sorted(kids.keys())]
+        context['keys'] = [kids[hkid] for hkid in sorted(kids.keys())]
         if is_ajax():
-            exclude = set()
-            if current_user.has_permission(models.Group.MEDIA):
-                result['upload_url'] = context['upload_url']
-            else:
+            exclude: set[str] = set()
+            result: ViewStreamAjaxResponse = {
+                **stream,
+                'csrf_tokens': context['csrf_tokens'],
+                'upload_url': context['upload_url'],
+            }
+            if not current_user.has_permission(models.Group.MEDIA):
+                del result['upload_url']
                 exclude.add('key')
-            result['keys'] = [k.toJSON(exclude=exclude, pure=True) for k in result['keys']]
+            result['keys'] = [
+                k.toJSON(exclude=exclude, pure=True) for k in context['keys']]
             return self.jsonify(result)
         options = self.calculate_options('vod', flask.request.args)
         options.audioCodec = 'any'
@@ -202,12 +277,11 @@ class EditStream(HTMLHandlerBase):
             layout = 'fragment.html'
         else:
             layout = 'layout.html'
-        context.update(result)
         context.update({
             'clear_adaptation_sets': clear_adaptation_sets,
             'encrypted_adaptation_sets': enc_adaptation_sets,
             'user_can_modify': current_user.has_permission(models.Group.MEDIA),
-            'stream': result,
+            'stream': stream,
             'layout': layout,
             'next': urllib.parse.quote_plus(
                 flask.url_for('view-stream', spk=current_stream.pk)),
@@ -215,8 +289,8 @@ class EditStream(HTMLHandlerBase):
         return flask.render_template('media/stream.html', **context)
 
     @login_required(permission=models.Group.MEDIA)
-    def post(self, **kwargs):
-        def str_or_none(value):
+    def post(self, spk: int) -> flask.Response:
+        def str_or_none(value: str | None) -> str | None:
             if value is None:
                 return None
             value = value.strip()
@@ -224,13 +298,12 @@ class EditStream(HTMLHandlerBase):
                 return None
             return value
 
-        context = self.create_context(**kwargs)
-        context['error'] = None
         if is_ajax():
             params = flask.request.json
         else:
             params = flask.request.form
         current_stream.title = params['title']
+        context = self.create_context(current_stream.title, False)
         if models.MediaFile.count(stream=current_stream) == 0:
             current_stream.directory = params['directory']
         current_stream.marlin_la_url = str_or_none(params['marlin_la_url'])
@@ -250,11 +323,11 @@ class EditStream(HTMLHandlerBase):
             logging.debug(cfe)
             context['error'] = "csrf check failed"
         if context['error'] is not None:
-            context['csrf_tokens'] = {
-                'files': self.generate_csrf_token('files', context['csrf_key']),
-                'kids': self.generate_csrf_token('keys', context['csrf_key']),
-                'streams': context['csrf_token'],
-            }
+            context['csrf_tokens'] = CsrfTokenCollection(
+                files=self.generate_csrf_token('files', context['csrf_key']),
+                kids=self.generate_csrf_token('keys', context['csrf_key']),
+                streams=context['csrf_token'],
+                upload=None)
             return flask.render_template('media/stream.html', **context)
         models.db.session.commit()
         if is_ajax():
@@ -263,7 +336,7 @@ class EditStream(HTMLHandlerBase):
         return flask.redirect(flask.url_for('list-streams'))
 
     @login_required(permission=models.Group.MEDIA)
-    def delete(self, **kwargs):
+    def delete(self, spk: int) -> flask.Response:
         """
         Delete a stream
         """
@@ -277,18 +350,33 @@ class EditStream(HTMLHandlerBase):
             })
         return flask.redirect(flask.url_for('list-streams'))
 
-    def create_context(self, **kwargs):
-        context = super().create_context(**kwargs)
+    def create_context(self,
+                       title: str | None,
+                       all_csrf_tokens: bool) -> EditStreamTemplateContext:
+        context = super().create_context(title=title)
         csrf_key = self.generate_csrf_cookie()
         context.update({
             'csrf_key': csrf_key,
             'csrf_token': self.generate_csrf_token('streams', csrf_key),
+            'error': None,
             'stream': current_stream,
             'model': current_stream,
             'submit_url': flask.url_for('view-stream', spk=current_stream.pk),
             'upload_url': flask.url_for('upload-blob', spk=current_stream.pk),
             "fields": current_stream.get_fields(),
         })
+
+        if all_csrf_tokens:
+            upload: str | None = None
+            if current_user.has_permission(models.Group.MEDIA):
+                upload = self.generate_csrf_token('upload', csrf_key)
+            csrf_tokens = CsrfTokenCollection(
+                files=self.generate_csrf_token('files', csrf_key),
+                kids=self.generate_csrf_token('keys', csrf_key),
+                streams=self.generate_csrf_token('streams', csrf_key),
+                upload=upload)
+            context['csrf_tokens'] = csrf_tokens
+
         if current_user.has_permission(models.Group.MEDIA):
             current_ref: str | None = None
             if current_stream.timing_reference:

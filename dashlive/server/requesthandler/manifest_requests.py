@@ -37,6 +37,18 @@ from .base import RequestHandlerBase
 from .decorators import uses_stream, current_stream
 from .manifest_context import ManifestContext
 
+class ManifestTemplateContext(TemplateContext):
+    mode: str
+    mpd: ManifestContext
+    options: OptionsContainer
+    stream: Stream
+
+class PatchTemplateContext(TemplateContext):
+    mpd: ManifestContext
+    options: OptionsContainer
+    stream: Stream
+    original_publish_time: datetime.datetime
+
 class ServeManifest(RequestHandlerBase):
     """handler for generating MPD files"""
 
@@ -45,7 +57,7 @@ class ServeManifest(RequestHandlerBase):
     def head(self, **kwargs):
         return self.get(**kwargs)
 
-    def get(self, mode: str, stream: str, manifest: str, **kwargs) -> flask.Response:
+    def get(self, mode: str, stream: str, manifest: str) -> flask.Response:
         logging.debug('ServeManifest: mode=%s stream=%s manifest=%s', mode, stream, manifest)
         try:
             mft = manifests.manifest[manifest]
@@ -63,8 +75,7 @@ class ServeManifest(RequestHandlerBase):
                 mode, manifest, modes)
             return flask.make_response(
                 f'{html.escape(manifest)} not found', 404)
-        context = self.create_context(**kwargs)
-        context['title'] = current_stream.title
+        context = self.create_context(title=current_stream.title)
         try:
             options = self.calculate_options(
                 mode=mode, args=flask.request.args, stream=current_stream,
@@ -210,7 +221,7 @@ class ServePatch(RequestHandlerBase):
                 f'{html.escape(manifest)} live mode not supported',
                 400)
 
-        context = self.create_context(**kwargs)
+        context = self.create_context(title=current_stream.title)
         try:
             options = self.calculate_options(
                 mode='live', args=flask.request.args, stream=current_stream,

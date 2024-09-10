@@ -46,8 +46,8 @@ class MainPage(HTMLHandlerBase):
     handler for main index page
     """
 
-    def get(self, **kwargs):
-        context = self.create_context(**kwargs)
+    def get(self) -> flask.Response:
+        context = self.create_context(title='DASH test streams')
         context.update({
             'rows': [],
             'streams': list(models.Stream.all()),
@@ -183,25 +183,30 @@ class CgiOptionsPage(HTMLHandlerBase):
     handler for page that describes each CGI option
     """
 
-    def get(self, **kwargs):
+    def get(self) -> flask.Response:
+        context = self.create_context(
+            title='Available CGI options',
+            cgi_options=OptionsRepository.get_cgi_options())
+
+        sort_key: str = flask.request.args.get('sort', 'short_name')
+        sort_order: bool = self.get_bool_param('order')
+
+        if not flask.request.args.get('json'):
+            return flask.render_template('cgi_options.html', **context)
+
         def sort_fn(item) -> str:
             value = getattr(item, sort_key)
             if isinstance(value, list):
                 return value[0]
             return value
 
-        context = self.create_context(**kwargs)
-        context['cgi_options'] = OptionsRepository.get_cgi_options()
-        if flask.request.args.get('json'):
-            sort_key = flask.request.args.get('sort', 'short_name')
-            sort_order = self.get_bool_param('order')
-            context['json'] = []
-            for opt in OptionsRepository.get_dash_options():
-                context['json'].append(opt)
-            context['json'].sort(key=sort_fn, reverse=sort_order)
-            context['sort_key'] = sort_key
-            context['sort_order'] = sort_order
-            context['reverse_order'] = '0' if sort_order else '1'
+        context['json'] = []
+        for opt in OptionsRepository.get_dash_options():
+            context['json'].append(opt)
+        context['json'].sort(key=sort_fn, reverse=sort_order)
+        context['sort_key'] = sort_key
+        context['sort_order'] = sort_order
+        context['reverse_order'] = '0' if sort_order else '1'
         return flask.render_template('cgi_options.html', **context)
 
 
@@ -215,7 +220,7 @@ class VideoPlayer(HTMLHandlerBase):
 
     decorators = [uses_stream]
 
-    def get(self, mode: str, stream: str, manifest: str, **kwargs):
+    def get(self, mode: str, stream: str, manifest: str) -> flask.Response:
         if current_stream.timing_reference is None:
             flask.flash(
                 f'The timing reference needs to be set for stream "{current_stream.title}"',
@@ -223,7 +228,7 @@ class VideoPlayer(HTMLHandlerBase):
             return flask.redirect(flask.url_for('home'))
         app_cfg = flask.current_app.config['DASH']
         manifest += '.mpd'
-        context = self.create_context(**kwargs)
+        context = self.create_context(title=current_stream.title)
         try:
             options = self.calculate_options(mode, flask.request.args)
         except ValueError as err:
