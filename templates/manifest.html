@@ -12,7 +12,7 @@
         MPD URL:
       </label>
       <div class="col-11">
-        <input type="text" value="{{ mpd_url }}" name="mpd_url" id="id_mpd_url" class="form-control" />
+        <input type="text" value="{{ mpd_url|safe }}" name="mpd_url" id="id_mpd_url" class="form-control" />
       </div>
     </div>
   </form>
@@ -38,7 +38,7 @@ $('#mpd-form').on('submit', function(ev) {
     });
 });
 
-$.ajax("{{ mpd_url }}", {
+$.ajax("{{ mpd_url|safe }}", {
     success: displayMpd,
     dataType: "xml",
 });

@@ -297,13 +297,13 @@ class ViewManifest(HTMLHandlerBase):
 
     decorators = [uses_stream]
 
-    def get(self, mode, stream, manifest, **kwargs):
-        context = self.create_context(**kwargs)
+    def get(self, mode: str, stream: str, manifest: str) -> flask.Response:
+        context = self.create_context(title=current_stream.title)
         try:
             options = self.calculate_options(mode, flask.request.args)
         except ValueError as err:
             logging.error('Invalid CGI parameters: %s', err)
-            return flask.make_response(f'Invalid CGI parameters: {err}', 400)
+            return flask.make_response('Invalid CGI parameters', 400)
         mpd_url = flask.url_for(
             'dash-mpd-v3', stream=stream, manifest=manifest, mode=mode)
         options.remove_unused_parameters(mode, use=~OptionUsage.HTML)
