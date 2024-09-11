@@ -217,7 +217,7 @@ class OptionsContainer(ObjectWithFields):
         if mode != 'live':
             todo += {'availabilityStartTime', 'minimumUpdatePeriod',
                      'ntpSources', 'timeShiftBufferDepth', 'utcMethod',
-                     'utcValue'}
+                     'utcValue', 'patch'}
         if encrypted:
             drms = {item[0] for item in self.drmSelection}
             if 'playready' not in drms:
