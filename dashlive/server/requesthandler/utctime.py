@@ -32,15 +32,15 @@ from dashlive.utils.timezone import UTC
 from .base import RequestHandlerBase
 
 class UTCTimeHandler(RequestHandlerBase):
-    def head(self, format, **kwargs):
-        return self.get(format, **kwargs)
+    def head(self, method: str) -> flask.Response:
+        return self.get(method)
 
-    def get(self, format, **kwargs):
+    def get(self, method: str) -> flask.Response:
         try:
             options = self.calculate_options('live', flask.request.args)
         except ValueError as err:
             logging.error('Invalid CGI parameters: %s', err)
-            return flask.make_response(f'Invalid CGI parameters: {err}', 400)
+            return flask.make_response('Invalid CGI parameters', 400)
         now = datetime.datetime.now(tz=UTC())
         if options.clockDrift:
             now -= datetime.timedelta(seconds=options.clockDrift)
@@ -49,15 +49,15 @@ class UTCTimeHandler(RequestHandlerBase):
             'Date': now.strftime(r'%a, %d %b %Y %H:%M:%S %Z'),
         }
         rv = ''
-        if format == 'xsd':
+        if method == 'xsd':
             rv = to_iso_datetime(now)
-        elif format == 'iso':
+        elif method == 'iso':
             # This code picks an obscure option from ISO 8601, so that a simple parser
             # will fail
             isocal = now.isocalendar()
             rv = '%04d-W%02d-%dT%02d:%02d:%02dZ' % (
                 isocal[0], isocal[1], isocal[2], now.hour, now.minute, now.second)
-        elif format == 'http-ntp':
+        elif method == 'http-ntp':
             # NTP epoch is 1st Jan 1900
             epoch = datetime.datetime(
                 year=1900, month=1, day=1, tzinfo=UTC())

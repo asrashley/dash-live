@@ -23,9 +23,13 @@
 import datetime
 import struct
 import unittest
+import urllib.parse
 
 import flask
 
+from dashlive.server.options.repository import OptionsRepository
+from dashlive.server.requesthandler.cgi_parameter_collection import CgiParameterCollection
+from dashlive.server.requesthandler.time_source_context import TimeSourceContext
 from dashlive.utils.date_time import from_isodatetime
 from dashlive.utils.timezone import UTC
 
@@ -37,7 +41,7 @@ class TestUtcTime(FlaskTestBase):
 
     @MockTime(NOW)
     def test_head_request(self):
-        url = flask.url_for('time', format='head')
+        url = flask.url_for('time', method='head')
         response = self.client.head(url)
         self.assert200(response)
         self.assertEqual(response.headers['Date'], 'Tue, 18 Jul 2023 20:10:02 UTC')
@@ -45,7 +49,7 @@ class TestUtcTime(FlaskTestBase):
 
     @MockTime(NOW)
     def test_xsd_request(self):
-        url = flask.url_for('time', format='xsd')
+        url = flask.url_for('time', method='xsd')
         response = self.client.get(url)
         self.assert200(response)
         self.assertEqual(response.headers['Date'], 'Tue, 18 Jul 2023 20:10:02 UTC')
@@ -54,7 +58,7 @@ class TestUtcTime(FlaskTestBase):
 
     @MockTime(NOW)
     def test_iso_request(self):
-        url = flask.url_for('time', format='iso')
+        url = flask.url_for('time', method='iso')
         response = self.client.get(url)
         self.assert200(response)
         self.assertEqual(response.headers['Date'], 'Tue, 18 Jul 2023 20:10:02 UTC')
@@ -63,7 +67,7 @@ class TestUtcTime(FlaskTestBase):
 
     @MockTime(NOW)
     def test_ntp_request(self):
-        url = flask.url_for('time', format='http-ntp')
+        url = flask.url_for('time', method='http-ntp')
         response = self.client.get(url)
         self.assert200(response)
         self.assertEqual(response.headers['Date'], 'Tue, 18 Jul 2023 20:10:02 UTC')
@@ -74,6 +78,35 @@ class TestUtcTime(FlaskTestBase):
         seconds = (from_isodatetime(self.NOW) - ntp_epoch).total_seconds()
         self.assertEqual(parts[0], seconds)
         self.assertEqual(parts[1], 0)
+
+    def test_scheme_id_uri_selection(self) -> None:
+        test_cases: list[tuple[str, str]] = [
+            ('direct', 'urn:mpeg:dash:utc:direct:2014'),
+            ('head', 'urn:mpeg:dash:utc:http-head:2014'),
+            ('http-ntp', 'urn:mpeg:dash:utc:http-ntp:2014'),
+            ('iso', 'urn:mpeg:dash:utc:http-iso:2014'),
+            ('ntp', 'urn:mpeg:dash:utc:ntp:2014'),
+            ('sntp', 'urn:mpeg:dash:utc:sntp:2014'),
+            ('xsd', 'urn:mpeg:dash:utc:http-xsdate:2014'),
+        ]
+        cgi_params = CgiParameterCollection(
+            audio={}, video={}, text={}, manifest={}, patch={}, time={})
+        for method, scheme_id in test_cases:
+            options = OptionsRepository.convert_cgi_options({'time': method})
+            tsc = TimeSourceContext(
+                options, cgi_params, datetime.datetime.fromisoformat(self.NOW))
+            self.assertEqual(tsc.schemeIdUri, scheme_id)
+
+    def test_cgi_params(self) -> None:
+        cgi_params = CgiParameterCollection(
+            audio={}, video={}, text={}, manifest={}, patch={},
+            time={'drift': 2})
+        options = OptionsRepository.convert_cgi_options({'time': 'iso'})
+        tsc = TimeSourceContext(
+            options, cgi_params, datetime.datetime.fromisoformat(self.NOW))
+        url = flask.url_for('time', method='iso', drift='2')
+        url = urllib.parse.urljoin(flask.request.host_url, url)
+        self.assertEqual(tsc.value, url)
 
 
 if __name__ == '__main__':
