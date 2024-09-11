@@ -41,8 +41,34 @@ UTCValue = DashOption(
     cgi_name='time_value',
     cgi_type='<string>')
 
+NTP_POOLS: dict[str, list[str]] = {
+    'europe-ntp': [
+        '0.europe.pool.ntp.org', '1.europe.pool.ntp.org',
+        '2.europe.pool.ntp.org', '3.europe.pool.ntp.org',
+    ],
+    'google': [
+        'time1.google.com', 'time2.google.com',
+        'time3.google.com', 'time4.google.com',
+    ]
+}
+
+POOL_NAMES: list[str] = sorted(list(NTP_POOLS.keys()))
+
+NTPSources = DashOption(
+    usage=OptionUsage.MANIFEST,
+    short_name='ntps',
+    full_name='ntpSources',
+    title='NTP time servers',
+    description='List of servers to use for NTP requests',
+    from_string=DashOption.list_without_none_from_string,
+    to_string=lambda servers: ','.join(servers),
+    cgi_name='ntp_servers',
+    cgi_type=f'({"|".join(POOL_NAMES)}|<server>,..)',
+    cgi_choices=tuple([None] + POOL_NAMES))
+
 time_options = [
     ClockDrift,
+    NTPSources,
     UTCMethod,
     UTCValue
 ]
