@@ -238,6 +238,7 @@ class VideoPlayer(HTMLHandlerBase):
         if stream_model is None:
             logging.error('Unknown stream: %s', stream)
             return flask.make_response(f'Unknown stream: {html.escape(stream)}', 404)
+        options.remove_unused_parameters(mode)
         dash_parms = ManifestContext(
             manifest=manifests.manifest[manifest], options=options,
             stream=stream_model)
