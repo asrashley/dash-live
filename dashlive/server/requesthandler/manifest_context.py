@@ -102,7 +102,11 @@ class ManifestContext:
             self.timeSource = TimeSourceContext(self.options, self.cgi_params, now)
         self.finish_periods_setup(timing)
 
-        if options.patch and self.manifest is not None:
+        if (
+                self.options.mode == 'live' and
+                options.patch and
+                self.manifest is not None and
+                timing is not None):
             patch_loc = flask.url_for(
                 'mpd-patch',
                 stream=self.stream.directory,
