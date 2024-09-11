@@ -161,7 +161,7 @@ class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
         self.check_generated_manifest_against_fixture(
             'hand_made.mpd', mode='live', drm='all', encrypted=True,
             now="2022-09-06T15:10:00Z",
-            acodec='mp4a', time='xsd', start='today')
+            acodec='mp4a', time='http-ntp', start='today')
 
     async def test_manifest_patch_live(self):
         await self.check_manifest_patch_live(False)

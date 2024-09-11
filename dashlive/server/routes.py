@@ -138,7 +138,7 @@ routes = {
         handler='streams.ListStreams',
         title='Available DASH streams'),
     "time": Route(
-        r'/time/<regex("(head|xsd|iso|http-ntp)"):format>',
+        r'/time/<regex("(head|xsd|iso|http-ntp)"):method>',
         handler='utctime.UTCTimeHandler',
         title='Current time of day'),
     "delete-stream": Route(

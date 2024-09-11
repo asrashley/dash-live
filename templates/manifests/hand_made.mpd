@@ -29,7 +29,7 @@
  </ProgramInformation>
  <Location>{{ request_uri|xmlSafe }}</Location>
  {%- if mpd.timeSource %}
- <UTCTiming schemeIdUri="{{mpd.timeSource.method}}" value="{{mpd.timeSource.value}}"/>
+ <UTCTiming schemeIdUri="{{mpd.timeSource.schemeIdUri}}" value="{{mpd.timeSource.value}}"/>
  {% endif %}
  {%- if options.patch %}
    <PatchLocation ttl="{{ mpd.patch.ttl }}">{{ mpd.patch.location|xmlSafe }}</PatchLocation>

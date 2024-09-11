@@ -28,7 +28,7 @@
  {%- endif %}
  <Location>{{ request_uri|xmlSafe }}</Location>
  {%- if mpd.timeSource %}
- <UTCTiming schemeIdUri="{{ mpd.timeSource.method}}" value="{{mpd.timeSource.value}}"/>
+ <UTCTiming schemeIdUri="{{ mpd.timeSource.schemeIdUri}}" value="{{mpd.timeSource.value}}"/>
  {%- endif %}
  <Period id="0" start="PT0S"
   {% if mode != 'live' %}

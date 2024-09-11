@@ -7,7 +7,7 @@
 #############################################################################
 import datetime
 import math
-from typing import AbstractSet, NamedTuple, Set, cast
+from typing import AbstractSet, Set, cast
 import urllib.parse
 
 import flask  # type: ignore
@@ -30,22 +30,15 @@ from dashlive.server.manifests import DashManifest
 from dashlive.server.options.container import OptionsContainer
 from dashlive.server.options.types import OptionUsage
 from dashlive.utils import objects
-from dashlive.utils.date_time import scale_timedelta, to_iso_datetime
+from dashlive.utils.date_time import scale_timedelta
 from dashlive.utils.json_object import JsonObject
 from dashlive.utils.timezone import UTC
 
+from .cgi_parameter_collection import CgiParameterCollection
 from .decorators import current_stream
 from .drm_context import DrmContext
+from .time_source_context import TimeSourceContext
 from .utils import is_https_request
-
-class CgiParameterCollection(NamedTuple):
-    audio: dict[str, str]
-    video: dict[str, str]
-    text: dict[str, str]
-    manifest: dict[str, str]
-    patch: dict[str, str]
-    time: dict[str, str]
-
 
 class ManifestContext:
     baseURL: str | None = None
@@ -65,6 +58,7 @@ class ManifestContext:
     startNumber: int
     stream: models.Stream
     suggestedPresentationDelay: int
+    timeSource: TimeSourceContext | None = None
     timing_ref: StreamTimingReference | None = None
     title: str
 
@@ -103,7 +97,9 @@ class ManifestContext:
             self.mediaDuration = self.timing_ref.media_duration_timedelta().total_seconds()
 
         self.periods.append(self.create_period(timing))
-        self.timeSource = self.choose_time_source_method(options, self.cgi_params, now)
+        self.timeSource = None
+        if self.options.mode == 'live' and self.options.utcMethod is not None:
+            self.timeSource = TimeSourceContext(self.options, self.cgi_params, now)
         self.finish_periods_setup(timing)
 
         if options.patch and self.manifest is not None:
@@ -496,43 +492,3 @@ class ManifestContext:
         self.elapsedTime = ltc.elapsedTime
         self.minimumUpdatePeriod = ltc.minimumUpdatePeriod
         self.timeShiftBufferDepth = ltc.timeShiftBufferDepth
-
-    @staticmethod
-    def choose_time_source_method(options: OptionsContainer,
-                                  cgi_params: CgiParameterCollection,
-                                  now: datetime.datetime) -> dict | None:
-        # TODO: replace dict with NamedTuple
-        if options.mode != 'live' or options.utcMethod is None:
-            return None
-        format = options.utcMethod
-        value = None
-        if format == 'direct':
-            method = 'urn:mpeg:dash:utc:direct:2014'
-            value = to_iso_datetime(now)
-        elif format == 'head':
-            method = 'urn:mpeg:dash:utc:http-head:2014'
-        elif format == 'http-ntp':
-            method = 'urn:mpeg:dash:utc:http-ntp:2014'
-        elif format == 'iso':
-            method = 'urn:mpeg:dash:utc:http-iso:2014'
-        elif format == 'ntp':
-            method = 'urn:mpeg:dash:utc:ntp:2014'
-            value = 'time1.google.com time2.google.com time3.google.com time4.google.com'
-        elif format == 'sntp':
-            method = 'urn:mpeg:dash:utc:sntp:2014'
-            value = 'time1.google.com time2.google.com time3.google.com time4.google.com'
-        elif format == 'xsd':
-            method = 'urn:mpeg:dash:utc:http-xsdate:2014'
-        else:
-            raise ValueError(fr'Unknown time format: "{format}"')
-        timeSource = {
-            'format': format,
-            'method': method,
-            'value': options.utcValue if options.utcValue is not None else value
-        }
-        if value is None:
-            timeSource['value'] = urllib.parse.urljoin(
-                flask.request.host_url,
-                flask.url_for('time', format=format))
-            timeSource['value'] += objects.dict_to_cgi_params(cgi_params.time)
-        return timeSource
