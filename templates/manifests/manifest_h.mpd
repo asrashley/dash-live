@@ -19,7 +19,9 @@
   {%- if mpd.baseURL %}
      <BaseURL>{{ mpd.baseURL}}</BaseURL>
   {%- endif %}
-  <UTCTiming schemeIdUri="urn:mpeg:dash:utc:ntp:2014" value="0.europe.pool.ntp.org 1.europe.pool.ntp.org 2.europe.pool.ntp.org 3.europe.pool.ntp.org"/>
+ {%- if mpd.timeSource %}
+ <UTCTiming schemeIdUri="{{mpd.timeSource.schemeIdUri}}" value="{{mpd.timeSource.value}}"/>
+ {% endif -%}
   <Period start="PT0S" id="{{ mpd.period.id }}">
    {%- with adp = mpd.video %}
      <AdaptationSet mimeType="video/mp4" startWithSAP="{{adp.startWithSAP}}" segmentAlignment="true">

@@ -6,17 +6,21 @@
 #
 #############################################################################
 import datetime
+from typing import ClassVar
 import urllib.parse
 
 import flask  # type: ignore
 
 from dashlive.server.options.container import OptionsContainer
+from dashlive.server.options.utc_time_options import NTP_POOLS
 from dashlive.utils.date_time import to_iso_datetime
 from dashlive.utils.objects import dict_to_cgi_params
 
 from .cgi_parameter_collection import CgiParameterCollection
 
 class TimeSourceContext:
+    DEFAULT_NTP_POOL: ClassVar[str] = 'google'
+
     method: str
     schemeIdUri: str
     value: str | None
@@ -36,12 +40,14 @@ class TimeSourceContext:
             self.schemeIdUri = 'urn:mpeg:dash:utc:http-ntp:2014'
         elif self.method == 'iso':
             self.schemeIdUri = 'urn:mpeg:dash:utc:http-iso:2014'
-        elif self.method == 'ntp':
-            self.schemeIdUri = 'urn:mpeg:dash:utc:ntp:2014'
-            self.value = 'time1.google.com time2.google.com time3.google.com time4.google.com'
-        elif self.method == 'sntp':
-            self.schemeIdUri = 'urn:mpeg:dash:utc:sntp:2014'
-            self.value = 'time1.google.com time2.google.com time3.google.com time4.google.com'
+        elif self.method in {'ntp', 'sntp'}:
+            self.schemeIdUri = f'urn:mpeg:dash:utc:{self.method}:2014'
+            servers: list[str] = [TimeSourceContext.DEFAULT_NTP_POOL]
+            if options.ntpSources:
+                servers = options.ntpSources
+            if len(servers) == 1 and servers[0] in NTP_POOLS:
+                servers = NTP_POOLS[servers[0]]
+            self.value = ' '.join(servers)
         elif self.method == 'xsd':
             self.schemeIdUri = 'urn:mpeg:dash:utc:http-xsdate:2014'
         else:

@@ -27,6 +27,7 @@ import urllib.parse
 
 import flask
 
+from dashlive.server.options.utc_time_options import NTP_POOLS
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.requesthandler.cgi_parameter_collection import CgiParameterCollection
 from dashlive.server.requesthandler.time_source_context import TimeSourceContext
@@ -89,10 +90,12 @@ class TestUtcTime(FlaskTestBase):
             ('sntp', 'urn:mpeg:dash:utc:sntp:2014'),
             ('xsd', 'urn:mpeg:dash:utc:http-xsdate:2014'),
         ]
+        defaults = OptionsRepository.get_default_options()
         cgi_params = CgiParameterCollection(
             audio={}, video={}, text={}, manifest={}, patch={}, time={})
         for method, scheme_id in test_cases:
-            options = OptionsRepository.convert_cgi_options({'time': method})
+            options = OptionsRepository.convert_cgi_options(
+                {'time': method}, defaults=defaults)
             tsc = TimeSourceContext(
                 options, cgi_params, datetime.datetime.fromisoformat(self.NOW))
             self.assertEqual(tsc.schemeIdUri, scheme_id)
@@ -107,6 +110,50 @@ class TestUtcTime(FlaskTestBase):
         url = flask.url_for('time', method='iso', drift='2')
         url = urllib.parse.urljoin(flask.request.host_url, url)
         self.assertEqual(tsc.value, url)
+
+    def test_default_ntp_servers(self) -> None:
+        defaults = OptionsRepository.get_default_options()
+        cgi_params = CgiParameterCollection(
+            audio={}, video={}, text={}, manifest={}, patch={}, time={})
+        for alg in ['ntp', 'sntp']:
+            options = OptionsRepository.convert_cgi_options(
+                {'time': alg}, defaults=defaults)
+            self.assertEqual(options.ntpSources, [])
+            tsc = TimeSourceContext(
+                options, cgi_params,
+                datetime.datetime.fromisoformat(self.NOW))
+            default_pool = NTP_POOLS[TimeSourceContext.DEFAULT_NTP_POOL]
+            self.assertEqual(tsc.value, ' '.join(default_pool))
+
+    def test_set_ntp_pool(self) -> None:
+        defaults = OptionsRepository.get_default_options()
+        cgi_params = CgiParameterCollection(
+            audio={}, video={}, text={}, manifest={}, patch={}, time={})
+        for pool in NTP_POOLS.keys():
+            for alg in ['ntp', 'sntp']:
+                options = OptionsRepository.convert_cgi_options({
+                    'time': alg,
+                    'ntp_servers': pool,
+                }, defaults=defaults)
+                self.assertEqual(options.ntpSources, [pool])
+                tsc = TimeSourceContext(
+                    options, cgi_params,
+                    datetime.datetime.fromisoformat(self.NOW))
+                self.assertEqual(tsc.value, ' '.join(NTP_POOLS[pool]))
+
+    def test_set_ntp_servers(self) -> None:
+        defaults = OptionsRepository.get_default_options()
+        cgi_params = CgiParameterCollection(
+            audio={}, video={}, text={}, manifest={}, patch={}, time={})
+        options = OptionsRepository.convert_cgi_options({
+            'time': 'ntp',
+            'ntp_servers': '1.time.unit.test,2.time.unit.test',
+        }, defaults=defaults)
+        self.assertEqual(options.ntpSources,
+                         ['1.time.unit.test', '2.time.unit.test'])
+        tsc = TimeSourceContext(
+            options, cgi_params, datetime.datetime.fromisoformat(self.NOW))
+        self.assertEqual(tsc.value, '1.time.unit.test 2.time.unit.test')
 
 
 if __name__ == '__main__':

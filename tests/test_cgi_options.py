@@ -231,6 +231,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             'leeway': 16,
             'mainAudio': None,
             'mode': 'vod',
+            'ntpSources': [],
             'manifestErrors': [],
             'mainText': None,
             'marlin': {
@@ -344,7 +345,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
         opts.remove_unused_parameters('vod')
         for field in {
                 'availabilityStartTime', 'minimumUpdatePeriod', 'timeShiftBufferDepth',
-                'utcMethod', 'utcValue'}:
+                'ntpSources', 'utcMethod', 'utcValue'}:
             del expected[field]
         self.maxDiff = None
         self.assertDictEqual(expected, opts.toJSON())
@@ -405,6 +406,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             },
             "minimumUpdatePeriod": None,
             "mode": "vod",
+            'ntpSources': [],
             "numPeriods": None,
             "patch": False,
             "ping": {
