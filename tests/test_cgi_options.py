@@ -345,7 +345,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
         opts.remove_unused_parameters('vod')
         for field in {
                 'availabilityStartTime', 'minimumUpdatePeriod', 'timeShiftBufferDepth',
-                'ntpSources', 'utcMethod', 'utcValue'}:
+                'patch', 'ntpSources', 'utcMethod', 'utcValue'}:
             del expected[field]
         self.maxDiff = None
         self.assertDictEqual(expected, opts.toJSON())
