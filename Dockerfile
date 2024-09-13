@@ -62,7 +62,8 @@ WORKDIR /home/dash/dash-live
 RUN python ./gen-settings.py --password=${DEFAULT_PASSWORD} --proxy-depth=${PROXY_DEPTH}
 RUN echo "#!/bin/bash" > $HOME/dash-live/lesscpy.sh
 RUN echo "source $HOME/.venv/bin/activate && python -m lesscpy static/css -o static/css/" >> $HOME/dash-live/lesscpy.sh
-RUN chmod +x $HOME/dash-live/lesscpy.sh
+COPY deploy/runtests.sh $HOME/dash-live/
+RUN chmod +x $HOME/dash-live/*.sh
 RUN $HOME/dash-live/lesscpy.sh
 ENTRYPOINT ["/home/dash/dash-live/runserver.sh"]
 
@@ -74,7 +75,6 @@ RUN apt-get -y -q --force-yes install nginx
 RUN rm /etc/nginx/sites-enabled/default
 COPY deploy/application.py $HOME/dash-live/
 COPY deploy/start-server.sh $HOME/dash-live/
-COPY deploy/runtests.sh $HOME/dash-live/
 COPY deploy/dashlive.conf /etc/nginx/sites-available/
 COPY deploy/x_forwarded_proto.conf /etc/nginx/conf.d/
 COPY deploy/proxy_params /etc/nginx/
