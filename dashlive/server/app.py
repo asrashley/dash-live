@@ -28,10 +28,10 @@ from pathlib import Path
 import secrets
 
 from dotenv import load_dotenv
-from flask import Flask, request  # type: ignore
+from flask import Flask, request, Response  # type: ignore
 from flask_login import LoginManager
 from flask_socketio import SocketIO
-from werkzeug.routing import BaseConverter  # type: ignore
+from werkzeug.routing import BaseConverter, Map  # type: ignore
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from dashlive.server import models
@@ -51,11 +51,11 @@ class RegexConverter(BaseConverter):
     """
     Utility class to allow a regex to be used in a route path
     """
-    def __init__(self, url_map, *items):
+    def __init__(self, url_map: Map, *items) -> None:
         super().__init__(url_map)
         self.regex = items[0]
 
-def no_api_cache(response):
+def no_api_cache(response: Response) -> Response:
     """
     Make sure all API calls return no caching directives
     """
