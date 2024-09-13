@@ -25,12 +25,13 @@ COPY static/js/*.js $HOME/dash-live/static/js/
 COPY static/js/dev/* $HOME/dash-live/static/js/dev/
 COPY static/js/legacy/* $HOME/dash-live/static/js/legacy/
 COPY static/js/prod/* $HOME/dash-live/static/js/prod/
-COPY templates/esm/*.js $HOME/dash-live/templates/esm/
-COPY templates/manifests/*.mpd $HOME/dash-live/templates/manifests/
 COPY templates/*.html $HOME/dash-live/templates/
 COPY templates/drm/*.xml $HOME/dash-live/templates/drm/
+COPY templates/esm/*.js $HOME/dash-live/templates/esm/
 COPY templates/events/*.xml $HOME/dash-live/templates/events/
+COPY templates/manifests/*.mpd $HOME/dash-live/templates/manifests/
 COPY templates/media/*.html $HOME/dash-live/templates/media/
+COPY templates/patches/*.xml $HOME/dash-live/templates/patches/
 COPY templates/segment/*.xml $HOME/dash-live/templates/segment/
 COPY templates/users/*.html $HOME/dash-live/templates/users/
 COPY static/css/* $HOME/dash-live/static/css/
