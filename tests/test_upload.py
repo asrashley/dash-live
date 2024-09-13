@@ -25,6 +25,7 @@ import logging
 from pathlib import Path
 import shutil
 import unittest
+from unittest.mock import patch
 
 import flask
 
@@ -149,7 +150,7 @@ class TestPopulateDatabase(FlaskTestBase):
         tmpdir = self.create_upload_folder()
         with self.app.app_context():
             self.app.config['BLOB_FOLDER'] = tmpdir
-        with unittest.mock.patch('requests.Session') as mock:
+        with patch('requests.Session') as mock:
             mock.return_value = ClientHttpSession(self.client)
             dashlive.upload.main(args)
         self.check_database_results(jsonfile, 2)
