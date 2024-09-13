@@ -41,7 +41,7 @@ ShakaVersion = DashOption(
     title='Shaka version',
     description='Shaka DASH player version',
     cgi_name='shaka',
-    cgi_choices=(None, '4.3.8', '2.5.4',))
+    cgi_choices=(None, '4.11.2', '4.3.8', '2.5.4',))
 
 player_options = [
     DashjsVersion,
