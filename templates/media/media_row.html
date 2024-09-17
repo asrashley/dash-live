@@ -29,8 +29,11 @@
       <td class="sha1-hash ellipsis" data-text="{{media.blob.sha1_hash}}">
         {{media.blob.sha1_hash}}
       </td>
-      <td class="contentType">
+      <td class="content-type">
         {{media.content_type}}
+      </td>
+      <td class="track-id">
+        {{ media.track_id }}
       </td>
       <td class="codec">
         {% if media.representation %}
