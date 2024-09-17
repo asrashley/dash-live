@@ -13,6 +13,7 @@ import flask
 import sqlalchemy as sa
 import sqlalchemy_jsonfield  # type: ignore
 from sqlalchemy.event import listen  # type: ignore
+from sqlalchemy.orm import reconstructor  # type: ignore
 
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.mpeg.dash.reference import StreamTimingReference
@@ -45,18 +46,44 @@ class MediaFile(db.Model, ModelMixin):
         ),
         nullable=True)
     bitrate = sa.Column(sa.Integer, default=0, index=True, nullable=False)
+
+    # 'video', 'audio' or 'text'
     content_type = sa.Column(sa.String(64), nullable=True, index=True)
+
+    track_id = sa.Column(sa.Integer, index=True, nullable=True)
+
+    # the fourcc of the audio/video/text codec
+    # 'avc1', 'avc3', 'hev1', 'mp4a', 'ec3', 'ac_3', 'stpp'
+    codec_fourcc = sa.Column(sa.String(16), nullable=True, index=False)
+
     encrypted = sa.Column(sa.Boolean, default=False, index=True, nullable=False)
+
     encryption_keys: db.Mapped[list[Key]] = db.relationship(secondary=mediafile_keys, back_populates='mediafiles')
 
-    _representation = None
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._post_init()
 
-    def _pre_put_hook(self):
-        if self._representation is not None:
-            if self.content_type is None:
-                self.content_type = self._representation.content_type
-                self.encrypted = self._representation.encrypted
-                self.bitrate = self._representation.bitrate
+    @reconstructor
+    def _reconstructor(self) -> None:
+        self._post_init()
+
+    def _post_init(self) -> None:
+        self._representation: Representation | None = None
+        if self.rep is not None:
+            self._representation = Representation(**self.rep)
+
+    def _pre_put_hook(self) -> None:
+        if self._representation is None:
+            return
+        if self.content_type is None:
+            self.content_type = self._representation.content_type
+            self.encrypted = self._representation.encrypted
+            self.bitrate = self._representation.bitrate
+        if self.codec_fourcc is None:
+            self.codec_fourcc = self._representation.codecs.split('.')[0]
+        if self.track_id is None:
+            self.track_id = self._representation.track_id
 
     def get_representation(self):
         if self._representation is None and self.rep:
