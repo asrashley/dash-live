@@ -1,7 +1,7 @@
 """add stream defaults column
 
 Revision ID: e3cdc4f4779b
-Revises: 
+Revises:
 Create Date: 2023-10-01 10:08:28.861737
 
 """
