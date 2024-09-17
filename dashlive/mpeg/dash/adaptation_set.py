@@ -113,8 +113,10 @@ class AdaptationSet(ObjectWithFields):
         return rv
 
     @property
-    def contentComponent(self):
-        return ContentComponent(self.id, self.content_type)
+    def contentComponent(self) -> ContentComponent | None:
+        if self.representations:
+            return ContentComponent(self.representations[0].track_id, self.content_type)
+        return None
 
     @property
     def start_number(self) -> int:
