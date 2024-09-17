@@ -21,6 +21,7 @@
 #############################################################################
 
 import json
+import logging
 import unittest
 from urllib.parse import urlparse, parse_qs
 
@@ -30,6 +31,7 @@ import flask
 from dashlive.server import manifests, models
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.options.types import OptionUsage
+from dashlive.server.template_tags import dateTimeFormat, sizeFormat
 
 from .mixins.flask_base import FlaskTestBase
 
@@ -157,7 +159,11 @@ class TestHtmlPageHandlers(FlaskTestBase):
             response = self.client.get(url)
             self.assertEqual(response.status_code, 200)
             self.assertIn('Editing', response.text)
-            for field in ['Title', 'Directory', 'Marlin LA URL', 'PlayReady LA URL']:
+            model_edit_fields: set[str] = {
+                'Title', 'Directory', 'Marlin LA URL', 'PlayReady LA URL',
+                'Timing reference', 'Stream defaults',
+            }
+            for field in model_edit_fields:
                 self.assertIn(f'{field}:', response.text)
             html = BeautifulSoup(response.text, 'lxml')
             for input_field in html.find(id="edit-model").find_all('input'):
@@ -181,6 +187,37 @@ class TestHtmlPageHandlers(FlaskTestBase):
                         'hidden')
                 if name == 'stream':
                     self.assertEqual(f'{stream.pk}', input_field.get('value'))
+            found_media: set[int] = set()
+            for row in html.find(id='media-files').tbody.find_all('tr'):
+                try:
+                    media_id = row['id']
+                except KeyError:
+                    continue
+                media = models.MediaFile.get(name=media_id)
+                self.assertIsNotNone(media, f'Failed to find MediaFile {media_id}')
+                expected_values: dict[str, str] = {
+                    'codec': media.representation.codecs,
+                    'content-type': media.content_type,
+                    'created': dateTimeFormat(media.blob.created, '%H:%M:%S %d/%m/%Y'),
+                    'filename': media.name,
+                    'filesize': sizeFormat(media.blob.size),
+                    'sha1-hash': media.blob.sha1_hash,
+                }
+                found_media.add(media_id)
+                for cell in row.find_all('td'):
+                    class_names = cell.attrs['class']
+                    for name in class_names:
+                        if name not in expected_values:
+                            continue
+                        contents: str = ' '.join(cell.stripped_strings)
+                        self.assertIn(
+                            expected_values[name], contents,
+                            (f'Expected cell "{class_names}" to contain ' +
+                             f'"{expected_values[name]}" but found "{contents}"'))
+            for media in models.MediaFile.all():
+                self.assertIn(
+                    media.name, found_media,
+                    f'Expected media file {media.name} to have been listed in media-files')
         finally:
             self.current_url = None
 
@@ -316,4 +353,6 @@ class TestHtmlPageHandlers(FlaskTestBase):
 
 
 if __name__ == "__main__":
+    logging.basicConfig()
+    logging.getLogger().setLevel(logging.INFO)
     unittest.main()
