@@ -24,7 +24,6 @@ import importlib
 import logging
 from logging.config import dictConfig
 from os import environ
-from pathlib import Path
 import secrets
 
 from dotenv import load_dotenv
@@ -41,6 +40,7 @@ from dashlive.utils.json_object import JsonObject
 
 from .anonymous_user import AnonymousUser
 from .asyncio_loop import asyncio_loop
+from .folders import AppFolders
 from .routes import routes
 from .template_tags import custom_tags
 # from .thread_pool import pool_executor
@@ -91,27 +91,16 @@ def create_app(config: JsonObject | None = None,
     if config is None:
         load_dotenv(environ.get('DASHLIVE_SETTINGS', '.env'))
     logging.basicConfig()
-    srcdir = Path(__file__).parent.resolve()
-    basedir = srcdir.parent.parent
-    template_folder = basedir / "templates"
-    static_folder = basedir / "static"
-    if not template_folder.exists():
-        template_folder = srcdir / "templates"
-        static_folder = srcdir / "static"
-    if instance_path is None:
-        media_folder = basedir / "media"
-        instance_path = environ.get('FLASK_INSTANCE_PATH', basedir)
-    else:
-        media_folder = Path(instance_path) / "media"
-        if not media_folder.exists():
-            media_folder.mkdir()
-    instance_path = Path(instance_path).resolve()
+    folders = AppFolders(instance_path)
+    folders.check(check_media=False)
+    folders.create_media_folders()
+    folders.check(check_media=True)
     asyncio_loop.start()
     app = Flask(
         __name__,
-        instance_path=instance_path,
-        template_folder=str(template_folder),
-        static_folder=str(static_folder))
+        instance_path=folders.instance_path,
+        template_folder=str(folders.template_folder),
+        static_folder=str(folders.static_folder))
     add_routes(app)
     dash_settings = {
         'CSRF_SECRET': secrets.token_urlsafe(16),
@@ -121,11 +110,11 @@ def create_app(config: JsonObject | None = None,
     url_template = environ.get('FLASK_DATABSE_TEMPLATE', r'${DB_URI}')
     database_uri = environ.get(
         'SQLALCHEMY_DATABASE_URI',
-        make_db_connection_string(instance_path, url_template))
+        make_db_connection_string(folders.instance_path, url_template))
     app.config.update(
-        BLOB_FOLDER=str(media_folder / "blobs"),
+        BLOB_FOLDER=str(folders.blob_folder),
         SQLALCHEMY_DATABASE_URI=database_uri,
-        UPLOAD_FOLDER=str(media_folder / "blobs"),
+        UPLOAD_FOLDER=str(folders.upload_folder),
         DASH=dash_settings,
         SECRET_KEY=secrets.token_urlsafe(16),
         SESSION_COOKIE_SAMESITE='Strict'
