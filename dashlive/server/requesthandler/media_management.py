@@ -26,9 +26,7 @@ import logging
 import flask
 from werkzeug.datastructures import FileStorage
 
-from dashlive.drm.playready import PlayReady
 from dashlive.mpeg import mp4
-from dashlive.mpeg.dash.representation import Representation
 from dashlive.server import models
 from dashlive.server.routes import Route
 from dashlive.utils.buffered_reader import BufferedReader
@@ -181,33 +179,14 @@ class IndexMediaFile(HTMLHandlerBase):
             status = 401
         if result["error"] is None:
             mf = current_media_file
-            with mf.open_file() as src:
-                atom = mp4.Wrapper(
-                    atom_type='wrap', position=0, size=mf.blob.size,
-                    parent=None, children=mp4.Mp4Atom.load(src))
-            rep = Representation.load(filename=mf.name, atoms=atom.children)
-            mf.representation = rep
-            mf.encryption_keys = []
-            for kid in rep.kids:
-                key_model = models.Key.get(hkid=kid.hex)
-                if key_model is None:
-                    key = models.KeyMaterial(
-                        raw=PlayReady.generate_content_key(kid.raw))
-                    key_model = models.Key(hkid=kid.hex, hkey=key.hex, computed=True)
-                    key_model.add()
-                mf.encryption_keys.append(key_model)
-            mf.content_type = rep.content_type
-            mf.bitrate = rep.bitrate
-            mf.encrypted = rep.encrypted
-            if rep.bitrate:
-                # bitrate cannot be None, therefore don't commit if
-                # Representation class failed to discover the
-                # bitrate
+            if mf.parse_media_file():
                 models.db.session.commit()
-            result = {
-                "indexed": mf.pk,
-                "representation": mf.rep,
-            }
+                result = {
+                    "indexed": mf.pk,
+                    "representation": mf.rep,
+                }
+            else:
+                result['error'] = 'Failed to parse media file'
         csrf_key = self.generate_csrf_cookie()
         result["csrf"] = self.generate_csrf_token('files', csrf_key)
         return self.jsonify(result, status=status)

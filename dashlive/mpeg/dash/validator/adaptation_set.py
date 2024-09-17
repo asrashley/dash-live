@@ -10,6 +10,7 @@ import datetime
 
 from dashlive.mpeg.dash.representation import Representation as ServerRepresentation
 
+from .content_component import ContentComponent
 from .dash_element import DashElement
 from .frame_rate_type import FrameRateType
 from .representation_base_type import RepresentationBaseType
@@ -33,6 +34,9 @@ class AdaptationSet(RepresentationBaseType):
         ('maxFrameRate', FrameRateType, None),
     ]
 
+    contentComponents: list[ContentComponent]
+    representations: list[Representation]
+
     def __init__(self, adap_set, parent):
         super().__init__(adap_set, parent)
         reps = adap_set.findall('./dash:Representation', self.xmlNamespaces)
@@ -42,6 +46,8 @@ class AdaptationSet(RepresentationBaseType):
                 self.default_KID = cp.default_KID
                 break
         self.representations = [Representation(r, self) for r in reps]
+        components = adap_set.findall('./dash:ContentComponent', self.xmlNamespaces)
+        self.contentComponents = [ContentComponent(c, self) for c in components]
 
     async def prefetch_media_info(self) -> bool:
         self.progress.add_todo(len(self.representations))
@@ -54,13 +60,13 @@ class AdaptationSet(RepresentationBaseType):
     def num_tests(self) -> int:
         count = 0
         if ValidationFlag.ADAPTATION_SET in self.options.verify:
-            count += 1 + len(self.contentProtection)
+            count += 1 + len(self.contentProtection) + len(self.contentComponents)
         for rep in self.representations:
             count += rep.num_tests()
         return count
 
     def children(self) -> list[DashElement]:
-        return super().children() + self.representations
+        return super().children() + self.representations + self.contentComponents
 
     @property
     def target_duration(self) -> datetime.timedelta | None:
@@ -128,6 +134,7 @@ class AdaptationSet(RepresentationBaseType):
             await self.validate_self()
             self.progress.inc()
         tasks = {rep.validate() for rep in self.representations}
+        tasks.update({cc.validate() for cc in self.contentComponents})
         await asyncio.gather(*tasks)
 
     async def validate_self(self, depth: int = -1) -> None:
@@ -135,10 +142,12 @@ class AdaptationSet(RepresentationBaseType):
             self.elt.check_not_none(
                 self.default_KID,
                 msg=f'default_KID cannot be missing for protected stream: {self.baseurl}')
-        self.attrs.check_includes(
-            container={'video', 'audio', 'text', 'image', 'font', 'application', None},
-            item=self.contentType,
-            template=r'Unexpected content type {1}, allowed values: {0}')
+        if self.contentType is not None:
+            self.attrs.check_includes(
+                ContentComponent.CONTENT_TYPES,
+                self.contentType,
+                msg=f'Unexpected @contentType "{self.contentType}"',
+                clause='5.3.3.1')
         self.attrs.check_not_none(
             self.mimeType, msg='AdaptationSet@mimeType is a mandatory attribute',
             clause='5.3.7.2')

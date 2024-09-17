@@ -222,10 +222,13 @@ class ManifestContext:
             stream=self.stream, max_items=max_items)
         for mf in media_files:
             if mf.representation is None:
+                mf.parse_media_file()
+            if mf.representation is None:
                 continue
             assert mf.content_type == 'video'
             assert mf.representation.content_type == 'video'
             video.representations.append(mf.representation)
+            assert video.representations[0].track_id == mf.representation.track_id
         video.compute_av_values()
         assert isinstance(video.representations, list)
         return video
