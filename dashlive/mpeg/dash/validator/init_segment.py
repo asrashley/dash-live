@@ -174,14 +174,22 @@ class InitSegment(DashElement):
                     'PSSH box should be present in an encrypted stream')
 
     def validate_moov(self, moov: mp4.Mp4Atom) -> None:
-        dash_rep = DashRepresentation()
-        key_ids = set()
-        dash_rep.process_moov(moov, key_ids)
-        self.codecs = dash_rep.codecs
-        timescale = self.parent.timescale()
-        self.elt.check_equal(
-            dash_rep.timescale, self.parent.timescale(),
-            msg=f'Expected timescale to be {timescale} but found {dash_rep.timescale}')
+        dash_rep = self.dash_rep
+        dash_timescale = self.parent.dash_timescale()
+        media_timescale: int | None = self.media_timescale()
+        if media_timescale == 0 or dash_timescale == 0:
+            self.elt.add_error(
+                f'Neither DASH timescale {dash_timescale} nor media timescale ' +
+                f'{media_timescale} can be zero')
+        elif media_timescale is not None and media_timescale != dash_timescale:
+            ratio = max(dash_timescale, media_timescale) / float(
+                min(dash_timescale, media_timescale))
+            self.elt.check_equal(
+                int(ratio), ratio,
+                msg=(
+                    f'DASH timescale {dash_timescale} and media timescale ' +
+                    f'{media_timescale} are not multiples of each other'))
+
         if self.parent.codecs:
             self.elt.check_equal(
                 dash_rep.codecs.lower(), self.parent.codecs.lower(),

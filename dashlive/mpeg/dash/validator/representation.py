@@ -262,14 +262,14 @@ class Representation(RepresentationBaseType):
                 return
             seg_duration = timeline.duration // len(timeline.segments)
         if self.parent.contentType == 'audio':
-            tolerance = self.timescale() // 20
+            tolerance = self.dash_timescale() // 20
         else:
-            tolerance = self.timescale() // frameRate
+            tolerance = self.dash_timescale() // frameRate
         total_duration = 0
         self.log.debug('Generating up to %d MediaSegments using SegmentTimeline', len(timeline.segments))
         need_duration = None
         if self.target_duration is not None:
-            need_duration = timedelta_to_timecode(self.target_duration, self.timescale())
+            need_duration = timedelta_to_timecode(self.target_duration, self.dash_timescale())
         for idx, seg in enumerate(timeline.segments):
             decode_time = seg.start - self.segmentTemplate.presentationTimeOffset
             if self.mode == 'vod':
@@ -288,7 +288,7 @@ class Representation(RepresentationBaseType):
                 expected_seg_num=expected_seg_num, tolerance=tolerance)
             if self.mode == 'live':
                 ms.set_segment_availability(
-                    seg_duration, self.segmentTemplate.presentationTimeOffset, self.timescale())
+                    seg_duration, self.segmentTemplate.presentationTimeOffset, self.dash_timescale())
             self.media_segments.append(ms)
             total_duration += seg.duration
             if self.mode != 'live' and need_duration and total_duration > need_duration:
@@ -298,7 +298,7 @@ class Representation(RepresentationBaseType):
                 break
         if self.mode == 'live':
             if self.target_duration is None or self.target_duration >= self.mpd.timeShiftBufferDepth:
-                tsb = self.mpd.timeShiftBufferDepth.total_seconds() * self.timescale()
+                tsb = self.mpd.timeShiftBufferDepth.total_seconds() * self.dash_timescale()
                 self.elt.check_greater_or_equal(
                     total_duration, tsb,
                     template=r'SegmentTimeline has duration {0}, expected {1} based upon timeshiftbufferdepth')
@@ -427,7 +427,7 @@ class Representation(RepresentationBaseType):
                     # self.log.debug(
                     #    '%s: seg[%s] expected_duration=%d total=%d', self.id,
                     #    seg.name, seg.expected_duration, total_dur)
-        return timecode_to_timedelta(total_dur, self.timescale())
+        return timecode_to_timedelta(total_dur, self.dash_timescale())
 
     def get_codec(self) -> str | None:
         if self.init_segment is not None:
@@ -451,7 +451,9 @@ class Representation(RepresentationBaseType):
         if self.target_duration is None:
             need_duration = None
         else:
-            need_duration = timedelta_to_timecode(self.target_duration, self.timescale())
+            need_duration = timedelta_to_timecode(self.target_duration, self.dash_timescale())
+        dash_timescale = self.dash_timescale()
+        media_timescale = self.init_segment.media_timescale()
         for idx, seg in enumerate(self.media_segments):
             self.log.debug(
                 '%s[%d]: num=%s time=%s', self.id, idx, next_seg_num, next_decode_time)
@@ -463,15 +465,17 @@ class Representation(RepresentationBaseType):
             elif seg.expected_seg_num != next_seg_num:
                 next_decode_time = None
             if seg.expected_decode_time is None and next_decode_time is not None:
-                expected_time = seg.expected_seg_num - self.segmentTemplate.startNumber
-                expected_time *= self.segmentTemplate.duration
+                seg_index = seg.expected_seg_num - self.segmentTemplate.startNumber
+                expected_time = (
+                    seg_index * self.segmentTemplate.duration *
+                    media_timescale // dash_timescale)
                 msg = f'Based upon segment number {seg.expected_seg_num} the expected '
                 msg += f'decode_time={expected_time} but next_decode_time={next_decode_time} '
                 msg += f'({next_decode_time - expected_time})'
                 if seg.expected_duration is not None:
                     delta = seg.expected_duration // 2
                 else:
-                    delta = self.timescale()
+                    delta = media_timescale
                 seg.elt.check_almost_equal(
                     expected_time, next_decode_time, delta=delta, msg=msg)
                 seg.expected_decode_time = next_decode_time
@@ -631,11 +635,15 @@ class Representation(RepresentationBaseType):
         }
         return self.URL_TEMPLATE_RE.sub(repfn, url)
 
-    def timescale(self) -> int:
-        if self.info:
-            if self.info.timescale:
-                return self.info.timescale
-        if self.segmentTemplate:
-            if self.segmentTemplate.timescale:
-                return self.segmentTemplate.timescale
+    def dash_timescale(self) -> int:
+        """
+        The timescale (in units per seconds) as defined by the data
+        in the Manifest. Note this might not match the timescale of
+        the actual media fragments!
+        """
+        if self.segmentTemplate and self.segmentTemplate.timescale:
+            return self.segmentTemplate.timescale
+        info = self.init_segment.dash_representation
+        if info is not None and info.timescale:
+            return info.timescale
         return 1
