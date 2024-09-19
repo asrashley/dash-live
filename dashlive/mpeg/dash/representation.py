@@ -473,7 +473,9 @@ class Representation(ObjectWithFields):
         return (first_fragment, last_fragment)
 
     def calculate_segment_number_and_time(
-            self, segment_time: int | None, segment_num: int | None) -> SegmentNumberAndTime:
+            self,
+            segment_time: int | None,
+            segment_num: int | None) -> SegmentNumberAndTime:
         if self._timing is None:
             raise ValueError('set_dash_timing() has not been called')
 
@@ -501,7 +503,12 @@ class Representation(ObjectWithFields):
             timecode = int((segment_num - self.start_number) * self.segment_duration)
         else:
             timecode = segment_time
+
+        if segment_num is None:
+            # TODO: handle special cases where segment durations vary within
+            # the reference Representation
             segment_num = int(segment_time // self.segment_duration)
+
         seg_delta = self.timescale_to_timedelta(timecode)
         fta = timing.firstAvailableTime - timing.leeway
         if (
