@@ -21,7 +21,8 @@
 #############################################################################
 
 import time
-from typing import ClassVar
+from dataclasses import dataclass
+from typing import Any, ClassVar
 
 from dashlive.utils.objects import dict_to_cgi_params
 from dashlive.utils.list_of import ListOf
@@ -32,20 +33,20 @@ from .event_stream import EventStream
 from .representation import Representation
 from .timing import DashTiming
 
+@dataclass(kw_only=True, slots=True)
 class ContentComponent:
-    def __init__(self, id: int, content_type: str) -> None:
-        self.id = id
-        self.contentType = content_type
+    id: int
+    content_type: str
 
 
 class AdaptationSet(ObjectWithFields):
     _NEXT_ID: ClassVar[int | None] = None
-    OBJECT_FIELDS = {
+    OBJECT_FIELDS: ClassVar[dict[str, Any]] = {
         'event_streams': ListOf(EventStream),
         'representations': ListOf(Representation),
         'drm': DrmBase | None,
     }
-    DEFAULT_VALUES = {
+    DEFAULT_VALUES: ClassVar[dict[str, Any]] = {
         'maxSegmentDuration': 1,
         'timescale': 1,
         'segmentAlignment': True,
@@ -115,7 +116,9 @@ class AdaptationSet(ObjectWithFields):
     @property
     def contentComponent(self) -> ContentComponent | None:
         if self.representations:
-            return ContentComponent(self.representations[0].track_id, self.content_type)
+            return ContentComponent(
+                id=self.representations[0].track_id,
+                content_type=self.content_type)
         return None
 
     @property
