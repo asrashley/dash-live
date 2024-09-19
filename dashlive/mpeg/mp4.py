@@ -642,11 +642,13 @@ class Mp4Atom(ObjectWithFields):
         out.write(struct.pack('>I', 0))
         out.write(fourcc)
         self.encode_fields(dest=out)
+        # indent = ' ' * depth
         if self._children:
             for idx, child in enumerate(self._children):
-                # print(f'{self.atom_type}: encode {idx}={child.atom_type}', type(child))
+                # print(f'{indent}{self.atom_type}: encode {idx}={child.atom_type}', type(child))
                 child.encode(dest=out, depth=(depth + 1))
         self.size = out.tell() - self.position
+        # print(f'{indent}{self.atom_type}: {self.position} -> {out.tell()} ({self.size})')
         # replace the length field
         out.seek(self.position)
         out.write(struct.pack('>I', self.size))
@@ -722,17 +724,14 @@ class Wrapper(Mp4Atom):
     parse_children = True
 
     def encode(self, dest=None, depth: int = 0):
-        # print('======== encode wrap start ======')
         assert depth == 0
         out = dest
         if out is None:
             out = io.BytesIO()
         if self._children:
             for idx, child in enumerate(self._children):
-                # print(f'{self.atom_type}: encode {idx}={child.atom_type}', type(child))
                 child.encode(dest=out, depth=(depth + 1))
             self.post_encode_all(dest=out)
-        # print('======== encode wrap done ======')
         if dest is None:
             return out.getvalue()
         return dest
