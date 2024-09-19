@@ -42,7 +42,10 @@ class MediaSegment(DashElement):
         self.availability_start_time: datetime.datetime | None = None
         self.availability_end_time: datetime.datetime | None = None
         path = Path(urllib.parse.urlparse(url).path)
-        self.name = path.name
+        if self.parent.id is not None:
+            self.name = f'{self.parent.id}:{path.name}'
+        else:
+            self.name = path.name
         if seg_range:
             self.name += f'?range={self.seg_range}'
         self.elt.prefix = f'{self.name}: '
@@ -247,17 +250,14 @@ class MediaSegment(DashElement):
         msg = (
             'trun.data_offset must point inside the MDAT box. ' +
             f'trun points to {first_sample_pos} but first sample of ' +
-            f'MDAT is {mdat.position + mdat.header_size} ' +
-            f'trun last sample is {last_sample_end} end of ' +
-            f'MDAT is {mdat.position + mdat.size}')
+            f'MDAT is at {mdat.position + mdat.header_size}. ' +
+            f'trun last sample is {last_sample_end}. End of ' +
+            f'MDAT is {mdat.position + mdat.size}. ' +
+            f'tfhd.base_data_offset={moof.traf.tfhd.base_data_offset} and ' +
+            f'trun.data_offset={moof.traf.trun.data_offset}'
+        )
         self.elt.check_equal(
             first_sample_pos, mdat.position + mdat.header_size, msg=msg)
-        msg = (
-            'trun.data_offset must point inside the MDAT box. ' +
-            f'trun points to {first_sample_pos} first sample of ' +
-            f'MDAT is {mdat.position + mdat.header_size} ' +
-            f'trun last sample is {last_sample_end} but end of ' +
-            f'MDAT is {mdat.position + mdat.size}')
         self.elt.check_less_than_or_equal(
             last_sample_end, mdat.position + mdat.size, msg=msg)
         return moof
