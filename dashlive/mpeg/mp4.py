@@ -107,22 +107,22 @@ class Mp4Atom(ObjectWithFields):
     parse_children = False
     include_atom_type = False
 
-    OBJECT_FIELDS = {
+    OBJECT_FIELDS: ClassVar[dict[str, Any]] = {
         '_children': ListOf(ObjectWithFields),
         'options': Options,
         'parent': ObjectWithFields,
     }
-    DEFAULT_EXCLUDE = {'options', 'parent'}
+    DEFAULT_EXCLUDE: ClassVar[set[str]] = {'options', 'parent'}
 
     # list of box names required for parsing
-    REQUIRED_PEERS = None
+    REQUIRED_PEERS: ClassVar[list[str] | None] = None
 
     # set of boxes that this atom depends upon
-    DEPENDS_UPON = set()
+    DEPENDS_UPON: ClassVar[set[str]] = set()
 
-    MODULE_PREFIX = 'dashlive.mpeg.mp4.'
+    MODULE_PREFIX: ClassVar[str] = 'dashlive.mpeg.mp4.'
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         if 'children' in kwargs:
             kwargs['_children'] = kwargs['children']
             del kwargs['children']
@@ -2710,18 +2710,18 @@ class TrackSample(ObjectWithFields):
 
 @fourcc('trun')
 class TrackFragmentRunBox(FullBox):
-    data_offset_present = 0x000001
-    first_sample_flags_present = 0x000004  # overrides default flags for the first sample only
-    sample_duration_present = 0x000100  # sample has its own duration?
-    sample_size_present = 0x000200  # sample has its own size
-    sample_flags_present = 0x000400  # sample has its own flags
-    sample_composition_time_offsets_present = 0x000800  # sample has a composition time offset
+    data_offset_present: ClassVar[int] = 0x000001
+    first_sample_flags_present: ClassVar[int] = 0x000004  # overrides default flags for the first sample only
+    sample_duration_present: ClassVar[int] = 0x000100  # sample has its own duration?
+    sample_size_present: ClassVar[int] = 0x000200  # sample has its own size
+    sample_flags_present: ClassVar[int] = 0x000400  # sample has its own flags
+    sample_composition_time_offsets_present: ClassVar[int] = 0x000800  # sample has a composition time offset
 
     OBJECT_FIELDS = {
         'samples': ListOf(TrackSample),
+        **FullBox.OBJECT_FIELDS,
     }
-    OBJECT_FIELDS.update(FullBox.OBJECT_FIELDS)
-    DEPENDS_UPON = {'moof', 'mdat', 'tfhd'}
+    DEPENDS_UPON: ClassVar[set[str]] = {'moof', 'traf', 'mdat', 'tfhd'}
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
