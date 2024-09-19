@@ -27,8 +27,8 @@ class MultipleSegmentBaseType(SegmentBaseType):
         if len(bss):
             self.BitstreamSwitching = bss[0].text
 
-    def validate(self, depth: int = -1) -> None:
-        super().validate(depth)
+    async def validate(self) -> None:
+        await super().validate()
         if self.segmentTimeline is not None:
             # 5.3.9.2.1: The attribute @duration and the element SegmentTimeline
             # shall not be present at the same time.

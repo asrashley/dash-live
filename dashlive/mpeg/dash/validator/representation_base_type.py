@@ -5,6 +5,8 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+import asyncio
+from collections.abc import Awaitable
 
 from .content_protection import ContentProtection
 from .dash_element import DashElement
@@ -45,11 +47,12 @@ class RepresentationBaseType(DashElement):
             return self.parent.get_timescale()
         return 1
 
-    def validate(self, depth: int = -1) -> None:
-        if depth == 0:
-            return
-        for ev in self.event_streams:
-            ev.validate(depth - 1)
+    async def validate(self) -> None:
+        futures: set[Awaitable] = {
+            ev.validate() for ev in self.event_streams}
+        futures.update({cp.validate() for cp in self.contentProtection})
+        futures.update({cp.validate() for cp in self.segmentList})
+        await asyncio.gather(*futures)
 
     def children(self) -> list[DashElement]:
         return self.event_streams

@@ -6,6 +6,8 @@
 #
 #############################################################################
 
+import asyncio
+from collections.abc import Awaitable
 import datetime
 import math
 import re
@@ -435,14 +437,17 @@ class Representation(RepresentationBaseType):
         return None
 
     async def validate(self) -> None:
+        futures: set[Awaitable] = set()
         if ValidationFlag.REPRESENTATION in self.options.verify:
-            await self.validate_self()
-            self.progress.inc()
-            self._validated = True
+            futures.add(super().validate())
+            futures.add(self.validate_self())
+        if ValidationFlag.MEDIA in self.options.verify:
+            futures.add(self.init_segment.validate())
+        await asyncio.gather(*futures)
+        self.progress.inc()
+        self._validated = True
         if ValidationFlag.MEDIA not in self.options.verify:
             return
-        if self.init_segment is not None:
-            await self.init_segment.validate()
         if len(self.media_segments) == 0:
             return
         next_decode_time = None

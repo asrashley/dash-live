@@ -5,6 +5,9 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+import asyncio
+from typing import Any, ClassVar
+
 from dashlive.mpeg import mp4
 from dashlive.utils.buffered_reader import BufferedReader
 
@@ -14,7 +17,7 @@ from .segment_reference import SegmentReference
 from .url_type import URLType
 
 class SegmentBaseType(DashElement):
-    attributes = [
+    attributes: ClassVar[list[tuple[str, Any, Any]]] = [
         ('timescale', int, 1),
         ('presentationTimeOffset', int, 0),
         ('indexRange', HttpRange, None),
@@ -22,6 +25,9 @@ class SegmentBaseType(DashElement):
         ('availabilityTimeOffset', float, None),
         ('availabilityTimeComplete', bool, None),
     ]
+
+    initializationList: list[URLType]
+    representationIndex: list[URLType]
 
     def __init__(self, elt, parent):
         super().__init__(elt, parent)
@@ -33,6 +39,10 @@ class SegmentBaseType(DashElement):
 
     def children(self) -> list[DashElement]:
         return self.initializationList + self.representationIndex
+
+    async def validate(self) -> None:
+        futures = {url.validate() for url in self.initializationList + self.representationIndex}
+        await asyncio.gather(*futures)
 
     async def load_segment_index(self, url: str) -> list[SegmentReference]:
         if self.indexRange:

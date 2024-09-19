@@ -17,13 +17,12 @@ class URLType(DashElement):
         ("range", HttpRange, None),
     ]
 
-    def validate(self, depth: int = -1) -> None:
-        if not self.attrs.check_not_none(self.sourceURL, msg='souceURL is missing'):
-            return
-        url = urlparse(self.souceURL)
-        self.attrs.check_includes(
-            {'http', 'https'}, url.scheme,
-            template=r'Expected HTTP scheme {0} but got {1}')
+    async def validate(self) -> None:
+        if self.sourceURL is not None:
+            url = urlparse(self.souceURL)
+            self.attrs.check_includes(
+                {'http', 'https'}, url.scheme,
+                template=r'Expected HTTP scheme {0} but got {1}')
 
     def children(self) -> list[DashElement]:
         return []
