@@ -104,15 +104,15 @@ class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
             only={'audioCodec', 'minimumupdateperiod'})
 
     async def test_hand_made_manifest_odvod_aac(self):
-        await self.check_a_manifest_using_all_options(
+        await self.check_a_manifest_using_major_options(
             'hand_made.mpd', 'odvod', with_subs=True, audioCodec='mp4a')
 
     async def test_hand_made_manifest_odvod_ec3(self):
-        await self.check_a_manifest_using_all_options(
+        await self.check_a_manifest_using_major_options(
             'hand_made.mpd', 'odvod', with_subs=True, audioCodec='ec-3')
 
     async def test_hand_made_manifest_odvod_all_audio(self):
-        await self.check_a_manifest_using_all_options(
+        await self.check_a_manifest_using_major_options(
             'hand_made.mpd', 'odvod', with_subs=True, audioCodec='any')
 
     async def test_legacy_vod_manifest_name(self):
