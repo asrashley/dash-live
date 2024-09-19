@@ -63,8 +63,7 @@
          {% include "drm/template.xml" %}
          <ContentComponent
              id="{{adp.contentComponent.id}}"
-             contentType="{{adp.contentComponent.contentType}}"
-             />
+             contentType="{{adp.contentComponent.content_type}}" />
          {%- if adp.role %}
            <Role
              schemeIdUri="urn:mpeg:dash:role:2011"
