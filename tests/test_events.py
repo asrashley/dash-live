@@ -21,12 +21,14 @@
 #############################################################################
 
 import os
+from typing import Any
 import unittest
 
 import flask
 
 from dashlive import scte35
 from dashlive.mpeg import MPEG_TIMEBASE, mp4
+from dashlive.mpeg.dash.validator.representation import Representation
 from dashlive.server.events.ping_pong import PingPongEvents
 from dashlive.server.events.scte35_events import Scte35Events
 from dashlive.utils.buffered_reader import BufferedReader
@@ -105,7 +107,10 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
                 rep = adp.representations[0]
                 await self.check_inband_events_for_representation(rep, params)
 
-    async def check_inband_events_for_representation(self, rep, params) -> None:
+    async def check_inband_events_for_representation(
+            self,
+            rep: Representation,
+            params: dict[str, Any]) -> None:
         """
         Check all of the fragments in the given representation
         """
@@ -122,8 +127,10 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
             frag = mp4.Wrapper(
                 atom_type='wrap',
                 children=mp4.Mp4Atom.load(src, options=options))
-            seg_presentation_time = (ev_presentation_time * rep.info.timescale /
-                                     float(PingPongEvents.DEFAULT_VALUES['timescale']))
+            media_timescale = rep.init_segment.media_timescale()
+            seg_presentation_time = (
+                ev_presentation_time * media_timescale /
+                float(PingPongEvents.DEFAULT_VALUES['timescale']))
             first_sample_pos = frag.moof.traf.tfhd.base_data_offset + frag.moof.traf.trun.data_offset
             self.assertGreaterOrEqual(
                 first_sample_pos, frag.mdat.position + frag.mdat.header_size)
@@ -136,7 +143,7 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
                 continue
             delta = seg_presentation_time - decode_time
             delta = (delta * PingPongEvents.DEFAULT_VALUES['timescale'] /
-                     float(rep.info.timescale))
+                     float(media_timescale))
             emsg = frag.emsg
             self.assertEqual(emsg.scheme_id_uri, PingPongEvents.schemeIdUri)
             self.assertEqual(emsg.value, PingPongEvents.DEFAULT_VALUES['value'])

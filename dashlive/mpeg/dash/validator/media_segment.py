@@ -142,7 +142,8 @@ class MediaSegment(DashElement):
                 template=r'Sequence number error, expected {0}, got {1}')
         if self.expected_decode_time is not None:
             tc_diff = moof.traf.tfdt.base_media_decode_time - self.expected_decode_time
-            tc_delta = timecode_to_timedelta(tc_diff, self.parent.timescale()).total_seconds()
+            tc_delta = timecode_to_timedelta(
+                tc_diff, self.parent.dash_timescale()).total_seconds()
             msg = (
                 f'Decode time {self.decode_time} should ' +
                 f'be {self.expected_decode_time} ({tc_diff}) [{tc_delta} seconds]')
@@ -171,11 +172,25 @@ class MediaSegment(DashElement):
             dts += samp_dur
         # self.log.debug('Last sample duration %d', samp_dur)
         self.duration = dts - moof.traf.tfdt.base_media_decode_time
+        self.next_decode_time = dts
+
+        # Special case - the timescale of media segments doesn't have to be
+        # the same as the timescale listed in the manifest :(
+        media_timescale: int | None = self.parent.init_segment.media_timescale()
+        dash_timescale: int = self.parent.dash_timescale()
+        if media_timescale == 0 or dash_timescale == 0:
+            self.elt.add_error(
+                f'Neither DASH timescale {dash_timescale} nor media timescale ' +
+                f'{media_timescale} can be zero')
+            return
+        if media_timescale != dash_timescale and media_timescale not in {None, 0}:
+            self.duration = int(self.duration * dash_timescale // media_timescale)
+
         if self.expected_duration is not None:
             self.elt.check_almost_equal(
-                self.expected_duration, self.duration, delta=self.parent.timescale(),
+                self.expected_duration, self.duration,
+                delta=self.parent.dash_timescale(),
                 msg=f'Expected duration {self.expected_duration} but duration is {self.duration}')
-        self.next_decode_time = dts
         self.log.debug('Segment %d duration %d. Next expected DTS %d',
                        self.seg_num, self.duration, dts)
 
