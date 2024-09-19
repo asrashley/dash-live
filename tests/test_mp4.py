@@ -23,9 +23,9 @@
 import binascii
 import io
 import json
+import logging
 import os
 from pathlib import Path
-import logging
 import struct
 import unittest
 
@@ -708,15 +708,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
 
     def test_parse_ebu_tt_d_subs(self):
         """Test parsing an init segment for a stream containing EBU-TT-D subtitles"""
-        # See http://rdmedia.bbc.co.uk/testcard/vod/ for source
-        with open(os.path.join(self.fixtures, "ebuttd.mp4"), "rb") as f:
-            src_data = f.read()
-        src = BufferedReader(None, data=src_data)
-        atoms = mp4.Mp4Atom.load(src)
-        self.assertEqual(len(atoms), 2)
-        self.assertEqual(atoms[1].atom_type, 'moov')
-        stpp = atoms[1].trak.mdia.minf.stbl.stsd.stpp
-        expected = ' '.join([
+        namespaces: list[str] = [
             "http://www.w3.org/ns/ttml",
             "http://www.w3.org/ns/ttml#parameter",
             "http://www.w3.org/ns/ttml#styling",
@@ -724,18 +716,47 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
             "urn:ebu:tt:metadata",
             "urn:ebu:tt:style",
             "http://www.w3.org/ns/ttml/profile/imsc1#styling",
-            "http://www.w3.org/ns/ttml/profile/imsc1#parameter"])
-        self.assertEqual(stpp.namespace, expected)
-        self.assertEqual(
-            stpp.mime.content_type,
-            "application/ttml+xml;codecs=im1t|etd1")
+            "http://www.w3.org/ns/ttml/profile/imsc1#parameter"
+        ]
+        self.check_ebu_tt_d_subs("ebuttd.mp4", 0, namespaces)
+
+    def test_parse_bbb_t1_fixture(self) -> None:
+        namespaces: list[str] = [
+            'http://www.w3.org/ns/ttml',
+            'http://www.w3.org/ns/ttml#parameter',
+            'http://www.w3.org/ns/ttml#styling',
+            'http://www.w3.org/ns/ttml#metadata',
+            'urn:ebu:tt:metadata',
+            'urn:ebu:tt:style',
+        ]
+        self.check_ebu_tt_d_subs("bbb_t1.mp4", 8, namespaces)
+
+    def check_ebu_tt_d_subs(self,
+                            filename: str,
+                            num_fragments: int,
+                            namespaces: list[str]) -> None:
+        # See http://rdmedia.bbc.co.uk/testcard/vod/ for source
+        with open(os.path.join(self.fixtures, filename), "rb") as f:
+            src_data = f.read()
+        src = BufferedReader(None, data=src_data)
+        atoms = mp4.Mp4Atom.load(src)
+        # ftyp, moov and then moof fragments
+        self.assertEqual(len(atoms), num_fragments + 2)
+        self.assertEqual(atoms[0].atom_type, 'ftyp')
+        self.assertEqual(atoms[1].atom_type, 'moov')
+        stpp = atoms[1].trak.mdia.minf.stbl.stsd.stpp
+        self.assertEqual(stpp.namespace.split(' '), namespaces)
+        if stpp.find_child('mime'):
+            self.assertEqual(
+                stpp.mime.content_type,
+                "application/ttml+xml;codecs=im1t|etd1")
         for child in atoms[1].children:
             self.check_create_atom(child, src_data)
         self.check_create_atom(atoms[1], src_data)
 
     def test_parse_webvtt_subs(self):
         """Test parsing a stream containing WebVTT subtitles"""
-        with open(os.path.join(self.fixtures, "bbb_t1.mp4"), "rb") as f:
+        with open(os.path.join(self.fixtures, "webvtt.mp4"), "rb") as f:
             src_data = f.read()
         src = io.BufferedReader(io.BytesIO(src_data))
         atoms = mp4.Mp4Atom.load(src)
@@ -898,12 +919,92 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
                 actual.append(js)
         self.assertListEqual(expected, actual)
 
+    def test_insert_tfdt_after_tfhd(self) -> None:
+        self.check_insert_tfdt_box_after_tfhd_box(False)
 
-if os.environ.get("TESTS"):
-    def load_tests(loader, tests, pattern):
-        return unittest.loader.TestLoader().loadTestsFromNames(
-            os.environ["TESTS"].split(','),
-            Mp4Tests)
+    def test_insert_tfdt_after_tfhd_using_lazy_load(self) -> None:
+        self.check_insert_tfdt_box_after_tfhd_box(True)
+
+    def check_insert_tfdt_box_after_tfhd_box(self, lazy_load: bool) -> None:
+        options = mp4.Options(
+            iv_size=8, strict=True, lazy_load=lazy_load, debug=lazy_load, mode='rw')
+        options.log = logging.getLogger('mp4')
+        filename = os.path.join(self.fixtures, "webvtt.mp4")
+        with open(filename, 'rb') as f:
+            src = BufferedReader(f, offset=674, size=(831 - 674))
+            wrap = mp4.Mp4Atom.load(src, options=options, use_wrapper=True)
+        for index, atom_type in enumerate(['moof', 'mdat']):
+            self.assertEqual(
+                wrap.children[index].atom_name(), atom_type)
+        traf = wrap.moof.traf
+        for index, atom_type in enumerate(['tfhd', 'trun']):
+            self.assertEqual(
+                traf.children[index].atom_name(), atom_type)
+        pos = traf.index('tfhd')
+        tfdt = mp4.TrackFragmentDecodeTimeBox(
+            version=0, flags=0, base_media_decode_time=0x1234)
+        traf.insert_child(pos + 1, tfdt)
+
+        # force base_data_offset to be re-calculated
+        traf.tfhd.base_data_offset = None
+
+        # force trun box to have a data_offset field, as its
+        # position will have changed
+        traf.trun.flags |= mp4.TrackFragmentRunBox.data_offset_present
+
+        new_data = wrap.encode()
+        src = BufferedReader(None, data=new_data)
+        new_wrap = mp4.Mp4Atom.load(src, options=options, use_wrapper=True)
+        for index, atom_type in enumerate(['moof', 'mdat']):
+            self.assertEqual(
+                new_wrap.children[index].atom_name(), atom_type)
+
+        new_moof = new_wrap.moof
+        self.assertEqual(new_moof.children[0].atom_type, 'mfhd')
+        self.assertEqual(new_moof.children[1].atom_type, 'traf')
+        traf = new_moof.traf
+
+        # expected box ordering in traf is [tfhd, tfdt, trun]
+        for index, atom_type in enumerate([
+                'tfhd', 'tfdt', 'trun']):
+            self.assertEqual(
+                traf.children[index].atom_name(), atom_type)
+
+        expected = wrap.toJSON()
+        moof_js = expected['children'][0]
+        self.assertEqual(moof_js['atom_type'], 'moof')
+        traf_js = moof_js['children'][1]
+        self.assertEqual(traf_js['atom_type'], 'traf')
+        trun_js = traf_js['children'][2]
+        self.assertEqual(trun_js['atom_type'], 'trun')
+        for idx, sample in enumerate(trun_js['samples']):
+            sample['offset'] = new_moof.traf.trun.samples[idx].offset
+        actual = new_wrap.toJSON()
+        self.assertObjectEqual(expected, actual, list_key=self.list_key_fn)
+
+        first_sample_pos: int = (
+            new_moof.traf.tfhd.base_data_offset +
+            new_moof.traf.trun.data_offset)
+        last_sample_end: int = first_sample_pos
+        for samp in new_moof.traf.trun.samples:
+            last_sample_end += samp.size
+        mdat = new_wrap.mdat
+        msg = (
+            'trun.data_offset must point inside the MDAT box. ' +
+            f'trun points to {first_sample_pos} but first sample of ' +
+            f'MDAT is at {mdat.position + mdat.header_size}. ' +
+            f'trun last sample is {last_sample_end}. End of ' +
+            f'MDAT is {mdat.position + mdat.size}. ' +
+            f'tfhd.base_data_offset={new_moof.traf.tfhd.base_data_offset} and ' +
+            f'trun.data_offset={new_moof.traf.trun.data_offset}'
+        )
+        self.assertEqual(
+            first_sample_pos, mdat.position + mdat.header_size, msg=msg)
+        self.assertLessThanOrEqual(
+            last_sample_end, mdat.position + mdat.size, msg=msg)
+
 
 if __name__ == "__main__":
+    logging.basicConfig()
+    logging.getLogger().setLevel(logging.INFO)
     unittest.main()
