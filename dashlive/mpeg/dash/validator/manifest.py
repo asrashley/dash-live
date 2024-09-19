@@ -15,6 +15,7 @@ from lxml import etree as ET
 
 from dashlive.mpeg.dash.representation import Representation as ServerRepresentation
 from dashlive.utils.date_time import from_isodatetime, UTC
+from dashlive.utils.string import set_from_comma_string
 
 from .dash_element import DashElement
 from .patch_location import PatchLocation
@@ -28,15 +29,18 @@ class Manifest(DashElement):
         ('minimumUpdatePeriod', from_isodatetime, None),
         ('timeShiftBufferDepth', from_isodatetime, None),
         ('mediaPresentationDuration', from_isodatetime, None),
+        ('profiles', set_from_comma_string, None),
         ('publishTime', from_isodatetime, None),
     ]
 
     baseurl: str
     url: str
     mode: str
+    mpd_type: str  # "static" or "dynamic"
     periods: list[Period]
     params: dict[str, Any]
     patches: list[PatchLocation]
+    profiles: set[str]
     publishTime: datetime.datetime
 
     def __init__(self,
@@ -55,8 +59,7 @@ class Manifest(DashElement):
             self.baseurl = url
             assert isinstance(url, str)
         if mode != 'live':
-            if "urn:mpeg:dash:profile:isoff-on-demand:2011" in xml.get(
-                    'profiles'):
+            if "urn:mpeg:dash:profile:isoff-on-demand:2011" in self.profiles:
                 self.mode = 'odvod'
         if self.publishTime is None:
             self.publishTime = datetime.datetime.now(tz=UTC())
