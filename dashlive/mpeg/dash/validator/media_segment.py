@@ -124,7 +124,8 @@ class MediaSegment(DashElement):
             return
         self.seg_num = moof.mfhd.sequence_number
         self.decode_time = moof.traf.tfdt.base_media_decode_time
-        if self.parent.info.encrypted:
+        info = self.parent.init_segment.dash_representation
+        if info.encrypted:
             self.check_saio_offset(moof)
         else:
             self.elt.check_not_in(
@@ -132,7 +133,7 @@ class MediaSegment(DashElement):
                 msg='senc box should not be found in a clear stream')
 
         self.log.debug(
-            '%s: num=%d expcted=%s base_media_decode_time=%d expected=%s',
+            '%s: seg_num=%d (expected %s) base_media_decode_time=%d (expected %s)',
             self.name, moof.mfhd.sequence_number, self.expected_seg_num,
             moof.traf.tfdt.base_media_decode_time, self.expected_decode_time)
         if self.expected_seg_num is not None:
@@ -193,7 +194,7 @@ class MediaSegment(DashElement):
     def parse_data(self, body: bytes) -> mp4.Mp4Atom | None:
         src = io.BytesIO(body)
         options = {"strict": True, "lazy_load": True, "mode": "r"}
-        info = self.parent.info
+        info = self.parent.init_segment.dash_representation
         if self.options.encrypted:
             msg = 'Expected an encrypted stream, but fragment is not encrypted'
         else:

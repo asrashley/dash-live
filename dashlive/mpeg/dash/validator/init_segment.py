@@ -16,15 +16,28 @@ from dashlive.utils.buffered_reader import BufferedReader
 from .dash_element import DashElement
 
 class InitSegment(DashElement):
+    atoms: list[mp4.Mp4Atom] | None
+    dash_rep: DashRepresentation | None
+    name: str
+    seg_range: str | None
+    url: str | None
+
     def __init__(self, parent, url: str | None, seg_range: str | None) -> None:
         super().__init__(None, parent)
+        self.atoms = None
+        self.dash_rep = None
         self.seg_range = seg_range
         self.url = url
-        self.atoms: list[mp4.Mp4Atom] | None = None
+        if url is not None:
+            self.set_url(url)
+        else:
+            self.name = f'InitSegment({id(self)})'
+
+    def set_url(self, url: str) -> None:
+        self.url = url
         path = Path(urllib.parse.urlparse(url).path)
         self.name = path.name
-        self.codecs: str | None = None
-        if seg_range:
+        if self.seg_range:
             self.name += f'?range={self.seg_range}'
 
     def children(self) -> list[DashElement]:
@@ -39,7 +52,29 @@ class InitSegment(DashElement):
                 return atom
         return None
 
+    def media_timescale(self) -> int | None:
+        if self.dash_rep:
+            return self.dash_rep.timescale
+        return None
+
+    def set_dash_representation(self, info: DashRepresentation) -> None:
+        self.dash_rep = info
+
+    def get_dash_representation(self) -> DashRepresentation | None:
+        return self.dash_rep
+
+    dash_representation = property(get_dash_representation, set_dash_representation)
+
+    @property
+    def codecs(self) -> str | None:
+        if self.dash_rep is None:
+            return None
+        return self.dash_rep.codecs
+
     async def load(self) -> bool:
+        if self.atoms is not None and self.dash_rep is not None:
+            return True
+
         if not self.elt.check_not_none(self.url, msg='URL of init segment is missing'):
             return False
         if self.seg_range is not None:
@@ -55,20 +90,36 @@ class InitSegment(DashElement):
                 msg=f'Failed to load init segment: {response.status_code}: {self.url}'):
             return False
         try:
-            async with self.pool.group() as tg:
+            async with self.pool.group(self.progress) as tg:
                 body = response.get_data(as_text=False)
                 if self.options.save:
                     tg.submit(self.save, body)
-                tg.submit(self.parse_body, body)
+                task = tg.submit(self.parse_body, body)
+            if not task.result():
+                return False
         except Exception as exc:
             self.elt.add_error(f'Failed to load init segment: {exc}')
             self.log.error('Failed to load init segment: %s', exc)
             return False
         return True
 
-    def parse_body(self, body: bytes) -> None:
+    def parse_body(self, body: bytes) -> bool:
         src = BufferedReader(None, data=body)
-        self.atoms = mp4.Mp4Atom.load(src, options={'lazy_load': False})
+        atoms = mp4.Mp4Atom.load(src, options={'lazy_load': False})
+        moov: mp4.Mp4Atom | None = None
+        for atm in atoms:
+            if atm.atom_type == 'moov':
+                moov = atm
+        if moov is None:
+            self.elt.add_error('Failed to find moov box')
+            return False
+        key_ids = set()
+        self.dash_rep = DashRepresentation()
+        self.dash_rep.process_moov(moov, key_ids)
+        self.dash_rep.segments = None
+        self.dash_rep.start_time = None
+        self.atoms = atoms
+        return True
 
     def save(self, body: bytes) -> None:
         adp = self.parent.parent
@@ -92,7 +143,8 @@ class InitSegment(DashElement):
                 self.elt.add_error('Failed to load init segment')
                 return
         if not self.elt.check_greater_than(
-                len(self.atoms), 1, msg='Expected more than one MP4 atom in init segment'):
+                len(self.atoms), 1,
+                msg='Expected more than one MP4 atom in init segment'):
             return
         self.elt.check_equal(self.atoms[0].atom_type, 'ftyp')
         moov = None
