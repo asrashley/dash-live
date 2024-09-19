@@ -9,13 +9,12 @@
 import datetime
 import math
 import re
-from pathlib import PurePath
 from typing import Optional, Set
 import urllib.parse
 
 from lxml import etree as ET
 
-from dashlive.mpeg.dash.representation import Representation as ServerRepresentation
+from dashlive.mpeg.dash.representation import Representation as DashRepresentation
 from dashlive.utils.date_time import (
     multiply_timedelta,
     scale_timedelta,
@@ -40,11 +39,12 @@ class Representation(RepresentationBaseType):
 
     def __init__(self, elt: ET.ElementBase, parent: DashElement) -> None:
         super().__init__(elt, parent)
-        self.info: ServerRepresentation | None = None
-        self.init_segment: Optional[InitSegment] = None
+        self.init_segment = InitSegment(self, None, None)
         self.media_segments: list[MediaSegment] = []
         self.segmentBase: Optional[MultipleSegmentBaseType] = None
         self._validated = False
+        if self.mimeType is None:
+            self.mimeType = self.parent.mimeType
         if self.id:
             self.attrs.prefix = f'{self.id}: '
             self.elt.prefix = f'{self.id}: '
@@ -56,6 +56,9 @@ class Representation(RepresentationBaseType):
             if len(segmentBase):
                 self.segmentBase = MultipleSegmentBaseType(
                     segmentBase[0], self)
+        seg_url = self.init_seg_url()
+        if seg_url is not None:
+            self.init_segment.set_url(seg_url)
 
     @property
     def target_duration(self) -> datetime.timedelta | None:
@@ -71,7 +74,6 @@ class Representation(RepresentationBaseType):
             self.log.debug(
                 '%s: Reusing previous init segment. has_atoms=%s',
                 self.id, self.init_segment.atoms is not None)
-        self.info = prev.info
         self.media_segments = []
         if not await self.generate_segments_live_profile():
             return False
@@ -92,47 +94,29 @@ class Representation(RepresentationBaseType):
         return True
 
     async def prefetch_media_info(self) -> bool:
-        rv: bool = True
-        if len(self.media_segments) == 0:
+        rv = await self.init_segment.load()
+
+        if rv and len(self.media_segments) == 0:
             if self.mode == "odvod":
                 rv = await self.generate_segments_on_demand_profile()
             else:
                 rv = await self.generate_segments_live_profile()
-        if rv:
-            rv = await self.load_representation_info()
         self.progress.inc()
         return rv
 
-    def set_representation_info(self, info: ServerRepresentation):
-        self.info = info
-
-    async def load_representation_info(self) -> bool:
-        if not self.elt.check_not_none(
-                self.init_segment, msg='Failed to find init segment'):
-            return False
-        if self.init_segment.atoms is None:
-            self.log.debug('%s: Loading init segment', self.id)
-            if not await self.init_segment.load():
-                return False
-        seg_url = self.init_seg_url()
-        if not seg_url:
-            return False
-        parsed = urllib.parse.urlparse(seg_url)
-        filename = PurePath(parsed.path)
-        self.info = ServerRepresentation.load(filename.name, self.init_segment.atoms)
-        self.info.segments = None
-        self.info.start_time = None
-        return True
+    def set_representation_info(self, info: DashRepresentation):
+        self.init_segment.set_dash_representation(info)
 
     def init_seg_url(self) -> str | None:
         if self.mode == 'odvod':
             return self.format_url_template(self.baseurl)
-        self.elt.check_not_none(self.segmentTemplate, msg='SegmentTemplate missing')
-        if not self.elt.check_not_none(
-                self.segmentTemplate.initialization,
-                msg='SegmentTemplate failed to find initialization URL'):
+        if self.segmentTemplate is None:
+            return None
+        if self.segmentTemplate.initialization is None:
             return None
         url = self.format_url_template(self.segmentTemplate.initialization)
+        if self.baseurl is None:
+            return url
         return urllib.parse.urljoin(self.baseurl, url)
 
     async def generate_segments_live_profile(self) -> bool:
@@ -141,16 +125,8 @@ class Representation(RepresentationBaseType):
         if not self.elt.check_not_none(
                 self.segmentTemplate,
                 msg='SegmentTemplate is required when using live profile'):
-            self.init_segment = InitSegment(self, None, None)
             return False
-        if self.init_segment is None:
-            seg_url = self.init_seg_url()
-            if not seg_url:
-                return False
-            self.init_segment = InitSegment(self, seg_url, None)
-        if self.info is None:
-            await self.load_representation_info()
-        if not self.elt.check_not_none(self.info, msg='Failed to get Representation info'):
+        if not await self.init_segment.load():
             return False
         frameRate = 24
         if self.frameRate is not None:
@@ -168,22 +144,23 @@ class Representation(RepresentationBaseType):
 
     def generate_segments_using_segment_template(self, frameRate: float) -> None:
         now = self.mpd.now()
-        decode_time = getattr(self.info, "start_time", None)
+        dash_rep = self.init_segment.dash_representation
+        decode_time = getattr(dash_rep, "start_time", None)
         start_number = None
-        if self.info.segments:
-            start_number = self.info.start_number
+        if dash_rep.segments:
+            start_number = dash_rep.start_number
         seg_duration = self.segmentTemplate.duration
         if not self.attrs.check_not_none(
                 seg_duration,
                 'SegmentTemplate@duration is missing for a template without a SegmentTimeline element'):
             return
-        if self.info.segments is None:
+        if dash_rep.segments is None:
             period_duration = self.parent.parent.get_duration_as_timescale(
-                self.info.timescale)
+                dash_rep.timescale)
             num_segments = int(period_duration // seg_duration)
         else:
-            # need to subtract one because self.info.segments also includes the init seg
-            num_segments = len(self.info.segments) - 1
+            # need to subtract one because dash_rep.segments also includes the init seg
+            num_segments = len(dash_rep.segments) - 1
         if self.mode == 'vod':
             decode_time = self.segmentTemplate.presentationTimeOffset
             start_number = 1
@@ -266,7 +243,7 @@ class Representation(RepresentationBaseType):
                               expected_duration=seg_duration)
             if self.mode == 'live':
                 ms.set_segment_availability(
-                    seg_duration, self.segmentTemplate.presentationTimeOffset, self.timescale())
+                    seg_duration, self.segmentTemplate.presentationTimeOffset, self.dash_timescale())
             self.media_segments.append(ms)
             seg_num += 1
             decode_time += seg_duration
@@ -352,12 +329,10 @@ class Representation(RepresentationBaseType):
                 self, url, sl.initializationList[0].range)
         if not self.elt.check_not_none(self.init_segment, msg='failed to find init segment URL'):
             return False
-        if self.info is None:
-            if not await self.load_representation_info():
-                return False
-        if not self.elt.check_not_none(self.info, msg='Failed to get Representation init segment'):
+        if not await self.init_segment.load():
             return False
-        decode_time = self.info.start_time
+        info = self.init_segment.dash_representation
+        decode_time = info.start_time
         seg_list = []
         for sl in self.segmentList:
             seg_list += sl.segmentURLs
@@ -374,7 +349,7 @@ class Representation(RepresentationBaseType):
         if self.segmentTemplate is not None:
             tolerance = self.segmentTemplate.timescale / frameRate
         else:
-            tolerance = self.info.timescale / frameRate
+            tolerance = info.timescale / frameRate
         for idx, item in enumerate(seg_list):
             if not self.elt.check_not_none(
                     item.mediaRange,
@@ -392,16 +367,16 @@ class Representation(RepresentationBaseType):
                 tol = tolerance
             dt = getattr(item, 'decode_time', decode_time)
             expected_duration = None
-            if self.info.segments:
-                expected_duration = self.info.segments[idx + 1].duration
+            if info.segments:
+                expected_duration = info.segments[idx + 1].duration
             ms = MediaSegment(
                 self, url, expected_seg_num=seg_num, expected_decode_time=dt,
                 tolerance=tol, seg_range=item.mediaRange,
                 expected_duration=expected_duration)
             self.media_segments.append(ms)
-            if self.info.segments:
-                # self.info.segments[0] is the init segment
-                decode_time += self.info.segments[idx + 1].duration
+            if info.segments:
+                # info.segments[0] is the init segment
+                decode_time += info.segments[idx + 1].duration
             else:
                 decode_time = None
         return True
@@ -455,7 +430,7 @@ class Representation(RepresentationBaseType):
         return timecode_to_timedelta(total_dur, self.timescale())
 
     def get_codec(self) -> str | None:
-        if self.init_segment:
+        if self.init_segment is not None:
             return self.init_segment.codecs
         return None
 
@@ -464,9 +439,11 @@ class Representation(RepresentationBaseType):
             await self.validate_self()
             self.progress.inc()
             self._validated = True
-        if len(self.media_segments) == 0:
-            return
         if ValidationFlag.MEDIA not in self.options.verify:
+            return
+        if self.init_segment is not None:
+            await self.init_segment.validate()
+        if len(self.media_segments) == 0:
             return
         next_decode_time = None
         next_seg_num = None
@@ -521,7 +498,11 @@ class Representation(RepresentationBaseType):
         if self.segmentTemplate is None:
             self.elt.check_equal(
                 self.mode, 'odvod',
-                msg='SegmentTemplate is required when using DASH profile')
+                msg=f'SegmentTemplate is required when using DASH profiles {self.mpd.profiles}')
+        else:
+            self.elt.check_not_none(
+                self.segmentTemplate.initialization,
+                msg='SegmentTemplate failed to find initialization URL')
         self.elt.check_not_none(self.baseurl, msg='Failed to find BaseURL')
         self.elt.check_not_none(self.init_segment)
         self.elt.check_not_none(self.media_segments)
@@ -536,9 +517,8 @@ class Representation(RepresentationBaseType):
         self.attrs.check_not_none(
             self.mimeType, msg='Representation@mimeType is a mandatory attribute',
             clause='5.3.7.2')
-        if self.info is None:
-            if not await self.load_representation_info():
-                return
+        if not await self.init_segment.load():
+            return
         if ValidationFlag.MEDIA in self.options.verify:
             await self.init_segment.validate()
             moov = await self.init_segment.get_moov()
@@ -548,7 +528,7 @@ class Representation(RepresentationBaseType):
                 return
         if self.options.encrypted:
             if self.options.ivsize is None:
-                self.options.ivsize = self.info.iv_size
+                self.options.ivsize = self.init_segment.dash_representation.iv_size
             if self.contentProtection:
                 cp_elts = self.contentProtection
             else:
