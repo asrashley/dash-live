@@ -133,6 +133,7 @@ class Mp4Atom(ObjectWithFields):
             '_children': children_default,
             'options': Options(),
             'parent': None,
+            'position': 0,
             'size': 0,
         })
         try:
@@ -304,6 +305,8 @@ class Mp4Atom(ObjectWithFields):
                 'Removing atoms is not allowed for an MP4 file opened in read-only mode')
         self.options.log.debug(
             '%s: append_child "%s"', self._fullname, child.atom_type)
+        if child.parent != self:
+            object.__setattr__(child, 'parent', self)
         if self._children is None:
             self._children = [child]
         else:
@@ -311,18 +314,23 @@ class Mp4Atom(ObjectWithFields):
         if child.size:
             self.update_size(child.size)
         self.trigger_change()
+        child.trigger_change()
         self._invalidate()
 
     def insert_child(self, index: int, child: "Mp4Atom") -> None:
         if self.options.mode == 'r':
             raise PermissionError(
                 'Removing atoms is not allowed for an MP4 file opened in read-only mode')
+        self.trigger_change()
+        if child.parent != self:
+            object.__setattr__(child, 'parent', self)
         if self._children is None:
-            self._children = []
-        self._children.insert(index, child)
+            self._children = [child]
+        else:
+            self._children.insert(index, child)
         if child.size:
             self.update_size(child.size)
-        self.trigger_change()
+        child.trigger_change()
         self._invalidate()
 
     def remove_child(self, idx: int) -> None:
