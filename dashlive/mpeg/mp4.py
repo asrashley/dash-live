@@ -3100,7 +3100,7 @@ class IsoParser:
         args = ap.parse_args()
         if args.debug:
             logging.getLogger().setLevel(logging.DEBUG)
-        options = Options()
+        options = Options(lazy_load=False)
         if args.ivsize:
             if args.ivsize > 16:
                 # user has provided IV size in bits
