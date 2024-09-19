@@ -186,7 +186,7 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
                 rep = Representation.load(filename, atoms)
                 rep_js = rep.toJSON(pure=True)
                 with js_filename.open('wt', encoding='utf-8') as dest:
-                    json.dump(rep_js, dest)
+                    json.dump(rep_js, dest, indent=2)
             self.assertIsNotNone(rep)
             self.assertIsInstance(rep, Representation)
             encrypted = rid.endswith('_enc')
