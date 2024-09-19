@@ -18,6 +18,7 @@ from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 
 from dashlive.utils.json_object import JsonObject
+from dashlive.utils.string import str_or_none
 from dashlive.mpeg.dash.reference import StreamTimingReference
 
 from .blob import Blob
@@ -88,10 +89,6 @@ class Stream(db.Model, ModelMixin):
         return rv
 
     def get_fields(self, **kwargs) -> list[JsonObject]:
-        def str_or_none(value):
-            if value is None:
-                return ''
-            return value
 
         has_media_files = False
         if self.pk:
