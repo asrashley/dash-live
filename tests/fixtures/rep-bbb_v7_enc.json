@@ -1,1 +1,88 @@
-{"_type": "dashlive.mpeg.dash.representation.Representation", "sar": "1:1", "encrypted": true, "accessibility": null, "segments": [{"pos": 0, "size": 954}, {"pos": 954, "size": 91591, "duration": 960}, {"pos": 92545, "size": 110244, "duration": 960}, {"pos": 202789, "size": 84850, "duration": 960}, {"pos": 287639, "size": 71043, "duration": 960}, {"pos": 358682, "size": 121352, "duration": 960}, {"pos": 480034, "size": 132703, "duration": 960}, {"pos": 612737, "size": 126940, "duration": 960}, {"pos": 739677, "size": 79838, "duration": 960}, {"pos": 819515, "size": 74468, "duration": 960}, {"pos": 893983, "size": 81033, "duration": 960}], "mediaDuration": 9600, "height": 1080, "content_type": "video", "default_kid": "1ab45440532c439994dc5c5ad9584bac", "iv_size": 8, "width": 1920, "start_number": 1, "version": 4, "track_id": 1, "scanType": "progressive", "codecs": "avc3.640028", "id": "bbb_v7_enc", "kids": ["1ab45440532c439994dc5c5ad9584bac"], "max_bitrate": 265406, "startWithSAP": 1, "start_time": 0, "timescale": 240, "mimeType": "video/mp4", "segment_duration": 960, "frameRate": 24.0, "bitrate": 195003, "lang": "und", "nalLengthFieldLength": 4, "filename": "bbb_v7_enc.mp4"}
+{
+  "_type": "dashlive.mpeg.dash.representation.Representation",
+  "track_id": 1,
+  "frameRate": 24.0,
+  "startWithSAP": 1,
+  "lang": "und",
+  "accessibility": null,
+  "segments": [
+    {
+      "pos": 0,
+      "size": 954
+    },
+    {
+      "pos": 954,
+      "size": 91591,
+      "duration": 960
+    },
+    {
+      "pos": 92545,
+      "size": 110244,
+      "duration": 960
+    },
+    {
+      "pos": 202789,
+      "size": 84850,
+      "duration": 960
+    },
+    {
+      "pos": 287639,
+      "size": 71043,
+      "duration": 960
+    },
+    {
+      "pos": 358682,
+      "size": 121352,
+      "duration": 960
+    },
+    {
+      "pos": 480034,
+      "size": 132703,
+      "duration": 960
+    },
+    {
+      "pos": 612737,
+      "size": 126940,
+      "duration": 960
+    },
+    {
+      "pos": 739677,
+      "size": 79838,
+      "duration": 960
+    },
+    {
+      "pos": 819515,
+      "size": 74468,
+      "duration": 960
+    },
+    {
+      "pos": 893983,
+      "size": 81033,
+      "duration": 960
+    }
+  ],
+  "mimeType": "video/mp4",
+  "bitrate": 195003,
+  "start_number": 1,
+  "width": 1920,
+  "mediaDuration": 9600,
+  "sar": "1:1",
+  "segment_duration": 960,
+  "codecs": "avc3.640028",
+  "version": 4,
+  "max_bitrate": 265406,
+  "nalLengthFieldLength": 4,
+  "timescale": 240,
+  "iv_size": 8,
+  "height": 1080,
+  "filename": "bbb_v7_enc.mp4",
+  "kids": [
+    "1ab45440532c439994dc5c5ad9584bac"
+  ],
+  "scanType": "progressive",
+  "encrypted": true,
+  "content_type": "video",
+  "start_time": 0,
+  "id": "bbb_v7_enc",
+  "default_kid": "1ab45440532c439994dc5c5ad9584bac"
+}

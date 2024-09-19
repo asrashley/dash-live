@@ -1,1 +1,83 @@
-{"_type": "dashlive.mpeg.dash.representation.Representation", "sampleRate": 44100, "encrypted": false, "accessibility": null, "segments": [{"pos": 0, "size": 939}, {"pos": 939, "size": 48905, "duration": 176128}, {"pos": 49844, "size": 48887, "duration": 176128}, {"pos": 98731, "size": 48980, "duration": 176128}, {"pos": 147711, "size": 49366, "duration": 177152}, {"pos": 197077, "size": 49363, "duration": 176128}, {"pos": 246440, "size": 48915, "duration": 176128}, {"pos": 295355, "size": 49003, "duration": 176128}, {"pos": 344358, "size": 49422, "duration": 177152}, {"pos": 393780, "size": 48909, "duration": 176128}, {"pos": 442689, "size": 49031, "duration": 176128}], "mediaDuration": 1763328, "content_type": "audio", "default_kid": null, "iv_size": null, "start_number": 1, "version": 4, "track_id": 2, "codecs": "mp4a.40.2", "id": "bbb_a1", "kids": [], "max_bitrate": 98869, "startWithSAP": 1, "start_time": 0, "timescale": 44100, "mimeType": "audio/mp4", "segment_duration": 176355, "numChannels": 2, "bitrate": 98381, "lang": "und", "nalLengthFieldLength": null, "filename": "bbb_a1.mp4"}
+{
+  "_type": "dashlive.mpeg.dash.representation.Representation",
+  "track_id": 2,
+  "startWithSAP": 1,
+  "lang": "und",
+  "accessibility": null,
+  "segments": [
+    {
+      "pos": 0,
+      "size": 939
+    },
+    {
+      "pos": 939,
+      "size": 48905,
+      "duration": 176128
+    },
+    {
+      "pos": 49844,
+      "size": 48887,
+      "duration": 176128
+    },
+    {
+      "pos": 98731,
+      "size": 48980,
+      "duration": 176128
+    },
+    {
+      "pos": 147711,
+      "size": 49366,
+      "duration": 177152
+    },
+    {
+      "pos": 197077,
+      "size": 49363,
+      "duration": 176128
+    },
+    {
+      "pos": 246440,
+      "size": 48915,
+      "duration": 176128
+    },
+    {
+      "pos": 295355,
+      "size": 49003,
+      "duration": 176128
+    },
+    {
+      "pos": 344358,
+      "size": 49422,
+      "duration": 177152
+    },
+    {
+      "pos": 393780,
+      "size": 48909,
+      "duration": 176128
+    },
+    {
+      "pos": 442689,
+      "size": 49031,
+      "duration": 176128
+    }
+  ],
+  "mimeType": "audio/mp4",
+  "numChannels": 2,
+  "sampleRate": 44100,
+  "bitrate": 98381,
+  "start_number": 1,
+  "mediaDuration": 1763328,
+  "segment_duration": 176355,
+  "codecs": "mp4a.40.2",
+  "version": 4,
+  "max_bitrate": 98869,
+  "nalLengthFieldLength": null,
+  "timescale": 44100,
+  "iv_size": null,
+  "filename": "bbb_a1.mp4",
+  "kids": [],
+  "encrypted": false,
+  "content_type": "audio",
+  "start_time": 0,
+  "id": "bbb_a1",
+  "default_kid": null
+}
