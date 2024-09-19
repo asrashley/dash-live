@@ -53,6 +53,7 @@ class AdaptationSet(ObjectWithFields):
         'segment_timeline': False,
         'drm': None,
         'default_kid': None,
+        'lang': None,
     }
 
     def __init__(self, **kwargs) -> None:

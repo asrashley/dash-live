@@ -38,7 +38,7 @@ from .cgi_parameter_collection import CgiParameterCollection
 from .decorators import current_stream
 from .drm_context import DrmContext
 from .time_source_context import TimeSourceContext
-from .utils import is_https_request
+from .utils import is_https_request, lang_is_equal
 
 class ManifestContext:
     baseURL: str | None = None
@@ -173,12 +173,12 @@ class ManifestContext:
         opts = self.options
 
         period = Period(start=datetime.timedelta(0), id="p0")
-        audio_adps = self.calculate_audio_adaptation_sets()
-        text_adps = self.calculate_text_adaptation_sets()
         max_items = None
         if opts.abr is False:
             max_items = 1
         video = self.calculate_video_adaptation_set(max_items=max_items)
+        audio_adps = self.calculate_audio_adaptation_sets()
+        text_adps = self.calculate_text_adaptation_sets(video.lang)
 
         if timing:
             opts.availabilityStartTime = timing.availabilityStartTime
@@ -273,7 +273,7 @@ class ManifestContext:
             except KeyError:
                 audio = AdaptationSet(
                     mode=opts.mode, content_type='audio',
-                    id=(100 + r.track_id),
+                    id=r.track_id,
                     segment_timeline=opts.segmentTimeline,
                     numChannels=r.numChannels)
                 adap_sets[r.track_id] = audio
@@ -294,7 +294,9 @@ class ManifestContext:
         return result
 
     def calculate_text_adaptation_sets(
-            self, max_items: int | None = None) -> list[AdaptationSet]:
+            self,
+            video_lang: str | None,
+            max_items: int | None = None) -> list[AdaptationSet]:
         opts = self.options
 
         media_files = models.MediaFile.search(
@@ -309,35 +311,40 @@ class ManifestContext:
                         opts.textCodec):
                     text_tracks.append(r)
         if not text_tracks:
-            # if stream is encrypted but there is no encrypted version of the text track, fall back
-            # to a clear version
+            # if stream is encrypted but there is no encrypted version of the
+            # text track, fall back to a clear version
             for mf in media_files:
                 r = mf.representation
                 if opts.textCodec is None or r.codecs.startswith(
                         opts.textCodec):
                     text_tracks.append(r)
         result: list[AdaptationSet] = []
-        for r in text_tracks:
+        main_text: int | None = None
+        for index, r in enumerate(text_tracks):
             text = AdaptationSet(
                 mode=opts.mode, content_type='text',
-                id=(200 + r.track_id),
+                id=r.track_id,
                 segment_timeline=opts.segmentTimeline)
-            lang_match = (opts.textLanguage is None or
-                          text.lang in {'und', opts.textLanguage})
-            if len(text_tracks) == 1 or lang_match:
-                text.role = 'main'
-                # Subtitles for the hard of hearing in the same language as
-                # the programme
+            if lang_is_equal(text.lang, video_lang, True):
+                # Subtitles in the same language as the programme
                 text.accessibility = {
                     'schemeIdUri': "urn:tva:metadata:cs:AudioPurposeCS:2007",
                     'value': 2,
                 }
+                if main_text is None:
+                    main_text = index
             elif opts.mainText == r.id:
-                text.role = 'main'
-            else:
-                text.role = 'alternate'
+                main_text = index
+            text.representations.append(r)
             text.compute_av_values()
             result.append(text)
+        if main_text is None:
+            main_text = 0
+        for index, adp in enumerate(result):
+            if main_text == index:
+                adp.role = 'main'
+            else:
+                adp.role = 'alternate'
         return result
 
     def calculate_cgi_parameters(
@@ -429,7 +436,6 @@ class ManifestContext:
         for period in self.periods:
             for idx, adp in enumerate(period.adaptationSets):
                 kids: Set[KeyMaterial] = set()
-                adp.id = idx + 1  # is this needed?
                 if prefix:
                     if self.options.mode != 'odvod':
                         adp.initURL = prefix + adp.initURL
