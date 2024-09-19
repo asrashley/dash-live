@@ -6,13 +6,14 @@
 #
 #############################################################################
 
+from typing import Any, ClassVar
 from urllib.parse import urlparse
 
 from .dash_element import DashElement
 from .http_range import HttpRange
 
 class SegmentURL(DashElement):
-    attributes = [
+    attributes: ClassVar[list[tuple[str, Any, Any]]] = [
         ('media', str, None),
         ('mediaRange', HttpRange, None),
         ('index', str, None),
@@ -32,17 +33,17 @@ class SegmentURL(DashElement):
         txt = ', '.join(params)
         return f'SegmentURL({txt})'
 
-    def validate(self, depth: int = -1) -> None:
-        self.checkIsNotNone(self.media)
-        self.checkIsNotNone(self.index)
-        url = urlparse(self.index)
-        self.attrs.check_includes(
-            {'http', 'https'}, url.scheme,
-            template=r'Expected index URL HTTP scheme {0} but got {1}: ' + self.index)
-        url = urlparse(self.media)
-        self.attrs.check_includes(
-            {'http', 'https'}, url.scheme,
-            template=r'Expected media URL HTTP scheme {0} but got {1}: ' + self.media)
+    async def validate(self) -> None:
+        if self.attrs.check_not_none(self.index):
+            url = urlparse(self.index)
+            self.attrs.check_includes(
+                {'http', 'https'}, url.scheme,
+                msg=f'Expected HTTP(S) URL scheme for index but got "{self.index}"')
+        if self.attrs.check_not_none(self.media):
+            url = urlparse(self.media)
+            self.attrs.check_includes(
+                {'http', 'https'}, url.scheme,
+                msg=r'Expected HTTP(S) URL scheme for media but got "{self.media}"')
 
     def children(self) -> list[DashElement]:
         return []

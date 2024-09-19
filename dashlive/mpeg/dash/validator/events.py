@@ -32,7 +32,7 @@ class Scte35Binary(DashElement):
     def children(self) -> list[DashElement]:
         return []
 
-    def validate(self) -> None:
+    async def validate(self) -> None:
         self.attrs.check_equal(
             self.schemeIdUri, EventStreamBase.SCTE35_XML_BIN_EVENTS)
         if self.signal is None:
