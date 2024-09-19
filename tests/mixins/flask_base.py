@@ -216,6 +216,7 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
             for mf in media_files:
                 models.db.session.add(mf)
             models.db.session.commit()
+
         with self.app.app_context():
             kids = set()
             self.assertGreaterThan(models.MediaFile.count(), 0)
@@ -240,6 +241,20 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
             self._temp_dir.value = bytes(tmpdir, 'utf-8')
             self.app.config['UPLOAD_FOLDER'] = tmpdir
         return tmpdir
+
+    def change_track_id(self, name: str, track_id: int) -> None:
+        with self.app.app_context():
+            mf = models.MediaFile.get(name='bbb_t1')
+            if mf is None:
+                print(f'Failed to find MediaFile(name={name})')
+                return
+            if mf.representation.track_id != track_id:
+                new_filename = self.FIXTURES_PATH / f'{name}_{track_id}.mp4'
+                print('Creating new track', new_filename)
+                mf.modify_media_file(
+                    new_filename=new_filename,
+                    modify_atoms=lambda atom: models.MediaFile._set_track_id(
+                        atom, track_id))
 
     def tearDown(self):
         self.logout_user()
