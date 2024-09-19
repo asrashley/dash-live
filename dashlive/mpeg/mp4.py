@@ -2779,12 +2779,9 @@ class TrackFragmentRunBox(FullBox):
             w.write('I', 'first_sample_flags')
 
     def post_encode(self, dest):
-        if (self.flags & self.data_offset_present) == 0:
-            return
         pos = getattr(self, '_first_field_pos', None)
         assert pos is not None
-        if pos is None:
-            return
+        object.__delattr__(self, '_first_field_pos')
         moof = self.find_atom(
             'moof', check_parent=True, recurse_children=False,
             no_exception=True)
@@ -2796,16 +2793,25 @@ class TrackFragmentRunBox(FullBox):
             self.options.log.info('%s: Failed to find mdat box', self._fullname)
             return
         mdat_sample_start = moof.position + moof.size + mdat.header_size
-        first_sample_pos = moof.traf.tfhd.base_data_offset + self.data_offset
+
+        first_sample_pos: int = moof.traf.tfhd.base_data_offset
+        if (self.flags & self.data_offset_present) != 0:
+            first_sample_pos += self.data_offset
         if first_sample_pos != mdat_sample_start:
             self.options.log.debug(
                 'rewriting trun data_offset from %d to %d',
-                self.data_offset, mdat_sample_start - moof.traf.tfhd.base_data_offset)
+                self.data_offset,
+                mdat_sample_start - moof.traf.tfhd.base_data_offset)
             self.data_offset = mdat_sample_start - moof.traf.tfhd.base_data_offset
             assert self.data_offset >= 0
             cur = dest.tell()
-            dest.seek(pos)
-            self.output_box_fields(dest)
+            if (self.flags & self.data_offset_present) == 0:
+                self.flags |= self.data_offset_present
+                dest.seek(self.position + self.header_size)
+                self.encode_fields(dest)
+            else:
+                dest.seek(pos)
+                self.output_box_fields(dest)
             dest.seek(cur)
 
 
