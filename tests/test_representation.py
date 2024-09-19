@@ -53,8 +53,18 @@ class RepresentationTests(FlaskTestBase, unittest.TestCase):
         self.assertEqual(rep.mimeType, 'application/ttml+xml')
         self.assertEqual(rep.codecs, 'im1t|etd1')
 
-    def test_load_web_vtt(self):
+    def test_load_bbb_t1(self):
         filename = self.FIXTURES_PATH / "bbb_t1.mp4"
+        with filename.open('rb') as src:
+            atoms = Mp4Atom.load(BufferedReader(src))
+        rep = Representation.load(filename, atoms)
+        self.assertEqual(rep.content_type, 'text')
+        self.assertEqual(rep.timescale, 200)
+        self.assertEqual(rep.mimeType, 'application/mp4')
+        self.assertEqual(rep.codecs, 'stpp')
+
+    def test_load_web_vtt(self):
+        filename = self.FIXTURES_PATH / "webvtt.mp4"
         with filename.open('rb') as src:
             atoms = Mp4Atom.load(BufferedReader(src))
         rep = Representation.load(filename, atoms)
