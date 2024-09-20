@@ -23,7 +23,9 @@ from dashlive.mpeg.dash.reference import StreamTimingReference
 from dashlive.mpeg import mp4
 from dashlive.utils.buffered_reader import BufferedReader
 from dashlive.utils.date_time import to_iso_datetime
+from dashlive.utils.files import generate_new_filename
 from dashlive.utils.json_object import JsonObject
+from dashlive.utils.string import str_or_none
 from dashlive.utils.timezone import UTC
 
 from .db import db
@@ -173,6 +175,25 @@ class MediaFile(db.Model, ModelMixin):
             num_media_segments=self.representation.num_media_segments,
             timescale=self.representation.timescale)
 
+    def get_fields(self, **kwargs) -> list[JsonObject]:
+        lang: str | None = None
+        if self.representation:
+            lang = self.representation.lang
+        return [{
+            "name": "track_id",
+            "title": "Track ID",
+            "type": "number",
+            "min": 1,
+            "max": 0xFFFFFFFF,
+            "value": kwargs.get("track_id", self.track_id),
+        }, {
+            "name": "lang",
+            "title": "Language",
+            "type": "text",
+            "maxlength": 100,
+            "value": str_or_none(kwargs.get("lang", lang)),
+        }]
+
     def parse_media_file(self, blob_folder: Path | None = None) -> bool:
         from dashlive.drm.keymaterial import KeyMaterial
         from dashlive.drm.playready import PlayReady
@@ -237,22 +258,29 @@ class MediaFile(db.Model, ModelMixin):
             mp4_options.iv_size = self.representation.iv_size
 
         logging.info('Creating MP4 file "%s"', new_filename)
-        with new_filename.open('wb') as dest:
-            for frag in self.representation.segments:
+        try:
+            with new_filename.open('wb') as dest:
                 with abs_name.open('rb') as src:
-                    src.seek(frag.pos)
-                    reader = BufferedReader(
-                        src, offset=frag.pos, size=frag.size, buffersize=16384)
-                    atom = mp4.Mp4Atom.load(
-                        reader, options=mp4_options, use_wrapper=True)
-                    changed = modify_atoms(atom)
-                    if changed:
-                        dest.write(atom.encode())
-                    else:
+                    for frag in self.representation.segments:
                         src.seek(frag.pos)
-                        dest.write(src.read(frag.size))
+                        reader = BufferedReader(
+                            src, offset=frag.pos, size=frag.size, buffersize=16384)
+                        atom = mp4.Mp4Atom.load(
+                            reader, options=mp4_options, use_wrapper=True)
+                        changed = modify_atoms(atom)
+                        if changed:
+                            dest.write(atom.encode())
+                        else:
+                            src.seek(frag.pos)
+                            dest.write(src.read(frag.size))
+        except Exception as err:
+            new_filename.unlink(missing_ok=True)
+            logging.error(
+                'Failed to create new MP4 file "%s": %s', new_filename, err)
+            return False
 
         stats = new_filename.stat()
+        old_blob = self.blob
         blob = Blob(filename=new_filename.name, size=stats.st_size,
                     content_type=self.blob.content_type,
                     auto_delete=self.blob.auto_delete)
@@ -265,6 +293,8 @@ class MediaFile(db.Model, ModelMixin):
         logging.info('Parsing new MP4 file "%s"', new_filename)
         self.parse_media_file(blob_folder=blob_folder, session=session)
         logging.info('Finished creating MP4 file "%s"', new_filename)
+        if old_blob.auto_delete:
+            session.delete(old_blob)
         return True
 
     @classmethod
@@ -309,11 +339,8 @@ class MediaFile(db.Model, ModelMixin):
                 raise RuntimeError(f'Failed to get MediaFile {pk}')
             abs_path = blob_folder / media.stream.directory
             filename = Path(media.blob.filename)
-            new_name = abs_path / f'{filename.stem}_{track_id:02d}{filename.suffix}'
-            index = 1
-            while new_name.exists():
-                new_name = abs_path / f'{filename.stem}_{track_id:02d}_{index:02d}{filename.suffix}'
-                index += 1
+            new_name = generate_new_filename(
+                abs_path, f'{filename.stem}_{track_id:02d}', filename.suffix)
             logging.warning('Creating new MP4 file %s from %s with track ID %d',
                             new_name, abs_path / filename, track_id)
             if not media.modify_media_file(

@@ -9,7 +9,14 @@
   <div class="card">
     <div class="card-header">
       Media fille &quot;{{ mediafile.name }}&quot;
-      <a class="btn btn-primary float-end" href="{{ url_for('view-stream', spk=stream.pk) }}">Back</a>
+      <div class="float-end" role="group">
+        {%- if user_can_modify %}
+          <a class="btn btn-danger me-2"
+             href="{{ url_for('edit-media', spk=stream.pk, mfid=mediafile.pk) }}">Edit</a>
+        {%- endif %}
+          <a class="btn btn-primary"
+             href="{{ url_for('view-stream', spk=stream.pk) }}">Back</a>
+      </div>
     </div>
     <div class="card-body">
       <div class="row">
@@ -37,10 +44,12 @@
 	<div class="col-3 field-title">Track ID:</div>
 	<div class="col-9">{{ mediafile.representation.track_id }}</div>
       </div>
+      {% if mediafile.representation.lang %}
       <div class="row">
-	<div class="col-3 field-title">Content Type:</div>
-	<div class="col-9">{{ mediafile.representation.content_type }}</div>
+	<div class="col-3 field-title">Language:</div>
+	<div class="col-9">{{ mediafile.representation.lang }}</div>
       </div>
+      {% endif %}
       <div class="row">
 	<div class="col-3 field-title">MIME Type:</div>
 	<div class="col-9">{{ mediafile.representation.mimeType }}</div>
@@ -53,12 +62,6 @@
         <div class="col-7 codec-description">
         </div>
       </div>
-      {% if mediafile.representation.lang %}
-      <div class="row">
-	<div class="col-3 field-title">Language:</div>
-	<div class="col-9">{{ mediafile.representation.lang }}</div>
-      </div>
-      {% endif %}
       {% if mediafile.representation.nalLengthFieldLength %}
       <div class="row">
 	<div class="col-3 field-title">NAL field length:</div>
@@ -68,12 +71,12 @@
       {% if mediafile.representation.numChannels %}
       <div class="row">
 	<div class="col-3 field-title">Number of audio channels:</div>
-	<div class="col-9">{{ mediafile.representation.numChannels }} bytes</div>
+	<div class="col-9">{{ mediafile.representation.numChannels }}</div>
       </div>
       {% endif %}
       <div class="row">
 	<div class="col-3 field-title">Timescale:</div>
-	<div class="col-9">{{ mediafile.representation.timescale }}</div>
+	<div class="col-9">{{ mediafile.representation.timescale }} Hz</div>
       </div>
       <div class="row">
 	<div class="col-3 field-title">Start time:</div>

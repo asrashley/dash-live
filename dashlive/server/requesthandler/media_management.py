@@ -22,8 +22,11 @@
 
 import datetime
 import logging
+from pathlib import Path
+from typing import cast
 
 import flask
+from flask_login import current_user
 from werkzeug.datastructures import FileStorage
 
 from dashlive.mpeg import mp4
@@ -31,15 +34,18 @@ from dashlive.server import models
 from dashlive.server.routes import Route
 from dashlive.utils.buffered_reader import BufferedReader
 from dashlive.utils.date_time import timecode_to_timedelta
+from dashlive.utils.files import generate_new_filename
 from dashlive.utils.json_object import JsonObject
+from dashlive.utils.timezone import UTC
 
-from .base import HTMLHandlerBase, RequestHandlerBase
+from .base import HTMLHandlerBase, RequestHandlerBase, DeleteModelBase
 from .decorators import (
     uses_media_file, current_media_file, login_required,
-    uses_stream, current_stream
+    uses_stream, current_stream, csrf_token_required
 )
 from .exceptions import CsrfFailureException
-from .utils import is_ajax
+from .manifest_context import ManifestContext
+from .utils import is_ajax, jsonify
 
 class UploadHandler(RequestHandlerBase):
     decorators = [uses_stream, login_required(permission=models.Group.MEDIA)]
@@ -66,7 +72,7 @@ class UploadHandler(RequestHandlerBase):
         logging.warning('Upload error: %s', error)
         if is_ajax():
             result = {"error": error}
-            return self.jsonify(result)
+            return jsonify(result)
         flask.flash(error)
         return flask.redirect(flask.url_for('list-streams'))
 
@@ -79,18 +85,26 @@ class UploadHandler(RequestHandlerBase):
         logging.debug("upload done %s", mf.name)
         context = self.create_context(
             title=f'File {mf.name} uploaded',
-            media=result)
-        context['stream'] = current_stream
+            media=result,
+            stream=current_stream)
         if is_ajax():
             csrf_key = self.generate_csrf_cookie()
             result['upload_url'] = flask.url_for('upload-blob', spk=stream.pk)
             result['csrf_token'] = self.generate_csrf_token(
                 "upload", csrf_key)
             result["file_html"] = flask.render_template('media/media_row.html', **context)
-            return self.jsonify(result)
+            return jsonify(result)
         flask.flash(f'Uploaded file {mf.name}', 'success')
         return flask.render_template('upload-done.html', **context)
 
+
+class MediaInfoContext(ManifestContext):
+    duration_tc: int | None
+    duration_time: datetime.timedelta | None
+    mediafile: models.MediaFile
+    segment_duration: datetime.timedelta | None
+    stream: models.Stream
+    user_can_modify: bool
 
 class MediaInfo(HTMLHandlerBase):
     """
@@ -102,6 +116,7 @@ class MediaInfo(HTMLHandlerBase):
         mf = current_media_file
         csrf_key = self.generate_csrf_cookie()
         csrf_token = self.generate_csrf_token('files', csrf_key)
+        user_can_modify: bool = current_user.has_permission(models.Group.MEDIA)
         if is_ajax():
             result = {
                 "representation": mf.rep,
@@ -109,16 +124,18 @@ class MediaInfo(HTMLHandlerBase):
                 "key": mf.pk,
                 "blob": mf.blob.to_dict(exclude={'mediafile'}),
                 "csrf_token": csrf_token,
+                "user_can_modify": user_can_modify,
             }
-            return self.jsonify(result)
-        context = self.create_context()
-        context.update({
-            'stream': current_stream,
-            'mediafile': mf,
-            "csrf_token": csrf_token,
-            "duration": None,
-            "segment_duration": None,
-        })
+            return jsonify(result)
+        context = cast(MediaInfoContext, self.create_context(
+            title=f'Media file: {mf.name}',
+            stream=current_stream,
+            mediafile=mf,
+            csrf_token=csrf_token,
+            duration_tc=None,
+            duration_time=None,
+            segment_duration=None,
+            user_can_modify=user_can_modify))
         if mf.representation:
             context['duration_tc'] = mf.representation.mediaDuration
             context['duration_time'] = timecode_to_timedelta(
@@ -137,7 +154,7 @@ class MediaInfo(HTMLHandlerBase):
         return breadcrumbs
 
     @login_required(permission=models.Group.MEDIA, html=True)
-    def delete(self, mfid, **kwargs):
+    def delete(self, spk: int, mfid: int) -> flask.Response:
         """
         handler for deleting a media blob
         """
@@ -159,7 +176,144 @@ class MediaInfo(HTMLHandlerBase):
             result["deleted"] = mfid
         csrf_key = self.generate_csrf_cookie()
         result["csrf"] = self.generate_csrf_token('files', csrf_key)
-        return self.jsonify(result, status=status)
+        return jsonify(result, status=status)
+
+
+class EditMediaContext(ManifestContext):
+    model: models.MediaFile
+    fields: dict[str, JsonObject]
+    cancel_url: str
+
+class EditMedia(HTMLHandlerBase):
+    """
+    View handler that allows editing one media file
+    """
+    decorators = [
+        uses_media_file,
+        uses_stream,
+        login_required(permission=models.Group.MEDIA),
+    ]
+
+    @classmethod
+    def next_url(cls, spk: int, **kwargs) -> str:
+        return flask.url_for('view-stream', spk=current_stream.pk)
+
+    def get(self, spk: int, mfid: int) -> flask.Response:
+        mf = current_media_file
+        csrf_key = self.generate_csrf_cookie()
+        csrf_token = self.generate_csrf_token('files', csrf_key)
+        context = cast(EditMediaContext, self.create_context(
+            title=f'Edit file: {mf.name}',
+            model=mf,
+            cancel_url=flask.url_for('media-info', spk=spk, mfid=mfid),
+            csrf_token=csrf_token,
+            fields=mf.get_fields(**flask.request.args)))
+        return flask.render_template('media/edit_media.html', **context)
+
+    @csrf_token_required(service='files', next_url=next_url)
+    def post(self, spk: int, mfid: int) -> flask.Response:
+        mf = current_media_file
+        current_values: dict[str, str | int] = {
+            'track_id': mf.track_id,
+            'lang': mf.representation.lang,
+        }
+        fields: dict[str, str | int] = {
+            'track_id': int(flask.request.form['track_id'], 10),
+            'lang': flask.request.form.get('lang', current_values['lang']),
+        }
+        if fields == current_values:
+            flask.flash('No file changes to apply')
+            return flask.redirect(
+                flask.url_for('media-info', spk=spk, mfid=mfid))
+        abs_path = models.MediaFile.absolute_path(mf.stream.directory)
+        filename = Path(mf.blob.filename)
+        new_name = generate_new_filename(abs_path, filename.stem, filename.suffix)
+
+        def modify_atoms(wrap: mp4.Wrapper) -> bool:
+            modified = False
+            moov = wrap.find_child('moov')
+            moof = wrap.find_child('moof')
+            if moov is not None:
+                trak = moov.trak
+                if trak.tkhd.track_id != fields['track_id']:
+                    trak.tkhd.track_id = fields['track_id']
+                    moov.mvex.trex.track_id = fields['track_id']
+                    moov.mvhd.next_track_id = fields['track_id'] + 1
+                    modified = True
+                if trak.mdia.mdhd.language != fields['lang']:
+                    trak.mdia.mdhd.language = fields['lang']
+                    modified = True
+                if modified:
+                    trak.tkhd.modification_time = datetime.datetime.now(tz=UTC())
+            elif moof is not None:
+                if moof.traf.tfhd.track_id != fields['track_id']:
+                    moof.traf.tfhd.track_id = fields['track_id']
+                    modified = True
+            return modified
+
+        old_blob_name = mf.blob.filename
+        if not mf.modify_media_file(new_name, modify_atoms):
+            flask.flash(f'Failed to create new MP4 file {new_name.name}')
+            url = flask.url_for(
+                'edit-media', spk=spk, mfid=mfid, **fields)
+            return flask.redirect(url)
+        flask.flash(f'Replaced MP4 file {old_blob_name} with {new_name.name}')
+        models.db.session.commit()
+        return flask.redirect(
+            flask.url_for('media-info', spk=mf.stream.pk, mfid=mf.pk))
+
+    def get_breadcrumbs(self, route: Route) -> list[dict[str, str]]:
+        breadcrumbs = super().get_breadcrumbs(route)
+        breadcrumbs.insert(-1, {
+            'title': current_stream.directory,
+            'href': flask.url_for('view-stream', spk=current_stream.pk),
+        })
+        breadcrumbs[-1] = {
+            'title': current_media_file.name,
+            'active': False,
+            'href': flask.url_for(
+                'media-info', spk=current_stream.pk, mfid=current_media_file.pk),
+        }
+        breadcrumbs.append({
+            'title': 'edit',
+            'active': True,
+        })
+        return breadcrumbs
+
+
+class DeleteMedia(DeleteModelBase):
+    MODEL_NAME = 'mediafile'
+    CSRF_TOKEN_NAME = 'files'
+    decorators = [
+        uses_media_file,
+        uses_stream,
+        login_required(html=True, permission=models.Group.MEDIA)]
+
+    def get_model_dict(self) -> JsonObject:
+        js = current_media_file.to_dict(with_collections=False)
+        js['title'] = current_media_file.blob.filename
+        return js
+
+    def get_cancel_url(self) -> str:
+        return flask.url_for(
+            'media-info',
+            spk=current_media_file.stream.pk,
+            mfid=current_media_file.pk)
+
+    def delete_model(self) -> JsonObject:
+        result = {
+            "deleted": current_media_file.pk,
+            "title": current_media_file.name,
+            "stream": current_stream.title,
+        }
+        models.db.session.delete(current_media_file)
+        models.db.session.commit()
+        return result
+
+    def get_next_url(self) -> str:
+        return flask.url_for(
+            'view-stream',
+            spk=current_stream.pk)
 
 
 class IndexMediaFile(HTMLHandlerBase):
@@ -189,7 +343,7 @@ class IndexMediaFile(HTMLHandlerBase):
                 result['error'] = 'Failed to parse media file'
         csrf_key = self.generate_csrf_cookie()
         result["csrf"] = self.generate_csrf_token('files', csrf_key)
-        return self.jsonify(result, status=status)
+        return jsonify(result, status=status)
 
 
 class MediaSegmentList(HTMLHandlerBase):
@@ -223,7 +377,7 @@ class MediaSegmentList(HTMLHandlerBase):
                 })
             segments.append(item)
         if is_ajax():
-            return self.jsonify({
+            return jsonify({
                 'stream': current_stream.to_dict(with_collections=False),
                 'mediafile': current_media_file.to_dict(
                     with_collections=False, exclude={'representation', 'rep'}),
@@ -278,7 +432,7 @@ class MediaSegmentInfo(HTMLHandlerBase):
         for ch in atoms:
             self.filter_atom(ch)
         if is_ajax():
-            return self.jsonify({
+            return jsonify({
                 'segmentNumber': segnum,
                 'atoms': atoms,
                 'media': current_media_file.to_dict(
