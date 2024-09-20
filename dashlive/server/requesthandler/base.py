@@ -23,13 +23,6 @@
 from abc import abstractmethod
 from typing import AbstractSet, Any, TypedDict
 
-import base64
-import datetime
-import hashlib
-import hmac
-import logging
-import re
-import secrets
 import urllib.request
 import urllib.parse
 import urllib.error
@@ -43,9 +36,9 @@ from dashlive.server import models
 from dashlive.server.routes import routes, Route
 from dashlive.server.options.container import OptionsContainer
 from dashlive.server.options.repository import OptionsRepository
-from dashlive.utils import objects
 from dashlive.utils.json_object import JsonObject
 
+from .csrf import CsrfProtection
 from .exceptions import CsrfFailureException
 from .utils import is_https_request
 
@@ -58,10 +51,6 @@ class TemplateContext(TypedDict):
 
 class RequestHandlerBase(MethodView):
     CLIENT_COOKIE_NAME = 'dash'
-    CSRF_COOKIE_NAME = 'csrf'
-    CSRF_EXPIRY = 1200
-    DEFAULT_ALLOWED_DOMAINS = re.compile(
-        r'^http://(dashif\.org)|(shaka-player-demo\.appspot\.com)|(mediapm\.edgesuite\.net)')
     INJECTED_ERROR_CODES = [404, 410, 503, 504]
 
     def create_context(self, title: str | None = None, **kwargs) -> TemplateContext:
@@ -86,117 +75,23 @@ class RequestHandlerBase(MethodView):
         """
         generate a secure cookie if not already present
         """
-        try:
-            return flask.request.cookies[self.CSRF_COOKIE_NAME]
-        except KeyError:
-            pass
-        csrf_key = secrets.token_urlsafe(models.Token.CSRF_KEY_LENGTH)
-        secure = None
-        if is_https_request():
-            secure = True
-
-        @flask.after_this_request
-        def set_csrf_cookie(response):
-            response.set_cookie(
-                self.CSRF_COOKIE_NAME, csrf_key, httponly=True,
-                samesite='Strict', max_age=self.CSRF_EXPIRY, secure=secure)
-            return response
-
-        return csrf_key
+        return CsrfProtection.generate_cookie()
 
     def generate_csrf_token(self, service: str, csrf_key: str) -> str:
         """
         generate a CSRF token that can be used as a hidden form field
         """
-        logging.debug(f'generate_csrf service: "{service}"')
-        logging.debug(f'generate_csrf csrf_key: "{csrf_key}"')
-        # logging.debug(f'generate_csrf URL: {url}')
-        # logging.debug(
-        # 'generate_csrf User-Agent: "{}"'.format(flask.request.headers['User-Agent']))
-        cfg = flask.current_app.config['DASH']
-        strict_origin = cfg.get('STRICT_CSRF_ORIGIN', 'False').lower() == 'true'
+        return CsrfProtection.generate_token(service, csrf_key)
 
-        sig = hmac.new(
-            bytes(cfg['CSRF_SECRET'], 'utf-8'),
-            bytes(csrf_key, 'utf-8'),
-            hashlib.sha1)
-        cur_url = urllib.parse.urlparse(flask.request.url, 'http')
-        origin = '{}://{}'.format(cur_url.scheme, cur_url.netloc)
-        logging.debug(f'generate_csrf origin: "{origin}"')
-        salt = secrets.token_urlsafe(models.Token.CSRF_SALT_LENGTH)
-        salt = salt[:models.Token.CSRF_SALT_LENGTH]
-        logging.debug(f'generate_csrf salt: "{salt}"')
-        # print('generate', service, csrf_key, origin, flask.request.headers['User-Agent'], salt)
-        sig.update(bytes(service, 'utf-8'))
-        if strict_origin:
-            sig.update(bytes(origin, 'utf-8'))
-        sig.update(bytes(salt, 'utf-8'))
-        rv = urllib.parse.quote(salt + str(base64.b64encode(sig.digest())))
-        # print('csrf', service, rv)
-        return rv
-
-    def check_csrf(self, service, params):
+    def check_csrf(self, service: str, params) -> None:
         """
         check that the CSRF token from the cookie and the submitted form match
         """
-        logging.debug(f'check_csrf service: "{service}"')
         try:
-            csrf_key = flask.request.cookies[self.CSRF_COOKIE_NAME]
+            token = params['csrf_token']
         except KeyError:
-            logging.debug("csrf cookie not present")
-            logging.debug(str(flask.request.cookies))
-            raise CsrfFailureException(
-                f"{self.CSRF_COOKIE_NAME} cookie not present")
-        if not csrf_key:
-            logging.debug("csrf deserialize failed")
-
-            @flask.after_this_request
-            def clear_csrf_cookie(response):
-                response.delete_cookie(self.CSRF_COOKIE_NAME)
-                return response
-
-            raise CsrfFailureException("csrf cookie not valid")
-        logging.debug(f'check_csrf csrf_key: "{csrf_key}"')
-        try:
-            token = str(urllib.parse.unquote(params['csrf_token']))
-        except KeyError:
-            raise CsrfFailureException("csrf_token not present")
-        try:
-            origin = flask.request.headers['Origin']
-        except KeyError:
-            logging.debug(
-                f"No origin in request, using: {flask.request.url}")
-            cur_url = urllib.parse.urlparse(flask.request.url, 'http')
-            origin = '{}://{}'.format(cur_url.scheme, cur_url.netloc)
-        logging.debug(f'check_csrf origin: "{origin}"')
-        existing_key = models.Token.get(jti=token,
-                                        token_type=models.TokenType.CSRF)
-        if existing_key is not None:
-            raise CsrfFailureException("Re-use of csrf_token")
-        expires = datetime.datetime.now() + datetime.timedelta(seconds=self.CSRF_EXPIRY)
-        existing_key = models.Token(
-            jti=token, token_type=models.TokenType.CSRF,
-            expires=expires, revoked=False)
-        models.db.session.add(existing_key)
-        salt = token[:models.Token.CSRF_SALT_LENGTH]
-        logging.debug(f'check_csrf salt: "{salt}"')
-        token = token[models.Token.CSRF_SALT_LENGTH:]
-        cfg = flask.current_app.config['DASH']
-        strict_origin = cfg.get('STRICT_CSRF_ORIGIN', 'False').lower() == 'true'
-        sig = hmac.new(
-            bytes(cfg['CSRF_SECRET'], 'utf-8'),
-            bytes(csrf_key, 'utf-8'),
-            hashlib.sha1)
-        sig.update(bytes(service, 'utf-8'))
-        if strict_origin:
-            sig.update(bytes(origin, 'utf-8'))
-        # logging.debug("check_csrf Referer: {}".format(flask.request.headers['Referer']))
-        sig.update(bytes(salt, 'utf-8'))
-        b64_sig = str(base64.b64encode(sig.digest()))
-        if token != b64_sig:
-            logging.debug("signatures do not match: %s %s", token, b64_sig)
-            raise CsrfFailureException("signatures do not match")
-        return True
+            raise CsrfFailureException('csrf_token not present')
+        CsrfProtection.check(service, token)
 
     def get_bool_param(self, param: str, default: bool | None = False) -> bool:
         value = flask.request.args.get(param)

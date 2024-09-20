@@ -74,35 +74,7 @@ class TestRequestHandlerBase(FlaskTestBase):
         rhb = RequestHandlerBase()
         with self.assertRaises(CsrfFailureException) as cm:
             rhb.check_csrf('files', {})
-        self.assertIn('cookie not present', str(cm.exception))
-
-    @patch.object(flask, 'request')
-    def test_invalid_csrf_cookie(self, req) -> None:
-        req.cookies = {
-            RequestHandlerBase.CSRF_COOKIE_NAME: None,
-        }
-        rhb = RequestHandlerBase()
-        with self.assertRaises(CsrfFailureException) as cm:
-            rhb.check_csrf('files', {})
-        self.assertIn('cookie not valid', str(cm.exception))
-
-    @patch.object(flask, 'request')
-    def test_csrf_signature_mismatch(self, req) -> None:
-        req.cookies = {
-            RequestHandlerBase.CSRF_COOKIE_NAME: 'Bj2sVUJfupva1WK-KamSk7BrI4_MFyWYpqYJjt7d-ts',
-        }
-        req.headers = {
-            'Origin': 'a.unit.test',
-        }
-        req.scheme = 'http'
-        req.url = 'http://a.unit/test/'
-        rhb = RequestHandlerBase()
-        params = {
-            'csrf_token': 'vvkRhkxfb%27KdO5RtEtzY6ULLfGpOuBks2AN/Q%3D%27',
-        }
-        with self.assertRaises(CsrfFailureException) as cm:
-            rhb.check_csrf('streams', params)
-        self.assertIn('signatures do not match', str(cm.exception))
+        self.assertIn('csrf_token not present', str(cm.exception))
 
 
 if __name__ == '__main__':

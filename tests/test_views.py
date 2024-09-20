@@ -25,7 +25,6 @@ import datetime
 import io
 import logging
 import unittest
-from unittest.mock import patch
 
 from lxml import etree
 import flask
@@ -33,7 +32,6 @@ import flask
 from dashlive.drm.clearkey import ClearKey
 from dashlive.mpeg.dash.validator import ConcurrentWorkerPool
 from dashlive.server import manifests, models
-from dashlive.server.requesthandler.base import RequestHandlerBase
 from dashlive.server.options.drm_options import DrmLocationOption, PlayreadyVersion
 from dashlive.utils.date_time import UTC, to_iso_datetime, from_isodatetime
 from dashlive.utils.objects import dict_to_cgi_params, flatten
@@ -447,42 +445,6 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                 clean.get_data(as_text=False),
                 corrupt.get_data(as_text=False),
                 name=url)
-
-    @patch.object(flask, 'request')
-    def test_wildcard_allowed_origin(self, mock_request) -> None:
-        rhb = RequestHandlerBase()
-        headers = {}
-        with self.app.app_context():
-            self.app.config['DASH']['ALLOWED_DOMAINS'] = '*'
-            rhb.add_allowed_origins(headers)
-            self.assertEqual(headers["Access-Control-Allow-Methods"], "HEAD, GET, POST")
-            self.assertEqual(headers["Access-Control-Allow-Origin"], '*')
-
-    @patch.object(flask, 'request')
-    def test_matching_allowed_origin(self, mock_request) -> None:
-        rhb = RequestHandlerBase()
-        headers = {}
-        with self.app.app_context():
-            mock_request.headers = {
-                'Origin': 'www.unit.test',
-            }
-            self.app.config['DASH']['ALLOWED_DOMAINS'] = 'unit.test'
-            rhb.add_allowed_origins(headers)
-            self.assertEqual(headers["Access-Control-Allow-Methods"], "HEAD, GET, POST")
-            self.assertEqual(headers["Access-Control-Allow-Origin"], 'www.unit.test')
-
-    @patch.object(flask, 'request')
-    def test_non_matching_allowed_origin(self, mock_request) -> None:
-        rhb = RequestHandlerBase()
-        headers = {}
-        with self.app.app_context():
-            mock_request.headers = {
-                'Origin': 'www.unit.test',
-            }
-            self.app.config['DASH']['ALLOWED_DOMAINS'] = 'another.domain'
-            rhb.add_allowed_origins(headers)
-            self.assertNotIn("Access-Control-Allow-Methods", headers)
-            self.assertNotIn("Access-Control-Allow-Origin", headers)
 
     async def test_get_vod_media_with_stream_defaults(self):
         """
