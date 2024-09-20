@@ -38,6 +38,7 @@ from dashlive.utils.timezone import UTC
 from .base import RequestHandlerBase, TemplateContext
 from .decorators import uses_stream, current_stream
 from .manifest_context import ManifestContext
+from .utils import add_allowed_origins
 
 class ManifestTemplateContext(TemplateContext):
     mode: str
@@ -114,7 +115,7 @@ class ServeManifest(RequestHandlerBase):
             'Cache-Control': f'max-age={max_age}',
             'Accept-Ranges': 'none',
         }
-        self.add_allowed_origins(headers)
+        add_allowed_origins(headers)
         return flask.make_response((body, 200, headers))
 
     def check_for_synthetic_manifest_error(
@@ -256,5 +257,5 @@ class ServePatch(RequestHandlerBase):
             'Cache-Control': f'max-age={max_age}',
             'Accept-Ranges': 'none',
         }
-        self.add_allowed_origins(headers)
+        add_allowed_origins(headers)
         return flask.make_response((body, 200, headers))
