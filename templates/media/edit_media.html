@@ -1,0 +1,11 @@
+{% extends 'edit-model.html' %}
+
+{% block card_header %}
+Edit file &quot;{{model.name}}&quot; ({{ model.blob.filename }})
+{% endblock %}
+
+{% block extra_buttons %}
+<a href="{{url_for('delete-media', spk=model.stream.pk, mfid=model.pk)}}"
+   class="btn btn-danger delete-file"
+   data-id="{{model.pk}}">Delete file &quot;{{model.name}}&quot;</a>
+{% endblock %}

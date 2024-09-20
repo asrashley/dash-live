@@ -115,7 +115,7 @@ routes = {
         handler='media_requests.OnDemandMedia',
         title="DASH media file"),
     "index-media-file": Route(
-        r'/media/index/<mfid>',
+        r'/media/index/<int:mfid>',
         handler='media_management.IndexMediaFile',
         title='Media information'),
     "view-media-segment": Route(
@@ -132,6 +132,16 @@ routes = {
         r'/stream/<int:spk>/<int:mfid>',
         handler='media_management.MediaInfo',
         title='Media information',
+        parent='list-streams'),
+    "edit-media": Route(
+        r'/stream/<int:spk>/<int:mfid>/edit',
+        handler='media_management.EditMedia',
+        title='Edit Media',
+        parent='list-streams'),
+    "delete-media": Route(
+        r'/stream/<int:spk>/<int:mfid>/delete',
+        handler='media_management.DeleteMedia',
+        title='Delete Media',
         parent='list-streams'),
     'list-streams': Route(
         r'/streams',
