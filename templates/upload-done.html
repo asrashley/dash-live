@@ -3,9 +3,17 @@
 
 {% block content %}
 <h2>Upload complete</h2>
-<p>{{blob}}</p>
-<br /><p><a href="{{url_for('list-streams')}}" class="link">Back to
-    media index</a></p>
-<br /><p><a href="{{url_for('index-media-file', mfid=media.key)}}" class="link">Generate index</a></p>
+<p class="mb-4">{{blob}}</p>
+<p class="mb-4">
+  <a href="{{ url_for('list-streams') }}" class="link">
+    Back to media index
+  </a>
+</p>
+<p>
+  <a href="{{ url_for('index-media-file', mfid=media.pk) }}"
+     class="link">
+    Generate index
+  </a>
+</p>
 {% endblock %}
 
