@@ -7,7 +7,7 @@
 .project
 .pydevproject
 htmlcov
-media
+./media/
 node_modules
 runner.py
 settings.py
