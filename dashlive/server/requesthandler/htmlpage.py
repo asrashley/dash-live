@@ -39,7 +39,7 @@ from dashlive.server.options.types import OptionUsage
 from .base import HTMLHandlerBase
 from .decorators import uses_stream, current_stream
 from .manifest_context import ManifestContext
-from .utils import is_https_request
+from .utils import add_allowed_origins, is_https_request
 
 class MainPage(HTMLHandlerBase):
     """
@@ -174,7 +174,7 @@ class MainPage(HTMLHandlerBase):
             'X-Frame-Options': 'SAMEORIGIN',
         }
         body = flask.render_template('index.html', **context)
-        self.add_allowed_origins(headers)
+        add_allowed_origins(headers)
         return flask.make_response((body, 200, headers))
 
 

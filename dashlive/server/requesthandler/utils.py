@@ -6,9 +6,13 @@
 #
 #############################################################################
 from os import environ
+import re
+from typing import Any, Pattern
 
 import flask  # type: ignore
 from langcodes import standardize_tag
+
+from dashlive.utils.objects import flatten
 
 def is_ajax() -> bool:
     return (
@@ -25,6 +29,32 @@ def is_https_request() -> bool:
         return True
     return flask.request.headers.get('X-HTTP-Scheme', 'http') == 'https'
 
+
+DEFAULT_ALLOWED_DOMAINS = re.compile(
+    r'^http://(dashif\.org)|(shaka-player-demo\.appspot\.com)|(mediapm\.edgesuite\.net)')
+
+def add_allowed_origins(headers: dict[str, str]) -> None:
+    """
+    Adds access control headers to the HTTP headers object
+    """
+    allowed_domains: str | Pattern | None = flask.g.get('allowed_domains', None)
+
+    if allowed_domains is None:
+        cfg = flask.current_app.config['DASH']
+        allowed_domains = cfg.get('ALLOWED_DOMAINS', DEFAULT_ALLOWED_DOMAINS)
+        if isinstance(allowed_domains, str) and allowed_domains != "*":
+            allowed_domains = re.compile(allowed_domains)
+        flask.g.allowed_domains = allowed_domains
+    if allowed_domains == "*":
+        headers["Access-Control-Allow-Origin"] = "*"
+        headers["Access-Control-Allow-Methods"] = "HEAD, GET, POST"
+        return
+    try:
+        if allowed_domains.search(flask.request.headers['Origin']):
+            headers["Access-Control-Allow-Origin"] = flask.request.headers['Origin']
+            headers["Access-Control-Allow-Methods"] = "HEAD, GET, POST"
+    except KeyError:
+        pass
 
 UNDEFINED_LANGS: set[str | None] = {'und', 'zxx', None}
 

@@ -44,6 +44,7 @@ from .decorators import (
     current_stream
 )
 from .drm_context import DrmContext
+from .utils import add_allowed_origins
 
 class OnDemandMedia(RequestHandlerBase):
     """
@@ -122,7 +123,7 @@ class LiveMedia(RequestHandlerBase):
             'Accept-Ranges': 'bytes',
             'Content-Type': adp_set.mimeType,
         }
-        self.add_allowed_origins(headers)
+        add_allowed_origins(headers)
         if segment_num == 'init':
             return self.generate_init_segment(mode, adp_set, headers, options)
 
