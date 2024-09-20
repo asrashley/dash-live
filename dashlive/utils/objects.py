@@ -130,7 +130,7 @@ def as_python(value):
         value = str(value)
     return value
 
-def pick_items(src, keys):
+def pick_items(src: dict, keys: AbstractSet[str]) -> dict:
     """
     Create a new dictionary, copying all keys listed in 'keys'
     """
