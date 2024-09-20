@@ -6,14 +6,17 @@
 #
 #############################################################################
 from functools import wraps
-from typing import cast
+from typing import cast, Callable
 
 import flask  # type: ignore
 from flask_login import current_user
 from werkzeug.local import LocalProxy  # type: ignore
 
 from dashlive.server.models import Group, Key, MediaFile, Stream, User
-from .utils import is_ajax
+
+from .csrf import CsrfProtection
+from .exceptions import CsrfFailureException
+from .utils import is_ajax, jsonify
 
 def needs_login_response(admin: bool, html: bool, permission: Group | None) -> flask.Response:
     if is_ajax():
@@ -37,6 +40,32 @@ def login_required(html=False, admin=False, permission: Group | None = None):
                 return needs_login_response(admin=admin, html=html, permission=permission)
             if permission and not current_user.has_permission(permission):
                 return needs_login_response(admin=admin, html=html, permission=permission)
+            return func(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+def csrf_token_required(service: str, next_url: Callable[..., str | None]):
+    """
+    Decorator that requires a CSRF token check to pass
+    """
+    def decorator(func):
+        @wraps(func)
+        def decorated_function(*args, **kwargs):
+            try:
+                token = flask.request.args.get('csrf_token')
+                if token is None:
+                    token = flask.request.form.get('csrf_token')
+                if token is None:
+                    raise CsrfFailureException('Failed to find csrf_token')
+                CsrfProtection.check(service, token)
+            except (ValueError, CsrfFailureException) as err:
+                if is_ajax():
+                    return jsonify({'error': f'{err}'}, 401)
+                flask.flash(f'CSRF error: {err}', 'error')
+                url = next_url(*args, **kwargs)
+                if url is None:
+                    return flask.make_response('Not Authorized', 401)
+                return flask.redirect(url)
             return func(*args, **kwargs)
         return decorated_function
     return decorator
