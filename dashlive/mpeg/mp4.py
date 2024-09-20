@@ -3057,10 +3057,10 @@ class IsoParser:
         check_children = True
         if atom.atom_name() in atom_types:
             if atom.atom_name() in with_children:
-                exclude = atom.DEFAULT_EXCLUDE.union({'atom_type'})
+                exclude = atom.DEFAULT_EXCLUDE
                 check_children = False
             else:
-                exclude = atom.DEFAULT_EXCLUDE.union({'atom_type', 'children'})
+                exclude = atom.DEFAULT_EXCLUDE.union({'children'})
             if atom.atom_type == b'mdat' and 'mdat' not in with_children:
                 exclude.add('data')
             if as_json:
