@@ -29,7 +29,7 @@ from dashlive.server import models
 from .base import HTMLHandlerBase
 from .decorators import login_required, uses_keypair, current_keypair
 from .exceptions import CsrfFailureException
-from .utils import is_ajax
+from .utils import is_ajax, jsonify
 
 class KeyHandler(HTMLHandlerBase):
     """
@@ -116,7 +116,7 @@ class KeyHandler(HTMLHandlerBase):
         kid = flask.request.args.get('kid')
         key = flask.request.args.get('key')
         if kid is None:
-            return self.jsonify({'error': 'KID is required'}, 400)
+            return jsonify({'error': 'KID is required'}, 400)
         result = {"error": None}
         try:
             self.check_csrf('keys', flask.request.args)
@@ -146,7 +146,7 @@ class KeyHandler(HTMLHandlerBase):
                 }
         csrf_key = self.generate_csrf_cookie()
         result["csrf_token"] = self.generate_csrf_token('keys', csrf_key)
-        return self.jsonify(result)
+        return jsonify(result)
 
 
 class DeleteKeyHandler(HTMLHandlerBase):
@@ -161,7 +161,7 @@ class DeleteKeyHandler(HTMLHandlerBase):
         """
         csrf_key = self.generate_csrf_cookie()
         if is_ajax():
-            return self.jsonify({
+            return jsonify({
                 'model': current_keypair.to_dict(),
                 'csrf_token': self.generate_csrf_token('keys', csrf_key),
             })
@@ -197,7 +197,7 @@ class DeleteKeyHandler(HTMLHandlerBase):
         try:
             self.check_csrf('keys', flask.request.args)
         except (ValueError, CsrfFailureException) as err:
-            return self.jsonify({'error': f'CSRF failure: {err}'}, 400)
+            return jsonify({'error': f'CSRF failure: {err}'}, 400)
         result = {
             "deleted": current_keypair.KID.hex,
         }
@@ -205,4 +205,4 @@ class DeleteKeyHandler(HTMLHandlerBase):
         models.db.session.commit()
         csrf_key = self.generate_csrf_cookie()
         result["csrf"] = self.generate_csrf_token('keys', csrf_key)
-        return self.jsonify(result)
+        return jsonify(result)

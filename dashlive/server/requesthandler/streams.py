@@ -42,7 +42,7 @@ from .base import HTMLHandlerBase, DeleteModelBase, TemplateContext
 from .decorators import login_required, uses_stream, current_stream
 from .exceptions import CsrfFailureException
 from .manifest_context import ManifestContext
-from .utils import is_ajax
+from .utils import is_ajax, jsonify
 
 @dataclass(slots=True, kw_only=True)
 class CsrfTokenCollection:
@@ -101,7 +101,7 @@ class ListStreams(HTMLHandlerBase):
                     s.to_dict(with_collections=True) for s in streams
                 ],
             }
-            return self.jsonify(result)
+            return jsonify(result)
 
         context = cast(ListStreamsTemplateContext, self.create_context(
             csrf_tokens=csrf_tokens,
@@ -152,7 +152,7 @@ class AddStream(HTMLHandlerBase):
         """
         return self.add_stream(flask.request.json)
 
-    def add_stream(self, params) -> flask.Response:
+    def add_stream(self, params: dict[str, str]) -> flask.Response:
         """
         Adds a new stream
         """
@@ -161,7 +161,7 @@ class AddStream(HTMLHandlerBase):
             self.check_csrf('streams', params)
         except (ValueError, CsrfFailureException) as err:
             if is_ajax():
-                return self.jsonify({'error': f'{err}'}, 401)
+                return jsonify({'error': f'{err}'}, 401)
             flask.flash(f'CSRF error: {err}', 'error')
             return self.get(error=str(err))
         for f in models.Stream.get_column_names(with_collections=False):
@@ -183,7 +183,7 @@ class AddStream(HTMLHandlerBase):
         result.update(st.to_dict(with_collections=True))
         csrf_key = self.generate_csrf_cookie()
         result["csrf_token"] = self.generate_csrf_token('streams', csrf_key)
-        return self.jsonify(result)
+        return jsonify(result)
 
 
 class EditStreamTemplateContext(TemplateContext):
@@ -262,7 +262,7 @@ class EditStream(HTMLHandlerBase):
                 exclude.add('key')
             result['keys'] = [
                 k.toJSON(exclude=exclude, pure=True) for k in context['keys']]
-            return self.jsonify(result)
+            return jsonify(result)
         options = self.calculate_options('vod', flask.request.args)
         options.audioCodec = 'any'
         options.textCodec = None
@@ -331,7 +331,7 @@ class EditStream(HTMLHandlerBase):
             return flask.render_template('media/stream.html', **context)
         models.db.session.commit()
         if is_ajax():
-            return self.jsonify(current_stream.toJSON())
+            return jsonify(current_stream.toJSON())
         flask.flash(f'Saved changes to "{current_stream.title}"', 'success')
         return flask.redirect(flask.url_for('list-streams'))
 
@@ -344,7 +344,7 @@ class EditStream(HTMLHandlerBase):
         models.db.session.commit()
         flask.flash(f'Deleted stream "{current_stream.title}"', 'success')
         if is_ajax():
-            return self.jsonify({
+            return jsonify({
                 'success': True,
                 'message': f'Deleted {current_stream.title}',
             })
@@ -494,7 +494,7 @@ class EditStreamDefaults(HTMLHandlerBase):
             self.check_csrf('streams', flask.request.form)
         except (ValueError, CsrfFailureException) as err:
             if is_ajax():
-                return self.jsonify({'error': f'{err}'}, 401)
+                return jsonify({'error': f'{err}'}, 401)
             flask.flash(f'CSRF error: {err}', 'error')
             return self.get(spk)
         defaults = OptionsRepository.get_default_options()

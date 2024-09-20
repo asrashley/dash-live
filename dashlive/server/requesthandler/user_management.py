@@ -31,7 +31,7 @@ from dashlive.utils.json_object import JsonObject
 from .base import HTMLHandlerBase, DeleteModelBase
 from .decorators import login_required, modifies_user_model, modifying_user
 from .exceptions import CsrfFailureException
-from .utils import is_ajax
+from .utils import is_ajax, jsonify
 
 def decorate_user(user: models.User) -> JsonObject:
     js = user.to_dict()
@@ -52,7 +52,7 @@ class LoginPage(HTMLHandlerBase):
         csrf_key = self.generate_csrf_cookie()
         context['csrf_token'] = self.generate_csrf_token('login', csrf_key)
         if is_ajax():
-            return self.jsonify({
+            return jsonify({
                 'csrf_token': context['csrf_token']
             })
         return flask.render_template('users/login.html', **context)
@@ -63,7 +63,7 @@ class LoginPage(HTMLHandlerBase):
             try:
                 self.check_csrf('login', data)
             except (ValueError, CsrfFailureException) as err:
-                return self.jsonify({'error': str(err)}, 400)
+                return jsonify({'error': str(err)}, 400)
             username = data.get("username", None)
             password = data.get("password", None)
             rememberme = data.get("rememberme", False)
@@ -89,7 +89,7 @@ class LoginPage(HTMLHandlerBase):
                 result = {}
                 for field in ['error', 'csrf_token']:
                     result[field] = context[field]
-                return self.jsonify(result)
+                return jsonify(result)
             return flask.render_template('users/login.html', **context)
         login_user(user, remember=rememberme)
         user.last_login = datetime.datetime.now()
@@ -102,7 +102,7 @@ class LoginPage(HTMLHandlerBase):
                 'user': user.to_dict(only={'email', 'username', 'pk', 'last_login'})
             }
             result['user']['groups'] = user.get_groups()
-            return self.jsonify(result)
+            return jsonify(result)
         if user.must_change:
             flask.flash('You must change your password', 'info')
             return flask.redirect(flask.url_for('change-password'))
