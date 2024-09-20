@@ -56,6 +56,36 @@ def add_allowed_origins(headers: dict[str, str]) -> None:
     except KeyError:
         pass
 
+
+def jsonify(data: Any, status: int | None = None,
+            headers: dict[str, str] | None = None) -> flask.Response:
+    """
+    Replacement for Flask jsonify that uses flatten to convert non-json objects
+    """
+    if status is None:
+        status = 200
+    if isinstance(data, dict):
+        response = flask.json.jsonify(**flatten(data))
+    elif isinstance(data, list):
+        response = flask.json.jsonify(flatten(data))
+    else:
+        response = flask.json.jsonify(data)
+    response.status = status
+    if headers is None:
+        headers = {}
+        add_allowed_origins(headers)
+    response.headers.update(headers)
+    return response
+
+def jsonify_no_content(status: int) -> flask.Response:
+    """
+    Used to return a JSON response with no body
+    """
+    response = flask.json.jsonify('')
+    response.status = status
+    return response
+
+
 UNDEFINED_LANGS: set[str | None] = {'und', 'zxx', None}
 
 def lang_is_equal(a: str | None,

@@ -22,6 +22,7 @@
 
 from abc import abstractmethod
 from typing import AbstractSet, Any, TypedDict
+from typing_extensions import deprecated
 
 import urllib.request
 import urllib.parse
@@ -40,7 +41,11 @@ from dashlive.utils.json_object import JsonObject
 
 from .csrf import CsrfProtection
 from .exceptions import CsrfFailureException
-from .utils import is_https_request
+from .utils import (
+    is_https_request,
+    jsonify,
+    jsonify_no_content
+)
 
 class TemplateContext(TypedDict):
     http_protocol: str
@@ -129,24 +134,19 @@ class RequestHandlerBase(MethodView):
         options.add_field('mode', mode)
         return options
 
-    def add_allowed_origins(self, headers):
-        cfg = flask.current_app.config['DASH']
-        allowed_domains = cfg.get('ALLOWED_DOMAINS', self.DEFAULT_ALLOWED_DOMAINS)
-        if allowed_domains == "*":
-            headers["Access-Control-Allow-Origin"] = "*"
-            headers["Access-Control-Allow-Methods"] = "HEAD, GET, POST"
-            return
-        try:
-            if isinstance(allowed_domains, str):
-                allowed_domains = re.compile(allowed_domains)
-            if allowed_domains.search(flask.request.headers['Origin']):
-                headers["Access-Control-Allow-Origin"] = flask.request.headers['Origin']
-                headers["Access-Control-Allow-Methods"] = "HEAD, GET, POST"
-        except KeyError:
-            pass
-
     def has_http_range(self):
         return 'range' in flask.request.headers
+
+    @staticmethod
+    @deprecated("use utils.jsonify() instead")
+    def jsonify(data: Any, status: int | None = None,
+                headers: dict[str, str] | None = None) -> flask.Response:
+        return jsonify(data, status, headers)
+
+    @staticmethod
+    @deprecated("use utils.jsonify_no_content() instead")
+    def jsonify_no_content(self, status: int) -> flask.Response:
+        return jsonify_no_content(status)
 
     def get_http_range(self, content_length):
         try:
@@ -202,34 +202,6 @@ class RequestHandlerBase(MethodView):
         if next is None:
             next = flask.url_for(route_name, **kwargs)
         return next
-
-    def jsonify(self, data: Any, status: int | None = None,
-                headers: dict | None = None) -> flask.Response:
-        """
-        Replacement for Flask jsonify that uses flatten to convert non-json objects
-        """
-        if status is None:
-            status = 200
-        if isinstance(data, dict):
-            response = flask.json.jsonify(**objects.flatten(data))
-        elif isinstance(data, list):
-            response = flask.json.jsonify(objects.flatten(data))
-        else:
-            response = flask.json.jsonify(data)
-        response.status = status
-        if headers is None:
-            headers = {}
-            self.add_allowed_origins(headers)
-        response.headers.update(headers)
-        return response
-
-    def jsonify_no_content(self, status: int) -> flask.Response:
-        """
-        Used to return a JSON response with no body
-        """
-        response = flask.json.jsonify('')
-        response.status = status
-        return response
 
     def increment_error_counter(self, usage: str, code: int) -> int:
         key = f'error-{usage}-{code:06d}'
@@ -349,7 +321,7 @@ class DeleteModelBase(HTMLHandlerBase):
 
     def delete(self, **kwargs) -> flask.Response:
         """
-        handler for deleting a stream
+        handler for deleting an item from a model
         """
         result = {"error": None}
         try:
@@ -362,7 +334,7 @@ class DeleteModelBase(HTMLHandlerBase):
             result = self.delete_model()
         csrf_key = self.generate_csrf_cookie()
         result["csrf"] = self.generate_csrf_token(self.CSRF_TOKEN_NAME, csrf_key)
-        return self.jsonify(result)
+        return jsonify(result)
 
     @abstractmethod
     def get_model_dict(self) -> JsonObject:
