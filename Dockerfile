@@ -51,6 +51,7 @@ COPY dashlive/scte35/*.py $HOME/dash-live/dashlive/scte35/
 COPY dashlive/server/*.py $HOME/dash-live/dashlive/server/
 COPY dashlive/server/events/*.py $HOME/dash-live/dashlive/server/events/
 COPY dashlive/server/models/*.py $HOME/dash-live/dashlive/server/models/
+COPY dashlive/server/models/migrations/*.py $HOME/dash-live/dashlive/server/models/migrations/
 COPY dashlive/server/options/*.py $HOME/dash-live/dashlive/server/options/
 COPY dashlive/server/requesthandler/*.py $HOME/dash-live/dashlive/server/requesthandler/
 COPY dashlive/utils/*.py $HOME/dash-live/dashlive/utils/

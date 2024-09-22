@@ -10,7 +10,7 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
-from dashlive.server.models import MediaFile
+from dashlive.server.models.migrations.unique_track_ids import EnsureTrackIdsAreUnique
 from dashlive.server.folders import AppFolders
 
 # revision identifiers, used by Alembic.
@@ -26,10 +26,17 @@ def upgrade() -> None:
     folders.check(check_media=False)
     bind = op.get_bind()
     session = sa.orm.Session(bind=bind)
-    MediaFile.ensure_track_ids_are_unique(session, folders.blob_folder)
+    migration = EnsureTrackIdsAreUnique(folders.blob_folder)
+    migration.upgrade(session)
     session.commit()
     op.create_index('media_file_track_id', 'media_file', ['stream', 'track_id'])
 
 
 def downgrade() -> None:
     op.drop_index('media_file_track_id', 'media_file')
+    folders = AppFolders()
+    bind = op.get_bind()
+    session = sa.orm.Session(bind=bind)
+    migration = EnsureTrackIdsAreUnique(folders.blob_folder)
+    migration.downgrade(session)
+    session.commit()

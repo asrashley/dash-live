@@ -6,7 +6,6 @@
 #
 #############################################################################
 import contextlib
-import datetime
 import hashlib
 import logging
 from pathlib import Path
@@ -23,10 +22,8 @@ from dashlive.mpeg.dash.reference import StreamTimingReference
 from dashlive.mpeg import mp4
 from dashlive.utils.buffered_reader import BufferedReader
 from dashlive.utils.date_time import to_iso_datetime
-from dashlive.utils.files import generate_new_filename
 from dashlive.utils.json_object import JsonObject
 from dashlive.utils.string import str_or_none
-from dashlive.utils.timezone import UTC
 
 from .db import db
 from .key import Key
@@ -297,113 +294,6 @@ class MediaFile(db.Model, ModelMixin):
             session.delete(old_blob)
         return True
 
-    @classmethod
-    def ensure_track_ids_are_unique(cls,
-                                    session: DatabaseSession,
-                                    blob_folder: Path) -> None:
-        content_types = ['video', 'audio', 'text']
-        next_track_ids: dict[int, int] = {}
-        for media in session.query(cls):
-            if media.rep is None:
-                if not media.parse_media_file(blob_folder):
-                    continue
-            media._pre_put_hook()
-            if media.content_type not in content_types:
-                content_types.append(media.content_type)
-            try:
-                next_track_ids[media.stream_pk] = max(
-                    next_track_ids[media.stream_pk],
-                    media.representation.track_id + 1)
-            except KeyError:
-                next_track_ids[media.stream_pk] = media.representation.track_id + 1
-
-        track_id_map: dict[tuple[int, str, str], int] = {}
-        track_content: dict[tuple[int, int], tuple[str, str]] = {}
-        mp4_fixups: list[tuple[int, int]] = []
-        for c_type in content_types:
-            for media in session.query(cls).filter_by(content_type=c_type):
-                if media.rep is None:
-                    continue
-                logging.info(
-                    'Populating track ID for stream %d file %d', media.stream_pk,
-                    media.pk)
-                new_id = media._populate_track_id(
-                    track_id_map, track_content, next_track_ids)
-                if new_id is not None:
-                    mp4_fixups.append((media.pk, new_id))
-
-        for pk, track_id in mp4_fixups:
-            media = session.execute(
-                db.select(cls).filter_by(pk=pk)).scalar_one_or_none()
-            if media is None:
-                raise RuntimeError(f'Failed to get MediaFile {pk}')
-            abs_path = blob_folder / media.stream.directory
-            filename = Path(media.blob.filename)
-            new_name = generate_new_filename(
-                abs_path, f'{filename.stem}_{track_id:02d}', filename.suffix)
-            logging.warning('Creating new MP4 file %s from %s with track ID %d',
-                            new_name, abs_path / filename, track_id)
-            if not media.modify_media_file(
-                    session=session, blob_folder=blob_folder, new_filename=new_name,
-                    modify_atoms=lambda atom: MediaFile._set_track_id(atom, track_id)):
-                raise IOError(f'Failed to update track ID for {filename}')
-
-    def _populate_track_id(self,
-                           track_id_map: dict,
-                           track_content: dict,
-                           next_track_ids: dict[int, int]) -> int | None:
-        assert self._representation is not None
-        assert self.codec_fourcc is not None
-        track_id_key = (self.stream_pk, self.content_type, self.codec_fourcc)
-        try:
-            self.track_id = track_id_map[track_id_key]
-        except KeyError:
-            self.track_id = self.representation.track_id
-        logging.info(
-            'stream %d file %d: track=%d codec=%s', self.stream_pk, self.pk,
-            self.track_id, self.codec_fourcc)
-        track_key = (self.stream_pk, self.track_id)
-        content_key = (self.content_type, self.codec_fourcc)
-        if track_content.get(track_key, content_key) != content_key:
-            logging.warning(
-                'Duplicate track ID for stream %d file %d',
-                self.stream_pk, self.pk)
-            logging.warning(
-                'track ID %d already exists of type %s, but this track is of type %s',
-                self.track_id, track_content[track_key], content_key)
-            self.track_id = next_track_ids[self.stream_pk]
-            next_track_ids[self.stream_pk] += 1
-            track_key = (self.stream_pk, self.track_id)
-            logging.warning(
-                'Using track ID %d for %s', self.track_id, content_key)
-        track_content[track_key] = content_key
-        track_id_map[track_id_key] = self.track_id
-        if self.track_id != self.representation.track_id:
-            logging.warning(
-                'File %s needs to have its track ID updated from %d to %d',
-                self.blob.filename, self.representation.track_id,
-                self.track_id)
-            return self.track_id
-        return None
-
-    @staticmethod
-    def _set_track_id(wrap: mp4.Wrapper, new_track_id: int) -> bool:
-        try:
-            moov = wrap.moov
-            moov.trak.tkhd.track_id = new_track_id
-            moov.mvex.trex.track_id = new_track_id
-            moov.mvhd.next_track_id = new_track_id + 1
-            moov.trak.tkhd.modification_time = datetime.datetime.now(tz=UTC())
-            return True
-        except AttributeError:
-            pass
-        try:
-            moof = wrap.moof
-            moof.traf.tfhd.track_id = new_track_id
-            return True
-        except AttributeError:
-            pass
-        return False
 
 # pylint: disable=unused-argument
 def before_mediafile_save(mapper, connect, mediafile):
