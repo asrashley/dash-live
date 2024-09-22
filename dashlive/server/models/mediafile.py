@@ -11,9 +11,9 @@ from typing import cast, Optional
 
 import flask
 import sqlalchemy as sa
-import sqlalchemy_jsonfield  # type: ignore
 from sqlalchemy.event import listen  # type: ignore
-from sqlalchemy.orm import reconstructor  # type: ignore
+from sqlalchemy.orm import Mapped, reconstructor, relationship  # type: ignore
+import sqlalchemy_jsonfield  # type: ignore
 
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.mpeg.dash.reference import StreamTimingReference
@@ -23,21 +23,22 @@ from .db import db
 from .key import Key
 from .mixin import ModelMixin
 from .mediafile_keys import mediafile_keys
+from .mediafile_error import MediaFileError
 
 class MediaFile(db.Model, ModelMixin):
     """representation of one MP4 file"""
     __plural__ = 'MediaFiles'
 
-    pk: db.Mapped[int] = db.Column('pk', sa.Integer, primary_key=True)
+    pk: Mapped[int] = db.Column('pk', sa.Integer, primary_key=True)
     name = sa.Column('name', sa.String(200), nullable=False, unique=True, index=True)
     stream_pk = sa.Column(
         'stream', sa.Integer, sa.ForeignKey('Stream.pk'),
         nullable=False)
-    stream = db.relationship('Stream', back_populates='media_files')
+    stream = relationship('Stream', back_populates='media_files')
     blob_pk = sa.Column('blob', sa.Integer, sa.ForeignKey('Blob.pk'),
                         nullable=False, unique=True)
-    blob = db.relationship('Blob', back_populates='mediafile',
-                           cascade='all, delete')
+    blob = relationship('Blob', back_populates='mediafile',
+                        cascade='all, delete')
     rep = sa.Column(
         'rep',
         sqlalchemy_jsonfield.JSONField(
@@ -58,7 +59,10 @@ class MediaFile(db.Model, ModelMixin):
 
     encrypted = sa.Column(sa.Boolean, default=False, index=True, nullable=False)
 
-    encryption_keys: db.Mapped[list[Key]] = db.relationship(secondary=mediafile_keys, back_populates='mediafiles')
+    encryption_keys: Mapped[list[Key]] = relationship(secondary=mediafile_keys, back_populates='mediafiles')
+
+    errors: Mapped[list["MediaFileError"]] = relationship(
+        'MediaFileError', cascade="all, delete")
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
