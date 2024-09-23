@@ -203,6 +203,8 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
                 stream=bbb,
                 bitrate=rep.bitrate,
                 content_type=rep.content_type,
+                codec_fourcc=rep.codecs.split('.')[0],
+                track_id=rep.track_id,
                 encrypted=rep.encrypted,
                 blob=blob)
             mf.set_representation(rep)
