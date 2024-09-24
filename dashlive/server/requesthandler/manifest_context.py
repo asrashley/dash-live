@@ -32,13 +32,14 @@ from dashlive.server.options.types import OptionUsage
 from dashlive.utils import objects
 from dashlive.utils.date_time import scale_timedelta
 from dashlive.utils.json_object import JsonObject
+from dashlive.utils.lang import lang_is_equal
 from dashlive.utils.timezone import UTC
 
 from .cgi_parameter_collection import CgiParameterCollection
 from .decorators import current_stream
 from .drm_context import DrmContext
 from .time_source_context import TimeSourceContext
-from .utils import is_https_request, lang_is_equal
+from .utils import is_https_request
 
 class ManifestContext:
     baseURL: str | None = None
