@@ -10,7 +10,6 @@ import re
 from typing import Any, Pattern
 
 import flask  # type: ignore
-from langcodes import standardize_tag
 
 from dashlive.utils.objects import flatten
 
@@ -84,25 +83,3 @@ def jsonify_no_content(status: int) -> flask.Response:
     response = flask.json.jsonify('')
     response.status = status
     return response
-
-
-UNDEFINED_LANGS: set[str | None] = {'und', 'zxx', None}
-
-def lang_is_equal(a: str | None,
-                  b: str | None,
-                  match_undefined: bool = False) -> bool:
-    if a == b:
-        return True
-    if match_undefined:
-        if a in UNDEFINED_LANGS:
-            return True
-        if b in UNDEFINED_LANGS:
-            return True
-    if a is None or b is None:
-        return False
-    try:
-        a = standardize_tag(a)
-        b = standardize_tag(b)
-    except ValueError:
-        return False
-    return a == b
