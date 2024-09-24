@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import cast, Callable, Optional
 
 import flask
+from langcodes import tag_is_valid
 import sqlalchemy as sa
 from sqlalchemy.event import listen  # type: ignore
 from sqlalchemy.orm import Mapped, reconstructor, relationship  # type: ignore
@@ -23,9 +24,11 @@ from dashlive.mpeg import mp4
 from dashlive.utils.buffered_reader import BufferedReader
 from dashlive.utils.date_time import to_iso_datetime
 from dashlive.utils.json_object import JsonObject
+from dashlive.utils.lang import UNDEFINED_LANGS
 from dashlive.utils.string import str_or_none
 
 from .db import db
+from .error_reason import ErrorReason
 from .key import Key
 from .mixin import ModelMixin
 from .mediafile_keys import mediafile_keys
@@ -191,22 +194,55 @@ class MediaFile(db.Model, ModelMixin):
             "value": str_or_none(kwargs.get("lang", lang)),
         }]
 
-    def parse_media_file(self, blob_folder: Path | None = None) -> bool:
+    def parse_media_file(self,
+                         blob_folder: Path | None = None,
+                         session: DatabaseSession | None = None) -> bool:
         from dashlive.drm.keymaterial import KeyMaterial
         from dashlive.drm.playready import PlayReady
+
+        if session is None:
+            session = db.session
+
+        for err in self.errors:
+            session.delete(err)
 
         if blob_folder is None:
             abs_path = self.absolute_path(self.stream.directory)
         else:
             abs_path = blob_folder / self.stream.directory
-        if not abs_path.exists():
+        src_name = abs_path / self.blob.filename
+        if not src_name.exists():
+            err = MediaFileError(
+                media_file=self,
+                reason=ErrorReason.FILE_NOT_FOUND,
+                details=f'No such file or directory: {src_name}')
+            session.add(err)
             return False
         with self.blob.open_file(abs_path, start=0, buffer_size=16384) as src:
             atom = mp4.Wrapper(
                 atom_type='wrap', position=0, size=self.blob.size,
                 parent=None, children=mp4.Mp4Atom.load(src))
         rep = Representation.load(filename=self.name, atoms=atom.children)
+        if not rep.segments:
+            err = MediaFileError(
+                media_file=self,
+                reason=ErrorReason.NO_FRAGMENTS,
+                details='Not a fragmented MP4 file')
+            session.add(err)
+            return False
+        if len(rep.segments) < 3:
+            err = MediaFileError(
+                media_file=self,
+                reason=ErrorReason.NOT_ENOUGH_FRAGMENTS,
+                details='At least 2 media segments are required')
+            session.add(err)
+            return False
         if rep.bitrate is None:
+            err = MediaFileError(
+                media_file=self,
+                reason=ErrorReason.FAILED_TO_DETECT_BITRATE,
+                details='Insufficient data to calculate bitrate')
+            session.add(err)
             return False
         self.representation = rep
         self.rep = rep.toJSON(pure=True)
@@ -222,6 +258,12 @@ class MediaFile(db.Model, ModelMixin):
                 key_model = Key(hkid=kid.hex, hkey=key.hex, computed=True)
                 session.add(key_model)
             self.encryption_keys.append(key_model)
+        if rep.lang not in UNDEFINED_LANGS and not tag_is_valid(rep.lang):
+            err = MediaFileError(
+                media_file=self,
+                reason=ErrorReason.INVALID_LANGUAGE_TAG,
+                details=f'Invalid language tag "{rep.lang}"')
+            session.add(err)
         return True
 
     def modify_media_file(self,
