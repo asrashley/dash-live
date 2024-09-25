@@ -176,6 +176,9 @@ class MediaFile(db.Model, ModelMixin):
             timescale=self.representation.timescale)
 
     def get_fields(self, **kwargs) -> list[JsonObject]:
+        errors: dict[ErrorReason, str] = {}
+        for err in self.errors:
+            errors[err.reason] = err.details
         lang: str | None = None
         if self.representation:
             lang = self.representation.lang
@@ -186,12 +189,14 @@ class MediaFile(db.Model, ModelMixin):
             "min": 1,
             "max": 0xFFFFFFFF,
             "value": kwargs.get("track_id", self.track_id),
+            "error": errors.get(ErrorReason.DUPLICATE_TRACK_IDS, None),
         }, {
             "name": "lang",
             "title": "Language",
             "type": "text",
             "maxlength": 100,
             "value": str_or_none(kwargs.get("lang", lang)),
+            "error": errors.get(ErrorReason.INVALID_LANGUAGE_TAG, None),
         }]
 
     def parse_media_file(self,
