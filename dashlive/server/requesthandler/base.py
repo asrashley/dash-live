@@ -21,8 +21,7 @@
 #############################################################################
 
 from abc import abstractmethod
-from typing import AbstractSet, Any, TypedDict
-from typing_extensions import deprecated
+from typing import AbstractSet, TypedDict
 
 import urllib.request
 import urllib.parse
@@ -41,11 +40,7 @@ from dashlive.utils.json_object import JsonObject
 
 from .csrf import CsrfProtection
 from .exceptions import CsrfFailureException
-from .utils import (
-    is_https_request,
-    jsonify,
-    jsonify_no_content
-)
+from .utils import is_https_request, jsonify
 
 class TemplateContext(TypedDict):
     http_protocol: str
@@ -136,17 +131,6 @@ class RequestHandlerBase(MethodView):
 
     def has_http_range(self):
         return 'range' in flask.request.headers
-
-    @staticmethod
-    @deprecated("use utils.jsonify() instead")
-    def jsonify(data: Any, status: int | None = None,
-                headers: dict[str, str] | None = None) -> flask.Response:
-        return jsonify(data, status, headers)
-
-    @staticmethod
-    @deprecated("use utils.jsonify_no_content() instead")
-    def jsonify_no_content(self, status: int) -> flask.Response:
-        return jsonify_no_content(status)
 
     def get_http_range(self, content_length):
         try:
