@@ -26,7 +26,14 @@
 {%- else %}
 {% set inputClass = 'form-control' %}
 {%- endif %}
-<div class="{{ rowClass }} {{ formClass }} row-field-{{ field.name }}">
+{%- if field.error %}
+{% set validationClass = 'is-invalid' %}
+{%- elif validation == 'was-validated' %}
+{% set validationClass = 'is-valid' %}
+{%- else %}
+{% set validationClass = '' %}
+{%- endif %}
+<div class="{{ rowClass }} {{ formClass }} row-field-{{ field.name }} {{ field.validation }}">
   {% if field.type != "hidden" %}
   <label class="{{ left }} col-form-label {%- if field.disabled %} disabled{%- endif %}" for="model-{{field.name}}">
     {{ field.title }}:
@@ -44,7 +51,7 @@
         type="{{ field.type }}"
         name="{{ field.name }}"
         id="model-{{ field.name }}"
-        class="{{ inputClass }} {{ field.className }}"
+        class="{{ inputClass }} {{ validationClass }} {{ field.className }}"
     {%- if model %} title="{{model.title}}" {% endif %}
     {%- if field.text %} aria-describedby="text-{{ field.name }}" {% endif %}
     {%- if field.type == 'checkbox' %}
@@ -86,7 +93,7 @@
       {% endfor %}
     {% endif %}
   {% if field.type != "hidden" %}
-    <div class="invalid-feedback"></div>
+    <div class="invalid-feedback">{{ field.error }}</div>
     {%- if field.type == "link" %}
       <a href="{{ field.href }}" class="btn btn-primary mt-2 mb-2" title="{{ field.link_title }}">
         {{ field.link_title }}
