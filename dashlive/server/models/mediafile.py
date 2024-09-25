@@ -75,26 +75,20 @@ class MediaFile(db.Model, ModelMixin):
     representation = property(get_representation, set_representation)
 
     @classmethod
-    def all(clz, order_by: tuple | None = None) -> list["MediaFile"]:
+    def all(clz, order_by: list[sa.Column] | None = None) -> list["MediaFile"]:
         return cast(list["MediaFile"], clz.get_all(order_by=order_by))
 
     @classmethod
-    def search(clz, content_type: str | None = None,
-               encrypted: bool | None = None,
+    def search(clz,
+               max_items: int | None = None,
+               order_by: list[sa.Column] | None = None,
                stream: Optional["Stream"] = None,  # noqa: F821
-               max_items: int | None = None) -> list["MediaFile"]:
-        # print('MediaFile.all()', contentType, encrypted, prefix, maxItems)
-        query = db.select(MediaFile)
-        if content_type is not None:
-            query = query.filter_by(content_type=content_type)
-        if encrypted is not None:
-            query = query.filter_by(encrypted=encrypted)
+               **kwargs) -> list["MediaFile"]:
         if stream is not None:
-            query = query.filter_by(stream_pk=stream.pk)
-        query = query.order_by(MediaFile.bitrate)
-        if max_items is not None:
-            query = query.limit(max_items)
-        return list(db.session.execute(query).scalars())
+            kwargs['stream_pk'] = stream.pk
+        if order_by is None:
+            order_by = [MediaFile.bitrate]
+        return super().search(max_items=max_items, order_by=order_by, **kwargs)
 
     @classmethod
     def get(clz, **kwargs) -> Optional["MediaFile"]:

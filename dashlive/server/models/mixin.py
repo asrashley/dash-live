@@ -1,5 +1,6 @@
 from typing import AbstractSet, Optional
 
+from sqlalchemy import Column
 from sqlalchemy.orm import class_mapper, ColumnProperty, RelationshipProperty  # type: ignore
 from sqlalchemy.orm.dynamic import AppenderQuery  # type: ignore
 
@@ -13,7 +14,7 @@ class ModelMixin:
     """
 
     @classmethod
-    def get_all(cls, order_by: tuple | None = None) -> list["ModelMixin"]:
+    def get_all(cls, order_by: list[Column] | None = None) -> list["ModelMixin"]:
         """
         Return all items from this table
         """
@@ -33,10 +34,13 @@ class ModelMixin:
 
     @classmethod
     def search(clz, max_items: int | None = None,
+               order_by: list[Column] | None = None,
                **kwargs) -> list[db.Model]:
         query = db.select(clz)
         if kwargs:
             query = query.filter_by(**kwargs)
+        if order_by is not None:
+            query = query.order_by(*order_by)
         if max_items is not None:
             query = query.limit(max_items)
         return list(db.session.execute(query).scalars())
