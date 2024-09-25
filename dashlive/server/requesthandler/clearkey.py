@@ -27,6 +27,7 @@ import flask
 
 from dashlive.server import models
 from .base import RequestHandlerBase
+from .utils import jsonify
 
 class ClearkeyHandler(RequestHandlerBase):
     def post(self):
@@ -37,7 +38,7 @@ class ClearkeyHandler(RequestHandlerBase):
         try:
             kids = req["kids"]
         except KeyError:
-            return self.jsonify('kids property missing', 400)
+            return jsonify('kids property missing', 400)
         try:
             kids = list(map(self.base64url_decode, kids))
             kids = [to_hex(k) for k in kids]
@@ -55,7 +56,7 @@ class ClearkeyHandler(RequestHandlerBase):
             }
         except (TypeError, ValueError, KeyError) as err:
             result["error"] = f'Error: {err}'
-        return self.jsonify(result)
+        return jsonify(result)
 
     def base64url_encode(self, b: bytes) -> str:
         b = str(base64.b64encode(b), 'ascii')
