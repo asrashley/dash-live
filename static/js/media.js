@@ -1,4 +1,6 @@
+/* jshint esversion: 11 */
 import $ from '/libs/jquery.js';
+import { enableTooltips } from './tooltips.js';
 
 function addClickListeners() {
     $('#keys .add-key').on('click', addKey);
@@ -339,3 +341,4 @@ function closeDialog() {
 }
 
 addClickListeners();
+enableTooltips();
