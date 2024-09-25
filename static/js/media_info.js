@@ -1,5 +1,6 @@
 import $ from '/libs/jquery.js';
 import { decode } from './prod/codec-string.js';
+import { enableTooltips } from './tooltips.js';
 
 function setCodecDescription() {
     const codecDescription = decode($('.codec-string').text());
@@ -8,3 +9,4 @@ function setCodecDescription() {
 }
 
 setCodecDescription();
+enableTooltips();
