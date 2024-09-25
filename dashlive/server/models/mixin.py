@@ -7,6 +7,7 @@ from sqlalchemy.orm.dynamic import AppenderQuery  # type: ignore
 from dashlive.utils.json_object import JsonObject
 
 from .db import db
+from .session import DatabaseSession
 
 class ModelMixin:
     """
@@ -14,27 +15,35 @@ class ModelMixin:
     """
 
     @classmethod
-    def get_all(cls, order_by: list[Column] | None = None) -> list["ModelMixin"]:
+    def get_all(cls,
+                session: DatabaseSession | None = None,
+                order_by: list[Column] | None = None) -> list["ModelMixin"]:
         """
         Return all items from this table
         """
         query = db.select(cls)
         if order_by is not None:
             query = query.order_by(*order_by)
-        return db.session.execute(query).scalars()
+        if session is None:
+            session = db.session
+        return session.execute(query).scalars()
 
     @classmethod
-    def get_one(cls, **kwargs) -> Optional["ModelMixin"]:
+    def get_one(cls,
+                session: DatabaseSession | None = None,
+                **kwargs) -> Optional["ModelMixin"]:
         """
         Get one object from a model, or None if not found
         """
-        return db.session.execute(
+        if session is None:
+            session = db.session
+        return session.execute(
             db.select(cls).filter_by(**kwargs)).scalar_one_or_none()
-        # return session.query(cls).filter_by(**kwargs).one_or_none()
 
     @classmethod
     def search(clz, max_items: int | None = None,
                order_by: list[Column] | None = None,
+               session: DatabaseSession | None = None,
                **kwargs) -> list[db.Model]:
         query = db.select(clz)
         if kwargs:
@@ -43,15 +52,21 @@ class ModelMixin:
             query = query.order_by(*order_by)
         if max_items is not None:
             query = query.limit(max_items)
-        return list(db.session.execute(query).scalars())
+        if session is None:
+            session = db.session
+        return list(session.execute(query).scalars())
 
     @classmethod
-    def count(cls, **kwargs) -> int:
+    def count(cls,
+              session: DatabaseSession | None = None,
+              **kwargs) -> int:
         query = db.select(cls)
         if kwargs:
             query = query.filter_by(**kwargs)
         query = query.with_only_columns(db.func.count(cls.pk))
-        return db.session.execute(query).scalar_one()
+        if session is None:
+            session = db.session
+        return session.execute(query).scalar_one()
 
     def to_dict(self, exclude: AbstractSet[str] | None = None,
                 only: AbstractSet[str] | None = None,
