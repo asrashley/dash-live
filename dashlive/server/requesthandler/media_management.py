@@ -21,6 +21,7 @@
 #############################################################################
 
 import datetime
+import html
 import logging
 from pathlib import Path
 from typing import cast
@@ -31,6 +32,7 @@ from werkzeug.datastructures import FileStorage
 
 from dashlive.mpeg import mp4
 from dashlive.server import models
+from dashlive.server.models.error_reason import ErrorReason
 from dashlive.server.routes import Route
 from dashlive.utils.buffered_reader import BufferedReader
 from dashlive.utils.date_time import timecode_to_timedelta
@@ -324,26 +326,42 @@ class IndexMediaFile(HTMLHandlerBase):
     decorators = [uses_media_file, login_required(permission=models.Group.MEDIA)]
 
     def get(self, mfid: str) -> flask.Response:
-        result = {"error": None}
-        status = 200
+        result = {"errors": []}
         try:
             self.check_csrf('files', flask.request.args)
         except (ValueError, CsrfFailureException) as err:
-            result = {"error": str(err)}
-            status = 401
-        if result["error"] is None:
-            mf = current_media_file
-            if mf.parse_media_file():
-                models.db.session.commit()
-                result = {
-                    "indexed": mf.pk,
-                    "representation": mf.rep,
-                }
-            else:
-                result['error'] = 'Failed to parse media file'
+            result["errors"].append(html.escape(f'{err}'))
+            return jsonify(result, status=401)
+
+        mf = current_media_file
+        if mf.parse_media_file():
+            models.db.session.commit()
+            result.update({
+                "indexed": mf.pk,
+                "representation": mf.rep,
+            })
+            codecs: set[str] = set()
+            for mfiles in models.MediaFile.search(
+                    stream_pk=mf.stream_pk, track_id=mf.track_id):
+                if mfiles.codec_fourcc is not None:
+                    codecs.add(mfiles.codec_fourcc)
+            if len(codecs) > 1:
+                details = (
+                    f'Track ID {mf.track_id} used for multiple codecs ' +
+                    f'{" ,".join(codecs)}')
+                err = models.MediaFileError(
+                    media_pk=mf.pk,
+                    reason=ErrorReason.DUPLICATE_TRACK_IDS,
+                    details=details)
+                models.db.session.add(err)
+                result['errors'].append(details)
+        else:
+            result['errors'].append('Failed to parse media file')
+        for err in mf.errors:
+            result['errors'].append(f'{err.reason.name}: {err.details}')
         csrf_key = self.generate_csrf_cookie()
         result["csrf"] = self.generate_csrf_token('files', csrf_key)
-        return jsonify(result, status=status)
+        return jsonify(result)
 
 
 class MediaSegmentList(HTMLHandlerBase):
