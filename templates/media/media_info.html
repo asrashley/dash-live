@@ -1,4 +1,5 @@
 {% extends "layout.html" %}
+{% import 'media/error_reason.html' as error_reason %}
 
 {% block extraheaders %}
 <script src="{{ url_for('static', filename='js/media_info.js') }}" type="module"></script>
@@ -8,7 +9,7 @@
 <div class="container media-info">
   <div class="card">
     <div class="card-header">
-      Media fille &quot;{{ mediafile.name }}&quot;
+      Media file &quot;{{ mediafile.name }}&quot;
       <div class="float-end" role="group">
         {%- if user_can_modify %}
           <a class="btn btn-danger me-2"
@@ -19,6 +20,14 @@
       </div>
     </div>
     <div class="card-body">
+      {%- for err in mediafile.errors %}
+        {%- if loop.first %}
+          <h5 class="card-title text-center text-danger">
+            {{ mediafile.name }} has errors!
+          </h5>
+        {%- endif %}
+        <div class="row mb-2">{{ error_reason.as_columns(err, ['col-3', 'col-9']) }}</div>
+      {% endfor -%}
       <div class="row">
 	<div class="col-3 field-title">Filename:</div>
 	<div class="col-9">{{ mediafile.blob.filename }}</div>

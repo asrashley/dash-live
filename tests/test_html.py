@@ -133,93 +133,124 @@ class TestHtmlPageHandlers(FlaskTestBase):
         finally:
             self.current_url = None
 
-    def test_stream_edit_page(self):
+    def test_stream_edit_page(self) -> None:
         self.setup_media()
-        stream = models.Stream.get(title='Big Buck Bunny')
+        with self.app.app_context():
+            stream = models.Stream.get(title='Big Buck Bunny')
         url = flask.url_for('view-stream', spk=stream.pk)
 
         try:
             self.current_url = url
-
-            self.logout_user()
-            response = self.client.get(url)
-            self.assertEqual(response.status_code, 200)
-            # user must be logged in to edit media
-            self.assertNotIn('Editing', response.text)
-
-            self.login_user(is_admin=False)
-            response = self.client.get(url)
-            self.assertEqual(response.status_code, 200)
-            # user must be logged in to edit media
-            self.assertNotIn('Editing', response.text)
-            self.logout_user()
-
-            # user must be logged in with media group to edit media
-            self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)
-            response = self.client.get(url)
-            self.assertEqual(response.status_code, 200)
-            self.assertIn('Editing', response.text)
-            model_edit_fields: set[str] = {
-                'Title', 'Directory', 'Marlin LA URL', 'PlayReady LA URL',
-                'Timing reference', 'Stream defaults',
-            }
-            for field in model_edit_fields:
-                self.assertIn(f'{field}:', response.text)
-            html = BeautifulSoup(response.text, 'lxml')
-            for input_field in html.find(id="edit-model").find_all('input'):
-                name = input_field.get('name')
-                if name == 'csrf_token':
-                    self.assertEqual(
-                        input_field.get('type'),
-                        'hidden')
-                    continue
-                self.assertEqual(f'model-{name}', input_field.get('id'))
-                expected = getattr(stream, name)
-                actual = input_field.get('value')
-                self.assertEqual(
-                    expected, actual,
-                    msg=f'Expected field {name} to have "{expected}" but got "{actual}"')
-            for input_field in html.find(id="upload-form").find_all('input'):
-                name = input_field.get('name')
-                if name in {'csrf_token', 'stream'}:
-                    self.assertEqual(
-                        input_field.get('type'),
-                        'hidden')
-                if name == 'stream':
-                    self.assertEqual(f'{stream.pk}', input_field.get('value'))
-            found_media: set[int] = set()
-            for row in html.find(id='media-files').tbody.find_all('tr'):
-                try:
-                    media_id = row['id']
-                except KeyError:
-                    continue
-                media = models.MediaFile.get(name=media_id)
-                self.assertIsNotNone(media, f'Failed to find MediaFile {media_id}')
-                expected_values: dict[str, str] = {
-                    'codec': media.representation.codecs,
-                    'content-type': media.content_type,
-                    'created': dateTimeFormat(media.blob.created, '%H:%M:%S %d/%m/%Y'),
-                    'filename': media.name,
-                    'filesize': sizeFormat(media.blob.size),
-                    'sha1-hash': media.blob.sha1_hash,
-                }
-                found_media.add(media_id)
-                for cell in row.find_all('td'):
-                    class_names = cell.attrs['class']
-                    for name in class_names:
-                        if name not in expected_values:
-                            continue
-                        contents: str = ' '.join(cell.stripped_strings)
-                        self.assertIn(
-                            expected_values[name], contents,
-                            (f'Expected cell "{class_names}" to contain ' +
-                             f'"{expected_values[name]}" but found "{contents}"'))
-            for media in models.MediaFile.all():
-                self.assertIn(
-                    media.name, found_media,
-                    f'Expected media file {media.name} to have been listed in media-files')
+            self.check_stream_edit_page(url, stream)
         finally:
             self.current_url = None
+
+    def test_stream_edit_page_with_file_errors(self) -> None:
+        self.setup_media()
+        with self.app.app_context():
+            stream = models.Stream.get(title='Big Buck Bunny')
+            media = stream.media_files[0]
+            media.lang = 'foo'
+            err = models.MediaFileError(
+                media_file=media,
+                reason=models.ErrorReason.INVALID_LANGUAGE_TAG,
+                details=f'Invalid language tag "{ media.lang }"')
+            models.db.session.add(err)
+            models.db.session.commit()
+            url = flask.url_for('view-stream', spk=stream.pk)
+            try:
+                self.current_url = url
+                self.check_stream_edit_page(url, stream)
+            finally:
+                self.current_url = None
+
+    def check_stream_edit_page(self, url: str, stream: models.Stream) -> None:
+        self.logout_user()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        # user must be logged in to edit media
+        self.assertNotIn('Editing', response.text)
+
+        self.login_user(is_admin=False)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        # user must be logged in to edit media
+        self.assertNotIn('Editing', response.text)
+        self.logout_user()
+
+        # user must be logged in with media group to edit media
+        self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('Editing', response.text)
+        model_edit_fields: set[str] = {
+            'Title', 'Directory', 'Marlin LA URL', 'PlayReady LA URL',
+            'Timing reference', 'Stream defaults',
+        }
+        for field in model_edit_fields:
+            self.assertIn(f'{field}:', response.text)
+        html = BeautifulSoup(response.text, 'lxml')
+        for input_field in html.find(id="edit-model").find_all('input'):
+            name = input_field.get('name')
+            if name == 'csrf_token':
+                self.assertEqual(
+                    input_field.get('type'),
+                    'hidden')
+                continue
+            self.assertEqual(f'model-{name}', input_field.get('id'))
+            expected = getattr(stream, name)
+            actual = input_field.get('value')
+            self.assertEqual(
+                expected, actual,
+                msg=f'Expected field {name} to have "{expected}" but got "{actual}"')
+        for input_field in html.find(id="upload-form").find_all('input'):
+            name = input_field.get('name')
+            if name in {'csrf_token', 'stream'}:
+                self.assertEqual(
+                    input_field.get('type'),
+                    'hidden')
+            if name == 'stream':
+                self.assertEqual(f'{stream.pk}', input_field.get('value'))
+        found_media: set[int] = set()
+        for row in html.find(id='media-files').tbody.find_all('tr'):
+            try:
+                media_id = row['id']
+            except KeyError:
+                continue
+            media = models.MediaFile.get(name=media_id)
+            self.assertIsNotNone(media, f'Failed to find MediaFile {media_id}')
+            expected_values: dict[str, str] = {
+                'codec': media.representation.codecs,
+                'content-type': media.content_type,
+                'created': dateTimeFormat(media.blob.created, '%H:%M:%S %d/%m/%Y'),
+                'filename': media.name,
+                'filesize': sizeFormat(media.blob.size),
+                'sha1-hash': media.blob.sha1_hash,
+                'media-error': ' '.join([
+                    f'{ err.reason.name }: { err.details }' for err in media.errors
+                ]),
+            }
+            found_media.add(media_id)
+            for cell in row.find_all('td'):
+                class_names = cell.attrs['class']
+                for name in class_names:
+                    if name not in expected_values:
+                        continue
+                    contents: str = ' '.join(cell.stripped_strings)
+                    self.assertIn(
+                        expected_values[name], contents,
+                        (f'Expected cell "{class_names}" to contain ' +
+                         f'"{expected_values[name]}" but found "{contents}"'))
+        for media in models.MediaFile.all():
+            self.assertIn(
+                media.name, found_media,
+                f'Expected media file {media.name} to have been listed in media-files')
+            if media.errors:
+                messages = html.find(class_='messages')
+                contents: str = ' '.join(messages.stripped_strings)
+                errs = ' '.join([err.reason.name for err in media.errors])
+                self.assertIn(
+                    f'File {media.name} has errors: { errs }', contents)
 
     def test_delete_stream(self):
         self.setup_media()

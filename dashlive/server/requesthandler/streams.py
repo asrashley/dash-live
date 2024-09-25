@@ -59,7 +59,7 @@ class ListStreamsTemplateContext(TemplateContext):
     csrf_tokens: CsrfTokenCollection
     drm: dict[str, DrmLicenseContext]
     keys: list[models.Key]
-    streams: list[dict]
+    streams: list[models.Stream]
     user_can_modify: bool
 
 class ListStreams(HTMLHandlerBase):
@@ -193,9 +193,10 @@ class EditStreamTemplateContext(TemplateContext):
     csrf_tokens: CsrfTokenCollection | None
     encrypted_adaptation_sets: list[AdaptationSet]
     error: str | None
+    has_file_errors: bool
     keys: list[models.Key]
     layout: str
-    media_files: list[dict]
+    media_files: list[models.MediaFile]
     next: str
     stream: models.Stream
     upload_url: str
@@ -245,10 +246,14 @@ class EditStream(HTMLHandlerBase):
             'media_files': [],
         })
         kids: dict[str, models.Key] = {}
+        has_file_errors: bool = False
         for mf in current_stream.media_files:
-            stream['media_files'].append(mf.toJSON(convert_date=False))
+            stream['media_files'].append(mf)
             for mk in mf.encryption_keys:
                 kids[mk.hkid] = mk
+            if mf.errors:
+                has_file_errors = True
+        context['has_file_errors'] = has_file_errors
         context['keys'] = [kids[hkid] for hkid in sorted(kids.keys())]
         if is_ajax():
             exclude: set[str] = set()
@@ -256,12 +261,16 @@ class EditStream(HTMLHandlerBase):
                 **stream,
                 'csrf_tokens': context['csrf_tokens'],
                 'upload_url': context['upload_url'],
+                'media_files': [
+                    mf.toJSON(convert_date=False) for mf in stream['media_files']
+                ],
             }
             if not current_user.has_permission(models.Group.MEDIA):
                 del result['upload_url']
                 exclude.add('key')
             result['keys'] = [
-                k.toJSON(exclude=exclude, pure=True) for k in context['keys']]
+                k.toJSON(exclude=exclude, pure=True) for k in context['keys']
+            ]
             return jsonify(result)
         options = self.calculate_options('vod', flask.request.args)
         options.audioCodec = 'any'
