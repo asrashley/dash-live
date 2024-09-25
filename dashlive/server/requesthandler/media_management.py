@@ -182,9 +182,12 @@ class MediaInfo(HTMLHandlerBase):
 
 
 class EditMediaContext(ManifestContext):
+    form_id: str
     model: models.MediaFile
     fields: dict[str, JsonObject]
+    error: str | None
     cancel_url: str
+    validation: str
 
 class EditMedia(HTMLHandlerBase):
     """
@@ -204,12 +207,19 @@ class EditMedia(HTMLHandlerBase):
         mf = current_media_file
         csrf_key = self.generate_csrf_cookie()
         csrf_token = self.generate_csrf_token('files', csrf_key)
+        error: str | None = None
+        if mf.errors:
+            errs: set[str] = {err.reason.name for err in mf.errors}
+            error = f'{ mf.name } has errors: { " ,".join(errs) }'
         context = cast(EditMediaContext, self.create_context(
+            form_id='edit_media',
             title=f'Edit file: {mf.name}',
             model=mf,
             cancel_url=flask.url_for('media-info', spk=spk, mfid=mfid),
             csrf_token=csrf_token,
-            fields=mf.get_fields(**flask.request.args)))
+            error=error,
+            fields=mf.get_fields(**flask.request.args),
+            validation='was-validated'))
         return flask.render_template('media/edit_media.html', **context)
 
     @csrf_token_required(service='files', next_url=next_url)

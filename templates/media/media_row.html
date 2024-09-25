@@ -1,13 +1,21 @@
+{%- import 'media/error_reason.html' as error_reason %}
+
 <tr id="{{media.name}}">
   {% if user_can_modify %}
   <td class="index">
-        {% if media.representation %}
-        <button class="btn btn-sm btn-info btn-index" data-bs-toggle="modal" data-bs-target="#dialog-box"
-                data-key="{{media.pk}}">Re-index</button>
-        {% else %}
-        <button class="btn btn-sm btn-warning btn-index" data-bs-toggle="modal" data-bs-target="#dialog-box"
-                data-key="{{media.pk}}">Index</button>
-        {% endif %}
+    {% if media.errors %}
+      <a class="btn btn-sm btn-warning btn-index"
+         href="{{ url_for('edit-media', spk=stream.pk, mfid=media.pk) }}">Edit</a>
+    {% elif media.representation %}
+      <button class="btn btn-sm btn-info btn-index"
+              data-bs-toggle="modal"
+              data-bs-target="#dialog-box"
+              data-key="{{media.pk}}">Re-index</button>
+    {% else %}
+      <button class="btn btn-sm btn-warning btn-index"
+              data-bs-toggle="modal" data-bs-target="#dialog-box"
+              data-key="{{media.pk}}">Index</button>
+    {% endif %}
   </td>
   <td class="delete">
     {% if media.blob %}
@@ -17,9 +25,17 @@
     {% endif %}
   </td>
   {% endif %}
-      <td class="filename text-primary">
-        <a href="{{url_for('media-info', spk=stream.pk, mfid=media.pk)}}">{{media.name}}</a>
+  <td class="filename text-primary">
+    <a name="{{ media.name }}"></a>
+    <a href="{{url_for('media-info', spk=stream.pk, mfid=media.pk)}}">{{media.name}}</a>
+  </td>
+      {%- if media.errors %}
+      <td class="media-error" colspan="3">
+        {%- for err in media.errors %}
+        <p>{{ error_reason.as_spans(err) }}</p>
+        {% endfor -%}
       </td>
+      {%- else %}
       <td class="filesize">
         {{media.blob.size|sizeFormat}}
       </td>
@@ -29,6 +45,7 @@
       <td class="sha1-hash ellipsis" data-text="{{media.blob.sha1_hash}}">
         {{media.blob.sha1_hash}}
       </td>
+      {%- endif %}
       <td class="content-type">
         {{media.content_type}}
       </td>

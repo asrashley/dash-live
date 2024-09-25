@@ -1,0 +1,26 @@
+{% macro as_spans(error, with_details = True) -%}
+<span class="badge text-bg-warning error-reason">
+  <a href="#" data-bs-toggle="tooltip"
+     data-bs-title="{{ error.reason.description }}"
+     >
+    {%- if with_details %}
+    {{ error.reason.name }}:
+    {%- else %}
+    {{ error.reason.name }}
+    {% endif -%}</a>
+</span>
+{%- if with_details %}
+<span class="error-details fw-bold text-danger">{{ error.details }}</span>
+{%- endif %}
+{%- endmacro %}
+
+{% macro as_columns(error, columns) -%}
+<div class="badge text-bg-warning error-reason {{ columns[0] }}">
+  <a href="#" data-bs-toggle="tooltip"
+     data-bs-title="{{ error.reason.description }}"
+     >{{ error.reason.name }}</a>:
+</div>
+<div class="error-details fw-bold text-danger {{ columns[1] }}">
+  {{ error.details }}
+</div>
+{%- endmacro %}
