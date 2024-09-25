@@ -10,10 +10,13 @@
     </div>
     <div class="card-body">
       <form
-	{% if submit_url %}action="{{submit_url}}"{% endif %}
+	{%- if submit_url %}action="{{submit_url}}"{% endif %}
 	id="{{ form_id }}"
 	method="POST"
 	name="edit-model"
+        {%- if validation %}
+        class="{{ validation }}"
+        {% endif -%}
 	>
 	{% if error %}
 	<div class="alert alert-danger" role="alert">{{error}}</div>
