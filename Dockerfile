@@ -66,6 +66,7 @@ RUN echo "source $HOME/.venv/bin/activate && python -m lesscpy static/css -o sta
 COPY deploy/runtests.sh $HOME/dash-live/
 RUN chmod +x $HOME/dash-live/*.sh
 RUN $HOME/dash-live/lesscpy.sh
+RUN python -m compileall -f -j 0 /home/dash/dash-live/dashlive
 ENTRYPOINT ["/home/dash/dash-live/runserver.sh"]
 
 FROM base as dashlive-nginx
