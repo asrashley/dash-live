@@ -195,19 +195,19 @@ function indexFile(ev) {
     }
     const csrf = $('#media-files').data('csrf');
     const dialog = $('#dialog-box');
-    dialog.find(".modal-body").html('<p>Indexing ' + filename +
-                                    '</p><div class="error"></div>');
+    dialog.find(".modal-body").html(`<p>Indexing ${ filename }</p>`);
     showDialog();
     $.ajax({
-        url: '/media/index/' + blobId + '?csrf_token=' + csrf,
+        url: `/media/index/${ blobId }?csrf_token=${ csrf }`,
         method: 'GET',
         dataType: 'json',
     }).done(function (result) {
         if (result.csrf) {
             $('#media-files').data('csrf', result.csrf);
         }
-        if (result.error) {
-            dialog.find('.modal-body .error').text(result.error);
+        if (result.errors && result.errors.length) {
+            const errs = result.errors.map(err => `<p>${ err }</p>`);
+            dialog.find('.modal-body').html(`<div class="error">${ errs }</div>`);
             return;
         }
         dialog.find(".modal-body").html(`<p>Indexing ${filename} complete</p>`);
@@ -226,10 +226,10 @@ function indexFile(ev) {
             $row.find('.btn-index').addClass('btn-info').removeClass('btn-warning').text('Re-index');
             window.setTimeout(closeDialog, 750);
         }
-    }).fail(function (e) {
+    }).fail((e) => {
         const err = dialog.find('.modal-body .error');
         if (e.statusText) {
-            err.text(e.status + ' ' + e.statusText);
+            err.text(`${ e.status } ${ e.statusText}`);
         } else if (e.responseText) {
             err.text(e.responseText);
         } else {

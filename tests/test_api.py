@@ -26,11 +26,15 @@ import copy
 import io
 import logging
 import os
+from typing import cast
 import unittest
+from unittest.mock import patch
 
 from bs4 import BeautifulSoup
 import flask
 
+from dashlive.mpeg.dash.representation import Representation
+from dashlive.mpeg.dash.segment import Segment
 from dashlive.server import models
 from dashlive.server.requesthandler.streams import ViewStreamAjaxResponse
 from dashlive.utils.date_time import to_iso_datetime
@@ -173,12 +177,68 @@ class TestRestApi(FlaskTestBase):
             response = self.client.get(url)
             self.assert200(response)
 
-    def test_index_stream(self):
+    def test_index_stream(self) -> None:
         """
         Test indexing of one representation file
         """
         self.setup_media()
+        for mf in cast(list[models.MediaFile], models.MediaFile.get_all()):
+            with self.subTest(mediafile=mf.name):
+                self.check_index_stream(mf)
+
+    def test_index_stream_parsing_fails(self) -> None:
+        self.setup_media()
         media_file = models.MediaFile.search(max_items=1)[0]
+        with patch('dashlive.server.models.mediafile.MediaFile.parse_media_file') as mock_parse:
+            mock_parse.return_value = False
+            self.check_index_stream(media_file, errors=[
+                'Failed to parse media file'
+            ])
+
+    def test_index_stream_no_fragments(self) -> None:
+        self.setup_media()
+        media_file = models.MediaFile.search(max_items=1)[0]
+        with patch('dashlive.mpeg.dash.representation.Representation.load') as mock_load:
+            mock_load.return_value = Representation()
+            self.check_index_stream(media_file, errors=[
+                'Failed to parse media file',
+                'NO_FRAGMENTS: Not a fragmented MP4 file',
+            ])
+
+    def test_index_stream_not_enough_fragments(self) -> None:
+        self.setup_media()
+        media_file = models.MediaFile.search(max_items=1)[0]
+        segments: list[Segment] = [
+            Segment(pos=0, size=854),
+            Segment(pos=854, size=182825, duration=960),
+        ]
+
+        with patch('dashlive.mpeg.dash.representation.Representation.load') as mock_load:
+            mock_load.return_value = Representation(segments=segments, bitrate=None)
+            self.check_index_stream(media_file, errors=[
+                'Failed to parse media file',
+                'NOT_ENOUGH_FRAGMENTS: At least 2 media segments are required',
+            ])
+
+    def test_index_stream_no_bitrate(self) -> None:
+        self.setup_media()
+        media_file = models.MediaFile.search(max_items=1)[0]
+        segments: list[Segment] = [
+            Segment(pos=0, size=854),
+            Segment(pos=854, size=182825, duration=960),
+            Segment(pos=183679, size=213430, duration=960),
+        ]
+
+        with patch('dashlive.mpeg.dash.representation.Representation.load') as mock_load:
+            mock_load.return_value = Representation(segments=segments, bitrate=None)
+            self.check_index_stream(media_file, errors=[
+                'Failed to parse media file',
+                'FAILED_TO_DETECT_BITRATE: Insufficient data to calculate bitrate',
+            ])
+
+    def check_index_stream(self,
+                           media_file: models.MediaFile,
+                           errors: list[str] | None = None) -> None:
 
         url = flask.url_for('index-media-file', mfid=media_file.pk, index=1)
 
@@ -210,10 +270,14 @@ class TestRestApi(FlaskTestBase):
         self.assert200(response)
         actual = response.json
         expected = {
-            "indexed": media_file.pk,
-            "representation": media_file.rep,
+            "errors": [] if errors is None else errors,
             "csrf": actual["csrf"],
         }
+        if errors is None:
+            expected.update({
+                "indexed": media_file.pk,
+                "representation": media_file.rep,
+            })
         self.assertObjectEqual(expected, actual)
 
     def test_delete_stream(self):
