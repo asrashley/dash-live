@@ -17,6 +17,8 @@
         {%- if validation %}
         class="{{ validation }}"
         {% endif -%}
+        {% block form_element %}
+        {% endblock %}
 	>
 	{% if error %}
 	<div class="alert alert-danger" role="alert">{{error}}</div>
