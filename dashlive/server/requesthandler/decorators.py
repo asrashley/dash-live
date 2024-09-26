@@ -6,6 +6,7 @@
 #
 #############################################################################
 from functools import wraps
+import logging
 from typing import cast, Callable
 
 import flask  # type: ignore
@@ -59,8 +60,9 @@ def csrf_token_required(service: str, next_url: Callable[..., str | None]):
                     raise CsrfFailureException('Failed to find csrf_token')
                 CsrfProtection.check(service, token)
             except (ValueError, CsrfFailureException) as err:
+                logging.info('CSRF failure: %s', err)
                 if is_ajax():
-                    return jsonify({'error': f'{err}'}, 401)
+                    return jsonify({'error': 'CSRF failure'}, 401)
                 flask.flash(f'CSRF error: {err}', 'error')
                 url = next_url(*args, **kwargs)
                 if url is None:

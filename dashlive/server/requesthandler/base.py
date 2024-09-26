@@ -21,6 +21,7 @@
 #############################################################################
 
 from abc import abstractmethod
+import logging
 from typing import AbstractSet, TypedDict
 
 import urllib.request
@@ -296,7 +297,8 @@ class DeleteModelBase(HTMLHandlerBase):
         try:
             self.check_csrf(self.CSRF_TOKEN_NAME, flask.request.form)
         except (ValueError, CsrfFailureException) as err:
-            return flask.make_response(f'CSRF failure: {err}', 400)
+            logging.info('CSRF failure: %s', err)
+            return flask.make_response('CSRF failure', 400)
         model = self.get_model_dict()
         result = self.delete_model()
         if not result.get('error'):
@@ -311,8 +313,9 @@ class DeleteModelBase(HTMLHandlerBase):
         try:
             self.check_csrf(self.CSRF_TOKEN_NAME, flask.request.args)
         except (ValueError, CsrfFailureException) as err:
+            logging.info('CSRF failure: %s', err)
             result = {
-                "error": f'CSRF failure: {err}'
+                "error": 'CSRF failure'
             }
         if result['error'] is None:
             result = self.delete_model()
