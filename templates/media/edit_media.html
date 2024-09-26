@@ -9,3 +9,11 @@ Edit file &quot;{{model.name}}&quot; ({{ model.blob.filename }})
    class="btn btn-danger delete-file"
    data-id="{{model.pk}}">Delete file &quot;{{model.name}}&quot;</a>
 {% endblock %}
+
+{% block form_element %}
+data-validate-url="{{url_for('check-media-changes', spk=model.stream.pk, mfid=model.pk)}}"
+{% endblock %}
+
+{% block extrascripts %}
+<script src="{{url_for('static', filename='js/edit_media.js')}}" type="module" ></script>
+{% endblock %}

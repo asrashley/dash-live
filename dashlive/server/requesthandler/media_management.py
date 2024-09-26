@@ -28,6 +28,7 @@ from typing import cast
 
 import flask
 from flask_login import current_user
+from langcodes import tag_is_valid
 from werkzeug.datastructures import FileStorage
 
 from dashlive.mpeg import mp4
@@ -47,7 +48,7 @@ from .decorators import (
 )
 from .exceptions import CsrfFailureException
 from .manifest_context import ManifestContext
-from .utils import is_ajax, jsonify
+from .utils import is_ajax, jsonify, jsonify_no_content
 
 class UploadHandler(RequestHandlerBase):
     decorators = [uses_stream, login_required(permission=models.Group.MEDIA)]
@@ -562,3 +563,48 @@ class MediaSegmentInfo(HTMLHandlerBase):
             else:
                 for dsc in atom['descriptors']:
                     self.filter_object(dsc)
+
+
+class ValidateMediaChanges(HTMLHandlerBase):
+    """
+    Handler used for form validation when editing a media file
+    """
+    decorators = [
+        uses_media_file,
+        uses_stream,
+        login_required(permission=models.Group.MEDIA),
+    ]
+
+    def post(self, spk: int, mfid: int) -> flask.Response:
+        if not is_ajax():
+            return flask.make_response('Invalid request', 400)
+        data = flask.request.json
+        try:
+            lang = data['lang']
+            track_id = int(data['track_id'], 10)
+        except (KeyError, ValueError):
+            return jsonify_no_content(400)
+        errors: dict[str, str] = {
+            "lang": '',
+            "track_id": '',
+        }
+        if not tag_is_valid(lang):
+            errors["lang"] = f'"{lang}" is not a valid BCP-47 language tag'
+        codecs: set(str) = set()
+        if current_media_file.codec_fourcc is not None:
+            codecs.add(current_media_file.codec_fourcc)
+        for item in models.MediaFile.search(
+                stream_pk=current_media_file.stream_pk, track_id=track_id):
+            if item.codec_fourcc is not None:
+                codecs.add(item.codec_fourcc)
+        if len(codecs) > 1:
+            codecs.remove(current_media_file.codec_fourcc)
+            track_names: list[str] = []
+            for item in models.MediaFile.search(
+                    stream_pk=current_media_file.stream_pk, track_id=track_id):
+                if item.codec_fourcc in codecs:
+                    track_names.append(f'"{item.name}"')
+            errors['track_id'] = (
+                f'Track ID {track_id} is already in use for {" ".join(codecs)} ' +
+                f'tracks {", ".join(track_names)}')
+        return jsonify(dict(errors=errors))

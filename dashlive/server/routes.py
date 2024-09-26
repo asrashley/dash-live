@@ -138,6 +138,11 @@ routes = {
         handler='media_management.EditMedia',
         title='Edit Media',
         parent='list-streams'),
+    "check-media-changes": Route(
+        r'/stream/<int:spk>/<int:mfid>/validate',
+        handler='media_management.ValidateMediaChanges',
+        title='Edit Media',
+        parent='list-streams'),
     "delete-media": Route(
         r'/stream/<int:spk>/<int:mfid>/delete',
         handler='media_management.DeleteMedia',
