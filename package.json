@@ -1,8 +1,19 @@
 {
+  "name": "dash-live",
+  "description": "A simulated MPEG DASH service",
+  "license": "Apache-2.0",
+  "repository": "github:asrashley/dash-live",
+  "browser": "static/js/index.js",
+  "type": "module",
+  "engines": {
+    "node": ">=16.20.2",
+    "npm": ">=8.19.4"
+  },
   "dependencies": {
     "jshint": "^2.13.6"
   },
   "scripts": {
     "lint": "jshint ./static/js/*.js ./static/js/legacy/*.js"
-  }
+  },
+  "private": true
 }
