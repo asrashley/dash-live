@@ -8,8 +8,12 @@ from .key import Key, KeyMaterial
 from .mediafile import MediaFile
 from .mediafile_error import MediaFileError
 from .stream import Stream
+from .period import Period
+from .multi_period_stream import MultiPeriodStream
+from .adaptation_set import AdaptationSet
 
 __all__ = [
-    "db", "ErrorReason", "Group", "Token", "TokenType", "User", "Blob", "Key",
-    "KeyMaterial", "MediaFile", "MediaFileError", "Stream"
+    "db", "AdaptationSet", "Blob", "ContentRole", "ErrorReason", "Group", "Key",
+    "KeyMaterial", "MediaFile", "MediaFileError", "MultiPeriodStream", "Period",
+    "Stream", "Token", "TokenType", "User"
 ]
