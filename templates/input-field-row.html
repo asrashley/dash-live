@@ -1,0 +1,48 @@
+{%- if field.rowClass %}
+{% set rowClass = field.rowClass %}
+{%- else %}
+{% set rowClass = "row mb-3" %}
+{%- endif %}
+{% if field.prefix %}
+{% set rowClass = rowClass + " prefix-" + field.prefix %}
+{% endif %}
+{% set formClass = "form-group" %}
+{%- if field.columns %}
+  {% set left, middle, right = field.columns %}
+{%- else %}
+  {% set left = "col-2" %}
+  {%- if field.text %}
+    {% set middle = "col-5" %}
+    {% set right = "col-5" %}
+  {%- else %}
+    {% set middle = "col-10" %}
+    {% set right = "" %}
+  {%- endif %}
+{%- endif %}
+<div class="{{ rowClass }} {{ formClass }} row-field-{{ field.name }} {{ field.validation }}">
+  <label class="{{ left }} col-form-label {%- if field.disabled %} disabled{%- endif %}" for="model-{{field.name}}">
+    {{ field.title }}:
+  </label>
+  <div class="{{ middle }}">
+    {% include "input-element.html" %}
+    
+    <div class="invalid-feedback">{{ field.error }}</div>
+    {%- if field.type == "link" %}
+      <a href="{{ field.href }}" class="btn btn-primary mt-2 mb-2" title="{{ field.link_title }}">
+        {{ field.link_title }}
+      </a>
+    {%- endif %}
+  </div>
+  {%- if field.text %}
+  <div class="form-text {{ right }}" id="text-{{ field.name }}">
+    {{ field.text }}
+  </div>
+  {%- endif %}
+  {%- if field.datalist %}
+    <datalist id="list-{{ field.name }}">
+      {% for option in field.options %}
+        <option value="{{ option.value }}">{{ option.title }}</option>
+      {% endfor %}
+    </datalist>
+  {% endif %}
+</div>

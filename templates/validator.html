@@ -19,8 +19,10 @@
     class="card needs-validation"
     >
     {%- for field in form %}
-      {% if field.type != 'checkbox' %}
-        {% include 'input-field.html' %}
+      {% if field.type == 'hidden' %}
+        {% include 'input-element.html' %}
+      {% elif field.type != 'checkbox' %}
+        {% include 'input-field-row.html' %}
       {% endif %}
     {%- endfor %}
     <div class="row mb-3">

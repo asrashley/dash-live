@@ -22,15 +22,23 @@
       <div class="accordion-collapse collapse p-3 {%- if group.show %} show{%- endif %}"
            id="model-group-{{ loop.index }}">
         {% for field in group.fields %}
-        {% include 'input-field.html' %}
+          {%- if field.type == "hidden" %}
+            {% include 'input-element.html' %}
+          {%- else %}
+            {% include 'input-field-row.html' %}
+          {%- endif %}
         {% endfor %}
       </div>
     </div>
     {% endfor %}
   </div>
   {% else %}
-    {% for field in fields %}
-    {% include 'input-field.html' %}
+    {%- for field in fields %}
+      {%- if field.type == "hidden" %}
+        {% include 'input-element.html' %}
+      {%- else %}
+        {%- include 'input-field-row.html' %}
+      {%- endif %}
     {% endfor %}
   {% endif %}
   {%- if not exclude_buttons %}
