@@ -39,17 +39,11 @@ from dashlive.utils.json_object import JsonObject
 from dashlive.utils.objects import flatten
 
 from .base import HTMLHandlerBase, DeleteModelBase, TemplateContext
+from .csrf import CsrfTokenCollection
 from .decorators import login_required, uses_stream, current_stream
 from .exceptions import CsrfFailureException
 from .manifest_context import ManifestContext
 from .utils import is_ajax, jsonify
-
-@dataclass(slots=True, kw_only=True)
-class CsrfTokenCollection:
-    files: str
-    kids: str
-    streams: str
-    upload: str | None = None
 
 @dataclass(slots=True, kw_only=True)
 class DrmLicenseContext:
