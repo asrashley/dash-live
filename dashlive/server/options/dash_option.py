@@ -28,9 +28,9 @@ from collections.abc import Callable
 import urllib.parse
 
 from dashlive.utils.date_time import from_isodatetime, to_iso_datetime
-from dashlive.utils.json_object import JsonObject
 from dashlive.utils.objects import flatten
 
+from .form_input_field import FormInputContext
 from .types import CgiOption, CgiOptionChoice, OptionUsage
 
 CgiChoiceType = Union[tuple[str, str], str, None]
@@ -101,8 +101,8 @@ class DashOption:
             options=ocs,
             usage=OptionUsage.to_string_set(self.usage))
 
-    def input_field(self, value: Any, field_choices: dict) -> JsonObject:
-        input = {
+    def input_field(self, value: Any, field_choices: dict) -> FormInputContext:
+        input: FormInputContext = {
             "name": self.cgi_name,
             "title": self.title,
             "value": value,
