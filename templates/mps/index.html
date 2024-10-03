@@ -1,0 +1,35 @@
+{% extends 'layout.html' %}
+
+
+{% block content %}
+<div id="media-management" class="container">
+  <h1>Available Multi-period DASH streams</h1>
+  <table class="table table-striped" id="mp-streams" data-csrf="{{csrf_tokens.streams}}">
+    <caption>Multi-Period Streams</caption>
+    <thead><tr>
+        <th class="name">Name</th>
+        <th class="title">Title</th>
+        <th class="num-periods text-end">Periods</th>
+        <th class="duration text-end">Duration</th>
+    </tr></thead>
+    <tbody>
+    {% for stream in streams %}
+    <tr>
+      <td class="name text-center">
+	<a href="{{url_for('edit-mps', name=stream.name)}}">{{stream.name}}</a>
+      </td>
+      <td class="title text-center">
+	<a href="{{url_for('edit-mps', name=stream.name)}}">{{stream.title}}</a>
+      </td>
+      <td class="num-periods text-end">
+	{{ stream.periods|count }}
+      </td>
+      <td class="duration text-end">
+	{{ stream.total_duration() | timeDelta(full_tc=True) }}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+  </table>
+</div>
+{% endblock %}
