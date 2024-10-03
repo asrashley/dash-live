@@ -21,6 +21,7 @@
 #############################################################################
 
 import base64
+from dataclasses import dataclass
 import datetime
 import hashlib
 import hmac
@@ -33,9 +34,27 @@ import flask  # type: ignore
 
 from dashlive.server.models.token import Token, TokenType
 from dashlive.server.models.db import db
+from dashlive.utils.json_object import JsonObject
 
 from .exceptions import CsrfFailureException
 from .utils import is_https_request
+
+@dataclass(slots=True, kw_only=True)
+class CsrfTokenCollection:
+    files: str
+    kids: str
+    streams: str
+    upload: str | None = None
+
+    def to_dict(self) -> JsonObject:
+        rv: JsonObject = {
+            'files': self.files,
+            'kids': self.kids,
+            'streams': self.streams,
+            'upload': self.upload,
+        }
+        return rv
+
 
 class CsrfProtection:
     CSRF_COOKIE_NAME: ClassVar[str] = 'csrf'
