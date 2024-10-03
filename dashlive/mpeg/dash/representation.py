@@ -578,6 +578,14 @@ class Representation(ObjectWithFields):
             num_loops, mod_segment)
         return (mod_segment, origin_time, seg_start_tc)
 
+    def media_duration_timedelta(self) -> datetime.timedelta:
+        """
+        Get the media duration, as a timedelta
+        """
+        if self.mediaDuration is None:
+            return datetime.timedelta(0)
+        return self.timescale_to_timedelta(self.mediaDuration)
+
 
 if __name__ == '__main__':
     from dashlive.mpeg import mp4
