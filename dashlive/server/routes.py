@@ -224,6 +224,25 @@ routes = {
         r'/users/<int:upk>/delete',
         handler='user_management.DeleteUser',
         title='Delete User'),
+    'list-mps': Route(
+        r'/multi-period-streams',
+        handler='multi_period_streams.ListStreams',
+        title='Available DASH multi-period streams'),
+    'add-mps': Route(
+        r'/multi-period-streams.add',
+        handler='multi_period_streams.AddStream',
+        title='Add new multi-period stream',
+        parent='list-mps'),
+    'edit-mps': Route(
+        r'/multi-period-streams/<name>',
+        handler='multi_period_streams.EditStream',
+        title='Edit multi-period stream',
+        parent='list-mps'),
+    "validate-mps": Route(
+        r'/multi-period-streams.validate',
+        handler='multi_period_streams.ValidateStream',
+        title='Check new MPS',
+        parent='list-mps'),
     "esm-wrapper": Route(
         r'/libs/<filename>',
         handler='htmlpage.ModuleWrapper',

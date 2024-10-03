@@ -214,6 +214,8 @@ class HTMLHandlerBase(RequestHandlerBase):
         }, {
             'title': 'Streams', 'href': flask.url_for('list-streams')
         }, {
+            'title': 'Multi-Period Streams', 'href': flask.url_for('list-mps')
+        }, {
             'title': 'Validate', 'href': flask.url_for('validate-stream')
         }]
         if current_user.is_authenticated:
