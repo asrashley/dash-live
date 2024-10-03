@@ -1,6 +1,5 @@
 {% extends 'layout.html' %}
 
-
 {% block content %}
 <div class="container">
   <div class="card">
@@ -24,9 +23,16 @@
 	<div class="alert alert-danger" role="alert">{{error}}</div>
 	{% endif %}
 	<input type="hidden" name="csrf_token" value="{{csrf_token}}" />
-	{% for field in fields %}
-	{% include 'input-field.html' %}
-	{% endfor %}
+	{%- for field in fields %}
+          {%- if field.type == "hidden" %}
+	    {% include 'input-element.html' %}
+          {% endif -%}
+	{% endfor -%}
+	{%- for field in fields %}
+          {%- if field.type != "hidden" %}
+	    {% include 'input-field-row.html' %}
+          {% endif -%}
+	{% endfor -%}
 	{% block extra_inputs %}
 	{% endblock %}
 	<div class="form-actions">
@@ -36,7 +42,7 @@
 	  {% endblock %}
 	</div>
       </form>
-    </div> <!-- card-body -->
-  </div> <!-- card -->
+    </div> {# card-body #}
+  </div> {# card #}
 </div>
 {% endblock %}
