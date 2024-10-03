@@ -76,7 +76,7 @@ def dateTimeFormat(value: str | datetime.datetime | None, fmt: str) -> str:
     return value.strftime(fmt)
 
 @custom_tags.app_template_filter()
-def timeDelta(value: datetime.timedelta | None) -> str:
+def timeDelta(value: datetime.timedelta | None, full_tc: bool = False) -> str:
     if value is None:
         return ''
     ticks = value / datetime.timedelta(milliseconds=10)
@@ -86,11 +86,16 @@ def timeDelta(value: datetime.timedelta | None) -> str:
     mins %= 60
     seconds %= 60
     ticks = int(ticks) % 100
+    ts: str = ''
+    if ticks != 0:
+        ts = f'.{ticks:#02d}'
+    if full_tc:
+        return f'{hours:#02d}:{mins:#02d}:{seconds:#02d}{ts}'
     if hours:
-        return f'{hours:d}:{mins:#02d}:{seconds:#02d}.{ticks:#02d}'
+        return f'{hours:d}:{mins:#02d}:{seconds:#02d}{ts}'
     if mins:
-        return f'{mins:d}:{seconds:#02d}.{ticks:#02d}'
-    return f'{seconds:#02d}.{ticks:#02d}'
+        return f'{mins:d}:{seconds:#02d}{ts}'
+    return f'{seconds:#02d}{ts}'
 
 @custom_tags.app_template_filter()
 def default(value: Any, default_value: Any) -> Any:
