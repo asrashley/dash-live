@@ -5,6 +5,7 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+import datetime
 import hashlib
 import logging
 from pathlib import Path
@@ -138,6 +139,15 @@ class Stream(db.Model, ModelMixin):
             self.timing_ref = ref.toJSON()
 
     timing_reference = property(get_timing_reference, set_timing_reference)
+
+    def duration(self) -> datetime.timedelta:
+        tref = self.get_timing_reference()
+        if tref is not None:
+            return tref.media_duration_timedelta()
+        for mfile in self.media_files:
+            if mfile.representation is not None:
+                return mfile.representation.media_duration_timedelta()
+        return datetime.timedelta(0)
 
     def add_file(self, file_upload: FileStorage, commit: bool = False) -> MediaFile:
         filename = Path(secure_filename(file_upload.filename))
