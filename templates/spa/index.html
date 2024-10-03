@@ -1,0 +1,16 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div id="app" class="container"></div>
+{% endblock %}
+
+{% block stylesheet %}
+{{ super() }}
+<link rel="stylesheet" href="{{url_for('static', filename='css/mps.css')}}" />
+{% endblock %}
+
+{% block extrascripts %}
+<script type="module">
+{% include "spa/main.js" %}
+</script>
+{% endblock %}

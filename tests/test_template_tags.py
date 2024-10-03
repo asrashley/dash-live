@@ -25,9 +25,9 @@ class TestTemplateTags(unittest.TestCase):
 
     def test_time_delta(self) -> None:
         testcases = [(
-            datetime.timedelta(seconds=20), '20.00',
+            datetime.timedelta(seconds=20), '20',
         ), (
-            datetime.timedelta(seconds=20, milliseconds=2), '20.00',
+            datetime.timedelta(seconds=20, milliseconds=2), '20',
         ), (
             datetime.timedelta(seconds=20, milliseconds=120), '20.12',
         ), (
@@ -43,6 +43,28 @@ class TestTemplateTags(unittest.TestCase):
         )]
         for value, expected in testcases:
             actual = tags.timeDelta(value)
+            self.assertEqual(expected, actual)
+
+    def test_time_delta_full_tc(self) -> None:
+        testcases = [(
+            datetime.timedelta(seconds=20), '00:00:20',
+        ), (
+            datetime.timedelta(seconds=20, milliseconds=2), '00:00:20',
+        ), (
+            datetime.timedelta(seconds=20, milliseconds=120), '00:00:20.12',
+        ), (
+            datetime.timedelta(seconds=60, milliseconds=120), '00:01:00.12',
+        ), (
+            datetime.timedelta(seconds=3600, milliseconds=120), '01:00:00.12',
+        ), (
+            datetime.timedelta(seconds=3640, milliseconds=120), '01:00:40.12',
+        ), (
+            datetime.timedelta(seconds=(25 * 3600), milliseconds=120), '25:00:00.12',
+        ), (
+            None, '',
+        )]
+        for value, expected in testcases:
+            actual = tags.timeDelta(value, full_tc=True)
             self.assertEqual(expected, actual)
 
     def test_sizeFormat(self) -> None:
