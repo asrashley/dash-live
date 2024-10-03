@@ -1,0 +1,82 @@
+{% extends 'edit-model.html' %}
+
+{% macro period_row(period, class_name) -%}
+<tr class="{{ class_name }}">
+  <td class="period-ordering">
+    {%- with field = period.ordering %}
+    {% include "input-element.html" -%}
+    {% endwith -%}
+  </td>
+  <td class="period-id">
+    {%- with field = period.pid %}
+    {% include "input-element.html" -%}
+    {% endwith -%}
+  </td>
+  <td class="period-stream">
+    {%- with field = period.stream %}
+    {% include "input-element.html" -%}
+    {% endwith -%}
+  </td>
+  <td class="period-start">
+    {%- with field = period.start %}
+    {% include "input-element.html" -%}
+    {% endwith -%}
+  </td>
+  <td class="period-duration">
+    {%- with field = period.duration %}
+    {% include "input-element.html" -%}
+    {% endwith -%}
+  </td>
+</tr>
+{%- endmacro %}
+
+{% block stylesheet %}
+{{ super() }}
+<link rel="stylesheet" href="{{url_for('static', filename='css/mps.css')}}" />
+{% endblock %}
+
+{% block card_header %}
+<h2>Edit Multi-Period Stream &quot;{{ model.name }}&quot;</h2>
+{% endblock %}
+
+{% block form_element %}
+data-validate-url="{{ url_for('validate-mps') }}"
+action="{{ url_for('edit-mps', name=model.name) }}"
+{% endblock %}
+
+{% block extra_inputs %}
+<input type="hidden" name="num_new_periods" value="0" />
+<div class="row">
+  <div class="col-2 col-form-label">Periods:</div>
+  <div class="col-10">
+    <table class="table table-striped period-table">
+      <thead>
+        <tr>
+          <th class="period-ordering">#</th>
+          <th class="period-id">ID</th>
+          <th class="period-stream">Stream</th>
+          <th class="period-start">Start Time</th>
+          <th class="period-duration">Duration</th>
+        </tr>
+      </thead>
+      <tbody>
+        {%- for period in model.periods %}
+        {{ period_row(period_fields[period.pk], "period") }}
+        {% endfor -%}
+      </tbody>
+      <tfoot>
+        {{ period_row(period_fields[-1], "placeholder-row hidden") }}
+        <tr>
+          <td colspan="3">
+            <a class="btn btn-primary" id="add-period-btn">Add a Period</a>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extrascripts %}
+<script src="{{url_for('static', filename='js/mps/edit_stream.js')}}" type="module"></script>
+{% endblock %}
