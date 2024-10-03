@@ -13,7 +13,14 @@ import flask  # type: ignore
 from flask_login import current_user
 from werkzeug.local import LocalProxy  # type: ignore
 
-from dashlive.server.models import Group, Key, MediaFile, Stream, User
+from dashlive.server.models import (
+    Group,
+    Key,
+    MediaFile,
+    MultiPeriodStream,
+    Stream,
+    User
+)
 
 from .csrf import CsrfProtection
 from .exceptions import CsrfFailureException
@@ -52,8 +59,12 @@ def csrf_token_required(service: str, next_url: Callable[..., str | None]):
     def decorator(func):
         @wraps(func)
         def decorated_function(*args, **kwargs):
+            token: str | None = None
             try:
-                token = flask.request.args.get('csrf_token')
+                if is_ajax():
+                    token = flask.request.json.get('csrf_token', None)
+                if token is None:
+                    token = flask.request.args.get('csrf_token')
                 if token is None:
                     token = flask.request.form.get('csrf_token')
                 if token is None:
@@ -183,3 +194,28 @@ def modifies_user_model(func):
 
 
 modifying_user = cast(User, LocalProxy(lambda: flask.g.modify_user))
+
+
+def uses_multi_period_stream(func):
+    """
+    Decorator that fetches MultiPeriodStream from database.
+    It will automatically return a 404 error if not found
+    """
+    @wraps(func)
+    def decorated_function(*args, **kwargs):
+        stream: MultiPeriodStream | None = None
+        name = kwargs.get('mps_name', None)
+        if name is None:
+            return flask.make_response(
+                'Multi-period stream ID missing', 400)
+
+        stream = MultiPeriodStream.get_one(name=name)
+        if not stream:
+            return flask.make_response(
+                f'Multi-period stream {html.escape(name)} not found', 404)
+        flask.g.mp_stream = stream
+        return func(*args, **kwargs)
+    return decorated_function
+
+
+current_mps = cast(MultiPeriodStream, LocalProxy(lambda: flask.g.mp_stream))
