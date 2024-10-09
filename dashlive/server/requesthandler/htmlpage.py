@@ -388,22 +388,6 @@ class DashValidator(HTMLHandlerBase):
         return flask.render_template('validator.html', **context)
 
 
-class ModuleWrapper(MethodView):
-    """
-    Handler that is used to wrap conventional JS libraries into ESM modules
-    """
-
-    def get(self, filename: str) -> flask.Response:
-        headers = {
-            'Content-Type': 'application/javascript',
-        }
-        context = {}
-        if 'default' in filename:
-            context['defaults'] = OptionsRepository.get_default_options().generate_cgi_parameters(
-                exclude={'_type'})
-        body = flask.render_template(f'esm/{filename}', **context)
-        return flask.make_response((body, 200, headers))
-
 def favicon() -> flask.Response:
     return flask.send_from_directory(
         flask.current_app.static_folder,
