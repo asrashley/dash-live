@@ -14,6 +14,7 @@
         {% block stylesheet %}
         <link rel="stylesheet" href="{{url_for('static', filename='css/main.css')}}" />
         {% endblock %}
+        <script type="importmap">{% include "importmap.json" %}</script>
         {% block scripts %}
         <script {{ nomodule }}
           src="{{ url_for('static', filename='js/prod/modernizr-3.5.0-custom.js') }}">
