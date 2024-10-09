@@ -243,9 +243,17 @@ routes = {
         handler='multi_period_streams.ValidateStream',
         title='Check new MPS',
         parent='list-mps'),
+    "route-map": Route(
+        r'/libs/routemap.js',
+        handler='esm.RouteMap',
+        title='URL routing data'),
+    "content-roles": Route(
+        r'/libs/content_roles.js',
+        handler='esm.ContentRoles',
+        title='MPEG content roles'),
     "esm-wrapper": Route(
         r'/libs/<filename>',
-        handler='htmlpage.ModuleWrapper',
+        handler='esm.ModuleWrapper',
         title='ESM JavaScript wrapper'),
     "favicon": Route(
         r'/favicon.ico',
