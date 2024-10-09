@@ -22,7 +22,7 @@
 
 from abc import abstractmethod
 import logging
-from typing import AbstractSet, TypedDict
+from typing import AbstractSet
 
 import urllib.request
 import urllib.parse
@@ -31,7 +31,6 @@ import urllib.parse
 
 import flask  # type: ignore
 from flask.views import MethodView  # type: ignore
-from flask_login import current_user
 
 from dashlive.server import models
 from dashlive.server.routes import routes, Route
@@ -41,36 +40,16 @@ from dashlive.utils.json_object import JsonObject
 
 from .csrf import CsrfProtection
 from .exceptions import CsrfFailureException
-from .utils import is_https_request, jsonify
-
-class TemplateContext(TypedDict):
-    http_protocol: str
-    is_current_user_admin: bool
-    remote_addr: str
-    request_uri: str
-    title: str
+from .navbar import create_navbar_context, NavBarItem
+from .template_context import TemplateContext, create_template_context
+from .utils import jsonify
 
 class RequestHandlerBase(MethodView):
     CLIENT_COOKIE_NAME = 'dash'
     INJECTED_ERROR_CODES = [404, 410, 503, 504]
 
-    def create_context(self, title: str | None = None, **kwargs) -> TemplateContext:
-        if title is None:
-            title = 'DASH'
-        is_admin: bool = False
-        if current_user.is_authenticated:
-            is_admin = current_user.is_admin
-        context: TemplateContext = dict(
-            http_protocol=flask.request.scheme,
-            is_current_user_admin=is_admin,
-            remote_addr=flask.request.remote_addr,
-            request_uri=flask.request.url,
-            title=title)
-        if is_https_request():
-            context['request_uri'] = context['request_uri'].replace(
-                'http://', 'https://')
-        context.update(kwargs)
-        return context
+    def create_context(self, **kwargs) -> TemplateContext:
+        return create_template_context(**kwargs)
 
     def generate_csrf_cookie(self) -> str:
         """
@@ -209,43 +188,7 @@ class HTMLHandlerBase(RequestHandlerBase):
         if 'nomodule' not in flask.request.args:
             context['nomodule'] = 'nomodule'
         route = routes[flask.request.endpoint]
-        navbar = [{
-            'title': 'Home', 'href': flask.url_for('home')
-        }, {
-            'title': 'Streams', 'href': flask.url_for('list-streams')
-        }, {
-            'title': 'Multi-Period Streams', 'href': flask.url_for('list-mps')
-        }, {
-            'title': 'Validate', 'href': flask.url_for('validate-stream')
-        }]
-        if current_user.is_authenticated:
-            if current_user.is_admin:
-                navbar.append({
-                    'title': 'Users', 'href': flask.url_for('list-users')
-                })
-            else:
-                navbar.append({
-                    'title': 'My Account', 'href': flask.url_for('change-password')
-                })
-            navbar.append({
-                'title': 'Log Out',
-                'class': 'user-login',
-                'href': flask.url_for('logout')
-            })
-        else:
-            navbar.append({
-                'title': 'Log In',
-                'class': 'user-login',
-                'href': flask.url_for('login')
-            })
-        found_active = False
-        for nav in navbar[1:]:
-            if flask.request.path.startswith(nav['href']):
-                nav['active'] = True
-                found_active = True
-                break
-        if not found_active:
-            navbar[0]['active'] = True
+        navbar = create_navbar_context()
         context.update({
             "title": kwargs.get('title', route.title),
             "breadcrumbs": self.get_breadcrumbs(route),
@@ -254,8 +197,8 @@ class HTMLHandlerBase(RequestHandlerBase):
         })
         return context
 
-    def get_breadcrumbs(self, route: Route) -> list[dict[str, str]]:
-        breadcrumbs = [{
+    def get_breadcrumbs(self, route: Route) -> list[NavBarItem]:
+        breadcrumbs: list[NavBarItem] = [{
             'title': route.page_title(),
             'active': 'active'
         }]
