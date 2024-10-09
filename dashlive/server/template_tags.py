@@ -266,3 +266,7 @@ def sort_icon(name: str, order: str, reverse: bool) -> str:
     else:
         entity = '&or;'
     return HtmlSafeString(f'<span class="float-end sort-arrow">{entity}</span>')
+
+@custom_tags.app_template_global()
+def js_url(filename: str) -> str:
+    return url_for('static', filename=f'js/{filename}')
