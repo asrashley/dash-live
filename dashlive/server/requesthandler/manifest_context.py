@@ -46,7 +46,6 @@ class ManifestContext:
     cgi_params: CgiParameterCollection
     locationURL: str
     manifest: DashManifest | None
-    maxSegmentDuration: int
     mediaDuration: int
     minBufferTime: datetime.timedelta
     mpd_name: str
@@ -80,11 +79,9 @@ class ManifestContext:
         self.mpd_id = stream.directory
         self.now = now
         self.options = options
-        self.maxSegmentDuration = 0
         self.periods = []
         self.profiles = [primary_profiles[options.mode]]
         self.startNumber = 1
-        self.stream = stream  # .to_dict(exclude={'media_files'}),
         self.suggestedPresentationDelay = 30
         self.timing_ref = stream.timing_reference
         self.title = stream.title
@@ -97,11 +94,10 @@ class ManifestContext:
             timing = DashTiming(self.now, self.timing_ref, options)
             self.mediaDuration = self.timing_ref.media_duration_timedelta().total_seconds()
 
-        self.periods.append(self.create_period(timing))
+        self.periods.append(self.create_period(stream, timing))
         self.timeSource = None
         if self.options.mode == 'live' and self.options.utcMethod is not None:
             self.timeSource = TimeSourceContext(self.options, self.cgi_params, now)
-        self.finish_periods_setup(timing)
 
         if (
                 self.options.mode == 'live' and
@@ -110,7 +106,7 @@ class ManifestContext:
                 timing is not None):
             patch_loc = flask.url_for(
                 'mpd-patch',
-                stream=self.stream.directory,
+                stream=stream.directory,
                 manifest=self.manifest.name,
                 publish=int(timing.publishTime.timestamp()))
             ttl = max(
@@ -170,16 +166,24 @@ class ManifestContext:
                 rv.append(adp)
         return rv
 
-    def create_period(self, timing: DashTiming | None) -> Period:
+    @property
+    def maxSegmentDuration(self) -> float:
+        if not self.periods:
+            return 1
+        return max([p.maxSegmentDuration for p in self.periods])
+
+    def create_period(self,
+                      stream: models.Stream,
+                      timing: DashTiming | None) -> Period:
         opts = self.options
 
         period = Period(start=datetime.timedelta(0), id="p0")
         max_items = None
         if opts.abr is False:
             max_items = 1
-        video = self.calculate_video_adaptation_set(max_items=max_items)
-        audio_adps = self.calculate_audio_adaptation_sets()
-        text_adps = self.calculate_text_adaptation_sets(video.lang)
+        video = self.calculate_video_adaptation_set(stream, max_items=max_items)
+        audio_adps = self.calculate_audio_adaptation_sets(stream)
+        text_adps = self.calculate_text_adaptation_sets(stream, video.lang)
 
         if timing:
             opts.availabilityStartTime = timing.availabilityStartTime
@@ -211,16 +215,31 @@ class ManifestContext:
         period.adaptationSets.append(video)
         period.adaptationSets += audio_adps
         period.adaptationSets += text_adps
+        period.finish_setup(
+            mode=opts.mode, stream_name=stream.directory, timing=timing,
+            useBaseUrls=opts.useBaseUrls)
+        if is_https_request():
+            period.baseURL = period.baseURL.replace('http://', 'https://')
+        for adp in period.adaptationSets:
+            if not adp.encrypted:
+                continue
+            kids: Set[KeyMaterial] = adp.key_ids()
+            keys = models.Key.get_kids(kids)
+            dc = DrmContext(stream, keys, self.options)
+            adp.drm = dc.manifest_context
+            adp.default_kid = list(keys.keys())[0]
         return period
 
     def calculate_video_adaptation_set(
-            self, max_items: int | None = None) -> AdaptationSet:
+            self,
+            stream: models.Stream,
+            max_items: int | None = None) -> AdaptationSet:
         video = AdaptationSet(
             mode=self.options.mode, content_type='video', id=1,
             segment_timeline=self.options.segmentTimeline)
         media_files = models.MediaFile.search(
             content_type='video', encrypted=self.options.encrypted,
-            stream=self.stream, max_items=max_items)
+            stream=stream, max_items=max_items)
         for mf in media_files:
             if mf.representation is None:
                 mf.parse_media_file()
@@ -235,11 +254,13 @@ class ManifestContext:
         return video
 
     def calculate_audio_adaptation_sets(
-            self, max_items: int | None = None) -> list[AdaptationSet]:
+            self,
+            stream: models.Stream,
+            max_items: int | None = None) -> list[AdaptationSet]:
         opts = self.options
         adap_sets: dict[int, AdaptationSet] = {}
         media_files = models.MediaFile.search(
-            content_type='audio', stream=self.stream, max_items=max_items)
+            content_type='audio', stream=stream, max_items=max_items)
         audio_files: list[Representation] = []
         acodec = opts.audioCodec
         for mf in media_files:
@@ -296,12 +317,13 @@ class ManifestContext:
 
     def calculate_text_adaptation_sets(
             self,
+            stream: models.Stream,
             video_lang: str | None,
             max_items: int | None = None) -> list[AdaptationSet]:
         opts = self.options
 
         media_files = models.MediaFile.search(
-            content_type='text', stream=self.stream, max_items=max_items)
+            content_type='text', stream=stream, max_items=max_items)
         text_tracks: list[Representation] = []
         for mf in media_files:
             if mf.representation is None:
@@ -406,53 +428,6 @@ class ManifestContext:
             manifest=mft_cgi_params,
             patch=patch_cgi_params,
             time=clk_cgi_params)
-
-    def finish_periods_setup(self, timing: DashTiming | None) -> None:
-        prefix: str = ''
-        base: str
-        if self.options.mode == 'odvod':
-            base = flask.url_for(
-                'dash-od-media',
-                stream=self.stream.directory,
-                filename='RepresentationID',
-                ext='m4v')
-            base = base.replace('RepresentationID.m4v', '')
-        else:
-            base = flask.url_for(
-                'dash-media',
-                mode=self.options.mode,
-                stream=self.stream.directory,
-                filename='RepresentationID',
-                segment_num='init',
-                ext='m4v')
-            base = base.replace('RepresentationID/init.m4v', '')
-        if self.options.useBaseUrls:
-            self.baseURL = urllib.parse.urljoin(flask.request.host_url, base)
-            if is_https_request():
-                self.baseURL = self.baseURL.replace('http://', 'https://')
-        else:
-            # convert every initURL and mediaURL to be an absolute URL
-            prefix = base
-
-        for period in self.periods:
-            for idx, adp in enumerate(period.adaptationSets):
-                kids: Set[KeyMaterial] = set()
-                if prefix:
-                    if self.options.mode != 'odvod':
-                        adp.initURL = prefix + adp.initURL
-                    adp.mediaURL = prefix + adp.mediaURL
-                if timing:
-                    adp.set_dash_timing(timing)
-                self.maxSegmentDuration = max(
-                    self.maxSegmentDuration, adp.maxSegmentDuration)
-                for rep in adp.representations:
-                    if rep.encrypted:
-                        kids.update(rep.kids)
-                if adp.encrypted:
-                    keys = models.Key.get_kids(kids)
-                    dc = DrmContext(self.stream, keys, self.options)
-                    adp.drm = dc.manifest_context
-                    adp.default_kid = list(keys.keys())[0]
 
     @staticmethod
     def calculate_injected_error_segments(

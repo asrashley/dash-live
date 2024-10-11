@@ -16,8 +16,8 @@
      mediaPresentationDuration="{{ mpd.mediaDuration|isoDuration }}"
   {%- endif %}
      minBufferTime="PT1S"  >
-  {%- if mpd.baseURL %}
-     <BaseURL>{{ mpd.baseURL}}</BaseURL>
+  {%- if mpd.period.baseURL %}
+     <BaseURL>{{ mpd.period.baseURL}}</BaseURL>
   {%- endif %}
  {%- if mpd.timeSource %}
  <UTCTiming schemeIdUri="{{mpd.timeSource.schemeIdUri}}" value="{{mpd.timeSource.value}}"/>

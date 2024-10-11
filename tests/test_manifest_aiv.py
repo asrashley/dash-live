@@ -31,15 +31,16 @@ class ManifestAIVTest(FlaskTestBase, DashManifestCheckMixin):
         await self.check_a_manifest_using_all_options('manifest_vod_aiv.mpd', 'odvod')
 
     def test_request_invalid_mode_for_manifest(self):
-        baseurl = flask.url_for(
-            'dash-mpd-v3', manifest='manifest_vod_aiv.mpd',
-            stream=self.FIXTURES_PATH.name, mode='live')
-        self.app.get(baseurl, status=404)
+        for mode in ['live', 'vod']:
+            baseurl = flask.url_for(
+                'dash-mpd-v3', manifest='manifest_vod_aiv.mpd',
+                stream=self.FIXTURES_PATH.name, mode=mode)
+            self.app.get(baseurl, status=404)
 
     def test_generated_manifest_against_fixture(self):
         self.check_generated_manifest_against_fixture(
-            'manifest_vod_aiv.mpd', mode='vod', acodec='mp4a', encrypted=False,
-            now="2023-10-05T20:19:58Z")
+            'manifest_vod_aiv.mpd', mode='odvod', acodec='mp4a',
+            encrypted=False, now="2023-10-05T20:19:58Z")
 
 
 if __name__ == '__main__':
