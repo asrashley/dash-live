@@ -199,6 +199,8 @@ class TestHtmlPageHandlers(FlaskTestBase):
                 continue
             self.assertEqual(f'model-{name}', input_field.get('id'))
             expected = getattr(stream, name)
+            if expected is None:
+                expected = ""
             actual = input_field.get('value')
             self.assertEqual(
                 expected, actual,
@@ -362,6 +364,11 @@ class TestHtmlPageHandlers(FlaskTestBase):
                 text = script.get_text()
                 if not text:
                     text = script.string
+                if script.get("type") == "importmap":
+                    data = json.loads(text)
+                    self.assertIsInstance(data, dict)
+                    self.assertIn('imports', data)
+                    continue
                 self.assertIn('window.dashParameters', text)
                 start = text.index('{')
                 end = text.rindex('}') + 1
