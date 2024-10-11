@@ -95,6 +95,16 @@ class ListStreams(HTMLHandlerBase):
                     s.to_dict(with_collections=True) for s in streams
                 ],
             }
+            if flask.request.args.get('details', '0') == '1':
+                for stream in result['streams']:
+                    media_files: list[JsonObject] = []
+                    for pk in stream['media_files']:
+                        mf = models.MediaFile.get(pk=pk)
+                        if mf is None:
+                            continue
+                        media_files.append(mf.to_dict(
+                            with_collections=False, exclude={'rep', 'blob'}))
+                    stream['media_files'] = media_files
             return jsonify(result)
 
         context = cast(ListStreamsTemplateContext, self.create_context(
