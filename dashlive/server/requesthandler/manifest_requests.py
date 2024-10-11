@@ -98,7 +98,7 @@ class ServeManifest(RequestHandlerBase):
         elif mft.segment_timeline or options.patch:
             options.update(segmentTimeline=True)
         options.remove_unused_parameters(mode)
-        dash = ManifestContext(manifest=mft, options=options)
+        dash = ManifestContext(manifest=mft, options=options, stream=current_stream)
         context = cast(ManifestTemplateContext, self.create_context(
             title=current_stream.title, mpd=dash, options=options, mode=mode,
             stream=current_stream))
