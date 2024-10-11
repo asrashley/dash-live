@@ -14,8 +14,8 @@
      mediaPresentationDuration="{{ mpd.mediaDuration|isoDuration }}"
   {%- endif %}
      >
-  {%- if mpd.baseURL %}
-     <BaseURL>{{ mpd.baseURL }}</BaseURL>
+  {%- if mpd.period.baseURL %}
+     <BaseURL>{{ mpd.period.baseURL }}</BaseURL>
   {%- endif %}
   <Period id="p1"
      {% if mode!='live' %}

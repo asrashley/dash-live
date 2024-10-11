@@ -87,6 +87,7 @@ class Representation(ObjectWithFields):
     DEFAULT_VALUES = {
         'accessibility': None,
         'bitrate': None,
+        'baseURL': None,
         'content_type': None,
         'codecs': None,
         'default_kid': None,

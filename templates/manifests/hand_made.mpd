@@ -40,7 +40,7 @@
      id="{{ period.id }}"
      {%- if period.duration %}duration="{{period.duration|isoDuration}}"{% endif %}
    >
-     {%- if mpd.baseURL %}<BaseURL>{{ mpd.baseURL }}</BaseURL>{% endif %}
+     {%- if period.baseURL %}<BaseURL>{{ period.baseURL }}</BaseURL>{% endif %}
      {% include "events/period.xml" %}
      {%- for adp in period.adaptationSets %}
        <AdaptationSet

@@ -41,7 +41,7 @@
             width="1920"
           
         >
-          <BaseURL>http://unit.test/dash/vod/fixtures/bbb_v7.m4v</BaseURL>
+          <BaseURL>bbb_v7.m4v</BaseURL>
         
 <SegmentList timescale="240" duration="9600">
   <Initialization range="0-853" />
@@ -70,7 +70,7 @@
             width="1920"
           
         >
-          <BaseURL>http://unit.test/dash/vod/fixtures/bbb_v6.m4v</BaseURL>
+          <BaseURL>bbb_v6.m4v</BaseURL>
         
 <SegmentList timescale="240" duration="9600">
   <Initialization range="0-853" />
@@ -119,7 +119,7 @@
         >
           <AudioChannelConfiguration schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011" value="2"/>
         
-          <BaseURL>http://unit.test/dash/vod/fixtures/bbb_a1.m4a</BaseURL>
+          <BaseURL>bbb_a1.m4a</BaseURL>
         
 <SegmentList timescale="44100" duration="1763328">
   <Initialization range="0-938" />
