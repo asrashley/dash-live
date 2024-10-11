@@ -27,7 +27,6 @@ import urllib.error
 import urllib.parse
 
 import flask
-from flask.views import MethodView  # type: ignore
 from flask_login import current_user
 
 from dashlive.server import manifests, models
@@ -242,6 +241,8 @@ class VideoPlayer(HTMLHandlerBase):
         dash_parms = ManifestContext(
             manifest=manifests.manifest[manifest], options=options,
             stream=stream_model)
+        dash_parms.stream = stream_model.to_dict(
+            only={'pk', 'title', 'directory', 'playready_la_url', 'marlin_la_url'})
         context['dash'] = dash_parms.to_dict(exclude={
             'periods', 'period', 'ref_representation', 'audio', 'video'})
         mpd_url = flask.url_for(
