@@ -19,11 +19,16 @@ from dashlive.server.models import (
     MediaFile,
     MultiPeriodStream,
     Stream,
+    Token,
+    TokenType,
     User
 )
+from dashlive.server.routes import routes
 
-from .csrf import CsrfProtection
+from .csrf import CsrfProtection, CsrfTokenCollection
 from .exceptions import CsrfFailureException
+from .navbar import create_navbar_context, NavBarItem
+from .template_context import TemplateContext, create_template_context
 from .utils import is_ajax, jsonify
 
 def needs_login_response(admin: bool, html: bool, permission: Group | None) -> flask.Response:
@@ -52,7 +57,10 @@ def login_required(html=False, admin=False, permission: Group | None = None):
         return decorated_function
     return decorator
 
-def csrf_token_required(service: str, next_url: Callable[..., str | None]):
+def csrf_token_required(
+        service: str,
+        next_url: Callable[..., str | None],
+        optional: bool = False):
     """
     Decorator that requires a CSRF token check to pass
     """
@@ -67,6 +75,8 @@ def csrf_token_required(service: str, next_url: Callable[..., str | None]):
                     token = flask.request.args.get('csrf_token')
                 if token is None:
                     token = flask.request.form.get('csrf_token')
+                if token is None and optional:
+                    return func(*args, **kwargs)
                 if token is None:
                     raise CsrfFailureException('Failed to find csrf_token')
                 CsrfProtection.check(service, token)
@@ -219,3 +229,42 @@ def uses_multi_period_stream(func):
 
 
 current_mps = cast(MultiPeriodStream, LocalProxy(lambda: flask.g.mp_stream))
+
+def spa_handler(func):
+    """
+    Decorator for views that are implemented using a Single Page Application.
+    Any non-ajax requests are responded with a single HTML page
+    """
+    @wraps(func)
+    def decorated_function(*args, **kwargs):
+        if is_ajax():
+            return func(*args, **kwargs)
+        csrf_key = CsrfProtection.generate_cookie()
+        csrf_tokens = CsrfTokenCollection(
+            streams=CsrfProtection.generate_token('streams', csrf_key),
+            files=None,
+            kids=None,
+            upload=None)
+        initial_tokens = {
+            'csrfTokens': csrf_tokens.to_dict(),
+            'accessToken': None,
+            'refreshToken': None,
+        }
+        if current_user.is_authenticated:
+            access_token: Token = Token.generate_api_token(
+                current_user, TokenType.ACCESS)
+            refresh_token: Token = Token.generate_api_token(
+                current_user, TokenType.REFRESH)
+            initial_tokens['accessToken'] = access_token.to_dict(only={'expires', 'jti'})
+            initial_tokens['refreshToken'] = refresh_token.to_dict(only={'expires', 'jti'})
+        navbar = create_navbar_context()
+        breadcrumbs: list[NavBarItem] = [{
+            'title': 'Home',
+            'active': 'active'
+        }]
+        context: TemplateContext = create_template_context(
+            title='DASH Test Streams', params=kwargs,
+            navbar=navbar, routes=routes, breadcrumbs=breadcrumbs,
+            initialTokens=initial_tokens)
+        return flask.render_template('spa/index.html', **context)
+    return decorated_function
