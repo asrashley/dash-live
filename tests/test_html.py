@@ -364,6 +364,11 @@ class TestHtmlPageHandlers(FlaskTestBase):
                 text = script.get_text()
                 if not text:
                     text = script.string
+                if script.get("type") == "importmap":
+                    data = json.loads(text)
+                    self.assertIsInstance(data, dict)
+                    self.assertIn('imports', data)
+                    continue
                 self.assertIn('window.dashParameters', text)
                 start = text.index('{')
                 end = text.rindex('}') + 1
