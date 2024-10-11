@@ -20,8 +20,8 @@
   maxSegmentDuration="{{ mpd.maxSegmentDuration|isoDuration }}"
   publishTime="{{ mpd.publishTime|isoDateTime }}"
   profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014">
-  {%- if mpd.baseURL %}
-  <BaseURL>{{ mpd.baseURL|xmlSafe}}</BaseURL>
+  {%- if mpd.period.baseURL %}
+  <BaseURL>{{ mpd.period.baseURL|xmlSafe}}</BaseURL>
   {%- endif %}
  {%- if mpd.locationURL %}<Location>{{
  mpd.locationURL|xmlSafe}}</Location>

@@ -22,12 +22,13 @@
 
 import time
 from dataclasses import dataclass
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Set
 
 from dashlive.utils.objects import dict_to_cgi_params
 from dashlive.utils.list_of import ListOf
 from dashlive.utils.object_with_fields import ObjectWithFields
 from dashlive.drm.base import DrmBase
+from dashlive.drm.keymaterial import KeyMaterial
 
 from .event_stream import EventStream
 from .representation import Representation
@@ -47,7 +48,6 @@ class AdaptationSet(ObjectWithFields):
         'drm': DrmBase | None,
     }
     DEFAULT_VALUES: ClassVar[dict[str, Any]] = {
-        'maxSegmentDuration': 1,
         'timescale': 1,
         'segmentAlignment': True,
         'segment_timeline': False,
@@ -141,8 +141,8 @@ class AdaptationSet(ObjectWithFields):
                 return True
         return False
 
-    def key_ids(self):
-        kids = set()
+    def key_ids(self) -> Set[KeyMaterial]:
+        kids: Set[KeyMaterial] = set()
         for rep in self.representations:
             if rep.encrypted:
                 kids.update(rep.kids)
@@ -156,16 +156,32 @@ class AdaptationSet(ObjectWithFields):
         if self.mode != 'odvod':
             self.initURL += qs
 
-    def compute_av_values(self):
+    @property
+    def maxSegmentDuration(self) -> float:
+        if self.timescale < 1 or not self.representations:
+            return 1
+        return max([
+            a.segment_duration for a in self.representations
+        ]) / float(self.timescale)
+
+    @property
+    def minBitrate(self) -> int:
+        if not self.representations:
+            return 0
+        return min([a.bitrate for a in self.representations])
+
+    @property
+    def maxBitrate(self) -> int:
+        if not self.representations:
+            return 0
+        return max([a.bitrate for a in self.representations])
+
+    def compute_av_values(self) -> None:
         if not self.representations:
             return
         self.timescale = self.representations[0].timescale
         self.presentationTimeOffset = int(
             (self.start_number - 1) * self.representations[0].segment_duration)
-        self.minBitrate = min([a.bitrate for a in self.representations])
-        self.maxBitrate = max([a.bitrate for a in self.representations])
-        self.maxSegmentDuration = (max(
-            [a.segment_duration for a in self.representations]) / float(self.timescale))
 
         if self.content_type in {'audio', 'text'}:
             for rep in self.representations:
