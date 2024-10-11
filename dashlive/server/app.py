@@ -32,6 +32,7 @@ from flask_login import LoginManager
 from flask_socketio import SocketIO
 from werkzeug.routing import BaseConverter, Map  # type: ignore
 from werkzeug.middleware.proxy_fix import ProxyFix
+from flask_jwt_extended import JWTManager
 
 from dashlive.server import models
 from dashlive.server.models.connection import make_db_connection_string
@@ -151,8 +152,20 @@ def create_app(config: JsonObject | None = None,
         log = logging.getLogger(module)
         log.setLevel(log_level.upper())
     models.db.init_app(app)
+    jwt = JWTManager(app)
     login_manager.anonymous_user = AnonymousUser
     login_manager.init_app(app)
+
+    # pylint: disable=unused-variable
+    @jwt.user_lookup_loader
+    def user_loader_callback(_jwt_header, jwt_payload) -> models.User | None:
+        identity = jwt_payload['sub']
+        return models.User.get_one(username=identity)
+
+    # pylint: disable=unused-variable
+    @jwt.token_in_blocklist_loader
+    def check_if_token_revoked(_jwt_header, jwt_payload: dict) -> bool:
+        return models.Token.is_revoked(jwt_payload)
 
     @login_manager.user_loader
     def user_lookup_callback(username):
