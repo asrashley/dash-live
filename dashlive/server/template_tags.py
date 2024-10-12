@@ -196,7 +196,7 @@ def toUuid(value):
         value[20:]])
 
 @custom_tags.app_template_filter()
-def trueFalse(value):
+def trueFalse(value: Any) -> bool:
     """
     Returns a "true" or "false" string for the provided boolean
     """
@@ -205,11 +205,13 @@ def trueFalse(value):
     return "false"
 
 @custom_tags.app_template_filter()
-def xmlSafe(value):
+def xmlSafe(value: str | None) -> str:
     """
     Convert the given string to a format that is safe for inclusion
     in an XML document.
     """
+    if value is None:
+        return ""
     return value.replace('&', '&amp;')
 
 @custom_tags.app_template_filter()
