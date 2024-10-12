@@ -332,7 +332,9 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
                     'hidden')
                 csrf_token = input_field.get('value')
                 continue
-            if isinstance(expected[name], bool):
+            if expected[name] is None:
+                self.assertEqual("", input_field.get('value', ""))
+            elif isinstance(expected[name], bool):
                 if expected[name] is True:
                     msg = f'Expected "{name}" field to be checked'
                     self.assertIsNotNone(input_field.get('checked'), msg=msg)
