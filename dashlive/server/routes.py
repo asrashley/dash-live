@@ -111,7 +111,7 @@ routes = {
         handler='media_requests.LiveMedia',
         title="DASH fragment"),
     "dash-od-media": Route(
-        r'/dash/vod/<stream>/<regex("[\w-]+"):filename>.<regex("(mp4|m4v|m4a|m4s)"):ext>',
+        r'/dash/odvod/<stream>/<regex("[\w-]+"):filename>.<regex("(mp4|m4v|m4a|m4s)"):ext>',
         handler='media_requests.OnDemandMedia',
         title="DASH media file"),
     "index-media-file": Route(
