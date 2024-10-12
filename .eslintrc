@@ -1,14 +1,17 @@
 {
   "parserOptions": {
-    "ecmaVersion": 2020,
-    "sourceType": "script",
+    "ecmaVersion": 2022,
+    "sourceType": "module",
     "ecmaFeatures": {
       "impliedStrict": true
     }
   },
   "env": {
     "browser": true,
-    "es6": true
+    "es2022": true
+  },
+  "globals": {
+    "AbortController": "readonly"
   },
   "plugins": [
   ]
