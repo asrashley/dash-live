@@ -199,6 +199,8 @@ class TestHtmlPageHandlers(FlaskTestBase):
                 continue
             self.assertEqual(f'model-{name}', input_field.get('id'))
             expected = getattr(stream, name)
+            if expected is None:
+                expected = ""
             actual = input_field.get('value')
             self.assertEqual(
                 expected, actual,

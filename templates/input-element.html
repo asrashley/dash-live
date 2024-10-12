@@ -30,7 +30,7 @@
     {%- if field.type == 'checkbox' %}
     {%- if field.value %} checked{% endif %}
     {% else %}
-    {%- if 'value' in field %} value="{{field.value}}"{% endif %}
+    {%- if 'value' in field and field.value != None %} value="{{field.value}}"{% endif %}
     {% endif %}
     {%- if field.min %} min="{{field.min}}"{% endif %}
     {%- if field.max %} max="{{field.max}}"{% endif %}
