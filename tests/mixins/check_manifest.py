@@ -326,9 +326,10 @@ class DashManifestCheckMixin:
 
     def check_generated_manifest_against_fixture(
             self, mpd_filename: str, mode: str, encrypted: bool,
-            now: str, **kwargs):
+            now: str, **kwargs) -> None:
         """
-        Check a freshly generated manifest against a "known good" previous example
+        Checks a freshly generated manifest against a "known good"
+        previous example
         """
         self.setup_media()
         self.init_xml_namespaces()
@@ -364,11 +365,12 @@ class DashManifestCheckMixin:
             mpd_filename: str,
             mode: str,
             stream: models.Stream,
-            options: OptionsContainer) -> dict:
+            options: OptionsContainer) -> TemplateContext:
         mock = MockServeManifest(flask.request)
         context: TemplateContext = {
             'mpd': ManifestContext(
-                manifest=manifests.manifest[mpd_filename], options=options,
+                manifest=manifests.manifest[mpd_filename],
+                options=options,
                 stream=stream),
             'mode': mode,
             'options': options,
