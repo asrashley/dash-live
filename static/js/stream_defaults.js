@@ -1,4 +1,4 @@
-import $ from '/libs/jquery.js';
+import $ from 'jquery';
 
 const allDrms = ['clearkey', 'marlin', 'playready',];
 

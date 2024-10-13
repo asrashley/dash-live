@@ -1,6 +1,5 @@
 import { html } from 'htm/preact';
 import { useCallback } from 'preact/hooks'
-import { useComputed } from "@preact/signals";
 
 import { Alert } from './Alert.js';
 
