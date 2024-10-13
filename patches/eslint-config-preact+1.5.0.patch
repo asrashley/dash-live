@@ -1,0 +1,11 @@
+diff --git a/node_modules/eslint-config-preact/dist/eslint-config-preact.module.js b/node_modules/eslint-config-preact/dist/eslint-config-preact.module.js
+index bfc35ea..515c8f3 100644
+--- a/node_modules/eslint-config-preact/dist/eslint-config-preact.module.js
++++ b/node_modules/eslint-config-preact/dist/eslint-config-preact.module.js
+@@ -151,4 +151,5 @@ var index = {
+   }
+ };
+ 
+-export { index as default };
++//export { index as default };
++module.exports = index;
