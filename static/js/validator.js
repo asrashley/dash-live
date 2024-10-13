@@ -1,5 +1,5 @@
-import $ from '/libs/jquery.js';
-import { io } from '/libs/socket.io.js';
+import $ from 'jquery';
+import { io } from 'socket.io';
 import { decode } from './prod/codec-string.js';
 
 function updateDirectoryState(target) {

@@ -1,4 +1,4 @@
-import $ from '/libs/jquery.js';
+import $ from 'jquery';
 import { decode } from './prod/codec-string.js';
 import { enableTooltips } from './tooltips.js';
 

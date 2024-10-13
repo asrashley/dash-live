@@ -1,8 +1,5 @@
-import { html } from 'htm/preact';
-import { Link, useLocation, useRouter } from 'wouter-preact';
+import { useLocation, useRouter } from 'wouter-preact';
 import { navigate } from "wouter/use-browser-location";
-
-import { routeFromUrl } from '../endpoints.js';
 
 function followInternalLink(ev) {
   const href = ev.target.getAttribute('href');
@@ -27,7 +24,7 @@ function breadCrumbItemHtml({title, href, active, id}) {
 }
 
 export function BreadCrumbs() {
-  const [location, setLocation] = useLocation();
+  const location = useLocation()[0];
   const { base } = useRouter();
 
   const baseParts = base.split('/');

@@ -1,4 +1,4 @@
-import $ from '/libs/jquery.js';
+import $ from 'jquery';
 import defaultOptions from '/libs/default-options.js';
 
 const pageState = {

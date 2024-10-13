@@ -1,5 +1,4 @@
-/* globals console */
-import $ from '/libs/jquery.js';
+import $ from 'jquery';
 import { enableTooltips } from './tooltips.js';
 import { validateFormValues } from './form_validation.js';
 
