@@ -5,7 +5,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import js from "@eslint/js";
 import { FlatCompat } from "@eslint/eslintrc";
-//import eslintConfigPreact from "eslint-config-preact";
+import eslintConfigPreact from "eslint-config-preact";
+import eslintPluginReact from "eslint-plugin-react";
+import eslintPluginReactHooks from "eslint-plugin-react-hooks";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,12 +17,13 @@ const compat = new FlatCompat({
     allConfig: js.configs.all
 });
 
-export default [...fixupConfigRules(compat.extends(
+export default [
+  ...fixupConfigRules(compat.extends(
     "eslint:recommended",
     "plugin:import/recommended",
-)),
-  /*              ...eslint-config-preact,*/
-                {
+    "plugin:react-hooks/recommended",
+  )),
+  {
     files: [
         "static/js/**/*.js"
     ],
@@ -28,7 +31,9 @@ export default [...fixupConfigRules(compat.extends(
         'node_modules/*'
     ],
     plugins: {
-        import: fixupPluginRules(_import),
+      "import": fixupPluginRules(_import),
+      react: fixupPluginRules(eslintPluginReact),
+      "react-hooks": fixupPluginRules(eslintPluginReactHooks)
     },
 
     languageOptions: {
@@ -54,9 +59,11 @@ export default [...fixupConfigRules(compat.extends(
                 extensions: [".js"],
             },
         },
+        "react": eslintConfigPreact.settings.react,
     },
 
     rules: {
+      ...eslintConfigPreact.rules,
         "no-unused-vars": ["error", {
             argsIgnorePattern: "^_",
         }],
