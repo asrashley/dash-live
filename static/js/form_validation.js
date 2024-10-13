@@ -1,4 +1,3 @@
-/* globals console */
 /**
  * Create an object with all the values from an HTML form
  * @param form {HTMLFormElement} the form to extract data from
