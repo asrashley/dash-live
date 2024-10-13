@@ -1,0 +1,46 @@
+{
+  "parserOptions": {
+    "ecmaVersion": 2022,
+    "sourceType": "module"
+  },
+  "env": {
+    "browser": true
+  },
+  "globals": {
+  },
+  "plugins": [
+    "import",
+    "react",
+    "react-hooks"
+  ],
+  "rules": {
+    "react/react-in-jsx-scope": "off",
+    "no-unused-vars": [
+      "error",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^React$"
+      }
+    ],
+    "import/first": "error",
+    "import/no-amd": "error",
+    "import/no-anonymous-default-export": "warn",
+    "react/require-render-return": "error",
+    "import/no-named-as-default": "off"
+  },
+  "settings": {
+    "react": {
+      "version": "18"
+    },
+    "import/resolver": {
+      "node": {
+        "paths": [
+          "static/js"
+        ],
+        "extensions": [
+          ".js"
+        ]
+      }
+    }
+  }
+}
