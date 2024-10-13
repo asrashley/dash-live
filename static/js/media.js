@@ -1,5 +1,4 @@
-/* jshint esversion: 11 */
-import $ from '/libs/jquery.js';
+import $ from 'jquery';
 import { enableTooltips } from './tooltips.js';
 
 function addClickListeners() {
