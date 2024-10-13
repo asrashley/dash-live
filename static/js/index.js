@@ -108,7 +108,7 @@ function updateManifestURL() {
   url = url.replace(/\.mpd$/, '/index.html');
   const params_str = Object.values(params).join('&');
   if (params_str) {
-    url += '?' + params_str;
+    url += `?${params_str}`;
   }
   $('a.selected-stream .title').text(`Play ${stream.title}`);
   dest.attr('href', document.location.origin + url);
@@ -127,9 +127,11 @@ function updateManifestURL() {
   $('.view-manifest').attr('href', dest.attr('href').replace('/dash/', '/view/'));
   if(window.history && typeof(history.pushState)==="function") {
     const page_params = Object.values(params);
-    page_params.push('manifest=' + $('#model-manifest').val());
-    url = pageState.baseurl + '#' + page_params.join('&');
-    history.replaceState(pageState, $('#buttons tbody .manifest.selected').text(), url);
+    const modelManifest = $('#model-manifest').val()
+    page_params.push(`manifest=${modelManifest}`);
+    url = `${pageState.baseurl}#${page_params.join('&')}`;
+    history.replaceState(
+      pageState, $('#buttons tbody .manifest.selected').text(), url);
   }
 }
 
@@ -144,10 +146,10 @@ function showOrHideAdvancedOptions(enable) {
 }
 
 function updateDom() {
-  $('#group-0 .accordion-header').html(
-    '<span class="accordion-button">' +
-      $('#group-0 .accordion-header .accordion-button').text() +
-      '</span>');
+  $('#group-0 .accordion-header').html(`
+    <span class="accordion-button">
+      ${$('#group-0 .accordion-header .accordion-button').text()}
+    </span>`);
   const allOptions = $("#show-all-options").detach();
   $('#group-0 .accordion-header').append(allOptions);
   $('.row-field-drm_clearkey').removeClass('hidden advanced');
