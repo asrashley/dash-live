@@ -1,4 +1,4 @@
-name: jshint JavaScript source
+name: lint JavaScript source
 
 on:
   push:
@@ -21,5 +21,7 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
-      - name: JS lint checks
-        run: npm run lint
+      - name: JS lint checks for ES5 code
+        run: npm run lint:compat
+      - name: JS lint checks for ESM code
+        run: npm run lint:esm
