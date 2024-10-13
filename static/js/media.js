@@ -27,9 +27,9 @@ function removeClickListeners() {
 
 function reloadContent() {
     $.ajax({
-        url: document.location + '?fragment=1',
+        url: `${document.location}?fragment=1`,
         method: 'GET',
-    }).done(function (result) {
+    }).done((result) => {
         removeClickListeners();
         $('#media-management').parent().html(result);
         addClickListeners();
@@ -40,19 +40,19 @@ function addKey(ev) {
     const $row = $(ev.target).parents('tr');
     const kid = $row.find('input[name="kid"]').val();
     const key = $row.find('input[name="key"]').val();
-    const csrf = $('#keys').data('csrf');
+    const csrf_token = $('#keys').data('csrf');
     $row.find('.btn').attr("disabled", true);
     $('#keys .error').text('');
     $.ajax({
         url: '/key',
         method: 'PUT',
         data: {
-            "kid": kid,
-            "key": key,
-            "csrf_token": csrf,
+          kid,
+          key,
+          csrf_token,
         },
         dataType: 'json',
-    }).done(function (result) {
+    }).done((result) => {
         if (result.error) {
             $('#keys .error').text(result.error);
             return;
@@ -76,7 +76,7 @@ function deleteKey(ev) {
         url: `/key/${kid}?csrf_token=${csrf}`,
         method: 'DELETE',
         dataType: 'json',
-    }).done(function (result) {
+    }).done((result) => {
         if (result.error) {
             $('#keys .error').text(result.error);
         } else {
@@ -85,7 +85,7 @@ function deleteKey(ev) {
         if (result.csrf) {
             $('#keys').data('csrf', result.csrf);
         }
-    }).fail(function (jqXhr, status) {
+    }).fail((jqXhr, status) => {
         $('#keys .error').text(status);
     });
 }
@@ -93,11 +93,11 @@ function deleteKey(ev) {
 function addStream(ev) {
     const $row = $(ev.target).parents('tr');
     const data = {
-        'title': $row.find('input[name="title"]').val(),
-        'directory': $row.find('input[name="directory"]').val(),
-        'marlin_la_url': $row.find('input[name="marlin_la_url"]').val(),
-        'playready_la_url': $row.find('input[name="playready_la_url"]').val(),
-        'csrf_token': $('#streams').data('csrf'),
+        title: $row.find('input[name="title"]').val(),
+        directory: $row.find('input[name="directory"]').val(),
+        marlin_la_url: $row.find('input[name="marlin_la_url"]').val(),
+        playready_la_url: $row.find('input[name="playready_la_url"]').val(),
+        csrf_token: $('#streams').data('csrf'),
     };
     $row.find('.btn').attr("disabled", true);
     $('#streams .error').text('');
@@ -107,7 +107,7 @@ function addStream(ev) {
         contentType: "application/json; charset=utf-8",
         data: JSON.stringify(data),
         dataType: 'json',
-    }).done(function (result) {
+    }).done((result) => {
         if (result.error) {
             $('#streams .error').text(result.error);
             return;
@@ -148,14 +148,14 @@ function deleteStream(ev) {
     const directory = $(ev.target).data('directory');
     const dialog = $('#dialog-box');
     dialog.find(".modal-body").html(
-        '<div><h3>Delete stream &quot;' + title + '&quot; ?</h3>' +
-            '<p>This will also delete all of the media files for this stream</p></div>');
+        `<div><h3>Delete stream &quot;${ title }&quot; ?</h3>
+        <p>This will also delete all of the media files for this stream</p></div>`);
     dialog.find(".modal-footer").html(
-        '<div>' +
-            '<button class="btn btn-danger" style="margin:1em" data-cmd="yes">Delete stream ' +
-            directory + '</button>' +
-            '<button class="btn btn-secondary" data-cmd="no">Cancel</button>' +
-            '</div>');
+      `<div>
+      <button class="btn btn-danger" style="margin:1em" data-cmd="yes">
+      Delete stream ${directory }</button>
+      <button class="btn btn-secondary" data-cmd="no">Cancel</button>
+      </div>`);
     dialog.find(".modal-footer .btn").one('click', onClick);
     showDialog();
     return false;
@@ -175,13 +175,13 @@ function confirmDeleteStream(id, csrf) {
             csrf_token: csrf,
             ajax: 1,
         },
-    }).done(function (result) {
+    }).done((result) => {
         if (result.error) {
             $('#streams .error').text(result.error);
         } else {
             window.location = $('#media-management').data('back');
         }
-    }).fail(function (jqXhr, status) {
+    }).fail((jqXhr, status) => {
         $('#streams .error').text(status);
     });
 }
@@ -202,7 +202,7 @@ function indexFile(ev) {
         url: `/media/index/${ blobId }?csrf_token=${ csrf }`,
         method: 'GET',
         dataType: 'json',
-    }).done(function (result) {
+    }).done((result) => {
         if (result.csrf) {
             $('#media-files').data('csrf', result.csrf);
         }
@@ -249,7 +249,7 @@ function deleteFile(ev) {
         url: `${href}?csrf_token=${csrf}`,
         method: 'DELETE',
         dataType: 'json',
-    }).done(function (result) {
+    }).done((result) => {
         if (result.error) {
             $('#media .error').text(result.error);
         }
@@ -257,7 +257,7 @@ function deleteFile(ev) {
             $('#media-files').data('csrf', result.csrf);
         }
 	reloadContent();
-    }).fail(function (jqXhr, status) {
+    }).fail((jqXhr, status) => {
         $('#media .error').text(status);
     });
 }
@@ -279,14 +279,14 @@ function uploadFile(ev) {
     showDialog();
     $.ajax({
         url: form.attr("action"),
-        data: data,
+        data,
         type: "POST",
         enctype: 'multipart/form-data',
         processData: false,
         contentType: false,
         timeout: 600000,
         cache: false,
-    }).done(function (data) {
+    }).done((data) => {
         $("#btnSubmit").prop("disabled", false);
         if (data.error) {
             const err = dialog.find('.modal-body .error');
@@ -303,13 +303,13 @@ function uploadFile(ev) {
         }
 	closeDialog();
         reloadContent();
-    }).fail(function (e) {
+    }).fail((e) => {
         const err = dialog.find('.modal-body .error');
         if (e.responseJSON) {
             err.text(e.responseJSON.error);
         }
         else if (e.statusText) {
-            err.text(e.status + ' ' + e.statusText);
+            err.text(`${e.status} ${e.statusText}`);
         } else if (e.responseText) {
             err.text(e.responseText);
         } else {

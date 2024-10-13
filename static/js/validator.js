@@ -27,7 +27,7 @@ function checkInputValidity(target) {
 
 function addLogMessage(msg) {
     const { level, text } = msg;
-    const item = $('<p class="' + level + '">' + text + '</p>');
+    const item = $(`<p class="${ level }">${ text }</p>`);
     $('#validator .results').append(item);
 }
 
@@ -35,7 +35,7 @@ const socket = io();
 
 socket.on('log', addLogMessage);
 
-socket.on('progress', function(data) {
+socket.on('progress', (data) => {
     let { pct, text, finished } = data;
     if (pct !== undefined) {
         const pct_str = `${pct}%`;
@@ -53,9 +53,9 @@ socket.on('progress', function(data) {
     }
 });
 
-socket.on('manifest', function(data) {
+socket.on('manifest', (data) => {
     $('#manifest-text').empty();
-    data.text.forEach(function(txt, idx) {
+    data.text.forEach((txt, idx) => {
         const item = $(`<div class="manifest-line" id="line-${idx + 1}" />`);
         item.append($(`<span class="line-num">${idx + 1}</span>`));
         const text_elt = $('<pre class="text"></pre>');
@@ -65,7 +65,7 @@ socket.on('manifest', function(data) {
     });
 });
 
-socket.on('codecs', function(codecs) {
+socket.on('codecs', (codecs) => {
     const thead = '<tr><th class="codec-string">Codec</th>' +
           '<th class="codec-detail">Details</th>';
     const rows = codecs.map(codec => {
@@ -79,7 +79,7 @@ socket.on('codecs', function(codecs) {
         `<table class="table table-striped manifest-codecs"><thead>${thead}</thead><tbody>${rows.join('')}</tbody></table>`);
 });
 
-socket.on('manifest-validation', function(fields) {
+socket.on('manifest-validation', (fields) => {
     $('#manifest-form').addClass('was-validated');
     $('#manifest-form input').each((idx, elt) => {
         const name = $(elt).attr('name');
@@ -98,7 +98,7 @@ socket.on('manifest-validation', function(fields) {
        } */
 });
 
-socket.on('manifest-errors', function(errors) {
+socket.on('manifest-errors', (errors) => {
     const rows = [];
     errors.forEach((err) => {
         const { assertion, location, clause, msg } = err;
@@ -123,7 +123,7 @@ socket.on('manifest-errors', function(errors) {
         `<table class="table table-striped manifest-errors"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`);
 });
 
-socket.on('script', function(data) {
+socket.on('script', (data) => {
     const { filename, title, prefix } = data;
     addLogMessage({
         level: 'info',
@@ -158,7 +158,7 @@ $('#submit').on('click', (ev) => {
         method: 'validate',
     };
     $(form).addClass('was-validated');
-    $(form).serializeArray().forEach(function(item) {
+    $(form).serializeArray().forEach((item) => {
         data[item.name] = item.value;
     });
     $('#btn-validate').attr('disabled', 'disabled');
