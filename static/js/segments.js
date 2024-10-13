@@ -5,10 +5,10 @@ function updateHistory(ev) {
     const path = $(ev.target).data('path');
     if (url.hash) {
       url.hash = path;
-      history.replaceState({path: path,}, "", url);
+      history.replaceState({path,}, "", url);
     } else {
       url.hash = path;
-      history.pushState({path: path,}, "", url);
+      history.pushState({path,}, "", url);
     }
 }
 
