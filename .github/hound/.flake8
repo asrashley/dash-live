@@ -1,0 +1,8 @@
+[flake8]
+select = C,E,F,W,B,D,B950
+ignore = E203,E302,E402,E501,C901,W504
+max-line-length = 127
+max-complexity = 10
+no-isort-config = true
+use-varnames-strict-mode = true
+exclude = .git,__pycache__, .tox
