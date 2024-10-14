@@ -4,6 +4,6 @@ import { useParams } from "wouter-preact";
 import { AddOrEditStreamPage } from './AddOrEditStreamPage.js';
 
 export function EditStreamPage() {
-  const {name} = useParams();
-  return html`<${AddOrEditStreamPage} name="${name}" />`;
+  const {mps_name} = useParams();
+  return html`<${AddOrEditStreamPage} name="${mps_name}" />`;
 }
