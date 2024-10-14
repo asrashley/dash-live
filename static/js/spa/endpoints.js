@@ -78,8 +78,8 @@ export class ApiRequests {
     });
   }
 
-  getMultiPeriodStream(name, options) {
-    return this.sendApiRequest(urlFor.editMps({name}), {
+  getMultiPeriodStream(mps_name, options) {
+    return this.sendApiRequest(urlFor.editMps({mps_name}), {
       service: 'streams',
       ...options,
     });
@@ -94,8 +94,8 @@ export class ApiRequests {
     });
   }
 
-  modifyMultiPeriodStream(name, data, options) {
-    return this.sendApiRequest(urlFor.editMps({name}), {
+  modifyMultiPeriodStream(mps_name, data, options) {
+    return this.sendApiRequest(urlFor.editMps({mps_name}), {
       ...options,
       service: 'streams',
       body: JSON.stringify(data),

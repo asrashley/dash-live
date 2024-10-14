@@ -36,7 +36,6 @@ from dashlive.utils.lang import lang_is_equal
 from dashlive.utils.timezone import UTC
 
 from .cgi_parameter_collection import CgiParameterCollection
-from .decorators import current_stream
 from .drm_context import DrmContext
 from .time_source_context import TimeSourceContext
 from .utils import is_https_request
