@@ -269,7 +269,9 @@ class ServePatch(RequestHandlerBase):
         options.remove_unused_parameters('live')
         original_publish_time = datetime.datetime.fromtimestamp(
             publish, tz=UTC())
-        dash = ManifestContext(manifest=mft, options=options)
+        dash = ManifestContext(
+            manifest=mft, options=options, stream=current_stream,
+            multi_period=None)
         context = cast(PatchTemplateContext, self.create_context(
             title=current_stream.title, mpd=dash, options=options,
             stream=current_stream,

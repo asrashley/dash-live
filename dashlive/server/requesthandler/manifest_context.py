@@ -61,29 +61,33 @@ class ManifestContext:
     timing_ref: StreamTimingReference | None = None
     title: str
 
-    def __init__(self,
-                 options: OptionsContainer,
-                 manifest: DashManifest | None = None,
-                 stream: models.Stream | None = None) -> None:
-        if stream is None:
-            stream = current_stream
-        if not bool(stream):
-            raise ValueError('Stream model is not available')
+    def __init__(
+            self,
+            options: OptionsContainer,
+            manifest: DashManifest | None,
+            stream: models.Stream | None,
+            multi_period: models.MultiPeriodStream | None) -> None:
+        if multi_period is None and stream is None:
+            raise ValueError('Either Stream or MultiPeriodStream must be provided')
 
         now = datetime.datetime.now(tz=UTC())
         if options.clockDrift:
             now -= datetime.timedelta(seconds=options.clockDrift)
         self.minBufferTime = datetime.timedelta(seconds=1.5)
         self.manifest = manifest
-        self.mpd_id = stream.directory
+        if multi_period:
+            self.mpd_id = multi_period.name
+            self.title = multi_period.title
+        else:
+            self.mpd_id = stream.directory
+            self.title = stream.title
+            self.timing_ref = stream.timing_reference
         self.now = now
         self.options = options
         self.periods = []
         self.profiles = [primary_profiles[options.mode]]
         self.startNumber = 1
         self.suggestedPresentationDelay = 30
-        self.timing_ref = stream.timing_reference
-        self.title = stream.title
 
         if options.mode != 'odvod':
             self.profiles.append(additional_profiles['dvb'])
@@ -93,7 +97,11 @@ class ManifestContext:
             timing = DashTiming(self.now, self.timing_ref, options)
             self.mediaDuration = self.timing_ref.media_duration_timedelta().total_seconds()
 
-        self.periods.append(self.create_period(stream, timing))
+        if multi_period:
+            self.create_all_periods(multi_period)
+        else:
+            self.periods.append(
+                self.create_period(stream, timing, db_period=None))
         self.timeSource = None
         if self.options.mode == 'live' and self.options.utcMethod is not None:
             self.timeSource = TimeSourceContext(self.options, self.cgi_params, now)
@@ -171,19 +179,66 @@ class ManifestContext:
             return 1
         return max([p.maxSegmentDuration for p in self.periods])
 
+    def create_all_periods(self,
+                           multi_period: models.MultiPeriodStream) -> None:
+        start: datetime.timedelta = datetime.timedelta(0)
+        for prd in multi_period.periods:
+            timing = DashTiming(
+                self.now, prd.stream.timing_reference, self.options)
+            period = self.create_period(
+                stream=prd.stream, timing=timing, db_period=prd)
+            period.start = start
+            self.periods.append(period)
+            start += period.duration
+
     def create_period(self,
                       stream: models.Stream,
-                      timing: DashTiming | None) -> Period:
+                      timing: DashTiming | None,
+                      db_period: models.Period | None) -> Period:
         opts = self.options
 
-        period = Period(start=datetime.timedelta(0), id="p0")
+        if db_period:
+            period: Period = Period(
+                start=datetime.timedelta(0), id=db_period.pid,
+                duration=db_period.duration)
+        else:
+            period = Period(start=datetime.timedelta(0), id="p0")
         max_items = None
         if opts.abr is False:
             max_items = 1
-        video = self.calculate_video_adaptation_set(stream, max_items=max_items)
-        audio_adps = self.calculate_audio_adaptation_sets(stream)
-        text_adps = self.calculate_text_adaptation_sets(stream, video.lang)
 
+        video: AdaptationSet | None = None
+        audio_adps: list[AdaptationSet] = []
+        text_adps: list[AdaptationSet] = []
+        if db_period:
+            for adp in db_period.adaptation_sets:
+                adp_set = AdaptationSet(
+                    mode=self.options.mode,
+                    content_type=adp.content_type.name,
+                    id=adp.track_id,
+                    role=adp.role.name.lower(),
+                    segment_timeline=self.options.segmentTimeline)
+                for mf in adp.media_files(encrypted=self.options.encrypted):
+                    if mf.representation is None:
+                        mf.parse_media_file()
+                    if mf.representation is None:
+                        continue
+                    adp_set.representations.append(mf.representation)
+                adp_set.compute_av_values()
+                period.adaptationSets.append(adp_set)
+                if adp_set.content_type == 'video':
+                    video = adp_set
+                elif adp_set.content_type == 'audio':
+                    audio_adps.append(adp_set)
+                elif adp_set.content_type == 'text':
+                    text_adps.append(adp_set)
+        else:
+            video = self.calculate_video_adaptation_set(
+                stream, max_items=max_items)
+            audio_adps = self.calculate_audio_adaptation_sets(stream)
+            text_adps = self.calculate_text_adaptation_sets(
+                stream, video.lang)
+        assert video is not None
         if timing:
             opts.availabilityStartTime = timing.availabilityStartTime
             opts.timeShiftBufferDepth = timing.timeShiftBufferDepth
@@ -211,9 +266,10 @@ class ManifestContext:
                 video.event_streams.append(ev_stream)
             else:
                 period.event_streams.append(ev_stream)
-        period.adaptationSets.append(video)
-        period.adaptationSets += audio_adps
-        period.adaptationSets += text_adps
+        if db_period is None:
+            period.adaptationSets.append(video)
+            period.adaptationSets += audio_adps
+            period.adaptationSets += text_adps
         period.finish_setup(
             mode=opts.mode, stream_name=stream.directory, timing=timing,
             useBaseUrls=opts.useBaseUrls)
