@@ -326,7 +326,7 @@ class EditStream(HTMLHandlerBase):
         spa_handler,
     ]
 
-    def get(self, name: str) -> flask.Response:
+    def get(self, mps_name: str) -> flask.Response:
         """
         Returns a form for editing an MP stream
         """
@@ -351,7 +351,7 @@ class EditStream(HTMLHandlerBase):
         next_url=lambda: flask.url_for(
             'edit-mps', name=current_mps.name, **flask.request.json))
     @jwt_required(optional=True)
-    def post(self, name: str) -> flask.Response:
+    def post(self, mps_name: str) -> flask.Response:
         data = flask.request.json
         if not data:
             logging.waring('JSON payload missing')
@@ -377,8 +377,8 @@ class EditStream(HTMLHandlerBase):
             })
         spa: bool = data.get('spa', False)
         if spa and isinstance(pk, int):
-            return self.handle_spa_data(name, csrf_token)
-        return self.handle_form_data(name, csrf_token)
+            return self.handle_spa_data(mps_name, csrf_token)
+        return self.handle_form_data(mps_name, csrf_token)
 
     def handle_form_data(self, name: str, csrf_token: str) -> flask.Response:
         data = flask.request.json

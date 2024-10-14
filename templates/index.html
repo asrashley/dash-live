@@ -9,7 +9,9 @@
   <span class="fw-semibold">Manifest URL: </span>
   <a id="dashurl" href="{{ default_url }}">{{ default_url }}</a>
 </div>
-<div id="with-modules" style="display: none" data-url-template="{{ url_template }}">
+<div id="with-modules" style="display: none"
+     data-stream-url-template="{{ stream_url_template }}"
+     data-mps-url-template="{{ mps_url_template }}">
   <div class="row">
     <div class="play-button col-6" >
       <a class="btn btn-primary selected-stream" href="{{ default_url }}">

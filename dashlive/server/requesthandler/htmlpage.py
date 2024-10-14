@@ -36,7 +36,12 @@ from dashlive.server.options.player_options import ShakaVersion, DashjsVersion
 from dashlive.server.options.types import OptionUsage
 
 from .base import HTMLHandlerBase
-from .decorators import uses_stream, current_stream
+from .decorators import (
+    uses_stream,
+    current_stream,
+    uses_multi_period_stream,
+    current_mps,
+)
 from .manifest_context import ManifestContext
 from .utils import add_allowed_origins, is_https_request
 
@@ -46,12 +51,11 @@ class MainPage(HTMLHandlerBase):
     """
 
     def get(self) -> flask.Response:
-        context = self.create_context(title='DASH test streams')
-        context.update({
-            'rows': [],
-            'streams': list(models.Stream.all()),
-            'exclude_buttons': True,
-        })
+        context = self.create_context(
+            title='DASH test streams', rows=[],
+            streams=list(models.Stream.all()),
+            mp_streams=list(models.MultiPeriodStream.all()),
+            exclude_buttons=True)
         if context['streams']:
             context.update({
                 'default_stream': context['streams'][0],
@@ -106,15 +110,24 @@ class MainPage(HTMLHandlerBase):
                 "selected": name == "hand_made.mpd",
             } for name in filenames],
         })
+        available_streams: list[dict] = []
+        for stream in context['streams']:
+            available_streams.append({
+                "title": stream.title,
+                "value": f"stream.{stream.directory}",
+                "selected": len(available_streams) == 0,
+            })
+        for stream in context['mp_streams']:
+            available_streams.append({
+                "title": stream.title,
+                "value": f"mps.{stream.name}",
+                "selected": False
+            })
         context['field_groups'][0].fields.insert(0, {
             "name": "stream",
             "title": "Stream",
             "type": "radio",
-            "options": [{
-                "title": stream.title,
-                "value": stream.directory,
-                "selected": stream.directory == context['streams'][0].directory,
-            } for stream in context['streams']],
+            "options": available_streams,
         })
         context['field_groups'][0].fields.insert(0, {
             "name": "mode",
@@ -155,7 +168,12 @@ class MainPage(HTMLHandlerBase):
             mode='mode').replace('/manifest', '/{manifest}')
         url = url.replace('/directory/', '/{directory}/')
         url = url.replace('/mode/', '/{mode}/')
-        context['url_template'] = url
+        context['stream_url_template'] = url
+        url = flask.url_for(
+            "dash-mpd-mps", mode="_mode-", mps_name="_stream-",
+            manifest="_manifest-")
+        url = url.replace("_", "{").replace("-", "}")
+        context['mps_url_template'] = url
         extras = [DrmLocationOption]
         cgi_options = OptionsRepository.get_cgi_options(
             featured=True, omit_empty=False, extras=extras)
@@ -309,6 +327,30 @@ class ViewManifest(HTMLHandlerBase):
             return flask.make_response('Invalid CGI parameters', 400)
         mpd_url = flask.url_for(
             'dash-mpd-v3', stream=stream, manifest=manifest, mode=mode)
+        options.remove_unused_parameters(mode, use=~OptionUsage.HTML)
+        mpd_url += options.generate_cgi_parameters_string()
+        context.update({
+            'mpd_url': mpd_url,
+        })
+        return flask.render_template('manifest.html', **context)
+
+
+class ViewMpsManifest(HTMLHandlerBase):
+    """
+    Responds with an HTML page that shows the contents of a multi-period manifest
+    """
+
+    decorators = [uses_multi_period_stream]
+
+    def get(self, mode: str, mps_name: str, manifest: str) -> flask.Response:
+        context = self.create_context(title=current_mps.title)
+        try:
+            options = self.calculate_options(mode, flask.request.args)
+        except ValueError as err:
+            logging.error('Invalid CGI parameters: %s', err)
+            return flask.make_response('Invalid CGI parameters', 400)
+        mpd_url = flask.url_for(
+            'dash-mpd-mps', mps_name=mps_name, manifest=manifest, mode=mode)
         options.remove_unused_parameters(mode, use=~OptionUsage.HTML)
         mpd_url += options.generate_cgi_parameters_string()
         context.update({

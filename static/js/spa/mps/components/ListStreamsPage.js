@@ -5,7 +5,7 @@ import { useEffect, useState, useContext } from 'preact/hooks'
 import { EndpointContext, urlFor } from '../../endpoints.js';
 
 function TableRow({name, title, periods, duration}) {
-  const url = urlFor.editMps({name});
+  const url = urlFor.editMps({mps_name: name});
   return html`
     <tr>
       <td class="name text-center">
