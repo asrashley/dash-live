@@ -114,7 +114,7 @@ class DashManifestCheckMixin:
         This test might be _very_ slow (i.e. expect it to take several minutes)
         if the manifest uses lots of features.
         """
-        manifest = manifests.manifest[filename]
+        manifest = manifests.manifest_map[filename]
         self.assertIn(mode, primary_profiles)
         modes = manifest.restrictions.get('mode', primary_profiles.keys())
         self.assertIn(mode, modes)
@@ -340,7 +340,7 @@ class DashManifestCheckMixin:
             manifest=mpd_filename)
         defaults = OptionsRepository.get_default_options()
         options = OptionsRepository.convert_cgi_options(kwargs, defaults=defaults)
-        manifest = manifests.manifest[mpd_filename]
+        manifest = manifests.manifest_map[mpd_filename]
         options.segmentTimeline = manifest.segment_timeline
         options.add_field('mode', mode)
         options.remove_unused_parameters(mode)
@@ -351,7 +351,8 @@ class DashManifestCheckMixin:
             with self.create_mock_request_context(url, stream):
                 context = self.generate_manifest_context(
                     mpd_filename, mode=mode, stream=stream, options=options)
-                text = flask.render_template(f'manifests/{mpd_filename}', **context)
+                text = flask.render_template(
+                    f'manifests/{mpd_filename}', **context)
         fixture = self.fixture_filename(mpd_filename, mode, encrypted)
         if not fixture.exists():
             with fixture.open('wt', encoding='utf-8') as dest:
@@ -369,7 +370,7 @@ class DashManifestCheckMixin:
         mock = MockServeManifest(flask.request)
         context: TemplateContext = {
             'mpd': ManifestContext(
-                manifest=manifests.manifest[mpd_filename],
+                manifest=manifests.manifest_map[mpd_filename],
                 options=options,
                 stream=stream),
             'mode': mode,

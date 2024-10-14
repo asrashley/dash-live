@@ -56,7 +56,7 @@ class TestHtmlPageHandlers(FlaskTestBase):
         self.assertIn('Log In', response.text)
         media_list_url = flask.url_for('list-streams')
         self.assertIn(f'href="{media_list_url}"', response.text)
-        for filename, manifest in manifests.manifest.items():
+        for filename, manifest in manifests.manifest_map.items():
             mpd_url = flask.url_for(
                 'dash-mpd-v3', manifest=filename, stream='placeholder',
                 mode='live')
@@ -287,13 +287,13 @@ class TestHtmlPageHandlers(FlaskTestBase):
         self.assertGreaterThan(models.MediaFile.count(), 0)
         num_tests = 0
         use = OptionUsage.AUDIO + OptionUsage.VIDEO + OptionUsage.MANIFEST + OptionUsage.HTML
-        for filename, manifest in manifests.manifest.items():
+        for filename, manifest in manifests.manifest_map.items():
             for mode in manifest.supported_modes():
                 options = manifest.get_supported_dash_options(
                     mode, simplified=True, only=only, use=use)
                 num_tests += options.num_tests * models.Stream.count()
         count = 0
-        for filename, manifest in manifests.manifest.items():
+        for filename, manifest in manifests.manifest_map.items():
             for mode in manifest.supported_modes():
                 options = manifest.get_supported_dash_options(
                     mode, simplified=True, only=only, use=use)
@@ -315,11 +315,18 @@ class TestHtmlPageHandlers(FlaskTestBase):
                 mf.delete()
             models.db.session.commit()
         self.check_video_html_page(
-            'hand_made.mpd', manifests.manifest['hand_made.mpd'], 'vod',
+            'hand_made.mpd',
+            manifests.manifest_map['hand_made.mpd'],
+            'vod',
             models.Stream.get(title=self.STREAM_TITLE), '', scheme='http')
 
-    def check_video_html_page(self, filename: str, manifest: manifests.DashManifest,
-                              mode: str, stream: models.Stream, query: str, scheme: str) -> None:
+    def check_video_html_page(self,
+                              filename: str,
+                              manifest: manifests.DashManifest,
+                              mode: str,
+                              stream: models.Stream,
+                              query: str,
+                              scheme: str) -> None:
         self.app.config['PREFERRED_URL_SCHEME'] = scheme
         html_url = f'{scheme}://localhost' + flask.url_for(
             "video",

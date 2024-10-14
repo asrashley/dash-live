@@ -6,13 +6,16 @@
 #
 #############################################################################
 from functools import wraps
+import html
 import logging
-from typing import cast, Callable
+from typing import cast, Callable, Iterable
 
 import flask  # type: ignore
 from flask_login import current_user
 from werkzeug.local import LocalProxy  # type: ignore
 
+from dashlive.mpeg.dash.profiles import primary_profiles
+from dashlive.server.manifests import DashManifest, manifest_map
 from dashlive.server.models import (
     Group,
     Key,
@@ -204,6 +207,46 @@ def modifies_user_model(func):
 
 
 modifying_user = cast(User, LocalProxy(lambda: flask.g.modify_user))
+
+def uses_manifest(func):
+    """
+    Decorator that checks manifest name is valid
+    It will automatically return a 404 error if not found
+    """
+    @wraps(func)
+    def decorated_function(*args, **kwargs):
+        manifest: DashManifest | None = None
+        mft_name: str = kwargs.get('manifest', '')
+        if not mft_name:
+            return flask.make_response('Manifest name missing', 404)
+        if not mft_name.endswith('.mpd'):
+            mft_name = f"{mft_name}.mpd"
+        try:
+            manifest = manifest_map[mft_name]
+        except KeyError as err:
+            logging.debug('Unknown manifest: %s (%s)', mft_name, err)
+        if manifest is None:
+            return flask.make_response(
+                f'{html.escape(mft_name)} not found', 404)
+        mode: str | None = kwargs.get('mode')
+        modes: Iterable[str] = primary_profiles.keys()
+        if mode is not None:
+            try:
+                modes = manifest.restrictions['mode']
+            except KeyError:
+                pass
+            if mode not in modes:
+                logging.debug(
+                    'Mode %s not supported with manifest %s (supported=%s)',
+                    mode, mft_name, modes)
+                return flask.make_response(
+                    f'{html.escape(mft_name)} not found', 404)
+        flask.g.manifest = manifest
+        return func(*args, **kwargs)
+    return decorated_function
+
+
+current_manifest = cast(DashManifest, LocalProxy(lambda: flask.g.manifest))
 
 
 def uses_multi_period_stream(func):

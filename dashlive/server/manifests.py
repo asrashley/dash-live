@@ -221,15 +221,17 @@ class DashManifest:
         }
 
 
-manifest = {
-    'hand_made.mpd': DashManifest(
-        name='hand_made',
-        title='Hand-made manifest',
-        features={
-            'abr', 'audioCodec', 'useBaseUrls', 'drmSelection', 'eventTypes',
-            'mode', 'minimumUpdatePeriod', 'numPeriods', 'patch',
-            'segmentTimeline', 'utcMethod'},
-    ),
+default_manifest = DashManifest(
+    name='hand_made',
+    title='Hand-made manifest',
+    features={
+        'abr', 'audioCodec', 'useBaseUrls', 'drmSelection', 'eventTypes',
+        'mode', 'minimumUpdatePeriod', 'numPeriods', 'patch',
+        'segmentTimeline', 'utcMethod'},
+)
+
+manifest_map = {
+    'hand_made.mpd': default_manifest,
     'manifest_vod_aiv.mpd': DashManifest(
         name='manifest_vod_aiv',
         title='AIV on demand profile',

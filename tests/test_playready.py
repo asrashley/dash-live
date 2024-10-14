@@ -696,7 +696,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
 
     async def test_all_playready_options(self):
         filename = 'hand_made.mpd'
-        manifest = manifests.manifest[filename]
+        manifest = manifests.manifest_map[filename]
         drm_opts = list(manifest.get_drm_options('vod', only={'playready'}))
         extras = [
             manifests.SupportedOptionTuple('drm', len(drm_opts), drm_opts),
