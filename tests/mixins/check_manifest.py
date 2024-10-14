@@ -372,6 +372,7 @@ class DashManifestCheckMixin:
             'mpd': ManifestContext(
                 manifest=manifests.manifest_map[mpd_filename],
                 options=options,
+                multi_period=None,
                 stream=stream),
             'mode': mode,
             'options': options,
