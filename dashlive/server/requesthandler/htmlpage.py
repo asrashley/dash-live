@@ -93,15 +93,15 @@ class MainPage(HTMLHandlerBase):
                         field['rowClass'] = 'row featured'
                 except KeyError:
                     pass
-        filenames = list(manifests.manifest.keys())
-        filenames.sort(key=lambda name: manifests.manifest[name].title)
+        filenames = list(manifests.manifest_map.keys())
+        filenames.sort(key=lambda name: manifests.manifest_map[name].title)
         context['field_groups'][0].fields.insert(0, {
             "name": "manifest",
             "title": "Manifest",
             "text": "Manifest template to use",
             "type": "select",
             "options": [{
-                "title": f'{name}: {manifests.manifest[name].title}',
+                "title": f'{name}: {manifests.manifest_map[name].title}',
                 "value": name,
                 "selected": name == "hand_made.mpd",
             } for name in filenames],
@@ -145,7 +145,7 @@ class MainPage(HTMLHandlerBase):
             context['rows'].append({
                 'filename': name,
                 'url': url,
-                'manifest': manifests.manifest[name],
+                'manifest': manifests.manifest_map[name],
                 'option': [],
             })
         url = flask.url_for(
@@ -239,7 +239,8 @@ class VideoPlayer(HTMLHandlerBase):
             return flask.make_response(f'Unknown stream: {html.escape(stream)}', 404)
         options.remove_unused_parameters(mode)
         dash_parms = ManifestContext(
-            manifest=manifests.manifest[manifest], options=options,
+            manifest=manifests.manifest_map[manifest],
+            options=options,
             stream=stream_model)
         dash_parms.stream = stream_model.to_dict(
             only={'pk', 'title', 'directory', 'playready_la_url', 'marlin_la_url'})
@@ -255,7 +256,7 @@ class VideoPlayer(HTMLHandlerBase):
             'mimeType': 'application/dash+xml',
             'source': urllib.parse.urljoin(flask.request.host_url, mpd_url),
             'shakaUrl': None,
-            'title': manifests.manifest[manifest].title,
+            'title': manifests.manifest_map[manifest].title,
             'videoPlayer': options.videoPlayer,
         })
         if options.drmSelection:
