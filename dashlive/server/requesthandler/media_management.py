@@ -47,7 +47,7 @@ from .decorators import (
     uses_stream, current_stream, csrf_token_required
 )
 from .exceptions import CsrfFailureException
-from .manifest_context import ManifestContext
+from .template_context import TemplateContext
 from .utils import is_ajax, jsonify, jsonify_no_content
 
 class UploadHandler(RequestHandlerBase):
@@ -101,7 +101,7 @@ class UploadHandler(RequestHandlerBase):
         return flask.render_template('upload-done.html', **context)
 
 
-class MediaInfoContext(ManifestContext):
+class MediaInfoContext(TemplateContext):
     duration_tc: int | None
     duration_time: datetime.timedelta | None
     mediafile: models.MediaFile
@@ -182,13 +182,14 @@ class MediaInfo(HTMLHandlerBase):
         return jsonify(result, status=status)
 
 
-class EditMediaContext(ManifestContext):
+class EditMediaContext(TemplateContext):
     form_id: str
     model: models.MediaFile
     fields: dict[str, JsonObject]
     error: str | None
     cancel_url: str
     validation: str
+
 
 class EditMedia(HTMLHandlerBase):
     """
