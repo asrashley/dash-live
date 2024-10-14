@@ -229,45 +229,74 @@ class CgiOptionsPage(HTMLHandlerBase):
 
 class VideoPlayer(HTMLHandlerBase):
     """
-    Responds with an HTML page that contains a video element to play the specified MPD
+    Responds with an HTML page that contains a video element to play
+    the specified stream
     """
 
     SHAKA_CDN_TEMPLATE = r'https://ajax.googleapis.com/ajax/libs/shaka-player/{shakaVersion}/shaka-player.compiled.js'
     DASHJS_CDN_TEMPLATE = r'https://cdn.dashjs.org/{dashjsVersion}/dash.all.min.js'
 
-    decorators = [uses_stream]
+    def get(self,
+            manifest: str,
+            mode: str,
+            stream: str | None = None,
+            mps_name: str | None = None
+            ) -> flask.Response:
+        stream_model: models.Stream | None = None
+        multi_period: models.MultiPeriodStream | None = None
+        title: str = manifest
 
-    def get(self, mode: str, stream: str, manifest: str) -> flask.Response:
-        if current_stream.timing_reference is None:
-            flask.flash(
-                f'The timing reference needs to be set for stream "{current_stream.title}"',
-                'error')
-            return flask.redirect(flask.url_for('home'))
+        if stream is None and mps_name is None:
+            return flask.make_response('Not Found', 404)
+
+        if stream is not None:
+            stream_model = models.Stream.get(directory=stream)
+            if stream_model is None:
+                logging.error('Unknown stream: %s', stream)
+                return flask.make_response(
+                    f'Unknown stream: {html.escape(stream)}', 404)
+            title = stream_model.title
+            if stream_model.timing_reference is None:
+                flask.flash(
+                    f'The timing reference needs to be set for stream "{current_stream.title}"',
+                    'error')
+                return flask.redirect(flask.url_for('home'))
+        else:
+            multi_period = models.MultiPeriodStream.get(name=mps_name)
+            if multi_period is None:
+                logging.error('Unknown multi-period stream: %s', mps_name)
+                return flask.make_response(
+                    f'Unknown stream: {html.escape(mps_name)}', 404)
+            title = multi_period.title
         app_cfg = flask.current_app.config['DASH']
         manifest += '.mpd'
-        context = self.create_context(title=current_stream.title)
+        context = self.create_context(title=title)
         try:
             options = self.calculate_options(mode, flask.request.args)
         except ValueError as err:
             logging.error('Invalid CGI parameters: %s', err)
             return flask.make_response(f'Invalid CGI parameters: {err}', 400)
-        stream_model = models.Stream.get(directory=stream)
-        if stream_model is None:
-            logging.error('Unknown stream: %s', stream)
-            return flask.make_response(f'Unknown stream: {html.escape(stream)}', 404)
         options.remove_unused_parameters(mode)
         dash_parms = ManifestContext(
             manifest=manifests.manifest_map[manifest],
             options=options,
-            stream=stream_model)
-        dash_parms.stream = stream_model.to_dict(
-            only={'pk', 'title', 'directory', 'playready_la_url', 'marlin_la_url'})
+            stream=stream_model,
+            multi_period=multi_period)
+        if stream_model:
+            dash_parms.stream = stream_model.to_dict(
+                only={'pk', 'title', 'directory', 'playready_la_url',
+                      'marlin_la_url'})
         context['dash'] = dash_parms.to_dict(exclude={
             'periods', 'period', 'ref_representation', 'audio', 'video'})
-        mpd_url = flask.url_for(
-            'dash-mpd-v3', stream=stream, manifest=manifest, mode=mode)
-        options.remove_unused_parameters(mode)
-        mpd_url += options.generate_cgi_parameters_string(use=~OptionUsage.HTML)
+        if stream:
+            mpd_url: str = flask.url_for(
+                'dash-mpd-v3', stream=stream, manifest=manifest, mode=mode)
+        else:
+            mpd_url = flask.url_for(
+                "dash-mpd-mps", mps_name=mps_name, manifest=manifest,
+                mode=mode)
+        mpd_url += options.generate_cgi_parameters_string(
+            use=~OptionUsage.HTML)
         context.update({
             'dashjsUrl': None,
             'drm': None,
@@ -284,23 +313,32 @@ class VideoPlayer(HTMLHandlerBase):
                 options.dashjsVersion = DashjsVersion.cgi_choices[1]
             if options.dashjsVersion in set(DashjsVersion.cgi_choices):
                 context['dashjsUrl'] = flask.url_for(
-                    'static', filename=f'js/prod/dashjs-{options.dashjsVersion}.js')
+                    'static',
+                    filename=f'js/prod/dashjs-{options.dashjsVersion}.js')
             else:
-                cdn_template = app_cfg.get('DASHJS_CDN_TEMPLATE', VideoPlayer.DASHJS_CDN_TEMPLATE)
-                context['dashjsUrl'] = cdn_template.format(dashjsVersion=options.dashjsVersion)
+                cdn_template = app_cfg.get(
+                    'DASHJS_CDN_TEMPLATE', VideoPlayer.DASHJS_CDN_TEMPLATE)
+                context['dashjsUrl'] = cdn_template.format(
+                    dashjsVersion=options.dashjsVersion)
         else:
             if options.shakaVersion is None:
                 options.shakaVersion = ShakaVersion.cgi_choices[1]
             if options.shakaVersion in set(ShakaVersion.cgi_choices):
                 context['shakaUrl'] = flask.url_for(
-                    'static', filename=f'js/prod/shaka-player.{options.shakaVersion}.js')
+                    'static',
+                    filename=f'js/prod/shaka-player.{options.shakaVersion}.js')
             else:
-                cdn_template = app_cfg.get('SHAKA_CDN_TEMPLATE', VideoPlayer.SHAKA_CDN_TEMPLATE)
-                context['shakaUrl'] = cdn_template.format(shakaVersion=options.shakaVersion)
+                cdn_template = app_cfg.get(
+                    'SHAKA_CDN_TEMPLATE', VideoPlayer.SHAKA_CDN_TEMPLATE)
+                context['shakaUrl'] = cdn_template.format(
+                    shakaVersion=options.shakaVersion)
         if is_https_request():
             context['source'] = context['source'].replace(
                 'http://', 'https://')
-        if options.drmSelection and context["drm"] and "marlin" in context["drm"]:
+        if (
+                options.drmSelection and
+                context["drm"] and
+                "marlin" in context["drm"]):
             licenseUrl: str | None = None
             if options.marlin and options.marlin.licenseUrl:
                 licenseUrl = options.marlin.licenseUrl

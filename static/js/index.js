@@ -112,6 +112,7 @@ function updateManifestURL() {
     return;
   }
   let url = mpdUrl.replace(/^\/dash/, '/play');
+  url = url.replace(/^\/mps/, '/play/mps');
   url = url.replace(/\.mpd$/, '/index.html');
   const params_str = Object.values(params).join('&');
   if (params_str) {
