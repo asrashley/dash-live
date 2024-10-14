@@ -35,10 +35,8 @@
    <PatchLocation ttl="{{ mpd.patch.ttl }}">{{ mpd.patch.location|xmlSafe }}</PatchLocation>
  {% endif -%}
  {%- for period in mpd.periods %}
-   <Period
-     start="{{period.start|isoDuration}}"
-     id="{{ period.id }}"
-     {%- if period.duration %}duration="{{period.duration|isoDuration}}"{% endif %}
+   <Period start="{{period.start|isoDuration}}" id="{{ period.id }}"
+     {%- if period.duration %} duration="{{period.duration|isoDuration}}"{% endif %}
    >
      {%- if period.baseURL %}<BaseURL>{{ period.baseURL }}</BaseURL>{% endif %}
      {% include "events/period.xml" %}
