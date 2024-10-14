@@ -81,12 +81,19 @@ function getSelectedStream() {
 
 function calculateManifestURL() {
   const stream = getSelectedStream();
+  if (!stream) {
+    return '';
+  }
   const manifest = $('#model-manifest').val();
   const mode = getSelectedMode();
-  const template = $('#with-modules').data('url-template');
+  const isMpsStream = /^mps\./.test(stream.value);
+  const template = $('#with-modules').data(
+    isMpsStream ? 'mps-url-template': 'stream-url-template');
+  const name = stream.value.split('.')[1];
 
   let url = template.replace('{manifest}', manifest);
-  url = url.replace('{directory}', stream.value);
+  url = url.replace('{directory}', name);
+  url = url.replace('{stream}', name);
   url = url.replace("{mode}", mode.value);
   return url;
 }
@@ -124,7 +131,8 @@ function updateManifestURL() {
     dest.attr('href', document.location.origin + mpdUrl);
   }
   dest.removeClass('disabled');
-  $('.view-manifest').attr('href', dest.attr('href').replace('/dash/', '/view/'));
+  const viewUrl = dest.attr('href').replace(/\/(dash|mps)\//, '/view/$1/')
+  $('.view-manifest').attr('href', viewUrl);
   if(window.history && typeof(history.pushState)==="function") {
     const page_params = Object.values(params);
     const modelManifest = $('#model-manifest').val()

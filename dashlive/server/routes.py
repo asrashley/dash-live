@@ -96,6 +96,10 @@ routes = {
         r'/dash/<regex("(live|vod|odvod)"):mode>/<stream>/<manifest>',
         handler='manifest_requests.ServeManifest',
         title='DASH test stream'),
+    "dash-mpd-mps": Route(
+        r'/mps/<regex("(live|vod)"):mode>/<mps_name>/<manifest>',
+        handler='manifest_requests.ServeMultiPeriodManifest',
+        title='DASH multi-period manifests'),
     "mpd-patch": Route(
         r'/patch/<stream>/<manifest>/<int:publish>',
         handler='manifest_requests.ServePatch',
@@ -189,8 +193,12 @@ routes = {
         handler='htmlpage.VideoPlayer',
         title='DASH test stream player'),
     "view-manifest": Route(
-        r'/view/<regex("(live|vod|odvod)"):mode>/<stream>/<manifest>',
+        r'/view/dash/<regex("(live|vod|odvod)"):mode>/<stream>/<manifest>',
         handler='htmlpage.ViewManifest',
+        title='DASH manifest'),
+    "view-mps-manifest": Route(
+        r'/view/mps/<regex("(live|vod)"):mode>/<mps_name>/<manifest>',
+        handler='htmlpage.ViewMpsManifest',
         title='DASH manifest'),
     "cgi-options": Route(
         r'/options',
@@ -229,12 +237,12 @@ routes = {
         handler='multi_period_streams.ListStreams',
         title='Available DASH multi-period streams'),
     'add-mps': Route(
-        r'/multi-period-streams.add',
+        r'/multi-period-streams/.add',
         handler='multi_period_streams.AddStream',
         title='Add new multi-period stream',
         parent='list-mps'),
     'edit-mps': Route(
-        r'/multi-period-streams/<name>',
+        r'/multi-period-streams/<mps_name>',
         handler='multi_period_streams.EditStream',
         title='Edit multi-period stream',
         parent='list-mps'),
