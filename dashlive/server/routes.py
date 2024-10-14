@@ -192,6 +192,10 @@ routes = {
         r'/play/<regex("(live|vod|odvod)"):mode>/<stream>/<manifest>/index.html',
         handler='htmlpage.VideoPlayer',
         title='DASH test stream player'),
+    "video-mps": Route(
+        r'/play/mps/<regex("(live|vod)"):mode>/<mps_name>/<manifest>/index.html',
+        handler='htmlpage.VideoPlayer',
+        title='DASH test stream player'),
     "view-manifest": Route(
         r'/view/dash/<regex("(live|vod|odvod)"):mode>/<stream>/<manifest>',
         handler='htmlpage.ViewManifest',
