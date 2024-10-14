@@ -32,6 +32,7 @@ from dashlive.drm.playready import PlayReady
 from dashlive.drm.system import DrmSystem
 from dashlive.mpeg.dash.adaptation_set import AdaptationSet
 from dashlive.server import models
+from dashlive.server.manifests import default_manifest
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.options.drm_options import DrmSelection
 from dashlive.server.routes import Route
@@ -234,6 +235,7 @@ class ViewStreamAjaxResponse(StreamAjaxResponse):
     upload_url: str
     csrf_tokens: CsrfTokenCollection
 
+
 class EditStream(HTMLHandlerBase):
     """
     Handler that allows viewing and updating a stream
@@ -245,7 +247,8 @@ class EditStream(HTMLHandlerBase):
         Get information about a stream
         """
         context = self.create_context(current_stream.title, True)
-        stream = current_stream.to_dict(with_collections=True, exclude={'media_files'})
+        stream = current_stream.to_dict(
+            with_collections=True, exclude={'media_files'})
         stream.update({
             'media_files': [],
         })
@@ -280,11 +283,15 @@ class EditStream(HTMLHandlerBase):
         options.audioCodec = 'any'
         options.textCodec = None
         options.drmSelection = []
-        mc = ManifestContext(options=options, stream=current_stream)
+        mc = ManifestContext(
+            options=options, stream=current_stream, multi_period=None,
+            manifest=default_manifest)
         clear_adaptation_sets = [mc.video] + mc.audio_sets + mc.text_sets
         drmSelection = DrmSelection.from_string(','.join(DrmSystem.values()))
         enc_options = options.clone(drmSelection=drmSelection)
-        mc = ManifestContext(options=enc_options, stream=current_stream)
+        mc = ManifestContext(
+            options=enc_options, stream=current_stream, multi_period=None,
+            manifest=default_manifest)
         enc_adaptation_sets = [mc.video] + mc.audio_sets + mc.text_sets
         if 'fragment' in flask.request.args:
             layout = 'fragment.html'
