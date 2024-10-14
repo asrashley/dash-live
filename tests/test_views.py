@@ -208,7 +208,7 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
         self.setup_media()
         self.logout_user()
         filename = 'hand_made.mpd'
-        manifest = manifests.manifest[filename]
+        manifest = manifests.manifest_map[filename]
         drm_options = manifest.get_supported_dash_options('vod', only={'drmSelection'})
         self.assertGreaterThan(drm_options.num_tests, 0)
         self.assertGreaterThan(models.MediaFile.count(), 0)
@@ -312,7 +312,7 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
         """Get VoD segments (on-demand profile)"""
         self.logout_user()
         self.setup_media()
-        for filename, manifest in manifests.manifest.items():
+        for filename, manifest in manifests.manifest_map.items():
             if 'odvod' not in manifest.supported_modes():
                 continue
             baseurl = flask.url_for(
