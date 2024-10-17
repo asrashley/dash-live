@@ -170,7 +170,7 @@ class MainPage(HTMLHandlerBase):
         url = url.replace('/mode/', '/{mode}/')
         context['stream_url_template'] = url
         url = flask.url_for(
-            "dash-mpd-mps", mode="_mode-", mps_name="_stream-",
+            "mps-manifest", mode="_mode-", mps_name="_stream-",
             manifest="_manifest-")
         url = url.replace("_", "{").replace("-", "}")
         context['mps_url_template'] = url
@@ -293,7 +293,7 @@ class VideoPlayer(HTMLHandlerBase):
                 'dash-mpd-v3', stream=stream, manifest=manifest, mode=mode)
         else:
             mpd_url = flask.url_for(
-                "dash-mpd-mps", mps_name=mps_name, manifest=manifest,
+                "mps-manifest", mps_name=mps_name, manifest=manifest,
                 mode=mode)
         mpd_url += options.generate_cgi_parameters_string(
             use=~OptionUsage.HTML)
@@ -388,7 +388,7 @@ class ViewMpsManifest(HTMLHandlerBase):
             logging.error('Invalid CGI parameters: %s', err)
             return flask.make_response('Invalid CGI parameters', 400)
         mpd_url = flask.url_for(
-            'dash-mpd-mps', mps_name=mps_name, manifest=manifest, mode=mode)
+            'mps-manifest', mps_name=mps_name, manifest=manifest, mode=mode)
         options.remove_unused_parameters(mode, use=~OptionUsage.HTML)
         mpd_url += options.generate_cgi_parameters_string()
         context.update({
