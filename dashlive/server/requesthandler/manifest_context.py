@@ -270,9 +270,20 @@ class ManifestContext:
             period.adaptationSets.append(video)
             period.adaptationSets += audio_adps
             period.adaptationSets += text_adps
+        if db_period:
+            base_url: str = flask.url_for(
+                "mps-base-url", mode=opts.mode, mps_name=db_period.parent.name,
+                ppk=db_period.pk)
+        elif opts.mode == "odvod":
+            base_url = flask.url_for(
+                'dash-od-media-base-url', stream=stream.directory)
+        else:
+            base_url = flask.url_for(
+                'dash-media-base-url', mode=opts.mode, stream=stream.directory)
+
         period.finish_setup(
-            mode=opts.mode, stream_name=stream.directory, timing=timing,
-            useBaseUrls=opts.useBaseUrls)
+            mode=opts.mode, timing=timing, base_url=base_url,
+            use_base_urls=opts.useBaseUrls)
         if is_https_request():
             period.baseURL = period.baseURL.replace('http://', 'https://')
         for adp in period.adaptationSets:
