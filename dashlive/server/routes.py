@@ -96,14 +96,14 @@ routes = {
         r'/dash/<regex("(live|vod|odvod)"):mode>/<stream>/<manifest>',
         handler='manifest_requests.ServeManifest',
         title='DASH test stream'),
-    "dash-mpd-mps": Route(
-        r'/mps/<regex("(live|vod)"):mode>/<mps_name>/<manifest>',
-        handler='manifest_requests.ServeMultiPeriodManifest',
-        title='DASH multi-period manifests'),
     "mpd-patch": Route(
         r'/patch/<stream>/<manifest>/<int:publish>',
         handler='manifest_requests.ServePatch',
         title='DASH manifest patch'),
+    "dash-media-base-url": Route(
+        r'/dash/<regex("(live|vod)"):mode>/<stream>/',
+        handler='generic.NotFound',
+        title="Used for generating BaseURL values"),
     "dash-media": Route(
         r'/dash/<regex("(live|vod)"):mode>/<stream>/<filename>/' +
         r'<regex("(\d+|init)"):segment_num>.<regex("(mp4|m4v|m4a|m4s)"):ext>',
@@ -114,6 +114,10 @@ routes = {
         r'<int:segment_time>.<regex("(mp4|m4v|m4a|m4s)"):ext>',
         handler='media_requests.LiveMedia',
         title="DASH fragment"),
+    "dash-od-media-base-url": Route(
+        r'/dash/odvod/<stream>/',
+        handler='generic.NotFound',
+        title="BaseURL for on-demand media"),
     "dash-od-media": Route(
         r'/dash/odvod/<stream>/<regex("[\w-]+"):filename>.<regex("(mp4|m4v|m4a|m4s)"):ext>',
         handler='media_requests.OnDemandMedia',
@@ -255,6 +259,29 @@ routes = {
         handler='multi_period_streams.ValidateStream',
         title='Check new MPS',
         parent='list-mps'),
+    "mps-manifest": Route(
+        r'/mps/<regex("(live|vod)"):mode>/<mps_name>/<manifest>',
+        handler='manifest_requests.ServeMultiPeriodManifest',
+        title='DASH multi-period manifests'),
+    "mps-base-url": Route(
+        r'/mps/<regex("(live|vod)"):mode>/<mps_name>/<int:ppk>/',
+        handler='generic.NotFound',
+        title='Used for generating BaseURL values'),
+    "mps-init-seg": Route(
+        r'/mps/<regex("(live|vod)"):mode>/<mps_name>/<int:ppk>/<filename>' +
+        r'init.<regex("(mp4|m4v|m4a|m4s)"):ext>',
+        handler='media_requests.ServeMpsInitSeg',
+        title='Init segments for multi-period streams'),
+    "mps-media-seg-by-number": Route(
+        r'/mps/<regex("(live|vod)"):mode>/<mps_name>/<int:ppk>/<int:track>' +
+        r'n/<int:segment_num>.<regex("(mp4|m4v|m4a|m4s)"):ext>',
+        handler='manifest_requests.ServeMultiPeriodManifest',
+        title='Init segments for multi-period streams'),
+    "mps-media-seg-by-time": Route(
+        r'/mps/<regex("(live|vod)"):mode>/<mps_name>/<int:ppk>/<int:track>' +
+        r't/<int:segment_time>.<regex("(mp4|m4v|m4a|m4s)"):ext>',
+        handler='manifest_requests.ServeMultiPeriodManifest',
+        title='Init segments for multi-period streams'),
     "route-map": Route(
         r'/libs/routemap.js',
         handler='esm.RouteMap',

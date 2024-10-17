@@ -41,7 +41,9 @@ from .decorators import (
     uses_stream,
     uses_media_file,
     current_media_file,
-    current_stream
+    current_stream,
+    uses_multi_period_stream,
+    current_mps
 )
 from .drm_context import DrmContext
 from .utils import add_allowed_origins
