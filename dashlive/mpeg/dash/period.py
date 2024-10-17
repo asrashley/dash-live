@@ -84,45 +84,21 @@ class Period(ObjectWithFields):
 
     def finish_setup(self,
                      mode: str,
-                     stream_name: str,
                      timing: DashTiming | None,
-                     useBaseUrls: bool = True) -> None:
-        prefix: str = ''
-        base: str
-        if mode == 'odvod':
-            base = flask.url_for(
-                'dash-od-media',
-                stream=stream_name,
-                filename='RepresentationID',
-                ext='m4v')
-            base = base.replace('RepresentationID.m4v', '')
-        else:
-            base = flask.url_for(
-                'dash-media',
-                mode=mode,
-                stream=stream_name,
-                filename='RepresentationID',
-                segment_num='init',
-                ext='m4v')
-            base = base.replace('RepresentationID/init.m4v', '')
-        if useBaseUrls:
-            self.baseURL = urllib.parse.urljoin(flask.request.host_url, base)
-        else:
-            # convert every initURL and mediaURL to be an absolute URL
-            prefix = base
+                     base_url: str,
+                     use_base_urls: bool) -> None:
+        if use_base_urls:
+            self.baseURL = urllib.parse.urljoin(flask.request.host_url, base_url)
 
         for adp in self.adaptationSets:
             if mode == 'odvod':
                 for rep in adp.representations:
-                    if useBaseUrls:
-                        rep.baseURL = f"{rep.id}.{adp.fileSuffix}"
-                    else:
-                        rep.baseURL = flask.url_for(
-                            'dash-od-media', stream=stream_name,
-                            filename=rep.id, ext=adp.fileSuffix)
-            if prefix:
+                    rep.baseURL = f"{rep.id}.{adp.fileSuffix}"
+                    if not use_base_urls:
+                        rep.baseURL = f"{base_url}{rep.baseURL}"
+            if not use_base_urls:
                 if mode != 'odvod':
-                    adp.initURL = prefix + adp.initURL
-                adp.mediaURL = prefix + adp.mediaURL
+                    adp.initURL = f"{base_url}{adp.initURL}"
+                adp.mediaURL = f"{base_url}{adp.mediaURL}"
             if timing:
                 adp.set_dash_timing(timing)
