@@ -1,0 +1,52 @@
+{
+    "copyFiles": [
+        {
+            "from": "../node_modules/wouter-preact/esm/*.js",
+            "to": "../static/js/prod/wouter-preact/"
+        },
+        {
+            "from": "../node_modules/preact/dist/preact.module.js",
+            "to": "../static/js/prod/preact/"
+        },
+        {
+            "from": "../node_modules/preact/hooks/dist/hooks.module.js",
+            "to": "../static/js/prod/preact/hooks/"
+        },
+        {
+            "from": "../node_modules/@preact/signals/dist/signals.module.js",
+            "to": "../static/js/prod/preact/signals/"
+        },
+        {
+            "from": "../node_modules/@preact/signals-core/dist/signals-core.module.js",
+            "to": "../static/js/prod/preact/signals/"
+        },
+        {
+            "from": "../node_modules/htm/dist/htm.module.js",
+            "to": "../static/js/prod/htm/"
+        },
+        {
+            "from": "../node_modules/htm/preact/index.mjs",
+            "to": "../static/js/prod/htm/preact/"
+        },
+        {
+            "from": "../node_modules/regexparam/dist/index.mjs",
+            "to": "../static/js/prod/regexparam/"
+        },
+        {
+            "from": "../node_modules/linkstate/dist/linkstate.module.js",
+            "to": "../static/js/prod/"
+        },
+        {
+            "from": "../node_modules/temporal-polyfill/index.js",
+            "to": "../static/js/prod/temporal-polyfill/"
+        },
+        {
+            "from": "../node_modules/temporal-polyfill/chunks/*.js",
+            "to": "../static/js/prod/temporal-polyfill/chunks/"
+        }
+    ],
+    "copyFilesSettings": {
+        "whenFileExists": "overwrite",
+        "minifyJs": false
+    }
+}
