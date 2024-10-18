@@ -20,14 +20,18 @@
 #
 #############################################################################
 
+from abc import abstractmethod
 import datetime
 import io
 import logging
+import math
+from typing import NamedTuple
 
 import flask
 
 from dashlive.mpeg import mp4
 from dashlive.mpeg.dash.adaptation_set import AdaptationSet
+from dashlive.mpeg.dash.mime_types import content_type_to_mime_type
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.mpeg.dash.timing import DashTiming
 from dashlive.server import models
@@ -78,81 +82,34 @@ class OnDemandMedia(RequestHandlerBase):
         return flask.make_response((data, status, headers))
 
 
-# blobstore_handlers.BlobstoreDownloadHandler):
-class LiveMedia(RequestHandlerBase):
+class SegmentPosition(NamedTuple):
+    mod_segment: int
+    origin_time: int
+    seg_num: int
+
+
+class MediaRequestBase(RequestHandlerBase):
     """
-    Handler that returns media fragments using the DASH live profile.
-    This handler can be used for both on-demand and live streams, as
-    the DASH live profile supports both use cases.
+    Base class for serving media segments
     """
-
-    decorators = [uses_stream, uses_media_file]
-
-    def get(self, mode: str, stream: str, filename: str,
-            ext: str,
-            segment_num: str | None = None,
-            segment_time: int | None = None) -> flask.Response:
-        seg_num: int | None = None
-
-        logging.debug(
-            'LiveMedia.get: %s.%s stream=%s num=%s time=%s',
-            filename, ext, stream, segment_num, segment_time)
-        representation = current_media_file.representation
-        try:
-            options = self.calculate_options(mode, flask.request.args, current_stream)
-        except ValueError as err:
-            logging.error('Invalid CGI parameters: %s', err)
-            return flask.make_response('Invalid CGI parameters', 400)
-        if current_stream.timing_reference is None:
-            logging.warning('stream.timing_reference has not been configured')
-            return flask.make_response(
-                'stream.timing_reference has not been configured', 404)
-        if representation.encrypted and not options.encrypted:
-            logging.warning('Request for an encrypted stream, when drmSelection is empty')
-            return flask.make_response(
-                'Request for an encrypted stream, when drmSelection is empty', 404)
-        options.update(segmentTimeline=(segment_time is not None))
-        mf = current_media_file
-        if mf.content_type not in {'audio', 'video', 'text'}:
-            return flask.make_response(
-                f'Unsupported content_type {mf.content_type}', 404)
-        adp_set = AdaptationSet(
-            mode=options.mode, content_type=mf.content_type, id=mf.track_id,
-            segment_timeline=options.segmentTimeline)
-        adp_set.representations.append(current_media_file.representation)
-        adp_set.compute_av_values()
-        headers = {
-            'Accept-Ranges': 'bytes',
-            'Content-Type': adp_set.mimeType,
-        }
-        add_allowed_origins(headers)
-        if segment_num == 'init':
-            return self.generate_init_segment(mode, adp_set, headers, options)
-
-        try:
-            if segment_num is not None:
-                seg_num = int(segment_num, 10)
-        except ValueError as err:
-            logging.warning('Invalid segment number: %s', err)
-            return flask.make_response('Invalid segment number', 404)
-
-        return self.generate_media_segment(
-            mode, adp_set, headers, options, seg_num, segment_time)
 
     def generate_init_segment(
             self,
+            media: models.MediaFile,
             mode: str,
-            adp_set: AdaptationSet,
-            headers: dict[str, str | int],
             options: OptionsContainer) -> flask.Response:
-        mf = current_media_file
-        representation = mf.representation
+        """
+        Returns an init segment
+        """
+        representation = media.representation
+        if representation is None:
+            return flask.make_response('Media file needs indexing', 404)
 
-        err = self.check_for_synthetic_http_error(mf.content_type, 0, options)
+        err = self.check_for_synthetic_http_error(media.content_type, 0, options)
         if err is not None:
             return err
 
-        atom = self.load_fragment(representation, 0, options)
+        atom = self.load_fragment(media, 0, options)
         if representation.encrypted:
             keys = models.Key.get_kids(representation.kids)
             drms = DrmContext(current_stream, keys, options)
@@ -168,58 +125,57 @@ class LiveMedia(RequestHandlerBase):
             except AttributeError:
                 pass
         data = atom.encode()
+        headers = {
+            'Accept-Ranges': 'bytes',
+            'Content-Type': content_type_to_mime_type(
+                media.content_type, media.codec_fourcc),
+        }
+        add_allowed_origins(headers)
         return flask.make_response((data, 200, headers))
 
     def generate_media_segment(
             self,
+            stream: models.Stream,
+            media_file: models.MediaFile,
             mode: str,
-            adp_set: AdaptationSet,
-            headers: dict[str, str | int],
             options: OptionsContainer,
             seg_num: int | None,
-            segment_time: int | None = None) -> flask.Response:
+            seg_time: int | None = None) -> flask.Response:
         mod_segment: int = 0
-        mf = current_media_file
-        representation = mf.representation
+        origin_time: int = 0
 
-        err = self.check_for_synthetic_http_error(mf.content_type, seg_num, options)
+        representation = media_file.representation
+
+        err = self.check_for_synthetic_http_error(media_file.content_type, seg_num, options)
         if err is not None:
             return err
 
+        adp_set = AdaptationSet(
+            mode=options.mode, content_type=media_file.content_type, id=media_file.track_id,
+            segment_timeline=options.segmentTimeline)
+        adp_set.representations.append(media_file.representation)
+        adp_set.compute_av_values()
+
         now = datetime.datetime.now(tz=UTC())
-        timing = DashTiming(now, current_stream.timing_reference, options)
+        timing = DashTiming(now, stream.timing_reference, options)
         adp_set.set_dash_timing(timing)
         try:
-            first_fragment, last_fragment = representation.calculate_first_and_last_segment_number()
-            logging.debug('elapsedTime=%s firstFragment=%d lastFragment=%d',
-                          timing.elapsedTime, first_fragment, last_fragment)
-            seg_num, mod_segment, origin_time = representation.calculate_segment_number_and_time(
-                segment_time, seg_num)
-            logging.debug('segment=%d mod=%d origin=%d', seg_num, mod_segment, origin_time)
+            mod_segment, origin_time, sn = self.calculate_media_segment_index(
+                mode, representation, timing, seg_num, seg_time)
+            assert sn is not None
+            seg_num = sn
         except ValueError as err:
             logging.warning('ValueError: %s', err)
-            logging.info(
-                'Segment %d not found (valid range= %d -> %d)',
-                seg_num, first_fragment, last_fragment)
-            return flask.make_response('Segment not found', 404)
+            return flask.make_response('Not Found', 404)
 
-        if seg_num < first_fragment or seg_num > last_fragment:
-            logging.info(
-                '%s: Request for fragment %d that is not available (%d -> %d)',
-                now, seg_num, first_fragment, last_fragment)
-            if mode == 'live':
-                first_tc = timing.availabilityStartTime + datetime.timedelta(
-                    seconds=(first_fragment * representation.segment_duration /
-                             representation.timescale))
-                logging.debug('oldest fragment %d start = %s', first_fragment, first_tc)
-            return flask.make_response(
-                f'Segment {seg_num} not found (valid range= {first_fragment}->{last_fragment})',
-                404)
-
+        assert mod_segment is not None
+        assert isinstance(mod_segment, int)
+        assert origin_time is not None
+        assert isinstance(origin_time, int)
         assert mod_segment >= 0 and mod_segment <= representation.num_media_segments
 
         atom = self.load_fragment(
-            representation, mod_segment, options,
+            media_file, mod_segment, options,
             parse_samples=(adp_set.content_type == 'video' and options.videoCorruption))
 
         moof_modified: bool = False
@@ -228,40 +184,39 @@ class LiveMedia(RequestHandlerBase):
         moof: mp4.Mp4Atom = atom.moof
         traf: mp4.Mp4Atom = moof.traf
 
-        if mode == 'live':
-            tfdt: mp4.Mp4Atom
-            try:
-                tfdt = traf.tfdt
-            except AttributeError as err:
-                logging.debug('Adding tfdt box to traf: %s', err)
-                base_media_decode_time: int
-                base_media_decode_time = sum([
-                    seg.duration for seg in representation.segments[1:mod_segment]])
-                tfdt = mp4.TrackFragmentDecodeTimeBox(
-                    version=0, flags=0,
-                    base_media_decode_time=base_media_decode_time)
-                tfhd_index = atom.moof.traf.index('tfhd')
-                traf.insert_child(tfhd_index + 1, tfdt)
-                traf_modified = True
-                moof_modified = True
-                # force trun box to have a data_offset field, as its
-                # position will have changed
-                traf.trun.flags |= mp4.TrackFragmentRunBox.data_offset_present
+        tfdt: mp4.Mp4Atom
+        try:
+            tfdt = traf.tfdt
+        except AttributeError as err:
+            logging.debug('Adding tfdt box to traf: %s', err)
+            base_media_decode_time: int
+            base_media_decode_time = sum([
+                seg.duration for seg in representation.segments[1:mod_segment]])
+            tfdt = mp4.TrackFragmentDecodeTimeBox(
+                version=0, flags=0,
+                base_media_decode_time=base_media_decode_time)
+            tfhd_index = atom.moof.traf.index('tfhd')
+            traf.insert_child(tfhd_index + 1, tfdt)
+            traf_modified = True
+            moof_modified = True
+            # force trun box to have a data_offset field, as its
+            # position will have changed
+            traf.trun.flags |= mp4.TrackFragmentRunBox.data_offset_present
 
-            tfdt.base_media_decode_time += origin_time
+        tfdt.base_media_decode_time += origin_time
 
-            # Update the sequenceNumber field in the MovieFragmentHeader
-            # box
-            moof.mfhd.sequence_number = seg_num
-            diff = None
-            if segment_time is not None:
-                diff = segment_time - tfdt.base_media_decode_time
-                logging.debug(
-                    r'%s: $Time$ want=%s got=%d (%s)',
-                    mf.name, segment_time, tfdt.base_media_decode_time, diff)
+        # Update the sequenceNumber field in the MovieFragmentHeader
+        # box
+        moof.mfhd.sequence_number = seg_num
+        diff = None
+        if seg_time is not None:
+            diff = seg_time - tfdt.base_media_decode_time
             logging.debug(
-                r'%s: origin=%d duration=%d',
-                mf.name, origin_time, representation.segment_duration)
+                r'%s: $Time$ want=%s got=%d (%s)',
+                media_file.name, seg_time, tfdt.base_media_decode_time, diff)
+        logging.debug(
+            r'%s: origin=%d duration=%d',
+            media_file.name, origin_time, representation.segment_duration)
 
         try:
             # remove any sidx box as it has a baseMediaDecodeTime and it's
@@ -304,10 +259,15 @@ class LiveMedia(RequestHandlerBase):
                 saio.offsets = None
         dest = io.BytesIO()
         atom.encode(dest)
-        if mf.content_type == 'video' and options.videoCorruption:
+        if media_file.content_type == 'video' and options.videoCorruption:
             self.apply_video_corruption(representation, seg_num, atom, dest, options)
         data = dest.getvalue()
         status = 200
+        headers = {
+            'Accept-Ranges': 'bytes',
+            'Content-Type': content_type_to_mime_type(
+                media_file.content_type, media_file.codec_fourcc),
+        }
         try:
             start, end, status, range_headers = self.get_http_range(len(data))
             if start is not None:
@@ -315,25 +275,42 @@ class LiveMedia(RequestHandlerBase):
             headers.update(range_headers)
         except (ValueError) as ve:
             return flask.make_response(f'{ve}', 400)
+        add_allowed_origins(headers)
         return flask.make_response((data, status, headers))
 
+    @abstractmethod
+    def calculate_media_segment_index(self,
+                                      mode: str,
+                                      representation: Representation,
+                                      timing: DashTiming,
+                                      seg_num: int | None,
+                                      seg_time: int | None
+                                      ) -> SegmentPosition:
+        """
+        Calculates the index into the array of segments and time offset from
+        stream start. For live streams this is based upon calculating how many
+        fragments would have been generated since the stream started.
+        """
+        return (-1, -1, -1)
+
     @staticmethod
-    def load_fragment(representation: Representation,
+    def load_fragment(media: models.MediaFile,
                       seg_index: int,
                       options: OptionsContainer,
                       parse_samples: bool = False) -> mp4.Mp4Atom:
-        frag = representation.segments[seg_index]
+        assert media.representation is not None
+        frag = media.representation.segments[seg_index]
         mp4_options = mp4.Options(
             mode='rw', lazy_load=True, bug_compatibility=options.bugCompatibility)
-        if representation.encrypted:
-            mp4_options.iv_size = representation.iv_size
-        with current_media_file.open_file(start=frag.pos, buffer_size=16384) as reader:
+        if media.representation.encrypted:
+            mp4_options.iv_size = media.representation.iv_size
+        with media.open_file(start=frag.pos, buffer_size=16384) as reader:
             src = BufferedReader(
                 reader, offset=frag.pos, size=frag.size, buffersize=16384)
             atom = mp4.Mp4Atom.load(src, options=mp4_options, use_wrapper=True)
             if parse_samples:
                 atom.moof.traf.trun.parse_samples(
-                    src, representation.nalLengthFieldLength)
+                    src, media.representation.nalLengthFieldLength)
 
         return atom
 
@@ -398,3 +375,190 @@ class LiveMedia(RequestHandlerBase):
                     corrupt_frames -= 1
                     if corrupt_frames <= 0:
                         return
+
+
+class LiveMedia(MediaRequestBase):
+    """
+    Handler that returns media fragments using the DASH live profile.
+    This handler can be used for both on-demand and live streams, as
+    the DASH live profile supports both use cases.
+    """
+
+    decorators = [uses_stream, uses_media_file]
+
+    def get(self, mode: str, stream: str, filename: str,
+            ext: str,
+            segment_num: str | None = None,
+            segment_time: int | None = None) -> flask.Response:
+        seg_num: int | None = None
+
+        logging.debug(
+            'LiveMedia.get: %s.%s stream=%s num=%s time=%s',
+            filename, ext, stream, segment_num, segment_time)
+        representation = current_media_file.representation
+        try:
+            options = self.calculate_options(mode, flask.request.args, current_stream)
+        except ValueError as err:
+            logging.error('Invalid CGI parameters: %s', err)
+            return flask.make_response('Invalid CGI parameters', 400)
+        if current_stream.timing_reference is None:
+            logging.warning('stream.timing_reference has not been configured')
+            return flask.make_response(
+                'stream.timing_reference has not been configured', 404)
+        if representation.encrypted and not options.encrypted:
+            logging.warning('Request for an encrypted stream, when drmSelection is empty')
+            return flask.make_response(
+                'Request for an encrypted stream, when drmSelection is empty', 404)
+        options.update(segmentTimeline=(segment_time is not None))
+        mf = current_media_file
+        if mf.content_type not in {'audio', 'video', 'text'}:
+            return flask.make_response(
+                f'Unsupported content_type {mf.content_type}', 404)
+        if segment_num == 'init':
+            return self.generate_init_segment(current_media_file, mode, options)
+        try:
+            if segment_num is not None:
+                seg_num = int(segment_num, 10)
+        except ValueError as err:
+            logging.warning('Invalid segment number: %s', err)
+            return flask.make_response('Invalid segment number', 404)
+
+        return self.generate_media_segment(
+            stream=current_stream, media_file=current_media_file, mode=mode,
+            options=options, seg_num=seg_num, seg_time=segment_time)
+
+    def calculate_media_segment_index(self,
+                                      mode: str,
+                                      representation: Representation,
+                                      timing: DashTiming,
+                                      seg_num: int | None,
+                                      seg_time: int | None
+                                      ) -> SegmentPosition:
+        first: int
+        last: int
+        mod_segment: int
+
+        try:
+            first, last = representation.calculate_first_and_last_segment_number()
+            logging.debug('elapsedTime=%s firstFragment=%d lastFragment=%d',
+                          timing.elapsedTime, first, last)
+            seg_num, mod_segment, origin_time = representation.calculate_segment_number_and_time(
+                seg_time, seg_num)
+            logging.debug('segment=%d mod=%d origin=%d', seg_num, mod_segment, origin_time)
+        except ValueError as err:
+            logging.warning('ValueError: %s', err)
+            logging.info(
+                'Segment %d not found (valid range= %d -> %d)',
+                seg_num, first, last)
+            raise err
+
+        if seg_num < first or seg_num > last:
+            logging.info(
+                '%s: Request for fragment %d that is not available (%d -> %d)',
+                timing.now, seg_num, first, last)
+            if mode == 'live':
+                first_tc = timing.availabilityStartTime + datetime.timedelta(
+                    seconds=(first * representation.segment_duration /
+                             representation.timescale))
+                logging.debug('oldest fragment %d start = %s', first, first_tc)
+            raise ValueError(
+                f'Segment {seg_num} not found (valid range= {first}->{last})')
+        return (mod_segment, origin_time, seg_num,)
+
+
+class ServeMpsInitSeg(MediaRequestBase):
+    decorators = [uses_multi_period_stream]
+
+    def get(self, mode: str, mps_name: str, ppk: int, filename: str, ext: str) -> flask.Response:
+        period = models.Period.get(pk=ppk)
+        if period is None or period.parent_pk != current_mps.pk:
+            logging.warning('Period not found: mps=%s ppk=%d', mps_name, ppk)
+            return flask.make_response('Period not found', 404)
+        try:
+            options = self.calculate_options(
+                mode, flask.request.args, period.stream)
+        except ValueError as err:
+            logging.error('Invalid CGI parameters: %s', err)
+            return flask.make_response('Invalid CGI parameters', 400)
+        media = models.MediaFile.get(stream_pk=period.stream.pk, name=filename)
+        if media is None:
+            logging.warning('Media file not  found: mps=%s ppk=%d filename=%s',
+                            mps_name, ppk, filename)
+            return flask.make_response('File not found', 404)
+        return self.generate_init_segment(media, mode, options)
+
+    def calculate_media_segment_index(self,
+                                      mode: str,
+                                      representation: Representation,
+                                      timing: DashTiming,
+                                      seg_num: int,
+                                      seg_time: int) -> SegmentPosition:
+        raise ValueError("Not applicable to init segments")
+
+
+class ServeMpsMedia(MediaRequestBase):
+    decorators = [uses_multi_period_stream]
+
+    def get(self,
+            mode: str,  # 'vod' | 'live'
+            mps_name: str,  # MPS stream name
+            ppk: int,  # period pk
+            filename: str,  # filename of mediafile
+            ext: str,  # file extension
+            segment_num: int | None = None,
+            segment_time: int | None = None
+            ) -> flask.Response:
+        period = models.Period.get(pk=ppk)
+        if period is None or period.parent_pk != current_mps.pk:
+            logging.warning('Period not found: mps=%s ppk=%d', mps_name, ppk)
+            return flask.make_response('Period not found', 404)
+        try:
+            options = self.calculate_options(
+                mode, flask.request.args, period.stream)
+        except ValueError as err:
+            logging.error('Invalid CGI parameters: %s', err)
+            return flask.make_response('Invalid CGI parameters', 400)
+        media = models.MediaFile.get(stream_pk=period.stream.pk, name=filename)
+        if media is None:
+            logging.warning('Media file not  found: mps=%s ppk=%d filename=%s',
+                            mps_name, ppk, filename)
+            return flask.make_response('File not found', 404)
+        flask.g.stream = period.stream
+        flask.g.period = period
+        return self.generate_media_segment(
+            stream=period.stream, media_file=media, mode=mode, options=options,
+            seg_num=segment_num, seg_time=None)
+
+    def calculate_media_segment_index(self,
+                                      mode: str,
+                                      representation: Representation,
+                                      timing: DashTiming,
+                                      seg_num: int | None,
+                                      seg_time: int | None
+                                      ) -> SegmentPosition:
+        start_time: int = 0
+        origin_time: int = 0
+        if flask.g.period.start is not None:
+            start_time = int(math.floor(
+                flask.g.period.start.total_seconds() *
+                representation.timescale))
+        mod_seg: int = 1
+        end: int = representation.segments[mod_seg].duration
+        if seg_time is not None:
+            start_time += seg_time
+
+        while end <= start_time:
+            mod_seg += 1
+            if mod_seg > representation.num_media_segments:
+                raise ValueError(f'Invalid start time: {start_time} end={end}')
+            end += representation.segments[mod_seg].duration
+
+        if seg_time is None:
+            assert seg_num is not None
+            mod_seg += seg_num - representation.start_number
+            if mod_seg > representation.num_media_segments:
+                raise ValueError(f'Invalid start time: {start_time} end={end}')
+        else:
+            origin_time += seg_time
+            seg_num = mod_seg
+        return SegmentPosition(mod_seg, origin_time, seg_num)

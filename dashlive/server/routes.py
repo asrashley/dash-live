@@ -268,20 +268,20 @@ routes = {
         handler='generic.NotFound',
         title='Used for generating BaseURL values'),
     "mps-init-seg": Route(
-        r'/mps/<regex("(live|vod)"):mode>/<mps_name>/<int:ppk>/<filename>' +
+        r'/mps/<regex("(live|vod)"):mode>/<mps_name>/<int:ppk>/<filename>/' +
         r'init.<regex("(mp4|m4v|m4a|m4s)"):ext>',
         handler='media_requests.ServeMpsInitSeg',
         title='Init segments for multi-period streams'),
     "mps-media-seg-by-number": Route(
-        r'/mps/<regex("(live|vod)"):mode>/<mps_name>/<int:ppk>/<int:track>' +
-        r'n/<int:segment_num>.<regex("(mp4|m4v|m4a|m4s)"):ext>',
-        handler='manifest_requests.ServeMultiPeriodManifest',
-        title='Init segments for multi-period streams'),
+        r'/mps/<regex("(live|vod)"):mode>/<mps_name>/<int:ppk>/<filename>/' +
+        r'<int:segment_num>.<regex("(mp4|m4v|m4a|m4s)"):ext>',
+        handler='media_requests.ServeMpsMedia',
+        title='media segments for multi-period streams'),
     "mps-media-seg-by-time": Route(
-        r'/mps/<regex("(live|vod)"):mode>/<mps_name>/<int:ppk>/<int:track>' +
-        r't/<int:segment_time>.<regex("(mp4|m4v|m4a|m4s)"):ext>',
-        handler='manifest_requests.ServeMultiPeriodManifest',
-        title='Init segments for multi-period streams'),
+        r'/mps/<regex("(live|vod)"):mode>/<mps_name>/<int:ppk>/<filename>/' +
+        r'time/<int:segment_time>.<regex("(mp4|m4v|m4a|m4s)"):ext>',
+        handler='media_requests.ServeMpsMedia',
+        title='media segments for multi-period streams using timelines'),
     "route-map": Route(
         r'/libs/routemap.js',
         handler='esm.RouteMap',
