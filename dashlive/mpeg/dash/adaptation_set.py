@@ -31,6 +31,7 @@ from dashlive.drm.base import DrmBase
 from dashlive.drm.keymaterial import KeyMaterial
 
 from .event_stream import EventStream
+from .mime_types import content_type_to_mime_type, content_type_file_suffix
 from .representation import Representation
 from .timing import DashTiming
 
@@ -67,38 +68,29 @@ class AdaptationSet(ObjectWithFields):
             'id': AdaptationSet.get_next_id(),
             'representations': [],
             'event_streams': [],
+            'mimeType': content_type_to_mime_type(
+                self.content_type, kwargs.get('codecs', None)),
+            'fileSuffix': content_type_file_suffix(self.content_type),
         }
         if self.content_type == 'audio':
-            defaults['mimeType'] = "audio/mp4"
             defaults['lang'] = 'und'
             defaults['role'] = 'main'
             defaults['numChannels'] = 2
-            suffix = 'm4a'
         elif self.content_type == 'video':
-            defaults['mimeType'] = "video/mp4"
             defaults['startWithSAP'] = 1
             defaults['par'] = "16:9"
-            suffix = 'm4v'
         elif self.content_type == 'text':
             defaults['lang'] = 'und'
             defaults['role'] = 'subtitle'
-            if kwargs.get('codecs', None) == 'wvtt':
-                defaults['mimeType'] = 'text/vtt'
-            else:
-                defaults['mimeType'] = 'application/mp4'
-            suffix = 'mp4'
-        else:
-            defaults['mimeType'] = 'application/mp4'
-            suffix = 'mp4'
+        suffix: str = defaults['fileSuffix']
         if self.mode == 'odvod':
-            defaults['mediaURL'] = r'$RepresentationID$.' + suffix
+            defaults['mediaURL'] = f'$RepresentationID$.{suffix}'
         else:
-            defaults['initURL'] = r'$RepresentationID$/init.' + suffix
+            defaults['initURL'] = f'$RepresentationID$/init.{suffix}'
             if self.segment_timeline:
-                defaults['mediaURL'] = r'$RepresentationID$/time/$Time$.' + suffix
+                defaults['mediaURL'] = f'$RepresentationID$/time/$Time$.{suffix}'
             else:
-                defaults['mediaURL'] = r'$RepresentationID$/$Number$.' + suffix
-        defaults['fileSuffix'] = suffix
+                defaults['mediaURL'] = f'$RepresentationID$/$Number$.{suffix}'
         self.apply_defaults(defaults)
         if self.encrypted and self.default_kid is None:
             for rp in self.representations:
