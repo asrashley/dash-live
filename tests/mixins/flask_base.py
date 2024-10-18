@@ -146,86 +146,32 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
             marlin_la_url='ms3://localhost/marlin/bbb',
             playready_la_url=PlayReady.TEST_LA_URL
         )
-        fixture_files = [
+        fixture_files: list[str] = [
             "bbb_v6", "bbb_v6_enc", "bbb_v7", "bbb_v7_enc",
             "bbb_a1", "bbb_a1_enc", "bbb_a2", "bbb_a2_enc"]
         if with_subs:
             fixture_files.append("bbb_t1")
-        media_files = []
-        blobs = []
+        media_files: list[models.MediaFile] = []
         for idx, rid in enumerate(fixture_files):
-            filename = rid + ".mp4"
-            src_file = self.FIXTURES_PATH / filename
-            if '_v' in rid:
-                content_type = 'video'
-            elif '_a' in rid:
-                content_type = 'audio'
-            else:
-                content_type = 'text'
-            blob = models.Blob(
-                filename=filename,
-                created=from_isodatetime("2022-09-01T12:23:00Z"),
-                size=src_file.stat().st_size,
-                sha1_hash=str(src_file),
-                content_type=content_type,
-                auto_delete=False)
-            blobs.append(blob)
-            js_filename = self.FIXTURES_PATH / f'rep-{rid}.json'
-            rep: Representation | None = None
-            if js_filename.exists():
-                with js_filename.open('rt', encoding='utf-8') as src:
-                    rep_js = json.load(src)
-                if rep_js['version'] == Representation.VERSION:
-                    rep = Representation(**rep_js)
-                else:
-                    rep = None
-            if rep is None:
-                print(f'Creating Representation cache: {js_filename}')
-                with src_file.open(mode="rb", buffering=16384) as src:
-                    atoms = mp4.Mp4Atom.load(src)
-                rep = Representation.load(filename, atoms)
-                rep_js = rep.toJSON(pure=True)
-                with js_filename.open('wt', encoding='utf-8') as dest:
-                    json.dump(rep_js, dest, indent=2)
-            self.assertIsNotNone(rep)
-            self.assertIsInstance(rep, Representation)
-            encrypted = rid.endswith('_enc')
-            self.assertEqual(encrypted, rep.encrypted)
-            self.assertAlmostEqual(
-                rep.mediaDuration,
-                self.MEDIA_DURATION * rep.timescale,
-                delta=(rep.timescale / 5.0),
-                msg='Invalid duration for {}. Expected {} got {}'.format(
-                    filename, self.MEDIA_DURATION * rep.timescale,
-                    rep.mediaDuration))
-            mf = models.MediaFile(
-                name=rid,
-                stream=bbb,
-                bitrate=rep.bitrate,
-                content_type=rep.content_type,
-                codec_fourcc=rep.codecs.split('.')[0],
-                track_id=rep.track_id,
-                encrypted=rep.encrypted,
-                blob=blob)
-            mf.set_representation(rep)
+            mf = self.add_blob_and_media_file(bbb, rid)
             media_files.append(mf)
             if idx == 0:
                 bbb.set_timing_reference(mf.as_stream_timing_reference())
         with self.app.app_context():
             models.db.session.add(bbb)
-            for blob in blobs:
-                models.db.session.add(blob)
             for mf in media_files:
+                models.db.session.add(mf.blob)
                 models.db.session.add(mf)
             models.db.session.commit()
+        self.add_media_keys()
 
+    def add_media_keys(self) -> None:
         with self.app.app_context():
-            kids = set()
+            kids: set[bytes] = set()
             self.assertGreaterThan(models.MediaFile.count(), 0)
             for mf in models.MediaFile.all():
                 r = mf.representation
-                self.assertIsNotNone(
-                    r, f'Failed to get Representation for MediaFile {mf.name}')
+                assert r is not None
                 if not r.encrypted:
                     continue
                 for kid in r.kids:
@@ -236,6 +182,66 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
                     models.db.session.add(keypair)
                     kids.add(kid.raw)
             models.db.session.commit()
+
+    def add_blob_and_media_file(self,
+                                stream: models.Stream,
+                                name: str) -> models.MediaFile:
+        filename = f"{name}.mp4"
+        src_file = self.FIXTURES_PATH / filename
+        if '_v' in name:
+            content_type = 'video'
+        elif '_a' in name:
+            content_type = 'audio'
+        else:
+            content_type = 'text'
+
+        blob = models.Blob(
+            filename=filename,
+            created=from_isodatetime("2022-09-01T12:23:00Z"),
+            size=src_file.stat().st_size,
+            sha1_hash=str(src_file),
+            content_type=content_type,
+            auto_delete=False)
+
+        js_filename = self.FIXTURES_PATH / f'rep-{name}.json'
+        rep: Representation | None = None
+        if js_filename.exists():
+            with js_filename.open('rt', encoding='utf-8') as src:
+                rep_js = json.load(src)
+            if rep_js['version'] == Representation.VERSION:
+                rep = Representation(**rep_js)
+        if rep is None:
+            print(f'Creating Representation cache: {js_filename}')
+            with src_file.open(mode="rb", buffering=16384) as src:
+                atoms = mp4.Mp4Atom.load(src)
+            rep = Representation.load(filename, atoms)
+            rep_js = rep.toJSON(pure=True)
+            with js_filename.open('wt', encoding='utf-8') as dest:
+                json.dump(rep_js, dest, indent=2)
+        self.assertIsNotNone(rep)
+        self.assertIsInstance(rep, Representation)
+        encrypted = name.endswith('_enc')
+        self.assertEqual(encrypted, rep.encrypted)
+        self.assertAlmostEqual(
+            rep.mediaDuration,
+            self.MEDIA_DURATION * rep.timescale,
+            delta=(rep.timescale / 5.0),
+            msg='Invalid duration for {}. Expected {} got {}'.format(
+                filename, self.MEDIA_DURATION * rep.timescale,
+                rep.mediaDuration))
+
+        mf = models.MediaFile(
+            name=name,
+            stream=stream,
+            bitrate=rep.bitrate,
+            content_type=rep.content_type,
+            codec_fourcc=rep.codecs.split('.')[0],
+            track_id=rep.track_id,
+            encrypted=rep.encrypted,
+            blob=blob)
+        mf.set_representation(rep)
+
+        return mf
 
     def create_upload_folder(self) -> str:
         with self.app.app_context():
