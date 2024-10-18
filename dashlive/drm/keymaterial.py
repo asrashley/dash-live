@@ -23,14 +23,20 @@
 import base64
 import binascii
 import re
-from typing import AbstractSet
+from typing import AbstractSet, ClassVar, Optional
 
 from dashlive.utils.json_object import JsonObject
 
 class KeyMaterial:
-    length = 16
+    length: ClassVar[int] = 16
 
-    def __init__(self, value=None, hex=None, b64=None, raw=None):
+    raw: bytes
+
+    def __init__(self,
+                 value: bytes | str | None = None,
+                 hex: Optional[str] = None,
+                 b64: Optional[str] = None,
+                 raw: Optional[bytes] = None) -> None:
         if value is not None:
             if isinstance(value, bytes) and len(value) == 16:
                 self.raw = value
@@ -53,21 +59,21 @@ class KeyMaterial:
             self.raw = binascii.a2b_base64(b64)
         else:
             raise ValueError("One of value, hex, b64 or raw must be provided")
-        if len(self.raw) != self.length:
-            raise ValueError(f"Size {len(self.raw)} is invalid")
+        if len(self.raw) != self.__class__.length:
+            raise ValueError(f"KeyMaterial size {len(self.raw)} is invalid")
 
-    def to_hex(self):
+    def to_hex(self) -> str:
         return str(binascii.b2a_hex(self.raw), 'ascii')
 
-    def from_hex(self, value):
+    def from_hex(self, value: str) -> None:
         self.raw = binascii.a2b_hex(value.replace('-', ''))
 
     hex = property(to_hex, from_hex)
 
-    def to_base64(self):
+    def to_base64(self) -> str:
         return str(base64.b64encode(self.raw), 'ascii')
 
-    def from_base64(self, value):
+    def from_base64(self, value: str) -> None:
         self.raw = base64.b64decode(value)
 
     b64 = property(to_base64, from_base64)
