@@ -24,6 +24,7 @@ import importlib
 import logging
 from logging.config import dictConfig
 from os import environ
+import mimetypes
 import secrets
 
 from dotenv import load_dotenv
@@ -96,6 +97,10 @@ def create_app(config: JsonObject | None = None,
     folders.check(check_media=False)
     folders.create_media_folders()
     folders.check(check_media=True)
+    mimetypes.add_type("text/css", ".css")
+    mimetypes.add_type("images/x-icon", ".ico", strict=False)
+    mimetypes.add_type("application/javascript", ".js")
+    mimetypes.add_type("application/javascript", ".mjs")
     asyncio_loop.start()
     app = Flask(
         __name__,
