@@ -71,7 +71,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from typing import NamedTuple
+from typing import ClassVar, NamedTuple
 
 from dashlive.drm.keymaterial import KeyMaterial
 from dashlive.drm.playready import PlayReady
@@ -85,7 +85,7 @@ class EncodedRepresentation(NamedTuple):
     index: int
 
 class InitialisationVector(KeyMaterial):
-    length = 8
+    length: ClassVar[int] = 8
 
 class VideoEncodingParameters(NamedTuple):
     width: int
