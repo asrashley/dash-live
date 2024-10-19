@@ -25,6 +25,8 @@ def create_navbar_context() -> list[NavBarItem]:
         'title': 'Multi-Period', 'href': flask.url_for('list-mps')
     }, {
         'title': 'Validate', 'href': flask.url_for('validate-stream')
+    }, {
+        'title': 'Inspect', 'href': flask.url_for('inspect-media')
     }]
     if current_user.is_authenticated:
         if current_user.is_admin:

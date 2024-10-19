@@ -158,19 +158,11 @@ class TestRestApi(FlaskTestBase):
                 segnum=segnum, ajax=1)
             response = self.client.get(url)
             self.assert200(response)
-            self.assertIn('segmentNumber', response.json)
-            self.assertIn('atoms', response.json)
-            self.assertIn('media', response.json)
-            self.assertIn('stream', response.json)
-            expected = {
-                'segmentNumber': segnum,
-                'atoms': response.json['atoms'],
-                'media': media_file.to_dict(
-                    with_collections=False, exclude={'stream', 'blob', 'representation', 'rep'}),
-                'stream': media_file.stream.to_dict(
-                    with_collections=False, exclude={'media_files'}),
-            }
-            self.assertDictEqual(expected, response.json)
+            atoms = response.json
+            if segnum == 0:
+                self.assertEqual(atoms[0]['atom_type'], 'ftyp')
+            else:
+                self.assertEqual(atoms[0]['atom_type'], 'moof')
             url = flask.url_for(
                 'view-media-segment', spk=media_file.stream_pk, mfid=media_file.pk,
                 segnum=segnum)

@@ -32,6 +32,7 @@
     {% else %}
     {%- if 'value' in field and field.value != None %} value="{{field.value}}"{% endif %}
     {% endif %}
+    {%- if field.accept %} accept="{{field.accept}}"{% endif %}
     {%- if field.min %} min="{{field.min}}"{% endif %}
     {%- if field.max %} max="{{field.max}}"{% endif %}
     {%- if field.minlength %} minlength="{{field.minlength}}"{% endif %}
