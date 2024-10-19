@@ -531,6 +531,8 @@ class ServeMpsMedia(MediaRequestBase):
                                       seg_time: int | None
                                       ) -> tuple[int, int, int]:
         start_time: int = 0
+        origin_time: int = 0
+        print('start', flask.g.period.start)
         if flask.g.period.start is not None:
             start_time = int(math.floor(
                 flask.g.period.start.total_seconds() *
@@ -545,10 +547,15 @@ class ServeMpsMedia(MediaRequestBase):
             if mod_seg > representation.num_media_segments:
                 raise ValueError(f'Invalid start time: {start_time} end={end}')
             end += representation.segments[mod_seg].duration
+        origin_time = representation.segments[mod_seg].duration - end
 
         if seg_time is None:
             assert seg_num is not None
             mod_seg += seg_num - representation.start_number
             if mod_seg > representation.num_media_segments:
                 raise ValueError(f'Invalid start time: {start_time} end={end}')
-        return (mod_seg, 0, mod_seg)
+        else:
+            origin_time += seg_time
+            seg_num = mod_seg
+        print(representation.id, mod_seg, origin_time, seg_num)
+        return (mod_seg, origin_time, seg_num)
