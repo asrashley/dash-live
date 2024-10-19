@@ -1,0 +1,19 @@
+{% extends 'layout.html' %}
+{% import "card.html" as card %}
+
+{% block content %}
+<div class="container">
+  {%- call card.card('Inspect MP4 file') %}
+  <form action="{{submit_url}}" id="inspect_file_form" method="POST" name="inspect_file">
+    <input type="hidden" name="csrf_token" value="{{csrf_token}}" />
+    {%- for field in fields %}
+    {% include 'input-field-row.html' %}
+    {% endfor -%}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Inspect file</button>
+      <a href="{{cancel_url}}" class="btn btn-warning">Cancel</a>
+    </div>
+  </form>
+  {%- endcall %}
+</div>
+{% endblock %}

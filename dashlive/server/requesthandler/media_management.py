@@ -32,16 +32,24 @@ from langcodes import tag_is_valid
 from werkzeug.datastructures import FileStorage
 
 from dashlive.mpeg import mp4
+from dashlive.mpeg.dash.validator.options import ValidatorOptions
+from dashlive.mpeg.dash.validator.requests_http_client import RequestsHttpClient
+from dashlive.mpeg.dash.validator.concurrent_pool import ConcurrentWorkerPool
 from dashlive.server import models
 from dashlive.server.models.error_reason import ErrorReason
+from dashlive.server.options.form_input_field import FormInputContext
 from dashlive.server.routes import Route
+from dashlive.server.thread_pool import pool_executor
 from dashlive.utils.buffered_reader import BufferedReader
 from dashlive.utils.date_time import timecode_to_timedelta
 from dashlive.utils.files import generate_new_filename
+from dashlive.utils.id_factory import create_id_factory
 from dashlive.utils.json_object import JsonObject
 from dashlive.utils.timezone import UTC
+from dashlive.utils.objects import object_has_children
 
 from .base import HTMLHandlerBase, RequestHandlerBase, DeleteModelBase
+from .csrf import CsrfProtection
 from .decorators import (
     uses_media_file, current_media_file, login_required,
     uses_stream, current_stream, csrf_token_required
@@ -436,91 +444,32 @@ class MediaSegmentList(HTMLHandlerBase):
         return crumbs
 
 
-class MediaSegmentInfo(HTMLHandlerBase):
+class SegmentInfoBase(HTMLHandlerBase):
     """
-    Handler for showing details about one segment in an MP4 file
+    Base class inspecting MP4 files
     """
 
-    decorators = [uses_media_file, uses_stream]
-
-    def get(self, spk: int, mfid: int, segnum: int) -> flask.Response:
-        context = self.create_context()
-        if segnum == 0:
-            context['breadcrumbs'][-1]['title'] = 'Init Segment'
-        else:
-            context['breadcrumbs'][-1]['title'] = f'Segment {segnum}'
-        frag = current_media_file.representation.segments[int(segnum)]
-        options = mp4.Options(lazy_load=False)
-        if current_media_file.representation.encrypted:
-            options.iv_size = current_media_file.representation.iv_size
-        with current_media_file.open_file(start=frag.pos, buffer_size=16384) as reader:
-            src = BufferedReader(
-                reader, offset=frag.pos, size=frag.size, buffersize=16384)
-            atom = mp4.Mp4Atom.load(src, options=options, use_wrapper=True)
-        exclude = {'parent', 'options'}
+    def render_segment_info(self,
+                            atom: mp4.Mp4Atom,
+                            back_url: str,
+                            full_title: str,
+                            short_title: str) -> flask.Response:
+        exclude: set[str] = {'parent', 'options'}
         atoms = [ch.toJSON(exclude=exclude) for ch in atom.children]
         for ch in atoms:
             self.filter_atom(ch)
         if is_ajax():
-            return jsonify({
-                'segmentNumber': segnum,
-                'atoms': atoms,
-                'media': current_media_file.to_dict(
-                    with_collections=False, exclude={'stream', 'blob', 'representation', 'rep'}),
-                'stream': current_stream.to_dict(
-                    with_collections=False, exclude={'media_files'}),
-            })
+            return jsonify(atoms)
 
-        def value_has_children(obj) -> bool:
-            if not obj:
-                return False
-            if not isinstance(obj, list):
-                return False
-            if not isinstance(obj[0], dict):
-                return False
-            if '_type' in obj[0]:
-                return True
-            return False
-
-        context['next_id_value'] = 1
-
-        def create_id() -> str:
-            rv = f'id{context["next_id_value"]}'
-            context['next_id_value'] += 1
-            return rv
-
-        context.update({
-            'segnum': segnum,
-            'atoms': atoms,
-            'mediafile': current_media_file,
-            'stream': current_stream,
-            'value_has_children': value_has_children,
-            'create_id': create_id,
-            'object_name': self.object_name,
-        })
+        context = self.create_context(
+            atoms=atoms,
+            value_has_children=object_has_children,
+            create_id=create_id_factory(),
+            object_name=self.object_name,
+            title=full_title,
+            back_url=back_url)
+        context['breadcrumbs'][-1]['title'] = short_title
         return flask.render_template('media/segment_info.html', **context)
-
-    def get_breadcrumbs(self, route: Route) -> list[dict[str, str]]:
-        crumbs = super().get_breadcrumbs(route)
-        stream_crumb = {
-            'title': current_stream.directory,
-            'href': flask.url_for('view-stream', spk=current_stream.pk),
-        }
-        crumbs.insert(-1, stream_crumb)
-        media_info = {
-            'title': current_media_file.name,
-            'href': flask.url_for(
-                'media-info', spk=current_stream.pk, mfid=current_media_file.pk),
-        }
-        crumbs.insert(-1, media_info)
-        all_segments = {
-            'title': 'Segments',
-            'href': flask.url_for(
-                'list-media-segments', spk=current_stream.pk,
-                mfid=current_media_file.pk),
-        }
-        crumbs.insert(-1, all_segments)
-        return crumbs
 
     @staticmethod
     def object_name(obj: str | JsonObject) -> str:
@@ -564,6 +513,133 @@ class MediaSegmentInfo(HTMLHandlerBase):
             else:
                 for dsc in atom['descriptors']:
                     self.filter_object(dsc)
+
+
+class MediaSegmentInfo(SegmentInfoBase):
+    """
+    Handler for showing details about one segment in an MP4 file
+    """
+
+    decorators = [uses_media_file, uses_stream]
+
+    def get(self, spk: int, mfid: int, segnum: int) -> flask.Response:
+        frag = current_media_file.representation.segments[int(segnum)]
+        options = mp4.Options(lazy_load=False)
+        if current_media_file.representation.encrypted:
+            options.iv_size = current_media_file.representation.iv_size
+        with current_media_file.open_file(start=frag.pos, buffer_size=16384) as reader:
+            src = BufferedReader(
+                reader, offset=frag.pos, size=frag.size, buffersize=16384)
+            atom = mp4.Mp4Atom.load(src, options=options, use_wrapper=True)
+        back_url = flask.url_for(
+            'list-media-segments', spk=current_stream.pk, mfid=current_media_file.pk)
+        full_title: str = f'Segment {segnum} in fille "{current_media_file.blob.filename}"'
+        short_title: str
+        if segnum == 0:
+            short_title = 'Init Segment'
+        else:
+            short_title = f'Segment {segnum}'
+        return self.render_segment_info(atom, back_url, full_title, short_title)
+
+    def get_breadcrumbs(self, route: Route) -> list[dict[str, str]]:
+        crumbs = super().get_breadcrumbs(route)
+        stream_crumb = {
+            'title': current_stream.directory,
+            'href': flask.url_for('view-stream', spk=current_stream.pk),
+        }
+        crumbs.insert(-1, stream_crumb)
+        media_info = {
+            'title': current_media_file.name,
+            'href': flask.url_for(
+                'media-info', spk=current_stream.pk, mfid=current_media_file.pk),
+        }
+        crumbs.insert(-1, media_info)
+        all_segments = {
+            'title': 'Segments',
+            'href': flask.url_for(
+                'list-media-segments', spk=current_stream.pk,
+                mfid=current_media_file.pk),
+        }
+        crumbs.insert(-1, all_segments)
+        return crumbs
+
+
+class InspectMediaFile(SegmentInfoBase):
+    """
+    Handler for showing details about one segment in an MP4 file
+    """
+    def get(self,
+            error: str | None = None,
+            form: dict | None = None) -> flask.Response:
+        csrf_key: str = self.generate_csrf_cookie()
+        csrf_token: str = self.generate_csrf_token("files", csrf_key)
+        if form is None:
+            form = {}
+        fields: list[FormInputContext] = [{
+            'name': 'url',
+            'type': 'url',
+            'title': 'URL of MP4 file',
+            'placeholder': '... HTTP(S) URL of MP4 file ...',
+            'value': form.get('url'),
+        }, {
+            'name': 'file',
+            'type': 'file',
+            'title': 'MP4 file to upload',
+            'accept': 'video/mp4,audio/mp4,.mp4,.m4v,.m4a,.m4s',
+            'value': form.get('file'),
+        }]
+        context = self.create_context(
+            title='Inspect MP4 file',
+            csrf_token=csrf_token,
+            submit_url=flask.request.path,
+            fields=fields)
+        return flask.render_template("media/inspect_file.html", **context)
+
+    async def post(self) -> flask.Response:
+        try:
+            token: str = flask.request.form['csrf_token']
+            CsrfProtection.check("files", token)
+        except (KeyError, ValueError, CsrfFailureException) as err:
+            logging.info('CSRF failure: %s', err)
+            return flask.make_response('CSRF failure', 401)
+        if flask.request.form.get('url'):
+            return await self.fetch_and_show(flask.request.form['url'])
+        return self.show_uploaded_file()
+
+    def show_uploaded_file(self) -> flask.Response:
+        if 'file' not in flask.request.files:
+            return flask.make_response('File not specified', 400)
+        if len(flask.request.files) == 0:
+            return flask.make_response('No files uploaded', 400)
+        blob_info = flask.request.files['file']
+        logging.debug("Filename: " + blob_info.filename)
+        if blob_info.filename == '':
+            return flask.make_response('Filename not specified', 400)
+        print('blob_info', dir(blob_info))
+        options = mp4.Options(lazy_load=False)
+        src = BufferedReader(blob_info)
+        atom = mp4.Mp4Atom.load(src, options=options, use_wrapper=True)
+        back_url = flask.url_for('inspect-media')
+        full_title: str = f"Contents of {blob_info.filename}"
+        short_title: str = blob_info.filename
+        return self.render_segment_info(atom, back_url, full_title, short_title)
+
+    async def fetch_and_show(self, url: str) -> flask.Response:
+        pool = ConcurrentWorkerPool(pool_executor)
+        options: ValidatorOptions = ValidatorOptions(
+            log=logging.getLogger('wsgi'), pool=pool)
+        client = RequestsHttpClient(options)
+        response = await client.get(url, stream=True)
+        if response.status_int != 200:
+            return self.get(
+                error=f"Failed to fetch: {response.status}", form=flask.request.form)
+        src = BufferedReader(response, size=int(response.headers['Content-Length'], 10))
+        atom = mp4.Mp4Atom.load(
+            src, options=mp4.Options(lazy_load=False), use_wrapper=True)
+        back_url = flask.url_for('inspect-media')
+        full_title: str = f"Contents of {url}"
+        short_title: str = url
+        return self.render_segment_info(atom, back_url, full_title, short_title)
 
 
 class ValidateMediaChanges(HTMLHandlerBase):
