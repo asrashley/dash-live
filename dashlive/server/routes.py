@@ -146,6 +146,12 @@ routes = {
         handler='media_management.EditMedia',
         title='Edit Media',
         parent='list-streams'),
+    "inspect-media": Route(
+        r'/media/inspect',
+        handler='media_management.InspectMediaFile',
+        title='Inspect MP4 file',
+        parent='home',
+    ),
     "check-media-changes": Route(
         r'/stream/<int:spk>/<int:mfid>/validate',
         handler='media_management.ValidateMediaChanges',

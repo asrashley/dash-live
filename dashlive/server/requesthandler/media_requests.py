@@ -552,6 +552,7 @@ class ServeMpsMedia(MediaRequestBase):
             if mod_seg > representation.num_media_segments:
                 raise ValueError(f'Invalid start time: {start_time} end={end}')
             end += representation.segments[mod_seg].duration
+        origin_time = representation.segments[mod_seg].duration - end
 
         if seg_time is None:
             assert seg_num is not None

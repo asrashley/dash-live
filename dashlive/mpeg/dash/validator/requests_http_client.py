@@ -14,7 +14,11 @@ from .concurrent_pool import ConcurrentWorkerPool
 from .options import ValidatorOptions
 
 class HttpResponse:
-    def __init__(self, response):
+    headers: dict
+    status_int: int
+    _pos: int
+
+    def __init__(self, response) -> None:
         self.response = response
         self.status_int = self.status_code = response.status_code
         self._xml = None
@@ -26,6 +30,7 @@ class HttpResponse:
             self.status = 'OK'
         else:
             self.status = response.reason
+        self._pos = 0
 
     @property
     def xml(self):
@@ -34,21 +39,29 @@ class HttpResponse:
         return self._xml
 
     @property
-    def forms(self, id):
+    def forms(self, id) -> dict:
         raise Exception("Not implemented")
 
     @property
-    def json(self):
+    def json(self) -> dict:
         return self.response.json
 
     @property
-    def body(self):
+    def body(self) -> bytes:
         return self.response.content
 
     def get_data(self, as_text: bool) -> bytes | str:
         if as_text:
             return self.response.text
         return self.response.content
+
+    def tell(self) -> int:
+        return self._pos
+
+    def read(self, length: int) -> bytes:
+        rv = self.response.raw.read(length)
+        self._pos += len(rv)
+        return rv
 
 
 class RequestsHttpClient:
@@ -74,9 +87,15 @@ class RequestsHttpClient:
             resp = tg.submit(do_head)
         return HttpResponse(resp.result())
 
-    async def get(self, url, headers=None, params=None, status=None, xhr=False) -> HttpResponse:
+    async def get(self,
+                  url: str,
+                  headers: dict | None = None,
+                  params: dict | None = None,
+                  status: int | None = None,
+                  xhr: bool = False,
+                  stream: bool = False) -> HttpResponse:
         def do_get():
-            return self.session.get(url, data=params, headers=headers)
+            return self.session.get(url, data=params, headers=headers, stream=stream)
 
         try:
             self.log.debug('GET %s', url)
