@@ -25,6 +25,7 @@ import datetime
 import io
 import logging
 import math
+from typing import NamedTuple
 
 import flask
 
@@ -79,6 +80,12 @@ class OnDemandMedia(RequestHandlerBase):
             with current_media_file.open_file(start=start) as reader:
                 data = reader.read(1 + end - start)
         return flask.make_response((data, status, headers))
+
+
+class SegmentPosition(NamedTuple):
+    mod_segment: int
+    origin_time: int
+    seg_num: int
 
 
 class MediaRequestBase(RequestHandlerBase):
@@ -177,40 +184,39 @@ class MediaRequestBase(RequestHandlerBase):
         moof: mp4.Mp4Atom = atom.moof
         traf: mp4.Mp4Atom = moof.traf
 
-        if mode == 'live':
-            tfdt: mp4.Mp4Atom
-            try:
-                tfdt = traf.tfdt
-            except AttributeError as err:
-                logging.debug('Adding tfdt box to traf: %s', err)
-                base_media_decode_time: int
-                base_media_decode_time = sum([
-                    seg.duration for seg in representation.segments[1:mod_segment]])
-                tfdt = mp4.TrackFragmentDecodeTimeBox(
-                    version=0, flags=0,
-                    base_media_decode_time=base_media_decode_time)
-                tfhd_index = atom.moof.traf.index('tfhd')
-                traf.insert_child(tfhd_index + 1, tfdt)
-                traf_modified = True
-                moof_modified = True
-                # force trun box to have a data_offset field, as its
-                # position will have changed
-                traf.trun.flags |= mp4.TrackFragmentRunBox.data_offset_present
+        tfdt: mp4.Mp4Atom
+        try:
+            tfdt = traf.tfdt
+        except AttributeError as err:
+            logging.debug('Adding tfdt box to traf: %s', err)
+            base_media_decode_time: int
+            base_media_decode_time = sum([
+                seg.duration for seg in representation.segments[1:mod_segment]])
+            tfdt = mp4.TrackFragmentDecodeTimeBox(
+                version=0, flags=0,
+                base_media_decode_time=base_media_decode_time)
+            tfhd_index = atom.moof.traf.index('tfhd')
+            traf.insert_child(tfhd_index + 1, tfdt)
+            traf_modified = True
+            moof_modified = True
+            # force trun box to have a data_offset field, as its
+            # position will have changed
+            traf.trun.flags |= mp4.TrackFragmentRunBox.data_offset_present
 
-            tfdt.base_media_decode_time += origin_time
+        tfdt.base_media_decode_time += origin_time
 
-            # Update the sequenceNumber field in the MovieFragmentHeader
-            # box
-            moof.mfhd.sequence_number = seg_num
-            diff = None
-            if seg_time is not None:
-                diff = seg_time - tfdt.base_media_decode_time
-                logging.debug(
-                    r'%s: $Time$ want=%s got=%d (%s)',
-                    media_file.name, seg_time, tfdt.base_media_decode_time, diff)
+        # Update the sequenceNumber field in the MovieFragmentHeader
+        # box
+        moof.mfhd.sequence_number = seg_num
+        diff = None
+        if seg_time is not None:
+            diff = seg_time - tfdt.base_media_decode_time
             logging.debug(
-                r'%s: origin=%d duration=%d',
-                media_file.name, origin_time, representation.segment_duration)
+                r'%s: $Time$ want=%s got=%d (%s)',
+                media_file.name, seg_time, tfdt.base_media_decode_time, diff)
+        logging.debug(
+            r'%s: origin=%d duration=%d',
+            media_file.name, origin_time, representation.segment_duration)
 
         try:
             # remove any sidx box as it has a baseMediaDecodeTime and it's
@@ -279,7 +285,7 @@ class MediaRequestBase(RequestHandlerBase):
                                       timing: DashTiming,
                                       seg_num: int | None,
                                       seg_time: int | None
-                                      ) -> tuple[int, int, int]:
+                                      ) -> SegmentPosition:
         """
         Calculates the index into the array of segments and time offset from
         stream start. For live streams this is based upon calculating how many
@@ -427,7 +433,7 @@ class LiveMedia(MediaRequestBase):
                                       timing: DashTiming,
                                       seg_num: int | None,
                                       seg_time: int | None
-                                      ) -> tuple[int, int, int]:
+                                      ) -> SegmentPosition:
         first: int
         last: int
         mod_segment: int
@@ -486,7 +492,7 @@ class ServeMpsInitSeg(MediaRequestBase):
                                       representation: Representation,
                                       timing: DashTiming,
                                       seg_num: int,
-                                      seg_time: int) -> tuple[int, int]:
+                                      seg_time: int) -> SegmentPosition:
         raise ValueError("Not applicable to init segments")
 
 
@@ -529,10 +535,9 @@ class ServeMpsMedia(MediaRequestBase):
                                       timing: DashTiming,
                                       seg_num: int | None,
                                       seg_time: int | None
-                                      ) -> tuple[int, int, int]:
+                                      ) -> SegmentPosition:
         start_time: int = 0
         origin_time: int = 0
-        print('start', flask.g.period.start)
         if flask.g.period.start is not None:
             start_time = int(math.floor(
                 flask.g.period.start.total_seconds() *
@@ -557,5 +562,4 @@ class ServeMpsMedia(MediaRequestBase):
         else:
             origin_time += seg_time
             seg_num = mod_seg
-        print(representation.id, mod_seg, origin_time, seg_num)
-        return (mod_seg, origin_time, seg_num)
+        return SegmentPosition(mod_seg, origin_time, seg_num)
