@@ -76,7 +76,10 @@ def dateTimeFormat(value: str | datetime.datetime | None, fmt: str) -> str:
     return value.strftime(fmt)
 
 @custom_tags.app_template_filter()
-def timeDelta(value: datetime.timedelta | None, full_tc: bool = False) -> str:
+def timeDelta(value: datetime.timedelta | None,
+              full_tc: bool = False,
+              with_millis: bool = False
+              ) -> str:
     if value is None:
         return ''
     ticks = value / datetime.timedelta(milliseconds=10)
@@ -87,7 +90,7 @@ def timeDelta(value: datetime.timedelta | None, full_tc: bool = False) -> str:
     seconds %= 60
     ticks = int(ticks) % 100
     ts: str = ''
-    if ticks != 0:
+    if ticks != 0 or with_millis:
         ts = f'.{ticks:#02d}'
     if full_tc:
         return f'{hours:#02d}:{mins:#02d}:{seconds:#02d}{ts}'
@@ -251,6 +254,12 @@ def length(value: str | None) -> int:
     if value is None:
         return 0
     return len(value)
+
+@custom_tags.app_template_filter()
+def plural(value: int, singular: str, plural_text: str) -> str:
+    if value == 1:
+        return f"{value} {singular}"
+    return f"{value} {plural_text}"
 
 @custom_tags.app_template_global()
 def import_script(filename: str) -> ScriptTag:
