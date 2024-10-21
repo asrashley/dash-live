@@ -9,7 +9,7 @@ const pageState = {
 
 function buildCGI() {
   const params = {};
-  const items = $('#edit-model').serializeArray();
+  const items = $('#id_main_form').serializeArray();
   items.forEach((item) => {
     if (item.value === "") {
       return;
@@ -134,6 +134,8 @@ function updateManifestURL() {
   dest.removeClass('disabled');
   const viewUrl = dest.attr('href').replace(/\/(dash|mps)\//, '/view/$1/')
   $('.view-manifest').attr('href', viewUrl);
+  $('#radio-mode-odvod').attr('disabled', /^mps\./.test(stream.value));
+
   if(window.history && typeof(history.pushState)==="function") {
     const page_params = Object.values(params);
     const modelManifest = $('#model-manifest').val()
@@ -172,12 +174,27 @@ function updateDom() {
 }
 
 function init() {
+  const defaultFields = ['mode', 'stream', 'manifest', 'player'];
+  const form = document.getElementById('id_main_form');
+
   updateDom();
   $('#advanced-options').on('change', (ev) => {
     showOrHideAdvancedOptions(ev.target.checked);
   });
-  $('#edit-model').on('change', updateManifestURL);
+  $('#id_main_form').on('change', updateManifestURL);
 
+  defaultFields.forEach(name => {
+    const value = localStorage.getItem(`dashlive.${name}`);
+    if (value !== null) {
+      form[name].value = value;
+    }
+    $(`input[name="${name}"], select[name="${name}"]`).on('change', (ev) => {
+      const { value } = ev.target;
+      if (value) {
+        localStorage.setItem(`dashlive.${name}`, value);
+      }
+    });
+  });
   if (/#/.test(document.location.href)) {
     let params = document.location.href.split('#')[1];
     params = params.split('&');
