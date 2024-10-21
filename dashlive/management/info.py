@@ -120,6 +120,7 @@ class StreamInfo:
     defaults: JsonObject | None = None
     csrf_token: InitVar[str | None] = None
     id: InitVar[str | None] = None
+    duration: str | None = None
 
     def __post_init__(self, *args):
         if isinstance(self.timing_ref, dict):
