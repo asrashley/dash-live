@@ -1,14 +1,16 @@
 <figure class="adaptation-set-list figure">
 <pre class="adaptation-set-pre">
+&lt;Period id="{{ stream.directory }}" duration="{{stream.duration | isoDuration}}"&gt;
 {%- for adp_set in adaptation_sets %}
-&lt;AdaptationSet content_type="{{ adp_set.content_type }}" id="{{ adp_set.id }}" mimeType="{{adp_set.mimeType}}"&gt;
+  &lt;AdaptationSet content_type="{{ adp_set.content_type }}" id="{{ adp_set.id }}" mimeType="{{adp_set.mimeType}}"&gt;
 {%- for rep in adp_set.representations %}
     &lt;Representation id="{{ rep.id }}" codecs="{{rep.codecs}}" bandwidth="{{rep.bitrate}}" {%- if adp_set.content_type != 'video' %} lang="{{ rep.lang }}" {%- endif %}{%- if adp_set.content_type == "audio" %} sampleRate="{{rep.sampleRate}}" numChannels="{{rep.numChannels}}" {%- endif %}{%- if adp_set.content_type == "video" %} width="{{ rep.width }}" height="{{ rep.height }}" {%- endif %} /&gt;
 {%- endfor %}
-&lt;/AdaptationSet&gt;
+  &lt;/AdaptationSet&gt;
 {%- endfor %}
+&lt;/Period&gt;
 </pre>
-<figcaption class="figure-caption text-right">
+<figcaption class="figure-caption text-end">
   Example {{ tab_name }} AdaptationSets and Representations for &quot;{{ stream.title }}&quot;
 </figcaption>
 </figure>

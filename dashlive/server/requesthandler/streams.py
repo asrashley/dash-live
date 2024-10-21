@@ -251,6 +251,7 @@ class EditStream(HTMLHandlerBase):
             with_collections=True, exclude={'media_files'})
         stream.update({
             'media_files': [],
+            'duration': current_stream.duration(),
         })
         kids: dict[str, models.Key] = {}
         has_file_errors: bool = False
