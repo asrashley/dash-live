@@ -25,7 +25,7 @@ import datetime
 import io
 import logging
 import math
-from typing import NamedTuple
+from typing import cast, NamedTuple
 
 import flask
 
@@ -536,30 +536,22 @@ class ServeMpsMedia(MediaRequestBase):
                                       seg_num: int | None,
                                       seg_time: int | None
                                       ) -> SegmentPosition:
-        start_time: int = 0
         origin_time: int = 0
-        if flask.g.period.start is not None:
+        period: models.Period = cast(models.Period, flask.g.period)
+        timing_ref = period.stream.timing_reference
+        assert timing_ref is not None
+        start_time: int = int(math.floor(
+            period.start.total_seconds() * timing_ref.timescale))
+        if representation.timescale != timing_ref.timescale:
             start_time = int(math.floor(
-                flask.g.period.start.total_seconds() *
-                representation.timescale))
-        mod_seg: int = 1
-        end: int = representation.segments[mod_seg].duration
+                start_time * representation.timescale / timing_ref.timescale))
         if seg_time is not None:
             start_time += seg_time
+        mod_seg, seg_start_tc, origin_time = representation.get_segment_index(
+            start_time)
 
-        while end <= start_time:
-            mod_seg += 1
-            if mod_seg > representation.num_media_segments:
-                raise ValueError(f'Invalid start time: {start_time} end={end}')
-            end += representation.segments[mod_seg].duration
-        origin_time = representation.segments[mod_seg].duration - end
-
-        if seg_time is None:
-            assert seg_num is not None
+        if seg_num is not None:
             mod_seg += seg_num - representation.start_number
             if mod_seg > representation.num_media_segments:
-                raise ValueError(f'Invalid start time: {start_time} end={end}')
-        else:
-            origin_time += seg_time
-            seg_num = mod_seg
-        return SegmentPosition(mod_seg, origin_time, seg_num)
+                raise ValueError(f'Invalid segment number: {mod_seg}')
+        return SegmentPosition(mod_seg, -seg_start_tc, seg_num)
