@@ -1,8 +1,7 @@
-<form
-  {% if submit_url %}action="{{submit_url}}"{% endif %}
-  id="edit-model"
-  method="POST"
-  name="edit-model"
+<form method="POST"
+  {%- if submit_url %} action="{{submit_url}}" {%- endif %}
+  id="{{ form_id | default('edit-model') }}"
+  name="{{ form_name | default('edit_model') }}"
   >
   {% if error %}
     <div class="alert alert-danger" role="alert">{{error}}</div>

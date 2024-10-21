@@ -54,6 +54,8 @@ class MainPage(HTMLHandlerBase):
         context = self.create_context(
             title='DASH test streams', rows=[],
             streams=list(models.Stream.all()),
+            form_id='id_main_form',
+            form_name='main',
             mp_streams=list(models.MultiPeriodStream.all()),
             exclude_buttons=True)
         if context['streams']:
