@@ -22,7 +22,6 @@ depends_on: Union[str, Sequence[str], None] = ('12fc8a1bb74f',)
 
 def upgrade() -> None:
     folders = AppFolders()
-    print(folders)
     folders.check(check_media=False)
     bind = op.get_bind()
     session = sa.orm.Session(bind=bind)
