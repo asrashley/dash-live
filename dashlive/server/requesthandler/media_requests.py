@@ -527,7 +527,7 @@ class ServeMpsMedia(MediaRequestBase):
         flask.g.period = period
         return self.generate_media_segment(
             stream=period.stream, media_file=media, mode=mode, options=options,
-            seg_num=segment_num, seg_time=None)
+            seg_num=segment_num, seg_time=segment_time)
 
     def calculate_media_segment_index(self,
                                       mode: str,
@@ -536,7 +536,7 @@ class ServeMpsMedia(MediaRequestBase):
                                       seg_num: int | None,
                                       seg_time: int | None
                                       ) -> SegmentPosition:
-        origin_time: int = 0
+        origin_time: int
         period: models.Period = cast(models.Period, flask.g.period)
         timing_ref = period.stream.timing_reference
         assert timing_ref is not None
@@ -550,8 +550,20 @@ class ServeMpsMedia(MediaRequestBase):
         mod_seg, seg_start_tc, origin_time = representation.get_segment_index(
             start_time)
 
+        origin_time = -seg_start_tc
+        if seg_time is not None:
+            origin_time += seg_time
+
         if seg_num is not None:
             mod_seg += seg_num - representation.start_number
             if mod_seg > representation.num_media_segments:
-                raise ValueError(f'Invalid segment number: {mod_seg}')
-        return SegmentPosition(mod_seg, -seg_start_tc, seg_num)
+                logging.warning(
+                    "Request for segment %d in file %s with duration %d",
+                    mod_seg, representation.id,
+                    representation.num_media_segments)
+                raise ValueError('Segment beyond end of media')
+                # assert representation.mediaDuration is not None
+                # origin_time += representation.mediaDuration
+                # mod_seg -= representation.num_media_segments
+                # assert mod_seg > 0
+        return SegmentPosition(mod_seg, origin_time, seg_num)
