@@ -9,7 +9,7 @@ import datetime
 import hashlib
 import logging
 from pathlib import Path
-from typing import cast, AbstractSet, Optional
+from typing import cast, AbstractSet, Optional, NamedTuple
 
 import flask
 import sqlalchemy as sa
@@ -26,6 +26,18 @@ from .blob import Blob
 from .db import db
 from .mediafile import MediaFile
 from .mixin import ModelMixin
+
+
+class TrackSummary(NamedTuple):
+    content_type: str
+    count: int
+
+
+class StreamTrackSummary(NamedTuple):
+    video: TrackSummary
+    audio: TrackSummary
+    text: TrackSummary
+
 
 class Stream(db.Model, ModelMixin):
     """
@@ -181,3 +193,17 @@ class Stream(db.Model, ModelMixin):
             return mf
         db.session.commit()
         return MediaFile.get(name=filename.stem, stream=self)
+
+    def track_summary(self) -> StreamTrackSummary:
+        """
+        Produces a summary of all tracks in this stream
+        """
+        tracks: list[TrackSummary] = []
+        for content_type in ['video', 'audio', 'text']:
+            stmt = db.select(
+                sa.func.count(sa.distinct(MediaFile.track_id))).filter_by(
+                    stream_pk=self.pk, content_type=content_type)
+            num_tracks: int = db.session.execute(stmt).scalar_one()
+            tracks.append(TrackSummary(content_type, num_tracks))
+        return StreamTrackSummary(
+            video=tracks[0], audio=tracks[1], text=tracks[2])

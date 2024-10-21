@@ -8,14 +8,14 @@
     <caption>Streams</caption>
     <thead><tr>
         <th class="stream-actions">
-	  {% if user_can_modify %}
+          {% if user_can_modify %}
           <a href="{{url_for('add-stream')}}" class="btn btn-success add-stream">Add</a>
-	  {% endif %}
-	</th>
+          {% endif %}
+        </th>
         <th class="title">Title</th>
         <th class="directory">Directory</th>
-        <th class="marlin_la_url">Marlin SAS URL</th>
-        <th class="playready_la_url">PlayReady LA_URL</th>
+        <th class="duration">Duration</th>
+        <th class="tracks">Tracks</th>
     </tr></thead>
     <tbody>
     {% for stream in streams %}
@@ -24,26 +24,28 @@
         <a href="{{url_for('view-stream', spk=stream.pk)}}"
            class="btn btn-success btn-sm edit-stream"
            data-id="{{stream.pk}}">
-	  {%- if user_can_modify %}
-	  Edit
-	  {%- else %}
-	  View
-	  {%- endif %}
-	</a>
+          {%- if user_can_modify %}
+          Edit
+          {%- else %}
+          View
+          {%- endif %}
+        </a>
       </td>
       <td class="title">
-	<a href="{{url_for('view-stream', spk=stream.pk)}}">{{stream.title}}</a>
+        <a href="{{url_for('view-stream', spk=stream.pk)}}">{{stream.title}}</a>
       </td>
       <td class="directory">
-	<a href="{{url_for('view-stream', spk=stream.pk)}}">{{stream.directory}}</a>
+        <a href="{{url_for('view-stream', spk=stream.pk)}}">{{stream.directory}}</a>
       </td>
-      <td class="marlin_la_url ellipsis"
-          data-text="{{stream.marlin_la_url|default(drm.marlin.laurl)}}">
-        {{stream.marlin_la_url|default(drm.marlin.laurl)}}
+      <td class="duration">
+        {{ stream.duration() | timeDelta(full_tc=True, with_millis=True) }}
       </td>
-      <td class="playready_la_url ellipsis"
-          data-text="{{stream.playready_la_url|default(drm.playready.laurl)}}">
-        {{stream.playready_la_url|default(drm.playready.laurl)}}
+      <td class="tracks">
+        {%- with summary = stream.track_summary() %}
+        {{ summary.video.count | plural('video track', 'video tracks') }},
+        {{ summary.audio.count | plural('audio track', 'audio tracks') }},
+        {{ summary.text.count | plural('text track', 'text tracks') }}
+        {%- endwith %}
       </td>
     </tr>
     {% endfor %}
