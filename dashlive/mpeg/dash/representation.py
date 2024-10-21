@@ -23,9 +23,10 @@
 import datetime
 from dataclasses import dataclass, field
 import logging
+from math import floor
 import os
 import sys
-from typing import NamedTuple, Optional, Set
+from typing import Any, ClassVar, NamedTuple, Optional, Set
 
 from dashlive.drm.keymaterial import KeyMaterial
 from dashlive.mpeg.codec_strings import codec_string_from_avc_box
@@ -105,15 +106,15 @@ class Representation(ObjectWithFields):
         'track_id': 1,
         'version': 0,
     }
-    VERSION = 4
-    KNOWN_CODEC_BOXES = [
+    VERSION: ClassVar[int] = 4
+    KNOWN_CODEC_BOXES: ClassVar[set[str]] = {
         'ac_3', 'avc1', 'avc3', 'mp4a', 'ec_3', 'encv', 'enca',
         'hev1', 'hvc1', 'stpp', 'wvtt',
-    ]
+    }
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        defaults = {
+        defaults: dict[str, Any] = {
             'lang': kwargs.get('language', 'und'),
             'kids': [],
             'segments': [],
@@ -135,8 +136,15 @@ class Representation(ObjectWithFields):
         self.apply_defaults(defaults)
         self.num_media_segments = len(self.segments) - 1
         self._timing: DashTiming | None = None
+        start: int = 0
+        for seg in self.segments[1:]:
+            seg.start = start
+            start += seg.duration
         if self.mediaDuration is None:
             self.mediaDuration = sum([s.duration for s in self.segments[1:]])
+        if self.segment_duration is None and self.num_media_segments > 0:
+            self.segment_duration = int(floor(
+                self.mediaDuration / self.num_media_segments))
 
     def __repr__(self) -> str:
         return self.as_python(exclude={'num_media_segments'})
