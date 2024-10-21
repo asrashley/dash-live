@@ -6,6 +6,7 @@
 #
 #############################################################################
 import datetime
+import logging
 import math
 from typing import AbstractSet, Set, cast
 import urllib.parse
@@ -98,7 +99,10 @@ class ManifestContext:
             self.mediaDuration = self.timing_ref.media_duration_timedelta().total_seconds()
 
         if multi_period:
-            self.create_all_periods(multi_period)
+            if options.mode == 'live':
+                self.create_all_live_periods(multi_period)
+            else:
+                self.create_all_vod_periods(multi_period)
         else:
             self.periods.append(
                 self.create_period(stream, timing, db_period=None))
@@ -179,8 +183,8 @@ class ManifestContext:
             return 1
         return max([p.maxSegmentDuration for p in self.periods])
 
-    def create_all_periods(self,
-                           multi_period: models.MultiPeriodStream) -> None:
+    def create_all_vod_periods(self,
+                               multi_period: models.MultiPeriodStream) -> None:
         start: datetime.timedelta = datetime.timedelta(0)
         for prd in multi_period.periods:
             timing = DashTiming(
@@ -190,6 +194,49 @@ class ManifestContext:
             period.start = start
             self.periods.append(period)
             start += period.duration
+
+    def create_all_live_periods(self,
+                                multi_period: models.MultiPeriodStream) -> None:
+        duration = multi_period.total_duration()
+        timing_ref = StreamTimingReference(
+            media_name=multi_period.name,
+            media_duration=int(duration.total_seconds() * 1000),
+            num_media_segments=100,
+            segment_duration=1000,
+            timescale=1000)
+        timing = DashTiming(self.now, timing_ref, self.options)
+        oldest_frag = timing.availabilityStartTime + timing.firstAvailableTime
+        num_loops = int(timing.firstAvailableTime.total_seconds() //
+                        duration.total_seconds())
+        logging.debug(
+            "First available fragment=%s (%s) elapsed=%s",
+            timing.firstAvailableTime, oldest_frag, timing.elapsedTime)
+        logging.debug(
+            'num_loops=%d mps_duration=%s', num_loops, duration)
+        start: datetime.timedelta = duration * num_loops
+        periods: list[models.Period] = list(multi_period.periods)
+        index: int = 0
+        # todo: datetime.timedelta = self.now - oldest_frag
+        while start <= timing.elapsedTime:
+            prd = periods[index]
+            prd_timing = DashTiming(
+                self.now, prd.stream.timing_reference, self.options)
+            period = self.create_period(
+                stream=prd.stream, timing=prd_timing, db_period=prd)
+            period.id = f"{period.id}_{num_loops}"
+            period.start = start
+            period_end = start + period.duration
+            if period_end >= timing.firstAvailableTime:
+                # don't output Periods where all its fragments are
+                # no longer available
+                self.periods.append(period)
+            start += period.duration
+            # todo -= period.duration
+            index = (index + 1) % len(periods)
+            if index == 0:
+                num_loops += 1
+        if self.options.segmentTimeline:
+            self.periods[-1].duration = None
 
     def create_period(self,
                       stream: models.Stream,

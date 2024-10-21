@@ -135,6 +135,12 @@ class Stream(db.Model, ModelMixin):
             "value": str_or_none(kwargs.get("playready_la_url", self.playready_la_url)),
         }]
 
+    def get_timing_reference_file(self) -> MediaFile | None:
+        if self.timing_ref is None:
+            return None
+        return MediaFile.get(
+            name=self.timing_reference.media_name, stream_pk=self.pk)
+
     def get_timing_reference(self) -> StreamTimingReference | None:
         if self.timing_ref is None:
             return None

@@ -156,8 +156,6 @@ class ServeMultiPeriodManifest(RequestHandlerBase):
         except ValueError as e:
             logging.info('Invalid CGI parameters: %s', e)
             return flask.make_response('Invalid CGI parameters', 400)
-        if mode != 'vod':
-            return flask.make_response('Only vod mode is supported', 404)
         dash = ManifestContext(
             manifest=current_manifest, options=options, stream=None,
             multi_period=current_mps)
