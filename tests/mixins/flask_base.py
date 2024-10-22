@@ -22,6 +22,7 @@
 
 import binascii
 import ctypes
+from datetime import timedelta
 import json
 import logging
 import multiprocessing
@@ -35,6 +36,7 @@ import flask
 
 from dashlive.drm.playready import PlayReady
 from dashlive.mpeg import mp4
+from dashlive.mpeg.dash.content_role import ContentRole
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.server import models
 from dashlive.server.app import create_app
@@ -44,6 +46,18 @@ from .async_flask_testing import AsyncFlaskTestCase
 from .context_filter import ContextFilter
 from .mixin import TestCaseMixin
 from .stream_fixtures import StreamFixture, BBB_FIXTURE
+
+class FixtureTrack(NamedTuple):
+    ttype: str  # "video", "audio", etc
+    tid: int
+    role: ContentRole
+
+class FixturePeriod(NamedTuple):
+    pid: str
+    fixture: StreamFixture
+    start: int
+    end: int
+    tracks: list[FixtureTrack]
 
 class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
     ADMIN_USER: ClassVar[str] = 'admin'
@@ -138,7 +152,23 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
     def setup_media(self, with_subs=False) -> None:
         self.setup_media_fixture(BBB_FIXTURE)
 
+    def setup_content_types(self) -> None:
+        content_types: list[str] = [
+            "application", "video", "audio", "text", "image",
+        ]
+        with self.app.app_context():
+            for name in content_types:
+                ct = models.ContentType.get(name=name)
+                if ct is None:
+                    ct = models.ContentType(name=name)
+                    models.db.session.add(ct)
+            models.db.session.commit()
+
     def setup_media_fixture(self, fixture: StreamFixture, with_subs=False) -> None:
+        self.setup_content_types()
+        stream: models.Stream | None = models.Stream.get(directory=fixture.name)
+        if stream is not None:
+            return
         stream = models.Stream(
             title=fixture.title,
             directory=fixture.name,
@@ -180,8 +210,10 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
                     if kid.raw in kids:
                         continue
                     key = binascii.b2a_hex(PlayReady.generate_content_key(kid.raw))
-                    keypair = models.Key(hkid=kid.hex, hkey=key, computed=True)
-                    models.db.session.add(keypair)
+                    keypair: models.Key | None = models.Key.get(hkid=kid.hex)
+                    if keypair is None:
+                        keypair = models.Key(hkid=kid.hex, hkey=key, computed=True)
+                        models.db.session.add(keypair)
                     kids.add(kid.raw)
             models.db.session.commit()
 
@@ -245,6 +277,38 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
         mf.set_representation(rep)
 
         return mf
+
+    def setup_multi_period_stream(self,
+                                  name: str,
+                                  title: str,
+                                  periods: list[FixturePeriod]) -> None:
+        for period in periods:
+            self.setup_media_fixture(period.fixture)
+        with self.app.app_context():
+            mps = models.MultiPeriodStream(name=name, title=title)
+            models.db.session.add(mps)
+            for idx, period in enumerate(periods, start=1):
+                stream = models.Stream.get(directory=period.fixture.name)
+                assert stream is not None
+                start: int = period.fixture.segment_duration * period.start
+                duration: int = period.fixture.media_duration
+                duration -= start
+                duration -= period.end * period.fixture.segment_duration
+                prd = models.Period(
+                    pid=period.pid, parent=mps, ordering=idx, stream=stream,
+                    start=timedelta(seconds=start),
+                    duration=timedelta(seconds=duration))
+                models.db.session.add(prd)
+                for trk in period.tracks:
+                    ct = models.ContentType.get(name=trk.ttype)
+                    assert ct is not None
+                    adp = models.AdaptationSet(
+                        period=prd, track_id=trk.tid,
+                        role=trk.role.value,
+                        content_type=ct)
+                    models.db.session.add(adp)
+                models.db.session.add(adp)
+            models.db.session.commit()
 
     def create_upload_folder(self) -> str:
         with self.app.app_context():

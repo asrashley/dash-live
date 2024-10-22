@@ -81,6 +81,7 @@ class DashManifestCheckMixin:
             self,
             filename: str,
             mode: str,
+            mps_name: str | None = None,
             simplified: bool = True,
             debug: bool = False,
             now: str | None = None,
@@ -100,6 +101,7 @@ class DashManifestCheckMixin:
             self,
             filename: str,
             mode: str,
+            mps_name: str | None = None,
             simplified: bool = False,
             debug: bool = False,
             check_head: bool = False,
@@ -127,18 +129,33 @@ class DashManifestCheckMixin:
         self.setup_media_fixture(fixture, with_subs=with_subs)
         self.logout_user()
         self.assertGreaterThan(models.MediaFile.count(), 0)
-        test_duration = duration
+        mps: models.MultiPeriodStream | None = None
+        if mps_name is not None:
+            mps = models.MultiPeriodStream.get(name=mps_name)
+            assert mps is not None
+        test_duration: int = duration
         if test_duration == 0:
             if mode == 'live':
-                test_duration = fixture.segment_duration + fixture.media_duration * 2
+                if mps is not None:
+                    test_duration = mps.total_duration() * 2
+                else:
+                    test_duration = (fixture.segment_duration +
+                                     fixture.media_duration * 2)
             else:
-                test_duration = 4 * fixture.segment_duration
+                if mps is not None:
+                    test_duration = mps.total_duration()
+                else:
+                    test_duration = 4 * fixture.segment_duration
 
         if now is None:
             now = "2024-09-02T09:57:02Z"
 
-        url = flask.url_for(
-            'dash-mpd-v3', manifest=filename, mode=mode, stream=fixture.name)
+        if mps is not None:
+            url: str = flask.url_for(
+                'mps-manifest', manifest=fixture, mode=mode, mps_name=mps_name)
+        else:
+            url = flask.url_for(
+                'dash-mpd-v3', manifest=filename, mode=mode, stream=fixture.name)
 
         if not kwargs:
             # do a first pass check with no CGI options
@@ -336,19 +353,31 @@ class DashManifestCheckMixin:
             yield context
 
     def check_generated_manifest_against_fixture(
-            self, mpd_filename: str, mode: str, encrypted: bool,
-            now: str, **kwargs) -> None:
+            self,
+            mpd_filename: str,
+            mode: str,
+            encrypted: bool,
+            now: str,
+            mps_name: str | None = None,
+            **kwargs) -> None:
         """
         Checks a freshly generated manifest against a "known good"
         previous example
         """
         self.setup_media_fixture(BBB_FIXTURE)
         self.init_xml_namespaces()
-        url = flask.url_for(
-            "dash-mpd-v3",
-            mode=mode,
-            stream=BBB_FIXTURE.name,
-            manifest=mpd_filename)
+        if mps_name is not None:
+            url: str = flask.url_for(
+                "mps-manifest",
+                mode=mode,
+                mps_name=mps_name,
+                manifest=mpd_filename)
+        else:
+            url = flask.url_for(
+                "dash-mpd-v3",
+                mode=mode,
+                stream=BBB_FIXTURE.name,
+                manifest=mpd_filename)
         defaults = OptionsRepository.get_default_options()
         options = OptionsRepository.convert_cgi_options(kwargs, defaults=defaults)
         manifest = manifests.manifest_map[mpd_filename]
@@ -356,15 +385,23 @@ class DashManifestCheckMixin:
         options.add_field('mode', mode)
         options.remove_unused_parameters(mode)
         url += options.generate_cgi_parameters_string()
-        stream = models.Stream.get(directory=BBB_FIXTURE.name)
-        self.assertIsNotNone(stream)
+        stream: models.Stream | None = None
+        mps: models.MultiPeriodStream | None = None
+        if mps_name is not None:
+            mps = models.MultiPeriodStream.get(name=mps_name)
+            assert mps is not None
+        else:
+            stream = models.Stream.get(directory=BBB_FIXTURE.name)
+            assert stream is not None
         with MockTime(now):
             with self.create_mock_request_context(url, stream):
                 context = self.generate_manifest_context(
-                    mpd_filename, mode=mode, stream=stream, options=options)
+                    mpd_filename, mode=mode, stream=stream,
+                    mps=mps, options=options)
                 text = flask.render_template(
                     f'manifests/{mpd_filename}', **context)
-        fixture = self.fixture_filename(mpd_filename, mode, encrypted)
+        fixture: Path = self.fixture_filename(
+            mpd_filename, mode, encrypted, mps_name is not None)
         if not fixture.exists():
             with fixture.open('wt', encoding='utf-8') as dest:
                 dest.write(text)
@@ -376,29 +413,32 @@ class DashManifestCheckMixin:
             self,
             mpd_filename: str,
             mode: str,
-            stream: models.Stream,
+            stream: models.Stream | None,
+            mps: models.MultiPeriodStream | None,
             options: OptionsContainer) -> TemplateContext:
         mock = MockServeManifest(flask.request)
         context: TemplateContext = {
             'mpd': ManifestContext(
                 manifest=manifests.manifest_map[mpd_filename],
                 options=options,
-                multi_period=None,
+                multi_period=mps,
                 stream=stream),
             'mode': mode,
             'options': options,
-            'title': stream.title,
+            'title': mps.title if mps is not None else stream.title,
             'remote_addr': mock.request.remote_addr,
             'request_uri': mock.request.url,
         }
         return context
 
     @staticmethod
-    def fixture_filename(mpd_name: str, mode: str, encrypted: bool) -> Path:
+    def fixture_filename(mpd_name: str, mode: str, encrypted: bool,
+                         multi_period: bool = False) -> Path:
         """returns absolute file path of the given fixture"""
         name, ext = os.path.splitext(mpd_name)
-        enc = '_enc' if encrypted else ''
-        filename = f'{name}_{mode}{enc}{ext}'
+        enc: str = '_enc' if encrypted else ''
+        mps: str = 'mps_' if multi_period else ''
+        filename = f'{name}_{mps}{mode}{enc}{ext}'
         return Path(__file__).parent.parent / 'fixtures' / filename
 
     xmlNamespaces = {
