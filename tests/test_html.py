@@ -34,6 +34,7 @@ from dashlive.server.options.types import OptionUsage
 from dashlive.server.template_tags import dateTimeFormat, sizeFormat
 
 from .mixins.flask_base import FlaskTestBase
+from .mixins.stream_fixtures import BBB_FIXTURE
 
 class TestHtmlPageHandlers(FlaskTestBase):
     def _assert_true(self, result, a, b, msg, template):
@@ -282,7 +283,7 @@ class TestHtmlPageHandlers(FlaskTestBase):
         HTML page that allows the video to be watched using a <video> element.
         """
         only = {'audioCodec', 'textCodec', 'drmSelection', 'videoPlayer'}
-        self.setup_media()
+        self.setup_media_fixture(BBB_FIXTURE)
         self.logout_user()
         self.assertGreaterThan(models.MediaFile.count(), 0)
         num_tests = 0
@@ -309,7 +310,7 @@ class TestHtmlPageHandlers(FlaskTestBase):
         """
         Check rendering video page for a stream without audio
         """
-        self.setup_media()
+        self.setup_media_fixture(BBB_FIXTURE)
         with self.app.app_context():
             for mf in list(models.MediaFile.search(content_type='audio')):
                 mf.delete()
@@ -318,7 +319,7 @@ class TestHtmlPageHandlers(FlaskTestBase):
             'hand_made.mpd',
             manifests.manifest_map['hand_made.mpd'],
             'vod',
-            models.Stream.get(title=self.STREAM_TITLE), '', scheme='http')
+            models.Stream.get(directory=BBB_FIXTURE.name), '', scheme='http')
 
     def check_video_html_page(self,
                               filename: str,
@@ -331,14 +332,14 @@ class TestHtmlPageHandlers(FlaskTestBase):
         html_url = f'{scheme}://localhost' + flask.url_for(
             "video",
             mode=mode,
-            stream=self.FIXTURES_PATH.name,
+            stream=stream.directory,
             manifest=filename[:-4])
         html_url += query
         html_parsed = urlparse(html_url)
         mpd_path = flask.url_for(
             'dash-mpd-v3',
             manifest=filename,
-            stream=self.FIXTURES_PATH.name,
+            stream=stream.directory,
             mode=mode)
         mpd_parts = urlparse(f'{scheme}://localhost{mpd_path}{query}')
         mpd_query = parse_qs(mpd_parts.query)

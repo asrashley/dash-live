@@ -11,7 +11,7 @@
      timeShiftBufferDepth="PT30M0S"
      
      >
- <BaseURL>http://unit.test/dash/live/fixtures/</BaseURL>
+ <BaseURL>http://unit.test/dash/live/bbb/</BaseURL>
  <Period id="p1"
      
          start="PT0.000S">

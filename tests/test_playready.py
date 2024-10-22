@@ -47,6 +47,7 @@ from .mixins.flask_base import FlaskTestBase
 from .key_stub import KeyStub
 from .mixins.check_manifest import DashManifestCheckMixin
 from .mixins.view_validator import ViewsTestDashValidator
+from .mixins.stream_fixtures import BBB_FIXTURE
 
 class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
     custom_attributes = [dict(tag='IIS_DRM_VERSION', value='8.0.1907.32')]
@@ -529,7 +530,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         Generate a PlayReady pssh box and insert it into an init segment
         """
         self.assertEqual(len(self.keys), 1)
-        filename = self.FIXTURES_PATH / 'bbb_a1_enc.mp4'
+        filename = self.FIXTURES_PATH / BBB_FIXTURE.name / 'bbb_a1_enc.mp4'
         options = mp4.Options(mode='rw')
         with filename.open('rb') as f:
             with io.BufferedReader(f) as src:
@@ -620,13 +621,13 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         """
         Check the LA_URL in the PRO element is correct
         """
-        self.setup_media()
+        self.setup_media_fixture(BBB_FIXTURE)
         self.logout_user()
         filename = 'hand_made.mpd'
         baseurl = flask.url_for(
             'dash-mpd-v3',
             manifest=filename,
-            stream=self.FIXTURES_PATH.name,
+            stream=BBB_FIXTURE.name,
             mode='vod')
         args += ['drm=playready']
         baseurl += '?' + '&'.join(args)
@@ -638,7 +639,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             mpd = ViewsTestDashValidator(
                 http_client=self.async_client, mode='vod', url=baseurl,
                 encrypted=True, check_media=False,
-                duration=self.SEGMENT_DURATION, pool=pool)
+                duration=BBB_FIXTURE.segment_duration, pool=pool)
             await mpd.load(xml=xml.getroot())
             await mpd.validate()
         self.assertFalse(mpd.has_errors())
@@ -707,14 +708,15 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             filename,
             mode='vod',
             only={'playreadyPiff', 'playreadyVersion'},
-            extras=extras)
+            extras=extras,
+            fixture=BBB_FIXTURE)
 
     async def check_piff_uuid_is_present(self, args: list[str], expect_errors: bool = False) -> None:
         filename = 'hand_made.mpd'
         baseurl = flask.url_for(
             'dash-mpd-v3',
             manifest=filename,
-            stream=self.FIXTURES_PATH.name,
+            stream=BBB_FIXTURE.name,
             mode='vod')
         baseurl += '?' + '&'.join(args)
         # response = self.client.get(baseurl)
@@ -723,7 +725,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             pool = ConcurrentWorkerPool(tpe)
             dv = ViewsTestDashValidator(
                 http_client=self.async_client, mode='vod', url=baseurl, encrypted=True, check_media=True,
-                pool=pool, duration=int(self.MEDIA_DURATION // 2))
+                pool=pool, duration=int(BBB_FIXTURE.media_duration // 2))
             self.assertTrue(await dv.load())
             for mf in models.MediaFile.all():
                 dv.set_representation_info(mf.representation)
@@ -790,7 +792,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         baseurl = flask.url_for(
             'dash-mpd-v3',
             manifest='hand_made.mpd',
-            stream=self.FIXTURES_PATH.name,
+            stream=BBB_FIXTURE.name,
             mode='vod')
         args = ['drm=playready-pro', 'acodec=any']
         baseurl += '?' + '&'.join(args)
@@ -802,7 +804,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             mpd = ViewsTestDashValidator(
                 http_client=self.async_client, mode='vod', url=baseurl,
                 encrypted=True, check_media=False,
-                duration=self.SEGMENT_DURATION, pool=pool)
+                duration=BBB_FIXTURE.segment_duration, pool=pool)
             await mpd.load(xml=xml.getroot())
             await mpd.validate()
         self.assertFalse(mpd.has_errors())

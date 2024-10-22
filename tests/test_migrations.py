@@ -28,6 +28,7 @@ from dashlive.server import models
 from dashlive.server.models.migrations.unique_track_ids import EnsureTrackIdsAreUnique
 
 from .mixins.flask_base import FlaskTestBase
+from .mixins.stream_fixtures import BBB_FIXTURE
 
 class DataMigrationTests(FlaskTestBase):
     def test_aac_audio_track_needs_changing(self) -> None:
@@ -120,7 +121,7 @@ class DataMigrationTests(FlaskTestBase):
             track_mapping: dict[str, int],
             new_files: list[str],
             success: bool) -> None:
-        self.setup_media(with_subs=True)
+        self.setup_media_fixture(BBB_FIXTURE, with_subs=True)
         with self.app.app_context():
             for name in track_mapping.keys():
                 media = models.MediaFile.get(name=name)
@@ -133,7 +134,7 @@ class DataMigrationTests(FlaskTestBase):
                 media.track_id = track_mapping[name]
                 media.set_representation(mrep)
             models.db.session.commit()
-        blob_folder = self.FIXTURES_PATH.parent
+        blob_folder = self.FIXTURES_PATH
         with self.app.app_context():
             session = models.db.session
             with patch('dashlive.server.models.MediaFile.modify_media_file') as mock_modify:
@@ -149,7 +150,7 @@ class DataMigrationTests(FlaskTestBase):
                     self.assertListEqual(errors, [])
                 calls: list[call] = [
                     call(session=session, blob_folder=blob_folder,
-                         new_filename=(self.FIXTURES_PATH / name),
+                         new_filename=(self.FIXTURES_PATH / BBB_FIXTURE.name / name),
                          modify_atoms=ANY) for name in new_files]
                 if not calls:
                     mock_modify.assert_not_called()
