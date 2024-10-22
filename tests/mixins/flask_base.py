@@ -28,7 +28,7 @@ import multiprocessing
 from pathlib import Path
 import shutil
 import tempfile
-from typing import Any, ClassVar, Optional, Type
+from typing import Any, ClassVar, Optional, NamedTuple, Type
 
 from bs4 import BeautifulSoup, element
 import flask
@@ -43,24 +43,20 @@ from dashlive.utils.date_time import from_isodatetime
 from .async_flask_testing import AsyncFlaskTestCase
 from .context_filter import ContextFilter
 from .mixin import TestCaseMixin
+from .stream_fixtures import StreamFixture, BBB_FIXTURE
 
 class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
-    # duration of media in test/fixtures directory (in seconds)
-    ADMIN_USER = 'admin'
-    ADMIN_EMAIL = 'admin@dashlive.unit.test'
-    ADMIN_PASSWORD = r'suuuperSecret!'
-    ENABLE_WSS = False
-    FIXTURES_PATH = Path(__file__).parent.parent / "fixtures"
-    STD_USER = 'user'
-    STD_EMAIL = 'user@dashlive.unit.test'
-    STD_PASSWORD = r'pa55word'
-    MEDIA_DURATION = 40
-    MEDIA_USER = 'media'
-    MEDIA_EMAIL = 'media@dashlive.unit.test'
-    MEDIA_PASSWORD = r'm3d!a'
-    SEGMENT_DURATION = 4
-    STREAM_TITLE = 'Big Buck Bunny'
-
+    ADMIN_USER: ClassVar[str] = 'admin'
+    ADMIN_EMAIL: ClassVar[str] = 'admin@dashlive.unit.test'
+    ADMIN_PASSWORD: ClassVar[str] = r'suuuperSecret!'
+    ENABLE_WSS: ClassVar[bool] = False
+    FIXTURES_PATH: ClassVar[Path] = Path(__file__).parent.parent / "fixtures"
+    STD_USER: ClassVar[str] = 'user'
+    STD_EMAIL: ClassVar[str] = 'user@dashlive.unit.test'
+    STD_PASSWORD: ClassVar[str] = r'pa55word'
+    MEDIA_USER: ClassVar[str] = 'media'
+    MEDIA_EMAIL: ClassVar[str] = 'media@dashlive.unit.test'
+    MEDIA_PASSWORD: ClassVar[str] = r'm3d!a'
     LOG_LEVEL: ClassVar[Type[logging.WARNING]] = logging.WARNING
     log_context: ClassVar[Optional[ContextFilter]] = None
     checked_urls: ClassVar[set[str]]
@@ -96,7 +92,7 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
 
     def create_app(self) -> flask.Flask:
         config = {
-            'BLOB_FOLDER': str(self.FIXTURES_PATH.parent),
+            'BLOB_FOLDER': str(self.FIXTURES_PATH),
             'DASH': {
                 'ALLOWED_DOMAINS': '*',
                 'CSRF_SECRET': 'test.csrf.secret',
@@ -139,26 +135,32 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
             models.db.session.commit()
         return app
 
-    def setup_media(self, with_subs=False):
-        bbb = models.Stream(
-            title=self.STREAM_TITLE,
-            directory=self.FIXTURES_PATH.name,
-            marlin_la_url='ms3://localhost/marlin/bbb',
+    def setup_media(self, with_subs=False) -> None:
+        self.setup_media_fixture(BBB_FIXTURE)
+
+    def setup_media_fixture(self, fixture: StreamFixture, with_subs=False) -> None:
+        stream = models.Stream(
+            title=fixture.title,
+            directory=fixture.name,
+            marlin_la_url=f"ms3://localhost/marlin/{fixture.name}",
             playready_la_url=PlayReady.TEST_LA_URL
         )
-        fixture_files: list[str] = [
-            "bbb_v6", "bbb_v6_enc", "bbb_v7", "bbb_v7_enc",
-            "bbb_a1", "bbb_a1_enc", "bbb_a2", "bbb_a2_enc"]
+        fixture_files: list[str] = []
+        patten: str = f"{fixture.name}_[av]*.mp4"
         if with_subs:
-            fixture_files.append("bbb_t1")
+            patten = f"{fixture.name}_[avt]*.mp4"
+        fixtures_dir: Path = self.FIXTURES_PATH / fixture.name
+        for item in fixtures_dir.glob(patten):
+            fixture_files.append(item.stem)
+        fixture_files.sort()
         media_files: list[models.MediaFile] = []
-        for idx, rid in enumerate(fixture_files):
-            mf = self.add_blob_and_media_file(bbb, rid)
+        for idx, name in enumerate(fixture_files):
+            mf = self.add_blob_and_media_file(fixture, stream, name)
             media_files.append(mf)
-            if idx == 0:
-                bbb.set_timing_reference(mf.as_stream_timing_reference())
+            if stream.timing_reference is None and '_v' in name:
+                stream.timing_reference = mf.as_stream_timing_reference()
         with self.app.app_context():
-            models.db.session.add(bbb)
+            models.db.session.add(stream)
             for mf in media_files:
                 models.db.session.add(mf.blob)
                 models.db.session.add(mf)
@@ -184,10 +186,11 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
             models.db.session.commit()
 
     def add_blob_and_media_file(self,
+                                fixture: StreamFixture,
                                 stream: models.Stream,
                                 name: str) -> models.MediaFile:
         filename = f"{name}.mp4"
-        src_file = self.FIXTURES_PATH / filename
+        src_file = self.FIXTURES_PATH / fixture.name / filename
         if '_v' in name:
             content_type = 'video'
         elif '_a' in name:
@@ -203,7 +206,7 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
             content_type=content_type,
             auto_delete=False)
 
-        js_filename = self.FIXTURES_PATH / f'rep-{name}.json'
+        js_filename = self.FIXTURES_PATH / fixture.name / f'rep-{name}.json'
         rep: Representation | None = None
         if js_filename.exists():
             with js_filename.open('rt', encoding='utf-8') as src:
@@ -224,10 +227,10 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
         self.assertEqual(encrypted, rep.encrypted)
         self.assertAlmostEqual(
             rep.mediaDuration,
-            self.MEDIA_DURATION * rep.timescale,
+            fixture.media_duration * rep.timescale,
             delta=(rep.timescale / 5.0),
             msg='Invalid duration for {}. Expected {} got {}'.format(
-                filename, self.MEDIA_DURATION * rep.timescale,
+                filename, fixture.media_duration * rep.timescale,
                 rep.mediaDuration))
 
         mf = models.MediaFile(

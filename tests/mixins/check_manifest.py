@@ -45,6 +45,7 @@ from dashlive.server.requesthandler.manifest_context import ManifestContext
 from dashlive.server.requesthandler.manifest_requests import ServeManifest
 
 from .mock_time import MockTime
+from .stream_fixtures import StreamFixture, BBB_FIXTURE
 from .view_validator import ViewsTestDashValidator
 
 def add_url(method, url):
@@ -83,6 +84,7 @@ class DashManifestCheckMixin:
             simplified: bool = True,
             debug: bool = False,
             now: str | None = None,
+            fixture: StreamFixture | None = None,
             **kwargs) -> None:
         """
         Exhaustive test of a manifest with every combination of options
@@ -91,7 +93,8 @@ class DashManifestCheckMixin:
         if the manifest uses lots of features.
         """
         await self.check_a_manifest_using_all_options(
-            filename, mode, simplified=simplified, debug=debug, now=now, **kwargs)
+            filename, mode, simplified=simplified, debug=debug, now=now,
+            fixture=fixture, **kwargs)
 
     async def check_a_manifest_using_all_options(
             self,
@@ -107,6 +110,7 @@ class DashManifestCheckMixin:
             extras: list[DashOption] | None = None,
             now: str | None = None,
             duration: int = 0,
+            fixture: StreamFixture | None = None,
             **kwargs) -> None:
         """
         Exhaustive test of a manifest with every combination of options
@@ -118,30 +122,30 @@ class DashManifestCheckMixin:
         self.assertIn(mode, primary_profiles)
         modes = manifest.restrictions.get('mode', primary_profiles.keys())
         self.assertIn(mode, modes)
-        self.setup_media(with_subs=with_subs)
+        if fixture is None:
+            fixture = BBB_FIXTURE
+        self.setup_media_fixture(fixture, with_subs=with_subs)
         self.logout_user()
         self.assertGreaterThan(models.MediaFile.count(), 0)
         test_duration = duration
         if test_duration == 0:
             if mode == 'live':
-                test_duration = self.SEGMENT_DURATION + self.MEDIA_DURATION * 2
+                test_duration = fixture.segment_duration + fixture.media_duration * 2
             else:
-                test_duration = 4 * self.SEGMENT_DURATION
+                test_duration = 4 * fixture.segment_duration
 
         if now is None:
             now = "2024-09-02T09:57:02Z"
 
         url = flask.url_for(
-            'dash-mpd-v3',
-            manifest=filename,
-            mode=mode,
-            stream=self.FIXTURES_PATH.name)
+            'dash-mpd-v3', manifest=filename, mode=mode, stream=fixture.name)
 
         if not kwargs:
             # do a first pass check with no CGI options
             await self.check_manifest_url(
                 url, mode, encrypted=False, debug=debug, duration=test_duration,
-                check_media=(check_media in {True, None}), check_head=True, now=now)
+                check_media=(check_media in {True, None}), check_head=True, now=now,
+                fixture=fixture)
 
         if check_media is None:
             check_media = not simplified
@@ -171,17 +175,18 @@ class DashManifestCheckMixin:
         for query in options.cgi_query_combinations():
             if 'events=' in query:
                 if duration == 0:
-                    test_duration = 9 * self.SEGMENT_DURATION
-                ev_interval = self.SEGMENT_DURATION * 300
+                    test_duration = 9 * fixture.segment_duration
+                ev_interval = fixture.segment_duration * 300
                 if 'ping' in query:
                     query += f'&ping_interval={ev_interval}&ping_timescale=100'
                 if 'scte35' in query:
                     query += f'&scte35_interval={ev_interval}&scte35_timescale=100'
             elif duration == 0:
-                test_duration = 3 * self.SEGMENT_DURATION
+                test_duration = 3 * fixture.segment_duration
             await self.check_manifest_using_options(
                 mode, url, query, debug=debug, check_media=check_media,
-                now=now, duration=test_duration, check_head=check_head)
+                now=now, duration=test_duration, check_head=check_head,
+                fixture=fixture)
             count += 1
             self.progress(count, total_tests)
         if 'utcMethod' in manifest.features and 'utcMethod' not in kwargs:
@@ -191,7 +196,8 @@ class DashManifestCheckMixin:
                 query = f'?time={method}'
                 await self.check_manifest_using_options(
                     mode, url, query, debug=debug, check_media=False,
-                    check_head=False, now=now, duration=test_duration)
+                    check_head=False, now=now, duration=test_duration,
+                    fixture=fixture)
                 count += 1
                 self.progress(count, total_tests)
         if 'useBaseUrls' in manifest.features and 'useBaseUrls' not in kwargs:
@@ -201,7 +207,8 @@ class DashManifestCheckMixin:
                 query = f'?base={ubu}'
                 await self.check_manifest_using_options(
                     mode, url, query, debug=debug, check_media=False,
-                    check_head=False, now=now, duration=test_duration)
+                    check_head=False, now=now, duration=test_duration,
+                    fixture=fixture)
                 count += 1
                 self.progress(count, total_tests)
         self.progress(total_tests, total_tests)
@@ -209,7 +216,8 @@ class DashManifestCheckMixin:
     async def check_manifest_using_options(
             self, mode: str, url: str, query: str, debug: bool,
             now: str, duration: int,
-            check_media: bool, check_head: bool) -> None:
+            check_media: bool, check_head: bool,
+            fixture: StreamFixture) -> None:
         """
         Check one manifest using a specific combination of options.
         :mode: operating mode
@@ -220,11 +228,12 @@ class DashManifestCheckMixin:
         clear = ('drm=none' in query) or ('drm' not in query)
         await self.check_manifest_url(
             mpd_url, mode, encrypted=not clear, debug=debug, check_media=check_media,
-            check_head=check_head, now=now, duration=duration)
+            check_head=check_head, now=now, duration=duration, fixture=fixture)
 
     async def check_manifest_url(
             self, mpd_url: str, mode: str, encrypted: bool, now: str, duration: int,
-            debug: bool, check_head: bool, check_media: bool) -> ViewsTestDashValidator:
+            debug: bool, check_head: bool, check_media: bool,
+            fixture: StreamFixture) -> ViewsTestDashValidator:
         """
         Test one manifest for validity (wrapped in context of MPD url)
         """
@@ -238,13 +247,14 @@ class DashManifestCheckMixin:
                 return await self.do_check_manifest_url(
                     mpd_url, mode, encrypted=encrypted, debug=debug,
                     check_head=check_head, check_media=check_media,
-                    duration=duration)
+                    duration=duration, fixture=fixture)
         finally:
             del self.log_context['url']
 
     async def do_check_manifest_url(
             self, mpd_url: str, mode: str, encrypted: bool, debug: bool,
-            check_head: bool, check_media: bool, duration: int) -> ViewsTestDashValidator:
+            check_head: bool, check_media: bool, duration: int,
+            fixture: StreamFixture) -> ViewsTestDashValidator:
         """
         Test one manifest for validity
         """
@@ -303,11 +313,12 @@ class DashManifestCheckMixin:
                 for period in dv.manifest.periods:
                     self.assertIsNotNone(period.duration)
                     dur += period.duration
-                self.assertAlmostEqual(dur.total_seconds(), self.MEDIA_DURATION,
-                                       delta=1.0)
+                self.assertAlmostEqual(
+                    dur.total_seconds(), fixture.media_duration, delta=1.0)
             else:
-                self.assertAlmostEqual(dv.manifest.mediaPresentationDuration.total_seconds(),
-                                       self.MEDIA_DURATION, delta=1.0)
+                self.assertAlmostEqual(
+                    dv.manifest.mediaPresentationDuration.total_seconds(),
+                    fixture.media_duration, delta=1.0)
         return dv
 
     @contextmanager
@@ -331,12 +342,12 @@ class DashManifestCheckMixin:
         Checks a freshly generated manifest against a "known good"
         previous example
         """
-        self.setup_media()
+        self.setup_media_fixture(BBB_FIXTURE)
         self.init_xml_namespaces()
         url = flask.url_for(
             "dash-mpd-v3",
             mode=mode,
-            stream=self.FIXTURES_PATH.name,
+            stream=BBB_FIXTURE.name,
             manifest=mpd_filename)
         defaults = OptionsRepository.get_default_options()
         options = OptionsRepository.convert_cgi_options(kwargs, defaults=defaults)
@@ -345,7 +356,7 @@ class DashManifestCheckMixin:
         options.add_field('mode', mode)
         options.remove_unused_parameters(mode)
         url += options.generate_cgi_parameters_string()
-        stream = models.Stream.get(directory=self.FIXTURES_PATH.name)
+        stream = models.Stream.get(directory=BBB_FIXTURE.name)
         self.assertIsNotNone(stream)
         with MockTime(now):
             with self.create_mock_request_context(url, stream):

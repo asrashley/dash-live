@@ -29,13 +29,14 @@ from dashlive.mpeg.dash.representation import Representation
 from dashlive.utils.buffered_reader import BufferedReader
 
 from .mixins.flask_base import FlaskTestBase
+from .mixins.stream_fixtures import BBB_FIXTURE
 
 class RepresentationTests(FlaskTestBase, unittest.TestCase):
     def test_load_representation(self) -> None:
-        self.setup_media(with_subs=True)
+        self.setup_media_fixture(BBB_FIXTURE, with_subs=True)
         self.assertGreaterThan(models.MediaFile.count(), 0)
         for mfile in models.MediaFile.all():
-            filename = self.FIXTURES_PATH / f'{mfile.name}.mp4'
+            filename = self.FIXTURES_PATH / BBB_FIXTURE.name / f'{mfile.name}.mp4'
             with filename.open('rb') as src:
                 atoms = Mp4Atom.load(BufferedReader(src))
             rep = Representation.load(filename, atoms)
@@ -54,7 +55,7 @@ class RepresentationTests(FlaskTestBase, unittest.TestCase):
         self.assertEqual(rep.codecs, 'im1t|etd1')
 
     def test_load_bbb_t1(self):
-        filename = self.FIXTURES_PATH / "bbb_t1.mp4"
+        filename = self.FIXTURES_PATH / "bbb" / "bbb_t1.mp4"
         with filename.open('rb') as src:
             atoms = Mp4Atom.load(BufferedReader(src))
         rep = Representation.load(filename, atoms)
@@ -112,7 +113,7 @@ class RepresentationTests(FlaskTestBase, unittest.TestCase):
         self.assertEqual(rep.sampleRate, 48000)
 
     def test_load_eac3(self):
-        filename = self.FIXTURES_PATH / "bbb_a2.mp4"
+        filename = self.FIXTURES_PATH / "bbb" / "bbb_a2.mp4"
         with filename.open('rb') as src:
             atoms = Mp4Atom.load(BufferedReader(src))
         rep = Representation.load(filename, atoms)
@@ -128,7 +129,7 @@ class RepresentationTests(FlaskTestBase, unittest.TestCase):
         self.assertEqual(rep.sampleRate, 44100)
 
     def test_load_encrypted_eac3(self):
-        filename = self.FIXTURES_PATH / "bbb_a2_enc.mp4"
+        filename = self.FIXTURES_PATH / "bbb" / "bbb_a2_enc.mp4"
         with filename.open('rb') as src:
             atoms = Mp4Atom.load(BufferedReader(src))
         rep = Representation.load(filename, atoms)

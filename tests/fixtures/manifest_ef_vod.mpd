@@ -10,7 +10,7 @@
      mediaPresentationDuration="PT40S"
      
      >
- <BaseURL>http://unit.test/dash/vod/fixtures/</BaseURL>
+ <BaseURL>http://unit.test/dash/vod/bbb/</BaseURL>
  <Period id="p1"
      
          duration="PT40S"

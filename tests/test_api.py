@@ -40,13 +40,14 @@ from dashlive.server.requesthandler.streams import ViewStreamAjaxResponse
 from dashlive.utils.date_time import to_iso_datetime
 
 from .mixins.flask_base import FlaskTestBase
+from .mixins.stream_fixtures import BBB_FIXTURE
 
 class TestRestApi(FlaskTestBase):
     def test_add_stream(self):
         self.assertEqual(models.Stream.count(), 0)
         request = {
             'title': 'Big Buck Bunny',
-            'directory': self.FIXTURES_PATH.name,
+            'directory': BBB_FIXTURE.name,
             'marlin_la_url': 'ms3://unit.test/bbb.sas',
             'playready_la_url': '',
             'ajax': '1',

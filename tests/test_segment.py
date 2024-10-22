@@ -20,9 +20,10 @@
 #
 #############################################################################
 
-import logging
 import os
+from pathlib import Path
 import unittest
+from typing import ClassVar
 
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.mpeg.dash.segment import Segment
@@ -30,15 +31,13 @@ from dashlive.mpeg import mp4
 from dashlive.utils.buffered_reader import BufferedReader
 
 class SegmentTests(unittest.TestCase):
-    def setUp(self):
-        self.fixtures = os.path.join(os.path.dirname(__file__), "fixtures")
-        logging.basicConfig(level=logging.WARNING)
+    FIXTURES_PATH: ClassVar[Path] = Path(__file__).parent / "fixtures" / "bbb"
 
     def test_index_media(self):
         for name in ["bbb_a1.mp4", "bbb_a1_enc.mp4", "bbb_a2.mp4", "bbb_v6.mp4",
                      "bbb_v6_enc.mp4", "bbb_v7.mp4", "bbb_v7_enc.mp4", ]:
-            filename = os.path.join(self.fixtures, name)
-            with open(filename, 'rb') as src:
+            filename = SegmentTests.FIXTURES_PATH / name
+            with filename.open('rb') as src:
                 wrap = mp4.Wrapper(
                     atom_type='wrap', parent=None,
                     children=mp4.Mp4Atom.load(BufferedReader(src)))
