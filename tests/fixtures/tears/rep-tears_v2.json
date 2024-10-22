@@ -1,0 +1,117 @@
+{
+  "_type": "dashlive.mpeg.dash.representation.Representation",
+  "frameRate": 24.0,
+  "start_time": 0,
+  "encrypted": false,
+  "baseURL": null,
+  "content_type": "video",
+  "start_number": 1,
+  "segments": [
+    {
+      "pos": 0,
+      "size": 971
+    },
+    {
+      "pos": 971,
+      "size": 66194,
+      "duration": 960
+    },
+    {
+      "pos": 67165,
+      "size": 408932,
+      "duration": 960
+    },
+    {
+      "pos": 476097,
+      "size": 196247,
+      "duration": 960
+    },
+    {
+      "pos": 672344,
+      "size": 105289,
+      "duration": 960
+    },
+    {
+      "pos": 777633,
+      "size": 135471,
+      "duration": 960
+    },
+    {
+      "pos": 913104,
+      "size": 198749,
+      "duration": 960
+    },
+    {
+      "pos": 1111853,
+      "size": 198456,
+      "duration": 960
+    },
+    {
+      "pos": 1310309,
+      "size": 174490,
+      "duration": 960
+    },
+    {
+      "pos": 1484799,
+      "size": 239288,
+      "duration": 960
+    },
+    {
+      "pos": 1724087,
+      "size": 207616,
+      "duration": 960
+    },
+    {
+      "pos": 1931703,
+      "size": 321345,
+      "duration": 960
+    },
+    {
+      "pos": 2253048,
+      "size": 207804,
+      "duration": 960
+    },
+    {
+      "pos": 2460852,
+      "size": 168600,
+      "duration": 960
+    },
+    {
+      "pos": 2629452,
+      "size": 163262,
+      "duration": 960
+    },
+    {
+      "pos": 2792714,
+      "size": 62101,
+      "duration": 960
+    },
+    {
+      "pos": 2854815,
+      "size": 19173,
+      "duration": 960
+    }
+  ],
+  "id": "tears_v2",
+  "filename": "tears_v2.mp4",
+  "default_kid": null,
+  "track_id": 1,
+  "timescale": 240,
+  "width": 512,
+  "startWithSAP": 1,
+  "bitrate": 359248,
+  "segment_duration": 960,
+  "sar": "1:1",
+  "mediaDuration": 15360,
+  "scanType": "progressive",
+  "max_bitrate": 817864,
+  "codecs": "avc1.42C01F",
+  "height": 120,
+  "mimeType": "video/mp4",
+  "nalLengthFieldLength": 4,
+  "iv_size": null,
+  "version": 4,
+  "kids": [],
+  "lang": "eng",
+  "accessibility": null
+}

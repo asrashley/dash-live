@@ -20,3 +20,8 @@ BBB_FIXTURE = StreamFixture(
     media_duration=40,
     segment_duration=4)
 
+TEARS_FIXTURE = StreamFixture(
+    name="tears",
+    title="Tears of Steel",
+    media_duration=64,
+    segment_duration=4)
