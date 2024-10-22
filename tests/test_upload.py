@@ -36,6 +36,7 @@ from dashlive.management.backend_db import BackendDatabaseAccess
 from dashlive.management.frontend_db import FrontendDatabaseAccess
 
 from .mixins.flask_base import FlaskTestBase
+from .mixins.stream_fixtures import BBB_FIXTURE
 from .http_client import ClientHttpSession
 
 class TestPopulateDatabase(FlaskTestBase):
@@ -61,7 +62,7 @@ class TestPopulateDatabase(FlaskTestBase):
             session=ClientHttpSession(self.client))
         self.assertFalse(fda.login())
         pd = PopulateDatabase(fda)
-        jsonfile = self.FIXTURES_PATH / 'upload_v2.json'
+        jsonfile = self.FIXTURES_PATH / 'bbb' / 'upload_v2.json'
         self.assertFalse(pd.populate_database(str(jsonfile)))
 
     def test_file_not_found(self) -> None:
@@ -83,7 +84,7 @@ class TestPopulateDatabase(FlaskTestBase):
 
     def check_populate_database(self, fixture_name: str, version: int) -> None:
         self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)
-        jsonfile = self.FIXTURES_PATH / fixture_name
+        jsonfile = self.FIXTURES_PATH / BBB_FIXTURE.name / fixture_name
         tmpdir = self.create_upload_folder()
         with self.app.app_context():
             self.app.config['BLOB_FOLDER'] = tmpdir
@@ -138,7 +139,7 @@ class TestPopulateDatabase(FlaskTestBase):
                 act_stream.timing_reference.media_name)
 
     def test_populate_database_using_command_line(self) -> None:
-        jsonfile = self.FIXTURES_PATH / 'upload_v2.json'
+        jsonfile = self.FIXTURES_PATH / BBB_FIXTURE.name / 'upload_v2.json'
         self.assertTrue(jsonfile.exists())
         args: list[str] = [
             '--username', self.MEDIA_USER,
@@ -323,7 +324,7 @@ class TestPopulateDatabase(FlaskTestBase):
             result = pd.populate_database(str(jsonfile))
             self.assertTrue(result, msg='populate_database() failed')
             return flask.make_response('done')
-        jsonfile = self.FIXTURES_PATH / 'upload_v2.json'
+        jsonfile = self.FIXTURES_PATH / BBB_FIXTURE.name / 'upload_v2.json'
         tmpdir = self.create_upload_folder()
         with self.app.app_context():
             self.app.config['UPLOAD_FOLDER'] = tmpdir
@@ -336,7 +337,9 @@ class TestPopulateDatabase(FlaskTestBase):
             config = json.load(js)
         for stream in config['streams']:
             for fname in stream['files']:
-                shutil.copyfile(self.FIXTURES_PATH / fname, subdir / fname)
+                shutil.copyfile(
+                    self.FIXTURES_PATH / BBB_FIXTURE.name / fname,
+                    subdir / fname)
         jsonfile = js_dest
         self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)
         response = self.client.get("/test-populate")

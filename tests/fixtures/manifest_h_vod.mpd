@@ -9,7 +9,7 @@
      mediaPresentationDuration="PT40S"
   
      minBufferTime="PT1S"  >
-     <BaseURL>http://unit.test/dash/vod/fixtures/</BaseURL>
+     <BaseURL>http://unit.test/dash/vod/bbb/</BaseURL>
   <Period start="PT0S" id="p0">
      <AdaptationSet mimeType="video/mp4" startWithSAP="1" segmentAlignment="true">
        

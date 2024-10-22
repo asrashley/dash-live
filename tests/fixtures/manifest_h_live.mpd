@@ -13,7 +13,7 @@
      timeShiftBufferDepth="PT30M0S"
   
      minBufferTime="PT1S"  >
-     <BaseURL>http://unit.test/dash/live/fixtures/</BaseURL>
+     <BaseURL>http://unit.test/dash/live/bbb/</BaseURL>
    <UTCTiming schemeIdUri="urn:mpeg:dash:utc:ntp:2014" value="0.europe.pool.ntp.org 1.europe.pool.ntp.org 2.europe.pool.ntp.org 3.europe.pool.ntp.org"/>
   <Period start="PT0S" id="p0">
      <AdaptationSet mimeType="video/mp4" startWithSAP="1" segmentAlignment="true">

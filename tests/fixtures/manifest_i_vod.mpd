@@ -7,7 +7,7 @@
     type="static"
     mediaPresentationDuration="PT40S"
 
-><BaseURL>http://unit.test/dash/vod/fixtures/</BaseURL>
+><BaseURL>http://unit.test/dash/vod/bbb/</BaseURL>
     <UTCTiming schemeIdUri="urn:mpeg:dash:utc:direct:2014" value="2023-08-07T17:56:43Z"/>
   <Period id="p0">
     <AdaptationSet

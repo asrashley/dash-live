@@ -24,9 +24,9 @@ import binascii
 import io
 import json
 import logging
-import os
 from pathlib import Path
 import struct
+from typing import ClassVar
 import unittest
 
 from dashlive.mpeg import mp4
@@ -37,10 +37,9 @@ from dashlive.utils.json_object import JsonObject
 from .mixins.mixin import TestCaseMixin
 
 class Mp4Tests(TestCaseMixin, unittest.TestCase):
-    FIXTURES_PATH = Path(__file__).parent / "fixtures"
+    FIXTURES_PATH: ClassVar[Path] = Path(__file__).parent / "fixtures"
 
     def setUp(self):
-        self.fixtures = os.path.join(os.path.dirname(__file__), "fixtures")
         self.timescale = 240
         self.mediaDuration = 141941
         self._segment = None
@@ -63,9 +62,10 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         """An encrypted video fragment init segment"""
         return self._get_media('_enc_moov', "enc-moov.mp4")
 
-    def _get_media(self, name, filename):
+    def _get_media(self, name: str, filename: str) -> bytes:
         if getattr(self, name) is None:
-            with open(os.path.join(self.fixtures, filename), "rb") as f:
+            fixture_file: Path = Mp4Tests.FIXTURES_PATH / filename
+            with fixture_file.open("rb") as f:
                 setattr(self, name, f.read())
         return getattr(self, name)
 
@@ -318,8 +318,8 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         self.assertBuffersEqual(moof_data, new_moof_data)
 
     def test_check_sample_count_in_saiz_box(self):
-        filename = os.path.join(self.fixtures, "bbb_a1_enc.mp4")
-        with open(filename, 'rb') as f:
+        filename: Path = Mp4Tests.FIXTURES_PATH / "bbb" / "bbb_a1_enc.mp4"
+        with filename.open('rb') as f:
             with io.BufferedReader(f) as src:
                 segments = mp4.Mp4Atom.load(src)
         for seg in segments:
@@ -348,9 +348,12 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         self.check_create_all_segments_in_file("bbb_a2.mp4", True)
 
     def check_create_all_segments_in_file(self, name: str, lazy_load: bool) -> None:
-        filename = os.path.join(self.fixtures, name)
+        if name.startswith('bbb_'):
+            filename: Path = Mp4Tests.FIXTURES_PATH / "bbb" / name
+        else:
+            filename = Mp4Tests.FIXTURES_PATH / name
         options = mp4.Options(lazy_load=lazy_load)
-        with open(filename, 'rb') as f:
+        with filename.open('rb') as f:
             with io.BufferedReader(f) as src:
                 segments = mp4.Mp4Atom.load(src, options=options)
                 for segment in segments:
@@ -420,7 +423,8 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         self.assertBuffersEqual(avc3_data, new_avc3_data)
 
     def test_eac3_specific_box(self):
-        with open(os.path.join(self.fixtures, "eac3-moov.mp4"), "rb") as f:
+        filename: Path = Mp4Tests.FIXTURES_PATH / "eac3-moov.mp4"
+        with filename.open("rb") as f:
             src_data = f.read()
         src = BufferedReader(None, data=src_data)
         atoms = mp4.Mp4Atom.load(src)
@@ -442,9 +446,10 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         new_ec3_data = dest.getvalue()
         self.assertBuffersEqual(orig_ec3_data, new_ec3_data)
 
-    def test_parse_dash_events(self):
+    def test_parse_dash_events(self) -> None:
         """Test parsing a fragment with DASH event messages in it"""
-        with open(os.path.join(self.fixtures, "emsg.mp4"), "rb") as f:
+        filename: Path = Mp4Tests.FIXTURES_PATH / "emsg.mp4"
+        with filename.open("rb") as f:
             src_data = f.read()
         src = BufferedReader(None, data=src_data)
         atoms = mp4.Mp4Atom.load(src)
@@ -614,8 +619,8 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
 
     def test_parse_senc_box_before_saiz_box(self):
         options = mp4.Options(iv_size=8, strict=True, lazy_load=True, mode='rw')
-        filename = os.path.join(self.fixtures, "bbb_v6_enc.mp4")
-        with open(filename, 'rb') as f:
+        filename: Path = Mp4Tests.FIXTURES_PATH / "bbb" / "bbb_v6_enc.mp4"
+        with filename.open('rb') as f:
             with io.BufferedReader(f) as src:
                 wrap = mp4.Mp4Atom.load(src, options=options, use_wrapper=True)
         seg = wrap.moof
@@ -649,18 +654,18 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         expected_traf['children'][0]["base_data_offset"] = 0
         self.assertObjectEqual(expected, actual, list_key=self.list_key_fn)
 
-    def test_insert_piff_box_before_saiz_box(self):
+    def test_insert_piff_box_before_saiz_box(self) -> None:
         self.check_insert_piff_box_before_saiz_box(False)
 
-    def test_insert_piff_box_before_saiz_box_lazy_loaded(self):
+    def test_insert_piff_box_before_saiz_box_lazy_loaded(self) -> None:
         self.check_insert_piff_box_before_saiz_box(True)
 
-    def check_insert_piff_box_before_saiz_box(self, lazy_load: bool):
+    def check_insert_piff_box_before_saiz_box(self, lazy_load: bool) -> None:
         options = mp4.Options(
             iv_size=8, strict=True, lazy_load=lazy_load, debug=lazy_load, mode='rw')
         options.log = logging.getLogger('mp4')
-        filename = os.path.join(self.fixtures, "bbb_v6_enc.mp4")
-        with open(filename, 'rb') as f:
+        filename: Path = Mp4Tests.FIXTURES_PATH / "bbb" / "bbb_v6_enc.mp4"
+        with filename.open('rb') as f:
             with io.BufferedReader(f) as src:
                 wrap = mp4.Mp4Atom.load(src, options=options, use_wrapper=True)
         traf = wrap.moof.traf
@@ -729,14 +734,15 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
             'urn:ebu:tt:metadata',
             'urn:ebu:tt:style',
         ]
-        self.check_ebu_tt_d_subs("bbb_t1.mp4", 8, namespaces)
+        self.check_ebu_tt_d_subs("bbb/bbb_t1.mp4", 8, namespaces)
 
     def check_ebu_tt_d_subs(self,
                             filename: str,
                             num_fragments: int,
                             namespaces: list[str]) -> None:
         # See http://rdmedia.bbc.co.uk/testcard/vod/ for source
-        with open(os.path.join(self.fixtures, filename), "rb") as f:
+        filename: Path = Mp4Tests.FIXTURES_PATH / filename
+        with filename.open("rb") as f:
             src_data = f.read()
         src = BufferedReader(None, data=src_data)
         atoms = mp4.Mp4Atom.load(src)
@@ -754,9 +760,10 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
             self.check_create_atom(child, src_data)
         self.check_create_atom(atoms[1], src_data)
 
-    def test_parse_webvtt_subs(self):
+    def test_parse_webvtt_subs(self) -> None:
         """Test parsing a stream containing WebVTT subtitles"""
-        with open(os.path.join(self.fixtures, "webvtt.mp4"), "rb") as f:
+        filename: Path = Mp4Tests.FIXTURES_PATH / "webvtt.mp4"
+        with filename.open("rb") as f:
             src_data = f.read()
         src = io.BufferedReader(io.BytesIO(src_data))
         atoms = mp4.Mp4Atom.load(src)
@@ -768,8 +775,9 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
             self.check_create_atom(child, src_data)
         self.check_create_atom(atoms[2], src_data)
 
-    def test_parse_hevc_moov(self):
-        with open(os.path.join(self.fixtures, "hevc-moov.mp4"), "rb") as f:
+    def test_parse_hevc_moov(self) -> None:
+        filename: Path = Mp4Tests.FIXTURES_PATH / "hevc-moov.mp4"
+        with filename.open("rb") as f:
             src_data = f.read()
         src = BufferedReader(None, data=src_data)
         atoms = mp4.Mp4Atom.load(src)
@@ -876,10 +884,10 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         self.assertBuffersEqual(dest.getvalue(), data, name="pasp")
 
     def test_parsing_against_fixture(self):
-        self.check_parsing_against_fixture('bbb_v7_enc', False)
+        self.check_parsing_against_fixture('bbb/bbb_v7_enc', False)
 
     def test_parsing_against_fixture_lazy_loaded(self):
-        self.check_parsing_against_fixture('bbb_v7_enc', True)
+        self.check_parsing_against_fixture('bbb/bbb_v7_enc', True)
 
     @staticmethod
     def update_type_field(typename: str) -> str:
@@ -929,8 +937,8 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         options = mp4.Options(
             iv_size=8, strict=True, lazy_load=lazy_load, debug=lazy_load, mode='rw')
         options.log = logging.getLogger('mp4')
-        filename = os.path.join(self.fixtures, "webvtt.mp4")
-        with open(filename, 'rb') as f:
+        filename: Path = Mp4Tests.FIXTURES_PATH / "webvtt.mp4"
+        with filename.open('rb') as f:
             src = BufferedReader(f, offset=674, size=(831 - 674))
             wrap = mp4.Mp4Atom.load(src, options=options, use_wrapper=True)
         for index, atom_type in enumerate(['moof', 'mdat']):

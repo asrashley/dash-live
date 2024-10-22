@@ -32,6 +32,7 @@ from dashlive.utils import objects
 from .mixins.check_manifest import DashManifestCheckMixin
 from .mixins.flask_base import FlaskTestBase
 from .mixins.mock_time import MockTime
+from .mixins.stream_fixtures import BBB_FIXTURE
 
 class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
     async def test_hand_made_manifest_aac_vod(self):
@@ -116,31 +117,31 @@ class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
             'hand_made.mpd', 'odvod', with_subs=True, audioCodec='any')
 
     async def test_legacy_vod_manifest_name(self):
-        self.setup_media()
+        self.setup_media_fixture(BBB_FIXTURE)
         url = flask.url_for('dash-mpd-v1', manifest='manifest_vod.mpd')
         await self.check_manifest_url(
             url, mode="vod", encrypted=False, check_head=True, debug=False,
-            check_media=False, duration=(2 * self.SEGMENT_DURATION),
-            now='2024-09-03T10:07:00Z')
+            check_media=False, duration=(2 * BBB_FIXTURE.segment_duration),
+            now='2024-09-03T10:07:00Z', fixture=BBB_FIXTURE)
 
     async def test_legacy_encrypted_manifest_name_vod(self):
-        self.setup_media()
+        self.setup_media_fixture(BBB_FIXTURE)
         url = flask.url_for('dash-mpd-v1', manifest='enc.mpd')
         await self.check_manifest_url(
             url, mode="vod", encrypted=True, check_head=True, check_media=False,
-            debug=False, duration=(2 * self.SEGMENT_DURATION),
-            now='2024-09-03T10:07:00Z')
+            debug=False, duration=(2 * BBB_FIXTURE.segment_duration),
+            now='2024-09-03T10:07:00Z', fixture=BBB_FIXTURE)
 
     async def test_legacy_encrypted_manifest_name_live(self):
-        self.setup_media()
+        self.setup_media_fixture(BBB_FIXTURE)
         url = flask.url_for('dash-mpd-v1', manifest='enc.mpd')
         url += '?mode=live'
         with MockTime("2020-10-07T09:59:02Z"):
             await self.check_manifest_url(
                 url, mode="live", encrypted=True, check_head=True,
                 check_media=False, debug=False,
-                duration=(2 * self.SEGMENT_DURATION),
-                now='2024-09-03T10:07:00Z')
+                duration=(2 * BBB_FIXTURE.segment_duration),
+                now='2024-09-03T10:07:00Z', fixture=BBB_FIXTURE)
 
     def test_generated_vod_manifest_against_fixture(self):
         self.check_generated_manifest_against_fixture(
@@ -170,7 +171,7 @@ class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
         await self.check_manifest_patch_live(True)
 
     async def check_manifest_patch_live(self, with_subs: bool):
-        self.setup_media(with_subs=with_subs)
+        self.setup_media_fixture(BBB_FIXTURE, with_subs=with_subs)
         self.logout_user()
         self.assertGreaterThan(models.MediaFile.count(), 0)
         args = {
@@ -185,7 +186,7 @@ class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
             'dash-mpd-v3',
             manifest='hand_made.mpd',
             mode='live',
-            stream=self.FIXTURES_PATH.name)
+            stream=BBB_FIXTURE.name)
         drm_checks = ['none'] + DrmSystem.values()
         for drm in drm_checks:
             args['drm'] = drm
@@ -195,7 +196,7 @@ class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
             await self.check_manifest_using_options(
                 mode='live', url=url, query=query, debug=False,
                 now="2023-09-06T09:59:02Z", duration=45,
-                check_media=True, check_head=False)
+                check_media=True, check_head=False, fixture=BBB_FIXTURE)
 
 
 if __name__ == '__main__':

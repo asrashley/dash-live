@@ -3,10 +3,10 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xmlns="urn:mpeg:dash:schema:mpd:2011"
   xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd"
-  
+
   type="static"
   mediaPresentationDuration="PT40S"
-    
+
   publishTime="2023-10-25T07:56:58Z"
   maxSegmentDuration="PT4S"
   minBufferTime="PT10S"
@@ -14,7 +14,7 @@
   <Period
     id="1"
     start="PT0S">
-    <BaseURL>http://unit.test/dash/vod/fixtures/</BaseURL>
+    <BaseURL>http://unit.test/dash/vod/bbb/</BaseURL>
     <AdaptationSet
       group="2"
       mimeType="video/mp4"
@@ -27,18 +27,18 @@
       maxHeight="1080"
       segmentAlignment="true"
       startWithSAP="1">
-      
-      
+
+
       <SegmentTemplate timescale="240"
               initialization="$RepresentationID$/init.m4v"
               media="$RepresentationID$/time/$Time$.m4v">
-        
+
 <SegmentTimeline>
     <S d="960" r="9" t="0"
     />
-</SegmentTimeline>  
+</SegmentTimeline>
       </SegmentTemplate>
-        
+
         <Representation
           id="bbb_v7"
           mimeType="video/mp4"
@@ -48,8 +48,8 @@
           height="1080"
           frameRate="24">
         </Representation>
-      
-      
+
+
         <Representation
           id="bbb_v6"
           mimeType="video/mp4"
@@ -59,21 +59,21 @@
           height="1080"
           frameRate="24">
         </Representation>
-      
+
     </AdaptationSet>
-    
+
     <AdaptationSet
-	id="2"
-	group="2"
-	mimeType="audio/mp4"
-	minBandwidth="98381"
-	maxBandwidth="98381"
-	segmentAlignment="true"
-	startWithSAP="1">
+        id="2"
+        group="2"
+        mimeType="audio/mp4"
+        minBandwidth="98381"
+        maxBandwidth="98381"
+        segmentAlignment="true"
+        startWithSAP="1">
         <SegmentTemplate timescale="44100"
                          initialization="$RepresentationID$/init.m4a"
                          media="$RepresentationID$/time/$Time$.m4a">
-          
+
 <SegmentTimeline>
     <S d="176128" r="2" t="0"
     />
@@ -85,7 +85,7 @@
     />
     <S d="176128" r="2"
     />
-</SegmentTimeline>  
+</SegmentTimeline>
         </SegmentTemplate>
         <Representation
           id="bbb_a1"
@@ -97,8 +97,8 @@
           lang=""
         >
         </Representation>
-	
+
         </AdaptationSet>
-      
+
   </Period>
 </MPD>

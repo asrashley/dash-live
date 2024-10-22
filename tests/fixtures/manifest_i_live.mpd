@@ -9,7 +9,7 @@
     timeShiftBufferDepth="PT30M0S"
     minimumUpdatePeriod="PT8S"
 
-><BaseURL>http://unit.test/dash/live/fixtures/</BaseURL>
+><BaseURL>http://unit.test/dash/live/bbb/</BaseURL>
     <UTCTiming schemeIdUri="urn:mpeg:dash:utc:direct:2014" value="2023-08-07T17:56:43Z"/>
   <Period id="p0">
     <AdaptationSet

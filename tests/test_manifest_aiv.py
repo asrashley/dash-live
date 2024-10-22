@@ -25,16 +25,18 @@ import flask
 
 from .mixins.check_manifest import DashManifestCheckMixin
 from .mixins.flask_base import FlaskTestBase
+from .mixins.stream_fixtures import BBB_FIXTURE
 
 class ManifestAIVTest(FlaskTestBase, DashManifestCheckMixin):
     async def test_vod_manifest_aiv(self):
-        await self.check_a_manifest_using_all_options('manifest_vod_aiv.mpd', 'odvod')
+        await self.check_a_manifest_using_all_options(
+            'manifest_vod_aiv.mpd', mode='odvod', fixture=BBB_FIXTURE)
 
     def test_request_invalid_mode_for_manifest(self):
         for mode in ['live', 'vod']:
             baseurl = flask.url_for(
                 'dash-mpd-v3', manifest='manifest_vod_aiv.mpd',
-                stream=self.FIXTURES_PATH.name, mode=mode)
+                stream=BBB_FIXTURE.name, mode=mode)
             self.app.get(baseurl, status=404)
 
     def test_generated_manifest_against_fixture(self):
