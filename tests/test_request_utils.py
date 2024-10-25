@@ -39,7 +39,25 @@ class TestRequestHandlerUtils(FlaskTestBase):
             }
             self.app.config['DASH']['ALLOWED_DOMAINS'] = 'unit.test'
             add_allowed_origins(headers)
-            self.assertEqual(headers["Access-Control-Allow-Methods"], "HEAD, GET, POST")
+            allowed_methods: set[str] = {
+                m.strip() for m in headers["Access-Control-Allow-Methods"].split(",")
+            }
+            self.assertEqual(allowed_methods, {"HEAD", "GET", "POST"})
+            self.assertEqual(headers["Access-Control-Allow-Origin"], 'www.unit.test')
+
+    @patch.object(flask, 'request')
+    def test_matching_allowed_origin_with_methods(self, mock_request) -> None:
+        headers = {}
+        with self.app.app_context():
+            mock_request.headers = {
+                'Origin': 'www.unit.test',
+            }
+            self.app.config['DASH']['ALLOWED_DOMAINS'] = 'unit.test'
+            add_allowed_origins(headers, methods={"PUT", "POST"})
+            allowed_methods: set[str] = {
+                m.strip() for m in headers["Access-Control-Allow-Methods"].split(",")
+            }
+            self.assertEqual(allowed_methods, {"PUT", "POST"})
             self.assertEqual(headers["Access-Control-Allow-Origin"], 'www.unit.test')
 
     @patch.object(flask, 'request')
@@ -60,7 +78,10 @@ class TestRequestHandlerUtils(FlaskTestBase):
         with self.app.app_context():
             self.app.config['DASH']['ALLOWED_DOMAINS'] = '*'
             add_allowed_origins(headers)
-            self.assertEqual(headers["Access-Control-Allow-Methods"], "HEAD, GET, POST")
+            allowed_methods: set[str] = {
+                m.strip() for m in headers["Access-Control-Allow-Methods"].split(",")
+            }
+            self.assertEqual(allowed_methods, {"HEAD", "GET", "POST"})
             self.assertEqual(headers["Access-Control-Allow-Origin"], '*')
 
 

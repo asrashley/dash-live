@@ -289,7 +289,10 @@ class DashManifestCheckMixin:
         self.assertEqual(response.status_code, 200)
         self.assertIn("Access-Control-Allow-Origin", response.headers)
         self.assertEqual(response.headers["Access-Control-Allow-Origin"], '*')
-        self.assertEqual(response.headers["Access-Control-Allow-Methods"], "HEAD, GET, POST")
+        allowed_methods: set[str] = {
+            m.strip() for m in response.headers["Access-Control-Allow-Methods"].split(",")
+        }
+        self.assertEqual(allowed_methods, {"HEAD", "GET"})
         timeout: int = 100 if mode == 'live' else 2
         with ThreadPoolExecutor(max_workers=4) as tpe:
             pool = ConcurrentWorkerPool(tpe)
