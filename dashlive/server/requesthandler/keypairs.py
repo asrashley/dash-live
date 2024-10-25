@@ -19,6 +19,7 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+import logging
 
 import flask
 
@@ -183,7 +184,8 @@ class DeleteKeyHandler(HTMLHandlerBase):
         try:
             self.check_csrf('keys', flask.request.form)
         except (ValueError, CsrfFailureException) as err:
-            return flask.make_response(f'CSRF failure: {err}', 400)
+            logging.warning('CSRF failure: %s', err)
+            return flask.make_response('CSRF failure', 400)
         models.db.session.delete(current_keypair)
         models.db.session.commit()
         flask.flash(f'Deleted keypair {current_keypair.hkid}', 'success')
@@ -197,7 +199,8 @@ class DeleteKeyHandler(HTMLHandlerBase):
         try:
             self.check_csrf('keys', flask.request.args)
         except (ValueError, CsrfFailureException) as err:
-            return jsonify({'error': f'CSRF failure: {err}'}, 400)
+            logging.warning('CSRF failure: %s', err)
+            return jsonify({'error': 'CSRF failure'}, 400)
         result = {
             "deleted": current_keypair.KID.hex,
         }
