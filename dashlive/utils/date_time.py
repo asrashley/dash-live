@@ -66,7 +66,7 @@ def to_iso_epoch(dt):
     return int(delta.total_seconds())
 
 
-def to_iso_datetime(value):
+def to_iso_datetime(value: datetime.datetime) -> str:
     """ Convert a datetime to an ISO8601 formatted dateTime string.
 
     :param value: the dateTime to convert
@@ -80,8 +80,9 @@ def to_iso_datetime(value):
         rv = re.sub('[+-]00:00$', 'Z', rv)
     return rv
 
-def toIsoDuration(secs):
-    """ Convert a time (in seconds) to an ISO8601 formatted duration string.
+def toIsoDuration(secs: float | str | datetime.timedelta) -> str:
+    """
+    Convert a time (in seconds) to an ISO8601 formatted duration string.
 
      :param secs: the duration to convert, in seconds
      :returns: an ISO8601 formatted string version of the duration
