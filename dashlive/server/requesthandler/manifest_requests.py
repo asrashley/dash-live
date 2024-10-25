@@ -177,7 +177,7 @@ class LegacyManifestUrl(ServeManifest):
             return flask.redirect(url)
         except KeyError:
             logging.debug('Unknown manifest: %s', manifest)
-            return flask.make_response(f'{manifest} not found', 404)
+            return flask.make_response(f'{html.escape(manifest)} not found', 404)
 
 class ServePatch(RequestHandlerBase):
     """
