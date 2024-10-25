@@ -201,8 +201,14 @@ class ValidationChecks:
             template = r'{0} should start with {1}'
         return self.check_true(result, text, prefix, template=template, **kwargs)
 
-    def check_almost_equal(self, a, b, places=7, delta=None,
-                           template: str | None = None, **kwargs) -> bool:
+    def check_almost_equal(self,
+                           a: float,
+                           b: float,
+                           places: int = 7,
+                           delta: int | None = None,
+                           template: str | None = None,
+                           msg: str | None = None,
+                           **kwargs) -> bool:
         if template is None:
             template = r'{} !~= {}'
         if delta is not None:
@@ -210,7 +216,8 @@ class ValidationChecks:
             return self.check_true(d <= delta, a, b, template=template, **kwargs)
         ar = round(a, places)
         br = round(b, places)
-        return self.check_true(ar == br, a, b, template=template, **kwargs)
+        return self.check_true(
+            ar == br, a, b, template=template, msg=msg, **kwargs)
 
     def check_is_instance(self, item: Any, types: type | tuple, **kwargs) -> bool:
         result = isinstance(item, types)

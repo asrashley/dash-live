@@ -11,7 +11,7 @@ from collections.abc import Awaitable
 import datetime
 import math
 import re
-from typing import Optional, Set
+from typing import Any, ClassVar, Optional, Set, TYPE_CHECKING, cast
 import urllib.parse
 
 from lxml import etree as ET
@@ -31,13 +31,20 @@ from .multiple_segment_base_type import MultipleSegmentBaseType
 from .representation_base_type import RepresentationBaseType
 from .validation_flag import ValidationFlag
 
+if TYPE_CHECKING:
+    from .adaptation_set import AdaptationSet
+    from .period import Period
+
 class Representation(RepresentationBaseType):
-    attributes = RepresentationBaseType.attributes + [
+    attributes: ClassVar[list[tuple[str, Any, Any]]] = RepresentationBaseType.attributes + [
         ('bandwidth', int, None),
         ('id', str, None),
         ('qualityRanking', int, None),
         ('dependencyId', str, None),
     ]
+
+    timeline_start: int  # from start of stream (manifest timescale units)
+    parent: "AdaptationSet"
 
     def __init__(self, elt: ET.ElementBase, parent: DashElement) -> None:
         super().__init__(elt, parent)
@@ -63,8 +70,12 @@ class Representation(RepresentationBaseType):
             self.init_segment = self.create_init_segment_live_profile()
 
     @property
+    def period(self) -> "Period":
+        return cast("Period", self.parent.parent)
+
+    @property
     def target_duration(self) -> datetime.timedelta | None:
-        return self.parent.parent.target_duration
+        return self.period.target_duration
 
     async def merge_previous_element(self, prev: "Representation") -> bool:
         if self.mode != 'live':
@@ -157,7 +168,7 @@ class Representation(RepresentationBaseType):
                 'SegmentTemplate@duration is missing for a template without a SegmentTimeline element'):
             return
         if dash_rep.segments is None:
-            period_duration = self.parent.parent.get_duration_as_timescale(
+            period_duration = self.period.get_duration_as_timescale(
                 dash_rep.timescale)
             num_segments = int(period_duration // seg_duration)
         else:
@@ -231,6 +242,7 @@ class Representation(RepresentationBaseType):
         tolerance = int(self.segmentTemplate.timescale // frameRate)
         self.log.debug('%s: Generating %d MediaSegments using SegmentTemplate',
                        self.id, num_segments)
+        presentation_time_offset: int = self.presentation_time_offset()
         for idx in range(num_segments):
             url = self.format_url_template(
                 self.segmentTemplate.media, seg_num, decode_time)
@@ -241,11 +253,16 @@ class Representation(RepresentationBaseType):
                 tol = tolerance >> 1
             else:
                 tol = tolerance
-            ms = MediaSegment(self, url, expected_seg_num=seg_num, tolerance=tol,
+            ms = MediaSegment(self, url=url,
+                              presentation_time_offset=presentation_time_offset,
+                              expected_seg_num=seg_num, tolerance=tol,
                               expected_duration=seg_duration)
             if self.mode == 'live':
                 ms.set_segment_availability(
-                    seg_duration, self.segmentTemplate.presentationTimeOffset, self.dash_timescale())
+                    seg_duration,
+                    self.period.availability_start_time(),
+                    self.segmentTemplate.presentationTimeOffset,
+                    self.dash_timescale())
             self.media_segments.append(ms)
             seg_num += 1
             decode_time += seg_duration
@@ -272,6 +289,7 @@ class Representation(RepresentationBaseType):
         need_duration = None
         if self.target_duration is not None:
             need_duration = timedelta_to_timecode(self.target_duration, self.dash_timescale())
+        presentation_time_offset: int = self.presentation_time_offset()
         for idx, seg in enumerate(timeline.segments):
             decode_time = seg.start - self.segmentTemplate.presentationTimeOffset
             if self.mode == 'vod':
@@ -286,11 +304,13 @@ class Representation(RepresentationBaseType):
                 self.segmentTemplate.media, seg_num, decode_time)
             url = urllib.parse.urljoin(self.baseurl, url)
             ms = MediaSegment(
-                self, url, expected_decode_time=decode_time, expected_duration=seg.duration,
+                self, url=url, presentation_time_offset=presentation_time_offset,
+                expected_decode_time=decode_time, expected_duration=seg.duration,
                 expected_seg_num=expected_seg_num, tolerance=tolerance)
             if self.mode == 'live':
                 ms.set_segment_availability(
-                    seg_duration, self.segmentTemplate.presentationTimeOffset, self.dash_timescale())
+                    seg_duration, self.period.availability_start_time(),
+                    self.segmentTemplate.presentationTimeOffset, self.dash_timescale())
             self.media_segments.append(ms)
             total_duration += seg.duration
             if self.mode != 'live' and need_duration and total_duration > need_duration:
@@ -304,6 +324,14 @@ class Representation(RepresentationBaseType):
                 self.elt.check_greater_or_equal(
                     total_duration, tsb,
                     template=r'SegmentTimeline has duration {0}, expected {1} based upon timeshiftbufferdepth')
+
+    def presentation_time_offset(self) -> int:
+        if self.segmentTemplate is None:
+            return 0
+        presentation_time_offset: int = self.segmentTemplate.presentationTimeOffset
+        presentation_time_offset -= timedelta_to_timecode(
+            self.period.start, self.segmentTemplate.timescale)
+        return presentation_time_offset
 
     def create_init_segment_live_profile(self) -> InitSegment:
         seg_url = self.init_seg_url()
@@ -364,6 +392,7 @@ class Representation(RepresentationBaseType):
             tolerance = self.segmentTemplate.timescale / frameRate
         else:
             tolerance = info.timescale / frameRate
+        presentation_time_offset: int = self.presentation_time_offset()
         for idx, item in enumerate(seg_list):
             if not self.elt.check_not_none(
                     item.mediaRange,
@@ -384,7 +413,8 @@ class Representation(RepresentationBaseType):
             if info.segments:
                 expected_duration = info.segments[idx + 1].duration
             ms = MediaSegment(
-                self, url, expected_seg_num=seg_num, expected_decode_time=dt,
+                self, url=url, presentation_time_offset=presentation_time_offset,
+                expected_seg_num=seg_num, expected_decode_time=dt,
                 tolerance=tol, seg_range=item.mediaRange,
                 expected_duration=expected_duration)
             self.media_segments.append(ms)
@@ -514,7 +544,7 @@ class Representation(RepresentationBaseType):
                 self.log.debug(
                     '%s: reached required validation duration %d',
                     self.id, need_duration)
-                return
+                break
 
     async def validate_self(self) -> None:
         if self.progress.aborted():
@@ -606,9 +636,8 @@ class Representation(RepresentationBaseType):
             num_segments = int(num_segments)
             num_segments = min(num_segments, 25)
         now = self.mpd.now()
-        elapsed_time = now - self.mpd.availabilityStartTime
+        elapsed_time = now - self.period.availability_start_time()
         startNumber = self.segmentTemplate.startNumber
-        # TODO: subtract Period@start
         last_fragment = startNumber + int(
             scale_timedelta(elapsed_time, timescale, seg_duration))
         first_fragment = last_fragment - math.floor(

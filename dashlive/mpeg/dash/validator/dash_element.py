@@ -148,6 +148,19 @@ class DashElement(ABC):
     def children(self) -> list["DashElement"]:
         ...
 
+    def previous_peer(self) -> Optional["DashElement"]:
+        """
+        Finds the peer element that appears before this element
+        """
+        if self.parent is None:
+            return None
+        prev: DashElement | None = None
+        for child in self.parent.children():
+            if child == self:
+                return prev
+            prev = child
+        return None
+
     def parse_attributes(self, elt: ET.ElementBase, attributes: list[tuple]) -> None:
         for name, conv, dflt in attributes:
             if ':' in name:
