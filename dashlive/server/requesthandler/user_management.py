@@ -21,6 +21,7 @@
 #############################################################################
 
 import datetime
+import logging
 
 import flask
 from flask_login import current_user, login_user, logout_user
@@ -185,7 +186,8 @@ class EditUser(HTMLHandlerBase):
         try:
             self.check_csrf('users', flask.request.form)
         except (ValueError, CsrfFailureException) as err:
-            return flask.make_response({'error': f'CSRF failure: {err}'}, 400)
+            logging.error('CSRF failure: %s', err)
+            return flask.make_response({'error': 'CSRF failure occurred'}, 400)
         user = self.get_model()
         if not current_user.is_admin and user.pk != current_user.pk:
             flask.flash('Only an admin user can modify other users', 'error')
