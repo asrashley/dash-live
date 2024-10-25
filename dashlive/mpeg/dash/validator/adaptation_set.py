@@ -9,6 +9,7 @@ import asyncio
 import datetime
 
 from dashlive.mpeg.dash.representation import Representation as ServerRepresentation
+from dashlive.utils.date_time import timedelta_to_timecode
 
 from .content_component import ContentComponent
 from .dash_element import DashElement
@@ -37,7 +38,7 @@ class AdaptationSet(RepresentationBaseType):
     contentComponents: list[ContentComponent]
     representations: list[Representation]
 
-    def __init__(self, adap_set, parent):
+    def __init__(self, adap_set, parent) -> None:
         super().__init__(adap_set, parent)
         reps = adap_set.findall('./dash:Representation', self.xmlNamespaces)
         self.default_KID = None
@@ -48,6 +49,9 @@ class AdaptationSet(RepresentationBaseType):
         self.representations = [Representation(r, self) for r in reps]
         components = adap_set.findall('./dash:ContentComponent', self.xmlNamespaces)
         self.contentComponents = [ContentComponent(c, self) for c in components]
+        abs_start: datetime.timedelta = self.parent.start
+        for rep in self.representations:
+            rep.timeline_start = timedelta_to_timecode(abs_start, rep.dash_timescale())
 
     async def prefetch_media_info(self) -> bool:
         self.progress.add_todo(len(self.representations))
