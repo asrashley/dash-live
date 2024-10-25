@@ -110,7 +110,7 @@ class ServeManifest(RequestHandlerBase):
             'Cache-Control': f'max-age={max_age}',
             'Accept-Ranges': 'none',
         }
-        add_allowed_origins(headers)
+        add_allowed_origins(headers, methods={'HEAD', 'GET'})
         return flask.make_response((body, 200, headers))
 
     def check_for_synthetic_manifest_error(
@@ -172,7 +172,7 @@ class ServeMultiPeriodManifest(RequestHandlerBase):
             'Cache-Control': f'max-age={max_age}',
             'Accept-Ranges': 'none',
         }
-        add_allowed_origins(headers)
+        add_allowed_origins(headers, methods={'GET', 'HEAD'})
         return flask.make_response((body, 200, headers))
 
 
