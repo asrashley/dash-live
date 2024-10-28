@@ -4,7 +4,7 @@
      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
      xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd"
      publishTime="2024-10-07T00:02:56Z"
-     id="testfix"
+     id="testmps"
     type="dynamic"
     minimumUpdatePeriod="PT8S"
     suggestedPresentationDelay="PT30S"
@@ -14,11 +14,11 @@
   minBufferTime="PT1.5S"
 >
  <ProgramInformation>
-  <Title>title </Title>
+  <Title>Example multi-period stream </Title>
  </ProgramInformation>
- <Location>http://unit.test/mps/live/testfix/hand_made.mpd?start=2024-10-07T00:00:00Z</Location>
+ <Location>http://unit.test/mps/live/testmps/hand_made.mpd?start=2024-10-07T00:00:00Z</Location>
    <Period start="PT0S" id="p1_0" duration="PT32S"
-   ><BaseURL>http://unit.test/mps/live/testfix/1/</BaseURL>
+   ><BaseURL>http://unit.test/mps/live/testmps/1/</BaseURL>
      
        <AdaptationSet
          id="1"
@@ -105,8 +105,8 @@
            </Representation> 
        </AdaptationSet> 
    </Period>
-   <Period start="PT32S" id="p2_0" duration="PT24S"
-   ><BaseURL>http://unit.test/mps/live/testfix/2/</BaseURL>
+   <Period start="PT32S" id="p2_0" duration="PT44S"
+   ><BaseURL>http://unit.test/mps/live/testmps/2/</BaseURL>
      
        <AdaptationSet
          id="1"
@@ -195,8 +195,8 @@
            </Representation> 
        </AdaptationSet> 
    </Period>
-   <Period start="PT56S" id="p1_1" duration="PT32S"
-   ><BaseURL>http://unit.test/mps/live/testfix/1/</BaseURL>
+   <Period start="PT1M16S" id="p1_1" duration="PT32S"
+   ><BaseURL>http://unit.test/mps/live/testmps/1/</BaseURL>
      
        <AdaptationSet
          id="1"
@@ -283,8 +283,8 @@
            </Representation> 
        </AdaptationSet> 
    </Period>
-   <Period start="PT1M28S" id="p2_1" duration="PT24S"
-   ><BaseURL>http://unit.test/mps/live/testfix/2/</BaseURL>
+   <Period start="PT1M48S" id="p2_1" duration="PT44S"
+   ><BaseURL>http://unit.test/mps/live/testmps/2/</BaseURL>
      
        <AdaptationSet
          id="1"
@@ -373,186 +373,8 @@
            </Representation> 
        </AdaptationSet> 
    </Period>
-   <Period start="PT1M52S" id="p1_2" duration="PT32S"
-   ><BaseURL>http://unit.test/mps/live/testfix/1/</BaseURL>
-     
-       <AdaptationSet
-         id="1"
-         mimeType="video/mp4"
-         contentType="video"
-         segmentAlignment="true"
-         startWithSAP="1"
-           maxWidth="1920"
-           maxHeight="1080"
-           maxFrameRate="24"
-           par="16:9"
-         >
-         
-         
-         <ContentComponent
-             id="1"
-             contentType="video" />
-           <Role
-             schemeIdUri="urn:mpeg:dash:role:2011"
-             value="main"
-           />
-               <SegmentTemplate
-                   startNumber="1"
-                   timescale="240"
-                   duration="960"
-                   initialization="$RepresentationID$/init.m4v?depth=180&amp;start=2024-10-07T00:00:00Z"
-                   media="$RepresentationID$/$Number$.m4v?depth=180&amp;start=2024-10-07T00:00:00Z">
-               </SegmentTemplate>
-           <Representation
-               id="bbb_v6"
-               mimeType="video/mp4"
-               codecs="avc3.640028"
-                 width="1920"
-                 height="1080"
-               startWithSAP="1"
-               bandwidth="374782"
-           >
-           </Representation>
-           <Representation
-               id="bbb_v7"
-               mimeType="video/mp4"
-               codecs="avc3.640028"
-                 width="1920"
-                 height="1080"
-               startWithSAP="1"
-               bandwidth="191821"
-           >
-           </Representation> 
-       </AdaptationSet>
-       <AdaptationSet
-         id="2"
-         mimeType="audio/mp4"
-         contentType="audio"
-         segmentAlignment="true"
-         startWithSAP=""
-         >
-         
-         
-         <ContentComponent
-             id="2"
-             contentType="audio" />
-           <Role
-             schemeIdUri="urn:mpeg:dash:role:2011"
-             value="main"
-           />
-         <AudioChannelConfiguration
-             schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011"
-             value="2" />
-               <SegmentTemplate
-                   startNumber="1"
-                   timescale="44100"
-                   duration="176355"
-                   initialization="$RepresentationID$/init.m4a?depth=180&amp;start=2024-10-07T00:00:00Z"
-                   media="$RepresentationID$/$Number$.m4a?depth=180&amp;start=2024-10-07T00:00:00Z">
-               </SegmentTemplate>
-           <Representation
-               id="bbb_a1"
-               mimeType="audio/mp4"
-               codecs="mp4a.40.2"
-                   audioSamplingRate="44100"
-               startWithSAP="1"
-               bandwidth="98381"
-           >
-           </Representation> 
-       </AdaptationSet> 
-   </Period>
-   <Period start="PT2M24S" id="p2_2" duration="PT24S"
-   ><BaseURL>http://unit.test/mps/live/testfix/2/</BaseURL>
-     
-       <AdaptationSet
-         id="1"
-         mimeType="video/mp4"
-         contentType="video"
-         segmentAlignment="true"
-         startWithSAP="1"
-           maxWidth="512"
-           maxHeight="120"
-           maxFrameRate="24"
-           par="16:9"
-         >
-         
-         
-         <ContentComponent
-             id="1"
-             contentType="video" />
-           <Role
-             schemeIdUri="urn:mpeg:dash:role:2011"
-             value="main"
-           />
-               <SegmentTemplate
-                   startNumber="1"
-                   timescale="240"
-                   duration="960"
-                   initialization="$RepresentationID$/init.m4v?depth=180&amp;start=2024-10-07T00:00:00Z"
-                   media="$RepresentationID$/$Number$.m4v?depth=180&amp;start=2024-10-07T00:00:00Z">
-               </SegmentTemplate>
-           <Representation
-               id="tears_v1"
-               mimeType="video/mp4"
-               codecs="avc1.42C01F"
-                 width="384"
-                 height="90"
-                   lang="eng"
-               startWithSAP="1"
-               bandwidth="186164"
-           >
-           </Representation>
-           <Representation
-               id="tears_v2"
-               mimeType="video/mp4"
-               codecs="avc1.42C01F"
-                 width="512"
-                 height="120"
-                   lang="eng"
-               startWithSAP="1"
-               bandwidth="359248"
-           >
-           </Representation> 
-       </AdaptationSet>
-       <AdaptationSet
-         id="2"
-         mimeType="audio/mp4"
-         contentType="audio"
-         segmentAlignment="true"
-         startWithSAP=""
-         >
-         
-         
-         <ContentComponent
-             id="2"
-             contentType="audio" />
-           <Role
-             schemeIdUri="urn:mpeg:dash:role:2011"
-             value="main"
-           />
-         <AudioChannelConfiguration
-             schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011"
-             value="2" />
-               <SegmentTemplate
-                   startNumber="1"
-                   timescale="48000"
-                   duration="191965"
-                   initialization="$RepresentationID$/init.m4a?depth=180&amp;start=2024-10-07T00:00:00Z"
-                   media="$RepresentationID$/$Number$.m4a?depth=180&amp;start=2024-10-07T00:00:00Z">
-               </SegmentTemplate>
-           <Representation
-               id="tears_a1"
-               mimeType="audio/mp4"
-               codecs="mp4a.40.2"
-                   audioSamplingRate="48000"
-               startWithSAP="1"
-               bandwidth="98393"
-           >
-           </Representation> 
-       </AdaptationSet> 
-   </Period>
-   <Period start="PT2M48S" id="p1_3"
-   ><BaseURL>http://unit.test/mps/live/testfix/1/</BaseURL>
+   <Period start="PT2M32S" id="p1_2"
+   ><BaseURL>http://unit.test/mps/live/testmps/1/</BaseURL>
      
        <AdaptationSet
          id="1"
