@@ -40,7 +40,7 @@ from .mixins.check_manifest import DashManifestCheckMixin
 from .mixins.flask_base import FlaskTestBase
 from .mixins.mock_time import MockTime, async_mock_time
 from .mixins.view_validator import ViewsTestDashValidator
-from .mixins.stream_fixtures import BBB_FIXTURE
+from .mixins.stream_fixtures import BBB_FIXTURE, MPS_FIXTURE
 
 class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
     def test_request_unknown_manifest(self):
@@ -80,11 +80,20 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 404)
 
-    async def test_availability_start_time(self):
+    async def test_availability_start_time(self) -> None:
+        await self.check_availability_start_time(False)
+
+    async def test_mps_availability_start_time(self) -> None:
+        await self.check_availability_start_time(True)
+
+    async def check_availability_start_time(self, mps: bool) -> None:
         """
         Control of MPD@availabilityStartTime using the start parameter
         """
-        self.setup_media_fixture(BBB_FIXTURE)
+        if mps:
+            self.setup_multi_period_stream(MPS_FIXTURE)
+        else:
+            self.setup_media_fixture(BBB_FIXTURE)
         self.logout_user()
         filename = 'hand_made.mpd'
         self.assertGreaterThan(models.MediaFile.count(), 0)
@@ -118,11 +127,20 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                     self.assertEqual(now, ref_today)
 
             with MockTime(now):
-                baseurl = flask.url_for(
-                    'dash-mpd-v3',
-                    manifest=filename,
-                    stream=BBB_FIXTURE.name,
-                    mode='live')
+                if mps:
+                    baseurl: str = flask.url_for(
+                        'mps-manifest',
+                        manifest=filename,
+                        mps_name=MPS_FIXTURE.name,
+                        mode='live')
+                    duration: int = int(MPS_FIXTURE.media_duration // 3)
+                else:
+                    baseurl = flask.url_for(
+                        'dash-mpd-v3',
+                        manifest=filename,
+                        stream=BBB_FIXTURE.name,
+                        mode='live')
+                    duration = int(BBB_FIXTURE.media_duration // 3)
                 if option:
                     baseurl += '?start=' + option
                 with unittest.mock.patch.object(logging, 'warning', mocked_warning):
@@ -137,8 +155,8 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                     pool = ConcurrentWorkerPool(tpe)
                     dv = ViewsTestDashValidator(
                         http_client=self.async_client, mode='live', pool=pool,
-                        url=baseurl, encrypted=False, debug=False, check_media=False,
-                        duration=int(BBB_FIXTURE.media_duration // 3))
+                        url=baseurl, encrypted=False, debug=False,
+                        check_media=False, duration=duration)
                     await dv.load(data=response.get_data(as_text=False))
                     await dv.validate()
                 if dv.has_errors():

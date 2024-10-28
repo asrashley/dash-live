@@ -4,18 +4,18 @@
      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
      xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd"
      publishTime="2023-10-25T07:56:58Z"
-     id="testfix"
+     id="testmps"
     type="static"
     mediaPresentationDuration="PT1M4S"
   profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014"
   minBufferTime="PT1.5S"
 >
  <ProgramInformation>
-  <Title>title </Title>
+  <Title>Example multi-period stream </Title>
  </ProgramInformation>
- <Location>http://unit.test/mps/vod/testfix/hand_made.mpd</Location>
+ <Location>http://unit.test/mps/vod/testmps/hand_made.mpd</Location>
    <Period start="PT0S" id="p1" duration="PT32S"
-   ><BaseURL>http://unit.test/mps/vod/testfix/1/</BaseURL>
+   ><BaseURL>http://unit.test/mps/vod/testmps/1/</BaseURL>
      
        <AdaptationSet
          id="1"
@@ -102,8 +102,8 @@
            </Representation> 
        </AdaptationSet> 
    </Period>
-   <Period start="PT32S" id="p2" duration="PT24S"
-   ><BaseURL>http://unit.test/mps/vod/testfix/2/</BaseURL>
+   <Period start="PT32S" id="p2" duration="PT44S"
+   ><BaseURL>http://unit.test/mps/vod/testmps/2/</BaseURL>
      
        <AdaptationSet
          id="1"

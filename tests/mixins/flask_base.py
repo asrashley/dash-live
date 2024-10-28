@@ -29,14 +29,13 @@ import multiprocessing
 from pathlib import Path
 import shutil
 import tempfile
-from typing import Any, ClassVar, Optional, NamedTuple, Type
+from typing import Any, ClassVar, Optional, Type
 
 from bs4 import BeautifulSoup, element
 import flask
 
 from dashlive.drm.playready import PlayReady
 from dashlive.mpeg import mp4
-from dashlive.mpeg.dash.content_role import ContentRole
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.server import models
 from dashlive.server.app import create_app
@@ -45,19 +44,7 @@ from dashlive.utils.date_time import from_isodatetime
 from .async_flask_testing import AsyncFlaskTestCase
 from .context_filter import ContextFilter
 from .mixin import TestCaseMixin
-from .stream_fixtures import StreamFixture, BBB_FIXTURE
-
-class FixtureTrack(NamedTuple):
-    ttype: str  # "video", "audio", etc
-    tid: int
-    role: ContentRole
-
-class FixturePeriod(NamedTuple):
-    pid: str
-    fixture: StreamFixture
-    start: int
-    end: int
-    tracks: list[FixtureTrack]
+from .stream_fixtures import MultiPeriodStreamFixture, StreamFixture, BBB_FIXTURE
 
 class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
     ADMIN_USER: ClassVar[str] = 'admin'
@@ -279,15 +266,15 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
         return mf
 
     def setup_multi_period_stream(self,
-                                  name: str,
-                                  title: str,
-                                  periods: list[FixturePeriod]) -> None:
-        for period in periods:
+                                  fixture: MultiPeriodStreamFixture
+                                  ) -> None:
+        for period in fixture.periods:
             self.setup_media_fixture(period.fixture)
         with self.app.app_context():
-            mps = models.MultiPeriodStream(name=name, title=title)
+            mps = models.MultiPeriodStream(
+                name=fixture.name, title=fixture.title)
             models.db.session.add(mps)
-            for idx, period in enumerate(periods, start=1):
+            for idx, period in enumerate(fixture.periods, start=1):
                 stream = models.Stream.get(directory=period.fixture.name)
                 assert stream is not None
                 start: int = period.fixture.segment_duration * period.start
@@ -309,6 +296,9 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
                     models.db.session.add(adp)
                 models.db.session.add(adp)
             models.db.session.commit()
+            self.assertEqual(
+                timedelta(seconds=fixture.media_duration),
+                mps.total_duration())
 
     def create_upload_folder(self) -> str:
         with self.app.app_context():
