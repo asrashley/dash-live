@@ -251,7 +251,9 @@ class MediaFile(db.Model, ModelMixin):
             return False
         self.representation = rep
         self.rep = rep.toJSON(pure=True)
+        self.track_id = rep.track_id
         self.content_type = rep.content_type
+        self.codec_fourcc = rep.codecs.split('.')[0]
         self.bitrate = rep.bitrate
         self.encrypted = rep.encrypted
         self.encryption_keys = []
