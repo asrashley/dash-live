@@ -363,9 +363,12 @@ class DashMediaCreator:
         # Add AAC audio track
         src_file = self.options.destdir / f'{bitrates[0]}' / f'{self.options.prefix}.mp4#trackID=2:role=main'
         source_files.append(EncodedRepresentation(source=src_file, contentType='a', index=1))
-        # Add E-AC3 audio track
-        src_file = self.options.destdir / f'{bitrates[0]}' / f'{self.options.prefix}.mp4#trackID=3:role=alternate'
-        source_files.append(EncodedRepresentation(source=src_file, contentType='a', index=2))
+
+        if self.options.surround:
+            # Add E-AC3 audio track
+            src_file = self.options.destdir / f'{bitrates[0]}' / f'{self.options.prefix}.mp4#trackID=3:role=alternate'
+            source_files.append(EncodedRepresentation(
+                source=src_file, contentType='a', index=2))
 
         self.package_sources(source_files)
         return True
