@@ -22,6 +22,7 @@
 
 from abc import abstractmethod
 import datetime
+import html
 import io
 import logging
 import math
@@ -62,7 +63,8 @@ class OnDemandMedia(RequestHandlerBase):
 
     def get(self, stream: str, filename: str, ext: str) -> flask.Response:
         try:
-            start, end, status, headers = self.get_http_range(current_media_file.blob.size)
+            start, end, status, headers = self.get_http_range(
+                current_media_file.blob.size)
         except ValueError as ve:
             logging.warning('Invalid HTTP range: %s', ve)
             return flask.make_response('Invalid HTTP range', 400)
@@ -274,7 +276,8 @@ class MediaRequestBase(RequestHandlerBase):
                 data = data[start:end + 1]
             headers.update(range_headers)
         except (ValueError) as ve:
-            return flask.make_response(f'{ve}', 400)
+            logging.warning('HTTP range error: %s', ve)
+            return flask.make_response('Invalid HTTP RANGE', 400)
         add_allowed_origins(headers)
         return flask.make_response((data, status, headers))
 
@@ -413,7 +416,8 @@ class LiveMedia(MediaRequestBase):
         mf = current_media_file
         if mf.content_type not in {'audio', 'video', 'text'}:
             return flask.make_response(
-                f'Unsupported content_type {mf.content_type}', 404)
+                f'Unsupported content_type {html.escape(mf.content_type)}',
+                404)
         if segment_num == 'init':
             return self.generate_init_segment(current_media_file, mode, options)
         try:

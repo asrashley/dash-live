@@ -109,10 +109,12 @@ class RequestHandlerBase(MethodView):
         options.add_field('mode', mode)
         return options
 
-    def has_http_range(self):
+    def has_http_range(self) -> bool:
         return 'range' in flask.request.headers
 
-    def get_http_range(self, content_length):
+    def get_http_range(self,
+                       content_length: int
+                       ) -> tuple[int | None, int | None, int, dict[str, str]]:
         try:
             http_range = flask.request.headers['range'].lower().strip()
         except KeyError:
@@ -121,19 +123,27 @@ class RequestHandlerBase(MethodView):
             raise ValueError('Only byte based ranges are supported')
         if ',' in http_range:
             raise ValueError('Multiple ranges not supported')
-        start, end = http_range[6:].split('-')
-        if start == '':
-            amount = int(end, 10)
+
+        start_str: str
+        end_str: str
+        start: int
+        end: int
+
+        start_str, end_str = http_range[6:].split('-')
+
+        if start_str == '':
+            amount: int = int(end_str, 10)
             start = content_length - amount
             end = content_length - 1
-        elif end == '':
-            end = content_length - 1
-        if isinstance(start, str):
-            start = int(start, 10)
-        if isinstance(end, str):
-            end = int(end, 10)
-        status = 206
-        headers = {
+        else:
+            start = int(start_str, 10)
+            if end_str == '':
+                end = content_length - 1
+            else:
+                end = int(end_str, 10)
+
+        status: int = 206
+        headers: dict[str, str] = {
             'Accept-Ranges': 'bytes',
             'Content-Range': f'bytes {start}-{end}/{content_length}'
         }
