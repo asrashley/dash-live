@@ -43,6 +43,14 @@
         {
             "from": "../node_modules/temporal-polyfill/chunks/*.js",
             "to": "../static/js/prod/temporal-polyfill/chunks/"
+        },
+        {
+          "from": "../node_modules/bootstrap-icons/font/bootstrap-icons.min.css",
+          "to": "../static/css/"
+        },
+        {
+          "from": "../node_modules/bootstrap-icons/font/fonts/*.w*",
+          "to": "../static/css/fonts/"
         }
     ],
     "copyFilesSettings": {
