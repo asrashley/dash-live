@@ -105,6 +105,7 @@ class MediaCreateOptions:
     segment_duration: float
     surround: bool
     verbose: bool
+    max_bitrate: int
     prefix: str
     source: str
     output: InitVar[str]
@@ -167,6 +168,8 @@ class DashMediaCreator:
     def encode_all(self) -> None:
         first = True
         for width, height, bitrate, codec in self.BITRATE_LADDER:
+            if self.options.max_bitrate > 0 and bitrate > self.options.max_bitrate:
+                continue
             self.encode_representation(width, height, bitrate, codec, first)
             first = False
 
@@ -333,7 +336,11 @@ class DashMediaCreator:
         logging.info(r'Generated file %s', dest_filename)
 
     def package_all(self) -> bool:
-        bitrates: list[int] = [br[2] for br in self.BITRATE_LADDER]
+        bitrates: list[int] = []
+        for br in self.BITRATE_LADDER:
+            rate = br[2]
+            if self.options.max_bitrate == 0 or rate <= self.options.max_bitrate:
+                bitrates.append(rate)
         source_files: list[EncodedRepresentation] = []
         nothing_to_do = True
         for idx in range(len(bitrates)):
@@ -609,21 +616,29 @@ class DashMediaCreator:
     @classmethod
     def main(cls, args: list[str]) -> int:
         ap = argparse.ArgumentParser(description='DASH encoding and packaging')
-        ap.add_argument('--duration', '-d', help='Stream duration (in seconds) (0=auto)',
+        ap.add_argument('--duration', '-d',
+                        help='Stream duration (in seconds) (0=auto)',
                         type=int, default=0)
-        ap.add_argument('--aspect', help='Aspect ratio (default=same as source)')
-        ap.add_argument('--avc3', help='Use in-band (AVC3 format) init segments',
+        ap.add_argument('--aspect',
+                        help='Aspect ratio (default=same as source)')
+        ap.add_argument('--avc3',
+                        help='Use in-band (AVC3 format) init segments',
                         action="store_true")
-        ap.add_argument('--surround', help='Add E-AC3 surround-sound audio track',
+        ap.add_argument('--surround',
+                        help='Add E-AC3 surround-sound audio track',
                         action="store_true")
-        ap.add_argument('--font', help='Truetype font file to use to show bitrate', type=str,
-                        dest='font', default=None)
-        ap.add_argument('--frag', help='Fragment duration (in seconds)', type=float,
-                        dest='segment_duration', default=4)
+        ap.add_argument('--font',
+                        help='Truetype font file to use to show bitrate',
+                        type=str, dest='font', default=None)
+        ap.add_argument('--frag', help='Fragment duration (in seconds)',
+                        type=float, dest='segment_duration', default=4)
         ap.add_argument('--fps', help='Frames per second (0=auto)', type=int,
                         dest='framerate', default=0)
-        ap.add_argument('--input', '-i', help='Input audio/video file', required=True,
-                        dest='source')
+        ap.add_argument('--max-bitrate',
+                        help='Maximum bitrate (Kbps) (0=all bitrates)',
+                        type=int, dest='max_bitrate', default=0)
+        ap.add_argument('--input', '-i', help='Input audio/video file',
+                        required=True, dest='source')
         ap.add_argument('--kid', help='Key ID ("random" = auto generate KID)', nargs="*")
         ap.add_argument('--key', help='Encryption Key', nargs="*")
         ap.add_argument('-v', '--verbose', help='Verbose mode', action="store_true")
