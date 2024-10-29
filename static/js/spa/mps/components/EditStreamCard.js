@@ -1,5 +1,5 @@
 import { html } from 'htm/preact';
-import { useCallback, useContext, useEffect, useMemo, useState } from 'preact/hooks';
+import { useCallback, useContext } from 'preact/hooks';
 import { useSignal, useComputed } from "@preact/signals";
 import { Link } from "wouter-preact";
 import { navigate } from "wouter/use-browser-location";
@@ -12,13 +12,12 @@ import { PageStateContext, validateModel } from '../state.js';
 import { EndpointContext, urlFor } from '../../endpoints.js';
 
 function FormRow({className="", name, label, text, children, error}) {
-  const htmlFor = `field-${name}`;
   const textDiv = text ? html`<div class="col-3 form-text">${ text }</div>` : null;
   const errDiv = error ? html`<div class="invalid-feedback">${error}</div>` : null;
 
   return html`
 <div class="row mb-3 form-group ${className}">
-  <label class="col-2 col-form-label" for="field-${name}">${ label }:</label>
+  <label class="col-2 col-form-label" htmlFor="field-${name}">${ label }:</label>
   <div class="${text ? 'col-7' : 'col-10'}">${ children }</div>
 ${ textDiv }${ errDiv }
 </div>
@@ -34,7 +33,7 @@ function TextInputRow({name, label, text, error, value, onInput}) {
 
 function EditStreamForm({name}) {
   const apiRequests = useContext(EndpointContext);
-  const { model, allStreams, modified } = useContext(PageStateContext);
+  const { model, modified } = useContext(PageStateContext);
   const { messages } = useContext(AppStateContext);
   const abortController = useSignal(new AbortController());
   const cancelUrl = urlFor.listMps();
@@ -70,36 +69,6 @@ function EditStreamForm({name}) {
       title: ev.target.value,
     };
   }, [model]);
-
-  const addPeriod = useCallback((ev) => {
-    let index = model.value.periods.length + 1;
-    let newPid = `p${index}`;
-
-    while(model.value.periods.some(p => p.pid === newPid)) {
-      index += 1;
-      newPid = `p${index}`;
-    }
-
-    const ordering = 1 + model.value.periods.reduce(
-      (a, c) => Math.max(a, c.ordering), 0);
-
-    model.value = {
-      ...model.value,
-      periods: [
-        ...model.value.periods,
-        {
-          pid: newPid,
-          pk: newPid,
-          'new': true,
-          ordering,
-          stream: allStreams.value[0].pk,
-          start: '',
-          duration: '',
-          tracks: {},
-        },
-      ],
-    };
-  }, [allStreams, model]);
 
   const saveChanges = useCallback(async () => {
     const { signal } = abortController.value;
@@ -145,7 +114,7 @@ function EditStreamForm({name}) {
     } catch(err) {
       appendMessage(messages, `${err}`, 'warning');
     }
-  }, [model]);
+  }, [abortController.value, apiRequests, messages, model, modified, name]);
 
   if (!model.value) {
     return html`<h3>Fetching data for stream "${ name }"...</h3>`;
@@ -162,7 +131,6 @@ function EditStreamForm({name}) {
     <${PeriodsTable} errors=${errors} />
   </${FormRow}>
   <div class="btn-toolbar">
-    <button class="btn btn-primary btn-sm m-2" onClick=${addPeriod} >Add a Period</button>
     <button class="btn btn-success btn-sm m-2" disabled=${disableSave.value}
       onClick=${saveChanges} >${ saveChangesTitle }</button>
     <${Link} class="btn btn-danger btn-sm m-2" to=${ cancelUrl }>Cancel</${Link}>

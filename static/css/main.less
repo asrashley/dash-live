@@ -893,3 +893,20 @@ footer {
         font-size: 0.9rem;
     }
 }
+
+li[dragging] {
+  opacity: 0.4;
+  transition: opacity 1ms ease;
+}
+
+.dragging-target-start {
+  border-top: 2px solid royalblue;
+}
+
+.dragging-target-end {
+  border-bottom: 2px solid royalblue;
+}
+
+li:hover::before {
+  opacity: 0.5;
+}

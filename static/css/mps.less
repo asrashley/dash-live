@@ -1,27 +1,56 @@
 #edit_mps_form {
-    .period-table {
-        .period-ordering {
-            > input {
-                text-align: right;
-            }
-            text-align: right;
-            width: 6em;
-        }
-        .period-id {
-            width: 10em;
-        }
-        .period-stream {
-            width: 25em;
-        }
-        .period-duration, .period-start {
-            > input {
-                text-align: right;
-            }
-            width: 10em;
-        }
-        .period-tracks {
-          text-align: center;
-          width: 7em;
-        }
+  .period-table {
+    padding: 2px 4px;
+
+    .table-head {
+      margin: 0;
+
+      & > .col {
+        font-size: 1.3rem;
+        text-align: center;
+      }
     }
+
+    & > ul {
+      padding-left: 0;
+    }
+    & > ul > .row {
+      margin: 1px 2px;
+    }
+
+    .period-ordering {
+      flex-basis: 3rem;
+      flex-grow: 1;
+    }
+
+    .period-id {
+      flex-basis: 8rem;
+      flex-grow: 4;
+    }
+
+    .period-stream {
+      flex-basis: 15rem;
+      flex-grow: 8;
+    }
+
+    .period-duration,
+    .period-start {
+      > input {
+        text-align: right;
+      }
+      flex-basis: 10rem;
+      flex-grow: 2;
+    }
+
+    .period-tracks {
+      flex-basis: 7rem;
+      flex-grow: 4;
+      text-align: center;
+    }
+  }
+}
+
+.icon {
+  height: 1.25em;
+  width: 1.25em;
 }
