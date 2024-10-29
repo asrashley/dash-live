@@ -39,17 +39,15 @@ function EditStreamForm({name}) {
   const cancelUrl = routeMap.listMps.url();
   const saveChangesTitle = useComputed(() => {
     if (!model.value.pk) {
-      return 'Add new stream';
+      return 'Save new stream';
     }
     return 'Save changes';
   });
   const errors = useComputed(() => validateModel(model.value));
   const disableSave = useComputed(() => {
     if (Object.keys(errors.value).length > 0) {
-      console.log('has errors');
       return true;
     }
-    console.log(`model.value.pk ${model.value.pk}`);
     if (model.value.pk === null) {
       return false;
     }
