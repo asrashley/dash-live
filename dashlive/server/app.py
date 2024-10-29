@@ -120,6 +120,7 @@ def create_app(config: JsonObject | None = None,
     app.config.update(
         BLOB_FOLDER=str(folders.blob_folder),
         SQLALCHEMY_DATABASE_URI=database_uri,
+        STATIC_FOLDER=str(folders.static_folder),
         UPLOAD_FOLDER=str(folders.upload_folder),
         DASH=dash_settings,
         SECRET_KEY=secrets.token_urlsafe(16),

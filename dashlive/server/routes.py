@@ -296,6 +296,10 @@ routes = {
         r'/libs/content_roles.js',
         handler='esm.ContentRoles',
         title='MPEG content roles'),
+    "spa-ui": Route(
+        r'/libs/ui.js',
+        handler='esm.UiComponents',
+        title='UI Components for SPA'),
     "esm-wrapper": Route(
         r'/libs/<filename>',
         handler='esm.ModuleWrapper',

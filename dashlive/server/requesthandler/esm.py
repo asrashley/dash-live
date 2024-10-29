@@ -19,6 +19,7 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+from pathlib import Path
 import re
 
 import flask
@@ -92,7 +93,7 @@ class RouteMap(MethodView):
         return {
             "template": flask.url_for('static', filename=filename) + r"{filename}",
             "re": (
-                flask.url_for('static', filename=filename).replace('/', '\/') +
+                flask.url_for('static', filename=filename).replace('/', r'\/') +
                 r'(?<filename>[\w_.-]+)'
             ),
             "title": f"static {title}",
@@ -111,4 +112,23 @@ class ContentRoles(MethodView):
         for role in ContentRole.all():
             roles[role.name.lower()] = [use.name.lower() for use in role.usage()]
         body = flask.render_template('esm/content_roles.js', roles=roles)
+        return flask.make_response((body, 200, headers))
+
+class UiComponents(MethodView):
+    """
+    Returns a bundle of all of the UI components
+    """
+    def get(self) -> flask.Response:
+        headers = {
+            'Content-Type': 'application/javascript',
+        }
+        static_dir: Path = Path(flask.current_app.config['STATIC_FOLDER'])
+        ui_folder = static_dir / "js" / "spa" / "components"
+        js_files: list[str] = []
+        for js in ui_folder.glob("*.js"):
+            url: str = flask.url_for(
+                'static', filename=f'js/spa/components/{js.name}')
+            js_files.append(f"export * from '{url}';")
+        body: str = '\n'.join(js_files)
+        headers['Content-Length'] = len(body)
         return flask.make_response((body, 200, headers))
