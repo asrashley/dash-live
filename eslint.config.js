@@ -71,9 +71,12 @@ export default [
           "error",
           {
             ignore: [
+              "^@dashlive/ui",
               "^/libs/default-options.js$",
+              "^/libs/routemap.js$",
+              "^/libs/content_roles.js$",
               "socket.io",
-              "^wouter/use-browser-location"
+              "^wouter-preact/use-browser-location"
             ],
           },
         ],
