@@ -74,7 +74,6 @@ export function validatePeriod(period) {
   if (Object.keys(period.tracks).length === 0) {
     errors.tracks = 'At least one track is requred';
   }
-  console.dir(errors);
   return errors;
 }
 
@@ -96,7 +95,6 @@ export function validateModel(model) {
       errors[`periods__${prd.pk}`] = err;
     }
   });
-  console.dir(errors);
   return errors;
 }
 
