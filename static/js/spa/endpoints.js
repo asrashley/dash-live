@@ -1,20 +1,6 @@
 import { createContext } from 'preact';
 import { routeMap } from '/libs/routemap.js';
 
-export function formatUrl(urlTemplate, args) {
-  const re = /{([a-z_]+)}/g;
-
-  const replacer = (match, name, ...rest) => {
-    return args[name] ?? match;
-  };
-
-  return urlTemplate.replaceAll(re, replacer);
-}
-
-export const urlFor = Object.fromEntries(
-  Object.entries(routeMap).map(([name, {template}]) => [
-    name, (args) => formatUrl(template, args)]));
-
 class CsrfTokenStore {
   constructor(token) {
     this.token = token;
@@ -64,7 +50,7 @@ export class ApiRequests {
 
   getAllStreams({ withDetails = false, ...options} = {}) {
     const query = withDetails ? new URLSearchParams({details:1}) : undefined;
-    return this.sendApiRequest(urlFor.listStreams(), {
+    return this.sendApiRequest(routeMap.listStreams.url(), {
       service: 'streams',
       query,
       ...options,
@@ -72,21 +58,21 @@ export class ApiRequests {
   }
 
   getAllMultiPeriodStreams(options) {
-    return this.sendApiRequest(urlFor.listMps(), {
+    return this.sendApiRequest(routeMap.listMps.url(), {
       service: 'streams',
       ...options,
     });
   }
 
   getMultiPeriodStream(mps_name, options) {
-    return this.sendApiRequest(urlFor.editMps({mps_name}), {
+    return this.sendApiRequest(routeMap.editMps.url({mps_name}), {
       service: 'streams',
       ...options,
     });
   }
 
   addMultiPeriodStream(data, options) {
-    return this.sendApiRequest(urlFor.addMps(), {
+    return this.sendApiRequest(routeMap.addMps.url(), {
       ...options,
       service: 'streams',
       body: JSON.stringify(data),
@@ -95,7 +81,7 @@ export class ApiRequests {
   }
 
   modifyMultiPeriodStream(mps_name, data, options) {
-    return this.sendApiRequest(urlFor.editMps({mps_name}), {
+    return this.sendApiRequest(routeMap.editMps.url({mps_name}), {
       ...options,
       service: 'streams',
       body: JSON.stringify(data),
