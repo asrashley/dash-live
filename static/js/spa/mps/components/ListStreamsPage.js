@@ -2,10 +2,11 @@ import { html } from 'htm/preact';
 import { Link } from 'wouter-preact';
 import { useEffect, useState, useContext } from 'preact/hooks'
 
-import { EndpointContext, urlFor } from '../../endpoints.js';
+import { EndpointContext } from '../../endpoints.js';
+import { routeMap } from '/libs/routemap.js';
 
 function TableRow({name, title, periods, duration}) {
-  const url = urlFor.editMps({mps_name: name});
+  const url = routeMap.editMps.url({mps_name: name});
   return html`
     <tr>
       <td class="name text-center">
@@ -67,7 +68,7 @@ export function ListStreamsPage() {
   </table>
   <div class="btn-toolbar">
     <${Link} class="btn btn-primary btn-sm m-2"
-      href=${urlFor.addMps()} >Add a Stream</${Link}>
+      href=${routeMap.addMps.url()} >Add a Stream</${Link}>
   </div>
 </div>
 `;

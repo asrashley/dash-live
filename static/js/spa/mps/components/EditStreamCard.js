@@ -4,12 +4,12 @@ import { useSignal, useComputed } from "@preact/signals";
 import { Link } from "wouter-preact";
 import { navigate } from "wouter/use-browser-location";
 
-import { Card } from '../../components/Card.js';
-import { TextInput } from '../../components/TextInput.js';
+import { Card, TextInput } from '@dashlive/ui';
 import { PeriodsTable } from './PeriodsTable.js';
 import { AppStateContext, appendMessage } from '../../appState.js';
 import { PageStateContext, validateModel } from '../state.js';
-import { EndpointContext, urlFor } from '../../endpoints.js';
+import { EndpointContext } from '../../endpoints.js';
+import { routeMap } from '/libs/routemap.js';
 
 function FormRow({className="", name, label, text, children, error}) {
   const textDiv = text ? html`<div class="col-3 form-text">${ text }</div>` : null;
@@ -36,7 +36,7 @@ function EditStreamForm({name}) {
   const { model, modified } = useContext(PageStateContext);
   const { messages } = useContext(AppStateContext);
   const abortController = useSignal(new AbortController());
-  const cancelUrl = urlFor.listMps();
+  const cancelUrl = routeMap.listMps.url();
   const saveChangesTitle = useComputed(() => {
     if (!model.value.pk) {
       return 'Add new stream';
@@ -107,7 +107,7 @@ function EditStreamForm({name}) {
         modified.value = false;
         model.value = result.model;
         if (data.pk === null) {
-          const href = urlFor.listMps();
+          const href = routeMap.listMps.url();
           navigate(href, {replace: true});
         }
       }
