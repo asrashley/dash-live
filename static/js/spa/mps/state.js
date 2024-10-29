@@ -48,6 +48,20 @@ export function modifyModel({model, periodPk, track, period = {}}) {
   };
 }
 
+export function setOrdering(model, periodPks) {
+  const periods = model.periods.map(p => {
+    return {
+      ...p,
+      ordering: periodPks.indexOf(p.pk) + 1,
+    };
+  });
+  periods.sort((a, b) => a.ordering - b.ordering);
+  return {
+    ...model,
+    periods,
+  };
+}
+
 export function validatePeriod(period) {
   const errors = {};
 
