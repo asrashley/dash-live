@@ -112,7 +112,6 @@ def process_period(mp_stream: models.MultiPeriodStream,
         period.duration = from_isodatetime(data['duration'])
     if new_period:
         models.db.session.add(period)
-        models.db.session.flush()
     unused_tracks: set[int] = set()
     for trk in period.adaptation_sets:
         unused_tracks.add(trk.pk)
@@ -130,14 +129,14 @@ def process_period(mp_stream: models.MultiPeriodStream,
                 name='application')
             assert content_type is not None
             adp = models.AdaptationSet(
-                period_pk=period.pk, track_id=track_id, role=role,
+                period=period, track_id=track_id, role=role,
                 content_type=content_type)
             stmt = models.db.select(models.MediaFile).filter(
                 models.MediaFile.stream_pk == stream.pk,
                 models.MediaFile.track_id == track_id,
                 models.MediaFile.content_type is not None)
             for mf in models.db.session.execute(stmt).scalars():
-                ct = models.ContentType.get(name=mf.content_type)
+                ct: models.ContentType | None = models.ContentType.get(name=mf.content_type)
                 if ct is not None:
                     adp.content_type = ct
                 break
@@ -434,12 +433,14 @@ class EditStream(HTMLHandlerBase):
         current_mps.name = data['name']
         current_mps.title = data['title']
         errors: list[str] = []
-        for period in data['periods']:
-            err = process_period(current_mps, period)
-            if err is not None:
-                errors.push(err)
-        if not errors:
-            models.db.session.commit()
+        with models.db.session.no_autoflush:
+            for period in data['periods']:
+                err: str | None = process_period(current_mps, period)
+                if err is not None:
+                    errors.push(err)
+            if not errors:
+                models.db.session.flush()
+                models.db.session.commit()
         return jsonify({
             'success': errors == [],
             'errors': errors,
