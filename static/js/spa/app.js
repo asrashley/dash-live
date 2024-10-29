@@ -4,8 +4,7 @@ import { Route, Switch } from "wouter-preact";
 
 import { routeMap } from '/libs/routemap.js';
 
-import { BreadCrumbs } from './components/BreadCrumbs.js';
-import { MessagesPanel } from './components/MessagesPanel.js';
+import { BreadCrumbs, MessagesPanel } from '@dashlive/ui';
 import { ListStreamsPage } from './mps/components/ListStreamsPage.js';
 import { AddStreamPage } from './mps/components/AddStreamPage.js';
 import { EditStreamPage } from './mps/components/EditStreamPage.js';

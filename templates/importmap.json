@@ -1,5 +1,6 @@
 {
   "imports": {
+    "@dashlive/ui": "/libs/ui.js",
     "@preact/signals": "{{ js_url('prod/preact/signals/signals.module.js' )}}",
     "@preact/signals-core": "{{ js_url('prod/preact/signals/signals-core.module.js' )}}",
     "preact": "{{ js_url('prod/preact/preact.module.js' )}}",
