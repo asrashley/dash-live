@@ -92,20 +92,18 @@ class ListStreams(HTMLHandlerBase):
                     k.toJSON(pure=True, exclude=exclude) for k in keys
                 ],
                 'csrf_tokens': csrf_tokens,
-                'streams': [
-                    s.to_dict(with_collections=True) for s in streams
-                ],
+                'streams': [],
             }
-            if flask.request.args.get('details', '0') == '1':
-                for stream in result['streams']:
+            for stream in streams:
+                jss: JsonObject = stream.to_dict(with_collections=True)
+                jss['duration'] = stream.duration()
+                if flask.request.args.get('details', '0') == '1':
                     media_files: list[JsonObject] = []
-                    for pk in stream['media_files']:
-                        mf = models.MediaFile.get(pk=pk)
-                        if mf is None:
-                            continue
+                    for mf in stream.media_files:
                         media_files.append(mf.to_dict(
                             with_collections=False, exclude={'rep', 'blob'}))
-                    stream['media_files'] = media_files
+                    jss['media_files'] = media_files
+                result['streams'].append(jss)
             return jsonify(result)
 
         context = cast(ListStreamsTemplateContext, self.create_context(
