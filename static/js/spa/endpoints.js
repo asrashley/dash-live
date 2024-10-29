@@ -92,6 +92,7 @@ export class ApiRequests {
   async sendApiRequest(url, options) {
     const { authorization, body, service, signal, method='GET' } = options;
     let { query } = options;
+    let usedAccessToken = false;
     if (this.csrfTokens[service] === undefined) {
       throw new Error(`Unknown service "${service}"`);
     }
@@ -106,6 +107,7 @@ export class ApiRequests {
       }
       if (this.accessToken) {
         headers.Authorization = `Bearer ${this.accessToken.jti}`;
+        usedAccessToken = true;
       } else {
         const token = await this.csrfTokens[service].getToken();
         if (query === undefined) {
@@ -121,22 +123,51 @@ export class ApiRequests {
     if (signal && signal.aborted) {
       throw signal.reason;
     }
-    const fetchResult = await fetch(url, {
-      cache: 'no-cache',
-      credentials: 'same-origin',
-      mode: 'same-origin',
+    const cache = 'no-cache';
+    const credentials = 'same-origin';
+    const mode = 'same-origin';
+    let fetchResult = await fetch(url, {
+      cache,
+      credentials,
+      mode,
       body,
       headers,
       method,
       signal,
     });
+    if (signal && signal.aborted) {
+      throw signal.reason;
+    }
+    if (fetchResult.status === 401 && usedAccessToken && this.refreshToken) {
+      const { jti } = this.accessToken;
+      await this.getAccessToken(signal);
+      if (signal && signal.aborted) {
+        throw signal.reason;
+      }
+      if (!this.accessToken?.jti || jti === this.accessToken.jti) {
+        throw new Error('Failed to refresh access token');
+      }
+      headers.Authorization = `Bearer ${this.accessToken.jti}`;
+      fetchResult = await fetch(url, {
+          cache,
+          credentials,
+          mode,
+          body,
+          headers,
+          method,
+          signal,
+        });
+    }
     if (!fetchResult.ok) {
-      throw new Error(`Failed to fetch ${ url }: ${ fetchResult.status }`);
+      throw new Error(`${ url }: ${ fetchResult.status }`);
     }
     if (signal && signal.aborted) {
       throw signal.reason;
     }
     const data = await fetchResult.json();
+    if (signal && signal.aborted) {
+      throw signal.reason;
+    }
     if (typeof(data?.csrfTokens) === "object") {
       this.updateCsrfTokens(data.csrfTokens);
     } else if(typeof(data?.csrf_tokens) === "object") {
@@ -166,13 +197,13 @@ export class ApiRequests {
       authorization: this.refreshToken.jti,
       signal,
     };
-    const data = await this.sendApiRequest(routeMap.getAccessToken, {}, options);
+    const data = await this.sendApiRequest(routeMap.getAccessToken.url(), options);
     const { accessToken } = data ?? {};
     if (accessToken) {
       this.accessToken = accessToken;
     }
   }
-};
+}
 
 export function routeFromUrl(url) {
   for (const [name, route] of Object.entries(routeMap)) {
