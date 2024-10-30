@@ -62,6 +62,45 @@ export function setOrdering(model, periodPks) {
   };
 }
 
+export function addPeriod(model) {
+    let index = model.periods.length + 1;
+    let newPid = `p${index}`;
+
+    while(model.periods.some(p => p.pid === newPid)) {
+      index += 1;
+      newPid = `p${index}`;
+    }
+
+    const ordering = 1 + model.periods.reduce(
+      (a, c) => Math.max(a, c.ordering), 0);
+
+    const newPeriod = {
+      pid: newPid,
+      pk: newPid,
+      new: true,
+      ordering,
+      stream: '',
+      start: '',
+      duration: '',
+      tracks: {},
+    };
+
+    return {
+      ...model,
+      periods: [
+        ...model.periods,
+        newPeriod,
+      ],
+    };
+}
+
+export function removePeriod(model, pk) {
+  return {
+    ...model,
+    periods: model.periods.filter(prd => prd.pk !== pk),
+  };
+}
+
 export function validatePeriod(period) {
   const errors = {};
 
