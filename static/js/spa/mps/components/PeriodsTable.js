@@ -4,7 +4,8 @@ import { useComputed } from '@preact/signals';
 
 import {
   Alert,
-  IconButton,
+  DropDownMenu,
+  Icon,
   Sortable,
   TextInput,
   TimeDeltaInput
@@ -12,18 +13,28 @@ import {
 import { AppStateContext } from '../../appState.js';
 import {
   PageStateContext,
+  addPeriod,
+  removePeriod,
   modifyModel,
   setOrdering,
   validatePeriod
 } from '../state.js';
 
-function doNothing(ev) {
-  ev.preventDefault();
-  return false;
-}
+function PeriodOrder({addPeriod, deletePeriod}) {
+  const menu = [
+    {
+      title: 'Add another Period',
+      onClick: addPeriod,
+    },
+    {
+      title: 'Delete Period',
+      onClick: deletePeriod,
+    },
+  ];
 
-function PeriodOrder() {
-  return html`<${IconButton} onClick=${doNothing} name="three-dots" className="text-center" />`;
+  return html`<${DropDownMenu} linkClass="" menu=${menu}>
+  <${Icon} name="three-dots" />
+  <//>`
 }
 
 function StreamSelect({value, onChange, name}) {
@@ -47,7 +58,7 @@ function StreamSelect({value, onChange, name}) {
 
 const rowColours = ['bg-secondary-subtle', 'bg-primary-subtle'];
 
-function PeriodRow({className="", index, item: period, ...props}) {
+function PeriodRow({className="", index, item: period, addPeriod, ...props}) {
   const { pid, pk, stream, start, duration, tracks } = period;
   const { model, streamsMap, modified } = useContext(PageStateContext);
   const { dialog }  = useContext(AppStateContext);
@@ -111,12 +122,16 @@ function PeriodRow({className="", index, item: period, ...props}) {
     modified.value = true;
   }, [model, modified, pk, streamsMap.value])
 
+  const deletePeriodBtn = useCallback(() => {
+    model.value = removePeriod(model.value, pk);
+  }, [model, pk]);
+
   const clsNames = `row mt-1 p-1 ${rowColours[index % rowColours.length]} ${className}`;
 
   return html`
     <li class="${clsNames}" ...${props}>
       <div class="col period-ordering">
-        <${PeriodOrder} />
+        <${PeriodOrder} addPeriod=${addPeriod} deletePeriod=${deletePeriodBtn}/>
       </div>
       <div class="col period-id">
         <${TextInput} value=${pid} name="pid_${pk}" onInput=${setPid}
@@ -158,39 +173,16 @@ export function PeriodsTable({errors}) {
     modified.value = true;
   }, [model, modified]);
 
-  const addPeriod = useCallback((ev) => {
-    let index = model.value.periods.length + 1;
-    let newPid = `p${index}`;
-
+  const addPeriodBtn = useCallback((ev) => {
     ev.preventDefault();
+    console.log('add period');
+    model.value = addPeriod(model.value);
+    modified.value = true;
+  }, [model, modified]);
 
-    while(model.value.periods.some(p => p.pid === newPid)) {
-      index += 1;
-      newPid = `p${index}`;
-    }
-
-    const ordering = 1 + model.value.periods.reduce(
-      (a, c) => Math.max(a, c.ordering), 0);
-
-    const newPeriod = {
-      pid: newPid,
-      pk: newPid,
-      new: true,
-      ordering,
-      stream: '',
-      start: '',
-      duration: '',
-      tracks: {},
-    };
-
-    model.value = {
-      ...model.value,
-      periods: [
-        ...model.value.periods,
-        newPeriod,
-      ],
-    };
-  }, [model]);
+  const renderItem = (props) => {
+    return html`<${PeriodRow} ...${props} addPeriod=${addPeriodBtn} />`;
+  }
 
   return html`
     <div class="period-table border">
@@ -202,9 +194,9 @@ export function PeriodsTable({errors}) {
           <div class="col period-duration">Duration</div>
           <div class="col period-tracks">Tracks</div>
       </div>
-      <${Sortable} Component="ul" items=${periods} setItems=${setPeriodOrder} RenderItem=${PeriodRow} dataKey="pk" />
+      <${Sortable} Component="ul" items=${periods} setItems=${setPeriodOrder} RenderItem=${renderItem} dataKey="pk" />
       <div class="btn-toolbar">
-        <button class="btn btn-primary btn-sm m-2" onClick=${addPeriod} >Add a Period</button>
+        <button class="btn btn-primary btn-sm m-2" onClick=${addPeriodBtn} >Add a Period</button>
       </div>
     </div>
     ${ errorsDiv.value }`;
