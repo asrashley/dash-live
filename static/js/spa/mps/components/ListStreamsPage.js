@@ -2,6 +2,7 @@ import { html } from 'htm/preact';
 import { Link } from 'wouter-preact';
 import { useEffect, useState, useContext } from 'preact/hooks'
 
+import { AppStateContext } from '../../appState.js';
 import { EndpointContext } from '../../endpoints.js';
 import { routeMap } from '/libs/routemap.js';
 
@@ -26,9 +27,11 @@ function TableRow({name, title, periods, duration}) {
 }
 
 export function ListStreamsPage() {
+  const { user } = useContext(AppStateContext);
   const [streams, setStreams] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const apiRequests = useContext(EndpointContext);
+  const canModify = user.value.permissions.media === true;
 
   useEffect(() => {
     const controller = new AbortController();
@@ -67,8 +70,8 @@ export function ListStreamsPage() {
     </tbody>
   </table>
   <div class="btn-toolbar">
-    <${Link} class="btn btn-primary btn-sm m-2"
-      href=${routeMap.addMps.url()} >Add a Stream</${Link}>
+    ${canModify ? html`<${Link} class="btn btn-primary btn-sm m-2"
+      href=${routeMap.addMps.url()} >Add a Stream</${Link}>` : null }
   </div>
 </div>
 `;

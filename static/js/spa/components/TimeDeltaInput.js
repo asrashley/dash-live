@@ -25,7 +25,7 @@ function valueToIsoDuration(value) {
   return Temporal.Duration.from({hours, minutes, seconds}).toString();
 }
 
-export function TimeDeltaInput({value, name, error, min="00:00:00", onChange}) {
+export function TimeDeltaInput({value, name, error, min="00:00:00", onChange, disabled}) {
   const changeHandler = useCallback((ev) => {
     const dur = valueToIsoDuration(ev.target.value);
     onChange({
@@ -38,7 +38,8 @@ export function TimeDeltaInput({value, name, error, min="00:00:00", onChange}) {
     });
   }, [name, onChange]);
   const timeValue = useMemo(() => isoDurationToValue(value), [value]);
-  const className = `form-control ${error ? "is-invalid" : "is-valid"}`;
-  return html`<input type="time" class="${className}" value=${timeValue} 
-    name=${name} step="1" min="${min}" onInput=${changeHandler} />`;
+  const className = `form-control ${disabled ? "" : error ? "is-invalid" : "is-valid"}`;
+  return html`<input type="time" class="${className}" value=${timeValue}
+    name=${name} step="1" min="${min}" onInput=${changeHandler}
+    disabled=${disabled} />`;
 }

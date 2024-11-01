@@ -4,52 +4,17 @@ import { useSignal, useComputed } from "@preact/signals";
 import { Link } from "wouter-preact";
 import { navigate } from "wouter/use-browser-location";
 
-import { Card, TextInput } from "@dashlive/ui";
+import { Card, FormRow, TextInputRow } from "@dashlive/ui";
 import { PeriodsTable } from "./PeriodsTable.js";
 import { AppStateContext, appendMessage } from "../../appState.js";
 import { PageStateContext, validateModel } from "../state.js";
 import { EndpointContext } from "../../endpoints.js";
 import { routeMap } from "/libs/routemap.js";
 
-function FormRow({ className = "", name, label, text, children, error }) {
-  const textDiv = text
-    ? html`<div class="col-3 form-text">${text}</div>`
-    : null;
-  const errDiv = error
-    ? html`<div class="invalid-feedback">${error}</div>`
-    : null;
-
-  return html`
-    <div class="row mb-3 form-group ${className}">
-      <label class="col-2 col-form-label" htmlFor="field-${name}"
-        >${label}:</label
-      >
-      <div class="${text ? "col-7" : "col-10"}">${children}</div>
-      ${textDiv}${errDiv}
-    </div>
-  `;
-}
-
-function TextInputRow({ name, label, text, error, value, onInput }) {
-  return html`
-<${FormRow} name=${name} label=${label} text=${text} error=${error} >
-  <${TextInput} name="${name}" value=${value} onInput=${onInput} required />
-</${FormRow}>`;
-}
-
-function EditStreamForm({ name }) {
-  const apiRequests = useContext(EndpointContext);
-  const { model, modified, allStreams } = useContext(PageStateContext);
-  const { dialog, messages } = useContext(AppStateContext);
-  const abortController = useSignal(new AbortController());
+function ButtonToolbar({errors, saveChanges, deleteStream}) {
+  const { user } = useContext(AppStateContext);
+  const { model, modified } = useContext(PageStateContext);
   const cancelUrl = routeMap.listMps.url();
-  const saveChangesTitle = useComputed(() => {
-    if (!model.value.pk) {
-      return "Save new stream";
-    }
-    return "Save changes";
-  });
-  const errors = useComputed(() => validateModel(model.value));
   const disableSave = useComputed(() => {
     if (Object.keys(errors.value).length > 0) {
       return true;
@@ -59,9 +24,37 @@ function EditStreamForm({ name }) {
     }
     return modified.value !== true;
   });
+  const saveChangesTitle = useComputed(() => {
+    if (!model.value.pk) {
+      return "Save new stream";
+    }
+    return "Save changes";
+  });
+
+  if (!user.value.permissions.media) {
+    return html`<div class="btn-toolbar">
+      <${Link} class="btn btn-primary m-2" to=${cancelUrl}>Back</${Link}></div>`;
+  }
+
+  return html`
+  <div class="btn-toolbar">
+    <button class="btn btn-success m-2" disabled=${disableSave.value}
+      onClick=${saveChanges} >${saveChangesTitle}</button>
+    <button class="btn btn-danger m-2" onClick=${deleteStream}>Delete</button>
+    <${Link} class="btn btn-primary m-2" to=${cancelUrl}>Back</${Link}>
+  </div>`;
+}
+
+function EditStreamForm({ name }) {
+  const apiRequests = useContext(EndpointContext);
+  const { model, modified, allStreams } = useContext(PageStateContext);
+  const { dialog, messages, user } = useContext(AppStateContext);
+  const abortController = useSignal(new AbortController());
+  const errors = useComputed(() => validateModel(model.value));
   const deleteConfirmed = useComputed(
     () => dialog.value?.confirmDelete?.confirmed === true
   );
+  const canModify = useComputed(() => user.value.permissions.media);
 
   const setName = useCallback(
     (ev) => {
@@ -178,30 +171,35 @@ function EditStreamForm({ name }) {
     return html`<h3>Fetching data for stream "${name}"...</h3>`;
   }
 
-  return html`<div class="was-validated">
+  return html`<div class="${ canModify.value ? 'was-validated' : ''}">
   <${TextInputRow} name="name" label="Name" value=${model.value.name}
      text="Unique name for this stream" onInput=${setName}
-     error=${errors.value.name} />
+     error=${errors.value.name} disabled=${!canModify.value} />
   <${TextInputRow} name="title" label="Title" value=${model.value.title}
     text="Title for this stream" onInput=${setTitle}
-    error=${errors.value.title} />
-  <${FormRow} className="has-validation" name="periods" label="Periods">
+    error=${errors.value.title} disabled=${!canModify.value} />
+  <${FormRow} className="${ canModify.value ? 'has-validation' : ''}"
+    name="periods" label="Periods">
     <${PeriodsTable} errors=${errors} />
   </${FormRow}>
-  <div class="btn-toolbar">
-    <button class="btn btn-success m-2" disabled=${disableSave.value}
-      onClick=${saveChanges} >${saveChangesTitle}</button>
-    <button class="btn btn-danger m-2" onClick=${deleteStream}>Delete</button>
-    <${Link} class="btn btn-primary m-2" to=${cancelUrl}>Cancel</${Link}>
-  </div>
+  <${ButtonToolbar} errors=${errors}
+    saveChanges=${saveChanges} deleteStream=${deleteStream} />
 </div>`;
+}
+
+function Header({newStream, name}) {
+  const { user } = useContext(AppStateContext);
+  if (newStream) {
+    return html`<h2>Add new Multi-Period stream</h2>`;
+  }
+  const {media} = user.value.permissions;
+  return html`<h2>${media ? 'Editing' : ''} Multi-Period stream "${name}"</h2>`;
 }
 
 export function EditStreamCard({ name, newStream }) {
   const { allStreams, model } = useContext(PageStateContext);
-  const header = newStream
-    ? html`<h2>Add new Multi-Period stream</h2>`
-    : html`<h2>Editing Multi-Period stream "${name}"</h2>`;
+  const header = html`<${Header} name=${name} newStream=${newStream} />`;
+
   return html`
 <${Card} header=${header} id="edit_mps_form">
   <${EditStreamForm} model=${model} name=${name} allStreams=${allStreams} />
