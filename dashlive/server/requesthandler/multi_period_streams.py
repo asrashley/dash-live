@@ -307,6 +307,13 @@ class EditStream(HTMLHandlerBase):
             })
         return self.handle_spa_data(mps_name, csrf_token)
 
+    @jwt_required()
+    def delete(self, mps_name: str) -> flask.Response:
+        logging.info('Deleting MultiPeriodStream: %s', mps_name)
+        models.db.session.delete(current_mps)
+        models.db.session.commit()
+        return jsonify_no_content(204)
+
     def handle_spa_data(self, name: str, csrf_token: str) -> flask.Response:
         data = flask.request.json
         current_mps.name = data['name']
@@ -328,4 +335,3 @@ class EditStream(HTMLHandlerBase):
             },
             'model': mps_as_dict(current_mps),
         })
-
