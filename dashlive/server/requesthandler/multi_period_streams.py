@@ -1,17 +1,3 @@
-############################################################################
-#
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
 #############################################################################
 #
 #  Project Name        :    Simulated MPEG DASH service
@@ -24,7 +10,6 @@ import logging
 from typing import cast, NamedTuple, TypedDict
 
 import flask
-from typing_extensions import deprecated
 from flask_jwt_extended import jwt_required
 
 from dashlive.mpeg.dash.content_role import ContentRole
@@ -211,17 +196,7 @@ class AddStream(HTMLHandlerBase):
         """
         GET will be handled by spa_handler
         """
-        # fields = models.MultiPeriodStream().get_fields(**flask.request.args)
-        # return self.generate_form(fields)
         return jsonify_no_content(404)
-
-    def generate_form(self, fields: list[FormInputContext]) -> flask.Response:
-        csrf_key = self.generate_csrf_cookie()
-        csrf_token = self.generate_csrf_token('streams', csrf_key)
-        context = self.create_context(
-            cancel_url=flask.url_for('list-mps'), csrf_token=csrf_token,
-            fields=fields, form_id='add_mps_form')
-        return flask.render_template('mps/add_stream.html', **context)
 
     def put(self) -> flask.Response:
         data: MultiPeriodStreamData = cast(
@@ -291,36 +266,8 @@ class PeriodFormInputs(NamedTuple):
     start: FormInputContext
     duration: FormInputContext
 
-class PeriodFormData:
-    pid: str
-    directory: str
-    stream: models.Stream | None
-    start: datetime.timedelta | None
-    duration: datetime.timedelta | None
-    ordering: int
-
-    def __init__(self, prefix: str, data: dict[str, str]) -> None:
-        self.directory = data[f'{prefix}_stream']
-        self.pid = data[f'{prefix}_pid']
-        self.ordering = int(data[f'{prefix}_ordering'], 10)
-        self.stream = None
-        if self.directory:
-            self.stream = models.Stream.get(directory=self.directory)
-        start = data[f'{prefix}_start']
-        if start == '':
-            self.start = None
-        else:
-            self.start = from_isodatetime(f'PT{start}')
-        duration = data[f'{prefix}_duration']
-        if duration == '':
-            self.duration = None
-        else:
-            self.duration = from_isodatetime(f'PT{duration}')
-
-
 class EditStream(HTMLHandlerBase):
     decorators = [
-        # login_required(permission=models.Group.MEDIA),
         uses_multi_period_stream,
         spa_handler,
     ]
@@ -344,12 +291,7 @@ class EditStream(HTMLHandlerBase):
         }
         return jsonify(result)
 
-    @csrf_token_required(
-        'streams',
-        optional=True,
-        next_url=lambda: flask.url_for(
-            'edit-mps', name=current_mps.name, **flask.request.json))
-    @jwt_required(optional=True)
+    @jwt_required()
     def post(self, mps_name: str) -> flask.Response:
         data = flask.request.json
         if not data:
@@ -363,70 +305,7 @@ class EditStream(HTMLHandlerBase):
                 'errors': errors,
                 'csrf_token': csrf_token,
             })
-        pk: int | None = None
-        try:
-            pk = data['pk']
-        except KeyError as err:
-            logging.waring('Primary key missing from JSON payload: %s', err)
-            return jsonify({
-                'errors': [
-                    "Primary key missing from JSON payload",
-                ],
-                'csrf_token': csrf_token,
-            })
-        spa: bool = data.get('spa', False)
-        if spa and isinstance(pk, int):
-            return self.handle_spa_data(mps_name, csrf_token)
-        return self.handle_form_data(mps_name, csrf_token)
-
-    def handle_form_data(self, name: str, csrf_token: str) -> flask.Response:
-        data = flask.request.json
-        current_mps.name = data['name']
-        current_mps.title = data['title']
-        errors: list[str] = []
-        for period in current_mps.periods:
-            try:
-                pfd = PeriodFormData(f'period_{period.pk}', data)
-                if pfd.stream is not None:
-                    period.stream = pfd.stream
-                period.start = pfd.start
-                period.duration = pfd.duration
-                period.ordering = pfd.ordering
-            except (ValueError, KeyError) as err:
-                logging.warning(
-                    'Invalid form data Period pk=%d: %s', period.pk, err)
-                errors[f'period_{ period.pk }'] = 'Invalid form data'
-        try:
-            num_new_periods: int = int(data['num_new_periods'], 10)
-        except (ValueError, KeyError) as err:
-            logging.warning('Failed to parse num_new_periods field: %s', err)
-            errors['num_new_periods'] = 'Failed to parse num_new_periods'
-        for idx in range(num_new_periods):
-            prefix: str = f'new_period_{idx}'
-            if f'{prefix}_stream' not in data:
-                logging.warning('Form data missing for %s', prefix)
-                continue
-            try:
-                pfd = PeriodFormData(prefix, data)
-                period = models.Period(
-                    stream=pfd.stream, ordering=pfd.ordering, parent=current_mps,
-                    start=pfd.start, duration=pfd.duration, pid=pfd.pid)
-                models.db.session.add(period)
-            except (ValueError, KeyError) as err:
-                logging.warning(
-                    'Invalid form data new Period %d: %s', idx, err)
-                errors[f'new_period_{ idx }'] = 'Invalid form data'
-
-        if not errors:
-            flask.flash(f'Updated multi-period stream "{name}"', 'success')
-            models.db.session.commit()
-        return jsonify({
-            'success': errors == {},
-            'errors': errors,
-            'csrf_token': csrf_token,
-            'next': flask.url_for('list-mps'),
-            **mps_as_dict(current_mps),
-        })
+        return self.handle_spa_data(mps_name, csrf_token)
 
     def handle_spa_data(self, name: str, csrf_token: str) -> flask.Response:
         data = flask.request.json
@@ -450,27 +329,3 @@ class EditStream(HTMLHandlerBase):
             'model': mps_as_dict(current_mps),
         })
 
-    @deprecated("the SPA handler should be used")
-    def generate_form(self) -> flask.Response:
-        fields = current_mps.get_fields(**flask.request.args)
-        csrf_key = self.generate_csrf_cookie()
-        csrf_token = self.generate_csrf_token('streams', csrf_key)
-        periods: dict[int, dict[str, FormInputContext]] = {}
-        for period in current_mps.periods:
-            periods[period.pk] = self.generate_period_fields(period)
-        periods[-1] = self.generate_period_fields(None)
-        context = self.create_context(
-            cancel_url=flask.url_for('list-mps'), csrf_token=csrf_token,
-            model=current_mps, period_fields=periods,
-            fields=fields, form_id='edit_mps_form')
-        return flask.render_template('mps/edit_stream.html', **context)
-
-    @classmethod
-    def generate_period_fields(
-            cls, period: models.Period | None) -> PeriodFormInputs:
-        if period is None:
-            period = models.Period(pk=None, ordering=1000)
-        ordering, pid, start, duration, stream = period.get_fields()
-        return PeriodFormInputs(
-            ordering=ordering, pid=pid, stream=stream, start=start,
-            duration=duration)
