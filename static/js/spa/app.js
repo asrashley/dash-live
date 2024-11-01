@@ -24,9 +24,9 @@ const paths = Object.fromEntries(
   Object.entries(routeMap).map(
     ([name, {template}]) => [name, translateUrlTemplate(template)]));
 
-export function App({tokens}) {
+export function App({tokens, user}) {
   const apiRequests = useMemo(() => new ApiRequests(tokens), [tokens]);
-  const state = useMemo(createAppState, []);
+  const state = useMemo(() => createAppState(user), [user]);
   const { backdrop, messages } = state;
 
   useEffect(() => {

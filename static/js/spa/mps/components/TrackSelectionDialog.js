@@ -8,9 +8,10 @@ import { ModalDialog } from '../../components/ModalDialog.js';
 import { AppStateContext } from '../../appState.js';
 import { PageStateContext, modifyModel } from '../state.js';
 
-function RoleSelect({roles, value, onChange}) {
+function RoleSelect({roles, value, onChange, disabled}) {
   return html`
-<select class="form-select col-4" value=${ value } onChange=${onChange} >
+<select class="form-select col-4" value=${ value } onChange=${onChange}
+  disabled=${disabled} >
   ${ roles.map(role => html`<option value="${role}">${role}</option>`) }
 </select>`;
 }
@@ -25,12 +26,15 @@ function allowedTrackRoles(track) {
   return roles;
 }
 
-function TrackCheckBox({track, onChange}) {
+function TrackCheckBox({track, onChange, guest}) {
   const roles = useMemo(() => allowedTrackRoles(track), [track]);
   const bitrates = track.bitrates > 1 ? `, ${track.bitrates} bitrates` : '';
   const label = `${track.content_type} track ${track.track_id} (${track.codec_fourcc}${bitrates})`;
 
   const onToggle = () => {
+    if (guest) {
+      return;
+    }
     onChange({
       ...track,
       enabled: !track.enabled,
@@ -38,6 +42,9 @@ function TrackCheckBox({track, onChange}) {
   };
 
   const onRoleChange = (ev) => {
+    if (guest) {
+      return;
+    }
     onChange({
       ...track,
       role: ev.target.value,
@@ -47,8 +54,8 @@ function TrackCheckBox({track, onChange}) {
   return html`
 <div class="input-group mb-3 row border p-1">
     <${CheckBox} checked=${track.enabled} name="track_${track.track_id}"
-       label="${label}" onClick=${onToggle} />
-    <${RoleSelect} roles=${roles} value=${track.role}
+       label="${label}" onClick=${onToggle} disabled=${guest} />
+    <${RoleSelect} roles=${roles} value=${track.role} disabled=${guest}
       name="role_${track.track_id}" onChange=${onRoleChange} />
 </div>`;
 }
@@ -97,7 +104,7 @@ export function TrackSelectionDialog() {
     return !mediaTracks.value.some(trk => !trk.enabled);
   });
   const title = useComputed(
-    () => `Choose tracks for Period "${ trackPicker.value?.pid }"`);
+    () => `${trackPicker.value?.guest ? '' : 'Choose '}tracks for Period "${ trackPicker.value?.pid }"`);
 
   const onClose = useCallback(() => {
     dialog.value = null;
@@ -129,15 +136,17 @@ export function TrackSelectionDialog() {
     return null;
   }
 
+  const {guest=false} = trackPicker.value;
+
   return html`
 <${ModalDialog} onClose=${onClose} title="${title.value}" size='lg'>
   <div class="row fw-bold">
-    <input class="form-check-input col-2" type="checkbox"
+    <input class="form-check-input col-2" type="checkbox" disabled=${guest}
       name="all_tracks" checked=${allSelected.value} onClick=${selectAllTracks} />
     <div class="col-6 text-center">Track</div>
     <div class="col-4 text-center">Role</div>
   </div>
   ${mediaTracks.value.map(trk => html`
-    <${TrackCheckBox} track=${trk} onChange=${updateTrack}/>`)}
+    <${TrackCheckBox} track=${trk} guest=${guest} onChange=${updateTrack}/>`)}
 </${ModalDialog}>`;
 }

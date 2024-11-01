@@ -58,20 +58,64 @@ function StreamSelect({value, onChange, name}) {
 
 const rowColours = ['bg-secondary-subtle', 'bg-primary-subtle'];
 
+function doNothing(ev) {
+  ev.preventDefault();
+  return false;
+}
+
+function tracksDescription(tracks) {
+  const count = Object.keys(tracks).length;
+  if (count === 0) {
+    return 'choose';
+  }
+  if (count === 1) {
+    return '1 track';
+  }
+  return `${count} tracks`;
+}
+
+function GuestPeriodRow({index, item, className=""}) {
+  const { ordering, pid, pk, start, duration, tracks } = item;
+  const { streamsMap } = useContext(PageStateContext);
+  const { dialog }  = useContext(AppStateContext);
+  const numTracks = useMemo(() => tracksDescription(tracks), [tracks]);
+  const stream = useComputed(() => streamsMap.value.get(item.stream));
+  const selectTracks = useCallback(() => {
+    dialog.value = {
+      backdrop: true,
+      trackPicker: {
+        pk,
+        pid,
+        guest: true,
+        stream: stream.value,
+      },
+    };
+  }, [dialog, pid, pk, stream]);
+  const clsNames = `row mt-1 p-1 ${rowColours[index % rowColours.length]} ${className}`;
+
+  return html`<li class="${clsNames}">
+      <div class="col period-ordering">${ordering}</div>
+      <div class="col period-id">${pid}</div>
+      <div class="col period-stream">${stream.value.title}</div>
+      <div class="col period-start">
+        <${TimeDeltaInput} value=${start} name="start_${pk}"
+          onChange=${doNothing}  disabled />
+      </div>
+      <div class="col period-duration">
+        <${TimeDeltaInput} value=${duration} name="duration_${pk}"
+          onChange=${doNothing} disabled />
+      </div>
+      <div class="col period-tracks">
+        <a class="btn btn-sm m-1 btn-primary" onClick=${selectTracks}>${numTracks}</a>
+      </div>
+    </li>`;
+}
+
 function PeriodRow({className="", index, item: period, addPeriod, ...props}) {
   const { pid, pk, stream, start, duration, tracks } = period;
   const { model, streamsMap, modified } = useContext(PageStateContext);
   const { dialog }  = useContext(AppStateContext);
-  const numTracks = useMemo(() => {
-    const count = Object.keys(tracks).length;
-    if (count === 0) {
-      return 'choose';
-    }
-    if (count === 1) {
-      return '1 track';
-    }
-    return `${count} tracks`;
-  }, [tracks]);
+  const numTracks = useMemo(() => tracksDescription(tracks), [tracks]);
   const errors = useMemo(() => validatePeriod(period), [period]);
 
   const selectTracks = useCallback(() => {
@@ -139,15 +183,15 @@ function PeriodRow({className="", index, item: period, addPeriod, ...props}) {
       </div>
       <div class="col period-stream">
         <${StreamSelect} name="stream_${pk}" value=${stream}
-          onChange=${setStream} error=${errors.stream} />
+          onChange=${setStream} error=${errors.stream} required />
       </div>
       <div class="col period-start">
         <${TimeDeltaInput} value=${start} name="start_${pk}"
-          onChange=${setField} error=${errors.start} />
+          onChange=${setField} error=${errors.start} required />
       </div>
       <div class="col period-duration">
         <${TimeDeltaInput} value=${duration} name="duration_${pk}"
-          onChange=${setField} min="00:00:01" error=${errors.duration} />
+          onChange=${setField} min="00:00:01" error=${errors.duration} required />
       </div>
       <div class="col period-tracks">
         <a class="btn btn-sm m-1 ${numTracks === 'choose' ? 'btn-warning' : 'btn-success'}"
@@ -157,7 +201,20 @@ function PeriodRow({className="", index, item: period, addPeriod, ...props}) {
     </li>`;
 }
 
+function ButtonToolbar({onAddPeriod}) {
+  const { user } = useContext(AppStateContext);
+  if (!user.value.permissions.media) {
+    return null;
+  }
+  return html`<div class="btn-toolbar">
+    <button class="btn btn-primary btn-sm m-2" onClick=${onAddPeriod} >
+      Add a Period
+    </button>
+  </div>`;
+}
+
 export function PeriodsTable({errors}) {
+  const { user } = useContext(AppStateContext);
   const { model, modified } = useContext(PageStateContext);
   const periods = useComputed(() => model.value?.periods ?? []);
   const errorsDiv = useComputed(() => {
@@ -175,12 +232,14 @@ export function PeriodsTable({errors}) {
 
   const addPeriodBtn = useCallback((ev) => {
     ev.preventDefault();
-    console.log('add period');
     model.value = addPeriod(model.value);
     modified.value = true;
   }, [model, modified]);
 
   const renderItem = (props) => {
+    if (!user.value.permissions.media) {
+      return html`<${GuestPeriodRow} ...${props} />`;
+    }
     return html`<${PeriodRow} ...${props} addPeriod=${addPeriodBtn} />`;
   }
 
@@ -195,9 +254,7 @@ export function PeriodsTable({errors}) {
           <div class="col period-tracks">Tracks</div>
       </div>
       <${Sortable} Component="ul" items=${periods} setItems=${setPeriodOrder} RenderItem=${renderItem} dataKey="pk" />
-      <div class="btn-toolbar">
-        <button class="btn btn-primary btn-sm m-2" onClick=${addPeriodBtn} >Add a Period</button>
-      </div>
+      <${ButtonToolbar} onAddPeriod=${addPeriodBtn} />
     </div>
     ${ errorsDiv.value }`;
 }

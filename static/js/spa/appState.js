@@ -3,9 +3,17 @@ import { signal, computed } from "@preact/signals";
 
 export const AppStateContext = createContext();
 
-export function createAppState() {
+export function createAppState(userInfo = {groups:[]}) {
   const messages = signal({alerts: [], nextId: 1});
   const dialog = signal(null);
+  const user = signal({
+    ...userInfo,
+    permissions: {
+      admin: userInfo.groups.includes('ADMIN'),
+      media: userInfo.groups.includes('MEDIA'),
+      user: userInfo.groups.includes('USER'),
+    },
+  });
 
   const alerts = computed(() => {
     return messages.value?.alerts ?? [];
@@ -15,7 +23,7 @@ export function createAppState() {
     return dialog.value?.backdrop === true;
   });
 
-  return { dialog, messages, alerts, backdrop };
+  return { dialog, messages, alerts, backdrop, user };
 }
 
 export function appendMessage(messageSignal, text, level='warning') {
