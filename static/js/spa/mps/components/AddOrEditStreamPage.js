@@ -5,6 +5,7 @@ import { useSignal } from '@preact/signals';
 import { createPageState, PageStateContext } from '../state.js';
 import { EndpointContext } from '../../endpoints.js';
 import { EditStreamCard } from './EditStreamCard.js';
+import { ConfirmDeleteDialog } from './ConfirmDeleteDialog.js';
 import { TrackSelectionDialog } from './TrackSelectionDialog.js';
 
 const blankModel = {
@@ -105,5 +106,6 @@ export function AddOrEditStreamPage({name, newStream}) {
 <${PageStateContext.Provider} value=${state}>
   <${EditStreamCard} name=${name} newStream=${newStream} />
   <${TrackSelectionDialog} />
+  <${ConfirmDeleteDialog} />
 </${PageStateContext.Provider}>`;
 }
