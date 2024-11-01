@@ -293,6 +293,12 @@ def spa_handler(func):
             'accessToken': None,
             'refreshToken': None,
         }
+        user = {
+            'isAuthenticated': current_user.is_authenticated,
+            'pk': None,
+            'username': 'guest',
+            'groups': [],
+        }
         if current_user.is_authenticated:
             access_token: Token = Token.generate_api_token(
                 current_user, TokenType.ACCESS)
@@ -300,6 +306,11 @@ def spa_handler(func):
                 current_user, TokenType.REFRESH)
             initial_tokens['accessToken'] = access_token.to_dict(only={'expires', 'jti'})
             initial_tokens['refreshToken'] = refresh_token.to_dict(only={'expires', 'jti'})
+            user.update({
+                'pk': current_user.pk,
+                'username': current_user.username,
+                'groups': current_user.get_groups(),
+            })
         navbar = create_navbar_context()
         breadcrumbs: list[NavBarItem] = [{
             'title': 'Home',
@@ -308,6 +319,6 @@ def spa_handler(func):
         context: TemplateContext = create_template_context(
             title='DASH Test Streams', params=kwargs,
             navbar=navbar, routes=routes, breadcrumbs=breadcrumbs,
-            initialTokens=initial_tokens)
+            initialTokens=initial_tokens, user=user)
         return flask.render_template('spa/index.html', **context)
     return decorated_function
