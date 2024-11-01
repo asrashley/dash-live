@@ -89,6 +89,14 @@ export class ApiRequests {
     });
   }
 
+  deleteMultiPeriodStream(mps_name, options) {
+    return this.sendApiRequest(routeMap.editMps.url({mps_name}), {
+      ...options,
+      service: 'streams',
+      method: 'DELETE',
+    });
+  }
+
   async sendApiRequest(url, options) {
     const { authorization, body, service, signal, method='GET' } = options;
     let { query } = options;
@@ -163,6 +171,9 @@ export class ApiRequests {
     }
     if (signal && signal.aborted) {
       throw signal.reason;
+    }
+    if (fetchResult.status !== 200) {
+      return fetchResult;
     }
     const data = await fetchResult.json();
     if (signal && signal.aborted) {

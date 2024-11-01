@@ -22,11 +22,35 @@
 import logging
 import unittest
 
+from dashlive.server import models
+
 from .mixins.check_manifest import DashManifestCheckMixin
 from .mixins.flask_base import FlaskTestBase
 from .mixins.stream_fixtures import MPS_FIXTURE
 
 class MultiPeriodTests(FlaskTestBase, DashManifestCheckMixin):
+    def test_delete_stream(self) -> None:
+        self.setup_multi_period_stream(MPS_FIXTURE)
+        with self.app.app_context():
+            num_content_types: int = models.ContentType.count()
+            self.assertGreaterThan(num_content_types, 0)
+            num_files: int = models.MediaFile.count()
+            self.assertGreaterThan(num_files, 0)
+            num_streams: int = models.Stream.count()
+            self.assertGreaterThan(num_streams, 0)
+            self.assertGreater(models.Period.count(), 0)
+            mps: models.MultiPeriodStream | None = models.MultiPeriodStream.get(
+                name=MPS_FIXTURE.name)
+            assert mps is not None
+            models.db.session.delete(mps)
+            models.db.session.commit()
+            self.assertEqual(models.ContentType.count(), num_content_types)
+            self.assertEqual(models.MediaFile.count(), num_files)
+            self.assertEqual(models.Stream.count(), num_streams)
+            self.assertEqual(models.AdaptationSet.count(), 0)
+            self.assertEqual(models.Period.count(), 0)
+            self.assertEqual(models.MultiPeriodStream.count(), 0)
+
     def test_generated_manifest_against_fixture_vod(self) -> None:
         self.setup_multi_period_stream(MPS_FIXTURE)
         self.check_generated_manifest_against_fixture(
