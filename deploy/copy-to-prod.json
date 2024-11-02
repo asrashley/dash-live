@@ -33,10 +33,6 @@
             "to": "../static/js/prod/regexparam/"
         },
         {
-            "from": "../node_modules/linkstate/dist/linkstate.module.js",
-            "to": "../static/js/prod/"
-        },
-        {
             "from": "../node_modules/temporal-polyfill/index.js",
             "to": "../static/js/prod/temporal-polyfill/"
         },
