@@ -1,0 +1,18 @@
+{
+    "presets": [
+        [
+            "@babel/preset-env",
+            {
+                "targets": {
+                    "chrome": 130,
+                    "edge": 130,
+                    "esmodules": true,
+                    "firefox": 120
+                }
+            }
+        ]
+    ],
+    "inputSourceMap":{
+        "/libs/routemap.js": "static/js/__mocks__/routemap.js"
+    }
+}
