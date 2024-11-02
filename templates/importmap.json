@@ -8,7 +8,6 @@
     "htm": "{{ js_url('prod/htm/htm.module.js' )}}",
     "htm/preact": "{{ js_url('prod/htm/preact/index.mjs' )}}",
     "jquery": "/libs/jquery.js",
-    "linkstate": "{{ js_url('prod/linkstate.module.js') }}",
     "regexparam": "{{ js_url('prod/regexparam/index.mjs' )}}",
     "socket.io": "/libs/socket.io.js",
     "temporal-polyfill": "{{ js_url('prod/temporal-polyfill/index.js' )}}",
