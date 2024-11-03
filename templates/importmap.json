@@ -12,6 +12,6 @@
     "socket.io": "/libs/socket.io.js",
     "temporal-polyfill": "{{ js_url('prod/temporal-polyfill/index.js' )}}",
     "wouter-preact": "{{ js_url('prod/wouter-preact/index.js' )}}",
-    "wouter/use-browser-location": "{{ js_url('prod/wouter-preact/use-browser-location.js' )}}"
+    "wouter-preact/use-browser-location": "{{ js_url('prod/wouter-preact/use-browser-location.js' )}}"
   }
 }

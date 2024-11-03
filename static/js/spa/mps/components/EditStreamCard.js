@@ -2,7 +2,7 @@ import { html } from "htm/preact";
 import { useCallback, useContext, useEffect } from "preact/hooks";
 import { useSignal, useComputed } from "@preact/signals";
 import { Link } from "wouter-preact";
-import { navigate } from "wouter/use-browser-location";
+import { navigate } from "wouter-preact/use-browser-location";
 
 import { Card, FormRow, TextInputRow } from "@dashlive/ui";
 import { PeriodsTable } from "./PeriodsTable.js";
