@@ -1,12 +1,15 @@
 import { html } from 'htm/preact';
 
+function CardImage({src, alt}) {
+  return html`<img src=${ src } class="card-img-top" alt=${alt} />`
+}
+
 export function Card({header, image, children, id}) {
-  const topImg = image ? html`<img src=${ image.src } class="card-img-top" alt=${image.alt}>` : '';
 
   const cardHeader = header ? html`<div class="card-header">${ header }</div>` : '';
   return html`
     <div class="card" id=${id}>
-      ${ topImg }
+      ${image && html`<${CardImage} ...${image} />`}
       ${ cardHeader }
       <div class="card-body">
         ${ children }
