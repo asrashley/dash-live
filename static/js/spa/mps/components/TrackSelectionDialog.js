@@ -3,8 +3,7 @@ import { useCallback, useContext, useMemo } from 'preact/hooks';
 import { useComputed } from "@preact/signals";
 import { ContentRoles } from '/libs/content_roles.js';
 
-import { CheckBox } from '../../components/CheckBox.js';
-import { ModalDialog } from '../../components/ModalDialog.js';
+import { CheckBox, ModalDialog } from '@dashlive/ui';
 import { AppStateContext } from '../../appState.js';
 import { PageStateContext, modifyModel } from '../state.js';
 
