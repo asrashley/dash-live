@@ -125,7 +125,10 @@ class UiComponents(MethodView):
         static_dir: Path = Path(flask.current_app.config['STATIC_FOLDER'])
         ui_folder = static_dir / "js" / "spa" / "components"
         js_files: list[str] = []
+        test_file = re.compile(r'\.test\.')
         for js in ui_folder.glob("*.js"):
+            if test_file.search(js.name):
+                continue
             url: str = flask.url_for(
                 'static', filename=f'js/spa/components/{js.name}')
             js_files.append(f"export * from '{url}';")
