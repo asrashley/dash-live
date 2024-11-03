@@ -16,8 +16,7 @@ export function ModalDialog({id = 'dialog-box', title, children, footer, size, o
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">${ title }</h5>
-        <button type="button" class="close btn-close"
-              data-bs-dismiss="modal" aria-label="Close" onClick=${onClose}>
+        <button type="button" class="close btn-close" aria-label="Close" onClick=${onClose}>
         </button>
       </div>
       <div class="modal-body m-2">

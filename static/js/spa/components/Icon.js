@@ -1,7 +1,7 @@
 import { html } from 'htm/preact';
 
 export function Icon({name, className=""}) {
-  return html`<span class="bi icon bi-${name} ${className}"></span>`;
+  return html`<span class="bi icon bi-${name} ${className}" role="icon"></span>`;
 }
 
 function doNothing(ev) {

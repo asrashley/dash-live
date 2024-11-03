@@ -1,0 +1,18 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CheckBox > should display CheckBox 1`] = `
+<DocumentFragment>
+  <input
+    class="form-check-input col-2"
+    id="check_test"
+    name="test"
+    type="checkbox"
+  />
+  <label
+    class="form-check-label col-6"
+    for="check_test"
+  >
+    Hello World
+  </label>
+</DocumentFragment>
+`;
