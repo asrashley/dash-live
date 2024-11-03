@@ -15,15 +15,6 @@ function NotFound(params) {
     return html`404, Sorry the page ${params["*"]} does not exist!`;
 }
 
-function translateUrlTemplate(urlTemplate) {
-  const re = /{([a-z_]+)}/g;
-  return urlTemplate.replaceAll(re, ':$1')
-}
-
-const paths = Object.fromEntries(
-  Object.entries(routeMap).map(
-    ([name, {template}]) => [name, translateUrlTemplate(template)]));
-
 export function App({tokens, user}) {
   const apiRequests = useMemo(() => new ApiRequests(tokens), [tokens]);
   const state = useMemo(() => createAppState(user), [user]);
@@ -48,9 +39,9 @@ export function App({tokens, user}) {
   <${EndpointContext.Provider} value=${apiRequests}>
     <${MessagesPanel} messages=${messages} />
     <${Switch}>
-      <${Route} component=${ListStreamsPage} path="${ paths.listMps }"/>
-      <${Route} component=${AddStreamPage} path="${ paths.addMps }"/>
-      <${Route} component=${EditStreamPage} path="${ paths.editMps }"/>
+      <${Route} component=${ListStreamsPage} path="${ routeMap.listMps.route }"/>
+      <${Route} component=${AddStreamPage} path="${ routeMap.addMps.route }"/>
+      <${Route} component=${EditStreamPage} path="${ routeMap.editMps.route }"/>
       <${Route} path="*" component=${NotFound} />
     </${Switch}>
   </${EndpointContext.Provider}>
