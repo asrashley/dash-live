@@ -1,5 +1,7 @@
+import { html } from "htm/preact";
+import { useEffect } from 'preact/hooks'
 import { useLocation, useRouter } from 'wouter-preact';
-import { navigate } from "wouter/use-browser-location";
+import { navigate } from "wouter-preact/use-browser-location";
 
 function followInternalLink(ev) {
   const href = ev.target.getAttribute('href');
@@ -23,12 +25,12 @@ function breadCrumbItemHtml({title, href, active, id}) {
   return `<li id="${id}" class="breadcrumb-item ${active ? 'active': ''}">${body}</li>`;
 }
 
-export function BreadCrumbs() {
-  const location = useLocation()[0];
+export const useBreadcrumbs = () => {
+  const [location, setLocation] = useLocation();
   const { base } = useRouter();
 
-  const baseParts = base.split('/');
-  const parts = location.split('/').slice(baseParts.length - 1);
+  const baseParts = base === "" ? [""] : base.split('/');
+  const parts = location === "/" ? [""] : location.split('/').slice(baseParts.length - 1);
 
   const breadcrumbs = parts.map((title, idx) => {
     const href = idx === 0 ? `${base}/` : `${base}${parts.slice(0, idx + 1).join('/')}`;
@@ -41,20 +43,27 @@ export function BreadCrumbs() {
     return {title, active, href, useLink, id};
   });
 
+  return {breadcrumbs, location, setLocation};
+};
+
+export function BreadCrumbs() {
+  const { breadcrumbs, location } = useBreadcrumbs();
   const payload = breadcrumbs.map(crumb => breadCrumbItemHtml(crumb)).join('');
 
-  for (const elt of document.querySelectorAll('header > .breadcrumbs .breadcrumb-item > a')) {
-    elt.removeEventListener('click', followInternalLink);
-  }
-  
   document.querySelector('header > .breadcrumbs > ol.breadcrumb').innerHTML = payload;
 
-  for (const crumb of breadcrumbs) {
-    if (crumb.useLink) {
-      document.getElementById(crumb.id)?.addEventListener('click', followInternalLink);
+  useEffect(() => {
+    for (const crumb of breadcrumbs) {
+      if (crumb.useLink) {
+        document.getElementById(crumb.id)?.addEventListener('click', followInternalLink);
+      }
     }
-  }
+    return () => {
+      for (const elt of document.querySelectorAll('header > .breadcrumbs .breadcrumb-item > a')) {
+        elt.removeEventListener('click', followInternalLink);
+      }
+    };
+  })
 
-  //return html`<div>${ breadcrumbs.map(crumb => html`<span>| ${crumb.title}</span>`)}</div>`;
-  return null;
+  return html`<div style="display:none" data-location="${location}" />`;
 }
