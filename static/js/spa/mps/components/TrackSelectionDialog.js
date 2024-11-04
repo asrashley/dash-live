@@ -5,7 +5,8 @@ import { ContentRoles } from '/libs/content_roles.js';
 
 import { CheckBox, ModalDialog } from '@dashlive/ui';
 import { AppStateContext } from '../../appState.js';
-import { PageStateContext, modifyModel } from '../state.js';
+import { MultiPeriodModelContext } from '../../hooks/useMultiPeriodStream.js';
+import { AllStreamsContext } from '../../hooks/useAllStreams.js';
 
 function RoleSelect({roles, value, onChange, disabled}) {
   return html`
@@ -81,6 +82,7 @@ function generateMediaTracks(trackPicker, model, streamsMap) {
       role: 'main',
       enabled: false,
     }])));
+
   for (const [tid, role] of Object.entries(prd.tracks)) {
     tracks[tid] = {
       ...tracks[tid],
@@ -94,7 +96,8 @@ function generateMediaTracks(trackPicker, model, streamsMap) {
 }
 
 export function TrackSelectionDialog() {
-  const { model, streamsMap, modified } = useContext(PageStateContext);
+  const { model, modifyPeriod } = useContext(MultiPeriodModelContext);
+  const { streamsMap } = useContext(AllStreamsContext);
   const { dialog } = useContext(AppStateContext);
   const trackPicker = useComputed(() => dialog.value?.trackPicker);
   const mediaTracks = useComputed(() => generateMediaTracks(
@@ -113,13 +116,11 @@ export function TrackSelectionDialog() {
     if (!trackPicker.value) {
       return;
     }
-    model.value = modifyModel({
-      model: model.value,
+    modifyPeriod({
       periodPk: trackPicker.value.pk,
       track,
     });
-    modified.value = true;
-  }, [trackPicker, model, modified]);
+  }, [trackPicker.value, modifyPeriod]);
 
   const selectAllTracks = useCallback(() => {
     mediaTracks.value.forEach(trk => {
@@ -128,8 +129,7 @@ export function TrackSelectionDialog() {
         enabled: !allSelected.value,
       });
     });
-    modified.value = true;
-  }, [allSelected, mediaTracks, modified, updateTrack]);
+  }, [allSelected, mediaTracks, updateTrack]);
 
   if (!trackPicker.value) {
     return null;

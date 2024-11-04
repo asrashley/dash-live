@@ -5,15 +5,17 @@ import { Link } from "wouter-preact";
 import { navigate } from "wouter-preact/use-browser-location";
 
 import { Card, FormRow, TextInputRow } from "@dashlive/ui";
+import { ConfirmDeleteDialog } from './ConfirmDeleteDialog.js';
 import { PeriodsTable } from "./PeriodsTable.js";
-import { AppStateContext, appendMessage } from "../../appState.js";
-import { PageStateContext, validateModel } from "../state.js";
-import { EndpointContext } from "../../endpoints.js";
+import { TrackSelectionDialog } from './TrackSelectionDialog.js';
+import { AppStateContext } from "../../appState.js";
 import { routeMap } from "/libs/routemap.js";
 
-function ButtonToolbar({errors, saveChanges, deleteStream}) {
+import { useAllStreams, AllStreamsContext } from '../../hooks/useAllStreams.js';
+import { useMultiPeriodStream, MultiPeriodModelContext } from '../../hooks/useMultiPeriodStream.js';
+
+function ButtonToolbar({errors, onSaveChanges, deleteStream, model, modified}) {
   const { user } = useContext(AppStateContext);
-  const { model, modified } = useContext(PageStateContext);
   const cancelUrl = routeMap.listMps.url();
   const disableSave = useComputed(() => {
     if (Object.keys(errors.value).length > 0) {
@@ -39,18 +41,17 @@ function ButtonToolbar({errors, saveChanges, deleteStream}) {
   return html`
   <div class="btn-toolbar">
     <button class="btn btn-success m-2" disabled=${disableSave.value}
-      onClick=${saveChanges} >${saveChangesTitle}</button>
+      onClick=${onSaveChanges} >${saveChangesTitle}</button>
     <button class="btn btn-danger m-2" onClick=${deleteStream}>Delete</button>
     <${Link} class="btn btn-primary m-2" to=${cancelUrl}>Back</${Link}>
   </div>`;
 }
 
-function EditStreamForm({ name }) {
-  const apiRequests = useContext(EndpointContext);
-  const { model, modified, allStreams } = useContext(PageStateContext);
-  const { dialog, messages, user } = useContext(AppStateContext);
+function EditStreamForm({ name, newStream }) {
+  const { model, modified, errors, setFields, saveChanges, deleteStream } = useContext(MultiPeriodModelContext)
+  const { allStreams } = useContext(AllStreamsContext);
+  const { dialog, user } = useContext(AppStateContext);
   const abortController = useSignal(new AbortController());
-  const errors = useComputed(() => validateModel(model.value));
   const deleteConfirmed = useComputed(
     () => dialog.value?.confirmDelete?.confirmed === true
   );
@@ -58,69 +59,30 @@ function EditStreamForm({ name }) {
 
   const setName = useCallback(
     (ev) => {
-      model.value = {
-        ...model.value,
-        name: ev.target.value,
-      };
+      setFields({name: ev.target.value});
     },
-    [model]
+    [setFields]
   );
 
   const setTitle = useCallback(
     (ev) => {
-      model.value = {
-        ...model.value,
+      setFields({
         title: ev.target.value,
-      };
+      });
     },
-    [model]
+    [setFields]
   );
 
-  const saveChanges = useCallback(async () => {
+  const onSaveChanges = useCallback(async () => {
     const { signal } = abortController.value;
-    if (!model.value || signal.aborted) {
-      return;
+    const success = await saveChanges({signal});
+    if (success && newStream) {
+      const href = routeMap.listMps.url();
+      navigate(href, { replace: true });
     }
-    const periods = model.value.periods.map((prd) => {
-      const period = {
-        ...prd,
-        pk: typeof prd.pk === "number" ? prd.pk : null,
-      };
-      return period;
-    });
-    const data = {
-      ...model.value,
-      spa: true,
-      periods,
-    };
-    try {
-      const result =
-        data.pk === null
-          ? await apiRequests.addMultiPeriodStream(data, { signal })
-          : await apiRequests.modifyMultiPeriodStream(name, data, { signal });
-      if (signal.aborted) {
-        return;
-      }
-      result.errors?.forEach((err) => appendMessage(messages, err, "warning"));
-      if (result?.success === true) {
-        if (data.pk === null) {
-          appendMessage(messages, `Added new stream ${name}`, "success");
-        } else {
-          appendMessage(messages, `Saved changes to ${name}`, "success");
-        }
-        modified.value = false;
-        model.value = result.model;
-        if (data.pk === null) {
-          const href = routeMap.listMps.url();
-          navigate(href, { replace: true });
-        }
-      }
-    } catch (err) {
-      appendMessage(messages, `${err}`, "warning");
-    }
-  }, [abortController.value, apiRequests, messages, model, modified, name]);
+  }, [abortController.value, newStream, saveChanges]);
 
-  const deleteStream = useCallback(
+  const onDelete = useCallback(
     (ev) => {
       ev.preventDefault();
       dialog.value = {
@@ -135,37 +97,26 @@ function EditStreamForm({ name }) {
   );
 
   useEffect(() => {
-    const controller = new AbortController();
-    const { signal } = controller;
+    const { signal } = abortController.value;
     const deleteStreamIfConfirmed = async () => {
       if (!deleteConfirmed.value) {
         return;
       }
-      try {
-        const result = await apiRequests.deleteMultiPeriodStream(name, {
-          signal,
-        });
-        if (result.ok) {
-          appendMessage(messages, `Deleted stream ${name}`, "success");
-          allStreams.value = null;
-          navigate(routeMap.listMps.url(), { replace: true });
-        } else {
-          appendMessage(
-            messages,
-            `Failed to delete {name}: {result.status} {result.statusText}`,
-            "warning"
-          );
-        }
-      } catch (err) {
-        appendMessage(messages, `${err}`, "warning");
+      const success = await deleteStream({signal});
+      if (success){
+        allStreams.value = null;
+        navigate(routeMap.listMps.url(), { replace: true });
       }
       dialog.value = null;
     };
     deleteStreamIfConfirmed();
+  }, [abortController.value, allStreams, deleteConfirmed.value, deleteStream, dialog]);
+
+  useEffect(() => {
     return () => {
-      controller.abort();
-    };
-  }, [apiRequests, allStreams, deleteConfirmed.value, dialog, messages, name]);
+      abortController.value.abort();
+    }
+  }, [abortController]);
 
   if (!model.value) {
     return html`<h3>Fetching data for stream "${name}"...</h3>`;
@@ -182,8 +133,8 @@ function EditStreamForm({ name }) {
     name="periods" label="Periods">
     <${PeriodsTable} errors=${errors} />
   </${FormRow}>
-  <${ButtonToolbar} errors=${errors}
-    saveChanges=${saveChanges} deleteStream=${deleteStream} />
+  <${ButtonToolbar} errors=${errors} model=${model} modified=${modified}
+    onSaveChanges=${onSaveChanges} deleteStream=${onDelete} />
 </div>`;
 }
 
@@ -197,11 +148,16 @@ function Header({newStream, name}) {
 }
 
 export function EditStreamCard({ name, newStream }) {
-  const { allStreams, model } = useContext(PageStateContext);
+  const modelContext = useMultiPeriodStream({name, newStream});
+  const streamsContext = useAllStreams();
   const header = html`<${Header} name=${name} newStream=${newStream} />`;
 
-  return html`
-<${Card} header=${header} id="edit_mps_form">
-  <${EditStreamForm} model=${model} name=${name} allStreams=${allStreams} />
-</${Card}>`;
+  return html`<${AllStreamsContext.Provider} value=${streamsContext}>
+  <${MultiPeriodModelContext.Provider} value=${modelContext}>
+    <${Card} header=${header} id="edit_mps_form">
+      <${EditStreamForm} name=${name} newStream=${newStream} />
+    </${Card}>
+    <${TrackSelectionDialog} />
+    <${ConfirmDeleteDialog} />
+  </${MultiPeriodModelContext.Provider}></${AllStreamsContext.Provider}>`;
 }
