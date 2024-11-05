@@ -1,9 +1,9 @@
 import { html } from 'htm/preact';
 import { useParams } from "wouter-preact";
 
-import { AddOrEditStreamPage } from './AddOrEditStreamPage.js';
+import { EditStreamCard } from './EditStreamCard.js';
 
 export function EditStreamPage() {
   const {mps_name} = useParams();
-  return html`<${AddOrEditStreamPage} name="${mps_name}" />`;
+  return html`<${EditStreamCard} name="${mps_name}" />`;
 }

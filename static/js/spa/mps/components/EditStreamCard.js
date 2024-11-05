@@ -14,23 +14,14 @@ import { routeMap } from "/libs/routemap.js";
 import { useAllStreams, AllStreamsContext } from '../../hooks/useAllStreams.js';
 import { useMultiPeriodStream, MultiPeriodModelContext } from '../../hooks/useMultiPeriodStream.js';
 
-function ButtonToolbar({errors, onSaveChanges, deleteStream, model, modified}) {
+function ButtonToolbar({errors, onSaveChanges, deleteStream, model, newStream}) {
   const { user } = useContext(AppStateContext);
   const cancelUrl = routeMap.listMps.url();
   const disableSave = useComputed(() => {
     if (Object.keys(errors.value).length > 0) {
       return true;
     }
-    if (model.value.pk === null) {
-      return false;
-    }
-    return modified.value !== true;
-  });
-  const saveChangesTitle = useComputed(() => {
-    if (!model.value.pk) {
-      return "Save new stream";
-    }
-    return "Save changes";
+    return model.value.modified !== true;
   });
 
   if (!user.value.permissions.media) {
@@ -38,12 +29,23 @@ function ButtonToolbar({errors, onSaveChanges, deleteStream, model, modified}) {
       <${Link} class="btn btn-primary m-2" to=${cancelUrl}>Back</${Link}></div>`;
   }
 
-  return html`
-  <div class="btn-toolbar">
+  if (newStream) {
+    return html`<div class="btn-toolbar">
     <button class="btn btn-success m-2" disabled=${disableSave.value}
-      onClick=${onSaveChanges} >${saveChangesTitle}</button>
-    <button class="btn btn-danger m-2" onClick=${deleteStream}>Delete</button>
-    <${Link} class="btn btn-primary m-2" to=${cancelUrl}>Back</${Link}>
+      onClick=${onSaveChanges} >Save new stream</button>
+    <${Link} class="btn btn-danger m-2" to=${cancelUrl}>Cancel</${Link}>
+  </div>`;
+  }
+
+  const linkClass = `btn m-2 ${model.value.modified ? 'btn-warning': 'btn-primary'}`;
+
+  return html`<div class="btn-toolbar">
+    <button class="btn btn-success m-2" disabled=${disableSave.value}
+      onClick=${onSaveChanges} >Save Changes</button>
+    <button class="btn btn-danger m-2" onClick=${deleteStream}>Delete Stream</button>
+    <${Link} class="${linkClass}" to=${cancelUrl}>
+      ${model.value.modified ? "Discard Changes" : "Back"}
+    </${Link}>
   </div>`;
 }
 
@@ -133,7 +135,7 @@ function EditStreamForm({ name, newStream }) {
     name="periods" label="Periods">
     <${PeriodsTable} errors=${errors} />
   </${FormRow}>
-  <${ButtonToolbar} errors=${errors} model=${model} modified=${modified}
+  <${ButtonToolbar} errors=${errors} model=${model} modified=${modified} newStream=${newStream}
     onSaveChanges=${onSaveChanges} deleteStream=${onDelete} />
 </div>`;
 }
