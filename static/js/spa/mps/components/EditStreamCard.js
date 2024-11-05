@@ -58,6 +58,12 @@ function EditStreamForm({ name, newStream }) {
     () => dialog.value?.confirmDelete?.confirmed === true
   );
   const canModify = useComputed(() => user.value.permissions.media);
+  const validationClass = useComputed(() => {
+    if(!modified.value || !canModify.value) {
+      return '';
+    }
+    return Object.keys(errors.value) === 0 ? 'was-validated' : 'has-validation';
+  });
 
   const setName = useCallback(
     (ev) => {
@@ -124,7 +130,7 @@ function EditStreamForm({ name, newStream }) {
     return html`<h3>Fetching data for stream "${name}"...</h3>`;
   }
 
-  return html`<div class="${ canModify.value ? 'was-validated' : ''}">
+  return html`<div class="${ validationClass.value }">
   <${TextInputRow} name="name" label="Name" value=${model.value.name}
      text="Unique name for this stream" onInput=${setName}
      error=${errors.value.name} disabled=${!canModify.value} />
