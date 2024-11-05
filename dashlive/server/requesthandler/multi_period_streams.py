@@ -246,15 +246,12 @@ class AddStream(HTMLHandlerBase):
 class ValidateStream(RequestHandlerBase):
     decorators = [
         login_required(permission=models.Group.MEDIA),
-        csrf_token_required('streams', next_url=lambda: None),
+        jwt_required()
     ]
 
     def post(self) -> flask.Response:
-        csrf_key = self.generate_csrf_cookie()
-        csrf_token = self.generate_csrf_token('streams', csrf_key)
         errors = models.MultiPeriodStream.validate_values(**flask.request.json)
         return jsonify({
-            'csrf_token': csrf_token,
             'errors': errors,
         })
 
