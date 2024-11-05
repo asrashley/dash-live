@@ -1,7 +1,7 @@
 import { html } from 'htm/preact';
 
-import { AddOrEditStreamPage } from './AddOrEditStreamPage.js';
+import { EditStreamCard } from './EditStreamCard.js';
 
 export function AddStreamPage() {
-  return html`<${AddOrEditStreamPage} name=".add" newStream />`;
+  return html`<${EditStreamCard} name=".add" newStream />`;
 }
