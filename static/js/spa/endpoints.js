@@ -97,6 +97,15 @@ export class ApiRequests {
     });
   }
 
+  validateMultiPeriodStream(data, options) {
+    return this.sendApiRequest(routeMap.validateMps.url(), {
+      ...options,
+      method: 'POST',
+      service: 'streams',
+      body: JSON.stringify(data),
+    });
+  }
+
   async sendApiRequest(url, options) {
     const { authorization, body, service, signal, method='GET' } = options;
     let { query } = options;

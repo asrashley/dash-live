@@ -263,7 +263,7 @@ routes = {
     "validate-mps": Route(
         r'/multi-period-streams.validate',
         handler='multi_period_streams.ValidateStream',
-        title='Check new MPS',
+        title='Check MPS settings are valid',
         parent='list-mps'),
     "mps-manifest": Route(
         r'/mps/<regex("(live|vod)"):mode>/<mps_name>/<manifest>',
