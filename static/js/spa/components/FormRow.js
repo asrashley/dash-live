@@ -5,7 +5,7 @@ export function FormRow({ className = "", name, label, text, children, error }) 
     ? html`<div class="col-3 form-text">${text}</div>`
     : null;
   const errDiv = error
-    ? html`<div class="invalid-feedback">${error}</div>`
+    ? html`<div class="invalid-feedback" style="display:block">${error}</div>`
     : null;
 
   return html`
