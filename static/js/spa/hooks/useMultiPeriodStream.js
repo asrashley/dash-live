@@ -1,6 +1,6 @@
 import { createContext } from "preact";
 import { useCallback, useContext, useEffect } from "preact/hooks";
-import { useSignal, useComputed } from "@preact/signals";
+import { useSignal, useSignalEffect, useComputed } from "@preact/signals";
 
 import { AppStateContext, appendMessage } from "../appState.js";
 import { EndpointContext } from "../endpoints.js";
@@ -52,7 +52,7 @@ export function validateModel({ model }) {
 }
 
 function modifyPeriod({ model, periodPk, track, period }) {
-  let { modified } = model.value;
+  let { modified, lastModified = 0 } = model.value;
   const periods = model.value.periods.map((prd) => {
     if (prd.pk !== periodPk) {
       return prd;
@@ -78,6 +78,7 @@ function modifyPeriod({ model, periodPk, track, period }) {
     ...model.value,
     periods,
     modified,
+    lastModified: modified ? Date.now() : lastModified,
   };
 }
 
@@ -124,18 +125,13 @@ function addPeriodToModel({ model }) {
 
   model.value = {
     ...model.value,
-    periods: [
-        ...periods,
-        newPeriod,
-    ],
+    periods: [...periods, newPeriod],
+    lastModified: Date.now(),
     modified: true,
   };
 }
 
-async function saveChangesToModel({ apiRequests, messages, model, signal }) {
-  if (!model.value || signal.aborted) {
-    return false;
-  }
+function createDataFromModel(model) {
   const periods = model.value.periods.map((prd) => {
     const period = {
       ...prd,
@@ -143,11 +139,17 @@ async function saveChangesToModel({ apiRequests, messages, model, signal }) {
     };
     return period;
   });
-  const data = {
+  return {
     ...model.value,
-    spa: true,
     periods,
   };
+}
+
+async function saveChangesToModel({ apiRequests, messages, model, signal }) {
+  if (!model.value || signal.aborted) {
+    return false;
+  }
+  const data = createDataFromModel(model);
   try {
     const result =
       data.pk === null
@@ -166,6 +168,7 @@ async function saveChangesToModel({ apiRequests, messages, model, signal }) {
       model.value = {
         ...result.model,
         modified: false,
+        lastModified: Date.now(),
       };
       return true;
     }
@@ -198,8 +201,18 @@ export function useMultiPeriodModel({ model, name }) {
   const apiRequests = useContext(EndpointContext);
   const { messages } = useContext(AppStateContext);
   const modified = useComputed(() => model.value?.modified ?? false);
-  const errors = useComputed(() => validateModel({ model }));
-  const isValid = useComputed(() => Object.keys(errors.value) === 0);
+  const lastModified = useComputed(() => model.value?.lastModified ?? 0);
+  const localErrors = useComputed(() => validateModel({ model }));
+  const serverErrors = useSignal({ errors: {}, lastChecked: Date.now() });
+  const errors = useComputed(() => ({
+    ...localErrors.value,
+    ...serverErrors.value.errors,
+  }));
+  const isValid = useComputed(
+    () =>
+      Object.keys(localErrors.value).length === 0 &&
+      Object.keys(serverErrors.value).length === 0
+  );
 
   const addPeriod = useCallback(() => addPeriodToModel({ model }), [model]);
 
@@ -209,6 +222,7 @@ export function useMultiPeriodModel({ model, name }) {
         ...model.value,
         periods: model.value.periods.filter((prd) => prd.pk !== pk),
         modified: true,
+        lastModified: Date.now(),
       };
     },
     [model]
@@ -231,6 +245,7 @@ export function useMultiPeriodModel({ model, name }) {
         ...model.value,
         ...props,
         modified: true,
+        lastModified: Date.now(),
       };
     },
     [model]
@@ -246,6 +261,44 @@ export function useMultiPeriodModel({ model, name }) {
     ({ signal }) => deleteMpsStream({ apiRequests, messages, name, signal }),
     [apiRequests, messages, name]
   );
+
+  useSignalEffect(() => {
+    if (
+      !modified.value ||
+      serverErrors.value.lastChecked >= lastModified.value ||
+      Object.keys(localErrors.value).length > 0
+    ) {
+      return;
+    }
+    const controller = new AbortController();
+    const { signal } = controller;
+    const timeout = window.setTimeout(async () => {
+      if (signal.aborted) {
+        return;
+      }
+      const data = createDataFromModel(model);
+      try {
+        const errs = await apiRequests.validateMultiPeriodStream(data, {
+          signal,
+        });
+        if (signal.aborted) {
+          return;
+        }
+        serverErrors.value = {
+          errors: errs?.errors ?? {},
+          lastChecked: Date.now(),
+        };
+      } catch (err) {
+        if (!signal.aborted) {
+          console.error(err);
+        }
+      }
+    }, 250);
+    return () => {
+      controller.abort();
+      window.clearTimeout(timeout);
+    };
+  });
 
   return {
     setFields,
@@ -288,6 +341,7 @@ async function fetchStreamIfRequired({
       loaded.value = name;
       model.value = {
         ...data.model,
+        lastModified: 0,
         modified: false,
       };
     }
