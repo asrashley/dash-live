@@ -30,6 +30,7 @@ import flask
 from flask_login import current_user
 
 from dashlive.server import manifests, models
+from dashlive.server.routes import Route
 from dashlive.server.options.drm_options import DrmLocationOption, DrmSelection
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.options.player_options import ShakaVersion, DashjsVersion
@@ -43,6 +44,7 @@ from .decorators import (
     current_mps,
 )
 from .manifest_context import ManifestContext
+from .navbar import NavBarItem
 from .utils import add_allowed_origins, is_https_request
 
 class MainPage(HTMLHandlerBase):
@@ -192,10 +194,35 @@ class MainPage(HTMLHandlerBase):
         headers = {
             'X-Frame-Options': 'SAMEORIGIN',
         }
-        body = flask.render_template('index.html', **context)
+        body = self.render_template(context)
         add_allowed_origins(headers)
         return flask.make_response((body, 200, headers))
 
+    def render_template(self, context: dict) -> str:
+        return flask.render_template('index.html', **context)
+
+
+class ES5MainPage(MainPage):
+    """
+    handler for main index page for use by browsers that only support
+    ECMAScript v5 (i.e. very old browsers)
+    """
+    def render_template(self, context: dict) -> str:
+        context['navbar'] = [{
+            'title': 'Home',
+            'href': flask.url_for('es5-home'),
+        }]
+        context['nav_warning'] = (
+            'Please upgrade your browser to use all of ' +
+            'the features of this site')
+        return flask.render_template('es5/index.html', **context)
+
+    def get_breadcrumbs(self, route: Route) -> list[NavBarItem]:
+        breadcrumbs: list[NavBarItem] = [{
+            'title': 'Home',
+            'active': 'active'
+        }]
+        return breadcrumbs
 
 class CgiOptionsPage(HTMLHandlerBase):
     """
