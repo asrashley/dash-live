@@ -308,6 +308,10 @@ routes = {
         r'/favicon.ico',
         handler='htmlpage.favicon',
         title='favicon'),
+    "es5-home": Route(
+        r'/es5/',
+        handler='htmlpage.ES5MainPage',
+        title='DASH test streams'),
     "home": Route(
         r'/',
         handler='htmlpage.MainPage',

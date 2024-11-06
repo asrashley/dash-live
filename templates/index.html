@@ -1,31 +1,23 @@
 {% extends 'layout.html' %}
 
-{% block extraheaders %}
-<link rel="stylesheet" href="{{url_for('static', filename='css/font-awesome.css')}}" />
-{% endblock %}
-
 {% block content %}
 <div class="manifest-url rounded border">
   <span class="fw-semibold">Manifest URL: </span>
   <a id="dashurl" href="{{ default_url }}">{{ default_url }}</a>
 </div>
-<div id="with-modules" style="display: none"
+<div id="with-modules"
      data-stream-url-template="{{ stream_url_template }}"
      data-mps-url-template="{{ mps_url_template }}">
   <div class="row">
     <div class="play-button col-6" >
       <a class="btn btn-primary selected-stream" href="{{ default_url }}">
-        <span class="fa fa-play icon"></span>
-        <span class="title">
-          {%- if default_stream %}
-          {{ default_stream.title }}
-          {%- endif %}
-        </span>
+        <span class="bi bi-play-fill" aria-hidden="true"/>
+        <span class="title" />
       </a>
     </div>
     <div class="col-6 view-manifest-button">
       <a class="view-manifest btn btn-light" href="" class="btn btn-light btn-sm disabled">
-        <span class="fa fa-search icon"></span>View Manifest
+        <span class="bi bi-search icon"></span>View Manifest
       </a>
     </div>
   </div>
@@ -35,73 +27,13 @@
   </div>
   {% include 'edit-model-form.html' %}
 </div>
-<div id="buttons" data-page="{{page}}" style="display: none">
-  <table class="btn-grid table table-striped table-bordered table-sm">
-    <thead>
-      <tr>
-        <th class="active manifest">Manifest</th>
-        <th class="option">Options</th></tr>
-      </thead>
-    <tbody>
-      {% for row in rows %}
-      <tr id="row{{ loop.index0 }}">
-        {% if row.manifest %}
-        <td class="manifest active"
-            data-uri="{{ row.url }}"
-            data-filename="{{ row.filename }}"
-            data-params="{{ row.manifest.restrictions|toJson | escape }}">
-          <span class="key manifest-key active">{{ loop.index0 }}</span>
-          {% if row.manifest.title %}
-          <a class="manifest-title" href="{{ row.url }}">{{ row.manifest.title }}</a>
-          <img class="bool-yes" src="{{url_for('static', filename='img/tick-icon.png')}}" />
-          {% endif %}
-        </td>
-        {% else %}
-        <td class="manifest empty" />
-        {% endif %}
-        <td class="option">
-          <span class="key option-key">{{ loop.index0 }}</span>
-          <span class="option-title">{{ row.option.title }}</span>
-          {% if row.option.name %}
-          <select name="{{row.option.name}}"
-                  data-default="{{ row.option.options[0].value }}">
-            {% for opt in row.option.options %}
-            <option value="{{opt[1]}}" {%- if loop.first %}selected{% endif -%}>
-              {{ opt[0] }}
-            </option>
-            {% endfor %}
-          </select>
-          {% endif %}
-        </td>
-        </tr>
-      {% endfor %}
-      <tr class="play-row">
-        <td class="play-cell">
-          <div id="play-button" class="disabled" >
-            <a class="button play-icon"><span class="fa fa-play icon"></span></a>
-            <select name="stream" class="play-select">
-              {% for stream in streams %}
-              <option value="{{stream.directory}}">Play {{stream.title}}</option>
-              {% endfor %}
-            </select>
-          </div>
-        </td>
-        <td>
-          <div class="view-manifest-wrapper">
-            <a id="view-manifest" href="" class="btn btn-light disabled">View Manifest</a>
-          </div>
-        </td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-  <p class="info">
-    The MPD files for live streams are dynamically
-    generated so that they appear to be live sources, using static media files.
-    Requests for manifests and for media fragments can be modified
-    using various CGI parameters, which are documented on the
-    <a href="{{url_for('cgi-options')}}" class="link">CGI options</a> page.
-  </p>
+<p class="info">
+  The MPD files for live streams are dynamically
+  generated so that they appear to be live sources, using static media files.
+  Requests for manifests and for media fragments can be modified
+  using various CGI parameters, which are documented on the
+  <a href="{{url_for('cgi-options')}}" class="link">CGI options</a> page.
+</p>
 {% endblock %}
 
 {% block extrascripts %}
