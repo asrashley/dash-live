@@ -10,9 +10,8 @@ import {
   TextInput,
   TimeDeltaInput
 } from '@dashlive/ui';
+import { AllStreamsContext, MultiPeriodModelContext } from '@dashlive/hooks';
 import { AppStateContext } from '../../appState.js';
-import { MultiPeriodModelContext } from '../../hooks/useMultiPeriodStream.js';
-import { AllStreamsContext } from '../../hooks/useAllStreams.js';
 
 function PeriodOrder({addPeriod, deletePeriod}) {
   const menu = [
@@ -205,12 +204,16 @@ export function PeriodsTable() {
   const { user } = useContext(AppStateContext);
   const { errors, model, addPeriod, setOrdering } = useContext(MultiPeriodModelContext);
   const periods = useComputed(() => model.value?.periods ?? []);
-  const errorsDiv = useComputed(() => {
+  const errorList = useComputed(() => {
     if (errors.value.periods === undefined) {
-      return null;
+      return [];
     }
-    return Object.values(errors.value.periods).map(err =>
-      html`<${Alert} text=${err} level="warning" />`);
+    return Object.entries(errors.value.periods).map(([pid, err]) => {
+       if (pid === '_') {
+        return err;
+       }
+       return `${pid}: ${Object.values(err).join('. ')}`;
+    });
   });
 
   const setPeriodOrder = useCallback((items) => {
@@ -243,6 +246,6 @@ export function PeriodsTable() {
       <${Sortable} Component="ul" items=${periods} setItems=${setPeriodOrder} RenderItem=${renderItem} dataKey="pk" />
       <${ButtonToolbar} onAddPeriod=${addPeriodBtn} />
     </div>
-    ${ errorsDiv.value }
+    ${ errorList.value.map(err => html`<${Alert} text="${err}" level="warning" />`) }
   </div>`;
 }

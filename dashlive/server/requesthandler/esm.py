@@ -119,7 +119,7 @@ class ContentRoles(MethodView):
         body = flask.render_template('esm/content_roles.js', roles=roles)
         return flask.make_response((body, 200, headers))
 
-class UiComponents(MethodView):
+class BundleDirectory(MethodView):
     DEFAULT_IMPORT: ClassVar[re.Pattern] = re.compile(r'^import (?P<name>[^\s]+) from [''"](?P<library>[^''"]+)[''"];?$')
     NAMED_IMPORT: ClassVar[re.Pattern] = re.compile(
         r'^import\s+{\s*(?P<names>[^}]+)\s*}\s+from\s+[\'"](?P<library>[^\'"]+)[\'"];?$')
@@ -127,9 +127,9 @@ class UiComponents(MethodView):
     """
     Returns a bundle of all of the UI components
     """
-    def get(self) -> flask.Response:
+    def get(self, directory: str) -> flask.Response:
         static_dir: Path = Path(flask.current_app.config['STATIC_FOLDER'])
-        ui_folder: Path = static_dir / "js" / "spa" / "components"
+        ui_folder: Path = static_dir / "js" / "spa" / directory
         js_files: set[str] = set()
         test_file: re.Pattern[str] = re.compile(r'\.test\.')
         default_imports: dict[str, str] = {}
@@ -141,11 +141,17 @@ class UiComponents(MethodView):
             js_files.add(f"./{js.name}")
             code += self.process_file(js, default_imports, named_imports)
         body: io.TextIO = io.StringIO()
+        library: str
+        name: str
         for library, name in default_imports.items():
             if library not in js_files:
+                if library.startswith('../'):
+                    library = flask.url_for('static', filename=f"js/spa/{library[3:]}")
                 body.write(f"import {name} from '{library}';\n")
         for library, names in named_imports.items():
             if library not in js_files:
+                if library.startswith('../'):
+                    library = flask.url_for('static', filename=f"js/spa/{library[3:]}")
                 body.write(f"import {{{','.join(names)}}} from '{library}';\n")
         for line in code:
             body.write(f"{line}\n")

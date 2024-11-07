@@ -3,8 +3,8 @@ import { Link } from 'wouter-preact';
 import { useCallback, useContext } from 'preact/hooks'
 
 import { Icon} from '@dashlive/ui';
+import { useAllMultiPeriodStreams, AllMultiPeriodStreamsContext } from '@dashlive/hooks';
 import { AppStateContext } from '../../appState.js';
-import { useAllMultiPeriodStreams, AllMultiPeriodStreamsContext } from '../../hooks/useAllMultiPeriodStreams.js';
 import { routeMap } from '/libs/routemap.js';
 
 function TableRow({name, title, periods, duration}) {
