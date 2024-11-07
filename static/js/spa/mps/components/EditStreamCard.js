@@ -11,8 +11,12 @@ import { TrackSelectionDialog } from './TrackSelectionDialog.js';
 import { AppStateContext } from "../../appState.js";
 import { routeMap } from "/libs/routemap.js";
 
-import { useAllStreams, AllStreamsContext } from '../../hooks/useAllStreams.js';
-import { useMultiPeriodStream, MultiPeriodModelContext } from '../../hooks/useMultiPeriodStream.js';
+import {
+  useAllStreams,
+  AllStreamsContext,
+  useMultiPeriodStream,
+  MultiPeriodModelContext,
+  useMessages } from '@dashlive/hooks';
 
 function ButtonToolbar({errors, onSaveChanges, deleteStream, model, newStream}) {
   const { user } = useContext(AppStateContext);
@@ -53,6 +57,7 @@ function EditStreamForm({ name, newStream }) {
   const { model, modified, errors, setFields, saveChanges, deleteStream } = useContext(MultiPeriodModelContext)
   const { allStreams } = useContext(AllStreamsContext);
   const { dialog, user } = useContext(AppStateContext);
+  const { appendMessage } = useMessages();
   const abortController = useSignal(new AbortController());
   const deleteConfirmed = useComputed(
     () => dialog.value?.confirmDelete?.confirmed === true
@@ -81,14 +86,15 @@ function EditStreamForm({ name, newStream }) {
     [setFields]
   );
 
-  const onSaveChanges = useCallback(async () => {
+  const onSaveChanges = useCallback(() => {
     const { signal } = abortController.value;
-    const success = await saveChanges({signal});
-    if (success && newStream) {
-      const href = routeMap.listMps.url();
-      navigate(href, { replace: true });
-    }
-  }, [abortController.value, newStream, saveChanges]);
+    saveChanges({signal}).then(success => {
+      if (success && newStream) {
+        const href = routeMap.listMps.url();
+        navigate(href, { replace: true });
+      }
+    }).catch(err => appendMessage(`${err}`, "warning"));
+  }, [abortController.value, appendMessage, newStream, saveChanges]);
 
   const onDelete = useCallback(
     (ev) => {
@@ -139,7 +145,7 @@ function EditStreamForm({ name, newStream }) {
     error=${errors.value.title} disabled=${!canModify.value} />
   <${FormRow} className="${ canModify.value ? 'has-validation' : ''}"
     name="periods" label="Periods">
-    <${PeriodsTable} errors=${errors} />
+    <${PeriodsTable} />
   </${FormRow}>
   <${ButtonToolbar} errors=${errors} model=${model} modified=${modified} newStream=${newStream}
     onSaveChanges=${onSaveChanges} deleteStream=${onDelete} />

@@ -2,8 +2,8 @@ import { createContext } from "preact";
 import { useCallback, useContext, useEffect } from "preact/hooks";
 import { useSignal, useSignalEffect, useComputed } from "@preact/signals";
 
-import { AppStateContext, appendMessage } from "../appState.js";
 import { EndpointContext } from "../endpoints.js";
+import { useMessages } from "./useMessages.js";
 
 export const MultiPeriodModelContext = createContext();
 
@@ -35,7 +35,7 @@ export function validateModel({ model }) {
     errors.title = "Title is required";
   }
   if (value.periods.length === 0) {
-    errors.periods = { 0: "At least one Period is required" };
+    errors.periods = { _: "At least one Period is required" };
   }
   //TODO: add check for duplicate period IDs
   value.periods.forEach((prd) => {
@@ -145,7 +145,7 @@ function createDataFromModel(model) {
   };
 }
 
-async function saveChangesToModel({ apiRequests, messages, model, signal }) {
+async function saveChangesToModel({ apiRequests, model, signal, appendMessage }) {
   if (!model.value || signal.aborted) {
     return false;
   }
@@ -158,12 +158,12 @@ async function saveChangesToModel({ apiRequests, messages, model, signal }) {
     if (signal.aborted) {
       return false;
     }
-    result.errors?.forEach((err) => appendMessage(messages, err, "warning"));
+    result.errors?.forEach((err) => appendMessage(err, "warning"));
     if (result?.success === true) {
       if (data.pk === null) {
-        appendMessage(messages, `Added new stream ${name}`, "success");
+        appendMessage(`Added new stream ${name}`, "success");
       } else {
-        appendMessage(messages, `Saved changes to ${name}`, "success");
+        appendMessage(`Saved changes to ${name}`, "success");
       }
       model.value = {
         ...result.model,
@@ -173,33 +173,32 @@ async function saveChangesToModel({ apiRequests, messages, model, signal }) {
       return true;
     }
   } catch (err) {
-    appendMessage(messages, `${err}`, "warning");
+    appendMessage(`${err}`, "warning");
   }
 }
 
-async function deleteMpsStream({ apiRequests, messages, name, signal }) {
+async function deleteMpsStream({ apiRequests, name, signal, appendMessage }) {
   try {
     const result = await apiRequests.deleteMultiPeriodStream(name, {
       signal,
     });
     if (result.ok) {
-      appendMessage(messages, `Deleted stream ${name}`, "success");
+      appendMessage(`Deleted stream ${name}`, "success");
       return true;
     }
     appendMessage(
-      messages,
       `Failed to delete {name}: {result.status} {result.statusText}`,
       "warning"
     );
   } catch (err) {
-    appendMessage(messages, `${err}`, "warning");
+    appendMessage(`${err}`, "warning");
   }
   return false;
 }
 
 export function useMultiPeriodModel({ model, name }) {
   const apiRequests = useContext(EndpointContext);
-  const { messages } = useContext(AppStateContext);
+  const { appendMessage } = useMessages();
   const modified = useComputed(() => model.value?.modified ?? false);
   const lastModified = useComputed(() => model.value?.lastModified ?? 0);
   const localErrors = useComputed(() => validateModel({ model }));
@@ -253,13 +252,13 @@ export function useMultiPeriodModel({ model, name }) {
 
   const saveChanges = useCallback(
     ({ signal }) =>
-      saveChangesToModel({ apiRequests, messages, model, modified, signal }),
-    [apiRequests, messages, model, modified]
+      saveChangesToModel({ apiRequests, model, modified, signal, appendMessage }),
+    [apiRequests, appendMessage, model, modified]
   );
 
   const deleteStream = useCallback(
-    ({ signal }) => deleteMpsStream({ apiRequests, messages, name, signal }),
-    [apiRequests, messages, name]
+    ({ signal }) => deleteMpsStream({ apiRequests, name, signal, appendMessage }),
+    [apiRequests, appendMessage, name]
   );
 
   useSignalEffect(() => {
