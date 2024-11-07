@@ -62,7 +62,7 @@ def login_required(html=False, admin=False, permission: Group | None = None):
 
 def csrf_token_required(
         service: str,
-        next_url: Callable[..., str | None],
+        next_url: Callable[..., str | None] = lambda: None,
         optional: bool = False):
     """
     Decorator that requires a CSRF token check to pass
@@ -72,11 +72,11 @@ def csrf_token_required(
         def decorated_function(*args, **kwargs):
             token: str | None = None
             try:
-                if is_ajax():
-                    token = flask.request.json.get('csrf_token', None)
+                if flask.request.method != 'GET' and flask.request.is_json:
+                    token = flask.request.get_json().get('csrf_token', None)
                 if token is None:
                     token = flask.request.args.get('csrf_token')
-                if token is None:
+                if token is None and flask.request.method in {'POST', 'PUT'}:
                     token = flask.request.form.get('csrf_token')
                 if token is None and optional:
                     return func(*args, **kwargs)
@@ -88,7 +88,7 @@ def csrf_token_required(
                 if is_ajax():
                     return jsonify({'error': 'CSRF failure'}, 401)
                 flask.flash(f'CSRF error: {err}', 'error')
-                url = next_url(*args, **kwargs)
+                url: str | None = next_url(*args, **kwargs)
                 if url is None:
                     return flask.make_response('Not Authorized', 401)
                 return flask.redirect(url)
