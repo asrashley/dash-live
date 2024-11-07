@@ -155,7 +155,10 @@ class ListStreams(HTMLHandlerBase):
     View handler that provides a list of all multi-period streams
     in the database.
     """
-    decorators = [spa_handler]
+    decorators = [
+        csrf_token_required('streams'),
+        spa_handler,  # must be the last decorator so that it called before the others
+    ]
 
     def get(self) -> flask.Response:
         """
@@ -198,9 +201,11 @@ class AddStream(HTMLHandlerBase):
         """
         return jsonify_no_content(404)
 
+    @jwt_required()
+    @csrf_token_required('streams')
     def put(self) -> flask.Response:
         data: MultiPeriodStreamData = cast(
-            MultiPeriodStreamData, flask.request.json)
+            MultiPeriodStreamData, flask.request.get_json())
         if not data:
             return jsonify_no_content(400)
         csrf_key = self.generate_csrf_cookie()
@@ -245,7 +250,7 @@ class AddStream(HTMLHandlerBase):
 
 class ValidateStream(RequestHandlerBase):
     decorators = [
-        login_required(permission=models.Group.MEDIA),
+        csrf_token_required('streams'),
         jwt_required()
     ]
 
@@ -265,13 +270,15 @@ class PeriodFormInputs(NamedTuple):
 
 class EditStream(HTMLHandlerBase):
     decorators = [
+        csrf_token_required('streams'),
         uses_multi_period_stream,
+        jwt_required(),
         spa_handler,
     ]
 
     def get(self, mps_name: str) -> flask.Response:
         """
-        Returns a form for editing an MP stream
+        Returns details of an MP stream
         """
         if not is_ajax():
             logging.error('the spa_handler decorator should have handled this request')
@@ -288,7 +295,6 @@ class EditStream(HTMLHandlerBase):
         }
         return jsonify(result)
 
-    @jwt_required()
     def post(self, mps_name: str) -> flask.Response:
         data = flask.request.json
         if not data:
@@ -304,7 +310,6 @@ class EditStream(HTMLHandlerBase):
             })
         return self.handle_spa_data(mps_name, csrf_token)
 
-    @jwt_required()
     def delete(self, mps_name: str) -> flask.Response:
         logging.info('Deleting MultiPeriodStream: %s', mps_name)
         models.db.session.delete(current_mps)
