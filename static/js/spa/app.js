@@ -18,7 +18,7 @@ function NotFound(params) {
 export function App({tokens, user}) {
   const apiRequests = useMemo(() => new ApiRequests(tokens), [tokens]);
   const state = useMemo(() => createAppState(user), [user]);
-  const { backdrop, messages } = state;
+  const { backdrop } = state;
 
   useEffect(() => {
     const elt = document.querySelector('.modal-backdrop');
@@ -37,7 +37,7 @@ export function App({tokens, user}) {
 <${AppStateContext.Provider} value=${state}>
   <${BreadCrumbs} />
   <${EndpointContext.Provider} value=${apiRequests}>
-    <${MessagesPanel} messages=${messages} />
+    <${MessagesPanel} />
     <${Switch}>
       <${Route} component=${ListStreamsPage} path="${ routeMap.listMps.route }"/>
       <${Route} component=${AddStreamPage} path="${ routeMap.addMps.route }"/>

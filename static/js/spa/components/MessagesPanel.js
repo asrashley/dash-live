@@ -2,18 +2,15 @@ import { html } from 'htm/preact';
 import { useCallback } from 'preact/hooks'
 
 import { Alert } from './Alert.js';
+import { useMessages } from '@dashlive/hooks';
 
-export function MessagesPanel({messages}) {
-  const dismissAlert = useCallback((id) => {
-    const newAlerts = messages.value.alerts.filter(a => a.id !== id);
-    messages.value = {
-      ...messages.value,
-      alerts: newAlerts,
-    };
-  }, [messages]);
+export function MessagesPanel() {
+  const  { alerts, removeAlert } = useMessages();
 
-  const alerts = messages.value.alerts.map(
-    item => html`<${Alert} key=${item.id} onDismiss=${dismissAlert} ...${item} />`);
+  const onDismiss = useCallback((id) => {
+    removeAlert(id);
+  }, [removeAlert]);
 
-  return html`<div class="messages-panel">${ alerts }</div>`;
+  return html`<div class="messages-panel">${ alerts.value.map(
+    item => html`<${Alert} key=${item.id} onDismiss=${onDismiss} ...${item} />`) }</div>`;
 }
