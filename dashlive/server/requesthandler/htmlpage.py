@@ -212,9 +212,6 @@ class ES5MainPage(MainPage):
             'title': 'Home',
             'href': flask.url_for('es5-home'),
         }]
-        context['nav_warning'] = (
-            'Please upgrade your browser to use all of ' +
-            'the features of this site')
         return flask.render_template('es5/index.html', **context)
 
     def get_breadcrumbs(self, route: Route) -> list[NavBarItem]:
