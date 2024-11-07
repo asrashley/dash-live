@@ -1,5 +1,9 @@
 {% extends 'layout.html' %}
 
+{% if not force_es5 %}
+{% set nomodule = "nomodule" %}
+{% endif %}
+
 {% block content %}
 <div class="manifest-url rounded border">
   <span class="fw-semibold">Manifest URL: </span>
@@ -37,8 +41,10 @@
 {% endblock %}
 
 {% block extrascripts %}
-{% if nomodule %}
+{% if not force_es5 %}
 <script src="{{url_for('static', filename='js/index.js')}}" type="module" ></script>
 {% endif %}
-<script src="{{url_for('static', filename='js/legacy/index.js')}}" {{ nomodule }} type="text/javascript" defer></script>
+<script {{ nomodule }} type="text/javascript">
+document.location.replace("{{ url_for('es5-home') }}");
+</script>
 {% endblock %}

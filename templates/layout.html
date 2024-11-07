@@ -11,18 +11,22 @@
         <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
         {% block firstscript %}{% endblock %}
         {% block bootstrap %}
+        {%- if not force_es5 %}
         <link rel="stylesheet"
               href="{{url_for('static', filename='css/bootstrap.min.css')}}" />
         <link rel="stylesheet"
               href="{{url_for('static', filename='css/bootstrap-icons.min.css')}}" />
         <script src="{{ url_for('static', filename='js/prod/popper.min.js') }}" defer></script>
         <script src="{{ url_for('static', filename='js/prod/bootstrap.bundle.min.js') }}" type="text/javascript" defer></script>
+        {%- endif %}
         {% endblock %}
         {% block stylesheet %}
         <link rel="stylesheet" href="{{url_for('static', filename='css/main.css')}}" />
         {% endblock %}
         {% block importmap %}
+        {%- if not force_es5 %}
         <script type="importmap">{% include "importmap.json" %}</script>
+        {%- endif %}
         {% endblock %}
         {% block extraheaders %}{% endblock %}
     </head>
