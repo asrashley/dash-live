@@ -32,10 +32,10 @@
     </head>
     <body>
       <header>
-	{% block header %}
-	{% include 'navbar.html' %}
-	{% include 'breadcrumbs.html' %}
-        {% endblock %}
+	      {%- block header %}
+	      {% include 'navbar.html' %}
+	      {% include 'breadcrumbs.html' %}
+        {%- endblock %}
       </header>
       <div class="content container-fluid">
 	{% block messages %}
