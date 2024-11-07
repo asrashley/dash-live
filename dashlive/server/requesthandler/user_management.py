@@ -24,9 +24,12 @@ import datetime
 import logging
 
 import flask
+from flask_jwt_extended import jwt_required
 from flask_login import current_user, login_user, logout_user
+from flask.views import MethodView
 
 from dashlive.server import models
+from dashlive.server.requesthandler.csrf import CsrfProtection, CsrfTokenCollection
 from dashlive.utils.json_object import JsonObject
 
 from .base import HTMLHandlerBase, DeleteModelBase
@@ -280,3 +283,44 @@ class DeleteUser(DeleteModelBase):
 
     def get_next_url(self) -> str:
         return flask.url_for('list-users')
+
+
+def generate_csrf_tokens() -> CsrfTokenCollection:
+    csrf_key: str = CsrfProtection.generate_cookie()
+    if current_user.has_permission(models.Group.MEDIA):
+        return CsrfTokenCollection(
+            streams=CsrfProtection.generate_token('streams', csrf_key),
+            files=CsrfProtection.generate_token('files', csrf_key),
+            kids=CsrfProtection.generate_token('kids', csrf_key),
+            upload=CsrfProtection.generate_token('upload', csrf_key))
+    return CsrfTokenCollection(
+        streams=CsrfProtection.generate_token('streams', csrf_key),
+        files=None,
+        kids=None,
+        upload=None)
+
+
+class RefreshAccessToken(MethodView):
+    decorators = [
+        login_required(),
+        jwt_required(refresh=True),
+    ]
+
+    def get(self) -> flask.Response:
+        access_token: models.Token = models.Token.generate_api_token(
+            current_user, models.TokenType.ACCESS)
+        return jsonify({
+            'accessToken': access_token,
+            'csrfTokens': generate_csrf_tokens().to_dict(),
+        })
+
+
+class RefreshCsrfTokens(MethodView):
+    decorators = [
+        jwt_required(),
+    ]
+
+    def get(self) -> flask.Response:
+        return jsonify({
+            'csrfTokens': generate_csrf_tokens().to_dict(),
+        })

@@ -16,12 +16,16 @@ class CsrfTokenStore {
     }
   }
 
-  async getToken(signal) {
+  async getToken(signal, refreshFn) {
+    if (!this.token && refreshFn) {
+      await refreshFn();
+    }
     const { token } = this;
     if (token) {
       this.token = null;
       return token;
     }
+
     const {promise, resolve, reject} = Promise.withResolvers();
     if (signal) {
       signal.addEventListener('abort', () => {
@@ -48,61 +52,101 @@ export class ApiRequests {
     this.refreshToken = refreshToken;
   }
 
-  getAllStreams({ withDetails = false, ...options} = {}) {
-    const query = withDetails ? new URLSearchParams({details:1}) : undefined;
-    return this.sendApiRequest(routeMap.listStreams.url(), {
-      service: 'streams',
+  async getAllStreams({ withDetails = false, ...options} = {}) {
+    const service = 'streams';
+    const csrf_token = await this.csrfTokens[service].getToken(
+      options?.signal, this.getCsrfTokens);
+    const query = new URLSearchParams({
+      details: withDetails ? 1 : 0,
+      csrf_token,
+    });
+    return await this.sendApiRequest(routeMap.listStreams.url(), {
+      service,
       query,
       ...options,
     });
   }
 
-  getAllMultiPeriodStreams(options) {
-    return this.sendApiRequest(routeMap.listMps.url(), {
-      service: 'streams',
+  async getAllMultiPeriodStreams(options) {
+    const service = 'streams';
+    const csrf_token = await this.csrfTokens[service].getToken(
+      options?.signal, this.getCsrfTokens);
+    const query = new URLSearchParams({
+      csrf_token,
+    });
+    return await this.sendApiRequest(routeMap.listMps.url(), {
+      service,
+      query,
       ...options,
     });
   }
 
-  getMultiPeriodStream(mps_name, options) {
-    return this.sendApiRequest(routeMap.editMps.url({mps_name}), {
-      service: 'streams',
+  async getMultiPeriodStream(mps_name, options) {
+    const service = 'streams';
+    const csrf_token = await this.csrfTokens[service].getToken(
+      options?.signal, this.getCsrfTokens);
+    const query = new URLSearchParams({
+      csrf_token,
+    });
+    return await this.sendApiRequest(routeMap.editMps.url({mps_name}), {
+      service,
+      query,
       ...options,
     });
   }
 
-  addMultiPeriodStream(data, options) {
-    return this.sendApiRequest(routeMap.addMps.url(), {
+  async addMultiPeriodStream(data, options) {
+    const service = 'streams';
+    const csrf_token = await this.csrfTokens[service].getToken(
+      options?.signal, this.getCsrfTokens);
+    return await this.sendApiRequest(routeMap.addMps.url(), {
       ...options,
-      service: 'streams',
-      body: JSON.stringify(data),
+      service,
+      body: JSON.stringify({
+        ...data,
+        csrf_token
+      }),
       method: 'PUT',
     });
   }
 
-  modifyMultiPeriodStream(mps_name, data, options) {
-    return this.sendApiRequest(routeMap.editMps.url({mps_name}), {
+  async modifyMultiPeriodStream(mps_name, data, options) {
+    const service = 'streams';
+    const csrf_token = await this.csrfTokens[service].getToken(
+      options?.signal, this.getCsrfTokens);
+    return await this.sendApiRequest(routeMap.editMps.url({mps_name}), {
       ...options,
-      service: 'streams',
-      body: JSON.stringify(data),
+      service,
+      body: JSON.stringify({...data, csrf_token}),
       method: 'POST',
     });
   }
 
-  deleteMultiPeriodStream(mps_name, options) {
+  async deleteMultiPeriodStream(mps_name, options) {
+    const service = 'streams';
+    const csrf_token = await this.csrfTokens[service].getToken(
+      options?.signal, this.getCsrfTokens
+    );
+    const query = new URLSearchParams({
+      csrf_token,
+    });
     return this.sendApiRequest(routeMap.editMps.url({mps_name}), {
       ...options,
-      service: 'streams',
+      service,
+      query,
       method: 'DELETE',
     });
   }
 
-  validateMultiPeriodStream(data, options) {
+  async validateMultiPeriodStream(data, options) {
+    const service = 'streams';
+    const csrf_token = await this.csrfTokens[service].getToken(
+      options?.signal, this.getCsrfTokens);
     return this.sendApiRequest(routeMap.validateMps.url(), {
       ...options,
       method: 'POST',
       service: 'streams',
-      body: JSON.stringify(data),
+      body: JSON.stringify({...data, csrf_token}),
     });
   }
 
@@ -110,9 +154,6 @@ export class ApiRequests {
     const { authorization, body, service, signal, method='GET' } = options;
     let { query } = options;
     let usedAccessToken = false;
-    if (this.csrfTokens[service] === undefined) {
-      throw new Error(`Unknown service "${service}"`);
-    }
     const headers = {
       "Content-Type": "application/json",
     }
@@ -126,6 +167,9 @@ export class ApiRequests {
         headers.Authorization = `Bearer ${this.accessToken.jti}`;
         usedAccessToken = true;
       } else {
+        if (this.csrfTokens[service] === undefined) {
+          throw new Error(`Unknown service "${service}"`);
+        }
         const token = await this.csrfTokens[service].getToken();
         if (query === undefined) {
           query = new URLSearchParams({csrf_token: token});
@@ -158,7 +202,7 @@ export class ApiRequests {
     if (fetchResult.status === 401 && usedAccessToken && this.refreshToken) {
       const { jti } = this.accessToken;
       await this.getAccessToken(signal);
-      if (signal && signal.aborted) {
+      if (signal?.aborted) {
         throw signal.reason;
       }
       if (!this.accessToken?.jti || jti === this.accessToken.jti) {
@@ -178,14 +222,14 @@ export class ApiRequests {
     if (!fetchResult.ok) {
       throw new Error(`${ url }: ${ fetchResult.status }`);
     }
-    if (signal && signal.aborted) {
+    if (signal?.aborted) {
       throw signal.reason;
     }
     if (fetchResult.status !== 200) {
       return fetchResult;
     }
     const data = await fetchResult.json();
-    if (signal && signal.aborted) {
+    if (signal?.aborted) {
       throw signal.reason;
     }
     if (typeof(data?.csrfTokens) === "object") {
@@ -217,12 +261,30 @@ export class ApiRequests {
       authorization: this.refreshToken.jti,
       signal,
     };
-    const data = await this.sendApiRequest(routeMap.getAccessToken.url(), options);
-    const { accessToken } = data ?? {};
+    const data = await this.sendApiRequest(routeMap.refreshAccessToken.url(), options);
+    const { accessToken, csrfTokens } = data ?? {};
     if (accessToken) {
       this.accessToken = accessToken;
     }
+    if (csrfTokens) {
+      this.updateCsrfTokens(csrfTokens);
+    }
   }
+
+  getCsrfTokens = async (signal) => {
+    if (this.accessToken === undefined) {
+      throw new Error('Cannot request CSRF tokens without an access token');
+    }
+    const options = {
+      authorization: this.accessToken.jti,
+      signal,
+    };
+    const data = await this.sendApiRequest(routeMap.refreshCsrfTokens.url(), options);
+    const { csrfTokens } = data ?? {};
+    if (csrfTokens) {
+      this.updateCsrfTokens(csrfTokens);
+    }
+  };
 }
 
 export function routeFromUrl(url) {

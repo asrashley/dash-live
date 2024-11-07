@@ -246,6 +246,14 @@ routes = {
         r'/users/<int:upk>/delete',
         handler='user_management.DeleteUser',
         title='Delete User'),
+    "refresh-access-token": Route(
+        r'/user/refresh/access',
+        handler='user_management.RefreshAccessToken',
+        title='Refresh access token'),
+    "refresh-csrf-tokens": Route(
+        r'/user/refresh/csrf',
+        handler='user_management.RefreshCsrfTokens',
+        title='Refresh access token'),
     'list-mps': Route(
         r'/multi-period-streams',
         handler='multi_period_streams.ListStreams',
