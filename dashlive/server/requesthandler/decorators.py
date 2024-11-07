@@ -319,6 +319,7 @@ def spa_handler(func):
         context: TemplateContext = create_template_context(
             title='DASH Test Streams', params=kwargs,
             navbar=navbar, routes=routes, breadcrumbs=breadcrumbs,
-            initialTokens=initial_tokens, user=user)
+            initialTokens=initial_tokens, user=user,
+            force_es5=('es5' in flask.request.args))
         return flask.render_template('spa/index.html', **context)
     return decorated_function
