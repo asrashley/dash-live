@@ -4,9 +4,8 @@ import { useComputed } from "@preact/signals";
 import { ContentRoles } from '/libs/content_roles.js';
 
 import { CheckBox, ModalDialog } from '@dashlive/ui';
+import { AllStreamsContext, MultiPeriodModelContext } from '@dashlive/hooks';
 import { AppStateContext } from '../../appState.js';
-import { MultiPeriodModelContext } from '../../hooks/useMultiPeriodStream.js';
-import { AllStreamsContext } from '../../hooks/useAllStreams.js';
 
 function RoleSelect({roles, value, onChange, disabled}) {
   return html`

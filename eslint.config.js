@@ -71,6 +71,7 @@ export default [
           "error",
           {
             ignore: [
+              "^@dashlive/hooks",
               "^@dashlive/ui",
               "^/libs/default-options.js$",
               "^/libs/routemap.js$",
