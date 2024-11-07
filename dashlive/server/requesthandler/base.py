@@ -193,17 +193,16 @@ class HTMLHandlerBase(RequestHandlerBase):
     Base class for all HTML pages
     """
 
-    def create_context(self, **kwargs):
-        context = super().create_context(**kwargs)
-        if 'nomodule' not in flask.request.args:
-            context['nomodule'] = 'nomodule'
-        route = routes[flask.request.endpoint]
-        navbar = create_navbar_context()
+    def create_context(self, **kwargs) -> TemplateContext:
+        context: TemplateContext = super().create_context(**kwargs)
+        route: Route = routes[flask.request.endpoint]
+        navbar: list[NavBarItem] = create_navbar_context()
         context.update({
             "title": kwargs.get('title', route.title),
             "breadcrumbs": self.get_breadcrumbs(route),
             "navbar": navbar,
             'routes': routes,
+            'force_es5': 'es5' in flask.request.args,
         })
         return context
 
