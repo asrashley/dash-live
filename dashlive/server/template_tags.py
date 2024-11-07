@@ -37,21 +37,6 @@ from dashlive.utils.date_time import (
 )
 
 @dataclass(slots=True, frozen=True)
-class ScriptTag:
-    SCRIPT_TEMPLATE: ClassVar[str] = r'<script src="{js_filename}" type="text/javascript"></script>'
-
-    filename: str
-    dev: bool
-
-    def __html__(self) -> str:
-        mode = 'dev' if self.dev else 'prod'
-        minify = '' if self.dev else '.min'
-        js_filename = url_for(
-            'static', filename=f'js/{mode}/{self.filename}{minify}.js')
-        return self.SCRIPT_TEMPLATE.format(js_filename=js_filename)
-
-
-@dataclass(slots=True, frozen=True)
 class HtmlSafeString:
     html: str
 
@@ -260,11 +245,6 @@ def plural(value: int, singular: str, plural_text: str) -> str:
     if value == 1:
         return f"{value} {singular}"
     return f"{value} {plural_text}"
-
-@custom_tags.app_template_global()
-def import_script(filename: str) -> ScriptTag:
-    debug = current_app.config.get('JS_DEBUG', False)
-    return ScriptTag(filename, debug)
 
 @custom_tags.app_template_global()
 def sort_icon(name: str, order: str, reverse: bool) -> str:
