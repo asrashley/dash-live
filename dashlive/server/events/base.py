@@ -68,17 +68,20 @@ class EventBase(ObjectWithFields):
 
         result: list[DashOption] = []
         for key, dflt in cls.DEFAULT_VALUES.items():
-            name = f'{cls.PREFIX}_{key}'
-            short_name = cls.PREFIX[:3] + key.title()[:4]
+            name: str = f"{cls.PREFIX}__{key}"
+            short_name: str = f"{cls.PREFIX[:3]}{key.title()[:4]}"
             cgi_choices = None
+            input_type: str = 'text'
             to_string = default_to_string
             if isinstance(dflt, bool):
                 from_string = DashOption.bool_from_string
                 to_string = DashOption.bool_to_string
                 cgi_type = '(0|1)'
+                input_type = 'checkbox'
                 cgi_choices = (str(dflt), str(not dflt))
             elif isinstance(dflt, int):
                 from_string = cls.int_or_default_from_string(dflt)
+                input_type = 'number'
                 cgi_type = '<int>'
                 cgi_choices = tuple([str(dflt)])
             elif isinstance(dflt, (
@@ -100,6 +103,7 @@ class EventBase(ObjectWithFields):
                 title=f'{cls.PREFIX.title()} {key}',
                 description='',
                 prefix=cls.PREFIX,
+                input_type=input_type,
                 cgi_name=name,
                 cgi_type=cgi_type,
                 cgi_choices=cgi_choices,

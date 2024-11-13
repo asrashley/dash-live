@@ -162,7 +162,7 @@ class TestTemplateTags(unittest.TestCase):
             'number': 42,
         }
         actual = tags.toJson(value)
-        expected = r'{"hello": "world", "boolean": true, "number": 42}'
+        expected = r'{"boolean": true, "hello": "world", "number": 42}'
         self.assertEqual(expected, actual)
 
     def test_toUuid(self) -> None:

@@ -24,9 +24,9 @@ import binascii
 from dataclasses import dataclass
 import datetime
 import json
-from typing import Any, ClassVar
+from typing import Any
 
-from flask import Blueprint, current_app, url_for
+from flask import Blueprint, url_for
 
 from dashlive.utils.objects import flatten_iterable
 from dashlive.utils.date_time import (
@@ -170,7 +170,7 @@ def toJson(value, indent: int | None = None):
     try:
         if isinstance(value, (dict, list, set, tuple)):
             value = flatten_iterable(value)
-        return json.dumps(value, indent=indent, default=json_encoder)
+        return json.dumps(value, indent=indent, default=json_encoder, sort_keys=True)
     except ValueError as err:
         return str(err)
 

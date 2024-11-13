@@ -4,10 +4,11 @@ import { useSignal, useComputed } from "@preact/signals";
 import { Link } from "wouter-preact";
 import { navigate } from "wouter-preact/use-browser-location";
 
-import { Card, FormRow, TextInputRow } from "@dashlive/ui";
+import { Card, FormRow, PrettyJson, TextInputRow } from "@dashlive/ui";
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog.js';
 import { PeriodsTable } from "./PeriodsTable.js";
 import { TrackSelectionDialog } from './TrackSelectionDialog.js';
+import { OptionsDialog } from './OptionsDialog.js';
 import { AppStateContext } from "../../appState.js";
 import { routeMap } from "/libs/routemap.js";
 
@@ -51,6 +52,28 @@ function ButtonToolbar({errors, onSaveChanges, deleteStream, model, newStream}) 
       ${model.value.modified ? "Discard Changes" : "Back"}
     </${Link}>
   </div>`;
+}
+
+function OptionsRow({name}) {
+  const { model } = useContext(MultiPeriodModelContext)
+  const { dialog } = useContext(AppStateContext);
+  const options = useComputed(() => model.value.options ?? {});
+
+  const openDialog = () => {
+    dialog.value = {
+      mpsOptions: {
+        options: options.value,
+        name,
+      },
+      backdrop: true,
+    };
+  };
+
+  return html`<${FormRow} name="options" label="Stream Options" type="json">
+  <div className="d-flex flex-row">
+<${PrettyJson} className="flex-fill me-1" data=${options.value} />
+<button class="btn btn-primary" onClick=${openDialog}>Options</button>
+  </div></${FormRow}>`;
 }
 
 function EditStreamForm({ name, newStream }) {
@@ -143,6 +166,7 @@ function EditStreamForm({ name, newStream }) {
   <${TextInputRow} name="title" label="Title" value=${model.value.title}
     text="Title for this stream" onInput=${setTitle}
     error=${errors.value.title} disabled=${!canModify.value} />
+  <${OptionsRow} name="${name}" />
   <${FormRow} className="${ canModify.value ? 'has-validation' : ''}"
     name="periods" label="Periods">
     <${PeriodsTable} />
@@ -162,16 +186,22 @@ function Header({newStream, name}) {
 }
 
 export function EditStreamCard({ name, newStream }) {
+  const { dialog } = useContext(AppStateContext);
   const modelContext = useMultiPeriodStream({name, newStream});
   const streamsContext = useAllStreams();
   const header = html`<${Header} name=${name} newStream=${newStream} />`;
+
+  const closeDialog = useCallback(() => {
+    dialog.value = null;
+  }, [dialog]);
 
   return html`<${AllStreamsContext.Provider} value=${streamsContext}>
   <${MultiPeriodModelContext.Provider} value=${modelContext}>
     <${Card} header=${header} id="edit_mps_form">
       <${EditStreamForm} name=${name} newStream=${newStream} />
     </${Card}>
-    <${TrackSelectionDialog} />
-    <${ConfirmDeleteDialog} />
+    <${TrackSelectionDialog} onClose=${closeDialog} />
+    <${ConfirmDeleteDialog} onClose=${closeDialog} />
+    <${OptionsDialog} onClose=${closeDialog} />
   </${MultiPeriodModelContext.Provider}></${AllStreamsContext.Provider}>`;
 }

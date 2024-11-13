@@ -25,7 +25,7 @@ function Footer({ deleting, onConfirm, onCancel }) {
   </div>`;
 }
 
-export function ConfirmDeleteDialog() {
+export function ConfirmDeleteDialog({onClose}) {
   const { dialog } = useContext(AppStateContext);
 
   const confirmDelete = useComputed(() => dialog.value?.confirmDelete);
@@ -35,10 +35,6 @@ export function ConfirmDeleteDialog() {
   }
 
   const { name } = confirmDelete.value;
-
-  const onClose = () => {
-    dialog.value = null;
-  };
 
   const onConfirm = () => {
     if (!confirmDelete.value) {
