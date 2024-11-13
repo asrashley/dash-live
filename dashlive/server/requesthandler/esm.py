@@ -27,9 +27,15 @@ from typing import ClassVar
 import flask
 from flask.views import MethodView  # type: ignore
 
+from dashlive.components.field_group import InputFieldGroup
+from dashlive.drm.system import DrmSystem
+from dashlive.server.options.container import OptionsContainer
+from dashlive.server.options.dash_option import DashOption
 from dashlive.server.options.repository import OptionsRepository
+from dashlive.server.options.types import OptionUsage
 from dashlive.mpeg.dash.content_role import ContentRole
 from dashlive.server.routes import routes
+
 
 class ModuleWrapper(MethodView):
     """
@@ -40,12 +46,8 @@ class ModuleWrapper(MethodView):
         headers = {
             'Content-Type': 'application/javascript',
         }
-        context = {}
-        if 'default' in filename:
-            context['defaults'] = OptionsRepository.get_default_options().generate_cgi_parameters(
-                exclude={'_type'})
         # TODO: check if filename exists
-        body = flask.render_template(f'esm/{filename}', **context)
+        body = flask.render_template(f'esm/{filename}')
         return flask.make_response((body, 200, headers))
 
 
@@ -118,6 +120,48 @@ class ContentRoles(MethodView):
             roles[role.name.lower()] = [use.name.lower() for use in role.usage()]
         body = flask.render_template('esm/content_roles.js', roles=roles)
         return flask.make_response((body, 200, headers))
+
+
+class OptionFieldGroups(MethodView):
+    """
+    Returns JavaScript source that defines all input fields for all CGI options and
+    their defaults.
+    """
+    def get(self) -> flask.Response:
+        field_name_map = {}
+        for opt in OptionsRepository.get_dash_options(use=~OptionUsage.HTML):
+            if opt.prefix:
+                field_name_map[f"{opt.prefix}__{opt.cgi_name}"] = opt
+            else:
+                field_name_map[opt.cgi_name] = opt
+        options: OptionsContainer = OptionsRepository.get_default_options()
+        field_groups: list[InputFieldGroup] = options.generate_input_field_groups(
+            {},
+            exclude={
+                'audioCodec', 'audioErrors', 'audioDescription',
+                'dashjsVersion', 'mainAudio', 'mainText',
+                'mode', 'manifestErrors', 'textErrors', 'videoErrors',
+                'numPeriods', 'shakaVersion', 'failureCount',
+                'textCodec', 'textLanguage',
+                'videoCorruption', 'videoCorruptionFrameCount',
+                'videoPlayer', 'updateCount', 'utcValue'})
+        for group in field_groups:
+            for field in group.fields:
+                try:
+                    opt: DashOption = field_name_map[field['name']]
+                except KeyError:
+                    continue
+                field['shortName'] = opt.short_name
+                field['fullName'] = opt.full_name
+        body: str = flask.render_template(
+            'esm/options.js', default_options=options.toJSON(exclude={"_type"}), drm_systems=DrmSystem.values(),
+            field_groups=field_groups)
+        headers: dict[str, str] = {
+            'Content-Type': 'application/javascript',
+            'Content-Length': len(body),
+        }
+        return flask.make_response((body, 200, headers))
+
 
 class BundleDirectory(MethodView):
     DEFAULT_IMPORT: ClassVar[re.Pattern] = re.compile(r'^import (?P<name>[^\s]+) from [''"](?P<library>[^''"]+)[''"];?$')

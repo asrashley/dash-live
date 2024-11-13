@@ -51,21 +51,24 @@ export function validateModel({ model }) {
   return errors;
 }
 
-function modifyPeriod({ model, periodPk, track, period }) {
+function modifyPeriod({ model, periodPk, track, tracks: newTracks, period }) {
   let { modified, lastModified = 0 } = model.value;
   const periods = model.value.periods.map((prd) => {
     if (prd.pk !== periodPk) {
       return prd;
     }
-    const tracks = {
-      ...prd.tracks,
-    };
+    let tracks = newTracks ? newTracks: prd.tracks;
     if (track) {
-      if (track.enabled) {
-        tracks[track.track_id] = track.role;
-      } else {
-        delete tracks[track.track_id];
-      }
+      const { track_id } = track;
+      tracks = tracks.map(tk => {
+        if (tk.track_id === track_id) {
+          return {
+            ...tk,
+            ...track,
+          };
+        }
+        return tk;
+      });
     }
     modified = true;
     return {
@@ -94,7 +97,7 @@ function setOrdering({ model, periodPks }) {
   });
   periods.sort((a, b) => a.ordering - b.ordering);
   model.value = {
-    ...model,
+    ...model.value,
     periods,
     modified: true,
   };
@@ -120,7 +123,7 @@ function addPeriodToModel({ model }) {
     stream: "",
     start: "",
     duration: "",
-    tracks: {},
+    tracks: [],
   };
 
   model.value = {
@@ -131,11 +134,29 @@ function addPeriodToModel({ model }) {
   };
 }
 
+function decorateLoadedModel(model) {
+  const periods = model.periods.map(prd => {
+    const tracks = prd.tracks.map((tk) => ({...tk, enabled: true}));
+    return {
+      ...prd,
+      tracks,
+    };
+  });
+  return {
+    ...model,
+    periods,
+    options: model.options ?? {},
+    lastModified: 0,
+    modified: false,
+  };
+}
+
 function createDataFromModel(model) {
   const periods = model.value.periods.map((prd) => {
     const period = {
       ...prd,
       pk: typeof prd.pk === "number" ? prd.pk : null,
+      tracks: prd.tracks.filter(tk => tk.enabled),
     };
     return period;
   });
@@ -145,7 +166,7 @@ function createDataFromModel(model) {
   };
 }
 
-async function saveChangesToModel({ apiRequests, model, signal, appendMessage }) {
+async function saveChangesToModel({ apiRequests, model, name, signal, appendMessage }) {
   if (!model.value || signal.aborted) {
     return false;
   }
@@ -166,8 +187,7 @@ async function saveChangesToModel({ apiRequests, model, signal, appendMessage })
         appendMessage(`Saved changes to ${name}`, "success");
       }
       model.value = {
-        ...result.model,
-        modified: false,
+        ...decorateLoadedModel(result.model),
         lastModified: Date.now(),
       };
       return true;
@@ -233,8 +253,8 @@ export function useMultiPeriodModel({ model, name }) {
   );
 
   const modify = useCallback(
-    ({ periodPk, track, period = {} }) =>
-      modifyPeriod({ model, periodPk, track, period }),
+    ({ periodPk, track, tracks, period = {} }) =>
+      modifyPeriod({ model, periodPk, track, tracks, period }),
     [model]
   );
 
@@ -252,8 +272,8 @@ export function useMultiPeriodModel({ model, name }) {
 
   const saveChanges = useCallback(
     ({ signal }) =>
-      saveChangesToModel({ apiRequests, model, modified, signal, appendMessage }),
-    [apiRequests, appendMessage, model, modified]
+      saveChangesToModel({ apiRequests, model, modified, name, signal, appendMessage }),
+    [apiRequests, appendMessage, model, modified, name]
   );
 
   const deleteStream = useCallback(
@@ -317,6 +337,7 @@ const blankModel = {
   pk: null,
   name: "",
   title: "",
+  options: {},
   periods: [],
   modified: false,
 };
@@ -338,11 +359,7 @@ async function fetchStreamIfRequired({
     const data = await apiRequests.getMultiPeriodStream(name, { signal });
     if (!signal.aborted) {
       loaded.value = name;
-      model.value = {
-        ...data.model,
-        lastModified: 0,
-        modified: false,
-      };
+      model.value = decorateLoadedModel(data.model);
     }
   }
 }

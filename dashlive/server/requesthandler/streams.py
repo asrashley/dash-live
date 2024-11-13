@@ -523,7 +523,7 @@ class EditStreamDefaults(HTMLHandlerBase):
         for name in DrmSystem.values():
             if flask.request.form.get(f'drm_{name}', '') != 'on':
                 continue
-            loc = flask.request.form.get(f'{name}_drmloc', 'all')
+            loc = flask.request.form.get(f'{name}__drmloc', 'all')
             drms.append(f'{name}-{loc}')
         form['drm'] = ','.join(drms)
         form['events'] = ','.join(flask.request.form.getlist('events'))

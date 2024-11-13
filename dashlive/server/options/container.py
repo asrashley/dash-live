@@ -249,14 +249,14 @@ class OptionsContainer(ObjectWithFields):
         result: list[InputFieldGroup] = []
         for name, fields in sorted(sections.items()):
             if name == "":
-                result.append(InputFieldGroup('General Options', fields, show=True))
+                result.append(InputFieldGroup('general', 'General Options', fields, show=True))
             else:
-                result.append(InputFieldGroup(f'{name.title()} Options', fields))
+                result.append(InputFieldGroup(name, f'{name.title()} Options', fields))
         return result
 
     def generate_input_fields(self, field_choices: dict,
                               exclude: AbstractSet | None = None) -> list[JsonObject]:
-        fields = []
+        fields: list[JsonObject] = []
         if exclude is None:
             exclude = set()
         for key, value in self.items():
@@ -298,7 +298,7 @@ class OptionsContainer(ObjectWithFields):
                 drms[item[0]] = locs
         for name in DrmSystem.values():
             fields.append({
-                "name": f'drm_{name}',
+                "name": f'{name}__enabled',
                 "title": f'{name.title()} DRM',
                 "text": f'Enable {name.title()} DRM support?',
                 "value": name in drms,
@@ -312,7 +312,7 @@ class OptionsContainer(ObjectWithFields):
                 val = ''
             input = DrmLocationOption.input_field(val, {})
             input.update({
-                'name': f'{name}_{input["name"]}',
+                'name': f'{name}__{input["name"]}',
                 'title': f'{name.title()} location',
                 'rowClass': f'row mb-3 drm-location prefix-{name}',
                 'prefix': name,
