@@ -37,7 +37,7 @@ ClearkeyLicenseUrl = DashOption(
     description='Override the Clearkey license URL field',
     from_string=DashOption.unquoted_url_or_none_from_string,
     to_string=DashOption.quoted_url_or_none_to_string,
-    cgi_name='clearkey_la_url',
+    cgi_name='clearkey__la_url',
     cgi_type='<escaped-url>')
 
 HTML_DESCRIPTION = '''
@@ -148,7 +148,7 @@ MarlinLicenseUrl = DashOption(
     description='Override the Marlin S-URL field',
     from_string=DashOption.unquoted_url_or_none_from_string,
     to_string=DashOption.quoted_url_or_none_to_string,
-    cgi_name='marlin_la_url',
+    cgi_name='marlin__la_url',
     cgi_type='<escaped-url>')
 
 PlayreadyLicenseUrl = DashOption(
@@ -159,7 +159,7 @@ PlayreadyLicenseUrl = DashOption(
     description='Override the Playready LA_URL field',
     from_string=DashOption.unquoted_url_or_none_from_string,
     to_string=DashOption.quoted_url_or_none_to_string,
-    cgi_name='playready_la_url',
+    cgi_name='playready__la_url',
     cgi_type='<escaped-url>',
     prefix='playready')
 
@@ -172,7 +172,8 @@ PlayreadyPiff = DashOption(
     description='Include PIFF sample encryption data',
     from_string=DashOption.bool_from_string,
     to_string=DashOption.bool_to_string,
-    cgi_name='playready_piff',
+    input_type='checkbox',
+    cgi_name='playready__piff',
     cgi_choices=('1', '0'))
 
 PlayreadyVersion = DashOption(
@@ -183,7 +184,7 @@ PlayreadyVersion = DashOption(
     title='Playready Version',
     description='Set the PlayReady version compatibility for this stream',
     from_string=DashOption.float_or_none_from_string,
-    cgi_name='playready_version',
+    cgi_name='playready__version',
     cgi_choices=(None, '1.0', '2.0', '3.0', '4.0'))
 
 drm_options = [

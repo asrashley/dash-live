@@ -304,6 +304,10 @@ routes = {
         r'/libs/content_roles.js',
         handler='esm.ContentRoles',
         title='MPEG content roles'),
+    "option-field-groups": Route(
+        r'/libs/options.js',
+        handler='esm.OptionFieldGroups',
+        title='options fields'),
     "spa-bundle": Route(
         r'/libs/bundle/<directory>.js',
         handler='esm.BundleDirectory',

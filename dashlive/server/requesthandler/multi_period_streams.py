@@ -31,15 +31,36 @@ from .decorators import (
 )
 from .utils import is_ajax, jsonify, jsonify_no_content
 
+class TracksItemPayload:
+    track_id: int
+    role: ContentRole
+    lang: str | None
+    encrypted: bool
+
+    def __init__(self, track_id: int, role: str, lang: str | None = None,
+                 encrypted: bool = False, **kwargs) -> None:
+        self.track_id = track_id
+        self.role = ContentRole.from_string(role)
+        self.lang = lang
+        self.encrypted = encrypted
+
+class TracksJsonPayload(TypedDict):
+    track_id: int
+    role: str
+    lang: str | None = None
+    encrypted: bool = False
+
 class PeriodJsonData(TypedDict):
     duration: str
+    encrypted: bool
+    lang: str | None
     ordering: int
     parent: int
     pid: str
     pk: int | None
     start: str
     stream: int
-    tracks: dict[int, str]
+    tracks: list[TracksJsonPayload]
 
 
 class MultiPeriodStreamData(TypedDict):
@@ -100,25 +121,28 @@ def process_period(mp_stream: models.MultiPeriodStream,
     unused_tracks: set[int] = set()
     for trk in period.adaptation_sets:
         unused_tracks.add(trk.pk)
-    for track_id, role_str in data['tracks'].items():
+
+    for tkd in data['tracks']:
+        tip: TracksItemPayload = TracksItemPayload(**tkd)
         adp: models.AdaptationSet | None = None
-        role: ContentRole = ContentRole.from_string(role_str)
         if period.pk:
             adp = models.AdaptationSet.get(
-                track_id=track_id, period=period)
+                track_id=tip.track_id, period=period)
         if adp:
             unused_tracks.remove(adp.pk)
-            adp.role = role
+            adp.role = tip.role
+            adp.encrypted = tip.encrypted
+            adp.lang = tip.lang
         else:
             content_type: models.ContentType | None = models.ContentType.get(
                 name='application')
             assert content_type is not None
             adp = models.AdaptationSet(
-                period=period, track_id=track_id, role=role,
-                content_type=content_type)
+                period=period, track_id=tip.track_id, role=tip.role, lang=tip.lang,
+                content_type=content_type, encrypted=tip.encrypted)
             stmt = models.db.select(models.MediaFile).filter(
                 models.MediaFile.stream_pk == stream.pk,
-                models.MediaFile.track_id == track_id,
+                models.MediaFile.track_id == tip.track_id,
                 models.MediaFile.content_type is not None)
             for mf in models.db.session.execute(stmt).scalars():
                 ct: models.ContentType | None = models.ContentType.get(name=mf.content_type)
@@ -133,13 +157,11 @@ def process_period(mp_stream: models.MultiPeriodStream,
 
 
 def mps_as_dict(mps: models.MultiPeriodStream) -> MultiPeriodStreamData:
-    model = mps.to_dict(with_collections=False)
+    model: MultiPeriodStreamData = mps.to_dict(with_collections=False)
     model['periods'] = []
     for period in mps.periods:
         p_js = period.to_dict()
-        p_js['tracks'] = {}
-        for adp in period.adaptation_sets:
-            p_js['tracks'][adp.track_id] = adp.role.name.lower()
+        p_js['tracks'] = [adp.to_dict(exclude={'period_pk'}) for adp in period.adaptation_sets]
         model['periods'].append(p_js)
     return model
 
@@ -238,7 +260,7 @@ class AddStream(HTMLHandlerBase):
                        ) -> tuple[models.MultiPeriodStream, list[str]]:
         errors: list[str] = []
         stream = models.MultiPeriodStream(
-            name=data["name"], title=data['title'])
+            name=data["name"], title=data['title'], options=data.get('options'))
         models.db.session.add(stream)
         models.db.session.flush()
         for period in data['periods']:
@@ -320,6 +342,7 @@ class EditStream(HTMLHandlerBase):
         data = flask.request.json
         current_mps.name = data['name']
         current_mps.title = data['title']
+        current_mps.options = data.get('options')
         errors: list[str] = []
         with models.db.session.no_autoflush:
             for period in data['periods']:

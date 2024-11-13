@@ -74,6 +74,7 @@ export default [
               "^@dashlive/hooks",
               "^@dashlive/ui",
               "^/libs/default-options.js$",
+              "^/libs/options.js$",
               "^/libs/routemap.js$",
               "^/libs/content_roles.js$",
               "socket.io",

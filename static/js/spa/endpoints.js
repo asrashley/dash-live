@@ -67,6 +67,13 @@ export class ApiRequests {
     });
   }
 
+  /*getOptions(options) {
+    return this.sendApiRequest(routeMap.optionFieldGroups.url(), {
+      service: 'streams',
+      ...options,
+    });
+  }*/
+
   async getAllMultiPeriodStreams(options) {
     const service = 'streams';
     const csrf_token = await this.csrfTokens[service].getToken(

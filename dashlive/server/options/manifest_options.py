@@ -26,6 +26,7 @@ AbrControl = DashOption(
         ('Enabled', '1'),
         ('Disabled', '0'),
     ),
+    input_type='checkbox',
     featured=True)
 
 AST_HTML = '''
@@ -82,6 +83,7 @@ UseBaseUrl = DashOption(
     description='Include a BaseURL element?',
     from_string=DashOption.bool_from_string,
     to_string=DashOption.bool_to_string,
+    input_type='checkbox',
     cgi_name='base',
     cgi_choices=(
         ('Yes', '1'),
@@ -148,6 +150,7 @@ Periods = DashOption(
     title='Multi-period',
     description='The number of Periods to include in the manifest',
     from_string=DashOption.int_or_none_from_string,
+    input_type='number',
     cgi_name='periods',
     cgi_type='<number>',
     cgi_choices=(None, '2', '3'),
@@ -161,6 +164,7 @@ SegmentTimeline = DashOption(
     description='Enable or disable segment timeline',
     from_string=DashOption.bool_from_string,
     to_string=DashOption.bool_to_string,
+    input_type='checkbox',
     cgi_name='timeline',
     cgi_choices=(
         ('No (use $Number$)', '0'),
@@ -197,6 +201,7 @@ UsePatches = DashOption(
     description='Use MPD patches for live streams',
     from_string=DashOption.bool_from_string,
     to_string=DashOption.bool_to_string,
+    input_type='checkbox',
     cgi_name='patch',
     cgi_choices=(
         ('No', '0'),

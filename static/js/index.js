@@ -1,5 +1,5 @@
 import $ from 'jquery';
-import defaultOptions from '/libs/default-options.js';
+import { defaultOptions } from '/libs/options.js';
 
 const pageState = {
     title: document.title,
@@ -32,7 +32,7 @@ function buildCGI() {
   });
   const drms = [];
   ['clearkey', 'marlin', 'playready',].forEach(name => {
-    if (params[`drm_${name}`] === 'on') {
+    if (params[`${name}__enabled`] === 'on') {
       const drmloc = `${name}_drmloc`;
       if (params[drmloc] === undefined || params[drmloc] === "") {
         drms.push(name);
