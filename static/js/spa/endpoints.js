@@ -158,7 +158,8 @@ export class ApiRequests {
   }
 
   async sendApiRequest(url, options) {
-    const { authorization, body, service, signal, method='GET' } = options;
+    const { authorization, body, service, signal, method='GET',
+      rejectOnError = true } = options;
     let { query } = options;
     let usedAccessToken = false;
     const headers = {
@@ -227,7 +228,11 @@ export class ApiRequests {
         });
     }
     if (!fetchResult.ok) {
-      throw new Error(`${ url }: ${ fetchResult.status }`);
+      if (rejectOnError) {
+        throw new Error(`${ url }: ${ fetchResult.status }`);
+      } else {
+        return fetchResult;
+      }
     }
     if (signal?.aborted) {
       throw signal.reason;
@@ -266,10 +271,14 @@ export class ApiRequests {
     }
     const options = {
       authorization: this.refreshToken.jti,
+      rejectOnError: false,
       signal,
     };
     const data = await this.sendApiRequest(routeMap.refreshAccessToken.url(), options);
-    const { accessToken, csrfTokens } = data ?? {};
+    const { accessToken, csrfTokens, ok, status } = data ?? {};
+    if (ok === false && status === 401) {
+      document.location.replace(routeMap.login.url());
+    }
     if (accessToken) {
       this.accessToken = accessToken;
     }
