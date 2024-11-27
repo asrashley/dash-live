@@ -210,6 +210,10 @@ routes = {
         r'/view/dash/<regex("(live|vod|odvod)"):mode>/<stream>/<manifest>',
         handler='htmlpage.ViewManifest',
         title='DASH manifest'),
+    "list-manifests": Route(
+        r'/manifests',
+        handler='manifest_requests.ListManifests',
+        title="DASH fragment"),
     "view-mps-manifest": Route(
         r'/view/mps/<regex("(live|vod)"):mode>/<mps_name>/<manifest>',
         handler='htmlpage.ViewMpsManifest',

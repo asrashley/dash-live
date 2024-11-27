@@ -30,8 +30,10 @@ import flask
 
 from dashlive.mpeg.dash.profiles import primary_profiles
 from dashlive.server.models import Stream
+from dashlive.server.manifests import manifest_map
 from dashlive.server.options.container import OptionsContainer
 from dashlive.utils.objects import dict_to_cgi_params
+from dashlive.utils.json_object import  JsonObject
 from dashlive.utils.timezone import UTC
 
 from .base import RequestHandlerBase, TemplateContext
@@ -44,7 +46,7 @@ from .decorators import (
     current_mps,
 )
 from .manifest_context import ManifestContext
-from .utils import add_allowed_origins
+from .utils import add_allowed_origins, jsonify
 
 class ManifestTemplateContext(TemplateContext):
     mode: str
@@ -288,3 +290,11 @@ class ServePatch(RequestHandlerBase):
         }
         add_allowed_origins(headers)
         return flask.make_response((body, 200, headers))
+
+
+class ListManifests(RequestHandlerBase):
+    def get(self) -> flask.Response:
+        manifests: JsonObject = {}
+        for name, msft in manifest_map.items():
+            manifests[name] = msft.toJSON();
+        return jsonify(manifests)
