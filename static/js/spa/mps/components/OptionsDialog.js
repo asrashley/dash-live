@@ -1,19 +1,12 @@
 import { html } from "htm/preact";
 import { useCallback, useContext, useRef } from "preact/hooks";
-import { useComputed } from "@preact/signals";
+import { useComputed, useSignal, useSignalEffect } from "@preact/signals";
 
 import { AccordionFormGroup, ModalDialog } from "@dashlive/ui";
 import { MultiPeriodModelContext } from "@dashlive/hooks";
-import { fieldGroups } from "/libs/options.js";
+import { fieldGroups, defaultShortOptions } from "/libs/options.js";
 
 import { AppStateContext } from "../../appState.js";
-import {
-  shortNamesToOptions,
-  optionsToShortNames,
-  nonDefaultOptions,
-  formToOptions,
-  optionsToFormData,
-} from "../../dashOptions.js";
 
 function Footer({ onClose, onSave }) {
   return html`<div role="group">
@@ -31,22 +24,45 @@ export function OptionsDialog({ onClose }) {
   const { setFields } = useContext(MultiPeriodModelContext);
   const form = useRef(null);
   const isActive = useComputed(() => dialog.value?.mpsOptions?.name !== undefined);
-  const mpsOptions = useComputed(() =>
-    isActive ? optionsToFormData(shortNamesToOptions(dialog.value.mpsOptions.options)) : null);
+  const data = useSignal(null);
+  const lastUpdated = useSignal(null);
 
   const onSubmit = useCallback((ev) => {
     ev.preventDefault();
     return false;
   }, []);
 
-  const onSave = useCallback(() => {
-    const options = optionsToShortNames(
-      nonDefaultOptions(formToOptions(form.current))
-    );
+  const onSave = useCallback((ev) => {
+    ev.preventDefault();
+    const options = Object.fromEntries(
+      Object.entries(data.value).filter(([key, value]) => defaultShortOptions[key] !== value));
     setFields({ options });
     onClose();
     return false;
-  }, [onClose, form, setFields]);
+  }, [data, setFields, onClose]);
+
+  const setValue = useCallback((name, value) => {
+    data.value = {
+        ...data.value,
+        [name]: value,
+    };
+  }, [data]);
+
+  useSignalEffect(() => {
+    if (!dialog.value?.mpsOptions) {
+      return;
+    }
+    const { lastModified, options } = dialog.value.mpsOptions;
+    if (lastUpdated.value === lastModified && data.value !== null) {
+      return;
+    }
+    data.value = {
+        ...defaultShortOptions,
+        ...options,
+    };
+    lastUpdated.value = lastModified;
+    // optionsToFormData(shortNamesToOptions(dialog.value.mpsOptions.options)),
+  });
 
   if (!isActive.value) {
     return null;
@@ -57,7 +73,7 @@ export function OptionsDialog({ onClose }) {
   return html`
     <${ModalDialog} onClose=${onClose} title="Stream Options" size='xl' footer=${footer}>
       <form name="mpsOptions" ref=${form} onSubmit=${onSubmit}>
-        <${AccordionFormGroup} groups=${fieldGroups} data=${mpsOptions} />
+        <${AccordionFormGroup} groups=${fieldGroups} data=${data} setValue=${setValue} mode="shortName" />
       </form>
     </${ModalDialog}>`;
 }
