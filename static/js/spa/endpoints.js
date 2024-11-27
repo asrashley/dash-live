@@ -52,6 +52,10 @@ export class ApiRequests {
     this.refreshToken = refreshToken;
   }
 
+  getAllManifests(options = {}) {
+    return this.sendApiRequest(routeMap.listManifests.url(), options);
+  }
+
   async getAllStreams({ withDetails = false, ...options} = {}) {
     const service = 'streams';
     const csrf_token = await this.csrfTokens[service].getToken(
@@ -66,13 +70,6 @@ export class ApiRequests {
       ...options,
     });
   }
-
-  /*getOptions(options) {
-    return this.sendApiRequest(routeMap.optionFieldGroups.url(), {
-      service: 'streams',
-      ...options,
-    });
-  }*/
 
   async getAllMultiPeriodStreams(options) {
     const service = 'streams';
@@ -174,7 +171,7 @@ export class ApiRequests {
       if (this.accessToken) {
         headers.Authorization = `Bearer ${this.accessToken.jti}`;
         usedAccessToken = true;
-      } else {
+      } else if (service) {
         if (this.csrfTokens[service] === undefined) {
           throw new Error(`Unknown service "${service}"`);
         }

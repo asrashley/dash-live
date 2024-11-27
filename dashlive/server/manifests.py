@@ -215,6 +215,7 @@ class DashManifest:
     def toJSON(self, pure: bool = False,
                exclude: AbstractSet | None = None) -> JsonObject:
         return {
+            'name': self.name,
             'title': self.title,
             'features': self.features,
             'restrictions': self.restrictions,
@@ -230,7 +231,7 @@ default_manifest = DashManifest(
         'segmentTimeline', 'utcMethod'},
 )
 
-manifest_map = {
+manifest_map: dict[str, DashManifest] = {
     'hand_made.mpd': default_manifest,
     'manifest_vod_aiv.mpd': DashManifest(
         name='manifest_vod_aiv',
