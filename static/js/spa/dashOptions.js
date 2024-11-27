@@ -1,5 +1,6 @@
-import { fieldGroups, defaultOptions } from "/libs/options.js";
+//import { fieldGroups, defaultOptions } from "/libs/options.js";
 
+/*
 const byFieldName = {};
 const byFullName = {};
 const byShortName = {};
@@ -34,6 +35,7 @@ fieldGroups.forEach((grp) => {
     byShortName[field.shortName] = field;
   });
 });
+
 
 function notEqual(defaultValue, value) {
   if (defaultValue === undefined || defaultValue === null) {
@@ -108,21 +110,21 @@ export function shortNamesToOptions(data) {
   }
   return result;
 }
+*/
 
-export function formToOptions(form) {
-  const result = Object.fromEntries(prefixes.map((key) => [key, {}]));
+export function formToOptions(form, defaults) {
+  const hasPrefix = /(\w+)__(\w+)/;
+  //const result = Object.fromEntries(prefixes.map((key) => [key, {}]));
+  const result = {};
   const data = new FormData(form);
   for (let i = 0; i < form.elements.length; ++i) {
     const elt = form.elements.item(i);
-    if (elt.nodeName === "BUTTON") {
+    const { name } = elt;
+    if (elt.nodeName === "BUTTON" || !name) {
         continue;
     }
-    const key = elt.name;
-    if (!key) {
-        continue;
-    }
-    let value = data[key] ?? elt.type === "checkbox" ? elt.checked : elt.value;
-    const { fullName, prefix, type, defaultValue } = byFieldName[key] ?? {};
+    let value = data[name] ?? elt.type === "checkbox" ? elt.checked : elt.value;
+    /* const { fullName, prefix, type, defaultValue } = byFieldName[key] ?? {};
     if (fullName === undefined) {
       continue;
     }
@@ -133,16 +135,21 @@ export function formToOptions(form) {
       if (isNaN(value)) {
         value = defaultValue ?? null;
       }
-    }
-    if (prefix) {
-      result[prefix][fullName] = value;
-    } else {
-      result[fullName] = value;
+    }*/
+    const match = hasPrefix(name);
+    if (match) {
+      const [prefix, fullName] = match.groups;
+      if (defaults[prefix][fullName] != value) {
+        result[prefix][fullName] = value;
+      }
+    } else if(defaults[name] != value) {
+      result[name] = value;
     }
   }
   return result;
 }
 
+/*
 export function optionsToFormData(options) {
   if (options === undefined) {
     return undefined;
@@ -167,3 +174,4 @@ export function optionsToFormData(options) {
   }
   return data;
 }
+*/
