@@ -1,4 +1,5 @@
 import { html } from "htm/preact";
+import { useCallback} from 'preact/hooks';
 
 import { SelectOption } from "./SelectOption.js";
 
@@ -29,7 +30,8 @@ function DataListInput({className, name, options, ...props}) {
     </datalist>`;
 }
 
-export function Input({className='', type, error, validation, value, title, options, prefix, datalist=false, name}) {
+export function Input({className='', type, name, value, setValue, error, validation, title, options,
+     datalist=false}) {
     const inputClass = type === 'checkbox' ? 'form-check-input' : type === 'select' ? 'form-select' :'form-control';
     const validationClass = error ? ' is-invalid' : validation === 'was-validated' ? ' is-valid': '';
     const inpProps = {
@@ -38,13 +40,15 @@ export function Input({className='', type, error, validation, value, title, opti
         className: `${ inputClass }${ validationClass } ${ className }`,
         title,
         id: `model-${ name }`,
+        value: value.value,
         "aria-describedby": `field-${ name }`,
-        "data-prefix": prefix,
+        onInput: (ev) => {
+            const { target } = ev;
+            setValue(name, type === 'checkbox' ? target.checked : target.value);
+        },
     };
     if (type === 'checkbox') {
-        inpProps.checked = value;
-    } else {
-        inpProps.value = value;
+        inpProps.checked = value.value === true || value.value === "1";
     }
     if (type === 'radio' || type === 'select' || datalist) {
         inpProps.options = options;
