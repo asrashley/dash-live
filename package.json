@@ -13,7 +13,7 @@
   "scripts": {
     "coverage": "vitest run --coverage",
     "lint": "npm run lint:compat && npm run lint:esm",
-    "lint:compat": "jshint ./static/js/legacy/*.js static/js/compat/*.js",
+    "lint:compat": "jshint static/js/legacy static/js/compat",
     "lint:esm": "eslint ./static/js/*.js ./static/js/spa/**/*.js",
     "postinstall": "patch-package",
     "test": "vitest",
