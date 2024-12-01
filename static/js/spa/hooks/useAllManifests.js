@@ -1,6 +1,6 @@
 import { createContext } from "preact";
 import { useContext, useEffect } from "preact/hooks";
-import { useSignal } from "@preact/signals";
+import { useComputed, useSignal } from "@preact/signals";
 
 import { EndpointContext } from "../endpoints.js";
 

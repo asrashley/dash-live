@@ -111,6 +111,7 @@ class DashOption:
             "prefix": self.prefix,
             "fullName": self.full_name,
             "shortName": self.short_name,
+            "featured": self.featured,
         }
         if self.cgi_choices and len(self.cgi_choices) > 1 and self.input_type != 'checkbox':
             input['options'] = []

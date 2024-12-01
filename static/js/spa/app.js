@@ -8,6 +8,8 @@ import { BreadCrumbs, MessagesPanel } from '@dashlive/ui';
 import { ListStreamsPage } from './mps/components/ListStreamsPage.js';
 import { AddStreamPage } from './mps/components/AddStreamPage.js';
 import { EditStreamPage } from './mps/components/EditStreamPage.js';
+import { HomePage } from './home/components/HomePage.js';
+
 import { ApiRequests, EndpointContext } from './endpoints.js';
 import { AppStateContext, createAppState } from './appState.js';
 
@@ -42,6 +44,7 @@ export function App({tokens, user}) {
       <${Route} component=${ListStreamsPage} path="${ routeMap.listMps.route }"/>
       <${Route} component=${AddStreamPage} path="${ routeMap.addMps.route }"/>
       <${Route} component=${EditStreamPage} path="${ routeMap.editMps.route }"/>
+      <${Route} component=${HomePage} path="${ routeMap.home.route }"/>
       <${Route} path="*" component=${NotFound} />
     </${Switch}>
   </${EndpointContext.Provider}>

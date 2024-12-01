@@ -2,7 +2,7 @@ import logging
 import re
 from unittest import TestCase, main
 
-from dashlive.server.requesthandler.esm import UiComponents
+from dashlive.server.requesthandler.esm import BundleDirectory
 
 class EsmTests(TestCase):
     def test_named_imports(self) -> None:
@@ -23,7 +23,7 @@ class EsmTests(TestCase):
             self.assertIsNotNone(match)
             match = end.search(line)
             self.assertIsNotNone(match)
-            match = UiComponents.NAMED_IMPORT.search(line)
+            match = BundleDirectory.NAMED_IMPORT.search(line)
             self.assertIsNotNone(match)
 
 

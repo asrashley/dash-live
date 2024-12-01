@@ -8,6 +8,17 @@ import { fieldGroups, defaultShortOptions } from "/libs/options.js";
 
 import { AppStateContext } from "../../appState.js";
 
+const excludeFields = new Set([
+  'audioCodec', 'audioErrors', 'audioDescription', 'mainAudio', 'mainText',
+  'textCodec', 'textLanguage', 'videoPlayer'
+]);
+
+const streamFieldGroups = fieldGroups.map(({fields, name, title}) => ({
+  name,
+  title,
+  fields: fields.filter(({name}) => !excludeFields.has(name)),
+}));
+
 function Footer({ onClose, onSave }) {
   return html`<div role="group">
     <button type="button" class="btn btn-success me-3" onClick=${onSave}>
@@ -73,7 +84,7 @@ export function OptionsDialog({ onClose }) {
   return html`
     <${ModalDialog} onClose=${onClose} title="Stream Options" size='xl' footer=${footer}>
       <form name="mpsOptions" ref=${form} onSubmit=${onSubmit}>
-        <${AccordionFormGroup} groups=${fieldGroups} data=${data} setValue=${setValue} mode="shortName" />
+        <${AccordionFormGroup} groups=${streamFieldGroups} data=${data} setValue=${setValue} mode="shortName" />
       </form>
     </${ModalDialog}>`;
 }

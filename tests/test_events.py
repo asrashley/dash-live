@@ -20,7 +20,6 @@
 #
 #############################################################################
 
-import os
 from typing import Any
 import unittest
 
@@ -46,9 +45,9 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
         self.setup_media_fixture(BBB_FIXTURE)
         params = {
             'events': 'ping',
-            'ping_count': '4',
-            'ping_inband': '0',
-            'ping_start': '256',
+            'ping__count': '4',
+            'ping__inband': '0',
+            'ping__start': '256',
         }
         url = flask.url_for(
             'dash-mpd-v3',
@@ -82,9 +81,9 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
         self.setup_media_fixture(BBB_FIXTURE)
         params = {
             'events': 'ping',
-            'ping_count': 4,
-            'ping_inband': True,
-            'ping_start': 200,
+            'ping__count': 4,
+            'ping__inband': True,
+            'ping__start': 200,
         }
         url = flask.url_for(
             'dash-mpd-v3',
@@ -117,7 +116,7 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
         Check all of the fragments in the given representation
         """
         await rep.validate()
-        ev_presentation_time = params['ping_start']
+        ev_presentation_time = params['ping__start']
         event_id = 0
         for seg in rep.media_segments:
             if not seg.validated:
@@ -166,10 +165,10 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
         self.setup_media_fixture(BBB_FIXTURE)
         params = {
             'events': 'scte35',
-            'scte35_count': '4',
-            'scte35_inband': '0',
-            'scte35_start': '256',
-            'scte35_program_id': '345',
+            'scte35__count': '4',
+            'scte35__inband': '0',
+            'scte35__start': '256',
+            'scte35__program_id': '345',
         }
         url = flask.url_for(
             'dash-mpd-v3',
@@ -242,12 +241,6 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
                 self.assertObjectEqual(expected, ev_elt.children()[0].signal)
                 presentationTime += Scte35Events.DEFAULT_VALUES['interval']
 
-
-if os.environ.get("TESTS"):
-    def load_tests(loader, tests, pattern):
-        return unittest.loader.TestLoader().loadTestsFromNames(
-            os.environ["TESTS"].split(','),
-            TestDashEventGeneration)
 
 if __name__ == '__main__':
     unittest.main()

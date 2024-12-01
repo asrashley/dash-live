@@ -11,6 +11,7 @@ class FormInputContext(TypedDict):
     datalist: bool
     disabled: bool
     error: str
+    featured: bool
     href: str
     link_title: str
     max: int
