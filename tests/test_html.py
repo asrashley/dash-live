@@ -46,17 +46,34 @@ class TestHtmlPageHandlers(FlaskTestBase):
                 raise AssertionError(msg)
             raise AssertionError(template.format(a, b))
 
-    def test_index_page(self):
-        self.setup_media()
-        url = flask.url_for('home')
+    def test_spa_index_page(self) -> None:
+        url: str = flask.url_for('home')
         # self.logout_user()
         response = self.client.get(url)
         self.assertEqual(response.status, '200 OK')
         html = BeautifulSoup(response.text, 'lxml')
         self.assertIsNotNone(html)
         self.assertIn('Log In', response.text)
-        media_list_url = flask.url_for('list-streams')
+        media_list_url: str = flask.url_for('list-streams')
         self.assertIn(f'href="{media_list_url}"', response.text)
+        self.login_user(is_admin=True)
+        response = self.client.get(url)
+        self.assertEqual(response.status, '200 OK')
+        self.assertNotIn('Log In', response.text)
+        self.assertIn(f'href="{media_list_url}"', response.text)
+        self.assertIn('Log Out', response.text)
+        user_admin_url: str = flask.url_for('list-users')
+        self.assertIn(f'href="{user_admin_url}"', response.text)
+
+    def test_es5_index_page(self) -> None:
+        self.setup_media()
+        url: str = flask.url_for('es5-home')
+        # self.logout_user()
+        response = self.client.get(url)
+        self.assertEqual(response.status, '200 OK')
+        html = BeautifulSoup(response.text, 'lxml')
+        self.assertIsNotNone(html)
+        self.assertNotIn('Log In', response.text)
         for filename, manifest in manifests.manifest_map.items():
             mpd_url = flask.url_for(
                 'dash-mpd-v3', manifest=filename, stream='placeholder',
@@ -64,16 +81,6 @@ class TestHtmlPageHandlers(FlaskTestBase):
             mpd_url = mpd_url.replace('/placeholder/', '/{directory}/')
             mpd_url = mpd_url.replace('/live/', '/{mode}/')
             self.assertIn(mpd_url, response.text)
-        options_url = flask.url_for('cgi-options')
-        self.assertIn(fr'href="{options_url}"', response.text)
-        self.login_user(is_admin=True)
-        response = self.client.get(url)
-        self.assertEqual(response.status, '200 OK')
-        self.assertNotIn('Log In', response.text)
-        self.assertIn(f'href="{media_list_url}"', response.text)
-        self.assertIn('Log Out', response.text)
-        user_admin_url = flask.url_for('list-users')
-        self.assertIn(f'href="{user_admin_url}"', response.text)
 
     def test_cgi_options_page(self):
         url = flask.url_for('cgi-options')

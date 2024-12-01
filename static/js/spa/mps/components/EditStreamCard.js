@@ -48,13 +48,13 @@ function ButtonToolbar({errors, onSaveChanges, deleteStream, model, newStream}) 
     <button class="btn btn-success m-2" disabled=${disableSave.value}
       onClick=${onSaveChanges} >Save Changes</button>
     <button class="btn btn-danger m-2" onClick=${deleteStream}>Delete Stream</button>
-    <${Link} class="${linkClass}" to=${cancelUrl}>
+  <${Link} class="${linkClass}" to=${cancelUrl}>
       ${model.value.modified ? "Discard Changes" : "Back"}
     </${Link}>
   </div>`;
 }
 
-function OptionsRow({name}) {
+function OptionsRow({ name, canModify }) {
   const { model } = useContext(MultiPeriodModelContext)
   const { dialog } = useContext(AppStateContext);
   const options = useComputed(() => model.value.options ?? {});
@@ -63,6 +63,7 @@ function OptionsRow({name}) {
     dialog.value = {
       mpsOptions: {
         options: options.value,
+        lastModified: model.lastModified,
         name,
       },
       backdrop: true,
@@ -72,7 +73,7 @@ function OptionsRow({name}) {
   return html`<${FormRow} name="options" label="Stream Options" type="json">
   <div className="d-flex flex-row">
 <${PrettyJson} className="flex-fill me-1" data=${options.value} />
-<button class="btn btn-primary" onClick=${openDialog}>Options</button>
+${ canModify.value ? html`<button className="btn btn-primary" onClick=${openDialog}>Options</button>`: null }
   </div></${FormRow}>`;
 }
 
@@ -166,7 +167,7 @@ function EditStreamForm({ name, newStream }) {
   <${TextInputRow} name="title" label="Title" value=${model.value.title}
     text="Title for this stream" onInput=${setTitle}
     error=${errors.value.title} disabled=${!canModify.value} />
-  <${OptionsRow} name="${name}" />
+  <${OptionsRow} name="${name}" canModify=${canModify} />
   <${FormRow} className="${ canModify.value ? 'has-validation' : ''}"
     name="periods" label="Periods">
     <${PeriodsTable} />

@@ -76,6 +76,7 @@ DrmLocationOption = DashOption(
         ('mspr:pro MPD + PSSH init', 'moov-pro'),
         ('dash:cenc MPD + PSSH init', 'cenc-moov'),
     ),
+    input_type='select',
     featured=True)
 
 

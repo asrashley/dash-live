@@ -11,11 +11,11 @@ function DataList({name, options, type='datallist'}) {
 </datalist>`;
 }
 
-function FormText({text}) {
+function FormText({text, className}) {
   if (!text) {
     return null;
   }
-  return html`<div class="col-3 form-text">${text}</div>`;
+  return html`<div class="${className} form-text">${text}</div>`;
 }
 
 function ErrorFeedback({error}) {
@@ -25,12 +25,16 @@ function ErrorFeedback({error}) {
   return html`<div class="invalid-feedback" style="display:block">${error}</div>`;
 }
 
-export function FormRow({ className = "", name, label, text, type, children, error, options }) {
+export function FormRow({ className = "", name, layout, label, text, type, children, error, options }) {
+  let [left, middle, right] = layout ?? [2, 7, 3];
+  if (!text) {
+    middle += right;
+  }
   return html`
     <div class="row mb-3 form-group ${className}">
-      <label class="col-2 col-form-label" htmlFor="field-${name}">${label}:</label>
-      <div class="${text ? "col-7" : "col-10"}">${children}</div>
-      <${FormText} text=${text} />
+      <label className="col-${left} col-form-label" htmlFor="field-${name}">${label}:</label>
+      <div className="col-${middle}">${children}</div>
+      <${FormText} text=${text} className="col-${right}" />
       <${ErrorFeedback} error=${error} />
       <${DataList} type=${type} name=${name} options=${options} />
     </div>`;

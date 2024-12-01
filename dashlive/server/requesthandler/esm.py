@@ -138,13 +138,9 @@ class OptionFieldGroups(MethodView):
         field_groups: list[InputFieldGroup] = options.generate_input_field_groups(
             {},
             exclude={
-                'audioCodec', 'audioErrors', 'audioDescription',
-                'dashjsVersion', 'mainAudio', 'mainText',
-                'mode', 'manifestErrors', 'textErrors', 'videoErrors',
-                'numPeriods', 'shakaVersion', 'failureCount',
-                'textCodec', 'textLanguage',
-                'videoCorruption', 'videoCorruptionFrameCount',
-                'videoPlayer', 'updateCount', 'utcValue'})
+                'audioErrors', 'dashjsVersion', 'mode', 'manifestErrors', 'textErrors',
+                'videoErrors', 'numPeriods', 'shakaVersion', 'failureCount', 'videoCorruption',
+                'videoCorruptionFrameCount', 'updateCount', 'utcValue'})
         for group in field_groups:
             for field in group.fields:
                 try:
@@ -154,7 +150,11 @@ class OptionFieldGroups(MethodView):
                 field['shortName'] = opt.short_name
                 field['fullName'] = opt.full_name
         body: str = flask.render_template(
-            'esm/options.js', default_options=options.toJSON(exclude={"_type"}), drm_systems=DrmSystem.values(),
+            'esm/options.js',
+            full_options=options.toJSON(exclude={"_type"}),
+            cgi_options=options.generate_cgi_parameters(remove_defaults=False),
+            short_options=options.generate_short_parameters(remove_defaults=False),
+            drm_systems=DrmSystem.values(),
             field_groups=field_groups)
         headers: dict[str, str] = {
             'Content-Type': 'application/javascript',

@@ -30,6 +30,7 @@ from dashlive.server.options.drm_options import (
     DrmSelectionTuple
 )
 from dashlive.components.field_group import InputFieldGroup
+from dashlive.server.options.form_input_field import FormInputContext
 from dashlive.utils.json_object import JsonObject
 from dashlive.utils.object_with_fields import ObjectWithFields
 from dashlive.utils.objects import dict_to_cgi_params
@@ -100,25 +101,26 @@ class OptionsContainer(ObjectWithFields):
         for key, value in kwargs.items():
             self.add_field(key, value)
 
-    def convert_sub_options(self,
-                            destination: dict[str, str],
-                            prefix: str,
-                            sub_opts: dict[str, Any],
-                            use: OptionUsage | None,
-                            exclude: AbstractSet | None) -> None:
+    def _convert_sub_options(self,
+                             destination: dict[str, str],
+                             prefix: str,
+                             sub_opts: dict[str, Any],
+                             use: OptionUsage | None,
+                             exclude: AbstractSet | None,
+                             remove_defaults: bool) -> None:
         defaults = ObjectWithFields()
         if self._defaults is not None and prefix in self._defaults._fields:
             defaults = self._defaults[prefix]
         for key, value in sub_opts.items():
-            name = f'{prefix}.{key}'
-            opt = self._parameter_map[name]
+            name: str = f'{prefix}.{key}'
+            opt: DashOption = self._parameter_map[name]
             if use is not None and (opt.usage & use) == 0:
                 continue
             if name in exclude:
                 continue
             try:
                 dft_val = defaults[key]
-                if value == dft_val:
+                if remove_defaults and value == dft_val:
                     continue
             except KeyError:
                 pass
@@ -127,22 +129,38 @@ class OptionsContainer(ObjectWithFields):
     def generate_cgi_parameters(self,
                                 destination: dict[str, str] | None = None,
                                 use: OptionUsage | None = None,
-                                exclude: AbstractSet | None = None) -> dict[str, str]:
+                                exclude: AbstractSet | None = None,
+                                remove_defaults: bool = True) -> dict[str, str]:
         """
         Produces a dictionary of CGI parameters that represent these options.
         Any option that matches its default is excluded.
         """
-        return self.generate_parameters_dict(
-            'cgi_name', destination=destination, use=use, exclude=exclude)
+        return self._generate_parameters_dict(
+            'cgi_name', destination=destination, use=use, exclude=exclude,
+            remove_defaults=remove_defaults)
 
-    def generate_parameters_dict(self,
-                                 attr_name: str,
-                                 destination: dict[str, str] | None = None,
-                                 use: OptionUsage | None = None,
-                                 exclude: AbstractSet | None = None) -> dict[str, str]:
+    def generate_short_parameters(self,
+                                  destination: dict[str, str] | None = None,
+                                  use: OptionUsage | None = None,
+                                  exclude: AbstractSet | None = None,
+                                  remove_defaults: bool = True) -> dict[str, str]:
+        """
+        Produces a dictionary of shortName parameters that represent these options.
+        Any option that matches its default is excluded.
+        """
+        return self._generate_parameters_dict(
+            'short_name', destination=destination, use=use, exclude=exclude,
+            remove_defaults=remove_defaults)
+
+    def _generate_parameters_dict(self,
+                                  attr_name: str,
+                                  destination: dict[str, str] | None,
+                                  use: OptionUsage | None,
+                                  exclude: AbstractSet | None,
+                                  remove_defaults: bool) -> dict[str, str]:
         """
         Produces a dictionary of parameters that represent these options.
-        Any option that matches its default is excluded.
+        Any option that matches its default is excluded if :remove_defaults: is True
         """
         if exclude is None:
             exclude = {'encrypted', 'mode'}
@@ -150,16 +168,16 @@ class OptionsContainer(ObjectWithFields):
             destination: dict[str, str] = {}
         for key, value in self.items():
             if isinstance(value, OptionsContainer):
-                self.convert_sub_options(destination, key, value, use, exclude)
+                self._convert_sub_options(destination, key, value, use, exclude, remove_defaults)
                 continue
             if key in exclude:
                 continue
-            if self._defaults is not None:
+            if remove_defaults and self._defaults is not None:
                 if key in self._defaults._fields:
                     dft_val = getattr(self._defaults, key)
                     if value == dft_val:
                         continue
-            opt = self._parameter_map[key]
+            opt: DashOption = self._parameter_map[key]
             if use is not None and (opt.usage & use) == 0:
                 continue
             destination[getattr(opt, attr_name)] = opt.to_string(value)
@@ -243,20 +261,23 @@ class OptionsContainer(ObjectWithFields):
     def generate_input_field_groups(
             self, field_choices: dict,
             exclude: AbstractSet | None = None) -> list[InputFieldGroup]:
-        sections = defaultdict(list)
+        sections: dict[str, list[FormInputContext]] = defaultdict(list)
         for field in self.generate_input_fields(field_choices, exclude):
-            sections[field.get('prefix')].append(field)
-        result: list[InputFieldGroup] = []
+            group: str = field['prefix']
+            if group == "":
+                group = "general" if field["featured"] else "advanced"
+            sections[group].append(field)
+        result: list[InputFieldGroup] = [
+            InputFieldGroup("general", "General Options", sections["general"], show=True),
+        ]
+        del sections["general"]
         for name, fields in sorted(sections.items()):
-            if name == "":
-                result.append(InputFieldGroup('general', 'General Options', fields, show=True))
-            else:
-                result.append(InputFieldGroup(name, f'{name.title()} Options', fields))
+            result.append(InputFieldGroup(name, f'{name.title()} Options', fields, show=False))
         return result
 
     def generate_input_fields(self, field_choices: dict,
-                              exclude: AbstractSet | None = None) -> list[JsonObject]:
-        fields: list[JsonObject] = []
+                              exclude: AbstractSet | None = None) -> list[FormInputContext]:
+        fields: list[FormInputContext] = []
         if exclude is None:
             exclude = set()
         for key, value in self.items():
@@ -264,10 +285,10 @@ class OptionsContainer(ObjectWithFields):
                 continue
             if isinstance(value, OptionsContainer):
                 for ok, ov in value.items():
-                    name = f'{key}.{ok}'
+                    name: str = f'{key}.{ok}'
                     if name in exclude:
                         continue
-                    op = self._parameter_map[name]
+                    op: DashOption = self._parameter_map[name]
                     fields.append(
                         op.input_field(ov, field_choices))
                 continue

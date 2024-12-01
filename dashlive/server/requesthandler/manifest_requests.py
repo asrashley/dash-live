@@ -33,7 +33,7 @@ from dashlive.server.models import Stream
 from dashlive.server.manifests import manifest_map
 from dashlive.server.options.container import OptionsContainer
 from dashlive.utils.objects import dict_to_cgi_params
-from dashlive.utils.json_object import  JsonObject
+from dashlive.utils.json_object import JsonObject
 from dashlive.utils.timezone import UTC
 
 from .base import RequestHandlerBase, TemplateContext
@@ -296,5 +296,5 @@ class ListManifests(RequestHandlerBase):
     def get(self) -> flask.Response:
         manifests: JsonObject = {}
         for name, msft in manifest_map.items():
-            manifests[name] = msft.toJSON();
+            manifests[name] = msft.toJSON()
         return jsonify(manifests)
