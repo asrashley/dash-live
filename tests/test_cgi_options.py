@@ -6,6 +6,7 @@ from dashlive.server.options.container import OptionsContainer
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.options.types import OptionUsage
 from dashlive.server.requesthandler.base import RequestHandlerBase
+from dashlive.utils.json_object import JsonObject
 
 from .mixins.mock_time import MockTime
 from .mixins.mixin import TestCaseMixin
@@ -73,7 +74,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
 
     @MockTime("2023-04-05T06:30:00Z")
     def test_convert_cgi_options(self) -> None:
-        params = {
+        params: dict[str, str] = {
             'abr': '1',
             'acodec': 'ec-3',
             'base': 'on',
@@ -84,8 +85,8 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             'player': 'shaka',
             'mup': 'none',
             'periods': '2',
-            'playready_piff': '1',
-            'playready_version': '2.0',
+            'playready__piff': '1',
+            'playready__version': '2.0',
             'start': 'epoch',
             'frames': '3',
             'vcorrupt': '2:03:05Z',
@@ -126,13 +127,13 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
                 msg=f'Expected {key} to be "{value}" but found "{actual}"')
 
     def test_convert_event_cgi_options(self) -> None:
-        params = {
+        params: dict[str, str] = {
             'acodec': 'ec-3',
             'events': 'ping',
-            'ping_inband': '1',
-            'ping_duration': '120',
-            'ping_timescale': '1000',
-            'ping_value': 'hello',
+            'ping__inband': '1',
+            'ping__duration': '120',
+            'ping__timescale': '1000',
+            'ping__value': 'hello',
         }
         expected = {
             '_type': 'dashlive.server.options.container.OptionsContainer',
@@ -167,10 +168,10 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
         expected = {
             'acodec': 'ec-3',
             'events': 'ping',
-            'ping_inband': '0',
-            'ping_duration': '120',
-            'ping_timescale': '1000',
-            'ping_value': 'hello',
+            'ping__inband': '0',
+            'ping__duration': '120',
+            'ping__timescale': '1000',
+            'ping__value': 'hello',
         }
         result = options.generate_cgi_parameters()
         for key, value in expected.items():
@@ -351,28 +352,28 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
         self.assertDictEqual(expected, opts.toJSON())
 
     def test_convert_stream_default_options(self) -> None:
-        form = {
+        form: dict[str, str] = {
             'abr': '1',
             'acodec': 'mp4a',
             'start': 'epoch',
             'events': 'ping',
-            'ping_count': '5',
-            'ping_duration': '200',
-            'ping_inband': '1',
-            'ping_interval': '1000',
-            'ping_start': '',
-            'ping_timescale': '100',
-            'ping_value': '0',
-            'ping_version': '',
-            'playready_piff': '1',
-            'scte35_count': '',
-            'scte35_duration': '200',
-            'scte35_inband': '1',
-            'scte35_interval': '1000',
-            'scte35_program_id': '1620',
-            'scte35_start': '',
-            'scte35_timescale': '100',
-            'scte35_value': '',
+            'ping__count': '5',
+            'ping__duration': '200',
+            'ping__inband': '1',
+            'ping__interval': '1000',
+            'ping__start': '',
+            'ping__timescale': '100',
+            'ping__value': '0',
+            'ping__version': '',
+            'playready__piff': '1',
+            'scte35__count': '',
+            'scte35__duration': '200',
+            'scte35__inband': '1',
+            'scte35__interval': '1000',
+            'scte35__program_id': '1620',
+            'scte35__start': '',
+            'scte35__timescale': '100',
+            'scte35__value': '',
             'timeline': '0',
             'base': '1',
             'depth': '1800',
@@ -534,7 +535,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             'clearkey': ({'moov'}, 'moov'),
         })
 
-    def check_generate_drm_input_fields(self, drm_map: dict) -> None:
+    def check_generate_drm_input_fields(self, drm_map: dict[str, tuple]) -> None:
         expected = []
         for name in ['clearkey', 'marlin', 'playready']:
             try:
@@ -542,7 +543,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             except KeyError:
                 loc = ''
             expected.append({
-                'name': f'drm_{name}',
+                'name': f'{name}__enabled',
                 'prefix': name,
                 'title': f'{name.title()} DRM',
                 'value': name in drm_map,
@@ -579,7 +580,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
                 'selected': loc == 'cenc-moov'
             }]
             expected.append({
-                'name': f'{name}_drmloc',
+                'name': f'{name}__drmloc',
                 'title': f'{name.title()} location',
                 'value': loc,
                 'text': 'Location to place DRM data',
@@ -588,11 +589,11 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
                 'options': options,
                 'rowClass': f'row mb-3 drm-location prefix-{name}'
             })
-        defaults = OptionsRepository.get_default_options()
+        defaults: OptionsContainer = OptionsRepository.get_default_options()
         drm_selection = []
         for key in sorted(list(drm_map.keys())):
             drm_selection.append((key, drm_map[key][0]))
-        fields = defaults.generate_drm_fields(drm_selection)
+        fields: list[JsonObject] = defaults.generate_drm_fields(drm_selection)
         self.assertListEqual(expected, fields)
 
     def test_apply_restrictions(self) -> None:

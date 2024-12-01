@@ -1,4 +1,6 @@
-export const defaultOptions = {{ default_options | toJson(indent=2) }};
+export const defaultFullOptions = {{ full_options | toJson(indent=2) }};
+export const defaultShortOptions = {{ short_options | toJson(indent=2) }};
+export const defaultCgiOptions = {{ cgi_options | toJson(indent=2) }};
 
 export const drmSystems = {{ drm_systems | toJson }};
 

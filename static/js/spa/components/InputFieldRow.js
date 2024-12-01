@@ -11,6 +11,7 @@ export function InputFieldRow({
   prefix,
   title,
   data,
+  layout,
   mode,
   text,
   ...props
@@ -28,7 +29,7 @@ export function InputFieldRow({
     return data.value[fullName];
   });
   const name = mode === 'shortName' ? shortName : mode === 'cgi' ? cgiName: `${prefix}${prefix ? '__': ''}${fullName}`;
-  return html`<${FormRow} name="${name}" label="${title}" text="${text}" ...${props} >
+  return html`<${FormRow} name="${name}" label="${title}" text="${text}" layout=${layout} ...${props} >
     <${Input} ...${props} name="${name}" value=${value} title="${title}"
   /><//>`;
 }
