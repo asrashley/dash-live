@@ -46,7 +46,7 @@ function StreamSelect({ value, onChange, name }) {
 
   return html` <select
     class="form-select"
-    value=${value}
+    value=${value.value?.pk}
     name=${name}
     onChange=${changeHandler}
   >
@@ -62,23 +62,24 @@ function doNothing(ev) {
   return false;
 }
 
-function tracksDescription(tracks) {
+function tracksDescription(tracks, stream) {
   const enabledCount = tracks.filter(tk => tk.enabled).length;
-  if (tracks.length === 0) {
+  const numTracks = stream.value?.tracks.length ?? 0;
+  if (numTracks === 0) {
     return "----";
   }
-  if (tracks.length === 1) {
+  if (tracks.length === 1 && numTracks === 1) {
     return "1 track";
   }
-  return `${enabledCount}/${tracks.length} tracks`;
+  return `${enabledCount}/${numTracks} tracks`;
 }
 
 function GuestPeriodRow({ index, item, className = "" }) {
   const { ordering, pid, pk, start, duration, tracks } = item;
   const { streamsMap } = useContext(AllStreamsContext);
   const { dialog } = useContext(AppStateContext);
-  const numTracks = useMemo(() => tracksDescription(tracks), [tracks]);
   const stream = useComputed(() => streamsMap.value.get(item.stream));
+  const numTracks = useComputed(() => tracksDescription(tracks, stream));
   const selectTracks = useCallback(() => {
     dialog.value = {
       backdrop: true,
@@ -163,14 +164,14 @@ function PeriodRow({ className = "", index, item: period, ...props }) {
   const { errors, modifyPeriod, addPeriod, removePeriod } = useContext(
     MultiPeriodModelContext
   );
-  const trackBtnLabel = useMemo(
-    () => tracksDescription(period.tracks),
-    [period.tracks]
+  const currentStream = useComputed(() => streamsMap.value.get(period.stream));
+  const trackBtnLabel = useComputed(
+    () => tracksDescription(period.tracks, currentStream),
   );
   const numActiveTracks = useMemo(
     () => period.tracks.filter(tk => tk.enabled).length,
   [period.tracks]);
-  const { pid, pk, stream, start, duration } = period;
+  const { pid, pk, start, duration } = period;
 
   const selectTracks = useCallback(() => {
     dialog.value = {
@@ -178,10 +179,10 @@ function PeriodRow({ className = "", index, item: period, ...props }) {
       trackPicker: {
         pk,
         pid,
-        stream: streamsMap.value.get(stream),
+        stream: currentStream.value,
       },
     };
-  }, [dialog, pid, pk, stream, streamsMap.value]);
+  }, [dialog, pid, pk, currentStream]);
 
   const setPid = useCallback(
     (ev) => {
@@ -240,7 +241,7 @@ function PeriodRow({ className = "", index, item: period, ...props }) {
     <div class="col period-stream">
       <${StreamSelect}
         name="stream_${pk}"
-        value=${stream}
+        value=${currentStream}
         onChange=${setStream}
         error=${errors.stream}
         required

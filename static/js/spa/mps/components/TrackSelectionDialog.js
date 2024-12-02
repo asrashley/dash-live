@@ -30,9 +30,10 @@ function allowedTrackRoles(track) {
 
 function TrackSelectRow({ track, onChange, guest }) {
   const roles = useMemo(() => allowedTrackRoles(track), [track]);
-  const bitrates = track.bitrates > 1 ? `, ${track.bitrates} bitrates` : "";
-  const label = `${track.content_type} track ${track.track_id} (${track.codec_fourcc}${bitrates})`;
-  const { track_id } = track;
+  const { track_id, enabled, encrypted, clearBitrates, encryptedBitrates } = track;
+  const bitrates = encrypted ? encryptedBitrates : clearBitrates;
+  const bitratesText = bitrates > 1 ? `, ${bitrates} bitrates` : "";
+  const label = `${track.content_type} track ${track_id} (${track.codec_fourcc}${bitratesText})`;
 
   const onToggleEnabled = () => {
     if (guest) {
@@ -40,7 +41,7 @@ function TrackSelectRow({ track, onChange, guest }) {
     }
     onChange({
       ...track,
-      enabled: !track.enabled,
+      enabled: !enabled,
     });
   };
 
@@ -50,7 +51,7 @@ function TrackSelectRow({ track, onChange, guest }) {
     }
     onChange({
       ...track,
-      encrypted: !track.encrypted,
+      encrypted: !encrypted,
     });
   };
 
@@ -70,7 +71,7 @@ function TrackSelectRow({ track, onChange, guest }) {
       class="form-check-input"
       id="id_enable_${track_id}"
       name="enable_${track_id}"
-      checked=${track.enabled}
+      checked=${enabled}
       onClick=${onToggleEnabled}
       disabled=${guest}
     /></div>
@@ -80,16 +81,16 @@ function TrackSelectRow({ track, onChange, guest }) {
       value=${track.role}
       className="form-select col-3"
       disabled=${guest}
-      name="role_${track.track_id}"
+      name="role_${track_id}"
       onChange=${onRoleChange}
     />
     <div class="col-1"><input
       class="form-check-input"
       type="checkbox"
-      checked=${track.encrypted}
-      name="enc_${track.track_id}"
+      checked=${encrypted}
+      name="enc_${track_id}"
       onClick=${onToggleEncrypted}
-      disabled=${guest}
+      disabled=${guest || encryptedBitrates === 0}
     /></div>
   </div>`;
 }
@@ -98,10 +99,17 @@ function generateMediaTracks(trackPicker, model) {
   if (!trackPicker.value || !model.value) {
     return [];
   }
-  const { pk } = trackPicker.value;
+  const { pk, stream } = trackPicker.value;
   const { periods = [] } = model.value;
   const prd = periods.find((p) => p.pk === pk);
-  return prd?.tracks ?? [];
+  return stream.tracks.map(stk => {
+    const trk = prd?.tracks.find(t => t.track_id === stk.track_id);
+    return {
+      enabled: trk !== undefined,
+      ...stk,
+      ...trk,
+    };
+  });
 }
 
 export function TrackSelectionDialog({ onClose }) {
