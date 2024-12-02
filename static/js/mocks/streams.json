@@ -1,0 +1,457 @@
+{
+  "csrf_tokens": {
+    "files": "qHAQOfmIb",
+    "kids": "dNFBz6LI",
+    "streams": "S_f42Pmob",
+    "upload": ["geVWPK6i"
+    ]
+  },
+  "keys": [
+    {
+      "alg": "AESCTR",
+      "computed": true,
+      "key": "55f6428d4330bd2f0f433e3174000000",
+      "kid": "c001de8e567b5fcfbc22c565ed5bda24"
+    },
+    {
+      "alg": "AESCTR",
+      "computed": true,
+      "key": "d6d39cedee9024c88b64eb1bdd000000",
+      "kid": "1ab45440532c439994dc5c5ad9584bac"
+    },
+    {
+      "alg": "AESCTR",
+      "computed": false,
+      "key": "0123456789abcdef0123456789abcdef",
+      "kid": "00000000000000000000000000000000"
+    },
+    {
+      "alg": "AESCTR",
+      "computed": true,
+      "key": "1947f5eba3d06f1fac8010038f000000",
+      "kid": "0102030405060708090aaabbccddeeff"
+    },
+    {
+      "alg": "AESCTR",
+      "computed": true,
+      "key": "4edb7704cdbf03617f4800bd87000000",
+      "kid": "a2c786d0f9ef4cb3b333cd323a4284a5"
+    },
+    {
+      "alg": "AESCTR",
+      "computed": true,
+      "key": "3179923adf3c929892951e62f9000000",
+      "kid": "db06a8feec164de292282c71e9b856ab"
+    }
+  ],
+  "streams": [
+    {
+      "defaults": {
+        "availabilityStartTime": "month",
+        "eventTypes": [
+          "ping"
+        ],
+        "ping": {
+          "count": 5
+        },
+        "timeShiftBufferDepth": 120,
+        "utcMethod": "iso"
+      },
+      "directory": "bbb",
+      "duration": "PT9M51.458S",
+      "marlin_la_url": "",
+      "media_files": [
+        {
+          "bitrate": 2953886,
+          "codec_fourcc": "avc3",
+          "content_type": "video",
+          "encrypted": false,
+          "name": "bbb_v1",
+          "pk": 5,
+          "stream": 1,
+          "track_id": 1
+        },
+        {
+          "bitrate": 2957049,
+          "codec_fourcc": "avc3",
+          "content_type": "video",
+          "encrypted": true,
+          "name": "bbb_v1_enc",
+          "pk": 6,
+          "stream": 1,
+          "track_id": 1
+        },
+        {
+          "bitrate": 1807672,
+          "codec_fourcc": "avc3",
+          "content_type": "video",
+          "encrypted": false,
+          "name": "bbb_v2",
+          "pk": 7,
+          "stream": 1,
+          "track_id": 1
+        },
+        {
+          "bitrate": 1810835,
+          "codec_fourcc": "avc3",
+          "content_type": "video",
+          "encrypted": true,
+          "name": "bbb_v2_enc",
+          "pk": 8,
+          "stream": 1,
+          "track_id": 1
+        },
+        {
+          "bitrate": 1027100,
+          "codec_fourcc": "avc3",
+          "content_type": "video",
+          "encrypted": false,
+          "name": "bbb_v3",
+          "pk": 9,
+          "stream": 1,
+          "track_id": 1
+        },
+        {
+          "bitrate": 1030263,
+          "codec_fourcc": "avc3",
+          "content_type": "video",
+          "encrypted": true,
+          "name": "bbb_v3_enc",
+          "pk": 10,
+          "stream": 1,
+          "track_id": 1
+        },
+        {
+          "bitrate": 659759,
+          "codec_fourcc": "avc3",
+          "content_type": "video",
+          "encrypted": false,
+          "name": "bbb_v4",
+          "pk": 11,
+          "stream": 1,
+          "track_id": 1
+        },
+        {
+          "bitrate": 662922,
+          "codec_fourcc": "avc3",
+          "content_type": "video",
+          "encrypted": true,
+          "name": "bbb_v4_enc",
+          "pk": 12,
+          "stream": 1,
+          "track_id": 1
+        },
+        {
+          "bitrate": 572786,
+          "codec_fourcc": "avc3",
+          "content_type": "video",
+          "encrypted": false,
+          "name": "bbb_v5",
+          "pk": 13,
+          "stream": 1,
+          "track_id": 1
+        },
+        {
+          "bitrate": 575949,
+          "codec_fourcc": "avc3",
+          "content_type": "video",
+          "encrypted": true,
+          "name": "bbb_v5_enc",
+          "pk": 14,
+          "stream": 1,
+          "track_id": 1
+        },
+        {
+          "bitrate": 372594,
+          "codec_fourcc": "avc3",
+          "content_type": "video",
+          "encrypted": false,
+          "name": "bbb_v6",
+          "pk": 15,
+          "stream": 1,
+          "track_id": 1
+        },
+        {
+          "bitrate": 375758,
+          "codec_fourcc": "avc3",
+          "content_type": "video",
+          "encrypted": true,
+          "name": "bbb_v6_enc",
+          "pk": 16,
+          "stream": 1,
+          "track_id": 1
+        },
+        {
+          "bitrate": 189666,
+          "codec_fourcc": "avc3",
+          "content_type": "video",
+          "encrypted": false,
+          "name": "bbb_v7",
+          "pk": 17,
+          "stream": 1,
+          "track_id": 1
+        },
+        {
+          "bitrate": 192830,
+          "codec_fourcc": "avc3",
+          "content_type": "video",
+          "encrypted": true,
+          "name": "bbb_v7_enc",
+          "pk": 18,
+          "stream": 1,
+          "track_id": 1
+        },
+        {
+          "bitrate": 101094,
+          "codec_fourcc": "mp4a",
+          "content_type": "audio",
+          "encrypted": true,
+          "name": "bbb_a1_enc",
+          "pk": 2,
+          "stream": 1,
+          "track_id": 2
+        },
+        {
+          "bitrate": 98247,
+          "codec_fourcc": "mp4a",
+          "content_type": "audio",
+          "encrypted": false,
+          "name": "bbb_a1",
+          "pk": 37,
+          "stream": 1,
+          "track_id": 2
+        },
+        {
+          "bitrate": 321274,
+          "codec_fourcc": "ec-3",
+          "content_type": "audio",
+          "encrypted": false,
+          "name": "bbb_a2",
+          "pk": 3,
+          "stream": 1,
+          "track_id": 3
+        },
+        {
+          "bitrate": 323203,
+          "codec_fourcc": "ec-3",
+          "content_type": "audio",
+          "encrypted": true,
+          "name": "bbb_a2_enc",
+          "pk": 4,
+          "stream": 1,
+          "track_id": 3
+        }
+      ],
+      "pk": 1,
+      "playready_la_url": null,
+      "timing_ref": {
+        "media_duration": 141950,
+        "media_name": "bbb_v1",
+        "num_media_segments": 148,
+        "segment_duration": 960,
+        "timescale": 240
+      },
+      "title": "Big Buck Bunny"
+    },
+    {
+      "defaults": {
+        "audioCodec": "any"
+      },
+      "directory": "tears",
+      "duration": "PT1M4S",
+      "marlin_la_url": "",
+      "media_files": [
+        {
+          "bitrate": 186164,
+          "codec_fourcc": "avc1",
+          "content_type": "video",
+          "encrypted": false,
+          "name": "tears_v1",
+          "pk": 23,
+          "stream": 2,
+          "track_id": 1
+        },
+        {
+          "bitrate": 189362,
+          "codec_fourcc": "avc1",
+          "content_type": "video",
+          "encrypted": true,
+          "name": "tears_v1_enc",
+          "pk": 24,
+          "stream": 2,
+          "track_id": 1
+        },
+        {
+          "bitrate": 359248,
+          "codec_fourcc": "avc1",
+          "content_type": "video",
+          "encrypted": false,
+          "name": "tears_v2",
+          "pk": 25,
+          "stream": 2,
+          "track_id": 1
+        },
+        {
+          "bitrate": 362447,
+          "codec_fourcc": "avc1",
+          "content_type": "video",
+          "encrypted": true,
+          "name": "tears_v2_enc",
+          "pk": 26,
+          "stream": 2,
+          "track_id": 1
+        },
+        {
+          "bitrate": 543804,
+          "codec_fourcc": "avc1",
+          "content_type": "video",
+          "encrypted": false,
+          "name": "tears_v3",
+          "pk": 27,
+          "stream": 2,
+          "track_id": 1
+        },
+        {
+          "bitrate": 547002,
+          "codec_fourcc": "avc1",
+          "content_type": "video",
+          "encrypted": true,
+          "name": "tears_v3_enc",
+          "pk": 28,
+          "stream": 2,
+          "track_id": 1
+        },
+        {
+          "bitrate": 619400,
+          "codec_fourcc": "avc1",
+          "content_type": "video",
+          "encrypted": false,
+          "name": "tears_v4",
+          "pk": 29,
+          "stream": 2,
+          "track_id": 1
+        },
+        {
+          "bitrate": 622598,
+          "codec_fourcc": "avc1",
+          "content_type": "video",
+          "encrypted": true,
+          "name": "tears_v4_enc",
+          "pk": 30,
+          "stream": 2,
+          "track_id": 1
+        },
+        {
+          "bitrate": 947981,
+          "codec_fourcc": "avc1",
+          "content_type": "video",
+          "encrypted": false,
+          "name": "tears_v5",
+          "pk": 31,
+          "stream": 2,
+          "track_id": 1
+        },
+        {
+          "bitrate": 951180,
+          "codec_fourcc": "avc1",
+          "content_type": "video",
+          "encrypted": true,
+          "name": "tears_v5_enc",
+          "pk": 32,
+          "stream": 2,
+          "track_id": 1
+        },
+        {
+          "bitrate": 1644787,
+          "codec_fourcc": "avc1",
+          "content_type": "video",
+          "encrypted": false,
+          "name": "tears_v6",
+          "pk": 33,
+          "stream": 2,
+          "track_id": 1
+        },
+        {
+          "bitrate": 1647985,
+          "codec_fourcc": "avc1",
+          "content_type": "video",
+          "encrypted": true,
+          "name": "tears_v6_enc",
+          "pk": 34,
+          "stream": 2,
+          "track_id": 1
+        },
+        {
+          "bitrate": 2642726,
+          "codec_fourcc": "avc1",
+          "content_type": "video",
+          "encrypted": false,
+          "name": "tears_v7",
+          "pk": 35,
+          "stream": 2,
+          "track_id": 1
+        },
+        {
+          "bitrate": 2645924,
+          "codec_fourcc": "avc1",
+          "content_type": "video",
+          "encrypted": true,
+          "name": "tears_v7_enc",
+          "pk": 36,
+          "stream": 2,
+          "track_id": 1
+        },
+        {
+          "bitrate": 98393,
+          "codec_fourcc": "mp4a",
+          "content_type": "audio",
+          "encrypted": false,
+          "name": "tears_a1",
+          "pk": 19,
+          "stream": 2,
+          "track_id": 2
+        },
+        {
+          "bitrate": 101517,
+          "codec_fourcc": "mp4a",
+          "content_type": "audio",
+          "encrypted": true,
+          "name": "tears_a1_enc",
+          "pk": 20,
+          "stream": 2,
+          "track_id": 2
+        },
+        {
+          "bitrate": 320419,
+          "codec_fourcc": "ec-3",
+          "content_type": "audio",
+          "encrypted": false,
+          "name": "tears_a2",
+          "pk": 21,
+          "stream": 2,
+          "track_id": 3
+        },
+        {
+          "bitrate": 322546,
+          "codec_fourcc": "ec-3",
+          "content_type": "audio",
+          "encrypted": true,
+          "name": "tears_a2_enc",
+          "pk": 22,
+          "stream": 2,
+          "track_id": 3
+        }
+      ],
+      "pk": 2,
+      "playready_la_url": null,
+      "timing_ref": {
+        "media_duration": 15360,
+        "media_name": "tears_v1",
+        "num_media_segments": 16,
+        "segment_duration": 960,
+        "timescale": 240
+      },
+      "title": "Tears of Steel"
+    }
+  ]
+}
