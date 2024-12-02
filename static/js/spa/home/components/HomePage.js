@@ -63,8 +63,9 @@ export function HomePage() {
     generateUrl(routeMap.dashMpdV3.url, routeMap.mpsManifest.url, mode, manifest, stream, nonDefaultOptions));
   const viewUrl = useComputed(() =>
     generateUrl(routeMap.viewManifest.url, routeMap.viewMpsManifest.url, mode, manifest, stream, nonDefaultOptions));
+  const manifestBaseName = useComputed(() => manifest.value.slice(0, -4));
   const videoUrl = useComputed(() =>
-    generateUrl(routeMap.video.url, routeMap.videoMps.url, mode, manifest, stream, nonDefaultOptions));
+    generateUrl(routeMap.video.url, routeMap.videoMps.url, mode, manifestBaseName, stream, nonDefaultOptions));
 
   return html`<${UseCombinedStreams.Provider} value=${combinedStreams}>
     <${StreamOptionsContext.Provider} value=${streamOptionsHook}>
