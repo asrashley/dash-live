@@ -15,6 +15,7 @@ from flask_jwt_extended import jwt_required
 from dashlive.mpeg.dash.content_role import ContentRole
 from dashlive.mpeg.dash.timing import DashTiming
 from dashlive.server import models
+from dashlive.server.models.adaptation_set import AdaptationSetJson
 from dashlive.server.options.form_input_field import FormInputContext
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.utils.date_time import from_isodatetime, timecode_to_timedelta
@@ -161,7 +162,13 @@ def mps_as_dict(mps: models.MultiPeriodStream) -> MultiPeriodStreamData:
     model['periods'] = []
     for period in mps.periods:
         p_js = period.to_dict()
-        p_js['tracks'] = [adp.to_dict(exclude={'period_pk'}) for adp in period.adaptation_sets]
+        tracks: list[AdaptationSetJson] = []
+        for adp in period.adaptation_sets:
+            tk: AdaptationSetJson = adp.to_dict(exclude={'period_pk', 'content_type'})
+            tk['content_type'] = adp.content_type.name
+            tk['codec_fourcc'] = adp.codec_fourcc()
+            tracks.append(tk)
+        p_js['tracks'] = tracks
         model['periods'].append(p_js)
     return model
 
