@@ -13,14 +13,18 @@ function findStreamTracks(stream) {
     let track = tracks.get(track_id);
     if (track === undefined) {
       track = {
-        bitrates: 1,
+        clearBitrates: 0,
+        encryptedBitrates: 0,
         track_id,
         content_type,
         codec_fourcc,
       };
       tracks.set(track_id, track);
+    }
+    if (mf.encrypted) {
+      track.encryptedBitrates += 1;
     } else {
-      track.bitrates += 1;
+      track.clearBitrates += 1;
     }
   }
   const ids = [...tracks.keys()];
@@ -28,7 +32,7 @@ function findStreamTracks(stream) {
   return ids.map((tid) => tracks.get(tid));
 }
 
-function decorateAllStreams(streams) {
+export function decorateAllStreams(streams) {
   return streams.map((stream) => {
     const decoratedStream = {
       ...stream,
