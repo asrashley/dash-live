@@ -207,17 +207,15 @@ class HTMLHandlerBase(RequestHandlerBase):
         return context
 
     def get_breadcrumbs(self, route: Route) -> list[NavBarItem]:
-        breadcrumbs: list[NavBarItem] = [{
-            'title': route.page_title(),
-            'active': 'active'
-        }]
+        breadcrumbs: list[NavBarItem] = [
+            NavBarItem(title=route.page_title(), active=True)
+        ]
         p: str | None = route.parent
         while p:
             rt: Route = routes[p]
-            breadcrumbs.insert(0, {
-                "title": rt.page_title(),
-                "href": flask.url_for(rt.name)
-            })
+            breadcrumbs.insert(0, NavBarItem(
+                title=rt.page_title(),
+                href=flask.url_for(rt.name)))
             p = rt.parent
         return breadcrumbs
 

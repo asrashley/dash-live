@@ -187,7 +187,9 @@ class ES5MainPage(HTMLHandlerBase):
         return flask.render_template("es5/index.html", **context)
 
     def get_breadcrumbs(self, route: Route) -> list[NavBarItem]:
-        breadcrumbs: list[NavBarItem] = [{"title": "Home", "active": "active"}]
+        breadcrumbs: list[NavBarItem] = [
+            NavBarItem(title="Home", active=True)
+        ]
         return breadcrumbs
 
 
