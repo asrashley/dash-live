@@ -312,10 +312,9 @@ def spa_handler(func):
                 'groups': current_user.get_groups(),
             })
         navbar = create_navbar_context()
-        breadcrumbs: list[NavBarItem] = [{
-            'title': 'Home',
-            'active': 'active'
-        }]
+        breadcrumbs: list[NavBarItem] = [
+            NavBarItem(title='Home', active=True, href=flask.url_for('home'))
+        ]
         context: TemplateContext = create_template_context(
             title='DASH Test Streams', params=kwargs,
             navbar=navbar, routes=routes, breadcrumbs=breadcrumbs,
