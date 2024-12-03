@@ -38,6 +38,7 @@ from dashlive.mpeg.dash.validator.concurrent_pool import ConcurrentWorkerPool
 from dashlive.server import models
 from dashlive.server.models.error_reason import ErrorReason
 from dashlive.server.options.form_input_field import FormInputContext
+from dashlive.server.requesthandler.navbar import NavBarItem
 from dashlive.server.routes import Route
 from dashlive.server.thread_pool import pool_executor
 from dashlive.utils.buffered_reader import BufferedReader
@@ -155,13 +156,12 @@ class MediaInfo(HTMLHandlerBase):
                 mf.representation.segment_duration, mf.representation.timescale)
         return flask.render_template('media/media_info.html', **context)
 
-    def get_breadcrumbs(self, route: Route) -> list[dict[str, str]]:
-        breadcrumbs = super().get_breadcrumbs(route)
-        breadcrumbs.insert(-1, {
-            'title': current_stream.directory,
-            'href': flask.url_for('view-stream', spk=current_stream.pk),
-        })
-        breadcrumbs[-1]['title'] = current_media_file.name
+    def get_breadcrumbs(self, route: Route) -> list[NavBarItem]:
+        breadcrumbs: list[NavBarItem] = super().get_breadcrumbs(route)
+        breadcrumbs.insert(-1, NavBarItem(
+            title=current_stream.directory,
+            href=flask.url_for('view-stream', spk=current_stream.pk)))
+        breadcrumbs[-1].title = current_media_file.name
         return breadcrumbs
 
     @login_required(permission=models.Group.MEDIA, html=True)
@@ -284,22 +284,16 @@ class EditMedia(HTMLHandlerBase):
         return flask.redirect(
             flask.url_for('media-info', spk=mf.stream.pk, mfid=mf.pk))
 
-    def get_breadcrumbs(self, route: Route) -> list[dict[str, str]]:
-        breadcrumbs = super().get_breadcrumbs(route)
-        breadcrumbs.insert(-1, {
-            'title': current_stream.directory,
-            'href': flask.url_for('view-stream', spk=current_stream.pk),
-        })
-        breadcrumbs[-1] = {
-            'title': current_media_file.name,
-            'active': False,
-            'href': flask.url_for(
-                'media-info', spk=current_stream.pk, mfid=current_media_file.pk),
-        }
-        breadcrumbs.append({
-            'title': 'edit',
-            'active': True,
-        })
+    def get_breadcrumbs(self, route: Route) -> list[NavBarItem]:
+        breadcrumbs: list[NavBarItem] = super().get_breadcrumbs(route)
+        breadcrumbs.insert(-1, NavBarItem(
+            title=current_stream.directory,
+            href=flask.url_for('view-stream', spk=current_stream.pk)))
+        breadcrumbs[-1] = NavBarItem(
+            title=current_media_file.name,
+            active=False,
+            href=flask.url_for('media-info', spk=current_stream.pk, mfid=current_media_file.pk))
+        breadcrumbs.append(NavBarItem(title='edit', active=True))
         return breadcrumbs
 
 
@@ -428,18 +422,15 @@ class MediaSegmentList(HTMLHandlerBase):
         })
         return flask.render_template('media/segment_list.html', **context)
 
-    def get_breadcrumbs(self, route: Route) -> list[dict[str, str]]:
-        crumbs = super().get_breadcrumbs(route)
-        stream_crumb = {
-            'title': current_stream.directory,
-            'href': flask.url_for('view-stream', spk=current_stream.pk),
-        }
+    def get_breadcrumbs(self, route: Route) -> list[NavBarItem]:
+        crumbs: list[NavBarItem] = super().get_breadcrumbs(route)
+        stream_crumb = NavBarItem(
+            title=current_stream.directory,
+            href=flask.url_for('view-stream', spk=current_stream.pk))
         crumbs.insert(-1, stream_crumb)
-        media_info = {
-            'title': current_media_file.name,
-            'href': flask.url_for(
-                'media-info', spk=current_stream.pk, mfid=current_media_file.pk),
-        }
+        media_info = NavBarItem(
+            title=current_media_file.name,
+            href=flask.url_for('media-info', spk=current_stream.pk, mfid=current_media_file.pk))
         crumbs.insert(-1, media_info)
         return crumbs
 
@@ -461,14 +452,14 @@ class SegmentInfoBase(HTMLHandlerBase):
         if is_ajax():
             return jsonify(atoms)
 
-        context = self.create_context(
+        context: TemplateContext = self.create_context(
             atoms=atoms,
             value_has_children=object_has_children,
             create_id=create_id_factory(),
             object_name=self.object_name,
             title=full_title,
             back_url=back_url)
-        context['breadcrumbs'][-1]['title'] = short_title
+        context['breadcrumbs'][-1].title = short_title
         return flask.render_template('media/segment_info.html', **context)
 
     @staticmethod
@@ -541,25 +532,21 @@ class MediaSegmentInfo(SegmentInfoBase):
             short_title = f'Segment {segnum}'
         return self.render_segment_info(atom, back_url, full_title, short_title)
 
-    def get_breadcrumbs(self, route: Route) -> list[dict[str, str]]:
-        crumbs = super().get_breadcrumbs(route)
-        stream_crumb = {
-            'title': current_stream.directory,
-            'href': flask.url_for('view-stream', spk=current_stream.pk),
-        }
+    def get_breadcrumbs(self, route: Route) -> list[NavBarItem]:
+        crumbs: list[NavBarItem] = super().get_breadcrumbs(route)
+        stream_crumb = NavBarItem(
+            title=current_stream.directory,
+            href=flask.url_for('view-stream', spk=current_stream.pk))
         crumbs.insert(-1, stream_crumb)
-        media_info = {
-            'title': current_media_file.name,
-            'href': flask.url_for(
-                'media-info', spk=current_stream.pk, mfid=current_media_file.pk),
-        }
+        media_info = NavBarItem(
+            title=current_media_file.name,
+            href=flask.url_for('media-info', spk=current_stream.pk, mfid=current_media_file.pk))
         crumbs.insert(-1, media_info)
-        all_segments = {
-            'title': 'Segments',
-            'href': flask.url_for(
+        all_segments = NavBarItem(
+            title='Segments',
+            href=flask.url_for(
                 'list-media-segments', spk=current_stream.pk,
-                mfid=current_media_file.pk),
-        }
+                mfid=current_media_file.pk))
         crumbs.insert(-1, all_segments)
         return crumbs
 

@@ -35,6 +35,7 @@ from dashlive.server import models
 from dashlive.server.manifests import default_manifest
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.options.drm_options import DrmSelection
+from dashlive.server.requesthandler.navbar import NavBarItem
 from dashlive.server.routes import Route
 from dashlive.utils.json_object import JsonObject
 from dashlive.utils.objects import flatten
@@ -435,9 +436,9 @@ class EditStream(HTMLHandlerBase):
                 fld['disabled'] = True
         return context
 
-    def get_breadcrumbs(self, route: Route) -> list[dict[str, str]]:
-        crumbs = super().get_breadcrumbs(route)
-        crumbs[-1]['title'] = current_stream.directory
+    def get_breadcrumbs(self, route: Route) -> list[NavBarItem]:
+        crumbs: list[NavBarItem] = super().get_breadcrumbs(route)
+        crumbs[-1].title = current_stream.directory
         return crumbs
 
 
@@ -533,10 +534,9 @@ class EditStreamDefaults(HTMLHandlerBase):
         flask.flash('Saved stream defaults', 'success')
         return flask.redirect(flask.url_for('view-stream', spk=current_stream.pk))
 
-    def get_breadcrumbs(self, route: Route) -> list[dict[str, str]]:
-        crumbs = super().get_breadcrumbs(route)
-        crumbs.insert(-1, {
-            'title': current_stream.directory,
-            'href': flask.url_for('view-stream', spk=current_stream.pk),
-        })
+    def get_breadcrumbs(self, route: Route) -> list[NavBarItem]:
+        crumbs: list[NavBarItem] = super().get_breadcrumbs(route)
+        crumbs.insert(-1, NavBarItem(
+            title=current_stream.directory,
+            href=flask.url_for('view-stream', spk=current_stream.pk)))
         return crumbs
