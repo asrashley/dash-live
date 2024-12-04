@@ -122,7 +122,6 @@ class ES5MainPage(HTMLHandlerBase):
                 "manifestErrors",
                 "textErrors",
                 "videoErrors",
-                "numPeriods",
                 "playready.licenseUrl",
                 "shakaVersion",
                 "failureCount",

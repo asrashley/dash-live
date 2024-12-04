@@ -218,7 +218,7 @@ class OptionsContainer(ObjectWithFields):
     def remove_unsupported_features(self, supported_features: AbstractSet[str]) -> None:
         todo = {
             'abr', 'audioCodec', 'useBaseUrls', 'drmSelection', 'eventTypes',
-            'minimumUpdatePeriod', 'numPeriods', 'segmentTimeline', 'utcMethod'
+            'minimumUpdatePeriod', 'segmentTimeline', 'utcMethod'
         }
         todo.difference_update(supported_features)
         for name in todo:

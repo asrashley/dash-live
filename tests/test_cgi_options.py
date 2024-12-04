@@ -84,7 +84,6 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             'drm': 'playready',
             'player': 'shaka',
             'mup': 'none',
-            'periods': '2',
             'playready__piff': '1',
             'playready__version': '2.0',
             'start': 'epoch',
@@ -99,7 +98,6 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             'clockDrift': 20,
             'drmSelection': [('playready', set(DrmLocation.all()))],
             'minimumUpdatePeriod': None,
-            'numPeriods': 2,
             'playready': {
                 'piff': True,
                 'version': 2.0,
@@ -240,7 +238,6 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
                 'licenseUrl': None,
             },
             'minimumUpdatePeriod': None,
-            'numPeriods': None,
             'patch': False,
             'ping': {
                 '_type': 'dashlive.server.options.container.OptionsContainer',
@@ -408,7 +405,6 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             "minimumUpdatePeriod": None,
             "mode": "vod",
             'ntpSources': [],
-            "numPeriods": None,
             "patch": False,
             "ping": {
                 "_type": "dashlive.server.options.container.OptionsContainer",
