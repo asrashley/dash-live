@@ -139,7 +139,7 @@ class OptionFieldGroups(MethodView):
             {},
             exclude={
                 'audioErrors', 'dashjsVersion', 'mode', 'manifestErrors', 'textErrors',
-                'videoErrors', 'numPeriods', 'shakaVersion', 'failureCount', 'videoCorruption',
+                'videoErrors', 'shakaVersion', 'failureCount', 'videoCorruption',
                 'videoCorruptionFrameCount', 'updateCount', 'utcValue'})
         for group in field_groups:
             for field in group.fields:

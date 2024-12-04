@@ -503,7 +503,7 @@ class EditStreamDefaults(HTMLHandlerBase):
             field_choices,
             exclude={'mode', 'clockDrift', 'dashjsVersion', 'marlin.licenseUrl',
                      'audioErrors', 'manifestErrors', 'textErrors', 'videoErrors',
-                     'numPeriods', 'playready.licenseUrl', 'shakaVersion', 'failureCount',
+                     'playready.licenseUrl', 'shakaVersion', 'failureCount',
                      'videoCorruption', 'videoCorruptionFrameCount',
                      'videoPlayer', 'updateCount', 'utcValue'})
         context['stream'] = current_stream
