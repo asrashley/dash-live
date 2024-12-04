@@ -143,7 +143,7 @@ class DashManifest:
         drm_opts = self.get_drm_options(mode)
         exclude: Set[str] = {
             'abr', 'bugCompatibility', 'drmSelection',
-            'leeway', 'mode', 'numPeriods', 'minimumUpdatePeriod',
+            'leeway', 'mode', 'minimumUpdatePeriod',
         }
         exclude.update(set(kwargs.keys()))
         if simplified:
@@ -227,7 +227,7 @@ default_manifest = DashManifest(
     title='Hand-made manifest',
     features={
         'abr', 'audioCodec', 'useBaseUrls', 'drmSelection', 'eventTypes',
-        'mode', 'minimumUpdatePeriod', 'numPeriods', 'patch',
+        'mode', 'minimumUpdatePeriod', 'patch',
         'segmentTimeline', 'utcMethod'},
 )
 
@@ -236,7 +236,7 @@ manifest_map: dict[str, DashManifest] = {
     'manifest_vod_aiv.mpd': DashManifest(
         name='manifest_vod_aiv',
         title='AIV on demand profile',
-        features={'abr', 'useBaseUrls', 'numPeriods'},
+        features={'abr', 'useBaseUrls'},
         restrictions={
             'mode': {'odvod'},
             'drm': {'none'},

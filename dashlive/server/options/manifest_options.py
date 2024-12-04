@@ -143,19 +143,6 @@ MinimumUpdatePeriod = DashOption(
     cgi_type='<number>',
     input_type='numberList')
 
-Periods = DashOption(
-    usage=OptionUsage.MANIFEST + OptionUsage.VIDEO + OptionUsage.AUDIO + OptionUsage.TEXT,
-    short_name='per',
-    full_name='numPeriods',
-    title='Multi-period',
-    description='The number of Periods to include in the manifest',
-    from_string=DashOption.int_or_none_from_string,
-    input_type='number',
-    cgi_name='periods',
-    cgi_type='<number>',
-    cgi_choices=(None, '2', '3'),
-    featured=True)
-
 SegmentTimeline = DashOption(
     usage=OptionUsage.MANIFEST,
     short_name='st',
@@ -217,7 +204,6 @@ manifest_options = [
     ManifestHttpError,
     MinimumUpdatePeriod,
     OperatingMode,
-    Periods,
     SegmentTimeline,
     TimeshiftBufferDepth,
     UpdateCount,
