@@ -6,6 +6,7 @@
     "@preact/signals-core": "{{ js_url('prod/preact/signals/signals-core.module.js' )}}",
     "preact": "{{ js_url('prod/preact/preact.module.js' )}}",
     "preact/hooks": "{{ js_url('prod/preact/hooks/hooks.module.js' )}}",
+    "preact-lazy": "{{ js_url('prod/preact/lazy/index.js' )}}",
     "htm": "{{ js_url('prod/htm/htm.module.js' )}}",
     "htm/preact": "{{ js_url('prod/htm/preact/index.mjs' )}}",
     "jquery": "/libs/jquery.js",

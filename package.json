@@ -43,6 +43,7 @@
     "jquery": "^3.7.1",
     "patch-package": "^8.0.0",
     "preact": "^10.23.1",
+    "preact-lazy": "^0.0.3",
     "regexparam": "^3.0.0",
     "temporal-polyfill": "^0.2.5",
     "wouter-preact": "^3.3.5"
