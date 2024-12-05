@@ -180,7 +180,7 @@ class BundleDirectory(MethodView):
         named_imports: dict[str, set[str]] = {}
         code: list[str] = []
         for js in ui_folder.glob("*.js"):
-            if test_file.search(js.name):
+            if test_file.search(js.name) or js.name == 'index.js':
                 continue
             js_files.add(f"./{js.name}")
             code += self.process_file(js, default_imports, named_imports)
