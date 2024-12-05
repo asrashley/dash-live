@@ -1,7 +1,8 @@
 import { html } from "htm/preact";
 import { useEffect } from 'preact/hooks'
-import { useLocation, useRouter } from 'wouter-preact';
 import { navigate } from "wouter-preact/use-browser-location";
+
+import { useBreadcrumbs } from "@dashlive/hooks";
 
 function followInternalLink(ev) {
   const href = ev.target.getAttribute('href');
@@ -24,28 +25,6 @@ function breadCrumbItemHtml({title, href, active, id}) {
   }
   return `<li id="${id}" class="breadcrumb-item ${active ? 'active': ''}">${body}</li>`;
 }
-
-export const useBreadcrumbs = () => {
-  const [location, setLocation] = useLocation();
-  const { base } = useRouter();
-
-  const baseParts = base === "" ? [""] : base.split('/');
-  const parts = location === "/" ? [""] : location.split('/').slice(baseParts.length - 1);
-
-  const breadcrumbs = parts.map((title, idx) => {
-    const href = idx === 0 ? `${base}/` : `${base}${parts.slice(0, idx + 1).join('/')}`;
-    const active = idx == (parts.length - 1);
-    const useLink = idx > 0;
-    const id = `crumb_${idx}`;
-    if (title === '') {
-      title = 'Home';
-    }
-    return {title, active, href, useLink, id};
-  });
-
-  return {breadcrumbs, location, setLocation};
-};
-
 export function BreadCrumbs() {
   const { breadcrumbs, location } = useBreadcrumbs();
   const payload = breadcrumbs.map(crumb => breadCrumbItemHtml(crumb)).join('');
@@ -54,9 +33,7 @@ export function BreadCrumbs() {
 
   useEffect(() => {
     for (const crumb of breadcrumbs) {
-      if (crumb.useLink) {
         document.getElementById(crumb.id)?.addEventListener('click', followInternalLink);
-      }
     }
     return () => {
       for (const elt of document.querySelectorAll('header > .breadcrumbs .breadcrumb-item > a')) {

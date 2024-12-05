@@ -1,17 +1,19 @@
 import { useEffect, useMemo } from 'preact/hooks'
 import { html } from 'htm/preact';
-import { Route, Switch } from "wouter-preact";
+import { Route, Switch, useLocation } from "wouter-preact";
+import lazy from 'preact-lazy';
 
 import { routeMap } from '/libs/routemap.js';
 
-import { BreadCrumbs, MessagesPanel } from '@dashlive/ui';
-import { ListStreamsPage } from './mps/components/ListStreamsPage.js';
-import { AddStreamPage } from './mps/components/AddStreamPage.js';
-import { EditStreamPage } from './mps/components/EditStreamPage.js';
-import { HomePage } from './home/components/HomePage.js';
+import { BreadCrumbs, LoadingSpinner, MessagesPanel } from '@dashlive/ui';
 
 import { ApiRequests, EndpointContext } from './endpoints.js';
 import { AppStateContext, createAppState } from './appState.js';
+
+const AddStreamPage = lazy(() => import('./mps/components/AddStreamPage.js'), LoadingSpinner);
+const EditStreamPage = lazy(() => import('./mps/components/EditStreamPage.js'), LoadingSpinner);
+const HomePage = lazy(() => import('./home/components/HomePage.js'), LoadingSpinner);
+const ListStreamsPage = lazy(() => import('./mps/components/ListStreamsPage.js'), LoadingSpinner);
 
 function NotFound(params) {
     return html`404, Sorry the page ${params["*"]} does not exist!`;
@@ -20,6 +22,7 @@ function NotFound(params) {
 export function App({tokens, user}) {
   const apiRequests = useMemo(() => new ApiRequests(tokens), [tokens]);
   const state = useMemo(() => createAppState(user), [user]);
+  const setLocation = useLocation()[1];
   const { backdrop } = state;
 
   useEffect(() => {
@@ -34,6 +37,21 @@ export function App({tokens, user}) {
       document.body.classList.remove('modal-open');
     }
   }, [backdrop.value]);
+
+  useEffect(() => {
+    const spaNavigate = (ev) => {
+      ev.preventDefault();
+      const href = ev.target.getAttribute('href');
+      setLocation(href);
+    };
+    const links = document.querySelectorAll('.navbar .spa .nav-link');
+
+    links.forEach((elt) => elt.addEventListener('click', spaNavigate));
+
+    return () => {
+      links.forEach((elt) => elt.removeEventListenerEventListener('click', spaNavigate));
+    };
+  }, [setLocation]);
 
   return html`
 <${AppStateContext.Provider} value=${state}>
