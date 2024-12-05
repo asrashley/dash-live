@@ -50,7 +50,7 @@ function SortableHeading({name, children, className=""}) {
   </th>`;
 }
 
-export function ListStreamsPage() {
+export default function ListStreamsPage() {
   const { user } = useContext(AppStateContext);
   const allMpsContext = useAllMultiPeriodStreams();
   const canModify = user.value.permissions.media === true;
