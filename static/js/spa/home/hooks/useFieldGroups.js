@@ -1,14 +1,14 @@
 import { useContext } from "preact/hooks";
 import { useComputed } from "@preact/signals";
 
-import { fieldGroups } from "/libs/options.js";
+import { fieldGroups, drmSystems } from "/libs/options.js";
 import { useAllManifests, UseCombinedStreams  } from "@dashlive/hooks";
 import { StreamOptionsContext } from '../types/StreamOptionsHook.js';
 
 export function useFieldGroups() {
   const { allManifests, names } = useAllManifests();
   const { streamNames, streamsMap } = useContext(UseCombinedStreams);
-  const { stream, manifest, mode } = useContext(StreamOptionsContext);
+  const { stream, manifest, mode, drms } = useContext(StreamOptionsContext);
 
   const homeFieldGroups = useComputed(() => {
     const playbackMode = {
@@ -61,12 +61,24 @@ export function useFieldGroups() {
       })),
       value: stream.value,
     };
+    const selectDrmSystem = {
+      name: "drms",
+      title: "DRM systems",
+      text: "DRM systems to enable for encrypted AdaptationSets",
+      type: "multiselect",
+      options: drmSystems .map(name => ({
+        name,
+        title: name,
+        checked: !!drms.value[name],
+      })),
+    };
     const generalOptions = {
       ...fieldGroups[0],
       fields: [
         playbackMode,
         selectManifest,
         selectStream,
+        selectDrmSystem,
         ...fieldGroups[0].fields,
       ],
     };

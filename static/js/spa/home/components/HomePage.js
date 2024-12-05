@@ -1,5 +1,5 @@
 import { html } from "htm/preact";
-import { useCallback, useContext } from "preact/hooks";
+import { useContext } from "preact/hooks";
 import { useComputed } from "@preact/signals";
 
 import { routeMap } from "/libs/routemap.js";
@@ -34,23 +34,25 @@ function generateUrl(stdUrlFn, mpsUrlFn, mode, manifest, stream, nonDefaultOptio
   return url;
 }
 
+function doNothing(ev) {
+  ev.preventDefault();
+  return false;
+}
+
+const formLayout = [2, 5, 5];
+
 function StreamOptionsForm({data}) {
   const { setValue } = useContext(StreamOptionsContext);
   const { homeFieldGroups } = useFieldGroups();
 
-  const onSubmit = useCallback((ev) => {
-    ev.preventDefault();
-    return false;
-  }, []);
-
-  return html`<form name="mpsOptions" onSubmit=${onSubmit}>
+  return html`<form name="mpsOptions" onSubmit=${doNothing}>
     <${AccordionFormGroup}
       groups=${homeFieldGroups.value}
       data=${data}
       expand="general"
       mode="cgi"
       setValue=${setValue}
-      layout=${[2,5,5]}
+      layout=${formLayout}
     />
   </form>`
 }
@@ -58,11 +60,11 @@ function StreamOptionsForm({data}) {
 export function HomePage() {
   const combinedStreams = useCombinedStreams();
   const streamOptionsHook = useStreamOptions(combinedStreams);
-  const { data, stream, mode, manifest, nonDefaultOptions } = streamOptionsHook;
+  const { data, stream, mode, manifest, nonDefaultOptions, manifestOptions } = streamOptionsHook;
   const manifestUrl = useComputed(() =>
-    generateUrl(routeMap.dashMpdV3.url, routeMap.mpsManifest.url, mode, manifest, stream, nonDefaultOptions));
+    generateUrl(routeMap.dashMpdV3.url, routeMap.mpsManifest.url, mode, manifest, stream, manifestOptions));
   const viewUrl = useComputed(() =>
-    generateUrl(routeMap.viewManifest.url, routeMap.viewMpsManifest.url, mode, manifest, stream, nonDefaultOptions));
+    generateUrl(routeMap.viewManifest.url, routeMap.viewMpsManifest.url, mode, manifest, stream, manifestOptions));
   const manifestBaseName = useComputed(() => manifest.value.slice(0, -4));
   const videoUrl = useComputed(() =>
     generateUrl(routeMap.video.url, routeMap.videoMps.url, mode, manifestBaseName, stream, nonDefaultOptions));
