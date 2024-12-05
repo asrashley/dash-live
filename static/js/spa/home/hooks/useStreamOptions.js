@@ -17,8 +17,12 @@ function getDefaultOptions() {
   };
 }
 
-const skipKeys = new RegExp(`^${[...drmSystems, 'drms', 'manifest', 'stream', 'mode'].join('|')}$`);
-const manifestSkipKeys = /^player|dashjs|shaka/;
+const skipKeys = new RegExp(`^(${[
+  ...drmSystems,
+  ...drmSystems.map(name => `${name}__enabled`),
+  ...drmSystems.map(name => `${name}__drmloc`),
+  'drms', 'manifest', 'stream', 'mode'].join('|')})$`);
+const manifestSkipKeys = /^(player|dashjs|shaka)/;
 
 export function useStreamOptions({ streamNames, streamsMap }) {
   const data = useSignal(getDefaultOptions());
@@ -33,7 +37,10 @@ export function useStreamOptions({ streamNames, streamsMap }) {
     const params = Object.entries(data.value)
       .filter(([key, value]) => defaultCgiOptions[key] != value)
       .filter(([key]) => !skipKeys.test(key));
-    const drm = drmSystems.filter(system => data.value[system] === "1");
+    const drm = drmSystems.filter(system => data.value[system] === "1").map(system => {
+      const drmLoc = data.value[`${system}__drmloc`];
+      return drmLoc ? `${system}-${drmLoc}`: system;
+    });
     if (drm.length) {
       params.push(['drm', drm.join(',')]);
     }

@@ -5,6 +5,8 @@ import { fieldGroups, drmSystems } from "/libs/options.js";
 import { useAllManifests, UseCombinedStreams  } from "@dashlive/hooks";
 import { StreamOptionsContext } from '../types/StreamOptionsHook.js';
 
+const drmSkipNames = new RegExp(`^${drmSystems.map(name => `${name}__enabled`).join('|')}$`);
+
 export function useFieldGroups() {
   const { allManifests, names } = useAllManifests();
   const { streamNames, streamsMap } = useContext(UseCombinedStreams);
@@ -82,7 +84,11 @@ export function useFieldGroups() {
         ...fieldGroups[0].fields,
       ],
     };
-    return [generalOptions, ...fieldGroups.slice(1)];
+    const otherGroups = fieldGroups.slice(1).map(grp => ({
+        ...grp,
+        fields: grp.fields.filter(({name}) => !drmSkipNames.test(name)),
+    }));
+    return [generalOptions, ...otherGroups];
   });
 
   return { homeFieldGroups };

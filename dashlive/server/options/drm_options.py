@@ -185,6 +185,7 @@ PlayreadyVersion = DashOption(
     title='Playready Version',
     description='Set the PlayReady version compatibility for this stream',
     from_string=DashOption.float_or_none_from_string,
+    input_type='select',
     cgi_name='playready__version',
     cgi_choices=(None, '1.0', '2.0', '3.0', '4.0'))
 
