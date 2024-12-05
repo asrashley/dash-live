@@ -57,7 +57,7 @@ function StreamOptionsForm({data}) {
   </form>`
 }
 
-export function HomePage() {
+export default function HomePage() {
   const combinedStreams = useCombinedStreams();
   const streamOptionsHook = useStreamOptions(combinedStreams);
   const { data, stream, mode, manifest, nonDefaultOptions, manifestOptions } = streamOptionsHook;
