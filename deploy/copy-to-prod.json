@@ -21,6 +21,10 @@
             "to": "../static/js/prod/preact/signals/"
         },
         {
+            "from": "../node_modules/preact-lazy/lib/index.js",
+            "to": "../static/js/prod/preact/lazy/"
+        },
+        {
             "from": "../node_modules/htm/dist/htm.module.js",
             "to": "../static/js/prod/htm/"
         },
