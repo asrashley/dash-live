@@ -79,5 +79,10 @@ export function useStreamOptions({ streamNames, streamsMap }) {
     [data, mode, streamsMap]
   );
 
-  return { data, drms, stream, mode, manifest, nonDefaultOptions, manifestOptions, setValue };
+  const resetAllValues = useCallback(() => {
+    data.value = { ...getDefaultOptions() };
+    localStorage.removeItem(keyName);
+  }, [data]);
+
+  return { data, drms, stream, mode, manifest, nonDefaultOptions, manifestOptions, setValue, resetAllValues };
 }
