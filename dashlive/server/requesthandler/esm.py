@@ -27,7 +27,7 @@ from typing import ClassVar
 import flask
 from flask.views import MethodView  # type: ignore
 
-from dashlive.components.field_group import InputFieldGroup
+from dashlive.components.field_group import InputFieldGroupJson
 from dashlive.drm.system import DrmSystem
 from dashlive.server.options.container import OptionsContainer
 from dashlive.server.options.dash_option import DashOption
@@ -135,14 +135,17 @@ class OptionFieldGroups(MethodView):
             else:
                 field_name_map[opt.cgi_name] = opt
         options: OptionsContainer = OptionsRepository.get_default_options()
-        field_groups: list[InputFieldGroup] = options.generate_input_field_groups(
-            {},
-            exclude={
-                'audioErrors', 'dashjsVersion', 'mode', 'manifestErrors', 'textErrors',
-                'videoErrors', 'shakaVersion', 'failureCount', 'videoCorruption',
-                'videoCorruptionFrameCount', 'updateCount', 'utcValue'})
+        field_groups: list[InputFieldGroupJson] = [
+            fg.toJSON(exclude={'className', 'show'}) for fg in options.generate_input_field_groups(
+                {},
+                exclude={
+                    'audioErrors', 'dashjsVersion', 'mode', 'manifestErrors', 'textErrors',
+                    'videoErrors', 'shakaVersion', 'failureCount', 'videoCorruption',
+                    'videoCorruptionFrameCount', 'updateCount', 'utcValue'
+                })
+        ]
         for group in field_groups:
-            for field in group.fields:
+            for field in group['fields']:
                 try:
                     opt: DashOption = field_name_map[field['name']]
                 except KeyError:
