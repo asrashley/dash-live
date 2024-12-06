@@ -9,8 +9,8 @@ import { fieldGroups, defaultShortOptions } from "/libs/options.js";
 import { AppStateContext } from "../../appState.js";
 
 const excludeFields = new Set([
-  'audioCodec', 'audioErrors', 'audioDescription', 'mainAudio', 'mainText',
-  'textCodec', 'textLanguage', 'videoPlayer'
+  'acodec', 'ad_audio', 'main_audio', 'main_text',
+  'player', 'tcodec', 'tlang'
 ]);
 
 const streamFieldGroups = fieldGroups.map(({fields, name, title}) => ({
