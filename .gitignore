@@ -19,6 +19,7 @@ static/css/legacy.css
 static/css/main.css
 static/css/mps.css
 static/css/prefixer.css
+static/css/spa.css
 static/css/validator.css
 static/css/video.css
 tests/runner.py
