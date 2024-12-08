@@ -21,7 +21,7 @@
   <Period
     id="1"
     start="PT0S">
-    {% if mpd.baseURL %}<BaseURL>{{ mpd.baseURL }}</BaseURL>{% endif %}
+    {% if mpd.period.baseURL %}<BaseURL>{{ mpd.period.baseURL }}</BaseURL>{% endif %}
     <AdaptationSet
       group="2"
       mimeType="video/mp4"

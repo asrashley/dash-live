@@ -16,7 +16,7 @@
   <Period
     id="1"
     start="PT0S">
-    <BaseURL>http://unit.test/dash/live/fixtures/</BaseURL>
+    <BaseURL>http://unit.test/dash/live/bbb/</BaseURL>
     <AdaptationSet
       group="2"
       mimeType="video/mp4"

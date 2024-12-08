@@ -1,4 +1,3 @@
-/* globals console, AbortController */
 /**
  * Create an object with all the values from an HTML form
  * @param form {HTMLFormElement} the form to extract data from
@@ -27,7 +26,7 @@ export async function validateFormValues(form_id) {
   const data = serializeForm(form);
   form.classList.add('needs-validation');
   form.classList.remove('was-validated');
-  
+
   const fetchResult = await fetch(url, {
     body: JSON.stringify(data),
     cache: 'no-cache',
@@ -46,7 +45,7 @@ export async function validateFormValues(form_id) {
   if (csrf_token) {
     form.csrf_token.value = csrf_token;
   }
-  
+
   form.querySelectorAll('input').forEach((elt) => {
     if (elt.getAttribute('type') == 'hidden') {
       return;
@@ -81,7 +80,7 @@ export async function validateFormValues(form_id) {
 export function setupValidation(form_id, options = {}) {
   const form = document.getElementById(form_id);
   const { cleanupOnSubmit = true } = options;
-    
+
   if (form === null) {
     throw new Error(`Failed to find form "${ form_id }"`);
   }

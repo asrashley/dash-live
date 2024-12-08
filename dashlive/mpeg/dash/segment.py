@@ -19,17 +19,18 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+from dataclasses import dataclass
+
 from typing import AbstractSet
 
 from dashlive.utils.json_object import JsonObject
 
+@dataclass(slots=True, kw_only=True)
 class Segment:
-    __slots__ = ('pos', 'size', 'duration')
-
-    def __init__(self, pos: int, size: int, duration: int | None = None) -> None:
-        self.pos = pos
-        self.size = size
-        self.duration = duration
+    pos: int
+    size: int
+    duration: int | None = None
+    start: int | None = None
 
     def toJSON(self, pure: bool = False,
                exclude: AbstractSet | None = None) -> JsonObject:

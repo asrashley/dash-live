@@ -23,9 +23,10 @@
 import datetime
 from dataclasses import dataclass, field
 import logging
+from math import floor
 import os
 import sys
-from typing import NamedTuple, Optional, Set
+from typing import Any, ClassVar, NamedTuple, Optional, Set
 
 from dashlive.drm.keymaterial import KeyMaterial
 from dashlive.mpeg.codec_strings import codec_string_from_avc_box
@@ -87,6 +88,7 @@ class Representation(ObjectWithFields):
     DEFAULT_VALUES = {
         'accessibility': None,
         'bitrate': None,
+        'baseURL': None,
         'content_type': None,
         'codecs': None,
         'default_kid': None,
@@ -104,15 +106,15 @@ class Representation(ObjectWithFields):
         'track_id': 1,
         'version': 0,
     }
-    VERSION = 4
-    KNOWN_CODEC_BOXES = [
+    VERSION: ClassVar[int] = 4
+    KNOWN_CODEC_BOXES: ClassVar[set[str]] = {
         'ac_3', 'avc1', 'avc3', 'mp4a', 'ec_3', 'encv', 'enca',
         'hev1', 'hvc1', 'stpp', 'wvtt',
-    ]
+    }
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        defaults = {
+        defaults: dict[str, Any] = {
             'lang': kwargs.get('language', 'und'),
             'kids': [],
             'segments': [],
@@ -134,8 +136,15 @@ class Representation(ObjectWithFields):
         self.apply_defaults(defaults)
         self.num_media_segments = len(self.segments) - 1
         self._timing: DashTiming | None = None
+        start: int = 0
+        for seg in self.segments[1:]:
+            seg.start = start
+            start += seg.duration
         if self.mediaDuration is None:
             self.mediaDuration = sum([s.duration for s in self.segments[1:]])
+        if self.segment_duration is None and self.num_media_segments > 0:
+            self.segment_duration = int(floor(
+                self.mediaDuration / self.num_media_segments))
 
     def __repr__(self) -> str:
         return self.as_python(exclude={'num_media_segments'})
@@ -547,35 +556,14 @@ class Representation(ObjectWithFields):
             raise ValueError('set_dash_timing() has not been called')
         if self.num_media_segments < 2:
             raise ValueError('At least 2 media segments are required')
-        stream_ref = self._timing.stream_reference
 
-        # ref_duration_tc is the duration of the reference media, in units of
-        # this representation's timescale
-        ref_duration_tc = stream_ref.media_duration_using_timescale(self.timescale)
-
-        num_loops = int(timecode // ref_duration_tc)
-        origin_time = int(num_loops * ref_duration_tc)
-        mod_segment = 1
-        # TODO use binary search to find correct segment
-        seg_start_tc = origin_time
-        while (seg_start_tc + (self.segments[mod_segment].duration // 2)) < timecode:
-            seg_start_tc += self.segments[mod_segment].duration
-            mod_segment += 1
-            if mod_segment > self.num_media_segments:
-                mod_segment = 1
-                origin_time += ref_duration_tc
-                seg_start_tc = origin_time
-
+        mod_segment, seg_start_tc, origin_time = self.get_segment_index(timecode)
         logging.debug(
-            '%s: target=%d (%s) found=%d (%s)',
-            rid, timecode, timecode_to_timedelta(timecode, self.timescale),
-            seg_start_tc, timecode_to_timedelta(seg_start_tc, self.timescale))
-        logging.debug(
-            '%s: origin=%d (%s) this_file_dur=%d (%s)  ref_file_dur=%d (%s) num_loops=%d mod_seg=%d',
+            '%s: origin=%d (%s) this_file_dur=%d (%s) mod_seg=%d',
             rid, origin_time, timecode_to_timedelta(origin_time, self.timescale),
-            self.mediaDuration, timecode_to_timedelta(self.mediaDuration, self.timescale),
-            ref_duration_tc, timecode_to_timedelta(ref_duration_tc, self.timescale),
-            num_loops, mod_segment)
+            self.mediaDuration,
+            timecode_to_timedelta(self.mediaDuration, self.timescale),
+            mod_segment)
         return (mod_segment, origin_time, seg_start_tc)
 
     def media_duration_timedelta(self) -> datetime.timedelta:
@@ -585,6 +573,29 @@ class Representation(ObjectWithFields):
         if self.mediaDuration is None:
             return datetime.timedelta(0)
         return self.timescale_to_timedelta(self.mediaDuration)
+
+    def get_segment_index(self, timecode: int) -> tuple[int, int, int]:
+        assert self._timing is not None
+        stream_ref = self._timing.stream_reference
+        ref_duration_tc: int = stream_ref.media_duration_using_timescale(self.timescale)
+        assert ref_duration_tc > 0
+        num_loops: int = int(timecode // ref_duration_tc)
+        origin_time: int = int(num_loops * ref_duration_tc)
+        mod_segment: int = 1
+        seg_start_tc: int = origin_time
+        # TODO use binary search to find correct segment
+        while (seg_start_tc + (self.segments[mod_segment].duration // 2)) < timecode:
+            seg_start_tc += self.segments[mod_segment].duration
+            mod_segment += 1
+            if mod_segment > self.num_media_segments:
+                mod_segment = 1
+                origin_time += ref_duration_tc
+                seg_start_tc = origin_time
+        logging.debug(
+            '%d: target=%d (%s) found=%d (%s)',
+            self.track_id, timecode, timecode_to_timedelta(timecode, self.timescale),
+            seg_start_tc, timecode_to_timedelta(seg_start_tc, self.timescale))
+        return (mod_segment, seg_start_tc, origin_time)
 
 
 if __name__ == '__main__':

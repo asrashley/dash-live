@@ -22,6 +22,7 @@
 
 import binascii
 import ctypes
+from datetime import timedelta
 import json
 import logging
 import multiprocessing
@@ -43,24 +44,20 @@ from dashlive.utils.date_time import from_isodatetime
 from .async_flask_testing import AsyncFlaskTestCase
 from .context_filter import ContextFilter
 from .mixin import TestCaseMixin
+from .stream_fixtures import MultiPeriodStreamFixture, StreamFixture, BBB_FIXTURE
 
 class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
-    # duration of media in test/fixtures directory (in seconds)
-    ADMIN_USER = 'admin'
-    ADMIN_EMAIL = 'admin@dashlive.unit.test'
-    ADMIN_PASSWORD = r'suuuperSecret!'
-    ENABLE_WSS = False
-    FIXTURES_PATH = Path(__file__).parent.parent / "fixtures"
-    STD_USER = 'user'
-    STD_EMAIL = 'user@dashlive.unit.test'
-    STD_PASSWORD = r'pa55word'
-    MEDIA_DURATION = 40
-    MEDIA_USER = 'media'
-    MEDIA_EMAIL = 'media@dashlive.unit.test'
-    MEDIA_PASSWORD = r'm3d!a'
-    SEGMENT_DURATION = 4
-    STREAM_TITLE = 'Big Buck Bunny'
-
+    ADMIN_USER: ClassVar[str] = 'admin'
+    ADMIN_EMAIL: ClassVar[str] = 'admin@dashlive.unit.test'
+    ADMIN_PASSWORD: ClassVar[str] = r'suuuperSecret!'
+    ENABLE_WSS: ClassVar[bool] = False
+    FIXTURES_PATH: ClassVar[Path] = Path(__file__).parent.parent / "fixtures"
+    STD_USER: ClassVar[str] = 'user'
+    STD_EMAIL: ClassVar[str] = 'user@dashlive.unit.test'
+    STD_PASSWORD: ClassVar[str] = r'pa55word'
+    MEDIA_USER: ClassVar[str] = 'media'
+    MEDIA_EMAIL: ClassVar[str] = 'media@dashlive.unit.test'
+    MEDIA_PASSWORD: ClassVar[str] = r'm3d!a'
     LOG_LEVEL: ClassVar[Type[logging.WARNING]] = logging.WARNING
     log_context: ClassVar[Optional[ContextFilter]] = None
     checked_urls: ClassVar[set[str]]
@@ -96,7 +93,7 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
 
     def create_app(self) -> flask.Flask:
         config = {
-            'BLOB_FOLDER': str(self.FIXTURES_PATH.parent),
+            'BLOB_FOLDER': str(self.FIXTURES_PATH),
             'DASH': {
                 'ALLOWED_DOMAINS': '*',
                 'CSRF_SECRET': 'test.csrf.secret',
@@ -139,103 +136,169 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
             models.db.session.commit()
         return app
 
-    def setup_media(self, with_subs=False):
-        bbb = models.Stream(
-            title=self.STREAM_TITLE,
-            directory=self.FIXTURES_PATH.name,
-            marlin_la_url='ms3://localhost/marlin/bbb',
-            playready_la_url=PlayReady.TEST_LA_URL
-        )
-        fixture_files = [
-            "bbb_v6", "bbb_v6_enc", "bbb_v7", "bbb_v7_enc",
-            "bbb_a1", "bbb_a1_enc", "bbb_a2", "bbb_a2_enc"]
-        if with_subs:
-            fixture_files.append("bbb_t1")
-        media_files = []
-        blobs = []
-        for idx, rid in enumerate(fixture_files):
-            filename = rid + ".mp4"
-            src_file = self.FIXTURES_PATH / filename
-            if '_v' in rid:
-                content_type = 'video'
-            elif '_a' in rid:
-                content_type = 'audio'
-            else:
-                content_type = 'text'
-            blob = models.Blob(
-                filename=filename,
-                created=from_isodatetime("2022-09-01T12:23:00Z"),
-                size=src_file.stat().st_size,
-                sha1_hash=str(src_file),
-                content_type=content_type,
-                auto_delete=False)
-            blobs.append(blob)
-            js_filename = self.FIXTURES_PATH / f'rep-{rid}.json'
-            rep: Representation | None = None
-            if js_filename.exists():
-                with js_filename.open('rt', encoding='utf-8') as src:
-                    rep_js = json.load(src)
-                if rep_js['version'] == Representation.VERSION:
-                    rep = Representation(**rep_js)
-                else:
-                    rep = None
-            if rep is None:
-                print(f'Creating Representation cache: {js_filename}')
-                with src_file.open(mode="rb", buffering=16384) as src:
-                    atoms = mp4.Mp4Atom.load(src)
-                rep = Representation.load(filename, atoms)
-                rep_js = rep.toJSON(pure=True)
-                with js_filename.open('wt', encoding='utf-8') as dest:
-                    json.dump(rep_js, dest, indent=2)
-            self.assertIsNotNone(rep)
-            self.assertIsInstance(rep, Representation)
-            encrypted = rid.endswith('_enc')
-            self.assertEqual(encrypted, rep.encrypted)
-            self.assertAlmostEqual(
-                rep.mediaDuration,
-                self.MEDIA_DURATION * rep.timescale,
-                delta=(rep.timescale / 5.0),
-                msg='Invalid duration for {}. Expected {} got {}'.format(
-                    filename, self.MEDIA_DURATION * rep.timescale,
-                    rep.mediaDuration))
-            mf = models.MediaFile(
-                name=rid,
-                stream=bbb,
-                bitrate=rep.bitrate,
-                content_type=rep.content_type,
-                codec_fourcc=rep.codecs.split('.')[0],
-                track_id=rep.track_id,
-                encrypted=rep.encrypted,
-                blob=blob)
-            mf.set_representation(rep)
-            media_files.append(mf)
-            if idx == 0:
-                bbb.set_timing_reference(mf.as_stream_timing_reference())
+    def setup_media(self, with_subs=False) -> None:
+        self.setup_media_fixture(BBB_FIXTURE)
+
+    def setup_content_types(self) -> None:
+        content_types: list[str] = [
+            "application", "video", "audio", "text", "image",
+        ]
         with self.app.app_context():
-            models.db.session.add(bbb)
-            for blob in blobs:
-                models.db.session.add(blob)
-            for mf in media_files:
-                models.db.session.add(mf)
+            for name in content_types:
+                ct = models.ContentType.get(name=name)
+                if ct is None:
+                    ct = models.ContentType(name=name)
+                    models.db.session.add(ct)
             models.db.session.commit()
 
+    def setup_media_fixture(self, fixture: StreamFixture, with_subs=False) -> None:
+        self.setup_content_types()
+        stream: models.Stream | None = models.Stream.get(directory=fixture.name)
+        if stream is not None:
+            return
+        stream = models.Stream(
+            title=fixture.title,
+            directory=fixture.name,
+            marlin_la_url=f"ms3://localhost/marlin/{fixture.name}",
+            playready_la_url=PlayReady.TEST_LA_URL
+        )
+        fixture_files: list[str] = []
+        patten: str = f"{fixture.name}_[av]*.mp4"
+        if with_subs:
+            patten = f"{fixture.name}_[avt]*.mp4"
+        fixtures_dir: Path = self.FIXTURES_PATH / fixture.name
+        for item in fixtures_dir.glob(patten):
+            fixture_files.append(item.stem)
+        fixture_files.sort()
+        media_files: list[models.MediaFile] = []
+        for idx, name in enumerate(fixture_files):
+            mf = self.add_blob_and_media_file(fixture, stream, name)
+            media_files.append(mf)
+            if stream.timing_reference is None and '_v' in name:
+                stream.timing_reference = mf.as_stream_timing_reference()
         with self.app.app_context():
-            kids = set()
+            models.db.session.add(stream)
+            for mf in media_files:
+                models.db.session.add(mf.blob)
+                models.db.session.add(mf)
+            models.db.session.commit()
+        self.add_media_keys()
+
+    def add_media_keys(self) -> None:
+        with self.app.app_context():
+            kids: set[bytes] = set()
             self.assertGreaterThan(models.MediaFile.count(), 0)
             for mf in models.MediaFile.all():
                 r = mf.representation
-                self.assertIsNotNone(
-                    r, f'Failed to get Representation for MediaFile {mf.name}')
+                assert r is not None
                 if not r.encrypted:
                     continue
                 for kid in r.kids:
                     if kid.raw in kids:
                         continue
                     key = binascii.b2a_hex(PlayReady.generate_content_key(kid.raw))
-                    keypair = models.Key(hkid=kid.hex, hkey=key, computed=True)
-                    models.db.session.add(keypair)
+                    keypair: models.Key | None = models.Key.get(hkid=kid.hex)
+                    if keypair is None:
+                        keypair = models.Key(hkid=kid.hex, hkey=key, computed=True)
+                        models.db.session.add(keypair)
                     kids.add(kid.raw)
             models.db.session.commit()
+
+    def add_blob_and_media_file(self,
+                                fixture: StreamFixture,
+                                stream: models.Stream,
+                                name: str) -> models.MediaFile:
+        filename = f"{name}.mp4"
+        src_file = self.FIXTURES_PATH / fixture.name / filename
+        if '_v' in name:
+            content_type = 'video'
+        elif '_a' in name:
+            content_type = 'audio'
+        else:
+            content_type = 'text'
+
+        blob = models.Blob(
+            filename=filename,
+            created=from_isodatetime("2022-09-01T12:23:00Z"),
+            size=src_file.stat().st_size,
+            sha1_hash=str(src_file),
+            content_type=content_type,
+            auto_delete=False)
+
+        js_filename = self.FIXTURES_PATH / fixture.name / f'rep-{name}.json'
+        rep: Representation | None = None
+        if js_filename.exists():
+            with js_filename.open('rt', encoding='utf-8') as src:
+                rep_js = json.load(src)
+            if rep_js['version'] == Representation.VERSION:
+                rep = Representation(**rep_js)
+        if rep is None:
+            print(f'Creating Representation cache: {js_filename}')
+            with src_file.open(mode="rb", buffering=16384) as src:
+                atoms = mp4.Mp4Atom.load(src)
+            rep = Representation.load(filename, atoms)
+            rep_js = rep.toJSON(pure=True)
+            with js_filename.open('wt', encoding='utf-8') as dest:
+                json.dump(rep_js, dest, indent=2)
+        self.assertIsNotNone(rep)
+        self.assertIsInstance(rep, Representation)
+        encrypted = name.endswith('_enc')
+        self.assertEqual(encrypted, rep.encrypted)
+        self.assertAlmostEqual(
+            rep.mediaDuration,
+            fixture.media_duration * rep.timescale,
+            delta=(rep.timescale / 5.0),
+            msg='Invalid duration for {}. Expected {} got {}'.format(
+                filename, fixture.media_duration * rep.timescale,
+                rep.mediaDuration))
+
+        mf = models.MediaFile(
+            name=name,
+            stream=stream,
+            bitrate=rep.bitrate,
+            content_type=rep.content_type,
+            codec_fourcc=rep.codecs.split('.')[0],
+            track_id=rep.track_id,
+            encrypted=rep.encrypted,
+            blob=blob)
+        mf.set_representation(rep)
+
+        return mf
+
+    def setup_multi_period_stream(self,
+                                  fixture: MultiPeriodStreamFixture
+                                  ) -> None:
+        for period in fixture.periods:
+            self.setup_media_fixture(period.fixture)
+        with self.app.app_context():
+            mps = models.MultiPeriodStream(
+                name=fixture.name, title=fixture.title)
+            models.db.session.add(mps)
+            for idx, period in enumerate(fixture.periods, start=1):
+                stream = models.Stream.get(directory=period.fixture.name)
+                assert stream is not None
+                start: int = period.fixture.segment_duration * period.start
+                duration: int = period.fixture.media_duration
+                duration -= start
+                duration -= period.end * period.fixture.segment_duration
+                prd = models.Period(
+                    pid=period.pid, parent=mps, ordering=idx, stream=stream,
+                    start=timedelta(seconds=start),
+                    duration=timedelta(seconds=duration))
+                models.db.session.add(prd)
+                for trk in period.tracks:
+                    ct = models.ContentType.get(name=trk.ttype)
+                    assert ct is not None
+                    adp = models.AdaptationSet(
+                        period=prd, track_id=trk.tid,
+                        role=trk.role.value,
+                        content_type=ct)
+                    models.db.session.add(adp)
+                models.db.session.add(adp)
+            models.db.session.commit()
+            self.assertEqual(
+                timedelta(seconds=fixture.media_duration),
+                mps.total_duration())
 
     def create_upload_folder(self) -> str:
         with self.app.app_context():

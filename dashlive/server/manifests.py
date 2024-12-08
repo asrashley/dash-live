@@ -143,7 +143,7 @@ class DashManifest:
         drm_opts = self.get_drm_options(mode)
         exclude: Set[str] = {
             'abr', 'bugCompatibility', 'drmSelection',
-            'leeway', 'mode', 'numPeriods', 'minimumUpdatePeriod',
+            'leeway', 'mode', 'minimumUpdatePeriod',
         }
         exclude.update(set(kwargs.keys()))
         if simplified:
@@ -215,25 +215,28 @@ class DashManifest:
     def toJSON(self, pure: bool = False,
                exclude: AbstractSet | None = None) -> JsonObject:
         return {
+            'name': self.name,
             'title': self.title,
             'features': self.features,
             'restrictions': self.restrictions,
         }
 
 
-manifest = {
-    'hand_made.mpd': DashManifest(
-        name='hand_made',
-        title='Hand-made manifest',
-        features={
-            'abr', 'audioCodec', 'useBaseUrls', 'drmSelection', 'eventTypes',
-            'mode', 'minimumUpdatePeriod', 'numPeriods', 'patch',
-            'segmentTimeline', 'utcMethod'},
-    ),
+default_manifest = DashManifest(
+    name='hand_made',
+    title='Hand-made manifest',
+    features={
+        'abr', 'audioCodec', 'useBaseUrls', 'drmSelection', 'eventTypes',
+        'mode', 'minimumUpdatePeriod', 'patch',
+        'segmentTimeline', 'utcMethod'},
+)
+
+manifest_map: dict[str, DashManifest] = {
+    'hand_made.mpd': default_manifest,
     'manifest_vod_aiv.mpd': DashManifest(
         name='manifest_vod_aiv',
         title='AIV on demand profile',
-        features={'abr', 'useBaseUrls', 'numPeriods'},
+        features={'abr', 'useBaseUrls'},
         restrictions={
             'mode': {'odvod'},
             'drm': {'none'},

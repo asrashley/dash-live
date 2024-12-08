@@ -22,14 +22,16 @@
 
 import time
 from dataclasses import dataclass
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Set
 
 from dashlive.utils.objects import dict_to_cgi_params
 from dashlive.utils.list_of import ListOf
 from dashlive.utils.object_with_fields import ObjectWithFields
 from dashlive.drm.base import DrmBase
+from dashlive.drm.keymaterial import KeyMaterial
 
 from .event_stream import EventStream
+from .mime_types import content_type_to_mime_type, content_type_file_suffix
 from .representation import Representation
 from .timing import DashTiming
 
@@ -47,7 +49,6 @@ class AdaptationSet(ObjectWithFields):
         'drm': DrmBase | None,
     }
     DEFAULT_VALUES: ClassVar[dict[str, Any]] = {
-        'maxSegmentDuration': 1,
         'timescale': 1,
         'segmentAlignment': True,
         'segment_timeline': False,
@@ -67,38 +68,29 @@ class AdaptationSet(ObjectWithFields):
             'id': AdaptationSet.get_next_id(),
             'representations': [],
             'event_streams': [],
+            'mimeType': content_type_to_mime_type(
+                self.content_type, kwargs.get('codecs', None)),
+            'fileSuffix': content_type_file_suffix(self.content_type),
         }
         if self.content_type == 'audio':
-            defaults['mimeType'] = "audio/mp4"
             defaults['lang'] = 'und'
             defaults['role'] = 'main'
             defaults['numChannels'] = 2
-            suffix = 'm4a'
         elif self.content_type == 'video':
-            defaults['mimeType'] = "video/mp4"
             defaults['startWithSAP'] = 1
             defaults['par'] = "16:9"
-            suffix = 'm4v'
         elif self.content_type == 'text':
             defaults['lang'] = 'und'
             defaults['role'] = 'subtitle'
-            if kwargs.get('codecs', None) == 'wvtt':
-                defaults['mimeType'] = 'text/vtt'
-            else:
-                defaults['mimeType'] = 'application/mp4'
-            suffix = 'mp4'
-        else:
-            defaults['mimeType'] = 'application/mp4'
-            suffix = 'mp4'
+        suffix: str = defaults['fileSuffix']
         if self.mode == 'odvod':
-            defaults['mediaURL'] = r'$RepresentationID$.' + suffix
+            defaults['mediaURL'] = f'$RepresentationID$.{suffix}'
         else:
-            defaults['initURL'] = r'$RepresentationID$/init.' + suffix
+            defaults['initURL'] = f'$RepresentationID$/init.{suffix}'
             if self.segment_timeline:
-                defaults['mediaURL'] = r'$RepresentationID$/time/$Time$.' + suffix
+                defaults['mediaURL'] = f'$RepresentationID$/time/$Time$.{suffix}'
             else:
-                defaults['mediaURL'] = r'$RepresentationID$/$Number$.' + suffix
-        defaults['fileSuffix'] = suffix
+                defaults['mediaURL'] = f'$RepresentationID$/$Number$.{suffix}'
         self.apply_defaults(defaults)
         if self.encrypted and self.default_kid is None:
             for rp in self.representations:
@@ -141,8 +133,8 @@ class AdaptationSet(ObjectWithFields):
                 return True
         return False
 
-    def key_ids(self):
-        kids = set()
+    def key_ids(self) -> Set[KeyMaterial]:
+        kids: Set[KeyMaterial] = set()
         for rep in self.representations:
             if rep.encrypted:
                 kids.update(rep.kids)
@@ -156,16 +148,32 @@ class AdaptationSet(ObjectWithFields):
         if self.mode != 'odvod':
             self.initURL += qs
 
-    def compute_av_values(self):
+    @property
+    def maxSegmentDuration(self) -> float:
+        if self.timescale < 1 or not self.representations:
+            return 1
+        return max([
+            a.segment_duration for a in self.representations
+        ]) / float(self.timescale)
+
+    @property
+    def minBitrate(self) -> int:
+        if not self.representations:
+            return 0
+        return min([a.bitrate for a in self.representations])
+
+    @property
+    def maxBitrate(self) -> int:
+        if not self.representations:
+            return 0
+        return max([a.bitrate for a in self.representations])
+
+    def compute_av_values(self) -> None:
         if not self.representations:
             return
         self.timescale = self.representations[0].timescale
         self.presentationTimeOffset = int(
             (self.start_number - 1) * self.representations[0].segment_duration)
-        self.minBitrate = min([a.bitrate for a in self.representations])
-        self.maxBitrate = max([a.bitrate for a in self.representations])
-        self.maxSegmentDuration = (max(
-            [a.segment_duration for a in self.representations]) / float(self.timescale))
 
         if self.content_type in {'audio', 'text'}:
             for rep in self.representations:

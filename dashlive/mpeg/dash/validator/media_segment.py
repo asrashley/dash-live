@@ -19,21 +19,33 @@ from .events import InbandEventStream
 from .http_range import HttpRange
 
 class MediaSegment(DashElement):
+    expected_decode_time: int | None
+    expected_seg_num: int | None
+    expected_duration: int | None
+    presentation_time_offset: int  # manifest timescale units
+    seg_range: HttpRange | None
+    tolerance: int
+    url: str
+
     def __init__(self,
                  parent: DashElement,
                  url: str,
+                 presentation_time_offset: int,
                  tolerance: int,
                  expected_duration: int | None,
                  expected_seg_num: int | None = None,
                  expected_decode_time: int | None = None,
                  seg_range: Optional[HttpRange] = None) -> None:
         super().__init__(None, parent)
+        assert url is not None
+        assert presentation_time_offset is not None
+        self.url = url
+        self.presentation_time_offset = presentation_time_offset
         self.expected_decode_time = expected_decode_time
         self.expected_seg_num = expected_seg_num
         self.expected_duration = expected_duration
         self.tolerance = tolerance
         self.seg_range = seg_range
-        self.url = url
         self.duration: int | None = None
         self.validated = False
         self.decode_time: int | None = None
@@ -56,7 +68,10 @@ class MediaSegment(DashElement):
     def children(self) -> list[DashElement]:
         return []
 
-    def set_segment_availability(self, segment_duration: int, presentationTimeOffset: int,
+    def set_segment_availability(self,
+                                 segment_duration: int,
+                                 period_availability_start: datetime.datetime,
+                                 presentationTimeOffset: int,
                                  timescale: int) -> None:
         decode_time = self.expected_decode_time
         if decode_time is None:
@@ -65,7 +80,7 @@ class MediaSegment(DashElement):
         delta = timecode_to_timedelta(
             decode_time + segment_duration - presentationTimeOffset,
             timescale)
-        self.availability_start_time = self.mpd.availabilityStartTime + delta
+        self.availability_start_time = period_availability_start + delta
         self.availability_end_time = self.availability_start_time + self.mpd.timeShiftBufferDepth
         self.availability_end_time += timecode_to_timedelta(segment_duration, timescale)
         self.log.debug('Segment availability %s -> %s',
@@ -159,13 +174,16 @@ class MediaSegment(DashElement):
         if not self.elt.check_not_none(
                 moov, msg='Failed to get MOOV box from init segment'):
             return
-        pts_values = set()
-        dts = moof.traf.tfdt.base_media_decode_time
+        pts_values: set[int] = set()
+        dts: int = moof.traf.tfdt.base_media_decode_time
         for sample in moof.traf.trun.samples:
             try:
                 pts = dts + sample.composition_time_offset
             except AttributeError:
                 pts = dts
+            pts -= self.presentation_time_offset
+            # TODO: some PTS values in first segment might be < zero
+            self.elt.check_greater_or_equal(pts, 0)
             self.elt.check_not_in(pts, pts_values)
             pts_values.add(pts)
             if sample.duration is None:

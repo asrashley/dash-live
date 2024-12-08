@@ -40,13 +40,14 @@ from dashlive.server.requesthandler.streams import ViewStreamAjaxResponse
 from dashlive.utils.date_time import to_iso_datetime
 
 from .mixins.flask_base import FlaskTestBase
+from .mixins.stream_fixtures import BBB_FIXTURE
 
 class TestRestApi(FlaskTestBase):
     def test_add_stream(self):
         self.assertEqual(models.Stream.count(), 0)
         request = {
             'title': 'Big Buck Bunny',
-            'directory': self.FIXTURES_PATH.name,
+            'directory': BBB_FIXTURE.name,
             'marlin_la_url': 'ms3://unit.test/bbb.sas',
             'playready_la_url': '',
             'ajax': '1',
@@ -158,19 +159,11 @@ class TestRestApi(FlaskTestBase):
                 segnum=segnum, ajax=1)
             response = self.client.get(url)
             self.assert200(response)
-            self.assertIn('segmentNumber', response.json)
-            self.assertIn('atoms', response.json)
-            self.assertIn('media', response.json)
-            self.assertIn('stream', response.json)
-            expected = {
-                'segmentNumber': segnum,
-                'atoms': response.json['atoms'],
-                'media': media_file.to_dict(
-                    with_collections=False, exclude={'stream', 'blob', 'representation', 'rep'}),
-                'stream': media_file.stream.to_dict(
-                    with_collections=False, exclude={'media_files'}),
-            }
-            self.assertDictEqual(expected, response.json)
+            atoms = response.json
+            if segnum == 0:
+                self.assertEqual(atoms[0]['atom_type'], 'ftyp')
+            else:
+                self.assertEqual(atoms[0]['atom_type'], 'moof')
             url = flask.url_for(
                 'view-media-segment', spk=media_file.stream_pk, mfid=media_file.pk,
                 segnum=segnum)

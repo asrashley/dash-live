@@ -32,8 +32,10 @@ from dashlive.drm.playready import PlayReady
 from dashlive.drm.system import DrmSystem
 from dashlive.mpeg.dash.adaptation_set import AdaptationSet
 from dashlive.server import models
+from dashlive.server.manifests import default_manifest
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.options.drm_options import DrmSelection
+from dashlive.server.requesthandler.navbar import NavBarItem
 from dashlive.server.routes import Route
 from dashlive.utils.json_object import JsonObject
 from dashlive.utils.objects import flatten
@@ -91,10 +93,18 @@ class ListStreams(HTMLHandlerBase):
                     k.toJSON(pure=True, exclude=exclude) for k in keys
                 ],
                 'csrf_tokens': csrf_tokens,
-                'streams': [
-                    s.to_dict(with_collections=True) for s in streams
-                ],
+                'streams': [],
             }
+            for stream in streams:
+                jss: JsonObject = stream.to_dict(with_collections=True)
+                jss['duration'] = stream.duration()
+                if flask.request.args.get('details', '0') == '1':
+                    media_files: list[JsonObject] = []
+                    for mf in stream.media_files:
+                        media_files.append(mf.to_dict(
+                            with_collections=False, exclude={'rep', 'blob'}))
+                    jss['media_files'] = media_files
+                result['streams'].append(jss)
             return jsonify(result)
 
         context = cast(ListStreamsTemplateContext, self.create_context(
@@ -224,6 +234,7 @@ class ViewStreamAjaxResponse(StreamAjaxResponse):
     upload_url: str
     csrf_tokens: CsrfTokenCollection
 
+
 class EditStream(HTMLHandlerBase):
     """
     Handler that allows viewing and updating a stream
@@ -235,9 +246,11 @@ class EditStream(HTMLHandlerBase):
         Get information about a stream
         """
         context = self.create_context(current_stream.title, True)
-        stream = current_stream.to_dict(with_collections=True, exclude={'media_files'})
+        stream = current_stream.to_dict(
+            with_collections=True, exclude={'media_files'})
         stream.update({
             'media_files': [],
+            'duration': current_stream.duration(),
         })
         kids: dict[str, models.Key] = {}
         has_file_errors: bool = False
@@ -270,11 +283,15 @@ class EditStream(HTMLHandlerBase):
         options.audioCodec = 'any'
         options.textCodec = None
         options.drmSelection = []
-        mc = ManifestContext(options=options, stream=current_stream)
+        mc = ManifestContext(
+            options=options, stream=current_stream, multi_period=None,
+            manifest=default_manifest)
         clear_adaptation_sets = [mc.video] + mc.audio_sets + mc.text_sets
         drmSelection = DrmSelection.from_string(','.join(DrmSystem.values()))
         enc_options = options.clone(drmSelection=drmSelection)
-        mc = ManifestContext(options=enc_options, stream=current_stream)
+        mc = ManifestContext(
+            options=enc_options, stream=current_stream, multi_period=None,
+            manifest=default_manifest)
         enc_adaptation_sets = [mc.video] + mc.audio_sets + mc.text_sets
         if 'fragment' in flask.request.args:
             layout = 'fragment.html'
@@ -419,9 +436,9 @@ class EditStream(HTMLHandlerBase):
                 fld['disabled'] = True
         return context
 
-    def get_breadcrumbs(self, route: Route) -> list[dict[str, str]]:
-        crumbs = super().get_breadcrumbs(route)
-        crumbs[-1]['title'] = current_stream.directory
+    def get_breadcrumbs(self, route: Route) -> list[NavBarItem]:
+        crumbs: list[NavBarItem] = super().get_breadcrumbs(route)
+        crumbs[-1].title = current_stream.directory
         return crumbs
 
 
@@ -486,7 +503,7 @@ class EditStreamDefaults(HTMLHandlerBase):
             field_choices,
             exclude={'mode', 'clockDrift', 'dashjsVersion', 'marlin.licenseUrl',
                      'audioErrors', 'manifestErrors', 'textErrors', 'videoErrors',
-                     'numPeriods', 'playready.licenseUrl', 'shakaVersion', 'failureCount',
+                     'playready.licenseUrl', 'shakaVersion', 'failureCount',
                      'videoCorruption', 'videoCorruptionFrameCount',
                      'videoPlayer', 'updateCount', 'utcValue'})
         context['stream'] = current_stream
@@ -507,7 +524,7 @@ class EditStreamDefaults(HTMLHandlerBase):
         for name in DrmSystem.values():
             if flask.request.form.get(f'drm_{name}', '') != 'on':
                 continue
-            loc = flask.request.form.get(f'{name}_drmloc', 'all')
+            loc = flask.request.form.get(f'{name}__drmloc', 'all')
             drms.append(f'{name}-{loc}')
         form['drm'] = ','.join(drms)
         form['events'] = ','.join(flask.request.form.getlist('events'))
@@ -517,10 +534,9 @@ class EditStreamDefaults(HTMLHandlerBase):
         flask.flash('Saved stream defaults', 'success')
         return flask.redirect(flask.url_for('view-stream', spk=current_stream.pk))
 
-    def get_breadcrumbs(self, route: Route) -> list[dict[str, str]]:
-        crumbs = super().get_breadcrumbs(route)
-        crumbs.insert(-1, {
-            'title': current_stream.directory,
-            'href': flask.url_for('view-stream', spk=current_stream.pk),
-        })
+    def get_breadcrumbs(self, route: Route) -> list[NavBarItem]:
+        crumbs: list[NavBarItem] = super().get_breadcrumbs(route)
+        crumbs.insert(-1, NavBarItem(
+            title=current_stream.directory,
+            href=flask.url_for('view-stream', spk=current_stream.pk)))
         return crumbs

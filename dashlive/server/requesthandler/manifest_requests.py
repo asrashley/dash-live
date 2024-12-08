@@ -29,16 +29,24 @@ from typing import cast
 import flask
 
 from dashlive.mpeg.dash.profiles import primary_profiles
-from dashlive.server import manifests
 from dashlive.server.models import Stream
+from dashlive.server.manifests import manifest_map
 from dashlive.server.options.container import OptionsContainer
 from dashlive.utils.objects import dict_to_cgi_params
+from dashlive.utils.json_object import JsonObject
 from dashlive.utils.timezone import UTC
 
 from .base import RequestHandlerBase, TemplateContext
-from .decorators import uses_stream, current_stream
+from .decorators import (
+    uses_stream,
+    current_stream,
+    uses_manifest,
+    current_manifest,
+    uses_multi_period_stream,
+    current_mps,
+)
 from .manifest_context import ManifestContext
-from .utils import add_allowed_origins
+from .utils import add_allowed_origins, jsonify
 
 class ManifestTemplateContext(TemplateContext):
     mode: str
@@ -55,32 +63,19 @@ class PatchTemplateContext(TemplateContext):
 class ServeManifest(RequestHandlerBase):
     """handler for generating MPD files"""
 
-    decorators = [uses_stream]
+    decorators = [uses_stream, uses_manifest]
 
     def head(self, **kwargs):
         return self.get(**kwargs)
 
     def get(self, mode: str, stream: str, manifest: str) -> flask.Response:
         logging.debug('ServeManifest: mode=%s stream=%s manifest=%s', mode, stream, manifest)
-        try:
-            mft = manifests.manifest[manifest]
-        except KeyError as err:
-            logging.debug('Unknown manifest: %s (%s)', manifest, err)
-            return flask.make_response(
-                f'{html.escape(manifest)} not found', 404)
-        try:
-            modes = mft.restrictions['mode']
-        except KeyError:
-            modes = primary_profiles.keys()
-        if mode not in modes:
-            logging.debug(
-                'Mode %s not supported with manifest %s (supported=%s)',
-                mode, manifest, modes)
-            return flask.make_response(
-                f'{html.escape(manifest)} not found', 404)
+        mft = current_manifest
         try:
             options = self.calculate_options(
-                mode=mode, args=flask.request.args, stream=current_stream,
+                mode=mode,
+                args=flask.request.args,
+                stream=current_stream,
                 restrictions=mft.restrictions,
                 features=mft.features)
         except ValueError as e:
@@ -98,10 +93,12 @@ class ServeManifest(RequestHandlerBase):
         elif mft.segment_timeline or options.patch:
             options.update(segmentTimeline=True)
         options.remove_unused_parameters(mode)
-        dash = ManifestContext(manifest=mft, options=options)
+        dash = ManifestContext(
+            manifest=mft, options=options, stream=current_stream,
+            multi_period=None)
         context = cast(ManifestTemplateContext, self.create_context(
-            title=current_stream.title, mpd=dash, options=options, mode=mode,
-            stream=current_stream))
+            title=current_stream.title, mpd=dash, options=options,
+            mode=mode, stream=current_stream))
         response = self.check_for_synthetic_manifest_error(options, context)
         if response is not None:
             return response
@@ -115,7 +112,7 @@ class ServeManifest(RequestHandlerBase):
             'Cache-Control': f'max-age={max_age}',
             'Accept-Ranges': 'none',
         }
-        add_allowed_origins(headers)
+        add_allowed_origins(headers, methods={'HEAD', 'GET'})
         return flask.make_response((body, 200, headers))
 
     def check_for_synthetic_manifest_error(
@@ -142,6 +139,43 @@ class ServeManifest(RequestHandlerBase):
                 continue
             return flask.make_response(f'Synthetic {code} for manifest', code)
         return None
+
+
+class ServeMultiPeriodManifest(RequestHandlerBase):
+    decorators = [uses_multi_period_stream, uses_manifest]
+
+    def get(self, mode: str, mps_name: str, manifest: str) -> flask.Response:
+        logging.debug(
+            'ServeMultiPeriodManifest: mode=%s mps=%s manifest=%s',
+            mode, mps_name, manifest)
+        try:
+            options = self.calculate_options(
+                mode=mode,
+                args=flask.request.args,
+                stream=None,
+                restrictions=current_manifest.restrictions,
+                features=current_manifest.features)
+        except ValueError as e:
+            logging.info('Invalid CGI parameters: %s', e)
+            return flask.make_response('Invalid CGI parameters', 400)
+        dash = ManifestContext(
+            manifest=current_manifest, options=options, stream=None,
+            multi_period=current_mps)
+        context = cast(ManifestTemplateContext, self.create_context(
+            title=current_mps.title, mpd=dash, options=options,
+            mode=mode))
+        body = flask.render_template(f'manifests/{manifest}', **context)
+        try:
+            max_age = int(math.floor(context["minimumUpdatePeriod"]))
+        except KeyError:
+            max_age = 60
+        headers = {
+            'Content-Type': 'application/dash+xml',
+            'Cache-Control': f'max-age={max_age}',
+            'Accept-Ranges': 'none',
+        }
+        add_allowed_origins(headers, methods={'GET', 'HEAD'})
+        return flask.make_response((body, 200, headers))
 
 
 class LegacyManifestUrl(ServeManifest):
@@ -184,7 +218,7 @@ class ServePatch(RequestHandlerBase):
     handler for generating MPD patch files
     """
 
-    decorators = [uses_stream]
+    decorators = [uses_stream, uses_manifest]
 
     def get(self,
             stream: str,
@@ -194,12 +228,7 @@ class ServePatch(RequestHandlerBase):
 
         logging.debug(
             'ServePatch: stream=%s manifest=%s', stream, manifest)
-        try:
-            mft = manifests.manifest[f'{manifest}.mpd']
-        except KeyError as err:
-            logging.debug('Unknown manifest: %s (%s)', manifest, err)
-            return flask.make_response(
-                f'{html.escape(manifest)} not found', 404)
+        mft = current_manifest
 
         if 'patch' not in mft.features:
             logging.warning(
@@ -240,7 +269,9 @@ class ServePatch(RequestHandlerBase):
         options.remove_unused_parameters('live')
         original_publish_time = datetime.datetime.fromtimestamp(
             publish, tz=UTC())
-        dash = ManifestContext(manifest=mft, options=options)
+        dash = ManifestContext(
+            manifest=mft, options=options, stream=current_stream,
+            multi_period=None)
         context = cast(PatchTemplateContext, self.create_context(
             title=current_stream.title, mpd=dash, options=options,
             stream=current_stream,
@@ -259,3 +290,11 @@ class ServePatch(RequestHandlerBase):
         }
         add_allowed_origins(headers)
         return flask.make_response((body, 200, headers))
+
+
+class ListManifests(RequestHandlerBase):
+    def get(self) -> flask.Response:
+        manifests: JsonObject = {}
+        for name, msft in manifest_map.items():
+            manifests[name] = msft.toJSON()
+        return jsonify(manifests)

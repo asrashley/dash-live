@@ -17,25 +17,32 @@ from .events import EventStream
 from .validation_flag import ValidationFlag
 
 class Period(DashElement):
+    id: str | int | None
+    adaptation_sets: list[AdaptationSet]
+    event_streams: list[EventStream]
+    start: datetime.timedelta | None
+    duration: datetime.timedelta | None
+
     attributes = [
         ('id', str, None),
         ('start', from_isodatetime, None),
         ('duration', from_isodatetime, DashElement.Parent),
     ]
 
-    def __init__(self, period, parent):
+    def __init__(self, period, parent) -> None:
         super().__init__(period, parent)
-        if self.parent.mpd_type == 'dynamic':
-            if self.start is None:
-                self.start = parent.availabilityStartTime
-            else:
-                self.start = parent.availabilityStartTime + \
-                    datetime.timedelta(seconds=self.start.total_seconds())
+        self.adaptation_sets = []
+        self.event_streams = []
+        if self.start is None:
+            self.start = datetime.timedelta()
+            prev_period: Period | None = self.previous_peer()
+            if prev_period and prev_period.duration:
+                self.start = prev_period.start + prev_period.duration
         adps = period.findall('./dash:AdaptationSet', self.xmlNamespaces)
         self.adaptation_sets = [AdaptationSet(a, self) for a in adps]
         evs = period.findall('./dash:EventStream', self.xmlNamespaces)
         self.event_streams = [EventStream(r, self) for r in evs]
-        next_id = 0
+        next_id: int = 0
         for adp in self.adaptation_sets:
             if adp.id is not None:
                 next_id = max(next_id, adp.id)
@@ -104,6 +111,12 @@ class Period(DashElement):
         if dur is None:
             return 0
         return int(dur.total_seconds() * timescale)
+
+    def availability_start_time(self) -> datetime.datetime | None:
+        ast = self.parent.availabilityStartTime
+        if ast is None:
+            return None
+        return ast + self.start
 
     def num_tests(self) -> int:
         count = 0

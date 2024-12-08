@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <MPD xmlns="urn:mpeg:dash:schema:mpd:2011" xmlns:cenc="urn:mpeg:cenc:2013" xmlns:mspr="urn:microsoft:playready" xmlns:mas="urn:marlin:mas:1-0:services:schemas:mpd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="urn:mpeg:schema:mpd:2011 DASH-MPD.xsd" profiles="urn:mpeg:profile:isoff-live:2011" publishTime="2022-09-06T11:57:00Z" minBufferTime="PT8.0S" type="static" mediaPresentationDuration="PT40S">
   <Period start="PT0S" id="p0">
-    <BaseURL>http://unit.test/dash/vod/fixtures/</BaseURL>
+    <BaseURL>http://unit.test/dash/vod/bbb/</BaseURL>
     <AdaptationSet mimeType="video/mp4" par="16:9" segmentAlignment="true" startWithSAP="1">
       <ContentProtection schemeIdUri="urn:mpeg:dash:mp4protection:2011" value="cenc" cenc:default_KID="1AB45440-532C-4399-94DC-5C5AD9584BAC"/>
       <ContentProtection xmlns:mas="urn:marlin:mas:1-0:services:schemas:mpd" schemeIdUri="urn:uuid:5e629af5-38da-4063-8977-97ffbd9902d4">

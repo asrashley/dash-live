@@ -22,11 +22,15 @@
 
 import datetime
 from typing import Any, ClassVar
+import urllib.parse
+
+import flask
 
 from dashlive.utils.list_of import ListOf
 from dashlive.utils.object_with_fields import ObjectWithFields
 
 from .adaptation_set import AdaptationSet
+from .timing import DashTiming
 
 class Period(ObjectWithFields):
     """
@@ -71,3 +75,30 @@ class Period(ObjectWithFields):
             if adp.content_type == 'audio':
                 rv.append(adp)
         return rv
+
+    @property
+    def maxSegmentDuration(self) -> float:
+        if not self.adaptationSets:
+            return 1
+        return max([a.maxSegmentDuration for a in self.adaptationSets])
+
+    def finish_setup(self,
+                     mode: str,
+                     timing: DashTiming | None,
+                     base_url: str,
+                     use_base_urls: bool) -> None:
+        if use_base_urls:
+            self.baseURL = urllib.parse.urljoin(flask.request.host_url, base_url)
+
+        for adp in self.adaptationSets:
+            if mode == 'odvod':
+                for rep in adp.representations:
+                    rep.baseURL = f"{rep.id}.{adp.fileSuffix}"
+                    if not use_base_urls:
+                        rep.baseURL = f"{base_url}{rep.baseURL}"
+            if not use_base_urls:
+                if mode != 'odvod':
+                    adp.initURL = f"{base_url}{adp.initURL}"
+                adp.mediaURL = f"{base_url}{adp.mediaURL}"
+            if timing:
+                adp.set_dash_timing(timing)
