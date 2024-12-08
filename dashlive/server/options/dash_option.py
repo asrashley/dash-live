@@ -45,7 +45,7 @@ class DashOption:
     cgi_name: str | list[str]
     cgi_choices: tuple[CgiChoiceType, ...] | None = field(default=None)
     cgi_type: str | None = None
-    input_type: str = 'text'
+    input_type: str = ''
     from_string: Callable[[str], Any] = field(default_factory=lambda: DashOption.string_or_none)
     to_string: Callable[[str], Any] = field(default_factory=lambda: flatten)
     prefix: str = field(default='')
@@ -129,7 +129,7 @@ class DashOption:
                     "title": title,
                     "selected": value == val
                 })
-        if input['type'] is None:
+        if input['type'] == '':
             if isinstance(value, bool) or self.to_string == DashOption.bool_to_string:
                 input['type'] = 'bool'
             elif isinstance(value, int) or self.to_string == DashOption.int_or_none_from_string:
@@ -163,11 +163,11 @@ class DashOption:
                 input['type'] = 'checkbox'
                 del input['options']
         elif input['type'] == 'numberList':
-            input['type'] = 'number'
-            input['datalist'] = True
+            input['datalist_type'] = 'number'
+            input['type'] = 'datalist'
         elif input['type'] == 'textList':
-            input['type'] = 'text'
-            input['datalist'] = True
+            input['datalist_type'] = 'text'
+            input['type'] = 'datalist'
         elif input['type'] in field_choices:
             input['options'] = field_choices[input['type']]
             input['type'] = 'select'

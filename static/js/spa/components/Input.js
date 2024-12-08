@@ -1,79 +1,13 @@
 import { html } from "htm/preact";
-import { useCallback } from "preact/hooks";
 
-import { SelectOption } from "./SelectOption.js";
-
-function RadioOption({ name, selected, title, value, disabled, setValue }) {
-  const onClick = useCallback(() => {
-    setValue(name, value);
-  }, [name, setValue, value]);
-  return html`<div class="form-check">
-    <input
-      class="form-check-input"
-      type="radio"
-      name="${name}"
-      id="radio-${name}-${value}"
-      onClick=${onClick}
-      value="${value}"
-      checked=${selected}
-      disabled=${disabled}
-    />
-    <label class="form-check-label" for="radio-${name}-${value}"
-      >${title}</label
-    >
-  </div>`;
-}
-
-function RadioInput({ options, ...props }) {
-  return html`<div>
-    ${options.map(
-      (opt) => html`<${RadioOption} key=${opt.value} ...${props} ...${opt} />`
-    )}
-  </div>`;
-}
-
-function SelectInput({ className, options, value, ...props }) {
-  return html`<select className="${className}" value=${value} ...${props}>
-    ${options.map(
-      (opt) =>
-        html`<${SelectOption} selected=${value === opt.value} ...${opt} />`
-    )}
-  </select>`;
-}
-
-function MultiSelectInput({className, options, name, setValue}) {
-    const onClick = (ev) => {
-        const { name, checked } = ev.target;
-        setValue(name, checked);
-    };
-    return html`<div data-testid="msi-${name}" className=${className}>
-      ${options.map(({name, title, checked}) => html`<div className="form-check form-check-inline">
-        <input name=${name} className="form-check-input" type="checkbox" id="msi${name}"
-            checked=${checked} onClick=${onClick} />
-        <label className="form-check-label me-3" for="msi${name}">${title}</label>
-      </div>`)}
-    </div>`;
-}
-
-function DataListInput({ className, name, options, ...props }) {
-  return html`<input
-      className="${className}"
-      name="${name}"
-      list="list-${name}"
-      ...${props}
-    />
-    <datalist id="list-${name}">
-      ${options.map(
-        (opt) =>
-          html`<option value="${opt.value}" selected=${opt.selected}>
-            ${opt.title}
-          </option>`
-      )}
-    </datalist>`;
-}
+import { DataListInput } from './DataListInput.js';
+import { MultiSelectInput } from './MultiSelectInput.js';
+import { RadioInput } from './RadioInput.js';
+import { SelectInput } from './SelectInput.js';
 
 export function Input({
   className = "",
+  datalist_type,
   type,
   name,
   value,
@@ -99,7 +33,6 @@ export function Input({
     type,
     className: `${inputClass}${validationClass} ${className}`,
     title,
-    options,
     id: `model-${name}`,
     value: value.value,
     "aria-describedby": `field-${name}`,
@@ -113,13 +46,14 @@ export function Input({
   }
   switch (type) {
     case "radio":
-      return html`<${RadioInput} setValue=${setValue} ...${inpProps} />`;
+      return html`<${RadioInput} setValue=${setValue} options=${options} ...${inpProps} />`;
     case "select":
-      return html`<${SelectInput} ...${inpProps} />`;
+      return html`<${SelectInput} options=${options} ...${inpProps} />`;
     case "multiselect":
-      return html`<${MultiSelectInput} setValue=${setValue} ...${inpProps} />`;
+      return html`<${MultiSelectInput} setValue=${setValue} options=${options} ...${inpProps} />`;
     case "datalist":
-      return html`<${DataListInput} ...${inpProps} />`;
+      inpProps.type = datalist_type ?? 'text';
+      return html`<${DataListInput} options=${options} ...${inpProps} />`;
     default:
       return html`<input ...${inpProps} />`;
   }
