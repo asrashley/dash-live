@@ -25,7 +25,7 @@
   </label>
   <div class="{{ middle }}">
     {% include "input-element.html" %}
-    
+
     <div class="invalid-feedback">{{ field.error }}</div>
     {%- if field.type == "link" %}
       <a href="{{ field.href }}" class="btn btn-primary mt-2 mb-2" title="{{ field.link_title }}">
@@ -38,7 +38,7 @@
     {{ field.text }}
   </div>
   {%- endif %}
-  {%- if field.datalist %}
+  {%- if field.type == 'datalist' %}
     <datalist id="list-{{ field.name }}">
       {% for option in field.options %}
         <option value="{{ option.value }}">{{ option.title }}</option>

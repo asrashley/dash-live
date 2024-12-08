@@ -14,14 +14,18 @@
 {%- endif %}
 
 {%- if field.type != "radio" %}
-  {% if field.type == "select" %}
+  {%- if field.type == "select" %}
     <select
   {%- elif field.type == "link" %}
     <input disabled type="text"
   {%- else %}
     <input
   {%- endif %}
+  {%- if field.type == 'datalist' %}
+      type="{{ field.datalist_type }}"
+  {%- else %}
       type="{{ field.type }}"
+  {%- endif %}
       name="{{ field.name }}"
       id="model-{{ field.name }}"
       class="{{ inputClass }} {{ validationClass }} {{ field.className }}"
