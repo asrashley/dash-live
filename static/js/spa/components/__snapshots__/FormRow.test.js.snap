@@ -1,0 +1,111 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`FormRow > can set column layout 1`] = `
+<DocumentFragment>
+  <div
+    class="row mb-2 form-group "
+  >
+    <label
+      class="col-3 col-form-label"
+      for="field-test"
+    >
+      form label:
+    </label>
+    <div
+      class="col-4"
+    >
+      <input
+        type="text"
+      />
+    </div>
+    <div
+      class="col-5 form-text"
+    >
+      input description
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`FormRow > can set column layout for row without text 1`] = `
+<DocumentFragment>
+  <div
+    class="row mb-2 form-group "
+  >
+    <label
+      class="col-3 col-form-label"
+      for="field-test"
+    >
+      form label:
+    </label>
+    <div
+      class="col-9"
+    >
+      <input
+        type="text"
+      />
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`FormRow > form row with text 1`] = `
+<DocumentFragment>
+  <div
+    class="row mb-2 form-group "
+  >
+    <label
+      class="col-2 col-form-label"
+      for="field-test"
+    >
+      form label:
+    </label>
+    <div
+      class="col-7"
+    >
+      <input
+        type="text"
+      />
+    </div>
+    <div
+      class="col-3 form-text"
+    >
+      input description
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`FormRow > shows an error 1`] = `
+<DocumentFragment>
+  <div
+    class="row mb-2 form-group "
+  >
+    <label
+      class="col-2 col-form-label"
+      for="field-test"
+    >
+      form label:
+    </label>
+    <div
+      class="col-7"
+    >
+      <input
+        name="test"
+        type="text"
+      />
+    </div>
+    <div
+      class="col-3 form-text"
+    >
+      input description
+    </div>
+    <div
+      class="invalid-feedback"
+      style="display: block;"
+    >
+      inout validation error
+    </div>
+  </div>
+</DocumentFragment>
+`;
