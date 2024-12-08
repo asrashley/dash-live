@@ -2,7 +2,7 @@ import { html } from "htm/preact";
 import { useCallback, useContext, useRef } from "preact/hooks";
 import { useComputed, useSignal, useSignalEffect } from "@preact/signals";
 
-import { AccordionFormGroup, ModalDialog } from "@dashlive/ui";
+import { TabFormGroup, ModalDialog } from "@dashlive/ui";
 import { MultiPeriodModelContext } from "@dashlive/hooks";
 import { fieldGroups, defaultShortOptions } from "/libs/options.js";
 
@@ -29,6 +29,8 @@ function Footer({ onClose, onSave }) {
     </button>
   </div>`;
 }
+
+const formLayout = [3, 4, 5];
 
 export function OptionsDialog({ onClose }) {
   const { dialog } = useContext(AppStateContext);
@@ -84,7 +86,7 @@ export function OptionsDialog({ onClose }) {
   return html`
     <${ModalDialog} onClose=${onClose} title="Stream Options" size='xl' footer=${footer}>
       <form name="mpsOptions" ref=${form} onSubmit=${onSubmit}>
-        <${AccordionFormGroup} groups=${streamFieldGroups} data=${data} setValue=${setValue} mode="shortName" />
+        <${TabFormGroup} groups=${streamFieldGroups} layout=${formLayout} data=${data} setValue=${setValue} mode="shortName" />
       </form>
     </${ModalDialog}>`;
 }
