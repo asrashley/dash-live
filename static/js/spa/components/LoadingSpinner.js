@@ -1,6 +1,11 @@
 import { html } from 'htm/preact';
 
 export function LoadingSpinner() {
-    return html`<h2 className="m-1">Loading...</h2>`;
+    return html`<div className="lds-ring">
+    <div className="lds-seg" />
+    <div className="lds-seg" />
+    <div className="lds-seg" />
+    <div className="lds-seg" />
+    </div>`;
 }
 
