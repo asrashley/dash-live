@@ -1,0 +1,114 @@
+{
+  "_type": "dashlive.mpeg.dash.representation.Representation",
+  "start_time": 0,
+  "encrypted": false,
+  "baseURL": null,
+  "content_type": "audio",
+  "start_number": 1,
+  "segments": [
+    {
+      "pos": 0,
+      "size": 918
+    },
+    {
+      "pos": 918,
+      "size": 48625,
+      "duration": 191488
+    },
+    {
+      "pos": 49543,
+      "size": 49255,
+      "duration": 192512
+    },
+    {
+      "pos": 98798,
+      "size": 49034,
+      "duration": 191488
+    },
+    {
+      "pos": 147832,
+      "size": 49294,
+      "duration": 192512
+    },
+    {
+      "pos": 197126,
+      "size": 48843,
+      "duration": 191488
+    },
+    {
+      "pos": 245969,
+      "size": 49222,
+      "duration": 192512
+    },
+    {
+      "pos": 295191,
+      "size": 48952,
+      "duration": 191488
+    },
+    {
+      "pos": 344143,
+      "size": 49430,
+      "duration": 192512
+    },
+    {
+      "pos": 393573,
+      "size": 49022,
+      "duration": 191488
+    },
+    {
+      "pos": 442595,
+      "size": 49269,
+      "duration": 192512
+    },
+    {
+      "pos": 491864,
+      "size": 49252,
+      "duration": 191488
+    },
+    {
+      "pos": 541116,
+      "size": 49366,
+      "duration": 192512
+    },
+    {
+      "pos": 590482,
+      "size": 49061,
+      "duration": 191488
+    },
+    {
+      "pos": 639543,
+      "size": 49242,
+      "duration": 192512
+    },
+    {
+      "pos": 688785,
+      "size": 49230,
+      "duration": 191488
+    },
+    {
+      "pos": 738015,
+      "size": 49395,
+      "duration": 193536
+    }
+  ],
+  "sampleRate": 48000,
+  "id": "tears_a1",
+  "filename": "tears_a1.mp4",
+  "default_kid": null,
+  "track_id": 2,
+  "timescale": 48000,
+  "startWithSAP": 1,
+  "bitrate": 98393,
+  "segment_duration": 191965,
+  "mediaDuration": 3073024,
+  "max_bitrate": 98878,
+  "codecs": "mp4a.40.2",
+  "mimeType": "audio/mp4",
+  "nalLengthFieldLength": null,
+  "iv_size": null,
+  "version": 4,
+  "kids": [],
+  "lang": "und",
+  "accessibility": null,
+  "numChannels": 2
+}

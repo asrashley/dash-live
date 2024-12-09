@@ -17,8 +17,8 @@
   {%- endif %}
 
 >
-{%- if mpd.baseURL %}
-<BaseURL>{{ mpd.baseURL }}</BaseURL>
+{%- if mpd.period.baseURL %}
+<BaseURL>{{ mpd.period.baseURL }}</BaseURL>
 {%- endif %}
     <UTCTiming schemeIdUri="urn:mpeg:dash:utc:direct:2014" value="{{ mpd.now|isoDateTime}}"/>
   <Period id="{{ mpd.period.id }}">

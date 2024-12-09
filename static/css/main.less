@@ -14,10 +14,10 @@
     --bs-link-hover-color-rgb: 8,8,192;
     --bs-navbar-active-color: @navbarActiveColor;
     --bs-tertiary-bg-rgb: 240,241,243;
+    --bs-font-sans-serif: system-ui, "Lucida Grande", "Lucida Sans Unicode", "Segoe UI", "Helvetica Neue", "Noto Sans", "Liberation Sans", Helvetica, Arial, sans-serif;
 }
 
 body {
-    font-family: "Lucida Grande", Helvetica, Arial, sans-serif;
     margin: 0;
     padding: 0;
 }
@@ -619,9 +619,12 @@ div.representations, div.cgi-parameters {
       .directory > input {
           width: 6em;
       }
-      .playready_la_url, .marlin_la_url {
-          font-size: 0.9rem;
-          font-stretch: extra-condensed;
+      .duration {
+          text-align: right;
+          width: 6em;
+      }
+      .tracks {
+          text-align: center;
           width: 20em;
       }
   }
@@ -743,7 +746,8 @@ div.representations, div.cgi-parameters {
   }
 }
 
-#edit-model {
+#edit_model,
+#id_main_form {
     .form-actions > .btn {
         margin-right: 1.5em;
     }
@@ -842,21 +846,6 @@ body.mips, body.arm {
         width: 38%;
     }
 
-    .icon {
-        margin-right: 0.75em;
-    }
-
-    .play-button, .view-manifest-button {
-        text-align: center;
-    }
-
-    .selected-stream, .view-manifest {
-        border: 1px solid #bbb;
-        font-size: 1.7rem;
-        margin-bottom: 1em;
-        padding: 0.3em 1em;
-    }
-
     #group-0 .accordion-header {
         position: relative;
 
@@ -875,9 +864,10 @@ body.mips, body.arm {
 
 footer {
     color: @darkGrey;
-    margin: 2em 0 0 !important;
+    margin: 2em 0 0;
     padding: 1em 2em;
     width: 100%;
+
     .github-link {
         font-size: 0.9rem;
     }
@@ -888,4 +878,21 @@ footer {
     .copyright {
         font-size: 0.9rem;
     }
+}
+
+li[dragging] {
+  opacity: 0.4;
+  transition: opacity 1ms ease;
+}
+
+.dragging-target-start {
+  border-top: 2px solid royalblue;
+}
+
+.dragging-target-end {
+  border-bottom: 2px solid royalblue;
+}
+
+li:hover::before {
+  opacity: 0.5;
 }

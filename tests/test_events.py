@@ -20,7 +20,6 @@
 #
 #############################################################################
 
-import os
 from typing import Any
 import unittest
 
@@ -35,6 +34,7 @@ from dashlive.utils.buffered_reader import BufferedReader
 
 from .mixins.flask_base import FlaskTestBase
 from .mixins.check_manifest import DashManifestCheckMixin
+from .mixins.stream_fixtures import BBB_FIXTURE
 
 class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
     async def test_inline_ping_pong_dash_events(self):
@@ -42,23 +42,23 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
         Test DASH 'PingPong' events carried in the manifest
         """
         self.logout_user()
-        self.setup_media()
+        self.setup_media_fixture(BBB_FIXTURE)
         params = {
             'events': 'ping',
-            'ping_count': '4',
-            'ping_inband': '0',
-            'ping_start': '256',
+            'ping__count': '4',
+            'ping__inband': '0',
+            'ping__start': '256',
         }
         url = flask.url_for(
             'dash-mpd-v3',
             manifest='hand_made.mpd',
             mode='vod',
-            stream=self.FIXTURES_PATH.name,
+            stream=BBB_FIXTURE.name,
             **params)
         dv = await self.check_manifest_url(
             url, mode='vod', encrypted=False, check_media=False, check_head=False,
-            debug=False, duration=self.SEGMENT_DURATION,
-            now='2024-09-03T10:07:00Z')
+            debug=False, duration=(2 * BBB_FIXTURE.segment_duration),
+            now='2024-09-03T10:07:00Z', fixture=BBB_FIXTURE)
         for period in dv.manifest.periods:
             self.assertEqual(len(period.event_streams), 1)
             event_stream = period.event_streams[0]
@@ -78,23 +78,24 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
         Test DASH 'PingPong' events carried in the video media segments
         """
         self.logout_user()
-        self.setup_media()
+        self.setup_media_fixture(BBB_FIXTURE)
         params = {
             'events': 'ping',
-            'ping_count': 4,
-            'ping_inband': True,
-            'ping_start': 200,
+            'ping__count': 4,
+            'ping__inband': True,
+            'ping__start': 200,
         }
         url = flask.url_for(
             'dash-mpd-v3',
             manifest='hand_made.mpd',
             mode='vod',
-            stream=self.FIXTURES_PATH.name,
+            stream=BBB_FIXTURE.name,
             **params)
         dv = await self.check_manifest_url(
             url, 'vod', encrypted=False, check_media=True, check_head=False,
             debug=False, now='2024-09-03T10:07:00Z',
-            duration=int(self.MEDIA_DURATION // 2))
+            duration=int(BBB_FIXTURE.media_duration // 2),
+            fixture=BBB_FIXTURE)
         for period in dv.manifest.periods:
             for adp in period.adaptation_sets:
                 if adp.contentType != 'video':
@@ -115,7 +116,7 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
         Check all of the fragments in the given representation
         """
         await rep.validate()
-        ev_presentation_time = params['ping_start']
+        ev_presentation_time = params['ping__start']
         event_id = 0
         for seg in rep.media_segments:
             if not seg.validated:
@@ -161,24 +162,24 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
         Test DASH scte35 events carried in the manifest
         """
         self.logout_user()
-        self.setup_media()
+        self.setup_media_fixture(BBB_FIXTURE)
         params = {
             'events': 'scte35',
-            'scte35_count': '4',
-            'scte35_inband': '0',
-            'scte35_start': '256',
-            'scte35_program_id': '345',
+            'scte35__count': '4',
+            'scte35__inband': '0',
+            'scte35__start': '256',
+            'scte35__program_id': '345',
         }
         url = flask.url_for(
             'dash-mpd-v3',
             manifest='hand_made.mpd',
             mode='vod',
-            stream=self.FIXTURES_PATH.name,
+            stream=BBB_FIXTURE.name,
             **params)
         dv = await self.check_manifest_url(
             url, 'vod', encrypted=False, check_media=False, check_head=False,
             debug=False, now='2024-09-03T10:07:00Z',
-            duration=self.SEGMENT_DURATION)
+            duration=(2 * BBB_FIXTURE.segment_duration), fixture=BBB_FIXTURE)
         for period in dv.manifest.periods:
             self.assertEqual(len(period.event_streams), 1)
             event_stream = period.event_streams[0]
@@ -240,12 +241,6 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
                 self.assertObjectEqual(expected, ev_elt.children()[0].signal)
                 presentationTime += Scte35Events.DEFAULT_VALUES['interval']
 
-
-if os.environ.get("TESTS"):
-    def load_tests(loader, tests, pattern):
-        return unittest.loader.TestLoader().loadTestsFromNames(
-            os.environ["TESTS"].split(','),
-            TestDashEventGeneration)
 
 if __name__ == '__main__':
     unittest.main()

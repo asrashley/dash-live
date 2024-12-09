@@ -31,6 +31,7 @@ from dashlive.management.frontend_db import FrontendDatabaseAccess
 from dashlive.server import models
 
 from .mixins.flask_base import FlaskTestBase
+from .mixins.stream_fixtures import BBB_FIXTURE
 from .http_client import ClientHttpSession
 
 class TestDownloadDatabase(FlaskTestBase):
@@ -45,7 +46,7 @@ class TestDownloadDatabase(FlaskTestBase):
         self.assertFalse(dd.download_database(Path('/tmp')))
 
     def test_download_database(self) -> None:
-        self.setup_media()
+        self.setup_media_fixture(BBB_FIXTURE)
         with self.app.app_context():
             stream = models.Stream(directory='abc', title='Test Stream 2')
             stream.add()
@@ -76,7 +77,7 @@ class TestDownloadDatabase(FlaskTestBase):
         with self.app.app_context():
             for st in models.Stream.all():
                 todo.add(st.directory)
-        for dirname in ['fixtures', 'abc']:
+        for dirname in [BBB_FIXTURE.name, 'abc']:
             self.assertIn(dirname, todo)
             todo.remove(dirname)
             self.check_json_file(Path(tmpdir), dirname)

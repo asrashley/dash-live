@@ -6,17 +6,32 @@
 #
 #############################################################################
 from functools import wraps
+import html
 import logging
-from typing import cast, Callable
+from typing import cast, Callable, Iterable
 
 import flask  # type: ignore
 from flask_login import current_user
 from werkzeug.local import LocalProxy  # type: ignore
 
-from dashlive.server.models import Group, Key, MediaFile, Stream, User
+from dashlive.mpeg.dash.profiles import primary_profiles
+from dashlive.server.manifests import DashManifest, manifest_map
+from dashlive.server.models import (
+    Group,
+    Key,
+    MediaFile,
+    MultiPeriodStream,
+    Stream,
+    Token,
+    TokenType,
+    User
+)
+from dashlive.server.routes import routes
 
-from .csrf import CsrfProtection
+from .csrf import CsrfProtection, CsrfTokenCollection
 from .exceptions import CsrfFailureException
+from .navbar import create_navbar_context, NavBarItem
+from .template_context import TemplateContext, create_template_context
 from .utils import is_ajax, jsonify
 
 def needs_login_response(admin: bool, html: bool, permission: Group | None) -> flask.Response:
@@ -45,17 +60,26 @@ def login_required(html=False, admin=False, permission: Group | None = None):
         return decorated_function
     return decorator
 
-def csrf_token_required(service: str, next_url: Callable[..., str | None]):
+def csrf_token_required(
+        service: str,
+        next_url: Callable[..., str | None] = lambda: None,
+        optional: bool = False):
     """
     Decorator that requires a CSRF token check to pass
     """
     def decorator(func):
         @wraps(func)
         def decorated_function(*args, **kwargs):
+            token: str | None = None
             try:
-                token = flask.request.args.get('csrf_token')
+                if flask.request.method != 'GET' and flask.request.is_json:
+                    token = flask.request.get_json().get('csrf_token', None)
                 if token is None:
+                    token = flask.request.args.get('csrf_token')
+                if token is None and flask.request.method in {'POST', 'PUT'}:
                     token = flask.request.form.get('csrf_token')
+                if token is None and optional:
+                    return func(*args, **kwargs)
                 if token is None:
                     raise CsrfFailureException('Failed to find csrf_token')
                 CsrfProtection.check(service, token)
@@ -64,7 +88,7 @@ def csrf_token_required(service: str, next_url: Callable[..., str | None]):
                 if is_ajax():
                     return jsonify({'error': 'CSRF failure'}, 401)
                 flask.flash(f'CSRF error: {err}', 'error')
-                url = next_url(*args, **kwargs)
+                url: str | None = next_url(*args, **kwargs)
                 if url is None:
                     return flask.make_response('Not Authorized', 401)
                 return flask.redirect(url)
@@ -183,3 +207,118 @@ def modifies_user_model(func):
 
 
 modifying_user = cast(User, LocalProxy(lambda: flask.g.modify_user))
+
+def uses_manifest(func):
+    """
+    Decorator that checks manifest name is valid
+    It will automatically return a 404 error if not found
+    """
+    @wraps(func)
+    def decorated_function(*args, **kwargs):
+        manifest: DashManifest | None = None
+        mft_name: str = kwargs.get('manifest', '')
+        if not mft_name:
+            return flask.make_response('Manifest name missing', 404)
+        if not mft_name.endswith('.mpd'):
+            mft_name = f"{mft_name}.mpd"
+        try:
+            manifest = manifest_map[mft_name]
+        except KeyError as err:
+            logging.debug('Unknown manifest: %s (%s)', mft_name, err)
+        if manifest is None:
+            return flask.make_response(
+                f'{html.escape(mft_name)} not found', 404)
+        mode: str | None = kwargs.get('mode')
+        modes: Iterable[str] = primary_profiles.keys()
+        if mode is not None:
+            try:
+                modes = manifest.restrictions['mode']
+            except KeyError:
+                pass
+            if mode not in modes:
+                logging.debug(
+                    'Mode %s not supported with manifest %s (supported=%s)',
+                    mode, mft_name, modes)
+                return flask.make_response(
+                    f'{html.escape(mft_name)} not found', 404)
+        flask.g.manifest = manifest
+        return func(*args, **kwargs)
+    return decorated_function
+
+
+current_manifest = cast(DashManifest, LocalProxy(lambda: flask.g.manifest))
+
+
+def uses_multi_period_stream(func):
+    """
+    Decorator that fetches MultiPeriodStream from database.
+    It will automatically return a 404 error if not found
+    """
+    @wraps(func)
+    def decorated_function(*args, **kwargs):
+        stream: MultiPeriodStream | None = None
+        name = kwargs.get('mps_name', None)
+        if name is None:
+            return flask.make_response(
+                'Multi-period stream ID missing', 400)
+
+        stream = MultiPeriodStream.get_one(name=name)
+        if not stream:
+            return flask.make_response(
+                f'Multi-period stream {html.escape(name)} not found', 404)
+        flask.g.mp_stream = stream
+        return func(*args, **kwargs)
+    return decorated_function
+
+
+current_mps = cast(MultiPeriodStream, LocalProxy(lambda: flask.g.mp_stream))
+
+def spa_handler(func):
+    """
+    Decorator for views that are implemented using a Single Page Application.
+    Any non-ajax requests are responded with a single HTML page
+    """
+    @wraps(func)
+    def decorated_function(*args, **kwargs):
+        if is_ajax():
+            return func(*args, **kwargs)
+        csrf_key = CsrfProtection.generate_cookie()
+        csrf_tokens = CsrfTokenCollection(
+            streams=CsrfProtection.generate_token('streams', csrf_key),
+            files=None,
+            kids=None,
+            upload=None)
+        initial_tokens = {
+            'csrfTokens': csrf_tokens.to_dict(),
+            'accessToken': None,
+            'refreshToken': None,
+        }
+        user = {
+            'isAuthenticated': current_user.is_authenticated,
+            'pk': None,
+            'username': 'guest',
+            'groups': [],
+        }
+        if current_user.is_authenticated:
+            access_token: Token = Token.generate_api_token(
+                current_user, TokenType.ACCESS)
+            refresh_token: Token = Token.generate_api_token(
+                current_user, TokenType.REFRESH)
+            initial_tokens['accessToken'] = access_token.to_dict(only={'expires', 'jti'})
+            initial_tokens['refreshToken'] = refresh_token.to_dict(only={'expires', 'jti'})
+            user.update({
+                'pk': current_user.pk,
+                'username': current_user.username,
+                'groups': current_user.get_groups(),
+            })
+        navbar = create_navbar_context()
+        breadcrumbs: list[NavBarItem] = [
+            NavBarItem(title='Home', active=True)
+        ]
+        context: TemplateContext = create_template_context(
+            title='DASH Test Streams', params=kwargs,
+            navbar=navbar, routes=routes, breadcrumbs=breadcrumbs,
+            initialTokens=initial_tokens, user=user,
+            force_es5=('es5' in flask.request.args))
+        return flask.render_template('spa/index.html', **context)
+    return decorated_function

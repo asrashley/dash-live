@@ -100,6 +100,10 @@ routes = {
         r'/patch/<stream>/<manifest>/<int:publish>',
         handler='manifest_requests.ServePatch',
         title='DASH manifest patch'),
+    "dash-media-base-url": Route(
+        r'/dash/<regex("(live|vod)"):mode>/<stream>/',
+        handler='generic.NotFound',
+        title="Used for generating BaseURL values"),
     "dash-media": Route(
         r'/dash/<regex("(live|vod)"):mode>/<stream>/<filename>/' +
         r'<regex("(\d+|init)"):segment_num>.<regex("(mp4|m4v|m4a|m4s)"):ext>',
@@ -110,8 +114,12 @@ routes = {
         r'<int:segment_time>.<regex("(mp4|m4v|m4a|m4s)"):ext>',
         handler='media_requests.LiveMedia',
         title="DASH fragment"),
+    "dash-od-media-base-url": Route(
+        r'/dash/odvod/<stream>/',
+        handler='generic.NotFound',
+        title="BaseURL for on-demand media"),
     "dash-od-media": Route(
-        r'/dash/vod/<stream>/<regex("[\w-]+"):filename>.<regex("(mp4|m4v|m4a|m4s)"):ext>',
+        r'/dash/odvod/<stream>/<regex("[\w-]+"):filename>.<regex("(mp4|m4v|m4a|m4s)"):ext>',
         handler='media_requests.OnDemandMedia',
         title="DASH media file"),
     "index-media-file": Route(
@@ -138,6 +146,12 @@ routes = {
         handler='media_management.EditMedia',
         title='Edit Media',
         parent='list-streams'),
+    "inspect-media": Route(
+        r'/media/inspect',
+        handler='media_management.InspectMediaFile',
+        title='Inspect MP4 file',
+        parent='home',
+    ),
     "check-media-changes": Route(
         r'/stream/<int:spk>/<int:mfid>/validate',
         handler='media_management.ValidateMediaChanges',
@@ -188,9 +202,21 @@ routes = {
         r'/play/<regex("(live|vod|odvod)"):mode>/<stream>/<manifest>/index.html',
         handler='htmlpage.VideoPlayer',
         title='DASH test stream player'),
+    "video-mps": Route(
+        r'/play/mps/<regex("(live|vod)"):mode>/<mps_name>/<manifest>/index.html',
+        handler='htmlpage.VideoPlayer',
+        title='DASH test stream player'),
     "view-manifest": Route(
-        r'/view/<regex("(live|vod|odvod)"):mode>/<stream>/<manifest>',
+        r'/view/dash/<regex("(live|vod|odvod)"):mode>/<stream>/<manifest>',
         handler='htmlpage.ViewManifest',
+        title='DASH manifest'),
+    "list-manifests": Route(
+        r'/manifests',
+        handler='manifest_requests.ListManifests',
+        title="DASH fragment"),
+    "view-mps-manifest": Route(
+        r'/view/mps/<regex("(live|vod)"):mode>/<mps_name>/<manifest>',
+        handler='htmlpage.ViewMpsManifest',
         title='DASH manifest'),
     "cgi-options": Route(
         r'/options',
@@ -224,14 +250,84 @@ routes = {
         r'/users/<int:upk>/delete',
         handler='user_management.DeleteUser',
         title='Delete User'),
+    "refresh-access-token": Route(
+        r'/user/refresh/access',
+        handler='user_management.RefreshAccessToken',
+        title='Refresh access token'),
+    "refresh-csrf-tokens": Route(
+        r'/user/refresh/csrf',
+        handler='user_management.RefreshCsrfTokens',
+        title='Refresh access token'),
+    'list-mps': Route(
+        r'/multi-period-streams',
+        handler='multi_period_streams.ListStreams',
+        title='Available DASH multi-period streams'),
+    'add-mps': Route(
+        r'/multi-period-streams/.add',
+        handler='multi_period_streams.AddStream',
+        title='Add new multi-period stream',
+        parent='list-mps'),
+    'edit-mps': Route(
+        r'/multi-period-streams/<mps_name>',
+        handler='multi_period_streams.EditStream',
+        title='Edit multi-period stream',
+        parent='list-mps'),
+    "validate-mps": Route(
+        r'/multi-period-streams.validate',
+        handler='multi_period_streams.ValidateStream',
+        title='Check MPS settings are valid',
+        parent='list-mps'),
+    "mps-manifest": Route(
+        r'/mps/<regex("(live|vod)"):mode>/<mps_name>/<manifest>',
+        handler='manifest_requests.ServeMultiPeriodManifest',
+        title='DASH multi-period manifests'),
+    "mps-base-url": Route(
+        r'/mps/<regex("(live|vod)"):mode>/<mps_name>/<int:ppk>/',
+        handler='generic.NotFound',
+        title='Used for generating BaseURL values'),
+    "mps-init-seg": Route(
+        r'/mps/<regex("(live|vod)"):mode>/<mps_name>/<int:ppk>/<filename>/' +
+        r'init.<regex("(mp4|m4v|m4a|m4s)"):ext>',
+        handler='media_requests.ServeMpsInitSeg',
+        title='Init segments for multi-period streams'),
+    "mps-media-seg-by-number": Route(
+        r'/mps/<regex("(live|vod)"):mode>/<mps_name>/<int:ppk>/<filename>/' +
+        r'<int:segment_num>.<regex("(mp4|m4v|m4a|m4s)"):ext>',
+        handler='media_requests.ServeMpsMedia',
+        title='media segments for multi-period streams'),
+    "mps-media-seg-by-time": Route(
+        r'/mps/<regex("(live|vod)"):mode>/<mps_name>/<int:ppk>/<filename>/' +
+        r'time/<int:segment_time>.<regex("(mp4|m4v|m4a|m4s)"):ext>',
+        handler='media_requests.ServeMpsMedia',
+        title='media segments for multi-period streams using timelines'),
+    "route-map": Route(
+        r'/libs/routemap.js',
+        handler='esm.RouteMap',
+        title='URL routing data'),
+    "content-roles": Route(
+        r'/libs/content_roles.js',
+        handler='esm.ContentRoles',
+        title='MPEG content roles'),
+    "option-field-groups": Route(
+        r'/libs/options.js',
+        handler='esm.OptionFieldGroups',
+        title='options fields'),
+    "spa-bundle": Route(
+        r'/libs/bundle/<directory>.js',
+        handler='esm.BundleDirectory',
+        title='Bundle of JS files'),
     "esm-wrapper": Route(
         r'/libs/<filename>',
-        handler='htmlpage.ModuleWrapper',
+        handler='esm.ModuleWrapper',
         title='ESM JavaScript wrapper'),
     "favicon": Route(
         r'/favicon.ico',
         handler='htmlpage.favicon',
         title='favicon'),
+    "es5-home": Route(
+        r'/es5/',
+        handler='htmlpage.ES5MainPage',
+        title='DASH test streams'),
     "home": Route(
         r'/',
         handler='htmlpage.MainPage',

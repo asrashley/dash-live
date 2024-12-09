@@ -52,9 +52,8 @@
 <div class="container media-info">
   <div class="card" id="atom-list">
     <div class="card-header">
-        Segment {{ segnum }} in fille &quot;{{ mediafile.blob.filename }}&quot;
-        <a class="btn btn-primary float-end"
-           href="{{ url_for('list-media-segments', spk=stream.pk, mfid=mediafile.pk) }}">Back</a>
+        {{ title }}
+        <a class="btn btn-primary float-end" href="{{ back_url }}">Back</a>
     </div>
     <div class="card-body mt-3">
       {% for atom in atoms %}

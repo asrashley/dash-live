@@ -8,9 +8,10 @@ class FieldOption(NamedTuple):
 class FormInputContext(TypedDict):
     columns: tuple[str, str, str]
     className: str
-    datalist: bool
+    datalist_type: str
     disabled: bool
     error: str
+    featured: bool
     href: str
     link_title: str
     max: int
@@ -29,5 +30,5 @@ class FormInputContext(TypedDict):
     step: int
     title: str
     text: str
-    type: str  # 'checkbox', 'number', 'select', 'radio', 'link', 'hidden'
+    type: str  # 'checkbox', 'datalist', 'number', 'select', 'radio', 'link', 'hidden'
     value: Any

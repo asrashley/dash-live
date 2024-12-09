@@ -1,0 +1,117 @@
+{
+  "_type": "dashlive.mpeg.dash.representation.Representation",
+  "frameRate": 24.0,
+  "start_time": 0,
+  "encrypted": false,
+  "baseURL": null,
+  "content_type": "video",
+  "start_number": 1,
+  "segments": [
+    {
+      "pos": 0,
+      "size": 972
+    },
+    {
+      "pos": 972,
+      "size": 50013,
+      "duration": 960
+    },
+    {
+      "pos": 50985,
+      "size": 250439,
+      "duration": 960
+    },
+    {
+      "pos": 301424,
+      "size": 79801,
+      "duration": 960
+    },
+    {
+      "pos": 381225,
+      "size": 43503,
+      "duration": 960
+    },
+    {
+      "pos": 424728,
+      "size": 56364,
+      "duration": 960
+    },
+    {
+      "pos": 481092,
+      "size": 101415,
+      "duration": 960
+    },
+    {
+      "pos": 582507,
+      "size": 103375,
+      "duration": 960
+    },
+    {
+      "pos": 685882,
+      "size": 89179,
+      "duration": 960
+    },
+    {
+      "pos": 775061,
+      "size": 120040,
+      "duration": 960
+    },
+    {
+      "pos": 895101,
+      "size": 95929,
+      "duration": 960
+    },
+    {
+      "pos": 991030,
+      "size": 169350,
+      "duration": 960
+    },
+    {
+      "pos": 1160380,
+      "size": 110309,
+      "duration": 960
+    },
+    {
+      "pos": 1270689,
+      "size": 88994,
+      "duration": 960
+    },
+    {
+      "pos": 1359683,
+      "size": 88348,
+      "duration": 960
+    },
+    {
+      "pos": 1448031,
+      "size": 30457,
+      "duration": 960
+    },
+    {
+      "pos": 1478488,
+      "size": 10827,
+      "duration": 960
+    }
+  ],
+  "id": "tears_v1",
+  "filename": "tears_v1.mp4",
+  "default_kid": null,
+  "track_id": 1,
+  "timescale": 240,
+  "width": 384,
+  "startWithSAP": 1,
+  "bitrate": 186164,
+  "segment_duration": 960,
+  "sar": "1:1",
+  "mediaDuration": 15360,
+  "scanType": "progressive",
+  "max_bitrate": 500878,
+  "codecs": "avc1.42C01F",
+  "height": 90,
+  "mimeType": "video/mp4",
+  "nalLengthFieldLength": 4,
+  "iv_size": null,
+  "version": 4,
+  "kids": [],
+  "lang": "eng",
+  "accessibility": null
+}

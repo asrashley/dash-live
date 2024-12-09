@@ -1,0 +1,19 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div id="app" class="container"></div>
+{% endblock %}
+
+{% block stylesheet %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/spa.css') }}" />
+{% endblock %}
+
+{% block extrascripts %}
+<script type="module">
+{% include "spa/main.js" %}
+</script>
+<script nomodule type="text/javascript">
+document.location.replace("{{ url_for('es5-home') }}");
+</script>
+{% endblock %}

@@ -45,7 +45,7 @@ class DashOption:
     cgi_name: str | list[str]
     cgi_choices: tuple[CgiChoiceType, ...] | None = field(default=None)
     cgi_type: str | None = None
-    input_type: str | None = None
+    input_type: str = ''
     from_string: Callable[[str], Any] = field(default_factory=lambda: DashOption.string_or_none)
     to_string: Callable[[str], Any] = field(default_factory=lambda: flatten)
     prefix: str = field(default='')
@@ -109,8 +109,11 @@ class DashOption:
             "text": self.description,
             "type": self.input_type,
             "prefix": self.prefix,
+            "fullName": self.full_name,
+            "shortName": self.short_name,
+            "featured": self.featured,
         }
-        if self.cgi_choices and len(self.cgi_choices) > 1:
+        if self.cgi_choices and len(self.cgi_choices) > 1 and self.input_type != 'checkbox':
             input['options'] = []
             for ch in self.cgi_choices:
                 if isinstance(ch, tuple):
@@ -126,7 +129,7 @@ class DashOption:
                     "title": title,
                     "selected": value == val
                 })
-        if input['type'] is None:
+        if input['type'] == '':
             if isinstance(value, bool) or self.to_string == DashOption.bool_to_string:
                 input['type'] = 'bool'
             elif isinstance(value, int) or self.to_string == DashOption.int_or_none_from_string:
@@ -141,26 +144,30 @@ class DashOption:
                     if ch['value'] == val:
                         ch['selected'] = True
         elif input['type'] == 'bool':
-            input['type'] = 'select'
-            input['options'] = [{
-                "value": '',
-                "title": '--',
-                "selected": value is None,
-            }, {
-                "value": '1',
-                "title": 'True',
-                "selected": value is True,
-            }, {
-                "value": '0',
-                "title": 'False',
-                "selected": value is False,
-            }]
+            if value is None:
+                input['type'] = 'select'
+                input['options'] = [{
+                    "value": '',
+                    "title": '--',
+                    "selected": value is None,
+                }, {
+                    "value": '1',
+                    "title": 'True',
+                    "selected": value is True,
+                }, {
+                    "value": '0',
+                    "title": 'False',
+                    "selected": value is False,
+                }]
+            else:
+                input['type'] = 'checkbox'
+                del input['options']
         elif input['type'] == 'numberList':
-            input['type'] = 'number'
-            input['datalist'] = True
+            input['datalist_type'] = 'number'
+            input['type'] = 'datalist'
         elif input['type'] == 'textList':
-            input['type'] = 'text'
-            input['datalist'] = True
+            input['datalist_type'] = 'text'
+            input['type'] = 'datalist'
         elif input['type'] in field_choices:
             input['options'] = field_choices[input['type']]
             input['type'] = 'select'

@@ -4,7 +4,7 @@
   <Title>Big Buck Bunny</Title>
  </ProgramInformation>
  <Period start="PT0S" duration="PT40S">
-   <BaseURL>http://unit.test/dash/vod/fixtures/</BaseURL>
+   <BaseURL>http://unit.test/dash/vod/bbb/</BaseURL>
      <AdaptationSet mimeType="video/mp4">
        
        <ContentComponent id="1" contentType="video"/>

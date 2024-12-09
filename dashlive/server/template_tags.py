@@ -24,9 +24,9 @@ import binascii
 from dataclasses import dataclass
 import datetime
 import json
-from typing import Any, ClassVar
+from typing import Any
 
-from flask import Blueprint, current_app, url_for
+from flask import Blueprint, url_for
 
 from dashlive.utils.objects import flatten_iterable
 from dashlive.utils.date_time import (
@@ -35,21 +35,6 @@ from dashlive.utils.date_time import (
     to_iso_datetime,
     from_isodatetime
 )
-
-@dataclass(slots=True, frozen=True)
-class ScriptTag:
-    SCRIPT_TEMPLATE: ClassVar[str] = r'<script src="{js_filename}" type="text/javascript"></script>'
-
-    filename: str
-    dev: bool
-
-    def __html__(self) -> str:
-        mode = 'dev' if self.dev else 'prod'
-        minify = '' if self.dev else '.min'
-        js_filename = url_for(
-            'static', filename=f'js/{mode}/{self.filename}{minify}.js')
-        return self.SCRIPT_TEMPLATE.format(js_filename=js_filename)
-
 
 @dataclass(slots=True, frozen=True)
 class HtmlSafeString:
@@ -76,7 +61,10 @@ def dateTimeFormat(value: str | datetime.datetime | None, fmt: str) -> str:
     return value.strftime(fmt)
 
 @custom_tags.app_template_filter()
-def timeDelta(value: datetime.timedelta | None, full_tc: bool = False) -> str:
+def timeDelta(value: datetime.timedelta | None,
+              full_tc: bool = False,
+              with_millis: bool = False
+              ) -> str:
     if value is None:
         return ''
     ticks = value / datetime.timedelta(milliseconds=10)
@@ -87,7 +75,7 @@ def timeDelta(value: datetime.timedelta | None, full_tc: bool = False) -> str:
     seconds %= 60
     ticks = int(ticks) % 100
     ts: str = ''
-    if ticks != 0:
+    if ticks != 0 or with_millis:
         ts = f'.{ticks:#02d}'
     if full_tc:
         return f'{hours:#02d}:{mins:#02d}:{seconds:#02d}{ts}'
@@ -182,7 +170,7 @@ def toJson(value, indent: int | None = None):
     try:
         if isinstance(value, (dict, list, set, tuple)):
             value = flatten_iterable(value)
-        return json.dumps(value, indent=indent, default=json_encoder)
+        return json.dumps(value, indent=indent, default=json_encoder, sort_keys=True)
     except ValueError as err:
         return str(err)
 
@@ -252,10 +240,11 @@ def length(value: str | None) -> int:
         return 0
     return len(value)
 
-@custom_tags.app_template_global()
-def import_script(filename: str) -> ScriptTag:
-    debug = current_app.config.get('JS_DEBUG', False)
-    return ScriptTag(filename, debug)
+@custom_tags.app_template_filter()
+def plural(value: int, singular: str, plural_text: str) -> str:
+    if value == 1:
+        return f"{value} {singular}"
+    return f"{value} {plural_text}"
 
 @custom_tags.app_template_global()
 def sort_icon(name: str, order: str, reverse: bool) -> str:
@@ -266,3 +255,7 @@ def sort_icon(name: str, order: str, reverse: bool) -> str:
     else:
         entity = '&or;'
     return HtmlSafeString(f'<span class="float-end sort-arrow">{entity}</span>')
+
+@custom_tags.app_template_global()
+def js_url(filename: str) -> str:
+    return url_for('static', filename=f'js/{filename}')

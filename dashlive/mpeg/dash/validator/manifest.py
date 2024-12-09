@@ -14,7 +14,7 @@ import urllib.parse
 from lxml import etree as ET
 
 from dashlive.mpeg.dash.representation import Representation as ServerRepresentation
-from dashlive.utils.date_time import from_isodatetime, UTC
+from dashlive.utils.date_time import from_isodatetime, UTC, toIsoDuration
 from dashlive.utils.string import set_from_comma_string
 
 from .dash_element import DashElement
@@ -64,11 +64,14 @@ class Manifest(DashElement):
         if self.publishTime is None:
             self.publishTime = datetime.datetime.now(tz=UTC())
         self.mpd_type = xml.get("type", "static")
-        self.periods = [Period(p, self) for p in xml.findall('./dash:Period', self.xmlNamespaces)]
-        for idx, period in enumerate(self.periods, start=1):
+        self.periods = []
+        self.patches = []
+        for idx, prd in enumerate(xml.findall('./dash:Period', self.xmlNamespaces), start=1):
+            period: Period = Period(prd, self)
             if period.id is None:
                 # Period@id is a string. Setting it to a number is therefore safely unique
                 period.id = idx
+            self.periods.append(period)
         self.patches = [PatchLocation(loc, self) for loc in xml.findall(
             './dash:PatchLocation', self.xmlNamespaces)]
         self.set_target_durations()
@@ -206,4 +209,21 @@ class Manifest(DashElement):
             self.elt.check_equal(
                 self.patches, [],
                 msg='PatchLocation elements should only be used in live streams')
+        start: datetime.timedelta | None = datetime.timedelta()
+        if self.periods:
+            start = self.periods[0].start
+        for period in self.periods:
+            if not period.attrs.check_not_none(
+                    start, 'Previous Period@duration was absent'):
+                continue
+            period.attrs.check_almost_equal(
+                period.start.total_seconds(),
+                start.total_seconds(),
+                delta=0.2,
+                msg=(f"Expected Period@start {toIsoDuration(start)} " +
+                     f"but found {toIsoDuration(period.start)}"))
+            if period.duration is None:
+                start = None
+            else:
+                start = period.start + period.duration
         self.progress.inc()

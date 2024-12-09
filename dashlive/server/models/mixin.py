@@ -1,4 +1,4 @@
-from typing import AbstractSet, Optional
+from typing import AbstractSet, Iterable, Optional
 
 from sqlalchemy import Column
 from sqlalchemy.orm import class_mapper, ColumnProperty, RelationshipProperty  # type: ignore
@@ -17,7 +17,7 @@ class ModelMixin:
     @classmethod
     def get_all(cls,
                 session: DatabaseSession | None = None,
-                order_by: list[Column] | None = None) -> list["ModelMixin"]:
+                order_by: list[Column] | None = None) -> Iterable["ModelMixin"]:
         """
         Return all items from this table
         """

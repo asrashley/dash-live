@@ -34,6 +34,7 @@ from dashlive.server.options.types import OptionUsage
 from dashlive.server.template_tags import dateTimeFormat, sizeFormat
 
 from .mixins.flask_base import FlaskTestBase
+from .mixins.stream_fixtures import BBB_FIXTURE
 
 class TestHtmlPageHandlers(FlaskTestBase):
     def _assert_true(self, result, a, b, msg, template):
@@ -45,34 +46,41 @@ class TestHtmlPageHandlers(FlaskTestBase):
                 raise AssertionError(msg)
             raise AssertionError(template.format(a, b))
 
-    def test_index_page(self):
-        self.setup_media()
-        url = flask.url_for('home')
+    def test_spa_index_page(self) -> None:
+        url: str = flask.url_for('home')
         # self.logout_user()
         response = self.client.get(url)
         self.assertEqual(response.status, '200 OK')
         html = BeautifulSoup(response.text, 'lxml')
         self.assertIsNotNone(html)
         self.assertIn('Log In', response.text)
-        media_list_url = flask.url_for('list-streams')
+        media_list_url: str = flask.url_for('list-streams')
         self.assertIn(f'href="{media_list_url}"', response.text)
-        for filename, manifest in manifests.manifest.items():
-            mpd_url = flask.url_for(
-                'dash-mpd-v3', manifest=filename, stream='placeholder',
-                mode='live')
-            mpd_url = mpd_url.replace('/placeholder/', '/{directory}/')
-            mpd_url = mpd_url.replace('/live/', '/{mode}/')
-            self.assertIn(mpd_url, response.text)
-        options_url = flask.url_for('cgi-options')
-        self.assertIn(fr'href="{options_url}"', response.text)
         self.login_user(is_admin=True)
         response = self.client.get(url)
         self.assertEqual(response.status, '200 OK')
         self.assertNotIn('Log In', response.text)
         self.assertIn(f'href="{media_list_url}"', response.text)
         self.assertIn('Log Out', response.text)
-        user_admin_url = flask.url_for('list-users')
+        user_admin_url: str = flask.url_for('list-users')
         self.assertIn(f'href="{user_admin_url}"', response.text)
+
+    def test_es5_index_page(self) -> None:
+        self.setup_media()
+        url: str = flask.url_for('es5-home')
+        # self.logout_user()
+        response = self.client.get(url)
+        self.assertEqual(response.status, '200 OK')
+        html = BeautifulSoup(response.text, 'lxml')
+        self.assertIsNotNone(html)
+        self.assertNotIn('Log In', response.text)
+        for filename in manifests.manifest_map.keys():
+            mpd_url = flask.url_for(
+                'dash-mpd-v3', manifest=filename, stream='placeholder',
+                mode='live')
+            mpd_url = mpd_url.replace('/placeholder/', '/{directory}/')
+            mpd_url = mpd_url.replace('/live/', '/{mode}/')
+            self.assertIn(mpd_url, response.text)
 
     def test_cgi_options_page(self):
         url = flask.url_for('cgi-options')
@@ -282,18 +290,18 @@ class TestHtmlPageHandlers(FlaskTestBase):
         HTML page that allows the video to be watched using a <video> element.
         """
         only = {'audioCodec', 'textCodec', 'drmSelection', 'videoPlayer'}
-        self.setup_media()
+        self.setup_media_fixture(BBB_FIXTURE)
         self.logout_user()
         self.assertGreaterThan(models.MediaFile.count(), 0)
         num_tests = 0
         use = OptionUsage.AUDIO + OptionUsage.VIDEO + OptionUsage.MANIFEST + OptionUsage.HTML
-        for filename, manifest in manifests.manifest.items():
+        for manifest in manifests.manifest_map.values():
             for mode in manifest.supported_modes():
                 options = manifest.get_supported_dash_options(
                     mode, simplified=True, only=only, use=use)
                 num_tests += options.num_tests * models.Stream.count()
         count = 0
-        for filename, manifest in manifests.manifest.items():
+        for filename, manifest in manifests.manifest_map.items():
             for mode in manifest.supported_modes():
                 options = manifest.get_supported_dash_options(
                     mode, simplified=True, only=only, use=use)
@@ -309,29 +317,36 @@ class TestHtmlPageHandlers(FlaskTestBase):
         """
         Check rendering video page for a stream without audio
         """
-        self.setup_media()
+        self.setup_media_fixture(BBB_FIXTURE)
         with self.app.app_context():
             for mf in list(models.MediaFile.search(content_type='audio')):
                 mf.delete()
             models.db.session.commit()
         self.check_video_html_page(
-            'hand_made.mpd', manifests.manifest['hand_made.mpd'], 'vod',
-            models.Stream.get(title=self.STREAM_TITLE), '', scheme='http')
+            'hand_made.mpd',
+            manifests.manifest_map['hand_made.mpd'],
+            'vod',
+            models.Stream.get(directory=BBB_FIXTURE.name), '', scheme='http')
 
-    def check_video_html_page(self, filename: str, manifest: manifests.DashManifest,
-                              mode: str, stream: models.Stream, query: str, scheme: str) -> None:
+    def check_video_html_page(self,
+                              filename: str,
+                              manifest: manifests.DashManifest,
+                              mode: str,
+                              stream: models.Stream,
+                              query: str,
+                              scheme: str) -> None:
         self.app.config['PREFERRED_URL_SCHEME'] = scheme
         html_url = f'{scheme}://localhost' + flask.url_for(
             "video",
             mode=mode,
-            stream=self.FIXTURES_PATH.name,
+            stream=stream.directory,
             manifest=filename[:-4])
         html_url += query
         html_parsed = urlparse(html_url)
         mpd_path = flask.url_for(
             'dash-mpd-v3',
             manifest=filename,
-            stream=self.FIXTURES_PATH.name,
+            stream=stream.directory,
             mode=mode)
         mpd_parts = urlparse(f'{scheme}://localhost{mpd_path}{query}')
         mpd_query = parse_qs(mpd_parts.query)
@@ -364,6 +379,11 @@ class TestHtmlPageHandlers(FlaskTestBase):
                 text = script.get_text()
                 if not text:
                     text = script.string
+                if script.get("type") == "importmap":
+                    data = json.loads(text)
+                    self.assertIsInstance(data, dict)
+                    self.assertIn('imports', data)
+                    continue
                 self.assertIn('window.dashParameters', text)
                 start = text.index('{')
                 end = text.rindex('}') + 1

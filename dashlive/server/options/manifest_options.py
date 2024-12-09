@@ -26,6 +26,7 @@ AbrControl = DashOption(
         ('Enabled', '1'),
         ('Disabled', '0'),
     ),
+    input_type='checkbox',
     featured=True)
 
 AST_HTML = '''
@@ -82,6 +83,7 @@ UseBaseUrl = DashOption(
     description='Include a BaseURL element?',
     from_string=DashOption.bool_from_string,
     to_string=DashOption.bool_to_string,
+    input_type='checkbox',
     cgi_name='base',
     cgi_choices=(
         ('Yes', '1'),
@@ -93,7 +95,7 @@ Bugs = DashOption(
     short_name='bug',
     full_name='bugCompatibility',
     title='Bug compatibility',
-    description='Produce a stream with known bugs. The value is a comma separated list of bug names',
+    description='Produce a stream with known bugs',
     from_string=DashOption.list_without_none_from_string,
     to_string=lambda bugs: ','.join(bugs),
     cgi_name='bugs',
@@ -141,18 +143,6 @@ MinimumUpdatePeriod = DashOption(
     cgi_type='<number>',
     input_type='numberList')
 
-Periods = DashOption(
-    usage=OptionUsage.MANIFEST + OptionUsage.VIDEO + OptionUsage.AUDIO + OptionUsage.TEXT,
-    short_name='per',
-    full_name='numPeriods',
-    title='Multi-period',
-    description='The number of Periods to include in the manifest',
-    from_string=DashOption.int_or_none_from_string,
-    cgi_name='periods',
-    cgi_type='<number>',
-    cgi_choices=(None, '2', '3'),
-    featured=True)
-
 SegmentTimeline = DashOption(
     usage=OptionUsage.MANIFEST,
     short_name='st',
@@ -161,6 +151,7 @@ SegmentTimeline = DashOption(
     description='Enable or disable segment timeline',
     from_string=DashOption.bool_from_string,
     to_string=DashOption.bool_to_string,
+    input_type='checkbox',
     cgi_name='timeline',
     cgi_choices=(
         ('No (use $Number$)', '0'),
@@ -197,6 +188,7 @@ UsePatches = DashOption(
     description='Use MPD patches for live streams',
     from_string=DashOption.bool_from_string,
     to_string=DashOption.bool_to_string,
+    input_type='checkbox',
     cgi_name='patch',
     cgi_choices=(
         ('No', '0'),
@@ -212,7 +204,6 @@ manifest_options = [
     ManifestHttpError,
     MinimumUpdatePeriod,
     OperatingMode,
-    Periods,
     SegmentTimeline,
     TimeshiftBufferDepth,
     UpdateCount,

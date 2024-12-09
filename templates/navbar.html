@@ -9,8 +9,8 @@
   <div class="collapse navbar-collapse" id="navbarSupportedContent">
     <ul class="navbar-nav mr-auto">
       {% for nav in navbar %}
-      <li class="nav-item {{ nav.class }}">
-        <a class="nav-link {%- if nav.active %} active{% endif %}"
+      <li class="nav-item {{ nav.className }}">
+        <a class="nav-link {%- if nav.active %} active{% endif %} {%- if nav.spa %} spa{% endif %}"
 	   href="{{ nav.href }}"
 	   {%- if nav.active %} aria-current="page" {% endif %}
 	   >{{ nav.title }}</a>
