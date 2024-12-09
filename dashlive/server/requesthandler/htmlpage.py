@@ -277,7 +277,7 @@ class VideoPlayer(HTMLHandlerBase):
             options = self.calculate_options(mode, flask.request.args)
         except ValueError as err:
             logging.error("Invalid CGI parameters: %s", err)
-            return flask.make_response(f"Invalid CGI parameters: {err}", 400)
+            return flask.make_response("Invalid CGI parameters", 400)
         options.remove_unused_parameters(mode)
         dash_parms = ManifestContext(
             manifest=manifests.manifest_map[manifest],
