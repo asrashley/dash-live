@@ -171,7 +171,7 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
             fixture_files.append(item.stem)
         fixture_files.sort()
         media_files: list[models.MediaFile] = []
-        for idx, name in enumerate(fixture_files):
+        for name in fixture_files:
             mf = self.add_blob_and_media_file(fixture, stream, name)
             media_files.append(mf)
             if stream.timing_reference is None and '_v' in name:
