@@ -74,7 +74,7 @@ class TestHtmlPageHandlers(FlaskTestBase):
         html = BeautifulSoup(response.text, 'lxml')
         self.assertIsNotNone(html)
         self.assertNotIn('Log In', response.text)
-        for filename, manifest in manifests.manifest_map.items():
+        for filename in manifests.manifest_map.keys():
             mpd_url = flask.url_for(
                 'dash-mpd-v3', manifest=filename, stream='placeholder',
                 mode='live')
@@ -295,7 +295,7 @@ class TestHtmlPageHandlers(FlaskTestBase):
         self.assertGreaterThan(models.MediaFile.count(), 0)
         num_tests = 0
         use = OptionUsage.AUDIO + OptionUsage.VIDEO + OptionUsage.MANIFEST + OptionUsage.HTML
-        for filename, manifest in manifests.manifest_map.items():
+        for manifest in manifests.manifest_map.values():
             for mode in manifest.supported_modes():
                 options = manifest.get_supported_dash_options(
                     mode, simplified=True, only=only, use=use)
