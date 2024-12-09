@@ -2,13 +2,26 @@
 
 ## Running server using a Docker image
 
-The [Dockerfile](./Dockerfile) can be used to create a Docker image
+The [Dockerfile](../Dockerfile) can be used to create a Docker image
 that contains all the required packages to run the server. It uses
 nginx to serve static files and the Python Flask app to serve all other
 HTTP requests.
 
+To build using Docker's buildx tool:
+
 ```sh
-docker build -t dashlive .
+docker buildx build --platform linux/amd64 -t dashlive:latest --load .
+```
+
+or to use the older build tool:
+
+```sh
+docker build -t dashlive:latest .
+```
+
+A directory is needed to contain the media and database files:
+
+```sh
 mkdir instance
 ```
 
@@ -36,7 +49,7 @@ The service should now be available from:
 
 To run the development server, so that changes in the source code are
 automatically re-loaded into the server, you can tell docker to use
-the [runserver.sh](./runserver.sh) script as its entry point:
+the [runserver.sh](../runserver.sh) script as its entry point:
 
 ```sh
 docker run -i -t  \
