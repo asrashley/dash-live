@@ -175,6 +175,8 @@ class BundleDirectory(MethodView):
     Returns a bundle of all of the UI components
     """
     def get(self, directory: str) -> flask.Response:
+        if directory not in {'hooks', 'components'}:
+            return flask.make_response('Unknown ESM bundle', 404)
         static_dir: Path = Path(flask.current_app.config['STATIC_FOLDER'])
         ui_folder: Path = static_dir / "js" / "spa" / directory
         js_files: set[str] = set()
