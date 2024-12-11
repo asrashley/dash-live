@@ -27,14 +27,14 @@ class CsrfTokenStore {
     }
 
     const {promise, resolve, reject} = Promise.withResolvers();
-    if (signal) {
-      signal.addEventListener('abort', () => {
-        reject(signal.reason);
-      });
-    }
+    const abortListener = () => {
+      reject(signal.reason);
+    };
+    signal?.addEventListener('abort', abortListener);
     this.pending.push({resolve, reject});
     promise.finally(() => {
       this.pending = this.pending.filter(p => p.resolve !== resolve);
+      signal?.removeEventListener('abort', abortListener);
     });
     return await promise;
   }
@@ -201,7 +201,7 @@ export class ApiRequests {
       method,
       signal,
     });
-    if (signal && signal.aborted) {
+    if (signal?.aborted) {
       throw signal.reason;
     }
     if (fetchResult.status === 401 && usedAccessToken && this.refreshToken) {
