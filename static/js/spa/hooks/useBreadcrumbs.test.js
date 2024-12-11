@@ -1,11 +1,23 @@
-import { describe, expect, test } from "vitest";
+import { afterAll, describe, expect, test, vi } from "vitest";
 import { renderHook, act } from "@testing-library/preact";
+import * as WouterPreact from 'wouter-preact';
 
 import { useBreadcrumbs } from "./useBreadcrumbs.js";
 
+vi.mock('wouter-preact');
+
 describe("useBreadCrumbs hook", () => {
+  const useLocationSpy = vi.spyOn(WouterPreact, 'useLocation');
+  const setLocation = vi.fn();
+
+  afterAll(() => {
+    vi.restoreAllMocks();
+  });
+
   test("useBreadcrumbs() hook", () => {
-    const { result } = renderHook(() => useBreadcrumbs());
+    useLocationSpy.mockReturnValue(['/', setLocation]);
+
+    const { result, rerender } = renderHook(() => useBreadcrumbs());
 
     expect(result.current.breadcrumbs).toEqual([
       {
@@ -17,7 +29,8 @@ describe("useBreadCrumbs hook", () => {
     ]);
 
     act(() => {
-      result.current.setLocation("/multi-period-streams/demo");
+      useLocationSpy.mockReturnValue(["/multi-period-streams/demo", setLocation]);
+      rerender();
     });
 
     expect(result.current.breadcrumbs).toEqual([
