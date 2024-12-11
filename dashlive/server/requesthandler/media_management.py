@@ -24,7 +24,7 @@ import datetime
 import html
 import logging
 from pathlib import Path
-from typing import cast
+from typing import cast, Any
 
 import flask
 from flask_login import current_user
@@ -47,7 +47,6 @@ from dashlive.utils.files import generate_new_filename
 from dashlive.utils.id_factory import create_id_factory
 from dashlive.utils.json_object import JsonObject
 from dashlive.utils.timezone import UTC
-from dashlive.utils.objects import object_has_children
 
 from .base import HTMLHandlerBase, RequestHandlerBase, DeleteModelBase
 from .csrf import CsrfProtection
@@ -454,7 +453,7 @@ class SegmentInfoBase(HTMLHandlerBase):
 
         context: TemplateContext = self.create_context(
             atoms=atoms,
-            value_has_children=object_has_children,
+            value_has_children=SegmentInfoBase.atom_has_children,
             create_id=create_id_factory(),
             object_name=self.object_name,
             title=full_title,
@@ -469,6 +468,18 @@ class SegmentInfoBase(HTMLHandlerBase):
         if 'atom_type' in obj:
             return obj['atom_type']
         return obj['_type'].split('.')[-1]
+
+    @staticmethod
+    def atom_has_children(obj: Any) -> bool:
+        if not obj:
+            return False
+        if not isinstance(obj, list):
+            return False
+        if not isinstance(obj[0], dict):
+            return False
+        if "_type" in obj[0]:
+            return True
+        return False
 
     def filter_object(self, obj: JsonObject) -> None:
         if 'children' in obj:

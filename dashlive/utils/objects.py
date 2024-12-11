@@ -23,7 +23,7 @@
 from collections.abc import Iterable
 import datetime
 import decimal
-from typing import AbstractSet, Any
+from typing import AbstractSet
 
 from dashlive.utils.date_time import to_iso_datetime, toIsoDuration
 
@@ -165,14 +165,3 @@ def merge(*items):
     for item in items:
         rv.update(item)
     return rv
-
-def object_has_children(obj: Any) -> bool:
-    if not obj:
-        return False
-    if not isinstance(obj, list):
-        return False
-    if not isinstance(obj[0], dict):
-        return False
-    if '_type' in obj[0]:
-        return True
-    return False
