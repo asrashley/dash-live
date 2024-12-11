@@ -13,6 +13,7 @@ export default defineConfig({
             ],
             exclude: [
                 "static/js/test/*.js",
+                "static/js/spa/**/*.test.js",
             ],
             thresholds: {
                 branches: 65,
