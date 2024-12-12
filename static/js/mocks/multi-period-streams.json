@@ -1,0 +1,24 @@
+{
+  "csrfTokens": {
+    "files": "gF0yI59Pb%27JoXmVhX9IKhEMlm81Y%2B8CT19aXo%3D%27",
+    "kids": "pSnZiiNSb%27eXYJSmOYe5MBdfp/9GtHK%2Bmnplc%3D%27",
+    "streams": "tFY083BNb%27xvUDMHF%2Bqo70miQ%2BPJUBLHZVLQw%3D%27",
+    "upload": null
+  },
+  "streams": [
+    {
+      "duration": "PT1M55S",
+      "name": "demo",
+      "options": {
+        "ntps": "europe-ntp",
+        "st": true
+      },
+      "periods": [
+        2,
+        1
+      ],
+      "pk": 1,
+      "title": "first title"
+    }
+  ]
+}
