@@ -57,10 +57,10 @@ function modifyPeriod({ model, periodPk, track, tracks: newTracks, period }) {
     if (prd.pk !== periodPk) {
       return prd;
     }
-    let tracks = newTracks ? newTracks: prd.tracks;
+    let tracks = newTracks ? newTracks : prd.tracks;
     if (track) {
       const { track_id } = track;
-      tracks = tracks.map(tk => {
+      tracks = tracks.map((tk) => {
         if (tk.track_id === track_id) {
           return {
             ...tk,
@@ -135,8 +135,8 @@ function addPeriodToModel({ model }) {
 }
 
 function decorateLoadedModel(model) {
-  const periods = model.periods.map(prd => {
-    const tracks = prd.tracks.map((tk) => ({...tk, enabled: true}));
+  const periods = model.periods.map((prd) => {
+    const tracks = prd.tracks.map((tk) => ({ ...tk, enabled: true }));
     return {
       ...prd,
       tracks,
@@ -156,7 +156,7 @@ function createDataFromModel(model) {
     const period = {
       ...prd,
       pk: typeof prd.pk === "number" ? prd.pk : null,
-      tracks: prd.tracks.filter(tk => tk.enabled),
+      tracks: prd.tracks.filter((tk) => tk.enabled),
     };
     return period;
   });
@@ -166,7 +166,13 @@ function createDataFromModel(model) {
   };
 }
 
-async function saveChangesToModel({ apiRequests, model, name, signal, appendMessage }) {
+async function saveChangesToModel({
+  apiRequests,
+  model,
+  name,
+  signal,
+  appendMessage,
+}) {
   if (!model.value || signal.aborted) {
     return false;
   }
@@ -272,12 +278,20 @@ export function useMultiPeriodModel({ model, name }) {
 
   const saveChanges = useCallback(
     ({ signal }) =>
-      saveChangesToModel({ apiRequests, model, modified, name, signal, appendMessage }),
+      saveChangesToModel({
+        apiRequests,
+        model,
+        modified,
+        name,
+        signal,
+        appendMessage,
+      }),
     [apiRequests, appendMessage, model, modified, name]
   );
 
   const deleteStream = useCallback(
-    ({ signal }) => deleteMpsStream({ apiRequests, name, signal, appendMessage }),
+    ({ signal }) =>
+      deleteMpsStream({ apiRequests, name, signal, appendMessage }),
     [apiRequests, appendMessage, name]
   );
 
@@ -333,7 +347,7 @@ export function useMultiPeriodModel({ model, name }) {
   };
 }
 
-const blankModel = {
+export const blankModel = {
   pk: null,
   name: "",
   title: "",
@@ -341,28 +355,6 @@ const blankModel = {
   periods: [],
   modified: false,
 };
-
-async function fetchStreamIfRequired({
-  apiRequests,
-  name,
-  newStream,
-  model,
-  loaded,
-  signal,
-}) {
-  if (newStream && model.value === undefined) {
-    loaded.value = name;
-    model.value = JSON.parse(JSON.stringify(blankModel));
-    return;
-  }
-  if (loaded.value !== name || model.value === undefined) {
-    const data = await apiRequests.getMultiPeriodStream(name, { signal });
-    if (!signal.aborted) {
-      loaded.value = name;
-      model.value = decorateLoadedModel(data.model);
-    }
-  }
-}
 
 export function useMultiPeriodStream({ name, newStream }) {
   const apiRequests = useContext(EndpointContext);
@@ -374,17 +366,27 @@ export function useMultiPeriodStream({ name, newStream }) {
     const controller = new AbortController();
     const { signal } = controller;
 
-    fetchStreamIfRequired({
-      apiRequests,
-      name,
-      newStream,
-      model,
-      loaded,
-      signal,
-    });
+    const fetchStreamIfRequired = async () => {
+      if (newStream && model.value === undefined) {
+        loaded.value = name;
+        model.value = JSON.parse(JSON.stringify(blankModel));
+        return;
+      }
+      if (loaded.value !== name || model.value === undefined) {
+        const data = await apiRequests.getMultiPeriodStream(name, { signal });
+        if (!signal.aborted) {
+          loaded.value = name;
+          model.value = decorateLoadedModel(data.model);
+        }
+      }
+    };
+
+    fetchStreamIfRequired();
 
     return () => {
-      controller.abort();
+      if (loaded.value !== name) {
+        controller.abort();
+      }
     };
   }, [apiRequests, loaded, name, newStream, model]);
 
