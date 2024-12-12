@@ -1,0 +1,105 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PrettyJson > should match snapshot 1`] = `
+<DocumentFragment>
+  <div
+    class="json bg-secondary-subtle border border-dark-subtle pretty"
+  >
+    {
+    <span
+      class="key"
+    >
+      hello
+    </span>
+    : 
+    <span
+      class="value"
+    >
+      "world"
+    </span>
+    , 
+    <span
+      class="key"
+    >
+      number
+    </span>
+    : 
+    <span
+      class="value"
+    >
+      32
+    </span>
+    , 
+    <span
+      class="key"
+    >
+      aBool
+    </span>
+    : 
+    <span
+      class="value"
+    >
+      true
+    </span>
+    , 
+    <span
+      class="key"
+    >
+      anArray
+    </span>
+    : [
+    <span
+      class="value"
+    >
+      "apple"
+    </span>
+    <span
+      class="value"
+    >
+      "pear"
+    </span>
+    <div
+      class="json bg-secondary-subtle border border-dark-subtle undefined"
+    >
+      {
+      <span
+        class="key"
+      >
+        strawberry
+      </span>
+      : 
+      <span
+        class="value"
+      >
+        "jam"
+      </span>
+      }
+    </div>
+    ], 
+    <span
+      class="key"
+    >
+      anObject
+    </span>
+    : 
+    <div
+      class="json bg-secondary-subtle border border-dark-subtle undefined"
+    >
+      {
+      <span
+        class="key"
+      >
+        james
+      </span>
+      : 
+      <span
+        class="value"
+      >
+        "bond"
+      </span>
+      }
+    </div>
+    }
+  </div>
+</DocumentFragment>
+`;
