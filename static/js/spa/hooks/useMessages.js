@@ -2,6 +2,11 @@ import { signal, useComputed } from "@preact/signals";
 
 const messages = signal({ alerts: [], nextId: 1 });
 
+// only exported for use in tests
+export function resetAllMessages() {
+  messages.value = { alerts: [], nextId: 1 };
+}
+
 const appendMessage = (text, level = "warning") => {
   const id = messages.value.nextId;
   const alerts = [
