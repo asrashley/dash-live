@@ -30,8 +30,16 @@ export default defineConfig({
 				replacement: resolve(projectRootDir, 'static/js/mocks/routemap.js')
 			},
 			{
+				find: '/libs/options.js',
+				replacement: resolve(projectRootDir, 'static/js/mocks/options.js')
+			},
+			{
 				find: '@dashlive/hooks',
 				replacement: resolve(projectRootDir, 'static/js/spa/hooks/index.js')
+			},
+			{
+				find: '@dashlive/ui',
+				replacement: resolve(projectRootDir, 'static/js/spa/components/index.js')
 			}
 		]
 	}
