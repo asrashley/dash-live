@@ -263,7 +263,7 @@ export class ApiRequests {
   }
 
   async getAccessToken(signal) {
-    if (this.refreshToken === undefined) {
+    if (!this.refreshToken) {
       throw new Error('Cannot request an access token without a refresh token');
     }
     const options = {
@@ -285,7 +285,7 @@ export class ApiRequests {
   }
 
   getCsrfTokens = async (signal) => {
-    if (this.accessToken === undefined) {
+    if (!this.accessToken) {
       throw new Error('Cannot request CSRF tokens without an access token');
     }
     const options = {
