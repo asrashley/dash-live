@@ -646,8 +646,10 @@ export const fieldGroups = [
     "fields": [
       {
         "className": "drm-checkbox",
+        "fullName": "enabled",
         "name": "clearkey__enabled",
         "prefix": "clearkey",
+        "shortName": "clearkey__enabled",
         "text": "Enable Clearkey DRM support?",
         "title": "Clearkey DRM",
         "type": "checkbox",
@@ -666,7 +668,7 @@ export const fieldGroups = [
       },
       {
         "featured": true,
-        "fullName": "drmLocation",
+        "fullName": "drmloc",
         "name": "clearkey__drmloc",
         "options": [
           {
@@ -707,7 +709,7 @@ export const fieldGroups = [
         ],
         "prefix": "clearkey",
         "rowClass": "row mb-3 drm-location prefix-clearkey",
-        "shortName": "dloc",
+        "shortName": "clearkey__drmloc",
         "text": "Location to place DRM data",
         "title": "Clearkey location",
         "type": "select",
@@ -721,8 +723,10 @@ export const fieldGroups = [
     "fields": [
       {
         "className": "drm-checkbox",
+        "fullName": "enabled",
         "name": "marlin__enabled",
         "prefix": "marlin",
+        "shortName": "marlin__enabled",
         "text": "Enable Marlin DRM support?",
         "title": "Marlin DRM",
         "type": "checkbox",
@@ -741,7 +745,7 @@ export const fieldGroups = [
       },
       {
         "featured": true,
-        "fullName": "drmLocation",
+        "fullName": "drmloc",
         "name": "marlin__drmloc",
         "options": [
           {
@@ -782,7 +786,7 @@ export const fieldGroups = [
         ],
         "prefix": "marlin",
         "rowClass": "row mb-3 drm-location prefix-marlin",
-        "shortName": "dloc",
+        "shortName": "marlin__drmloc",
         "text": "Location to place DRM data",
         "title": "Marlin location",
         "type": "select",
@@ -890,8 +894,10 @@ export const fieldGroups = [
     "fields": [
       {
         "className": "drm-checkbox",
+        "fullName": "enabled",
         "name": "playready__enabled",
         "prefix": "playready",
+        "shortName": "playready__enabled",
         "text": "Enable Playready DRM support?",
         "title": "Playready DRM",
         "type": "checkbox",
@@ -959,7 +965,7 @@ export const fieldGroups = [
       },
       {
         "featured": true,
-        "fullName": "drmLocation",
+        "fullName": "drmloc",
         "name": "playready__drmloc",
         "options": [
           {
@@ -1000,7 +1006,7 @@ export const fieldGroups = [
         ],
         "prefix": "playready",
         "rowClass": "row mb-3 drm-location prefix-playready",
-        "shortName": "dloc",
+        "shortName": "playready__drmloc",
         "text": "Location to place DRM data",
         "title": "Playready location",
         "type": "select",

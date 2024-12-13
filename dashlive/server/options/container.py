@@ -320,6 +320,8 @@ class OptionsContainer(ObjectWithFields):
         for name in DrmSystem.values():
             fields.append({
                 "name": f'{name}__enabled',
+                "shortName": f'{name}__enabled',
+                "fullName": 'enabled',
                 "title": f'{name.title()} DRM',
                 "text": f'Enable {name.title()} DRM support?',
                 "value": name in drms,
@@ -332,8 +334,12 @@ class OptionsContainer(ObjectWithFields):
             if val == all_locations:
                 val = ''
             input = DrmLocationOption.input_field(val, {})
+            cgi_name: str = f'{name}__{input["name"]}'
+            full_name = input["name"]
             input.update({
-                'name': f'{name}__{input["name"]}',
+                'name': cgi_name,
+                'shortName': cgi_name,
+                'fullName': full_name,
                 'title': f'{name.title()} location',
                 'rowClass': f'row mb-3 drm-location prefix-{name}',
                 'prefix': name,
