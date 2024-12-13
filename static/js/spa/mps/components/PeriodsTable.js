@@ -1,5 +1,5 @@
 import { html } from "htm/preact";
-import { useCallback, useContext, useMemo } from "preact/hooks";
+import { useCallback, useContext } from "preact/hooks";
 import { useComputed } from "@preact/signals";
 
 import {
@@ -46,7 +46,7 @@ function StreamSelect({ value, onChange, name }) {
 
   return html` <select
     class="form-select"
-    value=${value.value?.pk}
+    value=${value?.pk}
     name=${name}
     onChange=${changeHandler}
   >
@@ -64,7 +64,7 @@ function doNothing(ev) {
 
 function tracksDescription(tracks, stream) {
   const enabledCount = tracks.filter(tk => tk.enabled).length;
-  const numTracks = stream.value?.tracks.length ?? 0;
+  const numTracks = stream?.tracks.length ?? 0;
   if (numTracks === 0) {
     return "----";
   }
@@ -74,12 +74,24 @@ function tracksDescription(tracks, stream) {
   return `${enabledCount}/${numTracks} tracks`;
 }
 
+function TrackSelectionButton({ period, stream, selectTracks }) {
+  const { tracks } = period;
+  const description = tracksDescription(tracks, stream);
+  const hasActiveTracks = tracks.some(tk => tk.enabled);
+  const className = `btn btn-sm m-1 ${hasActiveTracks ? "btn-success" : "btn-warning"}`;
+
+  return html`<div class="col period-tracks">
+  <a className=${className} onClick=${selectTracks} disabled=${stream === undefined}>
+    ${description}
+  </a>
+</div>`;
+}
+
 function GuestPeriodRow({ index, item, className = "" }) {
-  const { ordering, pid, pk, start, duration, tracks } = item;
+  const { ordering, pid, pk, start, duration } = item;
   const { streamsMap } = useContext(AllStreamsContext);
   const { dialog } = useContext(AppStateContext);
-  const stream = useComputed(() => streamsMap.value.get(item.stream));
-  const numTracks = useComputed(() => tracksDescription(tracks, stream));
+  const stream = streamsMap.value.get(item.stream);
   const selectTracks = useCallback(() => {
     dialog.value = {
       backdrop: true,
@@ -87,7 +99,7 @@ function GuestPeriodRow({ index, item, className = "" }) {
         pk,
         pid,
         guest: true,
-        stream: stream.value,
+        stream,
       },
     };
   }, [dialog, pid, pk, stream]);
@@ -98,7 +110,7 @@ function GuestPeriodRow({ index, item, className = "" }) {
   return html`<li class="${clsNames}">
     <div class="col period-ordering">${ordering}</div>
     <div class="col period-id">${pid}</div>
-    <div class="col period-stream">${stream.value.title}</div>
+    <div class="col period-stream">${stream?.title}</div>
     <div class="col period-start">
       <${TimeDeltaInput}
         value=${start}
@@ -115,11 +127,7 @@ function GuestPeriodRow({ index, item, className = "" }) {
         disabled
       />
     </div>
-    <div class="col period-tracks">
-      <a class="btn btn-sm m-1 btn-primary" onClick=${selectTracks}
-        >${numTracks}</a
-      >
-    </div>
+    <${TrackSelectionButton} period=${item} stream=${stream} selectTracks=${selectTracks} />
   </li>`;
 }
 
@@ -164,22 +172,19 @@ function PeriodRow({ className = "", index, item: period, ...props }) {
   const { errors, modifyPeriod, addPeriod, removePeriod } = useContext(
     MultiPeriodModelContext
   );
-  const currentStream = useComputed(() => streamsMap.value.get(period.stream));
-  const trackBtnLabel = useComputed(
-    () => tracksDescription(period.tracks, currentStream),
-  );
-  const numActiveTracks = useMemo(
-    () => period.tracks.filter(tk => tk.enabled).length,
-  [period.tracks]);
+  const currentStream = streamsMap.value.get(period.stream);
   const { pid, pk, start, duration } = period;
 
   const selectTracks = useCallback(() => {
+    if (currentStream === undefined) {
+      return;
+    }
     dialog.value = {
       backdrop: true,
       trackPicker: {
         pk,
         pid,
-        stream: currentStream.value,
+        stream: currentStream,
       },
     };
   }, [dialog, pid, pk, currentStream]);
@@ -266,15 +271,7 @@ function PeriodRow({ className = "", index, item: period, ...props }) {
         required
       />
     </div>
-    <div class="col period-tracks">
-      <a
-        class="btn btn-sm m-1 ${numActiveTracks === 0
-          ? "btn-warning"
-          : "btn-success"}"
-        onClick=${selectTracks}
-        >${trackBtnLabel}
-      </a>
-    </div>
+    <${TrackSelectionButton} period=${period} stream=${currentStream} selectTracks=${selectTracks} />
   </li>`;
 }
 
