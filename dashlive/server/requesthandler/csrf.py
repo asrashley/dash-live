@@ -32,7 +32,7 @@ import urllib.parse
 
 import flask  # type: ignore
 
-from dashlive.server.models.token import Token, TokenType
+from dashlive.server.models.token import Token, TokenType, KEY_LIFETIMES
 from dashlive.server.models.db import db
 from dashlive.utils.json_object import JsonObject
 
@@ -58,7 +58,6 @@ class CsrfTokenCollection:
 
 class CsrfProtection:
     CSRF_COOKIE_NAME: ClassVar[str] = 'csrf'
-    CSRF_EXPIRY: ClassVar[int] = 1200
 
     @classmethod
     def generate_cookie(cls) -> str:
@@ -76,10 +75,11 @@ class CsrfProtection:
 
         @flask.after_this_request
         def set_csrf_cookie(response):
+            nonlocal secure, csrf_key
+            max_age: int = int(KEY_LIFETIMES[TokenType.CSRF].total_seconds())
             response.set_cookie(
                 CsrfProtection.CSRF_COOKIE_NAME, csrf_key, httponly=True,
-                samesite='Strict', max_age=CsrfProtection.CSRF_EXPIRY,
-                secure=secure)
+                samesite='Strict', max_age=max_age, secure=secure)
             return response
 
         return csrf_key
@@ -151,8 +151,7 @@ class CsrfProtection:
         existing_key = Token.get(jti=token, token_type=TokenType.CSRF)
         if existing_key is not None:
             raise CsrfFailureException("Re-use of csrf_token")
-        expires = datetime.datetime.now() + datetime.timedelta(
-            seconds=cls.CSRF_EXPIRY)
+        expires = datetime.datetime.now() + KEY_LIFETIMES[TokenType.CSRF]
         existing_key = Token(
             jti=token, token_type=TokenType.CSRF, expires=expires, revoked=False)
         db.session.add(existing_key)

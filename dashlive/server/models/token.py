@@ -34,6 +34,13 @@ class DecodedJwtToken(TypedDict):
     type: str  # 'access' or 'refresh'
 
 
+KEY_LIFETIMES: dict[TokenType, timedelta] = {
+    TokenType.ACCESS: timedelta(hours=2),
+    TokenType.GUEST: timedelta(hours=6),
+    TokenType.REFRESH: timedelta(days=7),
+    TokenType.CSRF: timedelta(minutes=20),
+}
+
 class Token(db.Model, ModelMixin):
     """
     Database table for storing refresh tokens and expired access tokens
@@ -41,8 +48,6 @@ class Token(db.Model, ModelMixin):
     __tablename__ = 'Token'
     __plural__ = 'Tokens'
     API_KEY_LENGTH: ClassVar[int] = 32
-    ACCESS_KEY_EXPIRY: ClassVar[timedelta] = timedelta(seconds=3600)
-    REFRESH_KEY_EXPIRY: ClassVar[timedelta] = timedelta(days=7)
     CSRF_KEY_LENGTH: ClassVar[int] = 32
     CSRF_SALT_LENGTH: ClassVar[int] = 8
     MAX_TOKEN_LENGTH: ClassVar[int] = max(
@@ -73,10 +78,7 @@ class Token(db.Model, ModelMixin):
             db.session.delete(token)
             token = None
         if token is None:
-            if token_type == TokenType.ACCESS:
-                expires: datetime = datetime.now() + cls.ACCESS_KEY_EXPIRY
-            else:
-                expires = datetime.now() + cls.REFRESH_KEY_EXPIRY
+            expires: datetime = datetime.now() + KEY_LIFETIMES[token_type]
             jti = create_access_token(identity=user.username)
             token = Token(
                 user_pk=user.pk, token_type=token_type, jti=jti,
