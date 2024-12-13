@@ -48,6 +48,7 @@ COPY deploy/start-server.sh $HOME/dash-live/
 COPY deploy/dashlive.conf /etc/nginx/sites-available/
 COPY deploy/x_forwarded_proto.conf /etc/nginx/conf.d/
 COPY deploy/proxy_params /etc/nginx/
+COPY deploy/mime.types /etc/nginx/
 RUN echo "client_max_body_size 1024M;" > /etc/nginx/conf.d/maxsize.conf
 RUN ln -s /etc/nginx/sites-available/dashlive.conf /etc/nginx/sites-enabled/dashlive.conf
 RUN chmod +x $HOME/dash-live/*.sh
