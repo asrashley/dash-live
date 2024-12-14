@@ -1,4 +1,4 @@
-name: lint JavaScript source
+name: check JavaScript source
 
 on:
   push:
@@ -25,3 +25,5 @@ jobs:
         run: npm run lint:compat
       - name: JS lint checks for ESM code
         run: npm run lint:esm
+      - name: Unit tests of ESM code
+        run: npm run coverage
