@@ -7,9 +7,10 @@ import { ModalDialog } from "@dashlive/ui";
 import { MultiPeriodModelContext } from "@dashlive/hooks";
 import { AppStateContext } from "../../appState.js";
 
-function RoleSelect({ roles, value, onChange, className, disabled }) {
+function RoleSelect({ name, roles, value, onChange, className, disabled }) {
   return html`<select
     className=${className}
+    name=${name}
     value=${value}
     onChange=${onChange}
     disabled=${disabled}
@@ -150,7 +151,7 @@ export function TrackSelectionDialog({ onClose }) {
     newTracks.forEach((trk) => {
       modifyPeriod({
         periodPk: trackPicker.value.pk,
-        trk,
+        track: trk,
       });
     });
   }, [allSelected, mediaTracks, modifyPeriod, trackPicker]);
@@ -164,8 +165,10 @@ export function TrackSelectionDialog({ onClose }) {
   return html`
 <${ModalDialog} onClose=${onClose} title="${title.value}" size='lg'>
   <div class="row fw-bold">
-    <div class="col-1"><input class="form-check-input" type="checkbox" disabled=${guest}
-      name="all_tracks" checked=${allSelected.value} onClick=${selectAllTracks} /></div>
+    <div class="col-1">
+      <input class="form-check-input" data-testid="select-all-tracks" type="checkbox" disabled=${guest}
+        name="all_tracks" checked=${allSelected.value} onClick=${selectAllTracks} />
+    </div>
     <div class="col-6 text-center">Track</div>
     <div class="col-3 text-center">Role</div>
     <div class="col-2 text-end">Encrypted</div>
