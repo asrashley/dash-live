@@ -16,10 +16,10 @@ export default defineConfig({
                 "static/js/spa/**/*.test.js",
             ],
             thresholds: {
-                branches: 65,
-                functions: 30,
-                lines: 15,
-                statements: 15
+                branches: 75,
+                functions: 75,
+                lines: 70,
+                statements: 70
             }
         },
 	},
