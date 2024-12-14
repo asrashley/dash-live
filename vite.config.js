@@ -26,6 +26,10 @@ export default defineConfig({
 	resolve: {
 		alias: [
 			{
+				find: "/libs/content_roles.js",
+				replacement: resolve(projectRootDir, 'static/js/mocks/content_roles.js')
+			},
+			{
 				find: '/libs/routemap.js',
 				replacement: resolve(projectRootDir, 'static/js/mocks/routemap.js')
 			},
