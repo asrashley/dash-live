@@ -13,23 +13,23 @@ const initialUserState = {
 
 export function renderWithProviders(
   ui,
-  { preloadedState, state, path = "/", ...renderOptions } = {}
+  { userInfo, state, path = "/", ...renderOptions } = {}
 ) {
-  if (preloadedState === undefined) {
-    preloadedState = { ...initialUserState };
+  if (userInfo === undefined) {
+    userInfo = { ...initialUserState };
   }
   if (state === undefined) {
-    state = createAppState(preloadedState);
+    state = createAppState(userInfo);
   }
+
   const { hook } = memoryLocation({
     path,
     static: true,
   });
 
-  const Wrapper = ({ state, children }) => {
+  const Wrapper = ({ children }) => {
     return html`<${AppStateContext.Provider} value=${state}
-      ><${Router} hook=${hook}>${children}<//><//
-    >`;
+      ><${Router} hook=${hook}>${children}<//><//>`;
   };
 
   return {
