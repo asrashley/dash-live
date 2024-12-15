@@ -12,6 +12,7 @@ import {
 import { ButtonRow } from './ButtonRow.js';
 import { CgiInfoPanel } from './CgiInfoPanel.js';
 import { ManifestUrl } from './ManifestUrl.js';
+import { NoStreamsMessage } from './NoStreamsMessage.js';
 import { useStreamOptions } from "../hooks/useStreamOptions.js";
 import { StreamOptionsContext } from '../types/StreamOptionsHook.js';
 import { useFieldGroups } from "../hooks/useFieldGroups.js";
@@ -69,6 +70,9 @@ export default function HomePage() {
   const videoUrl = useComputed(() =>
     generateUrl(routeMap.video.url, routeMap.videoMps.url, mode, manifestBaseName, stream, nonDefaultOptions));
 
+  if (combinedStreams.loaded.value && combinedStreams.streamNames.value.length === 0) {
+    return html`<div className="mb-3"><${NoStreamsMessage} /></div>`;
+  }
   return html`<${UseCombinedStreams.Provider} value=${combinedStreams}>
     <${StreamOptionsContext.Provider} value=${streamOptionsHook}>
       <div>

@@ -45,6 +45,7 @@ export function decorateAllStreams(streams) {
 export function useAllStreams() {
   const apiRequests = useContext(EndpointContext);
   const streams = useSignal();
+  const loaded = useSignal(false);
   const error = useSignal(null);
   const allStreams = useComputed(() => streams.value ?? []);
   const streamsMap = useComputed(() => {
@@ -71,6 +72,7 @@ export function useAllStreams() {
           if (!signal.aborted) {
             streams.value = decorateAllStreams(data.streams);
             error.value = null;
+            loaded.value = true;
           }
         } catch (err) {
           if (!signal.aborted) {
@@ -86,7 +88,7 @@ export function useAllStreams() {
     return () => {
       controller.abort();
     };
-  }, [apiRequests, error, streams]);
+  }, [apiRequests, error, loaded, streams]);
 
-  return { allStreams, streamsMap, error };
+  return { allStreams, loaded, streamsMap, error };
 }
