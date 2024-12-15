@@ -86,7 +86,7 @@ class RouteMap(MethodView):
             if params:
                 params = f'{{{params}}}'
             item["url"] = f'({params}) => `{template}`'
-        body: str = flask.render_template('esm/routemap.js', routes=route_map)
+        body: str = flask.render_template('esm/routemap.tjs', routes=route_map)
         headers: dict[str, str] = {
             'Content-Type': 'application/javascript',
             'Content-Length': len(body),
@@ -118,7 +118,7 @@ class ContentRoles(MethodView):
         roles: dict[str, str] = {}
         for role in ContentRole.all():
             roles[role.name.lower()] = [use.name.lower() for use in role.usage()]
-        body = flask.render_template('esm/content_roles.js', roles=roles)
+        body = flask.render_template('esm/content_roles.tjs', roles=roles)
         return flask.make_response((body, 200, headers))
 
 
