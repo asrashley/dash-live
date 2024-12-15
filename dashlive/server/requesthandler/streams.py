@@ -20,6 +20,7 @@
 #
 #############################################################################
 from dataclasses import dataclass
+import html
 import logging
 from pathlib import Path
 from typing import cast, TypedDict
@@ -334,7 +335,7 @@ class EditStream(HTMLHandlerBase):
             mf = models.MediaFile.get(name=Path(timing_reference).stem)
             if not mf:
                 return flask.make_response(
-                    f'Invalid timing_reference "{timing_reference}"', 400)
+                    f'Invalid timing_reference "{html.escape(timing_reference)}"', 400)
             current_stream.set_timing_reference(mf.as_stream_timing_reference())
         try:
             self.check_csrf('streams', params)
