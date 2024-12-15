@@ -23,7 +23,8 @@ function sortStreams(streams, field, ascending) {
 export function useAllMultiPeriodStreams() {
   const apiRequests = useContext(EndpointContext);
   const streams = useSignal([]);
-  const [loaded, setLoaded] = useState(false);
+  const loaded = useSignal(false);
+  const error = useSignal(null);
   const [sortField, setSortField] = useState("name");
   const [sortAscending, setSortAscending] = useState(true);
 
@@ -41,17 +42,19 @@ export function useAllMultiPeriodStreams() {
     const { signal } = controller;
 
     const fetchStreamsIfRequired = async () => {
-      if (!loaded) {
+      if (!loaded.value) {
         try {
           const data = await apiRequests.getAllMultiPeriodStreams({ signal });
           if (!signal.aborted) {
-            setLoaded(true);
+            loaded.value = true;
             streams.value = data.streams;
+            error.value = null;
             sortStreams(streams, sortField, sortAscending);
           }
         } catch (err) {
           if (!signal.aborted) {
             console.error(err);
+            error.value = `${err}`;
           }
         }
       }
@@ -62,7 +65,7 @@ export function useAllMultiPeriodStreams() {
     return () => {
       controller.abort();
     };
-  }, [apiRequests, loaded, sortAscending, sortField, streams]);
+  }, [apiRequests, error, loaded, sortAscending, sortField, streams]);
 
-  return { streams, loaded, sort, sortField, sortAscending };
+  return { error, streams, loaded, sort, sortField, sortAscending };
 }
