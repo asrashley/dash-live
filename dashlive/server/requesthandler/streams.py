@@ -74,7 +74,7 @@ class ListStreams(HTMLHandlerBase):
         csrf_key = self.generate_csrf_cookie()
         upload: str | None = None
         if user_can_modify:
-            upload = self.generate_csrf_token('upload', csrf_key),
+            upload = self.generate_csrf_token('upload', csrf_key)
         csrf_tokens = CsrfTokenCollection(
             files=self.generate_csrf_token('files', csrf_key),
             kids=self.generate_csrf_token('keys', csrf_key),
