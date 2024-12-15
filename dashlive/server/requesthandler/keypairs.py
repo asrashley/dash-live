@@ -85,7 +85,8 @@ class KeyHandler(HTMLHandlerBase):
         try:
             self.check_csrf('keys', flask.request.form)
         except (ValueError, CsrfFailureException) as err:
-            return flask.make_response((f'CSRF failure: {err}', 400))
+            logging.warning('CSRF failure: %s', err)
+            return flask.make_response(('CSRF failure', 400))
         model: models.Key | None = None
         if kpk:
             model = models.Key.get(pk=kpk)
