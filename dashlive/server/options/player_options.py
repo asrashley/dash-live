@@ -8,7 +8,7 @@ DashjsVersion = DashOption(
     title='dash.js version',
     description='dash.js DASH player version',
     cgi_name='dashjs',
-    cgi_choices=(None, '4.7.1'),
+    cgi_choices=(None, '4.7.4', '4.7.1'),
     input_type='datalist')
 
 PLAYBACK_HTML = '''
