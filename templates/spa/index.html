@@ -11,7 +11,7 @@
 
 {% block extrascripts %}
 <script type="module">
-{% include "spa/main.js" %}
+{% include "spa/main.tjs" %}
 </script>
 <script nomodule type="text/javascript">
 document.location.replace("{{ url_for('es5-home') }}");
