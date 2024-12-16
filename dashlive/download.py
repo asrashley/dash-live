@@ -19,8 +19,10 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+import logging
 
 from dashlive.management.download import DownloadDatabase
 
 if __name__ == "__main__":
+    logging.basicConfig()
     DownloadDatabase.main()
