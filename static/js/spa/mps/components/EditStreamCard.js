@@ -142,7 +142,6 @@ function EditStreamForm({ name, newStream }) {
       }
       const success = await deleteStream({signal});
       if (success){
-        allStreams.value = null;
         navigate(routeMap.listMps.url(), { replace: true });
       }
       dialog.value = null;
