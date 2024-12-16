@@ -247,8 +247,8 @@ class AddStream(HTMLHandlerBase):
                 "errors": errors,
                 "csrf_token": csrf_token,
             })
-        mp_stream = models.MultiPeriodStream.get(name=data["name"])
-        if mp_stream is not None:
+        stream: models.MultiPeriodStream | None = models.MultiPeriodStream.get(name=data["name"])
+        if stream is not None:
             errors.append(f'Stream {data["name"]} already exists')
         else:
             stream, errs = self.add_new_stream(data)
@@ -273,7 +273,7 @@ class AddStream(HTMLHandlerBase):
         for period in data['periods']:
             err = process_period(stream, period)
             if err is not None:
-                errors.push(err)
+                errors.append(err)
         return [stream, errors]
 
 
