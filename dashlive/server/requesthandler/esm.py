@@ -20,6 +20,7 @@
 #
 #############################################################################
 import io
+import logging
 from pathlib import Path
 import re
 from typing import ClassVar
@@ -46,7 +47,16 @@ class ModuleWrapper(MethodView):
         headers = {
             'Content-Type': 'application/javascript',
         }
-        # TODO: check if filename exists
+        app = flask.current_app
+        template_folder: Path = Path(app.root_path) / app.template_folder
+        js_name = template_folder / 'esm' / Path(filename).name
+        js_name = js_name.resolve()
+        if not js_name.is_relative_to(template_folder):
+            logging.warning('Invalid ESM module path "%s"', filename)
+            return flask.make_response('Not Found', 404)
+        if not js_name.exists():
+            logging.warning('Failed to find ESM module "%s"', js_name)
+            return flask.make_response('Not Found', 404)
         body = flask.render_template(f'esm/{filename}')
         return flask.make_response((body, 200, headers))
 
