@@ -71,12 +71,13 @@ def csrf_token_required(
         @wraps(func)
         def decorated_function(*args, **kwargs):
             token: str | None = None
+            has_payload: bool = flask.request.method in {'POST', 'PUT'}
             try:
-                if flask.request.method != 'GET' and flask.request.is_json:
+                if has_payload and flask.request.is_json:
                     token = flask.request.get_json().get('csrf_token', None)
                 if token is None:
                     token = flask.request.args.get('csrf_token')
-                if token is None and flask.request.method in {'POST', 'PUT'}:
+                if token is None and has_payload:
                     token = flask.request.form.get('csrf_token')
                 if token is None and optional:
                     return func(*args, **kwargs)
