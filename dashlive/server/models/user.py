@@ -163,8 +163,8 @@ class User(db.Model, ModelMixin):  # type: ignore
     groups = property(get_groups, set_groups)
 
     @classmethod
-    def check_if_empty(cls, default_username: str, default_password: str):
-        count = cls.count()
+    def populate_if_empty(cls, default_username: str, default_password: str) -> None:
+        count: int = cls.count()
         logging.debug('User count: %d', count)
         if count == 0:
             admin = User(
@@ -176,7 +176,6 @@ class User(db.Model, ModelMixin):  # type: ignore
             admin.set_password(default_password)
             logging.info('Adding default user account username="%s"', default_username)
             db.session.add(admin)
-            db.session.commit()
 
     def get_fields(self, with_must_change: bool = True,
                    with_confirm_password: bool = False, **kwargs) -> list[JsonObject]:

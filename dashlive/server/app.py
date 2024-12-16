@@ -180,9 +180,11 @@ def create_app(config: JsonObject | None = None,
     with app.app_context():
         models.db.create_all()
         if create_default_user:
-            models.User.check_if_empty(
+            models.User.populate_if_empty(
                 app.config['DASH']['DEFAULT_ADMIN_USERNAME'],
                 app.config['DASH']['DEFAULT_ADMIN_PASSWORD'])
+        models.ContentType.populate_if_empty()
+        models.db.session.commit()
         models.Token.prune_database(all_csrf=True)
 
     app.register_blueprint(custom_tags)
