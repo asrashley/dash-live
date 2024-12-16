@@ -54,6 +54,8 @@ class AdaptationSet(db.Model, ModelMixin):
         return cast(AdaptationSet | None, cls.get_one(**kwargs))
 
     def media_files(self, encrypted: bool | None = None) -> Iterable[MediaFile]:
+        if self.period.stream is None:
+            return []
         stmt = db.select(MediaFile).filter_by(
             stream_pk=self.period.stream.pk, track_id=self.track_id)
         if encrypted is not None:
