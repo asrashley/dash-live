@@ -24,6 +24,7 @@ import argparse
 import json
 import logging
 from pathlib import Path
+from typing import ClassVar
 
 from dashlive.utils.json_object import JsonObject
 
@@ -31,7 +32,9 @@ from .frontend_db import FrontendDatabaseAccess
 from .info import StreamInfo
 
 class DownloadDatabase:
-    OUTPUT_NAME = 'downloaded.json'
+    OUTPUT_NAME: ClassVar[str] = 'downloaded.json'
+    db: FrontendDatabaseAccess
+    log: logging.Logger
 
     def __init__(self, db: FrontendDatabaseAccess) -> None:
         self.db = db
@@ -39,8 +42,10 @@ class DownloadDatabase:
 
     def download_database(self, destination: Path) -> bool:
         if not self.db.login():
+            logging.error('Failed to login')
             return False
         if not self.db.fetch_media_info(with_details=True):
+            logging.error('Failed to fetch media info')
             return False
         if not destination.exists():
             destination.mkdir()
@@ -116,6 +121,8 @@ class DownloadDatabase:
         ap.add_argument('--debug', action="store_true")
         ap.add_argument('--host', help='HTTP address of host',
                         default="http://localhost:9080/")
+        ap.add_argument('--username')
+        ap.add_argument('--password')
         ap.add_argument('dest', help='Destination directory')
         args = ap.parse_args()
         mm_log = logging.getLogger('DownloadDatabase')
@@ -127,5 +134,6 @@ class DownloadDatabase:
             mm_log.setLevel(logging.DEBUG)
         else:
             mm_log.setLevel(logging.INFO)
-        dd = DownloadDatabase(args.host)
-        dd.download_database(args.dest)
+        fda = FrontendDatabaseAccess(args.host, args.username, args.password)
+        dd = DownloadDatabase(fda)
+        dd.download_database(Path(args.dest))
