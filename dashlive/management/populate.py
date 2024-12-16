@@ -74,7 +74,7 @@ class PopulateDatabase:
             if s_info is None:
                 continue
             for name in s['files']:
-                if not self.upload_file_and_index(js_dir, s_info, name):
+                if not self.upload_file_and_index(js_dir, s_info, Path(name)):
                     result = False
             if s.get('timing_ref'):
                 self.db.set_timing_ref(s_info, s['timing_ref'])
@@ -124,14 +124,17 @@ class PopulateDatabase:
             output['streams'].append(new_st)
         return output
 
-    def upload_file_and_index(self, js_dir: Path, stream: StreamInfo, name: str) -> bool:
-        name = Path(name)
+    def upload_file_and_index(self, js_dir: Path, stream: StreamInfo, name: Path) -> bool:
         if name.stem in stream.media_files:
             return True
-        filename = name
+        filename: Path = name
         if not filename.exists():
             self.log.debug(
-                "%s not found, trying directory %s", filename, js_dir)
+                "%s not found, trying %s/%s", filename, js_dir, name)
+            filename = js_dir / name
+        if not filename.exists():
+            self.log.debug(
+                "%s not found, trying %s/%s", filename, js_dir, filename.name)
             filename = js_dir / filename.name
         if not filename.exists():
             self.log.warning("%s not found", name)
