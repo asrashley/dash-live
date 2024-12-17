@@ -9,10 +9,14 @@ from abc import ABC, abstractmethod
 import sys
 
 class Progress(ABC):
-    def __init__(self):
-        self.num_items: int = 1
-        self.count: int = 0
-        self.txt: str = ''
+    num_items: int
+    count: int
+    txt: str
+
+    def __init__(self) -> None:
+        self.num_items = 1
+        self.count = 0
+        self.txt = ''
 
     def reset(self, num_items: int) -> None:
         self.num_items = num_items
@@ -56,6 +60,8 @@ class NullProgress(Progress):
         return False
 
 class ConsoleProgress(Progress):
+    _aborted: bool
+
     def __init__(self):
         super().__init__()
         self._aborted = False
