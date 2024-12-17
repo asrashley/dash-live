@@ -8,7 +8,7 @@
 from functools import wraps
 import html
 import logging
-from typing import cast, Callable, Iterable
+from typing import cast, Any, Callable, Iterable
 
 import flask  # type: ignore
 from flask_login import current_user
@@ -289,29 +289,26 @@ def spa_handler(func):
             files=None,
             kids=None,
             upload=None)
+        user: User = current_user
+        if not current_user.is_authenticated:
+            user = User.get_guest_user()
+        access_token = Token.generate_api_token(user, TokenType.ACCESS)
         initial_tokens = {
             'csrfTokens': csrf_tokens.to_dict(),
-            'accessToken': None,
+            'accessToken': access_token.to_dict(only={'expires', 'jti'}),
             'refreshToken': None,
         }
-        user = {
+        user_context: dict[str, Any] = {
             'isAuthenticated': current_user.is_authenticated,
-            'pk': None,
-            'username': 'guest',
-            'groups': [],
+            'pk': user.pk,
+            'username': user.username,
+            'groups': user.get_groups(),
         }
         if current_user.is_authenticated:
-            access_token: Token = Token.generate_api_token(
-                current_user, TokenType.ACCESS)
             refresh_token: Token = Token.generate_api_token(
                 current_user, TokenType.REFRESH)
-            initial_tokens['accessToken'] = access_token.to_dict(only={'expires', 'jti'})
-            initial_tokens['refreshToken'] = refresh_token.to_dict(only={'expires', 'jti'})
-            user.update({
-                'pk': current_user.pk,
-                'username': current_user.username,
-                'groups': current_user.get_groups(),
-            })
+            initial_tokens['refreshToken'] = refresh_token.to_dict(
+                only={'expires', 'jti'})
         navbar = create_navbar_context()
         breadcrumbs: list[NavBarItem] = [
             NavBarItem(title='Home', active=True)
@@ -319,7 +316,7 @@ def spa_handler(func):
         context: TemplateContext = create_template_context(
             title='DASH Test Streams', params=kwargs,
             navbar=navbar, routes=routes, breadcrumbs=breadcrumbs,
-            initialTokens=initial_tokens, user=user,
+            initialTokens=initial_tokens, user=user_context,
             force_es5=('es5' in flask.request.args))
         return flask.render_template('spa/index.html', **context)
     return decorated_function

@@ -2,7 +2,8 @@
 Database model for a user of the app
 """
 import logging
-from typing import AbstractSet, Optional, cast
+import secrets
+from typing import AbstractSet, ClassVar, Optional, cast
 
 from passlib.context import CryptContext  # type: ignore
 from sqlalchemy import (  # type: ignore
@@ -25,12 +26,12 @@ class User(db.Model, ModelMixin):  # type: ignore
     """
     Database model for a user of the app
     """
-    __tablename__ = 'User'
-    __plural__ = 'Users'
+    __tablename__: ClassVar[str] = 'User'
+    __plural__: ClassVar[str] = 'Users'
 
-    __RESET_TOKEN_LENGTH = 16
+    __RESET_TOKEN_LENGTH: ClassVar[int] = 16
+    __GUEST_USERNAME: ClassVar[str] = '_AnonymousUser_'
 
-    # TODO: add "must_change" bool field
     pk = Column(Integer, primary_key=True)
     username = Column(String(32), nullable=False, unique=True)
     password = Column(String(512), nullable=False)
@@ -129,7 +130,7 @@ class User(db.Model, ModelMixin):  # type: ignore
         """
         return (self.groups_mask & group.value) == group.value
 
-    def has_permission(self, group: Group | str):
+    def has_permission(self, group: Group | str) -> bool:
         """
         Check if the user has the permission associated with a group
         """
@@ -176,6 +177,18 @@ class User(db.Model, ModelMixin):  # type: ignore
             admin.set_password(default_password)
             logging.info('Adding default user account username="%s"', default_username)
             db.session.add(admin)
+
+    @classmethod
+    def get_guest_user(cls) -> "User":
+        guest = cls.get(username=cls.__GUEST_USERNAME, groups_mask=0)
+        if guest:
+            return guest
+        guest = User(username=cls.__GUEST_USERNAME, groups_mask=0,
+                     must_change=False, email=cls.__GUEST_USERNAME)
+        guest.set_password(secrets.token_urlsafe(16))
+        db.session.add(guest)
+        db.session.commit()
+        return guest
 
     def get_fields(self, with_must_change: bool = True,
                    with_confirm_password: bool = False, **kwargs) -> list[JsonObject]:
