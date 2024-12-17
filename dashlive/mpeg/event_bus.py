@@ -23,20 +23,24 @@ from typing import Callable, Generic, TypeVar
 
 T = TypeVar('T')
 
-class EventBus(Generic[T]):
-    def __init__(self) -> None:
-        self.listeners: dict[str, Callable[[str, T], None]] = {}
+EventCallback = Callable[[str, T], None]
 
-    def on(self, name: str, listener: Callable[[str, T], None]) -> None:
+class EventBus(Generic[T]):
+    listeners: dict[str, list[EventCallback]]
+
+    def __init__(self) -> None:
+        self.listeners = {}
+
+    def on(self, name: str, listener: EventCallback) -> None:
         # print('eventlistener.on', name)
         try:
-            ev_listeners = self.listeners[name]
+            ev_listeners: list[EventCallback] = self.listeners[name]
         except KeyError:
             ev_listeners = []
         ev_listeners.append(listener)
         self.listeners[name] = ev_listeners
 
-    def off(self, name: str, listener: Callable[[str, T], None]) -> None:
+    def off(self, name: str, listener: EventCallback) -> None:
         # print('eventlistener.off', name)
         try:
             self.listeners[name] = list(
