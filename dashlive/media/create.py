@@ -312,6 +312,7 @@ class DashMediaCreator:
                      dest_filename, moov, prefix)
         if not moov.exists():
             raise OSError(f'MOOV not found: {moov}')
+
         with dest_filename.open("wb") as dest:
             if self.options.verbose:
                 sys.stdout.write('I')
@@ -388,7 +389,7 @@ class DashMediaCreator:
             "-profile-ext", "urn:dvb:dash:profile:dvbdash:2014",
             "-bs-switching", bs_switching,
             "-segment-ext", "mp4",
-            "-segment-name", 'dash_$RepresentationID$_$number%03d$$Init=init$',
+            "-segment-name", 'dash_$RepresentationID$_$Number%03d$$Init=init$',
             "-out", "manifest",
         ]
         mp4box_args += [str(f.source) for f in source_files]
@@ -409,13 +410,23 @@ class DashMediaCreator:
             if dest_file.exists():
                 logging.debug('File %s exists, skipping generation', dest_file)
                 continue
-            moov = tmpdir / 'manifest_set1_init.mp4'
-            if os.path.exists(prefix + 'init.mp4'):
+            moov = tmpdir / f'dash_{idx + 1}_init.mp4'
+            logging.debug('try init filename: %s', moov)
+            if not moov.exists():
+                moov = tmpdir / 'dash_1_init.mp4'
+                logging.debug('try init filename: %s', moov)
+            if not moov.exists():
+                moov = tmpdir / 'manifest_set1_init.mp4'
+                logging.debug('try init filename: %s', moov)
+            if not moov.exists():
                 moov = Path(prefix + 'init.mp4')
+                logging.debug('try init filename: %s', moov)
+            if not moov.exists():
+                logging.error('Failed to find init segment for representation %d: %s',
+                              idx, prefix)
+                continue
             logging.debug('Check for file: "%s"', dest_file)
             self.create_file_from_fragments(dest_file, moov, prefix)
-            if os.path.exists(prefix + 'init.mp4'):
-                os.remove(moov)
 
     def destination_filename(self, contentType: str, index: int, encrypted: bool) -> str:
         enc = '_enc' if encrypted else ''
