@@ -108,7 +108,7 @@ class MockFfmpeg(TestCaseMixin):
             '-profile-ext', 'urn:dvb:dash:profile:dvbdash:2014',
             '-bs-switching', 'merge',
             '-segment-ext', 'mp4',
-            '-segment-name', 'dash_$RepresentationID$_$number%03d$$Init=init$',
+            '-segment-name', 'dash_$RepresentationID$_$Number%03d$$Init=init$',
             '-out', 'manifest',
         ]
         for br in DashMediaCreator.BITRATE_LADDER:
