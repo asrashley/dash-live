@@ -217,7 +217,6 @@ class DashMediaCreator:
         keyframes = ','.join(keyframes)
         ffmpeg_args = [
             "ffmpeg",
-            "-ss", "5",
             "-ec", "deblock",
             "-i", self.options.source,
             "-video_track_timescale", str(self.timescale),
