@@ -7,7 +7,8 @@
 #############################################################################
 
 from dataclasses import dataclass
-from typing import AbstractSet, TypedDict
+from collections.abc import Set
+from typing import TypedDict
 
 from dashlive.server.options.form_input_field import FormInputContext
 
@@ -26,7 +27,7 @@ class InputFieldGroup:
     show: bool = False
     className: str = ''
 
-    def toJSON(self, pure: bool = False, exclude: AbstractSet | None = None) -> InputFieldGroupJson:
+    def toJSON(self, pure: bool = False, exclude: Set[str] | None = None) -> InputFieldGroupJson:
         js: InputFieldGroupJson = {
             'name': self.name,
             'title': self.title,
@@ -36,5 +37,5 @@ class InputFieldGroup:
         }
         if exclude is not None:
             for field in exclude:
-                del js[field]
+                del js[field]  # type: ignore
         return js
