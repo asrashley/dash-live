@@ -588,10 +588,6 @@ class DashMediaCreator:
                     self.options.aspect_ratio = width / height
         if self.options.duration == 0:
             self.options.duration = math.floor(float(info["format"]["duration"]))
-        # round duration to be a multiple of fragment duration
-        self.options.duration = int(
-            (self.options.duration // self.options.segment_duration) *
-            self.options.segment_duration)
         if self.options.framerate == 0:
             for s in info["streams"]:
                 try:
@@ -611,8 +607,8 @@ class DashMediaCreator:
         assert self.options.segment_duration > 0
 
         # Duration of a segment (in frames)
-        self.frame_segment_duration = math.floor(
-            self.options.segment_duration * self.options.framerate)
+        self.frame_segment_duration = int(math.floor(
+            self.options.segment_duration * self.options.framerate))
         assert self.frame_segment_duration > 0
 
         # The MP4 timescale to use for video
