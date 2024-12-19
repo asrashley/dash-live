@@ -35,8 +35,12 @@ from werkzeug.routing import BaseConverter, Map  # type: ignore
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_jwt_extended import JWTManager
 
-from dashlive.server import models
+from dashlive.server.models.all import create_all_tables
 from dashlive.server.models.connection import make_db_connection_string
+from dashlive.server.models.content_type import ContentType
+from dashlive.server.models.db import db
+from dashlive.server.models.token import Token, DecodedJwtToken
+from dashlive.server.models.user import User
 from dashlive.server.requesthandler.websocket import WebsocketHandler
 from dashlive.utils.json_object import JsonObject
 
@@ -157,35 +161,36 @@ def create_app(config: JsonObject | None = None,
         log_level = app.config.get(f'{module.upper()}_LOG_LEVEL', 'warning')
         log = logging.getLogger(module)
         log.setLevel(log_level.upper())
-    models.db.init_app(app)
+    db.init_app(app)
     jwt = JWTManager(app)
     login_manager.anonymous_user = AnonymousUser
     login_manager.init_app(app)
 
     # pylint: disable=unused-variable
     @jwt.user_lookup_loader
-    def user_loader_callback(_jwt_header, jwt_payload) -> models.User | None:
-        identity = jwt_payload['sub']
-        return models.User.get_one(username=identity)
+    def user_loader_callback(_jwt_header: dict, jwt_payload: DecodedJwtToken) -> User | None:
+        identity: str = jwt_payload['sub']
+        return User.get_one(username=identity)
 
     # pylint: disable=unused-variable
     @jwt.token_in_blocklist_loader
-    def check_if_token_revoked(_jwt_header, jwt_payload: dict) -> bool:
-        return models.Token.is_revoked(jwt_payload)
+    def check_if_token_revoked(_jwt_header: dict, jwt_payload: DecodedJwtToken) -> bool:
+        return Token.is_revoked(jwt_payload)
 
     @login_manager.user_loader
-    def user_lookup_callback(username):
-        return models.User.get_one(username=username)
+    def user_lookup_callback(username: str) -> User | None:
+        return User.get_one(username=username)
 
     with app.app_context():
-        models.db.create_all()
+        create_all_tables()
         if create_default_user:
-            models.User.populate_if_empty(
+            User.populate_if_empty(
                 app.config['DASH']['DEFAULT_ADMIN_USERNAME'],
-                app.config['DASH']['DEFAULT_ADMIN_PASSWORD'])
-        models.ContentType.populate_if_empty()
-        models.db.session.commit()
-        models.Token.prune_database(all_csrf=True)
+                app.config['DASH']['DEFAULT_ADMIN_PASSWORD'],
+                session=db.session)
+        ContentType.populate_if_empty(db.session)
+        Token.prune_database(all_csrf=True, session=db.session)
+        db.session.commit()
 
     app.register_blueprint(custom_tags)
     proxy_depth = app.config['DASH'].get('PROXY_DEPTH', 0)

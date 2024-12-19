@@ -1,7 +1,10 @@
-from .db import db
+from sqlalchemy import Table, Column, ForeignKey
 
-mediafile_keys = db.Table(
+from .base import Base
+
+mediafile_keys = Table(
     "mediafile_keys",
-    db.Column("media_pk", db.ForeignKey("media_file.pk"), primary_key=True),
-    db.Column("key_pk", db.ForeignKey("key.pk"), primary_key=True),
+    Base.metadata,
+    Column("media_pk", ForeignKey("media_file.pk"), primary_key=True),
+    Column("key_pk", ForeignKey("key.pk"), primary_key=True),
 )
