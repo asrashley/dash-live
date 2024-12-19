@@ -9,13 +9,13 @@ import contextlib
 import hashlib
 import logging
 from pathlib import Path
-from typing import cast, Callable, Optional
+from typing import cast, Callable, ClassVar, Optional, TYPE_CHECKING
 
 import flask
 from langcodes import tag_is_valid
 import sqlalchemy as sa
 from sqlalchemy.event import listen  # type: ignore
-from sqlalchemy.orm import Mapped, reconstructor, relationship  # type: ignore
+from sqlalchemy.orm import Mapped, reconstructor, relationship, mapped_column
 import sqlalchemy_jsonfield  # type: ignore
 
 from dashlive.mpeg.dash.representation import Representation
@@ -27,47 +27,51 @@ from dashlive.utils.json_object import JsonObject
 from dashlive.utils.lang import UNDEFINED_LANGS
 from dashlive.utils.string import str_or_none
 
-from .db import db
+from .base import Base
 from .error_reason import ErrorReason
 from .key import Key
-from .mixin import ModelMixin
 from .mediafile_keys import mediafile_keys
 from .mediafile_error import MediaFileError
+from .mixin import ModelMixin
 from .session import DatabaseSession
 
-class MediaFile(db.Model, ModelMixin):
-    """representation of one MP4 file"""
-    __plural__ = 'MediaFiles'
+if TYPE_CHECKING:
+    from .blob import Blob
+    from .stream import Stream
 
-    pk: Mapped[int] = db.Column('pk', sa.Integer, primary_key=True)
-    name = sa.Column('name', sa.String(200), nullable=False, unique=True, index=True)
-    stream_pk = sa.Column(
-        'stream', sa.Integer, sa.ForeignKey('Stream.pk'),
-        nullable=False)
-    stream = relationship('Stream', back_populates='media_files')
-    blob_pk = sa.Column('blob', sa.Integer, sa.ForeignKey('Blob.pk'),
-                        nullable=False, unique=True)
-    blob = relationship('Blob', back_populates='mediafile',
-                        cascade='all, delete')
-    rep = sa.Column(
+class MediaFile(ModelMixin["MediaFile"], Base):
+    """representation of one MP4 file"""
+    __plural__: ClassVar[str] = 'MediaFiles'
+    __tablename__: ClassVar[str] = 'media_file'
+
+    pk: Mapped[int] = mapped_column(sa.Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(sa.String(200), nullable=False, unique=True, index=True)
+    stream_pk: Mapped[int] = mapped_column(
+        'stream', sa.Integer, sa.ForeignKey('Stream.pk'), nullable=False)
+    stream: Mapped["Stream"] = relationship('Stream', back_populates='media_files')
+    blob_pk: Mapped[int] = mapped_column(
+        'blob', sa.Integer, sa.ForeignKey('Blob.pk'), nullable=False, unique=True)
+    blob: Mapped["Blob"] = relationship(
+        'Blob', back_populates='mediafile', cascade='all, delete')
+    rep: Mapped[JsonObject | None] = mapped_column(
         'rep',
         sqlalchemy_jsonfield.JSONField(
             enforce_string=True,
             enforce_unicode=False
         ),
         nullable=True)
-    bitrate = sa.Column(sa.Integer, default=0, index=True, nullable=False)
+    bitrate: Mapped[int] = mapped_column(sa.Integer, default=0, index=True, nullable=False)
 
     # 'video', 'audio' or 'text'
-    content_type = sa.Column(sa.String(64), nullable=True, index=True)
+    content_type: Mapped[str | None] = mapped_column(sa.String(64), nullable=True, index=True)
 
-    track_id = sa.Column(sa.Integer, index=True, nullable=True)
+    track_id: Mapped[int | None] = mapped_column(sa.Integer, index=True, nullable=True)
 
     # the fourcc of the audio/video/text codec
     # 'avc1', 'avc3', 'hev1', 'mp4a', 'ec3', 'ac_3', 'stpp'
-    codec_fourcc = sa.Column(sa.String(16), nullable=True, index=False)
+    codec_fourcc: Mapped[str | None] = mapped_column(sa.String(16), nullable=True, index=False)
 
-    encrypted = sa.Column(sa.Boolean, default=False, index=True, nullable=False)
+    encrypted: Mapped[bool] = mapped_column(sa.Boolean, default=False, index=True, nullable=False)
 
     encryption_keys: Mapped[list[Key]] = relationship(secondary=mediafile_keys, back_populates='mediafiles')
 
@@ -204,6 +208,7 @@ class MediaFile(db.Model, ModelMixin):
                          session: DatabaseSession | None = None) -> bool:
         from dashlive.drm.keymaterial import KeyMaterial
         from dashlive.drm.playready import PlayReady
+        from .db import db
 
         if session is None:
             session = db.session
@@ -280,6 +285,7 @@ class MediaFile(db.Model, ModelMixin):
                           blob_folder: Path | None = None
                           ) -> bool:
         from .blob import Blob
+        from .db import db
 
         if blob_folder is None:
             abs_path = self.absolute_path(self.stream.directory)

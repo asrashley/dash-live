@@ -5,26 +5,24 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-from typing import ClassVar, Optional, cast, TYPE_CHECKING
+from typing import Optional, cast, TYPE_CHECKING
 
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .db import db
+from .base import Base
 from .mixin import ModelMixin
 from .session import DatabaseSession
 
 if TYPE_CHECKING:
     from .adaptation_set import AdaptationSet
 
-
-class ContentType(db.Model, ModelMixin):
+class ContentType(ModelMixin["ContentType"], Base):
     """
     Table for holding RFC 6838 content types
     """
-
-    __plural__: ClassVar[str] = "ContentTypes"
-    __tablename__: ClassVar[str] = "content_type"
+    __plural__: str = 'ContentTypes'
+    __tablename__: str = "content_type"
 
     pk: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(64), nullable=False, unique=True)
@@ -39,10 +37,10 @@ class ContentType(db.Model, ModelMixin):
         return cast(Optional[ContentType], cls.get_one(session=session, **kwargs))
 
     @classmethod
-    def populate_if_empty(cls) -> None:
+    def populate_if_empty(cls, session: DatabaseSession) -> None:
         count: int = cls.count()
         if count > 0:
             return
         for name in ["application", "video", "audio", "text", "image"]:
             ct = ContentType(name=name)
-            db.session.add(ct)
+            session.add(ct)

@@ -9,11 +9,11 @@ import datetime
 import hashlib
 import logging
 from pathlib import Path
-from typing import cast, AbstractSet, Optional, NamedTuple
+from typing import cast, AbstractSet, ClassVar, Optional, NamedTuple
 
 import flask
 import sqlalchemy as sa
-from sqlalchemy.orm import relationship  # type: ignore
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 import sqlalchemy_jsonfield  # type: ignore
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
@@ -22,16 +22,15 @@ from dashlive.utils.json_object import JsonObject
 from dashlive.utils.string import str_or_none
 from dashlive.mpeg.dash.reference import StreamTimingReference
 
+from .base import Base
 from .blob import Blob
 from .db import db
 from .mediafile import MediaFile
 from .mixin import ModelMixin
 
-
 class TrackSummary(NamedTuple):
     content_type: str
     count: int
-
 
 class StreamTrackSummary(NamedTuple):
     video: TrackSummary
@@ -39,27 +38,27 @@ class StreamTrackSummary(NamedTuple):
     text: TrackSummary
 
 
-class Stream(db.Model, ModelMixin):
+class Stream(ModelMixin["Stream"], Base):
     """
     Model for each media stream
     """
-    __plural__ = 'Streams'
-    __tablename__ = 'Stream'
+    __plural__: ClassVar[str] = 'Streams'
+    __tablename__: ClassVar[str] = 'Stream'
 
-    pk = sa.Column(sa.Integer, primary_key=True)
-    title = sa.Column(sa.String(120))
-    directory = sa.Column(sa.String(32), unique=True, index=True)
-    marlin_la_url = sa.Column(sa.String(), nullable=True)
-    playready_la_url = sa.Column(sa.String(), nullable=True)
-    media_files = relationship('MediaFile', cascade="all, delete")
-    timing_ref = sa.Column(
+    pk: Mapped[int] = mapped_column(sa.Integer, primary_key=True)
+    title: Mapped[str] = mapped_column(sa.String(120))
+    directory: Mapped[str] = mapped_column(sa.String(32), unique=True, index=True)
+    marlin_la_url: Mapped[str | None] = mapped_column(sa.String(), nullable=True)
+    playready_la_url: Mapped[str | None] = mapped_column(sa.String(), nullable=True)
+    media_files: Mapped[list[MediaFile]] = relationship('MediaFile', cascade="all, delete")
+    timing_ref: Mapped[JsonObject | None] = mapped_column(
         'timing_reference',
         sqlalchemy_jsonfield.JSONField(
             enforce_string=True,
             enforce_unicode=False
         ),
         nullable=True)
-    defaults = sa.Column(
+    defaults: Mapped[JsonObject | None] = mapped_column(
         'defaults',
         sqlalchemy_jsonfield.JSONField(
             enforce_string=True,

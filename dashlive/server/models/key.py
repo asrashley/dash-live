@@ -1,29 +1,29 @@
-import re
-from typing import cast, AbstractSet, Optional
+from typing import cast, AbstractSet, ClassVar, Optional, TYPE_CHECKING
 
 import sqlalchemy as sa
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from dashlive.drm.keymaterial import KeyMaterial
 from dashlive.utils.json_object import JsonObject
 
+from .base import Base
 from .db import db
-from .mediafile_keys import mediafile_keys
 from .mixin import ModelMixin
+from .mediafile_keys import mediafile_keys
 
-def kid_validator(prop, value):
-    if not re.match(r'^[0-9a-f-]+$', value, re.IGNORECASE):
-        raise TypeError(f'Expected a hex value, not {value:s}')
-    return value.replace('-', '').lower()
+if TYPE_CHECKING:
+    from .mediafile import MediaFile
 
-class Key(db.Model, ModelMixin):
-    __plural__ = 'Keys'
+class Key(ModelMixin["Key"], Base):
+    __plural__: ClassVar[str] = 'Keys'
+    __tablename__: ClassVar[str] = 'key'
 
-    pk = sa.Column(sa.Integer, primary_key=True)
-    hkid = sa.Column(sa.String(34), nullable=False, unique=True, index=True)
-    hkey = sa.Column(sa.String(34), nullable=False)
-    computed = sa.Column(sa.Boolean, nullable=False)
-    halg = sa.Column(sa.String(16), nullable=True)
-    mediafiles: db.Mapped[list["MediaFile"]] = db.relationship(  # noqa: F821
+    pk: Mapped[int] = mapped_column(sa.Integer, primary_key=True)
+    hkid: Mapped[str] = mapped_column(sa.String(34), nullable=False, unique=True, index=True)
+    hkey: Mapped[str] = mapped_column(sa.String(34), nullable=False)
+    computed: Mapped[bool] = mapped_column(sa.Boolean, nullable=False)
+    halg: Mapped[str] = mapped_column(sa.String(16), nullable=True)
+    mediafiles: Mapped[list["MediaFile"]] = relationship(  # noqa: F821
         secondary=mediafile_keys, back_populates='encryption_keys')
 
     @property

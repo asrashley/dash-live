@@ -14,18 +14,24 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from dashlive.server.template_tags import timeDelta
 from dashlive.server.options.form_input_field import FormInputContext, FieldOption
 
-from .db import db
+from .base import Base
 from .mixin import ModelMixin
 from .stream import Stream
 
 if TYPE_CHECKING:
     from .adaptation_set import AdaptationSet
+    from .multi_period_stream import MultiPeriodStream
 
-class Period(db.Model, ModelMixin):
-    __plural__ = 'Periods'
+class Period(ModelMixin["Period"], Base):
+    __plural__: str = 'Periods'
+    __tablename__: str = 'period'
+    __table_args__: tuple = (
+        sa.UniqueConstraint("parent_pk", "pid",
+                            name="single_period_id_per_mp_stream"),
+    )
 
     pk: Mapped[int] = mapped_column(primary_key=True)
-    pid = sa.Column(sa.String(62), nullable=False)
+    pid: Mapped[str] = mapped_column(sa.String(62), nullable=False)
     parent_pk: Mapped[int] = mapped_column(sa.ForeignKey("mp_stream.pk"))
     parent: Mapped["MultiPeriodStream"] = relationship(back_populates="periods")  # noqa
     ordering: Mapped[int] = mapped_column(sa.Integer(), nullable=False)
@@ -37,11 +43,6 @@ class Period(db.Model, ModelMixin):
     adaptation_sets: Mapped[list["AdaptationSet"]] = relationship(
         back_populates="period", cascade="all, delete")
 
-    __table_args__ = (
-        sa.UniqueConstraint("parent_pk", "pid",
-                            name="single_period_id_per_mp_stream"),
-    )
-
     @classmethod
     def get(cls, **kwargs) -> Optional["Period"]:
         return cast(Period | None, cls.get_one(**kwargs))
@@ -50,8 +51,8 @@ class Period(db.Model, ModelMixin):
         ordering: FormInputContext = {
             'name': self.field_name('ordering'),
             'type': 'number',
-            'minvalue': 0,
-            'maxvalue': 999,
+            'min': 0,
+            'max': 999,
             'value': self.ordering,
         }
         pid: FormInputContext = {
@@ -91,6 +92,7 @@ class Period(db.Model, ModelMixin):
             'name': self.field_name('stream'),
             'type': 'select',
             'options': options,
+            'value': self.stream.directory,
         }
         return stream_select_field
 

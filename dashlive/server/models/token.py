@@ -7,14 +7,17 @@ from enum import IntEnum
 import hashlib
 from typing import ClassVar, Optional, TypedDict, TYPE_CHECKING
 
-from sqlalchemy import (  # type: ignore
-    Boolean, Column, DateTime, String, Integer,  # type: ignore
-    ForeignKey, func, delete)  # type: ignore
-from sqlalchemy.orm import relationship  # type: ignore
+from sqlalchemy import (
+    Boolean, DateTime, String, Integer,
+    ForeignKey, func, delete
+)
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.orm.exc import NoResultFound
 from flask_jwt_extended import create_access_token
 
+from .base import Base
 from .db import db
+from .session import DatabaseSession
 from .mixin import ModelMixin
 
 if TYPE_CHECKING:
@@ -41,26 +44,26 @@ KEY_LIFETIMES: dict[TokenType, timedelta] = {
     TokenType.CSRF: timedelta(minutes=20),
 }
 
-class Token(db.Model, ModelMixin):
+class Token(ModelMixin["Token"], Base):
     """
     Database table for storing refresh tokens and expired access tokens
     """
-    __tablename__ = 'Token'
-    __plural__ = 'Tokens'
+    __tablename__: ClassVar[str] = 'Token'
+    __plural__: ClassVar[str] = 'Tokens'
     API_KEY_LENGTH: ClassVar[int] = 32
     CSRF_KEY_LENGTH: ClassVar[int] = 32
     CSRF_SALT_LENGTH: ClassVar[int] = 8
     MAX_TOKEN_LENGTH: ClassVar[int] = max(
         36, 2 + CSRF_SALT_LENGTH + (3 * hashlib.sha1().digest_size // 2))
 
-    pk = Column(Integer, primary_key=True)
-    jti = Column(String(MAX_TOKEN_LENGTH), nullable=False)
-    token_type = Column(Integer, nullable=False)
-    user_pk = Column("user_pk", Integer, ForeignKey('User.pk'), nullable=True)
-    created = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
-    expires = Column(DateTime, nullable=True)
-    revoked = Column(Boolean, nullable=False)
-    user = relationship("User", back_populates="tokens")
+    pk: Mapped[int] = mapped_column(Integer, primary_key=True)
+    jti: Mapped[str] = mapped_column(String(MAX_TOKEN_LENGTH), nullable=False)
+    token_type: Mapped[int] = mapped_column(Integer, nullable=False)
+    user_pk: Mapped[int | None] = mapped_column("user_pk", Integer, ForeignKey('User.pk'), nullable=True)
+    created: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    expires: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    revoked: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    user: Mapped["User"] = relationship("User", back_populates="tokens")
 
     def has_expired(self) -> bool:
         if self.expires is None:
@@ -100,14 +103,14 @@ class Token(db.Model, ModelMixin):
             return token_type != 'access'
 
     @classmethod
-    def prune_database(cls, all_csrf: bool) -> None:
+    def prune_database(cls, all_csrf: bool, session: DatabaseSession) -> None:
         """
         Delete tokens that have expired from the database.
         """
         now = datetime.now()
         stmt = delete(cls).where(cls.expires < now)
-        db.session.execute(stmt)
+        session.execute(stmt)
         if all_csrf:
             stmt = delete(cls).where(cls.token_type == TokenType.CSRF)
-            db.session.execute(stmt)
-        db.session.commit()
+            session.execute(stmt)
+        session.commit()

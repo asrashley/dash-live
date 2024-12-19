@@ -24,7 +24,7 @@ from abc import ABC, abstractmethod
 from typing import AbstractSet, NamedTuple, Protocol
 
 from dashlive.mpeg.mp4 import BoxWithChildren, ContentProtectionSpecificBox
-from dashlive.server.models import Stream
+from dashlive.server.models.stream import Stream
 from dashlive.server.options.container import OptionsContainer
 
 from .key_tuple import KeyTuple
