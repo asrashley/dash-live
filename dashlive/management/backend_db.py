@@ -15,7 +15,10 @@ from flask_login import current_user
 from dashlive.drm.playready import PlayReady
 from dashlive.mpeg import mp4
 from dashlive.mpeg.dash.representation import Representation
-from dashlive.server import models
+from dashlive.server.models.db import db
+from dashlive.server.models.key import Key, KeyMaterial
+from dashlive.server.models.mediafile import MediaFile
+from dashlive.server.models.stream import Stream
 
 from .db_access import DatabaseAccess
 from .info import KeyInfo, StreamInfo
@@ -46,27 +49,27 @@ class BackendDatabaseAccess(DatabaseAccess):
     def get_media_info(self, with_details: bool = False) -> bool:
         if not self.login():
             return False
-        self.keys = models.Key.all()
-        self.streams = models.Stream.all()
+        self.keys = Key.all()
+        self.streams = Stream.all()
         return True
 
     def fetch_media_info(self, with_details: bool = False) -> bool:
         return current_user.is_authenticated
 
     def get_streams(self) -> list[StreamInfo]:
-        return list(models.Stream.all())
+        return list(Stream.all())
 
-    def get_stream_info(self, directory: str) -> models.Stream | None:
-        return models.Stream.get(directory=directory)
+    def get_stream_info(self, directory: str) -> Stream | None:
+        return Stream.get(directory=directory)
 
     def add_stream(self,
                    directory: str,
                    title: str,
                    marlin_la_url: str = '',
                    playready_la_url: str = '',
-                   **kwargs) -> models.Stream | None:
+                   **kwargs) -> Stream | None:
         self.log.info('Adding stream "%s" (%s)', title, directory)
-        stream = models.Stream(
+        stream = Stream(
             title=title, directory=directory, marlin_la_url=marlin_la_url,
             playready_la_url=playready_la_url)
         stream.add(commit=True)
@@ -74,7 +77,7 @@ class BackendDatabaseAccess(DatabaseAccess):
 
     def get_keys(self) -> dict[str, KeyInfo]:
         rv: dict[str, KeyInfo] = {}
-        for k in models.Key.all():
+        for k in Key.all():
             rv[k.hkid] = k
         return rv
 
@@ -82,16 +85,16 @@ class BackendDatabaseAccess(DatabaseAccess):
                 key: str | None = None, alg: str | None = None) -> bool:
         if key is None:
             computed = True
-        k = models.Key(hkid=kid, computed=computed, hkey=key, halg=alg)
+        k = Key(hkid=kid, computed=computed, hkey=key, halg=alg)
         if computed:
-            kid_km = models.KeyMaterial(kid)
-            k.hkey = models.KeyMaterial(raw=PlayReady.generate_content_key(kid_km.raw)).hex
+            kid_km = KeyMaterial(kid)
+            k.hkey = KeyMaterial(raw=PlayReady.generate_content_key(kid_km.raw)).hex
         k.add(commit=True)
         return True
 
     def upload_file(self, stream: StreamInfo, filename: Path) -> bool:
         name = Path(filename)
-        mf = models.MediaFile.get(stream=stream, name=name.stem)
+        mf: MediaFile | None = MediaFile.get(stream=stream, name=name.stem)
         if mf is not None:
             self.log.debug('File %s (%s) already part of stream %s',
                            filename, name.stem, stream.directory)
@@ -109,7 +112,7 @@ class BackendDatabaseAccess(DatabaseAccess):
 
     def index_file(self, stream: StreamInfo, name: Path) -> bool:
         name = Path(name)
-        mf = models.MediaFile.get(stream=stream, name=name.stem)
+        mf: MediaFile | None = MediaFile.get(stream=stream, name=name.stem)
         if not mf:
             self.log.error('Failed to find MediaFile %s', name.stem)
             return False
@@ -122,11 +125,11 @@ class BackendDatabaseAccess(DatabaseAccess):
         mf.representation = rep
         mf.encryption_keys = []
         for kid in rep.kids:
-            key_model = models.Key.get(hkid=kid.hex)
+            key_model = Key.get(hkid=kid.hex)
             if key_model is None:
-                key = models.KeyMaterial(
+                key = KeyMaterial(
                     raw=PlayReady.generate_content_key(kid.raw))
-                key_model = models.Key(hkid=kid.hex, hkey=key.hex, computed=True)
+                key_model = Key(hkid=kid.hex, hkey=key.hex, computed=True)
                 key_model.add()
             mf.encryption_keys.append(key_model)
         mf.content_type = rep.content_type
@@ -138,14 +141,14 @@ class BackendDatabaseAccess(DatabaseAccess):
         # bitrate cannot be None, therefore don't commit if
         # Representation class failed to discover the
         # bitrate
-        models.db.session.commit()
+        db.session.commit()
         self.log.info('Indexing file %s complete', mf.name)
         return True
 
     def set_timing_ref(self, stream: StreamInfo, timing_ref: str) -> bool:
-        mf = models.MediaFile.get(name=Path(timing_ref).stem)
+        mf = MediaFile.get(name=Path(timing_ref).stem)
         if not mf:
             return False
         stream.set_timing_reference(mf.as_stream_timing_reference())
-        models.db.session.commit()
+        db.session.commit()
         return True
