@@ -133,7 +133,10 @@ class ValidationChecks:
                    clause: str | None = None) -> bool:
         if not result:
             if msg is None:
-                msg = template.format(a, b)
+                if template is not None:
+                    msg = template.format(a, b)
+                else:
+                    msg = f"{a} != {b}"
             self.add_error(msg, clause)
         return result
 
