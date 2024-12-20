@@ -1,20 +1,19 @@
 import { describe, expect, test, vi } from "vitest";
-import { html } from "htm/preact";
 
-import { renderWithProviders } from "../../test/renderWithProviders.js";
-import { TextInput } from "./TextInput.js";
+import { renderWithProviders } from "../test/renderWithProviders";
+import { TextInput } from "./TextInput";
 
 describe("TextInput", () => {
   const onInput = vi.fn();
 
   test("matches snapshot", () => {
     const { asFragment, getBySelector } = renderWithProviders(
-      html`<${TextInput}
+      <TextInput
         name="tname"
-        onInput=${onInput}
+        onInput={onInput}
         placeholder="search..."
-        required=${true}
-      />`
+        required={true}
+      />
     );
     const inp = getBySelector(".form-control");
     expect(inp.className.trim()).toEqual("form-control is-valid");
@@ -25,11 +24,11 @@ describe("TextInput", () => {
 
   test("text input with error", () => {
     const { getBySelector } = renderWithProviders(
-      html`<${TextInput}
+      <TextInput
         name="tname"
-        onInput=${onInput}
+        onInput={onInput}
         error="input has an error"
-      />`
+      />
     );
     const inp = getBySelector(".form-control");
     expect(inp.className.trim()).toEqual("form-control is-invalid");
