@@ -37,7 +37,7 @@ from Crypto.Hash import SHA256
 from flask import render_template
 
 from dashlive.mpeg import mp4
-from dashlive.server.models import Stream
+from dashlive.server.models.stream import Stream
 from dashlive.server.options.container import OptionsContainer
 from dashlive.utils.buffered_reader import BufferedReader
 

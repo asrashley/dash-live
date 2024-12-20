@@ -1,48 +1,52 @@
 """
 Database model for a user of the app
 """
+from datetime import datetime
 import logging
 import secrets
-from typing import AbstractSet, ClassVar, Optional, cast
+from typing import AbstractSet, ClassVar, Optional, cast, TYPE_CHECKING
 
 from passlib.context import CryptContext  # type: ignore
-from sqlalchemy import (  # type: ignore
-    Boolean, Column, DateTime, String, Integer,
-)
-from sqlalchemy.orm import relationship  # type: ignore
+from sqlalchemy import DateTime, String, Integer
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from dashlive.utils.json_object import JsonObject
+
+from .base import Base
 from .db import db
 from .group import Group
 from .mixin import ModelMixin
+from .session import DatabaseSession
 
 password_context = CryptContext(
     schemes=["bcrypt", "pbkdf2_sha256"],
     deprecated="auto",
 )
 
+if TYPE_CHECKING:
+    from .token import Token
 
-class User(db.Model, ModelMixin):  # type: ignore
+class User(ModelMixin["User"], Base):
     """
     Database model for a user of the app
     """
-    __tablename__: ClassVar[str] = 'User'
-    __plural__: ClassVar[str] = 'Users'
+    __tablename__: str = 'User'
+    __plural__: str = 'Users'
 
     __RESET_TOKEN_LENGTH: ClassVar[int] = 16
     __GUEST_USERNAME: ClassVar[str] = '_AnonymousUser_'
 
-    pk = Column(Integer, primary_key=True)
-    username = Column(String(32), nullable=False, unique=True)
-    password = Column(String(512), nullable=False)
-    must_change = Column(Boolean, default=False)
+    pk: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String(32), nullable=False, unique=True)
+    password: Mapped[str] = mapped_column(String(512), nullable=False)
+    must_change: Mapped[bool] = mapped_column(default=False)
     # See http://tools.ietf.org/html/rfc5321#section-4.5.3 for email length limit
-    email = Column(String(256), unique=True, nullable=False)
-    last_login = Column(DateTime, nullable=True)
-    groups_mask = Column(Integer, nullable=False, default=Group.USER.value)
-    reset_expires = Column(DateTime, nullable=True)
-    reset_token = Column(String(__RESET_TOKEN_LENGTH * 2), nullable=True)
-    tokens = relationship("Token", back_populates="user", lazy='dynamic')
+    email: Mapped[str] = mapped_column(String(256), unique=True, nullable=False)
+    last_login: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    groups_mask: Mapped[int] = mapped_column(Integer, nullable=False, default=Group.USER.value)
+    reset_expires: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    reset_token: Mapped[str | None] = mapped_column(String(__RESET_TOKEN_LENGTH * 2), nullable=True)
+    tokens: Mapped[list["Token"]] = relationship("Token", back_populates="user", lazy='dynamic')
 
     @classmethod
     def get(cls, **kwargs) -> Optional["User"]:
@@ -164,7 +168,7 @@ class User(db.Model, ModelMixin):  # type: ignore
     groups = property(get_groups, set_groups)
 
     @classmethod
-    def populate_if_empty(cls, default_username: str, default_password: str) -> None:
+    def populate_if_empty(cls, default_username: str, default_password: str, session: DatabaseSession) -> None:
         count: int = cls.count()
         logging.debug('User count: %d', count)
         if count == 0:
@@ -176,7 +180,7 @@ class User(db.Model, ModelMixin):  # type: ignore
             )
             admin.set_password(default_password)
             logging.info('Adding default user account username="%s"', default_username)
-            db.session.add(admin)
+            session.add(admin)
 
     @classmethod
     def get_guest_user(cls) -> "User":

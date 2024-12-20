@@ -6,38 +6,41 @@
 #
 #############################################################################
 import contextlib
+from datetime import datetime
 from io import SEEK_SET
-from typing import cast, AbstractSet
 from pathlib import Path
+from typing import cast, AbstractSet, TYPE_CHECKING
 
 import sqlalchemy as sa
-from sqlalchemy.orm import relationship  # type: ignore
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 
 from dashlive.utils.date_time import to_iso_datetime
 from dashlive.utils.json_object import JsonObject
 
-from .db import db
+from .base import Base
 from .mixin import ModelMixin
 
-class Blob(ModelMixin, db.Model):
+if TYPE_CHECKING:
+    from .mediafile import MediaFile
+
+class Blob(ModelMixin["Blob"], Base):
     """
     Database model for a generic file store
     """
     __plural__ = 'Blobs'
     __tablename__ = 'Blob'
 
-    pk = sa.Column('pk', sa.Integer, primary_key=True)
-    filename = sa.Column(sa.String, unique=True, nullable=False)
-    created = sa.Column(
-        'created',
+    pk: Mapped[int] = mapped_column(sa.Integer, primary_key=True)
+    filename: Mapped[str] = mapped_column(sa.String, unique=True, nullable=False)
+    created: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
         server_default=sa.func.now())
-    size = sa.Column(sa.Integer, nullable=False)
-    sha1_hash = sa.Column(sa.String(42), nullable=False)
-    content_type = sa.Column(sa.String(64), nullable=False)
-    auto_delete = sa.Column(sa.Boolean, default=True, nullable=False)
-    mediafile = relationship("MediaFile", back_populates="blob")
+    size: Mapped[int] = mapped_column(sa.Integer, nullable=False)
+    sha1_hash: Mapped[str] = mapped_column(sa.String(42), nullable=False)
+    content_type: Mapped[str] = mapped_column(sa.String(64), nullable=False)
+    auto_delete: Mapped[bool] = mapped_column(sa.Boolean, default=True, nullable=False)
+    mediafile: Mapped["MediaFile"] = relationship("MediaFile", back_populates="blob")
 
     @classmethod
     def all(cls) -> list["Blob"]:

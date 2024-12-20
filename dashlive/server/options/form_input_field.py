@@ -1,34 +1,39 @@
-from typing import Any, NamedTuple, TypedDict
+from typing import Any, NamedTuple, NotRequired, TypedDict
 
 class FieldOption(NamedTuple):
     title: str
     value: str | int
     selected: bool
 
+class ColumnClassNames(NamedTuple):
+    left: str
+    middle: str
+    right: str
+
 class FormInputContext(TypedDict):
-    columns: tuple[str, str, str]
-    className: str
-    datalist_type: str
-    disabled: bool
-    error: str
-    featured: bool
-    href: str
-    link_title: str
-    max: int
-    min: int
-    maxlength: int
-    minlength: int
-    multiple: bool
+    columns: NotRequired[ColumnClassNames]
+    className: NotRequired[str]
+    datalist_type: NotRequired[str]
+    disabled: NotRequired[bool]
+    error: NotRequired[str]
+    featured: NotRequired[bool]
+    href: NotRequired[str]
+    link_title: NotRequired[str]
+    max: NotRequired[int]
+    min: NotRequired[int]
+    maxlength: NotRequired[int]
+    minlength: NotRequired[int]
+    multiple: NotRequired[bool]
     name: str
-    options: list[FieldOption]
-    pattern: str
-    placeholder: str
-    prefix: str
-    required: bool
-    rowClass: str
-    spellcheck: bool
-    step: int
-    title: str
-    text: str
+    options: NotRequired[list[FieldOption]]
+    pattern: NotRequired[str]
+    placeholder: NotRequired[str]
+    prefix: NotRequired[str]
+    required: NotRequired[bool]
+    rowClass: NotRequired[str]
+    spellcheck: NotRequired[bool]
+    step: NotRequired[int]
+    title: NotRequired[str]
+    text: NotRequired[str]
     type: str  # 'checkbox', 'datalist', 'number', 'select', 'radio', 'link', 'hidden'
     value: Any

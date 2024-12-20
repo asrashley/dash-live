@@ -14,15 +14,16 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 import sqlalchemy_jsonfield  # type: ignore
 
 from dashlive.server.options.form_input_field import FormInputContext
+from dashlive.utils.json_object import JsonObject
 
-from .db import db
+from .base import Base
 from .mixin import ModelMixin
 from .session import DatabaseSession
 
 if TYPE_CHECKING:
     from .period import Period
 
-class MultiPeriodStream(db.Model, ModelMixin):
+class MultiPeriodStream(ModelMixin["MultiPeriodStream"], Base):
     __ALLOWED_NAME_CHARS = r'A-Za-z0-9_.\-'
     __tablename__ = "mp_stream"
     __plural__ = 'MultiPeriodStreams'
@@ -33,7 +34,7 @@ class MultiPeriodStream(db.Model, ModelMixin):
     title: Mapped[str] = mapped_column(sa.String(120), nullable=False)
     periods: Mapped[list["Period"]] = relationship(
         back_populates='parent', order_by='Period.ordering', cascade="all, delete")
-    options = sa.Column(
+    options: Mapped[JsonObject | None] = mapped_column(
         'options',
         sqlalchemy_jsonfield.JSONField(
             enforce_string=True,
@@ -90,7 +91,7 @@ class MultiPeriodStream(db.Model, ModelMixin):
         Return all items from this table
         """
         return cast(
-            Iterable[cls], cls.get_all(session=session, order_by=order_by))
+            Iterable[MultiPeriodStream], cls.get_all(session=session, order_by=order_by))
 
     @classmethod
     def validate_values(cls,

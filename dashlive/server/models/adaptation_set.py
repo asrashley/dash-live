@@ -12,10 +12,11 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from dashlive.mpeg.dash.content_role import ContentRole
 
+from .base import Base
 from .content_type import ContentType
 from .db import db
-from .mediafile import MediaFile
 from .mixin import ModelMixin
+from .mediafile import MediaFile
 from .type_decorators import IntEnumType
 
 if TYPE_CHECKING:
@@ -31,7 +32,7 @@ class AdaptationSetJson(TypedDict):
     encrypted: bool
     lang: str | None
 
-class AdaptationSet(db.Model, ModelMixin):
+class AdaptationSet(ModelMixin["AdaptationSet"], Base):
     __plural__ = 'AdaptationSets'
     __tablename__ = "adaptation_set"
 

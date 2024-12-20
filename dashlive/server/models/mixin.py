@@ -1,23 +1,24 @@
-from typing import AbstractSet, Iterable, Optional
+from typing import AbstractSet, Generic, Iterable, Optional, TypeVar
 
 from sqlalchemy import Column
-from sqlalchemy.orm import class_mapper, ColumnProperty, RelationshipProperty  # type: ignore
-from sqlalchemy.orm.dynamic import AppenderQuery  # type: ignore
+from sqlalchemy.orm import class_mapper, ColumnProperty, RelationshipProperty
+from sqlalchemy.orm.dynamic import AppenderQuery
 
 from dashlive.utils.json_object import JsonObject
 
 from .db import db
 from .session import DatabaseSession
 
-class ModelMixin:
+T = TypeVar('T')
+class ModelMixin(Generic[T]):
     """
-    Common utility functions to add to all models
+    Mixin that adds some common helper functions to a model
     """
 
     @classmethod
     def get_all(cls,
                 session: DatabaseSession | None = None,
-                order_by: list[Column] | None = None) -> Iterable["ModelMixin"]:
+                order_by: list[Column] | None = None) -> Iterable[T]:
         """
         Return all items from this table
         """
@@ -31,7 +32,7 @@ class ModelMixin:
     @classmethod
     def get_one(cls,
                 session: DatabaseSession | None = None,
-                **kwargs) -> Optional["ModelMixin"]:
+                **kwargs) -> Optional[T]:
         """
         Get one object from a model, or None if not found
         """
@@ -44,7 +45,7 @@ class ModelMixin:
     def search(clz, max_items: int | None = None,
                order_by: list[Column] | None = None,
                session: DatabaseSession | None = None,
-               **kwargs) -> list[db.Model]:
+               **kwargs) -> Iterable[T]:
         query = db.select(clz)
         if kwargs:
             query = query.filter_by(**kwargs)
@@ -113,7 +114,7 @@ class ModelMixin:
         if commit:
             db.session.commit()
 
-    def delete(self, commit=False) -> None:
+    def delete(self, commit: bool = False) -> None:
         db.session.delete(self)
         if commit:
             db.session.commit()
