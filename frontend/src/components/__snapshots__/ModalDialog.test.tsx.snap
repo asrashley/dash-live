@@ -1,0 +1,56 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ModalDialog component > matches snapshot 1`] = `
+<DocumentFragment>
+  <div
+    aria-modal="true"
+    class="modal fade show"
+    id="dialog-box"
+    role="dialog"
+    style="display: block;"
+    tabindex="-1"
+  >
+    <div
+      class="modal-dialog"
+      role="document"
+    >
+      <div
+        class="modal-content"
+      >
+        <div
+          class="modal-header"
+        >
+          <h5
+            class="modal-title"
+          >
+            ModalDialog Test
+          </h5>
+          <button
+            aria-label="Close"
+            class="close btn-close"
+            type="button"
+          />
+        </div>
+        <div
+          class="modal-body m-2"
+        >
+          <div>
+            <p>
+              This is the dialog body
+            </p>
+          </div>
+        </div>
+        <div
+          class="modal-footer"
+        >
+          <div>
+            <p>
+              This is the dialog footer
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;

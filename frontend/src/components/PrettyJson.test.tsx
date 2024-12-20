@@ -1,8 +1,7 @@
 import { describe, expect, test } from "vitest";
-import { html } from "htm/preact";
 
-import { renderWithProviders } from "../../test/renderWithProviders.js";
-import { PrettyJson } from "./PrettyJson.js";
+import { renderWithProviders } from "../test/renderWithProviders";
+import { PrettyJson } from "./PrettyJson";
 
 describe("PrettyJson", () => {
   const data = {
@@ -23,7 +22,7 @@ describe("PrettyJson", () => {
 
   test("should match snapshot", () => {
     const { asFragment } = renderWithProviders(
-      html`<${PrettyJson} className="pretty" data=${data} />`
+      <PrettyJson className="pretty" data={data} />
     );
     expect(asFragment()).toMatchSnapshot();
   });

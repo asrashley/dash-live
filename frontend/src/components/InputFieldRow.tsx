@@ -1,8 +1,19 @@
-import { html } from "htm/preact";
-import { useComputed } from "@preact/signals";
+import { type Signal, useComputed } from "@preact/signals";
 
-import { FormRow } from "./FormRow.js";
-import { Input } from "./Input.js";
+import { FormRow, FormRowProps } from "./FormRow.js";
+import { Input, InputProps } from "./Input.js";
+
+export interface InputFieldRowProps extends Omit<InputProps, 'title'> {
+  data: Signal<object>;
+  fullName: string;
+  layout: FormRowProps['layout'];
+  mode: 'shortName' | 'fullName' | 'cgi';
+  name: string;
+  prefix?: string;
+  shortName: string;
+  text: FormRowProps['text'];
+  title: string;
+}
 
 export function InputFieldRow({
   name: cgiName,
@@ -15,7 +26,7 @@ export function InputFieldRow({
   mode,
   text,
   ...props
-}) {
+}: InputFieldRowProps) {
   const value = useComputed(() => {
     if (mode === "shortName") {
       return data.value[shortName];
@@ -29,7 +40,7 @@ export function InputFieldRow({
     return data.value[fullName];
   });
   const name = mode === 'shortName' ? shortName : mode === 'cgi' ? cgiName: `${prefix}${prefix ? '__': ''}${fullName}`;
-  return html`<${FormRow} name="${name}" label="${title}" text="${text}" layout=${layout} ...${props} >
-    <${Input} ...${props} name="${name}" value=${value} title="${title}"
-  /><//>`;
+  return <FormRow name={name} label={title} text={text} layout={layout} {...props} >
+    <Input {...props} name={name} value={value} title={title}/>
+    </FormRow>;
 }

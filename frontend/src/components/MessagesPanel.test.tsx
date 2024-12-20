@@ -1,21 +1,22 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { html } from "htm/preact";
 import { signal } from "@preact/signals";
-
-import { renderWithProviders } from "../../test/renderWithProviders.js";
-import { MessagesPanel } from "./MessagesPanel.js";
-import { useMessages } from "../hooks/useMessages.js";
 import { fireEvent } from "@testing-library/preact";
 
-vi.mock("../hooks/useMessages.js");
+import { renderWithProviders } from "../test/renderWithProviders";
+import { MessagesPanel } from "./MessagesPanel";
+import { useMessages } from "../hooks/useMessages";
+import { MessageType } from "../types/MessageType";
+
+vi.mock("../hooks/useMessages");
 
 describe("MessagesPanel", () => {
   const useMessagesMock = vi.mocked(useMessages);
+  const appendMessage = vi.fn();
   const removeAlert = vi.fn();
-  const alerts = signal([]);
+  const alerts = signal<MessageType[]>([]);
 
   beforeEach(() => {
-    useMessagesMock.mockReturnValue({ alerts, removeAlert });
+    useMessagesMock.mockReturnValue({ alerts, appendMessage, removeAlert });
   });
 
   afterEach(() => {
@@ -36,7 +37,7 @@ describe("MessagesPanel", () => {
       },
     ];
     const { asFragment, getBySelector, getByText } = renderWithProviders(
-      html`<${MessagesPanel} />`
+      <MessagesPanel />
     );
     getBySelector(".messages-panel");
     getByText(alerts.value[0].text);
@@ -52,7 +53,7 @@ describe("MessagesPanel", () => {
         level: "warning",
       },
     ];
-    const { getBySelector } = renderWithProviders(html`<${MessagesPanel} />`);
+    const { getBySelector } = renderWithProviders(<MessagesPanel />);
 
     const btn = getBySelector("#alert_12 .btn-close");
     fireEvent.click(btn);

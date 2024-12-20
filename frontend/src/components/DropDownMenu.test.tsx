@@ -1,9 +1,8 @@
 import { vi, describe, expect, test } from "vitest";
-import { html } from "htm/preact";
 import { fireEvent } from "@testing-library/preact";
 
-import { renderWithProviders } from "../../test/renderWithProviders.js";
-import { DropDownMenu} from './DropDownMenu.js';
+import { renderWithProviders } from "../test/renderWithProviders";
+import { DropDownMenu} from './DropDownMenu';
 
 describe('DropDownMenu', () => {
     test("should display drop-down menu", () => {
@@ -19,10 +18,10 @@ describe('DropDownMenu', () => {
         }
         ];
         const { asFragment, getByTestId, queryBySelector } = renderWithProviders(
-          html`<${DropDownMenu} menu=${menu} />`
+          <DropDownMenu menu={menu} />
         );
-        expect(getByTestId('ddi_0').textContent).toEqual('item one');
-        expect(getByTestId('ddi_1').textContent).toEqual('item two');
+        expect((getByTestId('ddi_0') as HTMLElement).textContent).toEqual('item one');
+        expect((getByTestId('ddi_1') as HTMLElement).textContent).toEqual('item two');
 
         const elt = queryBySelector('.dropdown > a');
         expect(elt).not.toBeNull();
@@ -31,13 +30,13 @@ describe('DropDownMenu', () => {
 
         fireEvent.click(elt);
         expect(elt.className).toEqual('btn btn-secondary dropdown-toggle show');
-        fireEvent.click(getByTestId('ddi_0').querySelector('a'));
+        fireEvent.click((getByTestId('ddi_0') as HTMLElement).querySelector('a'));
         expect(menu[0].onClick).toHaveBeenCalledTimes(1);
         expect(menu[1].onClick).not.toHaveBeenCalled();
         expect(elt.className).toEqual('btn btn-secondary dropdown-toggle');
 
         fireEvent.click(elt);
-        fireEvent.click(getByTestId('ddi_1').querySelector('a'));
+        fireEvent.click((getByTestId('ddi_1') as HTMLElement).querySelector('a'));
         expect(menu[0].onClick).toHaveBeenCalledTimes(1);
         expect(menu[1].onClick).toHaveBeenCalledTimes(1);
       });

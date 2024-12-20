@@ -1,8 +1,7 @@
 import { describe, expect, test } from "vitest";
-import { html } from "htm/preact";
 
-import { renderWithProviders } from "../../test/renderWithProviders.js";
-import { DataListInput } from "./DataListInput.js";
+import { renderWithProviders } from "../test/renderWithProviders";
+import { DataListInput } from "./DataListInput";
 
 describe("DataListInput", () => {
   const options = [
@@ -20,7 +19,7 @@ describe("DataListInput", () => {
 
   test.each(["text", "number"])("should display %s data list", (type) => {
     const { asFragment, getBySelector, getAllBySelector } = renderWithProviders(
-      html`<${DataListInput} type=${type} name="dltest" options=${options} />`
+      <DataListInput type={type} name="dltest" options={options} />
     );
     expect(getBySelector('input[name="dltest"]').getAttribute('type')).toEqual(type);
     getBySelector("#list-dltest");

@@ -1,9 +1,22 @@
-import { html } from "htm/preact";
+import { JSX } from 'preact';
+import { type Signal } from '@preact/signals';
 
 import { DataListInput } from './DataListInput.js';
 import { MultiSelectInput } from './MultiSelectInput.js';
 import { RadioInput } from './RadioInput.js';
 import { SelectInput } from './SelectInput.js';
+import { SelectOptionType } from '../types/SelectOptionType.js';
+
+export interface InputProps extends Omit<JSX.InputHTMLAttributes<HTMLInputElement>, 'className' | 'name' | 'value'> {
+  className?: string;
+  datalist_type?: 'text' | 'number'
+  error?: string;
+  name: string;
+  options?: SelectOptionType[];
+  value: Signal<number | string | boolean>;
+  validation: "was-validated" | "has-validation" | "needs-validation";
+  setValue: (name: string, value: string | boolean) => void;
+}
 
 export function Input({
   className = "",
@@ -16,7 +29,7 @@ export function Input({
   validation,
   title,
   options,
-}) {
+}: InputProps) {
   const inputClass =
     type === "checkbox"
       ? "form-check-input"
@@ -34,27 +47,26 @@ export function Input({
     className: `${inputClass}${validationClass} ${className}`,
     title,
     id: `model-${name}`,
-    value: value.value,
+    value: typeof value.value === "number" ? value.value : `${value.value}`,
     "aria-describedby": `field-${name}`,
     onInput: (ev) => {
       const { target } = ev;
       setValue(name, target.type === "checkbox" ? target.checked : target.value);
     },
   };
-  if (type === "checkbox") {
-    inpProps.checked = value.value === true || value.value === "1";
-  }
   switch (type) {
     case "radio":
-      return html`<${RadioInput} setValue=${setValue} options=${options} ...${inpProps} />`;
+      return <RadioInput setValue={setValue} options={options} {...inpProps} />;
     case "select":
-      return html`<${SelectInput} options=${options} ...${inpProps} />`;
+      return <SelectInput options={options} {...inpProps} />;
     case "multiselect":
-      return html`<${MultiSelectInput} setValue=${setValue} options=${options} ...${inpProps} />`;
+      return <MultiSelectInput setValue={setValue} options={options} {...inpProps} />;
     case "datalist":
       inpProps.type = datalist_type ?? 'text';
-      return html`<${DataListInput} options=${options} ...${inpProps} />`;
+      return <DataListInput options={options} {...inpProps} />;
+    case 'checkbox':
+      return <input checked={value.value === true || value.value === "1"} {...inpProps} />;
     default:
-      return html`<input ...${inpProps} />`;
+      return <input {...inpProps} />;
   }
 }
