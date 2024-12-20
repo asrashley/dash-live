@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 from lxml import etree as ET
 import requests
+from werkzeug.utils import cached_property
 
 from .concurrent_pool import ConcurrentWorkerPool
 from .options import ValidatorOptions
@@ -32,15 +33,11 @@ class HttpResponse:
             self.status = response.reason
         self._pos = 0
 
-    @property
+    @cached_property
     def xml(self):
         if self._xml is None:
             self._xml = ET.fromstring(self.response.text)
         return self._xml
-
-    @property
-    def forms(self, id) -> dict:
-        raise Exception("Not implemented")
 
     @property
     def json(self) -> dict:
