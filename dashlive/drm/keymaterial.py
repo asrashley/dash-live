@@ -22,10 +22,13 @@
 
 import base64
 import binascii
+from collections.abc import Set
 import re
-from typing import AbstractSet, ClassVar, Optional
+from typing import ClassVar, NotRequired, Optional, TypedDict
 
-from dashlive.utils.json_object import JsonObject
+class KeyMaterialJson(TypedDict):
+    _type: NotRequired[str]
+    hex: NotRequired[str]
 
 class KeyMaterial:
     length: ClassVar[int] = 16
@@ -78,19 +81,14 @@ class KeyMaterial:
 
     b64 = property(to_base64, from_base64)
 
-    def toJSON(self, pure=True, exclude: AbstractSet | None = None) -> JsonObject:
+    def toJSON(self, pure=True, exclude: Set[str] | None = None) -> KeyMaterialJson | str:
         if pure:
             return self.to_hex()
-        rv: JsonObject = {
-            '_type': KeyMaterial.__name__,
-            'hex': self.to_hex(),
-        }
-        if exclude is None:
-            return rv
-        if '_type' in exclude:
-            del rv['_type']
-        if 'hex' in exclude:
-            del rv['hex']
+        rv: KeyMaterialJson = {}
+        if exclude is None or '_type' not in exclude:
+            rv['_type'] = KeyMaterial.__name__
+        if exclude is None or 'hex' not in exclude:
+            rv['hex'] = self.to_hex()
         return rv
 
     def __len__(self):
