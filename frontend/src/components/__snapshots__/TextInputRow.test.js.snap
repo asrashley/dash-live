@@ -1,0 +1,33 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`TextInputRow > should match snapshot 1`] = `
+<DocumentFragment>
+  <div
+    class="row mb-2 form-group "
+  >
+    <label
+      class="col-2 col-form-label"
+      for="field-tirtest"
+    >
+      the input label:
+    </label>
+    <div
+      class="col-7"
+    >
+      <input
+        class="form-control is-valid"
+        id="field-tirtest"
+        name="tirtest"
+        placeholder="search..."
+        required=""
+        type="text"
+      />
+    </div>
+    <div
+      class="col-3 form-text"
+    >
+      description of the input
+    </div>
+  </div>
+</DocumentFragment>
+`;

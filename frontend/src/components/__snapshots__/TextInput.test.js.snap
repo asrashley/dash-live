@@ -1,0 +1,14 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`TextInput > matches snapshot 1`] = `
+<DocumentFragment>
+  <input
+    class="form-control is-valid"
+    id="field-tname"
+    name="tname"
+    placeholder="search..."
+    required=""
+    type="text"
+  />
+</DocumentFragment>
+`;

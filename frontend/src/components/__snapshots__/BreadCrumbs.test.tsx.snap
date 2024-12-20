@@ -1,0 +1,63 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`BreadCrumbs > should display Breadcrumbs 1`] = `
+<DocumentFragment>
+  <header>
+    
+          
+    <div
+      class="breadcrumbs"
+    >
+      
+            
+      <ol
+        class="breadcrumb"
+      >
+        <li
+          class="breadcrumb-item "
+          id="crumb_0"
+        >
+          <a
+            href="/"
+            title="Home"
+          >
+            Home
+          </a>
+        </li>
+        <li
+          class="breadcrumb-item "
+          id="crumb_1"
+        >
+          <a
+            href="/multi-period-streams"
+            title="multi-period-streams"
+          >
+            multi-period-streams
+          </a>
+        </li>
+        <li
+          class="breadcrumb-item active"
+          id="crumb_2"
+        >
+          .add
+        </li>
+      </ol>
+    </div>
+    
+        
+  </header>
+  <div
+    id="app"
+  >
+    <div>
+      <div>
+        <div
+          data-location="/multi-period-streams/.add"
+          style="display: none;"
+        />
+        <div />
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
