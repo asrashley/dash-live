@@ -1,10 +1,10 @@
 import { createContext } from "preact";
 import { useContext, useEffect } from "preact/hooks";
-import { useSignal, useComputed } from "@preact/signals";
+import { useSignal, useComputed, type Signal } from "@preact/signals";
 
-import { EndpointContext } from "../endpoints.js";
+import { EndpointContext } from "../endpoints";
 
-export const AllStreamsContext = createContext();
+export const AllStreamsContext = createContext(null);
 
 function findStreamTracks(stream) {
   const tracks = new Map();
@@ -42,7 +42,14 @@ export function decorateAllStreams(streams) {
   });
 }
 
-export function useAllStreams() {
+export interface UseAllStreamsHook {
+  allStreams: Signal<object[]>,
+  loaded: Signal<boolean>,
+  streamsMap: Signal<Map<string, object>>,
+  error: Signal<string | null>;
+ };
+
+export function useAllStreams(): UseAllStreamsHook {
   const apiRequests = useContext(EndpointContext);
   const streams = useSignal();
   const loaded = useSignal(false);
