@@ -1,0 +1,74 @@
+{
+  "csrf_tokens": {
+    "streams": "OIXwYv8kb%27J4ulLi0tgrS8gzzAieNe4o3gouA%3D%27"
+  },
+  "model": {
+    "name": "demo",
+    "options": {
+      "ntps": "europe-ntp",
+      "st": true
+    },
+    "periods": [
+      {
+        "duration": "PT1M4S",
+        "ordering": 1,
+        "parent": 1,
+        "pid": "p2",
+        "pk": 2,
+        "start": "PT0S",
+        "stream": 2,
+        "tracks": [
+          {
+            "codec_fourcc": "avc1",
+            "content_type": "video",
+            "encrypted": false,
+            "lang": null,
+            "pk": 3,
+            "role": "main",
+            "track_id": 1
+          },
+          {
+            "codec_fourcc": "mp4a",
+            "content_type": "audio",
+            "encrypted": false,
+            "lang": null,
+            "pk": 4,
+            "role": "main",
+            "track_id": 2
+          }
+        ]
+      },
+      {
+        "duration": "PT51S",
+        "ordering": 2,
+        "parent": 1,
+        "pid": "p1",
+        "pk": 1,
+        "start": "PT0S",
+        "stream": 1,
+        "tracks": [
+          {
+            "codec_fourcc": "avc3",
+            "content_type": "video",
+            "encrypted": false,
+            "lang": null,
+            "pk": 1,
+            "role": "main",
+            "track_id": 1
+          },
+          {
+            "codec_fourcc": "mp4a",
+            "content_type": "audio",
+            "encrypted": false,
+            "lang": null,
+            "pk": 2,
+            "role": "main",
+            "track_id": 2
+          }
+        ]
+      }
+    ],
+    "pk": 1,
+    "title": "first title"
+  }
+}
