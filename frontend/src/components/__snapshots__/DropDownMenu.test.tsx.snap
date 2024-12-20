@@ -1,0 +1,40 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`DropDownMenu > should display drop-down menu 1`] = `
+<DocumentFragment>
+  <div
+    class="dropdown"
+  >
+    <a
+      aria-expanded="false"
+      class="btn btn-secondary dropdown-toggle"
+      href="#"
+      role="button"
+    />
+    <ul
+      class="dropdown-menu "
+    >
+      <li
+        data-testid="ddi_0"
+      >
+        <a
+          class="dropdown-item"
+          href="#"
+        >
+          item one
+        </a>
+      </li>
+      <li
+        data-testid="ddi_1"
+      >
+        <a
+          class="dropdown-item"
+          href="/two"
+        >
+          item two
+        </a>
+      </li>
+    </ul>
+  </div>
+</DocumentFragment>
+`;

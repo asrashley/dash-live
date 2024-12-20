@@ -1,0 +1,22 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`LoadingSpinner > should display spinner 1`] = `
+<DocumentFragment>
+  <div
+    class="lds-ring"
+  >
+    <div
+      class="lds-seg"
+    />
+    <div
+      class="lds-seg"
+    />
+    <div
+      class="lds-seg"
+    />
+    <div
+      class="lds-seg"
+    />
+  </div>
+</DocumentFragment>
+`;

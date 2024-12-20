@@ -1,0 +1,13 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`TimeDeltaInput > matches snapshot 1`] = `
+<DocumentFragment>
+  <input
+    class="form-control is-valid"
+    min="00:00:00"
+    name="tdi"
+    step="1"
+    type="time"
+  />
+</DocumentFragment>
+`;

@@ -1,0 +1,2542 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
+<DocumentFragment>
+  <div
+    data-location="/multi-period-streams/demo"
+    style="display: none;"
+  />
+  <div
+    class="messages-panel"
+  />
+  <div
+    class="card"
+    id="edit_mps_form"
+  >
+    <div
+      class="card-header"
+    >
+      <h2>
+        Editing Multi-Period stream "demo"
+      </h2>
+    </div>
+    <div
+      class="card-body"
+    >
+      <div
+        class=""
+      >
+        <div
+          class="row mb-2 form-group "
+        >
+          <label
+            class="col-2 col-form-label"
+            for="field-name"
+          >
+            Name:
+          </label>
+          <div
+            class="col-7"
+          >
+            <input
+              class="form-control is-valid"
+              id="field-name"
+              name="name"
+              type="text"
+            />
+          </div>
+          <div
+            class="col-3 form-text"
+          >
+            Unique name for this stream
+          </div>
+        </div>
+        <div
+          class="row mb-2 form-group "
+        >
+          <label
+            class="col-2 col-form-label"
+            for="field-title"
+          >
+            Title:
+          </label>
+          <div
+            class="col-7"
+          >
+            <input
+              class="form-control is-valid"
+              id="field-title"
+              name="title"
+              type="text"
+            />
+          </div>
+          <div
+            class="col-3 form-text"
+          >
+            Title for this stream
+          </div>
+        </div>
+        <div
+          class="row mb-2 form-group "
+        >
+          <label
+            class="col-2 col-form-label"
+            for="field-options"
+          >
+            Stream Options:
+          </label>
+          <div
+            class="col-10"
+          >
+            <div
+              class="d-flex flex-row"
+            >
+              <div
+                class="json bg-secondary-subtle border border-dark-subtle flex-fill me-1"
+              >
+                <span
+                  class="key"
+                >
+                  ntps
+                </span>
+                : 
+                <span
+                  class="value"
+                >
+                  "europe-ntp"
+                </span>
+                , 
+                <span
+                  class="key"
+                >
+                  st
+                </span>
+                : 
+                <span
+                  class="value"
+                >
+                  true
+                </span>
+              </div>
+              <button
+                class="btn btn-primary"
+              >
+                Options
+              </button>
+            </div>
+          </div>
+        </div>
+        <div
+          class="row mb-2 form-group has-validation"
+        >
+          <label
+            class="col-2 col-form-label"
+            for="field-periods"
+          >
+            Periods:
+          </label>
+          <div
+            class="col-10"
+          >
+            <div>
+              <div
+                class="period-table border"
+              >
+                <div
+                  class="row bg-secondary text-white table-head"
+                >
+                  <div
+                    class="col period-ordering"
+                  >
+                    #
+                  </div>
+                  <div
+                    class="col period-id"
+                  >
+                    ID
+                  </div>
+                  <div
+                    class="col period-stream"
+                  >
+                    Stream
+                  </div>
+                  <div
+                    class="col period-start"
+                  >
+                    Start Time
+                  </div>
+                  <div
+                    class="col period-duration"
+                  >
+                    Duration
+                  </div>
+                  <div
+                    class="col period-tracks"
+                  >
+                    Tracks
+                  </div>
+                </div>
+                <ul>
+                  <li
+                    class="row mt-1 p-1 undefined "
+                  >
+                    <div
+                      class="col period-ordering"
+                    >
+                      <div
+                        class="dropdown"
+                      >
+                        <a
+                          aria-expanded="false"
+                          class=" dropdown-toggle"
+                          href="#"
+                          role="button"
+                        >
+                          <span
+                            class="bi icon bi-three-dots "
+                            role="icon"
+                          />
+                        </a>
+                        <ul
+                          class="dropdown-menu "
+                        >
+                          <li
+                            data-testid="ddi_0"
+                          >
+                            <a
+                              class="dropdown-item"
+                              href="#"
+                            >
+                              Add another Period
+                            </a>
+                          </li>
+                          <li
+                            data-testid="ddi_1"
+                          >
+                            <a
+                              class="dropdown-item"
+                              href="#"
+                            >
+                              Delete Period
+                            </a>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                    <div
+                      class="col period-id"
+                    >
+                      <input
+                        class="form-control is-valid"
+                        id="field-pid_undefined"
+                        name="pid_undefined"
+                        required=""
+                        type="text"
+                      />
+                    </div>
+                    <div
+                      class="col period-stream"
+                    >
+                      <select
+                        class="form-select"
+                        name="stream_undefined"
+                      >
+                        <option
+                          value=""
+                        >
+                          --Select a stream--
+                        </option>
+                        <option
+                          value="1"
+                        >
+                          Big Buck Bunny
+                        </option>
+                        <option
+                          value="2"
+                        >
+                          Tears of Steel
+                        </option>
+                      </select>
+                    </div>
+                    <div
+                      class="col period-start"
+                    >
+                      <input
+                        class="form-control is-valid"
+                        min="00:00:00"
+                        name="start_undefined"
+                        step="1"
+                        type="time"
+                      />
+                    </div>
+                    <div
+                      class="col period-duration"
+                    >
+                      <input
+                        class="form-control is-valid"
+                        min="00:00:01"
+                        name="duration_undefined"
+                        step="1"
+                        type="time"
+                      />
+                    </div>
+                    <div
+                      class="col period-tracks"
+                    />
+                  </li>
+                  <li
+                    class="row mt-1 p-1 undefined "
+                  >
+                    <div
+                      class="col period-ordering"
+                    >
+                      <div
+                        class="dropdown"
+                      >
+                        <a
+                          aria-expanded="false"
+                          class=" dropdown-toggle"
+                          href="#"
+                          role="button"
+                        >
+                          <span
+                            class="bi icon bi-three-dots "
+                            role="icon"
+                          />
+                        </a>
+                        <ul
+                          class="dropdown-menu "
+                        >
+                          <li
+                            data-testid="ddi_0"
+                          >
+                            <a
+                              class="dropdown-item"
+                              href="#"
+                            >
+                              Add another Period
+                            </a>
+                          </li>
+                          <li
+                            data-testid="ddi_1"
+                          >
+                            <a
+                              class="dropdown-item"
+                              href="#"
+                            >
+                              Delete Period
+                            </a>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                    <div
+                      class="col period-id"
+                    >
+                      <input
+                        class="form-control is-valid"
+                        id="field-pid_undefined"
+                        name="pid_undefined"
+                        required=""
+                        type="text"
+                      />
+                    </div>
+                    <div
+                      class="col period-stream"
+                    >
+                      <select
+                        class="form-select"
+                        name="stream_undefined"
+                      >
+                        <option
+                          value=""
+                        >
+                          --Select a stream--
+                        </option>
+                        <option
+                          value="1"
+                        >
+                          Big Buck Bunny
+                        </option>
+                        <option
+                          value="2"
+                        >
+                          Tears of Steel
+                        </option>
+                      </select>
+                    </div>
+                    <div
+                      class="col period-start"
+                    >
+                      <input
+                        class="form-control is-valid"
+                        min="00:00:00"
+                        name="start_undefined"
+                        step="1"
+                        type="time"
+                      />
+                    </div>
+                    <div
+                      class="col period-duration"
+                    >
+                      <input
+                        class="form-control is-valid"
+                        min="00:00:01"
+                        name="duration_undefined"
+                        step="1"
+                        type="time"
+                      />
+                    </div>
+                    <div
+                      class="col period-tracks"
+                    />
+                  </li>
+                </ul>
+                <div
+                  class="btn-toolbar"
+                >
+                  <button
+                    class="btn btn-primary btn-sm m-2"
+                  >
+                    Add a Period
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="btn-toolbar"
+        >
+          <button
+            class="btn btn-success m-2"
+            disabled=""
+          >
+            Save Changes
+          </button>
+          <button
+            class="btn btn-danger m-2"
+          >
+            Delete Stream
+          </button>
+          <a
+            class="btn m-2 btn-primary"
+            href="/multi-period-streams"
+          >
+            Back
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`main entry-point app > matches snapshot for home page 1`] = `
+<DocumentFragment>
+  <div
+    data-location="/"
+    style="display: none;"
+  />
+  <div
+    class="messages-panel"
+  />
+  <div>
+    <div
+      class="manifest-url rounded border"
+    >
+      <span
+        class="fw-semibold"
+      >
+        Manifest URL: 
+      </span>
+      <a
+        href="http://localhost:3000/dash/vod/bbb/hand_made.mpd"
+        id="dashurl"
+      >
+        /dash/vod/bbb/hand_made.mpd
+      </a>
+    </div>
+    <div
+      id="with-modules"
+    >
+      <div
+        class="d-flex flex-row align-self-stretch pb-3"
+      >
+        <div
+          class="play-button flex-fill text-center"
+        >
+          <a
+            class="btn btn-lg btn-primary"
+            href="http://localhost:3000/play/vod/bbb/hand_made/index.html"
+          >
+            <span
+              class="bi icon bi-play-fill "
+              role="icon"
+            />
+            <span
+              class="title ps-2"
+            >
+              Play Big Buck Bunny
+            </span>
+          </a>
+        </div>
+        <div
+          class="view-manifest-button flex-fill text-center"
+        >
+          <a
+            class="btn btn-lg btn-primary"
+            href="http://localhost:3000/view/dash/vod/bbb/hand_made.mpd"
+          >
+            <span
+              class="bi icon bi-search pe-2"
+              role="icon"
+            />
+            View Manifest
+          </a>
+        </div>
+        <div
+          class="reset-all-button flex-fill text-center"
+        >
+          <button
+            class="btn btn-lg btn-primary"
+          >
+            <span
+              class="bi icon bi-trash3-fill pe-2"
+              role="icon"
+            />
+            Reset Options
+          </button>
+        </div>
+      </div>
+      <form
+        name="mpsOptions"
+      >
+        <div
+          class="accordion mb-4"
+        >
+          $
+          <div
+            class="accordion-item \${item.className}"
+            data-name="\${name}"
+            id="group-\${name}"
+          >
+            <div
+              class="accordion-header"
+            >
+              <button
+                aria-controls="model-group-0"
+                aria-expanded="true"
+                class="accordion-button"
+                type="button"
+              >
+                $General Options
+              </button>
+            </div>
+            <div
+              class="accordion-collapse collapse p-3 show"
+              id="model-group-0"
+            >
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-mode"
+                >
+                  Playback Mode:
+                </label>
+                <div
+                  class="col-10"
+                >
+                  <div>
+                    <div
+                      class="form-check"
+                    >
+                      <input
+                        class="form-check-input"
+                        id="radio-undefined-vod"
+                        type="radio"
+                        value="vod"
+                      />
+                      <label
+                        class="form-check-label"
+                        for="radio-undefined-vod"
+                      >
+                        Video On Demand (using live profile)
+                      </label>
+                    </div>
+                    <div
+                      class="form-check"
+                    >
+                      <input
+                        class="form-check-input"
+                        id="radio-undefined-live"
+                        type="radio"
+                        value="live"
+                      />
+                      <label
+                        class="form-check-label"
+                        for="radio-undefined-live"
+                      >
+                        Live stream (using live profile)
+                      </label>
+                    </div>
+                    <div
+                      class="form-check"
+                    >
+                      <input
+                        class="form-check-input"
+                        id="radio-undefined-odvod"
+                        type="radio"
+                        value="odvod"
+                      />
+                      <label
+                        class="form-check-label"
+                        for="radio-undefined-odvod"
+                      >
+                        Video On Demand (using on-demand profile)
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-manifest"
+                >
+                  Manifest:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <select
+                    aria-describedby="field-manifest"
+                    class="form-select "
+                    id="model-manifest"
+                    name="manifest"
+                    title="Manifest"
+                    type="select"
+                  >
+                    <option
+                      value="hand_made.mpd"
+                    >
+                      Hand-made manifest
+                    </option>
+                    <option
+                      value="manifest_a.mpd"
+                    >
+                      Vendor A live profile
+                    </option>
+                    <option
+                      value="manifest_b.mpd"
+                    >
+                      Vendor B VOD using live profile
+                    </option>
+                    <option
+                      value="manifest_e.mpd"
+                    >
+                      Vendor E live profile
+                    </option>
+                    <option
+                      value="manifest_ef.mpd"
+                    >
+                      Vendor EF live profile
+                    </option>
+                    <option
+                      value="manifest_h.mpd"
+                    >
+                      Vendor H live profile
+                    </option>
+                    <option
+                      value="manifest_i.mpd"
+                    >
+                      Vendor I live profile
+                    </option>
+                    <option
+                      value="manifest_n.mpd"
+                    >
+                      Provider N live profile
+                    </option>
+                    <option
+                      value="manifest_vod_aiv.mpd"
+                    >
+                      AIV on demand profile
+                    </option>
+                  </select>
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Manifest template to use
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-stream"
+                >
+                  Stream:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <select
+                    aria-describedby="field-stream"
+                    class="form-select "
+                    id="model-stream"
+                    name="stream"
+                    title="Stream"
+                    type="select"
+                  >
+                    <option
+                      value="std.bbb"
+                    >
+                      Big Buck Bunny
+                    </option>
+                    <option
+                      value="std.tears"
+                    >
+                      Tears of Steel
+                    </option>
+                    <option
+                      value="mps.demo"
+                    >
+                      first title
+                    </option>
+                  </select>
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Stream to play
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-drms"
+                >
+                  DRM systems:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <div
+                    class="form-control "
+                    data-testid="msi-drms"
+                  >
+                    <div
+                      class="form-check form-check-inline"
+                    >
+                      <input
+                        class="form-check-input"
+                        id="msiclearkey"
+                        name="clearkey"
+                        type="checkbox"
+                      />
+                      <label
+                        class="form-check-label me-3"
+                        for="msiclearkey"
+                      >
+                        clearkey
+                      </label>
+                    </div>
+                    <div
+                      class="form-check form-check-inline"
+                    >
+                      <input
+                        class="form-check-input"
+                        id="msimarlin"
+                        name="marlin"
+                        type="checkbox"
+                      />
+                      <label
+                        class="form-check-label me-3"
+                        for="msimarlin"
+                      >
+                        marlin
+                      </label>
+                    </div>
+                    <div
+                      class="form-check form-check-inline"
+                    >
+                      <input
+                        class="form-check-input"
+                        id="msiplayready"
+                        name="playready"
+                        type="checkbox"
+                      />
+                      <label
+                        class="form-check-label me-3"
+                        for="msiplayready"
+                      >
+                        playready
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  DRM systems to enable for encrypted AdaptationSets
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-abr"
+                >
+                  Adaptive bitrate:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <input
+                    aria-describedby="field-abr"
+                    class="form-check-input "
+                    id="model-abr"
+                    name="abr"
+                    title="Adaptive bitrate"
+                    type="checkbox"
+                    value="1"
+                  />
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Enable or disable adaptive bitrate
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-acodec"
+                >
+                  Audio Codec:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <select
+                    aria-describedby="field-acodec"
+                    class="form-select "
+                    id="model-acodec"
+                    name="acodec"
+                    title="Audio Codec"
+                    type="select"
+                  >
+                    <option
+                      value="mp4a"
+                    >
+                      HEAAC codec
+                    </option>
+                    <option
+                      value="ec-3"
+                    >
+                      EAC3 codec
+                    </option>
+                    <option
+                      value="any"
+                    >
+                      Any codec
+                    </option>
+                  </select>
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Filter audio adaptation sets by audio codec (AAC or E-AC3)
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-events"
+                >
+                  DASH events:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <select
+                    aria-describedby="field-events"
+                    class="form-select "
+                    id="model-events"
+                    name="events"
+                    title="DASH events"
+                    type="select"
+                  >
+                    <option
+                      value=""
+                    >
+                      --
+                    </option>
+                    <option
+                      value="ping"
+                    >
+                      ping
+                    </option>
+                    <option
+                      value="scte35"
+                    >
+                      scte35
+                    </option>
+                  </select>
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  A comma separated list of event formats
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-timeline"
+                >
+                  Segment timeline:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <input
+                    aria-describedby="field-timeline"
+                    class="form-check-input "
+                    id="model-timeline"
+                    name="timeline"
+                    title="Segment timeline"
+                    type="checkbox"
+                    value="0"
+                  />
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Enable or disable segment timeline
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-time"
+                >
+                  UTC timing method:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <select
+                    aria-describedby="field-time"
+                    class="form-select "
+                    id="model-time"
+                    name="time"
+                    title="UTC timing method"
+                    type="select"
+                  >
+                    <option
+                      value=""
+                    >
+                      --
+                    </option>
+                    <option
+                      value="direct"
+                    >
+                      direct
+                    </option>
+                    <option
+                      value="head"
+                    >
+                      head
+                    </option>
+                    <option
+                      value="http-ntp"
+                    >
+                      http-ntp
+                    </option>
+                    <option
+                      value="iso"
+                    >
+                      iso
+                    </option>
+                    <option
+                      value="ntp"
+                    >
+                      ntp
+                    </option>
+                    <option
+                      value="sntp"
+                    >
+                      sntp
+                    </option>
+                    <option
+                      value="xsd"
+                    >
+                      xsd
+                    </option>
+                  </select>
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Select UTCTiming element method.
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-player"
+                >
+                  Video Player:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <select
+                    aria-describedby="field-player"
+                    class="form-select "
+                    id="model-player"
+                    name="player"
+                    title="Video Player"
+                    type="select"
+                  >
+                    <option
+                      value="native"
+                    >
+                      Native video element
+                    </option>
+                    <option
+                      value="dashjs"
+                    >
+                      dash.js
+                    </option>
+                    <option
+                      value="shaka"
+                    >
+                      Shaka
+                    </option>
+                  </select>
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Native or MSE playback control
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            class="accordion-item \${item.className}"
+            data-name="\${name}"
+            id="group-\${name}"
+          >
+            <div
+              class="accordion-header"
+            >
+              <button
+                aria-controls="model-group-1"
+                aria-expanded="false"
+                class="accordion-button collapsed"
+                type="button"
+              >
+                $Advanced Options
+              </button>
+            </div>
+            <div
+              class="accordion-collapse collapse p-3"
+              id="model-group-1"
+            >
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-ad_audio"
+                >
+                  Audio Description:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <input
+                    aria-describedby="field-ad_audio"
+                    class="form-control "
+                    id="model-ad_audio"
+                    name="ad_audio"
+                    title="Audio Description"
+                    type="audio_representation"
+                  />
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Select audio AdaptationSet that will be marked as a broadcast-mix audio description track
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-start"
+                >
+                  Availability start time:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <input
+                    aria-describedby="field-start"
+                    class="form-control "
+                    id="model-start"
+                    list="list-start"
+                    name="start"
+                    title="Availability start time"
+                    type="text"
+                  />
+                  <datalist
+                    id="list-start"
+                  >
+                    <option
+                      value="year"
+                    >
+                      year
+                    </option>
+                    <option
+                      value="today"
+                    >
+                      today
+                    </option>
+                    <option
+                      value="month"
+                    >
+                      month
+                    </option>
+                    <option
+                      value="epoch"
+                    >
+                      epoch
+                    </option>
+                    <option
+                      value="now"
+                    >
+                      now
+                    </option>
+                  </datalist>
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Sets availabilityStartTime for live streams
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-bugs"
+                >
+                  Bug compatibility:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <select
+                    aria-describedby="field-bugs"
+                    class="form-select "
+                    id="model-bugs"
+                    name="bugs"
+                    title="Bug compatibility"
+                    type="select"
+                  >
+                    <option
+                      value=""
+                    >
+                      --
+                    </option>
+                    <option
+                      value="saio"
+                    >
+                      saio
+                    </option>
+                  </select>
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Produce a stream with known bugs
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-drift"
+                >
+                  Clock drift:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <input
+                    aria-describedby="field-drift"
+                    class="form-control "
+                    id="model-drift"
+                    name="drift"
+                    title="Clock drift"
+                    type="number"
+                  />
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Number of seconds of delay to add to wall clock time
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-leeway"
+                >
+                  Fragment expiration leeway:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <input
+                    aria-describedby="field-leeway"
+                    class="form-control "
+                    id="model-leeway"
+                    list="list-leeway"
+                    name="leeway"
+                    title="Fragment expiration leeway"
+                    type="number"
+                  />
+                  <datalist
+                    id="list-leeway"
+                  >
+                    <option
+                      value="16"
+                    >
+                      16
+                    </option>
+                    <option
+                      value="60"
+                    >
+                      60
+                    </option>
+                    <option
+                      value="0"
+                    >
+                      0
+                    </option>
+                  </datalist>
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Number of seconds after a fragment has expired before it becomes unavailable
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-main_audio"
+                >
+                  Main audio track:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <input
+                    aria-describedby="field-main_audio"
+                    class="form-control "
+                    id="model-main_audio"
+                    name="main_audio"
+                    title="Main audio track"
+                    type="audio_representation"
+                  />
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Select audio AdaptationSet that will be given the "main" role
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-main_text"
+                >
+                  Main text track:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <input
+                    aria-describedby="field-main_text"
+                    class="form-control "
+                    id="model-main_text"
+                    name="main_text"
+                    title="Main text track"
+                    type="text_representation"
+                  />
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Select text AdaptationSet that will be given the "main" role
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-mup"
+                >
+                  Minimum update period:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <input
+                    aria-describedby="field-mup"
+                    class="form-control "
+                    id="model-mup"
+                    list="list-mup"
+                    name="mup"
+                    title="Minimum update period"
+                    type="number"
+                  />
+                  <datalist
+                    id="list-mup"
+                  >
+                    <option
+                      value=""
+                    >
+                      Every 2 fragments
+                    </option>
+                    <option
+                      value="-1"
+                    >
+                      Never
+                    </option>
+                    <option
+                      value="4"
+                    >
+                      Every fragment
+                    </option>
+                    <option
+                      value="30"
+                    >
+                      Every 30 seconds
+                    </option>
+                  </datalist>
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Specify minimumUpdatePeriod (in seconds) or -1 to disable updates
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-ntp_servers"
+                >
+                  NTP time servers:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <select
+                    aria-describedby="field-ntp_servers"
+                    class="form-select "
+                    id="model-ntp_servers"
+                    name="ntp_servers"
+                    title="NTP time servers"
+                    type="select"
+                  >
+                    <option
+                      value=""
+                    >
+                      --
+                    </option>
+                    <option
+                      value="europe-ntp"
+                    >
+                      europe-ntp
+                    </option>
+                    <option
+                      value="google"
+                    >
+                      google
+                    </option>
+                  </select>
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  List of servers to use for NTP requests
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-tcodec"
+                >
+                  Text Codec:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <select
+                    aria-describedby="field-tcodec"
+                    class="form-select "
+                    id="model-tcodec"
+                    name="tcodec"
+                    title="Text Codec"
+                    type="select"
+                  >
+                    <option
+                      value=""
+                    >
+                      Any codec
+                    </option>
+                    <option
+                      value="im1t|etd1"
+                    >
+                      im1t codec
+                    </option>
+                  </select>
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Filter text adaptation sets by text codec
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-tlang"
+                >
+                  Text Language:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <input
+                    aria-describedby="field-tlang"
+                    class="form-control "
+                    id="model-tlang"
+                    name="tlang"
+                    title="Text Language"
+                    type=""
+                  />
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Filter text adaptation sets by language
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-base"
+                >
+                  Use BaseURLs:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <input
+                    aria-describedby="field-base"
+                    class="form-check-input "
+                    id="model-base"
+                    name="base"
+                    title="Use BaseURLs"
+                    type="checkbox"
+                    value="1"
+                  />
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Include a BaseURL element?
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-patch"
+                >
+                  Use MPD patches:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <input
+                    aria-describedby="field-patch"
+                    class="form-check-input "
+                    id="model-patch"
+                    name="patch"
+                    title="Use MPD patches"
+                    type="checkbox"
+                    value="0"
+                  />
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Use MPD patches for live streams
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-depth"
+                >
+                  timeShiftBufferDepth size:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <input
+                    aria-describedby="field-depth"
+                    class="form-control "
+                    id="model-depth"
+                    list="list-depth"
+                    name="depth"
+                    title="timeShiftBufferDepth size"
+                    type="number"
+                  />
+                  <datalist
+                    id="list-depth"
+                  >
+                    <option
+                      value="1800"
+                    >
+                      1800
+                    </option>
+                    <option
+                      value="30"
+                    >
+                      30
+                    </option>
+                  </datalist>
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Number of seconds for timeShiftBufferDepth
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            class="accordion-item \${item.className}"
+            data-name="\${name}"
+            id="group-\${name}"
+          >
+            <div
+              class="accordion-header"
+            >
+              <button
+                aria-controls="model-group-2"
+                aria-expanded="false"
+                class="accordion-button collapsed"
+                type="button"
+              >
+                $Clearkey Options
+              </button>
+            </div>
+            <div
+              class="accordion-collapse collapse p-3"
+              id="model-group-2"
+            >
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-clearkey__la_url"
+                >
+                  Clearkey LA_URL:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <input
+                    aria-describedby="field-clearkey__la_url"
+                    class="form-control "
+                    id="model-clearkey__la_url"
+                    name="clearkey__la_url"
+                    title="Clearkey LA_URL"
+                    type=""
+                  />
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Override the Clearkey license URL field
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-clearkey__drmloc"
+                >
+                  Clearkey location:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <select
+                    aria-describedby="field-clearkey__drmloc"
+                    class="form-select "
+                    id="model-clearkey__drmloc"
+                    name="clearkey__drmloc"
+                    title="Clearkey location"
+                    type="select"
+                  >
+                    <option
+                      value=""
+                    >
+                      All locations
+                    </option>
+                    <option
+                      value="pro"
+                    >
+                      mspr:pro element in MPD
+                    </option>
+                    <option
+                      value="cenc"
+                    >
+                      dash:cenc element in MPD
+                    </option>
+                    <option
+                      value="moov"
+                    >
+                      PSSH in init segment
+                    </option>
+                    <option
+                      value="cenc-pro"
+                    >
+                      mspr:pro + dash:cenc in MPD
+                    </option>
+                    <option
+                      value="moov-pro"
+                    >
+                      mspr:pro MPD + PSSH init
+                    </option>
+                    <option
+                      value="cenc-moov"
+                    >
+                      dash:cenc MPD + PSSH init
+                    </option>
+                  </select>
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Location to place DRM data
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            class="accordion-item \${item.className}"
+            data-name="\${name}"
+            id="group-\${name}"
+          >
+            <div
+              class="accordion-header"
+            >
+              <button
+                aria-controls="model-group-3"
+                aria-expanded="false"
+                class="accordion-button collapsed"
+                type="button"
+              >
+                $Marlin Options
+              </button>
+            </div>
+            <div
+              class="accordion-collapse collapse p-3"
+              id="model-group-3"
+            >
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-marlin__la_url"
+                >
+                  Marlin LA_URL:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <input
+                    aria-describedby="field-marlin__la_url"
+                    class="form-control "
+                    id="model-marlin__la_url"
+                    name="marlin__la_url"
+                    title="Marlin LA_URL"
+                    type=""
+                  />
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Override the Marlin S-URL field
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-marlin__drmloc"
+                >
+                  Marlin location:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <select
+                    aria-describedby="field-marlin__drmloc"
+                    class="form-select "
+                    id="model-marlin__drmloc"
+                    name="marlin__drmloc"
+                    title="Marlin location"
+                    type="select"
+                  >
+                    <option
+                      value=""
+                    >
+                      All locations
+                    </option>
+                    <option
+                      value="pro"
+                    >
+                      mspr:pro element in MPD
+                    </option>
+                    <option
+                      value="cenc"
+                    >
+                      dash:cenc element in MPD
+                    </option>
+                    <option
+                      value="moov"
+                    >
+                      PSSH in init segment
+                    </option>
+                    <option
+                      value="cenc-pro"
+                    >
+                      mspr:pro + dash:cenc in MPD
+                    </option>
+                    <option
+                      value="moov-pro"
+                    >
+                      mspr:pro MPD + PSSH init
+                    </option>
+                    <option
+                      value="cenc-moov"
+                    >
+                      dash:cenc MPD + PSSH init
+                    </option>
+                  </select>
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Location to place DRM data
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            class="accordion-item \${item.className}"
+            data-name="\${name}"
+            id="group-\${name}"
+          >
+            <div
+              class="accordion-header"
+            >
+              <button
+                aria-controls="model-group-4"
+                aria-expanded="false"
+                class="accordion-button collapsed"
+                type="button"
+              >
+                $Ping Options
+              </button>
+            </div>
+            <div
+              class="accordion-collapse collapse p-3"
+              id="model-group-4"
+            >
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-ping__count"
+                >
+                  Ping count:
+                </label>
+                <div
+                  class="col-10"
+                >
+                  <input
+                    aria-describedby="field-ping__count"
+                    class="form-control "
+                    id="model-ping__count"
+                    name="ping__count"
+                    title="Ping count"
+                    type="number"
+                  />
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-ping__duration"
+                >
+                  Ping duration:
+                </label>
+                <div
+                  class="col-10"
+                >
+                  <input
+                    aria-describedby="field-ping__duration"
+                    class="form-control "
+                    id="model-ping__duration"
+                    name="ping__duration"
+                    title="Ping duration"
+                    type="number"
+                  />
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-ping__inband"
+                >
+                  Ping inband:
+                </label>
+                <div
+                  class="col-10"
+                >
+                  <input
+                    aria-describedby="field-ping__inband"
+                    class="form-check-input "
+                    id="model-ping__inband"
+                    name="ping__inband"
+                    title="Ping inband"
+                    type="checkbox"
+                    value="1"
+                  />
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-ping__interval"
+                >
+                  Ping interval:
+                </label>
+                <div
+                  class="col-10"
+                >
+                  <input
+                    aria-describedby="field-ping__interval"
+                    class="form-control "
+                    id="model-ping__interval"
+                    name="ping__interval"
+                    title="Ping interval"
+                    type="number"
+                  />
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-ping__start"
+                >
+                  Ping start:
+                </label>
+                <div
+                  class="col-10"
+                >
+                  <input
+                    aria-describedby="field-ping__start"
+                    class="form-control "
+                    id="model-ping__start"
+                    name="ping__start"
+                    title="Ping start"
+                    type="number"
+                  />
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-ping__timescale"
+                >
+                  Ping timescale:
+                </label>
+                <div
+                  class="col-10"
+                >
+                  <input
+                    aria-describedby="field-ping__timescale"
+                    class="form-control "
+                    id="model-ping__timescale"
+                    name="ping__timescale"
+                    title="Ping timescale"
+                    type="number"
+                  />
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-ping__value"
+                >
+                  Ping value:
+                </label>
+                <div
+                  class="col-10"
+                >
+                  <input
+                    aria-describedby="field-ping__value"
+                    class="form-control "
+                    id="model-ping__value"
+                    name="ping__value"
+                    title="Ping value"
+                    type="text"
+                  />
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-ping__version"
+                >
+                  Ping version:
+                </label>
+                <div
+                  class="col-10"
+                >
+                  <input
+                    aria-describedby="field-ping__version"
+                    class="form-control "
+                    id="model-ping__version"
+                    name="ping__version"
+                    title="Ping version"
+                    type="number"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            class="accordion-item \${item.className}"
+            data-name="\${name}"
+            id="group-\${name}"
+          >
+            <div
+              class="accordion-header"
+            >
+              <button
+                aria-controls="model-group-5"
+                aria-expanded="false"
+                class="accordion-button collapsed"
+                type="button"
+              >
+                $Playready Options
+              </button>
+            </div>
+            <div
+              class="accordion-collapse collapse p-3"
+              id="model-group-5"
+            >
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-playready__la_url"
+                >
+                  Playready LA_URL:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <input
+                    aria-describedby="field-playready__la_url"
+                    class="form-control "
+                    id="model-playready__la_url"
+                    name="playready__la_url"
+                    title="Playready LA_URL"
+                    type=""
+                  />
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Override the Playready LA_URL field
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-playready__piff"
+                >
+                  Playready PIFF:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <input
+                    aria-describedby="field-playready__piff"
+                    class="form-check-input "
+                    id="model-playready__piff"
+                    name="playready__piff"
+                    title="Playready PIFF"
+                    type="checkbox"
+                    value="1"
+                  />
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Include PIFF sample encryption data
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-playready__version"
+                >
+                  Playready Version:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <select
+                    aria-describedby="field-playready__version"
+                    class="form-select "
+                    id="model-playready__version"
+                    name="playready__version"
+                    title="Playready Version"
+                    type="select"
+                  >
+                    <option
+                      value=""
+                    >
+                      --
+                    </option>
+                    <option
+                      value="1.0"
+                    >
+                      1.0
+                    </option>
+                    <option
+                      value="2.0"
+                    >
+                      2.0
+                    </option>
+                    <option
+                      value="3.0"
+                    >
+                      3.0
+                    </option>
+                    <option
+                      value="4.0"
+                    >
+                      4.0
+                    </option>
+                  </select>
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Set the PlayReady version compatibility for this stream
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-playready__drmloc"
+                >
+                  Playready location:
+                </label>
+                <div
+                  class="col-5"
+                >
+                  <select
+                    aria-describedby="field-playready__drmloc"
+                    class="form-select "
+                    id="model-playready__drmloc"
+                    name="playready__drmloc"
+                    title="Playready location"
+                    type="select"
+                  >
+                    <option
+                      value=""
+                    >
+                      All locations
+                    </option>
+                    <option
+                      value="pro"
+                    >
+                      mspr:pro element in MPD
+                    </option>
+                    <option
+                      value="cenc"
+                    >
+                      dash:cenc element in MPD
+                    </option>
+                    <option
+                      value="moov"
+                    >
+                      PSSH in init segment
+                    </option>
+                    <option
+                      value="cenc-pro"
+                    >
+                      mspr:pro + dash:cenc in MPD
+                    </option>
+                    <option
+                      value="moov-pro"
+                    >
+                      mspr:pro MPD + PSSH init
+                    </option>
+                    <option
+                      value="cenc-moov"
+                    >
+                      dash:cenc MPD + PSSH init
+                    </option>
+                  </select>
+                </div>
+                <div
+                  class="col-5 form-text"
+                >
+                  Location to place DRM data
+                </div>
+              </div>
+            </div>
+          </div>
+          <div
+            class="accordion-item \${item.className}"
+            data-name="\${name}"
+            id="group-\${name}"
+          >
+            <div
+              class="accordion-header"
+            >
+              <button
+                aria-controls="model-group-6"
+                aria-expanded="false"
+                class="accordion-button collapsed"
+                type="button"
+              >
+                $Scte35 Options
+              </button>
+            </div>
+            <div
+              class="accordion-collapse collapse p-3"
+              id="model-group-6"
+            >
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-scte35__count"
+                >
+                  Scte35 count:
+                </label>
+                <div
+                  class="col-10"
+                >
+                  <input
+                    aria-describedby="field-scte35__count"
+                    class="form-control "
+                    id="model-scte35__count"
+                    name="scte35__count"
+                    title="Scte35 count"
+                    type="number"
+                  />
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-scte35__duration"
+                >
+                  Scte35 duration:
+                </label>
+                <div
+                  class="col-10"
+                >
+                  <input
+                    aria-describedby="field-scte35__duration"
+                    class="form-control "
+                    id="model-scte35__duration"
+                    name="scte35__duration"
+                    title="Scte35 duration"
+                    type="number"
+                  />
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-scte35__inband"
+                >
+                  Scte35 inband:
+                </label>
+                <div
+                  class="col-10"
+                >
+                  <input
+                    aria-describedby="field-scte35__inband"
+                    class="form-check-input "
+                    id="model-scte35__inband"
+                    name="scte35__inband"
+                    title="Scte35 inband"
+                    type="checkbox"
+                    value="1"
+                  />
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-scte35__interval"
+                >
+                  Scte35 interval:
+                </label>
+                <div
+                  class="col-10"
+                >
+                  <input
+                    aria-describedby="field-scte35__interval"
+                    class="form-control "
+                    id="model-scte35__interval"
+                    name="scte35__interval"
+                    title="Scte35 interval"
+                    type="number"
+                  />
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-scte35__program_id"
+                >
+                  Scte35 program_id:
+                </label>
+                <div
+                  class="col-10"
+                >
+                  <input
+                    aria-describedby="field-scte35__program_id"
+                    class="form-control "
+                    id="model-scte35__program_id"
+                    name="scte35__program_id"
+                    title="Scte35 program_id"
+                    type="number"
+                  />
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-scte35__start"
+                >
+                  Scte35 start:
+                </label>
+                <div
+                  class="col-10"
+                >
+                  <input
+                    aria-describedby="field-scte35__start"
+                    class="form-control "
+                    id="model-scte35__start"
+                    name="scte35__start"
+                    title="Scte35 start"
+                    type="number"
+                  />
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-scte35__timescale"
+                >
+                  Scte35 timescale:
+                </label>
+                <div
+                  class="col-10"
+                >
+                  <input
+                    aria-describedby="field-scte35__timescale"
+                    class="form-control "
+                    id="model-scte35__timescale"
+                    name="scte35__timescale"
+                    title="Scte35 timescale"
+                    type="number"
+                  />
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-scte35__value"
+                >
+                  Scte35 value:
+                </label>
+                <div
+                  class="col-10"
+                >
+                  <input
+                    aria-describedby="field-scte35__value"
+                    class="form-control "
+                    id="model-scte35__value"
+                    name="scte35__value"
+                    title="Scte35 value"
+                    type="text"
+                  />
+                </div>
+              </div>
+              <div
+                class="row mb-2 form-group "
+              >
+                <label
+                  class="col-2 col-form-label"
+                  for="field-scte35__version"
+                >
+                  Scte35 version:
+                </label>
+                <div
+                  class="col-10"
+                >
+                  <input
+                    aria-describedby="field-scte35__version"
+                    class="form-control "
+                    id="model-scte35__version"
+                    name="scte35__version"
+                    title="Scte35 version"
+                    type="number"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <p
+      class="info"
+    >
+      The MPD files for live streams are dynamically generated so that they appear to be live sources, using static media files. Requests for manifests and for media fragments can be modified using various CGI parameters, which are documented on the 
+      <a
+        class="link"
+        href="/options"
+      >
+        CGI options
+      </a>
+       page.
+    </p>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`main entry-point app > matches snapshot for list MPS 1`] = `
+<DocumentFragment>
+  <div
+    data-location="/multi-period-streams"
+    style="display: none;"
+  />
+  <div
+    class="messages-panel"
+  />
+  <h1>
+    Available Multi-period DASH streams
+  </h1>
+  <table
+    class="table table-striped"
+    id="mp-streams"
+  >
+    <caption>
+      Multi-Period Streams
+    </caption>
+    <thead>
+      <tr>
+        <th
+          class="name "
+        >
+          <a
+            class="link-light fw-bolder"
+          >
+            <span
+              class="bi icon bi-sort-alpha-down opacity-100"
+              role="icon"
+            />
+            Name
+          </a>
+        </th>
+        <th
+          class="title "
+        >
+          <a
+            class="link-light "
+          >
+            <span
+              class="bi icon bi-sort-alpha-down opacity-50"
+              role="icon"
+            />
+            Title
+          </a>
+        </th>
+        <th
+          class="num-periods text-end"
+        >
+          Periods
+        </th>
+        <th
+          class="duration text-end"
+        >
+          Duration
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td
+          class="name text-center"
+        >
+          <a
+            href="/multi-period-streams/demo"
+          >
+            demo
+          </a>
+        </td>
+        <td
+          class="title text-center"
+        >
+          <a
+            href="/multi-period-streams/demo"
+          >
+            first title
+          </a>
+        </td>
+        <td
+          class="num-periods text-end"
+        >
+          2
+        </td>
+        <td
+          class="duration text-end"
+        >
+          PT1M55S
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <div
+    class="btn-toolbar"
+  >
+    <a
+      class="btn btn-primary btn-sm m-2"
+      href="/multi-period-streams/.add"
+    >
+      Add a Stream
+    </a>
+  </div>
+</DocumentFragment>
+`;

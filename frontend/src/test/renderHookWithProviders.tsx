@@ -1,24 +1,34 @@
-import { html } from "htm/preact";
+import type { JSX, ComponentChildren } from "preact";
+import { renderWithProviders, RenderWithProvidersProps } from "./renderWithProviders";
 
-import { renderWithProviders } from "./renderWithProviders";
-
-function DefaultWrapper({ children }) {
-  return html`<div>${children}</div>`;
+function DefaultWrapper({ children }: { children: ComponentChildren }) {
+  return <div>{children}</div>;
 }
 
-export function renderHookWithProviders(
-  hook,
-  { initialState, Wrapper = DefaultWrapper, ...props } = {}
+export function renderHookWithProviders<Props, Output>(
+  hook: (props: Props) => Output,
+  {
+    initialState,
+    Wrapper = DefaultWrapper,
+    ...props
+  }: Partial<
+    RenderWithProvidersProps & {
+      initialState: Props;
+      Wrapper: (props: { children: ComponentChildren }) => JSX.Element;
+    }
+  > = {}
 ) {
-  let result;
+  let result: Output;
 
-  function HookWrapper({ text }) {
+  function HookWrapper({ text }: { text: string }) {
     result = hook(initialState);
-    return html`<div>${text}</div>`;
+    return <div>{text}</div>;
   }
   const now = new Date().toISOString();
   const { getByText, rerender } = renderWithProviders(
-    html`<${Wrapper}><${HookWrapper} text=${now} /></${Wrapper}>`,
+    <Wrapper>
+      <HookWrapper text={now} />
+    </Wrapper>,
     props
   );
   getByText(now);

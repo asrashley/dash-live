@@ -6,7 +6,10 @@ import { CsrfTokenCollection } from './types/CsrfTokenCollection';
 import { AllManifests } from './types/AllManifests';
 import { AllStreamsJson } from './types/AllStreams';
 import { JwtToken } from './types/JwtToken';
-import { DecoratedMultiPeriodStream, MultiPeriodStreamJson } from './types/MultiPeriodStream';
+import { MultiPeriodStreamJson } from './types/MultiPeriodStream';
+import { DecoratedMultiPeriodStream } from "./types/DecoratedMultiPeriodStream";
+import { AllMultiPeriodStreamsJson } from './types/AllMultiPeriodStreams';
+import { ContentRolesMap } from './types/ContentRolesMap';
 
 type TokenStoreCollection = {
   files: CsrfTokenStore;
@@ -61,6 +64,10 @@ export class ApiRequests {
     return this.sendApiRequest(routeMap.listManifests.url(), options);
   }
 
+  getContentRoles(options: Partial<ApiRequestOptions> = {}): Promise<ContentRolesMap> {
+    return this.sendApiRequest(routeMap.contentRoles.url(), options);
+  }
+
   async getAllStreams({ withDetails = false, ...options}: Partial<GetAllStreamsProps>  = {}): Promise<AllStreamsJson> {
     const service = 'streams';
     const csrf_token = await this.csrfTokens[service].getToken(
@@ -76,7 +83,7 @@ export class ApiRequests {
     });
   }
 
-  async getAllMultiPeriodStreams(options: Partial<ApiRequestOptions> = {}): Promise<MultiPeriodStreamJson> {
+  async getAllMultiPeriodStreams(options: Partial<ApiRequestOptions> = {}): Promise<AllMultiPeriodStreamsJson> {
     const service = 'streams';
     const csrf_token = await this.csrfTokens[service].getToken(
       options?.signal, this.getCsrfTokens);
