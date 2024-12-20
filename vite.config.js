@@ -9,11 +9,12 @@ export default defineConfig({
         setupFiles: './static/js/test/setup.js',
         coverage: {
             include: [
-                "static/js/spa/**/*.js",
+                "frontend/src/**/*.ts",
+                "frontend/src/**/*.tsx",
             ],
             exclude: [
-                "static/js/test/*.js",
-                "static/js/spa/**/*.test.js",
+                "frontend/src/test/*.ts",
+                "frontend/src/**/*.test.tsx",
             ],
             thresholds: {
                 branches: 75,
@@ -27,23 +28,15 @@ export default defineConfig({
 		alias: [
 			{
 				find: "/libs/content_roles.js",
-				replacement: resolve(projectRootDir, 'static/js/mocks/content_roles.js')
+				replacement: resolve(projectRootDir, 'frontend/src/test/fixtures/content_roles.js')
 			},
 			{
-				find: '/libs/routemap.js',
-				replacement: resolve(projectRootDir, 'static/js/mocks/routemap.js')
+				find: '@dashlive/routemap',
+				replacement: resolve(projectRootDir, 'frontend/src/test/fixtures/routemap.js')
 			},
 			{
-				find: '/libs/options.js',
-				replacement: resolve(projectRootDir, 'static/js/mocks/options.js')
-			},
-			{
-				find: '@dashlive/hooks',
-				replacement: resolve(projectRootDir, 'static/js/spa/hooks/index.js')
-			},
-			{
-				find: '@dashlive/ui',
-				replacement: resolve(projectRootDir, 'static/js/spa/components/index.js')
+				find: '@dashlive/options',
+				replacement: resolve(projectRootDir, 'frontend/src/test/fixtures/options.js')
 			}
 		]
 	}
