@@ -14,10 +14,6 @@ class HttpResponse(ABC):
         raise Exception("Not implemented")
 
     @property
-    def forms(self, id):
-        raise Exception("Not implemented")
-
-    @property
     def json(self):
         raise Exception("Not implemented")
 
