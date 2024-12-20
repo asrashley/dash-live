@@ -1,0 +1,201 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`AddStreamPage component > allows a new stream to be added 1`] = `
+<DocumentFragment>
+  <div
+    class="card"
+    id="edit_mps_form"
+  >
+    <div
+      class="card-header"
+    >
+      <h2>
+        Add new Multi-Period stream
+      </h2>
+    </div>
+    <div
+      class="card-body"
+    >
+      <div
+        class=""
+      >
+        <div
+          class="row mb-2 form-group "
+        >
+          <label
+            class="col-2 col-form-label"
+            for="field-name"
+          >
+            Name:
+          </label>
+          <div
+            class="col-7"
+          >
+            <input
+              class="form-control is-invalid"
+              id="field-name"
+              name="name"
+              type="text"
+            />
+          </div>
+          <div
+            class="col-3 form-text"
+          >
+            Unique name for this stream
+          </div>
+          <div
+            class="invalid-feedback"
+            style="display: block;"
+          >
+            Name is required
+          </div>
+        </div>
+        <div
+          class="row mb-2 form-group "
+        >
+          <label
+            class="col-2 col-form-label"
+            for="field-title"
+          >
+            Title:
+          </label>
+          <div
+            class="col-7"
+          >
+            <input
+              class="form-control is-invalid"
+              id="field-title"
+              name="title"
+              type="text"
+            />
+          </div>
+          <div
+            class="col-3 form-text"
+          >
+            Title for this stream
+          </div>
+          <div
+            class="invalid-feedback"
+            style="display: block;"
+          >
+            Title is required
+          </div>
+        </div>
+        <div
+          class="row mb-2 form-group "
+        >
+          <label
+            class="col-2 col-form-label"
+            for="field-options"
+          >
+            Stream Options:
+          </label>
+          <div
+            class="col-10"
+          >
+            <div
+              class="d-flex flex-row"
+            >
+              <div
+                class="json bg-secondary-subtle border border-dark-subtle flex-fill me-1"
+              />
+              <button
+                class="btn btn-primary"
+              >
+                Options
+              </button>
+            </div>
+          </div>
+        </div>
+        <div
+          class="row mb-2 form-group has-validation"
+        >
+          <label
+            class="col-2 col-form-label"
+            for="field-periods"
+          >
+            Periods:
+          </label>
+          <div
+            class="col-10"
+          >
+            <div>
+              <div
+                class="period-table border"
+              >
+                <div
+                  class="row bg-secondary text-white table-head"
+                >
+                  <div
+                    class="col period-ordering"
+                  >
+                    #
+                  </div>
+                  <div
+                    class="col period-id"
+                  >
+                    ID
+                  </div>
+                  <div
+                    class="col period-stream"
+                  >
+                    Stream
+                  </div>
+                  <div
+                    class="col period-start"
+                  >
+                    Start Time
+                  </div>
+                  <div
+                    class="col period-duration"
+                  >
+                    Duration
+                  </div>
+                  <div
+                    class="col period-tracks"
+                  >
+                    Tracks
+                  </div>
+                </div>
+                <ul />
+                <div
+                  class="btn-toolbar"
+                >
+                  <button
+                    class="btn btn-primary btn-sm m-2"
+                  >
+                    Add a Period
+                  </button>
+                </div>
+              </div>
+              <div
+                class="alert alert-warning show"
+                id="alert_0"
+                role="alert"
+              >
+                At least one Period is required
+              </div>
+            </div>
+          </div>
+        </div>
+        <div
+          class="btn-toolbar"
+        >
+          <button
+            class="btn btn-success m-2"
+            disabled=""
+          >
+            Save new stream
+          </button>
+          <a
+            class="btn btn-danger m-2"
+            href="/multi-period-streams"
+          >
+            Cancel
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;

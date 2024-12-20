@@ -1,0 +1,17 @@
+{
+  "alternate": ["video", "text", "application", "audio"],
+  "caption": ["video", "text"],
+  "commentary": ["text", "audio"],
+  "description": ["text", "audio"],
+  "dub": ["text", "audio"],
+  "easyreader": ["video", "text"],
+  "emergency": ["video", "text", "application", "audio"],
+  "enhanced_audio_intelligibility": ["audio"],
+  "forced_subtitle": ["text"],
+  "karaoke": ["video", "text", "application", "audio"],
+  "main": ["video", "text", "application", "audio"],
+  "metadata": ["text", "application"],
+  "sign": ["video"],
+  "subtitle": ["video", "text"],
+  "supplementary": ["video", "text", "application", "audio"]
+}
