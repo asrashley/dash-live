@@ -1,13 +1,19 @@
-import { signal, useComputed } from "@preact/signals";
+import { type Signal, signal, useComputed } from "@preact/signals";
+import { MessageLevel, MessageType } from "../types/MessageType";
 
-const messages = signal({ alerts: [], nextId: 1 });
+type MessagesState = {
+  alerts: MessageType[];
+  nextId: number;
+}
+
+const messages = signal<MessagesState>({ alerts: [], nextId: 1 });
 
 // only exported for use in tests
 export function resetAllMessages() {
   messages.value = { alerts: [], nextId: 1 };
 }
 
-const appendMessage = (text, level = "warning") => {
+const appendMessage = (text: string, level: MessageLevel = "warning") => {
   const id = messages.value.nextId;
   const alerts = [
     ...messages.value.alerts,
@@ -23,12 +29,18 @@ const appendMessage = (text, level = "warning") => {
   };
 };
 
-const removeAlert = (id) => {
+const removeAlert = (id: number) => {
   const alerts = messages.value.alerts.filter((a) => a.id !== id);
   messages.value = { ...messages.value, alerts };
 };
 
-export function useMessages() {
+export interface UseMessagesHook {
+  alerts: Signal<MessageType[]>
+  appendMessage: (level: MessageLevel, text: string, footer?: string) => void;
+  removeAlert: (id: number) => void;
+}
+
+export function useMessages(): UseMessagesHook {
   const alerts = useComputed(() => {
     return messages.value.alerts;
   });
