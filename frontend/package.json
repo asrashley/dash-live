@@ -1,0 +1,52 @@
+{
+  "name": "dash-live",
+  "version": "2.10.0",
+  "description": "A simulated MPEG DASH service",
+  "license": "Apache-2.0",
+  "repository": "github:asrashley/dash-live",
+  "browser": "static/js/index.js",
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "scripts": {
+    "build": "webpack --mode production --config config/webpack.prod.js",
+    "coverage": "vitest run --coverage",
+    "lint": "eslint src/**/*.{ts,tsx}",
+    "postinstall": "patch-package",
+    "test": "vitest"
+  },
+  "devDependencies": {
+    "@eslint/compat": "~1.1.1",
+    "@testing-library/preact": "^3.2.4",
+    "@types/eslint__js": "^8.42.3",
+    "@vitest/coverage-istanbul": "^2.1.6",
+    "eslint": "^8.57.1",
+    "eslint-config-preact": "^1.5.0",
+    "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-no-barrel-files": "^1.2.0",
+    "eslint-plugin-react": "^7.37.2",
+    "html-webpack-plugin": "^5.6.3",
+    "jsdom": "^25.0.1",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.16.0",
+    "vitest": "^2.1.6",
+    "webpack": "^5.96.1",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^5.1.0"
+  },
+  "dependencies": {
+    "bootstrap-icons": "^1.11.3",
+    "@preact/signals": "^2.0.0",
+    "@preact/signals-core": "^1.8.0",
+    "patch-package": "^8.0.0",
+    "preact": "^10.25.0",
+    "preact-jsx-runtime": "^1.2.0",
+    "preact-lazy": "^0.0.3",
+    "regexparam": "^3.0.0",
+    "temporal-polyfill": "^0.2.5",
+    "wouter-preact": "^3.3.5"
+  }
+}
