@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "outDir": "./templates/dist/",
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+    "module": "ES2022",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "sourceMap": true,
+    "target": "ES2023"
+  },
+  "include": [
+    "frontend/src/**/*.ts",
+    "frontend/src/**/*.tsx"
+  ],
+}
