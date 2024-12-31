@@ -305,7 +305,7 @@ routes = {
         handler='esm.RouteMap',
         title='URL routing data'),
     "content-roles": Route(
-        r'/libs/content_roles.js',
+        r'/api/ContentRoles.json',
         handler='esm.ContentRoles',
         title='MPEG content roles'),
     "option-field-groups": Route(
