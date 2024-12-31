@@ -36,7 +36,7 @@ from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.options.types import OptionUsage
 from dashlive.mpeg.dash.content_role import ContentRole
 from dashlive.server.routes import routes
-
+from .utils import jsonify
 
 class ModuleWrapper(MethodView):
     """
@@ -122,14 +122,10 @@ class ContentRoles(MethodView):
     Returns an object describing content roles
     """
     def get(self) -> flask.Response:
-        headers = {
-            'Content-Type': 'application/javascript',
-        }
-        roles: dict[str, str] = {}
+        roles: dict[str, list[str]] = {}
         for role in ContentRole.all():
             roles[role.name.lower()] = [use.name.lower() for use in role.usage()]
-        body = flask.render_template('esm/content_roles.tjs', roles=roles)
-        return flask.make_response((body, 200, headers))
+        return jsonify(roles)
 
 
 class OptionFieldGroups(MethodView):

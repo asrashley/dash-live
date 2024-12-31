@@ -27,10 +27,6 @@ export default defineConfig({
 	resolve: {
 		alias: [
 			{
-				find: "/libs/content_roles.js",
-				replacement: resolve(projectRootDir, 'frontend/src/test/fixtures/content_roles.js')
-			},
-			{
 				find: '@dashlive/routemap',
 				replacement: resolve(projectRootDir, 'frontend/src/test/fixtures/routemap.js')
 			},
