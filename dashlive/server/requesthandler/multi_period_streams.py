@@ -174,7 +174,7 @@ def mps_as_dict(mps: models.MultiPeriodStream) -> MultiPeriodStreamData:
 
 
 class ListStreamsTemplateContext(TemplateContext):
-    csrf_tokens: CsrfTokenCollection
+    csrfTokens: CsrfTokenCollection
     streams: list[models.Stream]
     user_can_modify: bool
 
@@ -317,7 +317,7 @@ class EditStream(HTMLHandlerBase):
         csrf_token = self.generate_csrf_token('streams', csrf_key)
         model = mps_as_dict(current_mps)
         result = {
-            'csrf_tokens': {
+            'csrfTokens': {
                 'streams': csrf_token,
             },
             'model': model,
