@@ -1,6 +1,6 @@
 interface PendingRequest {
   resolve: (token: string) => void;
-  reject: (reason: any) => void;
+  reject: (reason: never) => void;
 }
 
 export class CsrfTokenStore {
@@ -19,7 +19,7 @@ export class CsrfTokenStore {
     }
   }
 
-  async getToken(signal: AbortSignal, refreshFn?: (sig?: AbortSignal) => Promise<void>): Promise<string> {
+  async getToken(signal: AbortSignal | undefined, refreshFn?: (sig?: AbortSignal) => Promise<void>): Promise<string> {
     if (!this.token && refreshFn) {
       await refreshFn(signal);
     }
@@ -31,14 +31,15 @@ export class CsrfTokenStore {
 
     const {promise, resolve, reject} = Promise.withResolvers<string>();
     const abortListener = () => {
-      reject(signal.reason);
+      reject(new Error(signal.reason));
     };
-    signal?.addEventListener('abort', abortListener);
-    this.pending.push({resolve, reject});
-    promise.finally(() => {
+    try{
+      signal?.addEventListener('abort', abortListener);
+      this.pending.push({resolve, reject});
+      return await promise;
+    } finally {
       this.pending = this.pending.filter(p => p.resolve !== resolve);
       signal?.removeEventListener('abort', abortListener);
-    });
-    return await promise;
+    }
   }
 }
