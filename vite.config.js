@@ -14,7 +14,10 @@ export default defineConfig({
                 "frontend/src/**/*.tsx",
             ],
             exclude: [
+                "frontend/src/main.tsx",
                 "frontend/src/test/*.ts",
+                "frontend/src/types/*.ts",
+                "frontend/src/**/*.test.ts",
                 "frontend/src/**/*.test.tsx",
             ],
             thresholds: {
