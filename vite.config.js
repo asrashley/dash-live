@@ -6,7 +6,8 @@ const projectRootDir = resolve(__dirname);
 export default defineConfig({
 	test: {
 		environment: 'jsdom',
-        setupFiles: './static/js/test/setup.js',
+        globalSetup: 'frontend/src/test/globalSetup.ts',
+        setupFiles: 'frontend/src/test/setup.ts',
         coverage: {
             include: [
                 "frontend/src/**/*.ts",
