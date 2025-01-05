@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import HomePage from './HomePage';
@@ -31,7 +31,7 @@ describe("HomePage", () => {
     getMpsStreams = new Promise<void>((resolve) => {
       apiRequests.getAllMultiPeriodStreams.mockImplementation(async () => {
         const streams = await import(
-          "../../test/fixtures/multi-period-streams.json"
+          "../../test/fixtures/multi-period-streams/index.json"
         );
         resolve();
         return streams.default;

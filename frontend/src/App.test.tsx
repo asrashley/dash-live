@@ -84,14 +84,14 @@ describe("main entry-point app", () => {
       }),
       getAllMultiPeriodStreams: new Promise<void>(resolve => {
         apiRequestMock.getAllMultiPeriodStreams.mockImplementation(async () => {
-          const streams = await import("./test/fixtures/multi-period-streams.json");
+          const streams = await import("./test/fixtures/multi-period-streams/index.json");
           resolve();
           return streams;
         });
       }),
       getMultiPeriodStream: new Promise<void>(resolve => {
         apiRequestMock.getMultiPeriodStream.mockImplementation(async () => {
-          const demo = await import("./test/fixtures/demo-mps.json");
+          const demo = await import("./test/fixtures/multi-period-streams/demo.json");
           resolve();
           return demo.default as MultiPeriodStreamJson;
         });
