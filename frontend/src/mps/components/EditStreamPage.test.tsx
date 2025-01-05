@@ -29,7 +29,7 @@ describe("EditStreamPage component", () => {
       }),
       new Promise<void>((resolve) => {
         apiRequests.getMultiPeriodStream.mockImplementation(async () => {
-          const demo = await import("../../test/fixtures/demo-mps.json");
+          const demo = await import("../../test/fixtures/multi-period-streams/demo.json");
           resolve();
           return demo.default as MultiPeriodStreamJson;
         });

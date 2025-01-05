@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, test } from "vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import ListStreamsPage from "./ListStreamsPage";
@@ -15,7 +15,7 @@ describe("ListStreamsPage", () => {
 
   beforeEach(() => {
     apiRequests.getAllMultiPeriodStreams.mockImplementation(async () => {
-      const mps = await import("../../test/fixtures/multi-period-streams.json") as AllMultiPeriodStreamsJson;
+      const mps = await import("../../test/fixtures/multi-period-streams/index.json") as AllMultiPeriodStreamsJson;
       return mps;
     });
   });

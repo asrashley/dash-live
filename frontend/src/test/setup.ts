@@ -1,18 +1,15 @@
 import { cleanup } from '@testing-library/preact';
-import { afterEach, beforeAll, beforeEach, vi } from 'vitest';
-import fetchMock from 'fetch-mock';
-import createFetchMock from 'vitest-fetch-mock';
+import { afterEach, beforeAll, beforeEach } from 'vitest';
 import { installAllPolyfills } from './polyfills';
-
-const fetchMocker = createFetchMock(vi);
+import fetchMock, { manageFetchMockGlobally } from '@fetch-mock/vitest';
 
 beforeAll(() => {
     Object.assign(fetchMock.config, {
         fallbackToNetwork: false,
         warnOnFallback: true,
     });
-    // sets globalThis.fetch and globalThis.fetchMock to our mocked version
-    fetchMocker.enableMocks();
+    fetchMock.mockGlobal();
+    manageFetchMockGlobally();
 });
 
 beforeEach(() => {

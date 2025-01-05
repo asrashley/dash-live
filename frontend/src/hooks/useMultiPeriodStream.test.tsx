@@ -99,7 +99,7 @@ describe("useMultiPeriodStream hook", () => {
   beforeEach(() => {
     getMultiPeriodStreamPromise = new Promise<void>((resolve) => {
       apiRequests.getMultiPeriodStream.mockImplementation(async () => {
-        const data = await import("../test/fixtures/demo-mps.json");
+        const data = await import("../test/fixtures/multi-period-streams/demo.json");
         resolve();
         return data.default as MultiPeriodStreamJson;
       });
