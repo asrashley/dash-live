@@ -1,4 +1,6 @@
 import { createContext } from 'preact';
+import log from 'loglevel';
+
 import { routeMap } from '@dashlive/routemap';
 import { type RouteMap } from './types/RouteMap';
 import { CsrfTokenStore } from './CsrfTokenStore';
@@ -204,6 +206,8 @@ export class ApiRequests {
     const cache = 'no-cache';
     const credentials = 'same-origin';
     const mode = 'same-origin';
+    url = new URL(url, document.location.origin).href;
+    log.trace(`sendApiRequest(${url})`);
     let fetchResult = await fetch(url, {
       cache,
       credentials,
@@ -264,7 +268,7 @@ export class ApiRequests {
     return data;
   }
 
-  updateCsrfTokens(tokens: Partial<CsrfTokenCollection>) {
+  private updateCsrfTokens(tokens: Partial<CsrfTokenCollection>) {
     for (const [key, value] of Object.entries(tokens)) {
       if (this.csrfTokens[key] === undefined) {
         this.csrfTokens[key] = new CsrfTokenStore(value);
@@ -274,7 +278,7 @@ export class ApiRequests {
     }
   }
 
-  async getAccessToken(signal: AbortSignal): Promise<void> {
+  private async getAccessToken(signal: AbortSignal): Promise<void> {
     if (!this.refreshToken) {
       throw new Error('Cannot request an access token without a refresh token');
     }
