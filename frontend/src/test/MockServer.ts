@@ -4,7 +4,9 @@ import { FakeEndpoint, HttpRequestHandler, jsonResponse, ServerRouteProps } from
 import { ContentRolesMap } from '../types/ContentRolesMap';
 import { CsrfTokenCollection } from '../types/CsrfTokenCollection';
 import { JwtToken } from '../types/JwtToken';
-import { AllMultiPeriodStreamsJson } from '../types/AllMultiPeriodStreams';
+import { AllMultiPeriodStreamsJson, MultiPeriodStreamSummary } from '../types/AllMultiPeriodStreams';
+import { DecoratedMultiPeriodStream } from '../types/DecoratedMultiPeriodStream';
+import { ModifyMultiPeriodStreamJson } from '../types/ModifyMultiPeriodStreamJson';
 
 enum UserGroups {
     USER = "USER",
@@ -72,12 +74,13 @@ export interface MockDashServerProps {
     endpoint: FakeEndpoint;
     accessTokenLifetime?: number;
     refreshTokenLifetime?: number;
-};
+}
 
 export class MockDashServer {
     private endpoint: FakeEndpoint;
     private nextAccessTokenId = 1;
     private nextRefreshTokenId = 1000;
+    private nextPk = 200;
     private accessTokenLifetime: number;
     private refreshTokenLifetime: number;
     private userDatabase: UserModel[] = structuredClone([
@@ -85,6 +88,7 @@ export class MockDashServer {
         normalUser,
         mediaUser,
     ]);
+    private mpsStreams: MultiPeriodStreamSummary[] | undefined;
 
     constructor({
         endpoint,
@@ -119,9 +123,11 @@ export class MockDashServer {
             .get(routeMap.listManifests.url(), this.returnSimpleFixture)
             .get(routeMap.contentRoles.url(), this.getContentRoles)
             .get(routeMap.listStreams.url(), this.returnSimpleFixture)
-            .get(routeMap.listMps.url(), this.getAllMpStreams)
+            .get(routeMap.listMps.url(), protectedRoute(this.getAllMpStreams))
             .get(routeMap.editMps.url({mps_name: 'demo'}), this.returnSimpleFixture)
-            .get(routeMap.refreshCsrfTokens.url(), protectedRoute(this.refreshCsrfTokens));
+            .put(routeMap.addMps.url(), protectedRoute(this.addMultiPeriodStream))
+            .get(routeMap.refreshCsrfTokens.url(), protectedRoute(this.refreshCsrfTokens))
+            .get(routeMap.refreshAccessToken.url(), this.refreshAccessToken);
     }
 
     addUser(user: UserModel) {
@@ -157,6 +163,24 @@ export class MockDashServer {
 
     getUser({ email, username }: Partial<UserModel>): UserModel | undefined {
         return this.userDatabase.find(usr => usr.username === username || usr.email === email);
+    }
+
+    modifyUser(props: Partial<UserModel>): boolean {
+        const { email, username } = props;
+        const curUser = this.userDatabase.find(usr => usr.username === username || usr.email === email);
+        if (!curUser) {
+            return false;
+        }
+        this.userDatabase = this.userDatabase.map(user => {
+            if (user.pk === curUser.pk) {
+                return {
+                    ...user,
+                    ...props,
+                };
+            }
+            return user;
+        });
+        return true;
     }
 
     isLoggedIn({ email, username }: Partial<UserModel>): boolean {
@@ -197,6 +221,7 @@ export class MockDashServer {
         user.accessToken = this.generateAccessToken(user.username);
         return jsonResponse({
             accessToken: user.accessToken,
+            csrfTokens: this.generateCsrfTokens(user),
         });
     };
 
@@ -210,9 +235,62 @@ export class MockDashServer {
         return jsonResponse(await this.endpoint.fetchFixtureJson<ContentRolesMap>('content_roles.json'));
     };
 
-    private getAllMpStreams = async () => {
-        return jsonResponse(await this.endpoint.fetchFixtureJson<AllMultiPeriodStreamsJson>(
-            'multi-period-streams/index.json'));
+    private getAllMpStreams = async ({context}: ServerRouteProps) => {
+        const result: AllMultiPeriodStreamsJson = {
+            streams: await this.getMpsStreams(),
+            csrfTokens: this.generateCsrfTokens((context as RequestContext).currentUser),
+        };
+        return jsonResponse(result);
+    };
+
+    private async getMpsStreams() {
+        if (this.mpsStreams === undefined) {
+            const { streams } = await this.endpoint.fetchFixtureJson<AllMultiPeriodStreamsJson>(
+                'multi-period-streams/index.json');
+            this.mpsStreams = streams;
+        }
+        return this.mpsStreams;
+    }
+
+    private addMultiPeriodStream = async ({context, jsonParam}: ServerRouteProps) => {
+        type DecoratedMultiPeriodStreamJson = DecoratedMultiPeriodStream & {
+            csrf_token: string;
+        };
+        if (!jsonParam) {
+            return jsonResponse('', 400);
+        }
+        if (this.mpsStreams === undefined) {
+            await this.getMpsStreams();
+        }
+        const {csrf_token, ...dmps}: DecoratedMultiPeriodStreamJson = jsonParam as DecoratedMultiPeriodStreamJson;
+        if (!csrf_token) {
+            return jsonResponse('CSRF token missing', 401);
+        }
+        const { name, options, title } = dmps;
+        const periods: number[] = dmps.periods.map((prd, idx) => {
+            if (typeof prd.pk === 'number') {
+                return prd.pk;
+            }
+            return 10 + idx;
+        });
+        const summary: MultiPeriodStreamSummary = {
+            name,
+            duration: '',
+            options,
+            periods,
+            pk: this.nextPk++,
+            title
+        };
+        this.mpsStreams.push(summary);
+        const result: ModifyMultiPeriodStreamJson = {
+            csrfTokens: {
+                streams: `${(context as RequestContext).currentUser.username}.${randomToken(12)}`,
+            },
+            model: dmps,
+            success: true,
+            errors: [],
+        };
+        return jsonResponse(result);
     };
 
     //
