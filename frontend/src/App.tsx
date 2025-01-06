@@ -26,9 +26,12 @@ export interface AppProps {
 }
 
 export function App({tokens, user}: AppProps) {
-  const apiRequests = useMemo(() => new ApiRequests(tokens), [tokens]);
-  const state = useMemo(() => createAppState(user), [user]);
   const setLocation = useLocation()[1];
+  const apiRequests = useMemo(() => new ApiRequests({
+    ...tokens,
+    navigate: setLocation
+  }), [setLocation, tokens]);
+  const state = useMemo(() => createAppState(user), [user]);
   const { backdrop } = state;
 
   useEffect(() => {

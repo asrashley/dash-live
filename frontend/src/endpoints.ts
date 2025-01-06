@@ -12,6 +12,7 @@ import { MultiPeriodStreamJson } from './types/MultiPeriodStream';
 import { DecoratedMultiPeriodStream } from "./types/DecoratedMultiPeriodStream";
 import { AllMultiPeriodStreamsJson } from './types/AllMultiPeriodStreams';
 import { ContentRolesMap } from './types/ContentRolesMap';
+import { ModifyMultiPeriodStreamJson } from './types/ModifyMultiPeriodStreamJson';
 
 type TokenStoreCollection = {
   files: CsrfTokenStore;
@@ -45,13 +46,16 @@ export interface ApiRequestsProps {
   csrfTokens: Partial<CsrfTokenCollection>;
   accessToken: JwtToken | null;
   refreshToken: JwtToken | null;
+  navigate: (url: string) => void;
 }
+
 export class ApiRequests {
   private csrfTokens: TokenStoreCollection;
   private accessToken: JwtToken | null;
   private refreshToken: JwtToken | null;
+  private navigate: ApiRequestsProps['navigate'];
 
-  constructor({csrfTokens, accessToken, refreshToken}: ApiRequestsProps) {
+  constructor({csrfTokens, accessToken, refreshToken, navigate}: ApiRequestsProps) {
     this.csrfTokens = {
       files: new CsrfTokenStore(csrfTokens?.files),
       kids: new CsrfTokenStore(csrfTokens?.kids),
@@ -60,6 +64,7 @@ export class ApiRequests {
     }
     this.accessToken = accessToken;
     this.refreshToken = refreshToken;
+    this.navigate = navigate;
   }
 
   getAllManifests(options: Partial<ApiRequestOptions> = {}): Promise<AllManifests> {
@@ -113,7 +118,7 @@ export class ApiRequests {
     });
   }
 
-  async addMultiPeriodStream(data: DecoratedMultiPeriodStream, options: Partial<ApiRequestOptions> = {}) {
+  async addMultiPeriodStream(data: DecoratedMultiPeriodStream, options: Partial<ApiRequestOptions> = {}): Promise<ModifyMultiPeriodStreamJson> {
     const service = 'streams';
     const csrf_token = await this.csrfTokens[service].getToken(
       options?.signal, this.getCsrfTokens);
@@ -168,7 +173,7 @@ export class ApiRequests {
     });
   }
 
-  async sendApiRequest(url: string, options: Partial<ApiRequestOptions>) {
+  private async sendApiRequest(url: string, options: Partial<ApiRequestOptions>) {
     const { authorization, body, service, signal, method='GET',
       rejectOnError = true } = options;
     let { query } = options;
@@ -248,7 +253,7 @@ export class ApiRequests {
       }
     }
     if (signal?.aborted) {
-      throw signal.reason;
+      throw new Error(signal.reason);
     }
     if (fetchResult.status !== 200) {
       return fetchResult;
@@ -290,7 +295,7 @@ export class ApiRequests {
     const data: RefreshAccessTokenResponse = await this.sendApiRequest(routeMap.refreshAccessToken.url(), options);
     const { accessToken, csrfTokens, ok, status } = data ?? {};
     if (ok === false && status === 401) {
-      document.location.replace(routeMap.login.url());
+      this.navigate(routeMap.login.url());
     }
     if (accessToken) {
       this.accessToken = accessToken;
@@ -300,7 +305,10 @@ export class ApiRequests {
     }
   }
 
-  getCsrfTokens = async (signal: AbortSignal): Promise<void> => {
+  private getCsrfTokens = async (signal: AbortSignal): Promise<void> => {
+    if (!this.accessToken && this.refreshToken) {
+      await this.getAccessToken(signal);
+    }
     if (!this.accessToken) {
       throw new Error('Cannot request CSRF tokens without an access token');
     }
