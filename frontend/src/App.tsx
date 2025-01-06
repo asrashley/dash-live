@@ -1,3 +1,4 @@
+import { type ComponentChildren } from 'preact';
 import { useEffect, useMemo } from 'preact/hooks'
 import { Route, Switch, useLocation } from "wouter-preact";
 import lazy from 'preact-lazy';
@@ -8,7 +9,7 @@ import { LoadingSpinner } from './components/LoadingSpinner';
 import { MessagesPanel } from './components/MessagesPanel';
 
 import { ApiRequests, ApiRequestsProps, EndpointContext } from './endpoints';
-import { AppStateContext, createAppState } from './appState';
+import { AppStateContext, AppStateType, createAppState } from './appState';
 import { InitialUserState } from './types/UserState';
 
 const AddStreamPage = lazy(() => import('./mps/components/AddStreamPage'), LoadingSpinner);
@@ -23,15 +24,16 @@ function NotFound(params) {
 export interface AppProps {
   tokens: Omit<ApiRequestsProps, 'navigate'>;
   user: InitialUserState;
+  children?: ComponentChildren;
 }
 
-export function App({tokens, user}: AppProps) {
+export function App({children, tokens, user}: AppProps) {
   const setLocation = useLocation()[1];
   const apiRequests = useMemo(() => new ApiRequests({
     ...tokens,
     navigate: setLocation
   }), [setLocation, tokens]);
-  const state = useMemo(() => createAppState(user), [user]);
+  const state: AppStateType = useMemo(() => createAppState(user), [user]);
   const { backdrop } = state;
 
   useEffect(() => {
@@ -73,6 +75,7 @@ export function App({tokens, user}: AppProps) {
       <Route component={HomePage} path={ routeMap.home.route } />
       <Route path="*" component={NotFound} />
     </Switch>
+    { children }
   </EndpointContext.Provider>
 </AppStateContext.Provider>;
 }

@@ -1,10 +1,13 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
-import { render } from "@testing-library/preact";
+import { act, fireEvent, render } from "@testing-library/preact";
+import { useContext } from "preact/hooks";
+import { useLocation } from 'wouter-preact';
 
 import { ApiRequests } from "./endpoints";
 import { App } from "./App";
 import { AllStreamsJson } from "./types/AllStreams";
 import { MultiPeriodStreamJson } from "./types/MultiPeriodStream";
+import { AppStateContext, AppStateType } from "./appState";
 
 vi.mock('./endpoints.js', async (importOriginal) => {
   const ApiRequests = vi.fn();
@@ -19,6 +22,13 @@ vi.mock('./endpoints.js', async (importOriginal) => {
    };
 });
 
+vi.mock('wouter-preact', async (importOriginal) => {
+  return {
+    ...await importOriginal(),
+    useLocation: vi.fn(),
+  };
+});
+
 type ApiRequestPromises = {
   getAllManifests: Promise<void>;
   getAllStreams: Promise<void>;
@@ -28,6 +38,8 @@ type ApiRequestPromises = {
 };
 
 describe("main entry-point app", () => {
+  const useLocationSpy = vi.mocked(useLocation);
+  const setLocation = vi.fn();
   const initialTokens = {
     accessToken: {
       expires: "2024-12-14T16:42:22.606208Z",
@@ -53,6 +65,7 @@ describe("main entry-point app", () => {
   const mockLocation = {
     ...new URL(document.location.href),
     pathname: '/',
+    replace: vi.fn(),
   };
   const apiRequestMock = vi.mocked(ApiRequests.prototype);
   let baseElement: HTMLDivElement;
@@ -104,9 +117,20 @@ describe("main entry-point app", () => {
         });
       })
     };
-    document.body.innerHTML = `<header><nav class="breadcrumbs"><ol class="breadcrumb" /></nav></header>
+    document.body.innerHTML = `<header>
+    <nav class="navbar">
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item spa"><a class="nav-link active" href="/" aria-current="page">Home</a></li>
+          <li class="nav-item "><a class="nav-link" href="/streams">Streams</a></li>
+          <li class="nav-item spa"><a class="nav-link" id="nav-mps" href="/multi-period-streams">Multi-Period</a></li>
+          <li class="nav-item user-login"><a class="nav-link" href="/logout">Log Out</a></li>
+        </ul>
+      </div>
+    </nav>
+    <nav class="breadcrumbs"><ol class="breadcrumb" /></nav></header>
     <div class="content"><div id="app" /></div>
-    <div class="modal-backdrop" />`;
+    <div class="modal-backdrop hidden" />`;
     const app = document.getElementById('app');
     expect(app).not.toBeNull();
     baseElement = app as HTMLDivElement;
@@ -114,6 +138,7 @@ describe("main entry-point app", () => {
 
   test("matches snapshot for home page", async () => {
     mockLocation.pathname = "/";
+    useLocationSpy.mockReturnValue([mockLocation.pathname, setLocation]);
     const { asFragment, findByText } = render(
       <App tokens={initialTokens} user={user} />,
       { baseElement }
@@ -128,6 +153,7 @@ describe("main entry-point app", () => {
 
   test("matches snapshot for list MPS", async () => {
     mockLocation.pathname = '/multi-period-streams';
+    useLocationSpy.mockReturnValue([mockLocation.pathname, setLocation]);
     const { asFragment, findByText } = render(
       <App tokens={initialTokens} user={user} />,
       { baseElement }
@@ -140,6 +166,7 @@ describe("main entry-point app", () => {
 
   test("matches snapshot for edit MPS", async () => {
     mockLocation.pathname = '/multi-period-streams/demo';
+    useLocationSpy.mockReturnValue([mockLocation.pathname, setLocation]);
     const { asFragment, findByText } = render(
       <App tokens={initialTokens} user={user} />,
       { baseElement }
@@ -151,11 +178,59 @@ describe("main entry-point app", () => {
 
   test("unknown page", () => {
     mockLocation.pathname = '/unknown';
+    useLocationSpy.mockReturnValue([mockLocation.pathname, setLocation]);
     const { getByText } = render(
       <App tokens={initialTokens} user={user} />,
       { baseElement }
     );
     getByText('404, Sorry the page',  { exact: false});
     getByText('does not exist',  { exact: false});
-  })
+  });
+
+  test("modal backdrop is displayed", async () => {
+    let appState: AppStateType;
+    const StateSpy = () => {
+      appState = useContext(AppStateContext);
+      return <div />;
+    };
+    mockLocation.pathname = "/";
+    useLocationSpy.mockReturnValue([mockLocation.pathname, setLocation]);
+    const { findByText } = render(
+      <App tokens={initialTokens} user={user}><StateSpy /></App>,
+      { baseElement }
+    );
+    await Promise.all([promises.getAllManifests, promises.getAllStreams, promises.getAllMultiPeriodStreams]);
+    await findByText("Stream to play");
+    expect(appState).toBeDefined();
+    const elt = document.querySelector('.modal-backdrop');
+    expect(elt.className).toEqual('modal-backdrop hidden');
+    act(() => {
+      appState!.dialog.value = {
+        backdrop: true,
+      };
+    });
+    expect(elt.className).toEqual('modal-backdrop show');
+    act(() => {
+      appState!.dialog.value = {
+        backdrop: false,
+      };
+    });
+    expect(elt.className).toEqual('modal-backdrop hidden');
+  });
+
+  test("doesn't reload page when navigating to another SPA page", async () => {
+    mockLocation.pathname = "/";
+    useLocationSpy.mockReturnValue(["/", setLocation]);
+    const { findByText } = render(
+      <App tokens={initialTokens} user={user} />,
+      { baseElement }
+    );
+    await Promise.all([promises.getAllManifests, promises.getAllStreams, promises.getAllMultiPeriodStreams]);
+    await findByText("Stream to play");
+    const elt = document.getElementById("nav-mps");
+    expect(elt).not.toBeNull();
+    fireEvent.click(elt);
+    expect(setLocation).toHaveBeenCalled();
+    expect(setLocation).toHaveBeenCalledWith('/multi-period-streams');
+  });
 });
