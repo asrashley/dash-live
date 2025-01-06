@@ -148,4 +148,14 @@ describe("main entry-point app", () => {
     await findByText("Delete Stream");
     expect(asFragment()).toMatchSnapshot();
   });
+
+  test("unknown page", () => {
+    mockLocation.pathname = '/unknown';
+    const { getByText } = render(
+      <App tokens={initialTokens} user={user} />,
+      { baseElement }
+    );
+    getByText('404, Sorry the page',  { exact: false});
+    getByText('does not exist',  { exact: false});
+  })
 });

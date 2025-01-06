@@ -21,7 +21,7 @@ function NotFound(params) {
 }
 
 export interface AppProps {
-  tokens: ApiRequestsProps;
+  tokens: Omit<ApiRequestsProps, 'navigate'>;
   user: InitialUserState;
 }
 
