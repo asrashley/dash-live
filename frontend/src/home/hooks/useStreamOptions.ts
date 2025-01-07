@@ -1,5 +1,5 @@
 import { useCallback } from "preact/hooks";
-import { Signal, useComputed, useSignal } from "@preact/signals";
+import { type Signal, useComputed, useSignal } from "@preact/signals";
 
 import { defaultCgiOptions, drmSystems } from "@dashlive/options";
 import { CombinedStream } from "../../hooks/useCombinedStreams";
@@ -54,13 +54,13 @@ export interface UseStreamOptionsProps {
 export function useStreamOptions({ streamNames, streamsMap }: UseStreamOptionsProps): UseStreamOptionsHook {
   const data = useSignal<object>(getDefaultOptions());
   const stream = useComputed<CombinedStream>(() => {
-    const name: string = data.value.stream ?? streamNames.value[0];
+    const name: string = data.value['stream'] ?? streamNames.value[0];
     return streamsMap.value.get(name) ?? emptyStream;
   });
-  const mode = useComputed<string>(() => data.value.mode);
-  const manifest = useComputed<string>(() => data.value.manifest);
+  const mode = useComputed<string>(() => data.value['mode']);
+  const manifest = useComputed<string>(() => data.value['manifest']);
   const drms = useComputed<EnabledDrmSystems>(() => Object.fromEntries(drmSystems.map(name => [name, data.value[name] === "1"])));
-  const nonDefaultOptions = useComputed(() => {
+  const nonDefaultOptions = useComputed<object>(() => {
     const params = Object.entries(data.value)
       .filter(([key, value]) => defaultCgiOptions[key] != value)
       .filter(([key]) => !skipKeys.test(key));
@@ -74,7 +74,7 @@ export function useStreamOptions({ streamNames, streamsMap }: UseStreamOptionsPr
     return Object.fromEntries(params);
   });
   const manifestOptions = useComputed<object>(() => Object.fromEntries(
-    Object.entries(nonDefaultOptions.value).filter(key => !manifestSkipKeys.test(key))));
+    Object.entries(nonDefaultOptions.value).filter(([key]) => !manifestSkipKeys.test(key))));
 
   const setValue = useCallback(
     (name, value) => {
