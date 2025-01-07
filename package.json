@@ -11,10 +11,11 @@
     "npm": ">=10.0.0"
   },
   "scripts": {
-    "build": "webpack --mode production --config config/webpack.prod.js",
+    "build": "webpack --mode production --config frontend/config/webpack.prod.js",
     "coverage": "vitest run --coverage",
     "lint": "eslint frontend/src/**/*.{ts,tsx}",
     "postinstall": "patch-package",
+    "start": "webpack server --host 0.0.0.0 --port 8765 --watch-files src --color",
     "test": "vitest"
   },
   "devDependencies": {
