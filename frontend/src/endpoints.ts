@@ -13,6 +13,7 @@ import { DecoratedMultiPeriodStream } from "./types/DecoratedMultiPeriodStream";
 import { AllMultiPeriodStreamsJson } from './types/AllMultiPeriodStreams';
 import { ContentRolesMap } from './types/ContentRolesMap';
 import { ModifyMultiPeriodStreamJson } from './types/ModifyMultiPeriodStreamJson';
+import { InitialApiTokens } from './types/InitialApiTokens';
 
 type TokenStoreCollection = {
   files: CsrfTokenStore;
@@ -42,10 +43,7 @@ type RefreshAccessTokenResponse = {
   status: number;
 };
 
-export interface ApiRequestsProps {
-  csrfTokens: Partial<CsrfTokenCollection>;
-  accessToken: JwtToken | null;
-  refreshToken: JwtToken | null;
+export interface ApiRequestsProps extends InitialApiTokens {
   navigate: (url: string) => void;
 }
 

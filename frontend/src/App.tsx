@@ -8,9 +8,10 @@ import { BreadCrumbs } from './components/BreadCrumbs';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { MessagesPanel } from './components/MessagesPanel';
 
-import { ApiRequests, ApiRequestsProps, EndpointContext } from './endpoints';
+import { ApiRequests, EndpointContext } from './endpoints';
 import { AppStateContext, AppStateType, createAppState } from './appState';
 import { InitialUserState } from './types/UserState';
+import { InitialApiTokens } from './types/InitialApiTokens';
 
 const AddStreamPage = lazy(() => import('./mps/components/AddStreamPage'), LoadingSpinner);
 const EditStreamPage = lazy(() => import('./mps/components/EditStreamPage'), LoadingSpinner);
@@ -22,7 +23,7 @@ function NotFound(params) {
 }
 
 export interface AppProps {
-  tokens: Omit<ApiRequestsProps, 'navigate'>;
+  tokens: InitialApiTokens;
   user: InitialUserState;
   children?: ComponentChildren;
 }
