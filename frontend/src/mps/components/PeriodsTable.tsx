@@ -10,11 +10,12 @@ import { TextInput } from '../../components/TextInput';
 import { TimeDeltaInput }  from '../../components/TimeDeltaInput';
 
 import { AllStreamsContext } from '../../hooks/useAllStreams';
-import { MultiPeriodModelContext } from '../../hooks/useMultiPeriodStream';
+import { MpsPeriodValidationErrors, MultiPeriodModelContext } from '../../hooks/useMultiPeriodStream';
 import { AppStateContext } from "../../appState";
 import { MenuItemType } from "../../types/MenuItemType";
 import { MpsPeriod } from "../../types/MpsPeriod";
 import { MpsTrack } from "../../types/MpsTrack";
+import { DecoratedStream } from "../../types/DecoratedStream";
 
 interface PeriodOrderProps {
   addPeriod: (ev: JSX.TargetedEvent<HTMLAnchorElement>) => void;
@@ -37,13 +38,21 @@ function PeriodOrder({ addPeriod, deletePeriod }: PeriodOrderProps) {
   </DropDownMenu>;
 }
 interface StreamSelectProps {
-  value,
+  value?: DecoratedStream,
   onChange: (props: {name: string, value: number}) => void;
   name: string;
+  error?: string;
+  required?: boolean;
  }
-function StreamSelect({ value, onChange, name }: StreamSelectProps) {
+function StreamSelect({ value, onChange, name, error, required }: StreamSelectProps) {
   const { allStreams } = useContext(AllStreamsContext);
   const streams = useComputed(() => allStreams.value ?? []);
+  const validationClass = error
+    ? " is-invalid"
+    : value
+    ? " is-valid"
+    : "";
+  const className = `form-select${validationClass}`;
 
   const changeHandler = useCallback(
     (ev) => {
@@ -56,10 +65,11 @@ function StreamSelect({ value, onChange, name }: StreamSelectProps) {
   );
 
   return <select
-    className="form-select"
+    className={className}
     value={value?.pk}
     name={name}
     onChange={changeHandler}
+    required={required}
   >
     <option value="">--Select a stream--</option>
     {streams.value.map((s) => <option key={s.pk} value={s.pk}>{s.title}</option>)}
@@ -95,10 +105,11 @@ function TrackSelectionButton({ period, stream, selectTracks }: TrackSelectionBu
   const { tracks } = period;
   const description = tracksDescription(tracks, stream);
   const hasActiveTracks = tracks.some(tk => tk.enabled);
-  const className = `btn btn-sm m-1 ${hasActiveTracks ? "btn-success" : "btn-warning"}`;
+  const disabled = stream === undefined;
+  const className = `btn btn-sm m-1 ${hasActiveTracks ? "btn-success" : "btn-warning"}${disabled ? ' disabled': ''}`;
 
   return <div className="col period-tracks">
-  <a className={className} onClick={selectTracks} disabled={stream === undefined}>
+  <a className={className} onClick={selectTracks} aria-disabled={disabled}>
     {description}
   </a>
 </div>;
@@ -189,12 +200,13 @@ function setPeriodStream(periodPk, stream, currentTracks, modifyPeriod) {
   });
 }
 
-function PeriodRow({ className = "", index, item: period, ...props }: PeriodRowProps) {
+function PeriodRow({ className = "", index, item: period }: PeriodRowProps) {
   const { streamsMap } = useContext(AllStreamsContext);
   const { dialog } = useContext(AppStateContext);
   const { errors, modifyPeriod, addPeriod, removePeriod } = useContext(
     MultiPeriodModelContext
   );
+  const prdErrors = useComputed<MpsPeriodValidationErrors>(() => errors?.[period?.pid] ?? {});
   const currentStream = period ? streamsMap.value.get(`${period.stream}`) : undefined;
   const { pid, pk, start, duration } = period ?? {};
 
@@ -265,7 +277,7 @@ function PeriodRow({ className = "", index, item: period, ...props }: PeriodRowP
         value={pid}
         name={`pid_${pk}`}
         onInput={setPid}
-        error={errors.pid}
+        error={prdErrors.value.pid}
         required
       />
     </div>
@@ -274,7 +286,7 @@ function PeriodRow({ className = "", index, item: period, ...props }: PeriodRowP
         name={`stream_${pk}`}
         value={currentStream}
         onChange={setStream}
-        error={errors.stream}
+        error={prdErrors.value.stream}
         required
       />
     </div>
@@ -283,7 +295,7 @@ function PeriodRow({ className = "", index, item: period, ...props }: PeriodRowP
         value={start}
         name={`start_${pk}`}
         onChange={setField}
-        error={errors.start}
+        error={prdErrors.value.start}
         required
       />
     </div>
@@ -293,7 +305,7 @@ function PeriodRow({ className = "", index, item: period, ...props }: PeriodRowP
         name={`duration_${pk}`}
         onChange={setField}
         min="00:00:01"
-        error={errors.duration}
+        error={prdErrors.value.duration}
         required
       />
     </div>
@@ -324,15 +336,13 @@ export function PeriodsTable() {
   );
   const periods = useComputed<MpsPeriod[]>(() => model.value?.periods ?? []);
   const errorList = useComputed<string[]>(() => {
-    if (errors.value.periods === undefined) {
-      return [];
-    }
-    return Object.entries(errors.value.periods).map(([pid, err]) => {
-      if (pid === "_") {
-        return err;
-      }
+    const errs: string[] = Object.entries(errors.value.periods ?? []).map(([pid, err]) => {
       return `${pid}: ${Object.values(err).join(". ")}`;
     });
+    if (errors.value.allPeriods) {
+      errs.push(errors.value.allPeriods);
+    }
+    return errs;
   });
 
   const setPeriodOrder = useCallback(

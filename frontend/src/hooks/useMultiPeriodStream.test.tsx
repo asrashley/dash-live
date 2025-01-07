@@ -148,9 +148,7 @@ describe("useMultiPeriodStream hook", () => {
     expect(result.model.value).toEqual(blankModel);
     expect(errors.value).toEqual({
       name: "Name is required",
-      periods: {
-        _: "At least one Period is required",
-      },
+      allPeriods: "At least one Period is required",
       title: "Title is required",
     });
     expect(apiRequests.getMultiPeriodStream).not.toHaveBeenCalled();
