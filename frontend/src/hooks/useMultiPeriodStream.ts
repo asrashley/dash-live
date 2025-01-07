@@ -233,9 +233,9 @@ async function saveChangesToModel({
     result.errors?.forEach((err) => appendMessage(err, "warning"));
     if (result?.success === true) {
       if (data.pk === null) {
-        appendMessage(`Added new stream ${name}`, "success");
+        appendMessage("success", `Added new stream ${name}`);
       } else {
-        appendMessage(`Saved changes to ${name}`, "success");
+        appendMessage("success", `Saved changes to ${name}`);
       }
       model.value = {
         ...decorateLoadedModel(result.model),
@@ -244,7 +244,7 @@ async function saveChangesToModel({
       return true;
     }
   } catch (err) {
-    appendMessage(`${err}`, "warning");
+    appendMessage("warning", `${err}`);
   }
 }
 

@@ -1,4 +1,4 @@
-import { type Signal, signal, useComputed } from "@preact/signals";
+import { type ReadonlySignal, signal, useComputed } from "@preact/signals";
 import { MessageLevel, MessageType } from "../types/MessageType";
 
 type MessagesState = {
@@ -13,9 +13,9 @@ export function resetAllMessages() {
   messages.value = { alerts: [], nextId: 1 };
 }
 
-export type AppendMessageFn = (text: string, level?: MessageLevel) => void;
+export type AppendMessageFn = (level: MessageLevel, text: string) => number;
 
-const appendMessage: AppendMessageFn = (text: string, level: MessageLevel = "warning") => {
+const appendMessage: AppendMessageFn = (level: MessageLevel, text: string) => {
   const id = messages.value.nextId;
   const alerts = [
     ...messages.value.alerts,
@@ -29,6 +29,7 @@ const appendMessage: AppendMessageFn = (text: string, level: MessageLevel = "war
     nextId: id + 1,
     alerts,
   };
+  return id;
 };
 
 const removeAlert = (id: number) => {
@@ -37,8 +38,8 @@ const removeAlert = (id: number) => {
 };
 
 export interface UseMessagesHook {
-  alerts: Signal<MessageType[]>
-  appendMessage: (level: MessageLevel, text: string, footer?: string) => void;
+  alerts: ReadonlySignal<MessageType[]>
+  appendMessage: AppendMessageFn;
   removeAlert: (id: number) => void;
 }
 

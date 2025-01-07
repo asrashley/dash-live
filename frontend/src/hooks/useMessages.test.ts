@@ -28,7 +28,7 @@ describe("useMessages hook", () => {
   test("can add a message", () => {
     const { result } = renderHook(() => useMessages());
     const { appendMessage } = result.current;
-    appendMessage("this is a message");
+    appendMessage("warning", "this is a message");
     expect(result.current.alerts.value).toEqual([
       {
         id: 1,
@@ -36,7 +36,7 @@ describe("useMessages hook", () => {
         level: "warning",
       },
     ]);
-    appendMessage("second message", "info");
+    appendMessage("info", "second message");
     expect(result.current.alerts.value).toEqual([
       {
         id: 1,
@@ -54,7 +54,7 @@ describe("useMessages hook", () => {
   test("can remove a message", () => {
     const { result } = renderHook(() => useMessages());
     const { appendMessage, removeAlert } = result.current;
-    appendMessage("this is a message");
+    expect(appendMessage("warning", "this is a message")).toEqual(1);
     expect(result.current.alerts.value).toEqual([
       {
         id: 1,
