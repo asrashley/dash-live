@@ -29,6 +29,9 @@ export function InputFieldRow({
   ...props
 }: InputFieldRowProps) {
   const value = useComputed(() => {
+    if (!data.value) {
+      return undefined;
+    }
     if (mode === "shortName") {
       return data.value[shortName];
     }
