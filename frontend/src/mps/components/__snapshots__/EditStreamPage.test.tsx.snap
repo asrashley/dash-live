@@ -186,8 +186,9 @@ exports[`EditStreamPage component > allows an existing stream to be edited 1`] =
                           role="button"
                         >
                           <span
+                            aria-label="three-dots icon"
                             class="bi icon bi-three-dots "
-                            role="icon"
+                            role="img"
                           />
                         </a>
                         <ul
@@ -233,6 +234,7 @@ exports[`EditStreamPage component > allows an existing stream to be edited 1`] =
                       <select
                         class="form-select"
                         name="stream_undefined"
+                        required=""
                       >
                         <option
                           value=""
@@ -293,8 +295,9 @@ exports[`EditStreamPage component > allows an existing stream to be edited 1`] =
                           role="button"
                         >
                           <span
+                            aria-label="three-dots icon"
                             class="bi icon bi-three-dots "
-                            role="icon"
+                            role="img"
                           />
                         </a>
                         <ul
@@ -340,6 +343,7 @@ exports[`EditStreamPage component > allows an existing stream to be edited 1`] =
                       <select
                         class="form-select"
                         name="stream_undefined"
+                        required=""
                       >
                         <option
                           value=""

@@ -1,6 +1,7 @@
 import { Fragment } from "preact/jsx-runtime";
 
 interface ValueProps {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     val: any;
 }
 
@@ -9,7 +10,7 @@ function Value({ val }: ValueProps) {
     return <span className="value">{`"${val}"`}</span>;
   }
   if (Array.isArray(val)) {
-    return <Fragment>{`[`}{val.map((item) => <Value val={item} />)}{`]`}</Fragment>;
+    return <Fragment>{`[`}{val.map((item, idx) => <Value key={idx} val={item} />)}{`]`}</Fragment>;
   }
   if (typeof val === "object") {
     return <PrettyJson data={val} />;
@@ -20,6 +21,7 @@ function Value({ val }: ValueProps) {
 
 interface KeyValueProps {
     keyName: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     value: any;
     idx: number;
 }
