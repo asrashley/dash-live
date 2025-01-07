@@ -6,6 +6,9 @@
     "jsxImportSource": "preact",
     "module": "ES2022",
     "moduleResolution": "node",
+    "paths": {
+      "@dashlive/*": ["./frontend/@types/@dashlive/*"]
+    },
     "resolveJsonModule": true,
     "sourceMap": true,
     "target": "ES2023",
