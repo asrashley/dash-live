@@ -1,4 +1,4 @@
-import { render, queries, RenderOptions, RenderResult, Queries } from "@testing-library/preact";
+import { render, queries, type RenderOptions, type RenderResult, type Queries } from "@testing-library/preact";
 import { memoryLocation } from "wouter-preact/memory-location";
 import { Router } from "wouter-preact";
 

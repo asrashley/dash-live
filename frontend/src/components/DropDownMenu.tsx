@@ -1,4 +1,4 @@
-import { ComponentChildren, JSX } from "preact";
+import type { ComponentChildren } from "preact";
 import { useCallback, useState } from "preact/hooks";
 import { MenuItemType } from "../types/MenuItemType";
 
@@ -65,6 +65,7 @@ export function DropDownMenu({
       <ul className={`dropdown-menu ${show}`}>
         {menu.map((item, index) => (
           <DropDownItem
+            key={item.title}
             index={index}
             onClick={item.onClick}
             setExpanded={setExpanded}

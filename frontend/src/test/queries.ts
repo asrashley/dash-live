@@ -1,4 +1,4 @@
-import { buildQueries, FindAllBy, FindBy, GetAllBy, GetBy, QueryBy } from '@testing-library/preact';
+import { buildQueries, type FindAllBy, type FindBy, type GetAllBy, type GetBy, type QueryBy } from '@testing-library/preact';
 
 const queryAllBySelector = (container: HTMLElement, selector: string): HTMLElement[] => {
     return Array.from(container.querySelectorAll(selector));
