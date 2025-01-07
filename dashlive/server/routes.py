@@ -211,7 +211,7 @@ routes = {
         handler='htmlpage.ViewManifest',
         title='DASH manifest'),
     "list-manifests": Route(
-        r'/manifests',
+        r'/api/manifests',
         handler='manifest_requests.ListManifests',
         title="DASH fragment"),
     "view-mps-manifest": Route(
