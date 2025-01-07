@@ -11,12 +11,12 @@ import {
   UseMultiPeriodStreamHook,
 } from "../../hooks/useMultiPeriodStream";
 import { TrackPickerDialogState } from "../../types/DialogState";
-import { MultiPeriodStream } from "../../types/MultiPeriodStream";
 import { DecoratedStream } from "../../types/DecoratedStream";
 import { ApiRequests, EndpointContext } from "../../endpoints";
 import { ContentRolesMap } from "../../types/ContentRolesMap";
 import { MpsPeriod } from "../../types/MpsPeriod";
 import { StreamTrack } from "../../types/StreamTrack";
+import { DecoratedMultiPeriodStream } from "../../types/DecoratedMultiPeriodStream";
 
 describe("TrackSelectionDialog component", () => {
   const onClose = vi.fn();
@@ -25,8 +25,9 @@ describe("TrackSelectionDialog component", () => {
     groups: ["MEDIA"],
   };
   const state = createAppState(userInfo);
+  const model = signal<DecoratedMultiPeriodStream>();
   const mpsContext: UseMultiPeriodStreamHook = {
-    model: signal<MultiPeriodStream>(),
+    model,
     loaded: signal<string | undefined>(),
     setFields: vi.fn(),
     addPeriod: vi.fn(),
@@ -117,12 +118,14 @@ describe("TrackSelectionDialog component", () => {
       backdrop: true,
       trackPicker: { ...trackPicker },
     };
-    mpsContext.model.value = {
+    model.value = {
       pk: 12,
       name: "test",
       title: "mps title",
       periods: [mpsPeriod],
       options: null,
+      modified: false,
+      lastModified: 0,
     };
     rolesPromise = new Promise<void>((resolve) => {
       apiRequests.getContentRoles.mockImplementation(async () => {
@@ -176,12 +179,14 @@ describe("TrackSelectionDialog component", () => {
       ...mpsPeriod,
       tracks,
     };
-    mpsContext.model.value = {
+    model.value = {
       pk: 12,
       name: "test",
       title: "mps title",
       periods: [prd],
       options: null,
+      modified: false,
+      lastModified: 0,
     };
 
     const { getByTestId } = renderWithProviders(

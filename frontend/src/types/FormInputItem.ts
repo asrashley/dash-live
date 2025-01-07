@@ -19,7 +19,7 @@ export interface FormInputItem {
     options?: SelectOptionType[];
     pattern?: string;
     placeholder?: string;
-    prefix: string;
+    prefix?: string;
     required?: boolean;
     rowClass?: string;
     shortName: string;

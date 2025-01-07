@@ -433,7 +433,7 @@ export const MultiPeriodModelContext = createContext<UseMultiPeriodStreamHook>(n
 export function useMultiPeriodStream({ name, newStream }: UseMultiPeriodStreamProps): UseMultiPeriodStreamHook {
   const apiRequests = useContext(EndpointContext);
   const loaded = useSignal<string | undefined>();
-  const model = useSignal<MultiPeriodStream>(blankModel);
+  const model = useSignal<DecoratedMultiPeriodStream>(blankModel);
   const modifiers = useMultiPeriodModel({ model, name });
 
   useEffect(() => {
