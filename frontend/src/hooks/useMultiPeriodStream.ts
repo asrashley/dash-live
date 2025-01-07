@@ -1,6 +1,6 @@
 import { createContext } from "preact";
 import { useCallback, useContext, useEffect } from "preact/hooks";
-import { useSignal, useSignalEffect, useComputed, Signal } from "@preact/signals";
+import { useSignal, useSignalEffect, useComputed, type Signal, type ReadonlySignal } from "@preact/signals";
 
 import { ApiRequests, EndpointContext } from "../endpoints";
 import { AppendMessageFn, useMessages } from "./useMessages";
@@ -12,6 +12,8 @@ import { MpsTrack } from "../types/MpsTrack";
 export type MpsPeriodValidationErrors = {
   pid?: string;
   duration?: string;
+  start?: string;
+  stream?: string;
   tracks?: string;
 };
 
@@ -30,10 +32,15 @@ export function validatePeriod(period: MpsPeriod): MpsPeriodValidationErrors {
   return errors;
 }
 
+export type MpsPeriodValidationErrorsMap = {
+  [pid: string]:  MpsPeriodValidationErrors;
+};
+
 export type MpsModelValidationErrors = {
   name?: string;
   title?: string;
-  periods?: MpsPeriodValidationErrors;
+  allPeriods?: string;
+  periods?: MpsPeriodValidationErrorsMap;
 };
 
 export function validateModel({ model }: {model: Signal<DecoratedMultiPeriodStream>}): MpsModelValidationErrors {
@@ -49,13 +56,13 @@ export function validateModel({ model }: {model: Signal<DecoratedMultiPeriodStre
     errors.title = "Title is required";
   }
   if (value.periods.length === 0) {
-    errors.periods = { _: "At least one Period is required" };
+    errors.allPeriods = "At least one Period is required";
   }
   //TODO: add check for duplicate period IDs
   value.periods.forEach((prd) => {
     const err = validatePeriod(prd);
     if (Object.keys(err).length > 0) {
-      const periods: MpsPeriodValidationErrors = errors.periods ?? {};
+      const periods: MpsPeriodValidationErrorsMap = errors.periods ?? {};
       errors.periods = {
         ...periods,
         [prd.pk]: err,
@@ -68,7 +75,7 @@ export function validateModel({ model }: {model: Signal<DecoratedMultiPeriodStre
 interface ModifyPeriodProps {
   model: Signal<DecoratedMultiPeriodStream>;
   periodPk: number | string;
-  track?: MpsTrack;
+  track?: Partial<MpsTrack>;
   tracks?: MpsTrack[];
   period?: Partial<MpsPeriod>;
 }
@@ -417,8 +424,8 @@ export interface UseMultiPeriodStreamProps {
 }
 
 export interface UseMultiPeriodStreamHook extends UseMultiPeriodModelHook {
-  loaded: Signal<string | undefined>;
-  model: Signal<MultiPeriodStream>;
+  loaded: ReadonlySignal<string | undefined>;
+  model: ReadonlySignal<DecoratedMultiPeriodStream>;
 }
 
 export const MultiPeriodModelContext = createContext<UseMultiPeriodStreamHook>(null);
