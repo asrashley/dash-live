@@ -1,10 +1,10 @@
 import { createContext } from 'preact';
-import { signal, computed, type Signal } from "@preact/signals";
+import { signal, computed, type Signal, type ReadonlySignal } from "@preact/signals";
 import { DialogState } from './types/DialogState';
 import { InitialUserState, UserState } from './types/UserState';
 
 export interface AppStateType {
-  backdrop: Signal<boolean>;
+  backdrop: ReadonlySignal<boolean>;
   dialog: Signal<DialogState>;
   user: Signal<UserState>;
 }
@@ -38,5 +38,5 @@ export function getInitialState<T>(eltId: string): T {
   if (!elt) {
     throw new Error(`Failed to find script element "${eltId}"`);
   }
-  return JSON.parse(elt.innerText) as T;
+  return JSON.parse(elt.textContent) as T;
 }
