@@ -10,9 +10,13 @@
 {% endblock %}
 
 {% block extrascripts %}
-<script type="module">
-{% include "spa/main.tjs" %}
+<script type="application/json" id="initialTokens">
+{{ initialTokens | toJson }}
 </script>
+<script type="application/json" id="user">
+{{ user | toJson }}
+</script>
+<%= htmlWebpackPlugin.tags.headTags %>
 <script nomodule type="text/javascript">
 document.location.replace("{{ url_for('es5-home') }}");
 </script>

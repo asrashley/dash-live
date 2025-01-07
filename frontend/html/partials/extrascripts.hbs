@@ -1,0 +1,10 @@
+<script type="application/json" id="initialTokens">
+{{{ template.initialTokens }}}
+</script>
+<script type="application/json" id="user">
+{{{ template.initialUser }}}
+</script>
+{{ htmlWebpackPlugin.tags.headTags }}
+<script nomodule type="text/javascript">
+document.location.replace("{{url_for 'es5-home' }}");
+</script>
