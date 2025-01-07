@@ -33,3 +33,10 @@ export function createAppState(userInfo: InitialUserState = {isAuthenticated: fa
   return { dialog, backdrop, user };
 }
 
+export function getInitialState<T>(eltId: string): T {
+  const elt = document.getElementById(eltId);
+  if (!elt) {
+    throw new Error(`Failed to find script element "${eltId}"`);
+  }
+  return JSON.parse(elt.innerText) as T;
+}
