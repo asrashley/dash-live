@@ -44,9 +44,9 @@ export function OptionsDialog({ onClose }: OptionsDialogProps) {
   const { dialog } = useContext(AppStateContext);
   const { setFields } = useContext(MultiPeriodModelContext);
   const form = useRef(null);
-  const isActive = useComputed(() => dialog.value?.mpsOptions?.name !== undefined);
-  const data = useSignal(null);
-  const lastUpdated = useSignal(null);
+  const isActive = useComputed<boolean>(() => dialog.value?.mpsOptions?.name !== undefined);
+  const data = useSignal<object | null>(null);
+  const lastUpdated = useSignal<null | number>(null);
 
   const onSubmit = useCallback((ev: Event) => {
     ev.preventDefault();
@@ -85,7 +85,7 @@ export function OptionsDialog({ onClose }: OptionsDialogProps) {
     // optionsToFormData(shortNamesToOptions(dialog.value.mpsOptions.options)),
   });
 
-  if (!isActive.value) {
+  if (!isActive.value || data.value === null) {
     return null;
   }
 

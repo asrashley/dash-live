@@ -1,0 +1,1543 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`OptionsDialog component > matches snapshot 1`] = `
+<DocumentFragment>
+  <div
+    aria-modal="true"
+    class="modal fade show"
+    id="dialog-box"
+    role="dialog"
+    style="display: block;"
+    tabindex="-1"
+  >
+    <div
+      class="modal-dialog modal-xl"
+      role="document"
+    >
+      <div
+        class="modal-content"
+      >
+        <div
+          class="modal-header"
+        >
+          <h5
+            class="modal-title"
+          >
+            Stream Options
+          </h5>
+          <button
+            aria-label="Close"
+            class="close btn-close"
+            type="button"
+          />
+        </div>
+        <div
+          class="modal-body m-2"
+        >
+          <form
+            name="mpsOptions"
+          >
+            <div>
+              <ul
+                class="nav nav-tabs mb-3"
+              >
+                <li
+                  class="nav-item"
+                >
+                  <a
+                    aria-current="page"
+                    class="nav-link active"
+                    href="#"
+                    id="general-tab"
+                  >
+                    general
+                  </a>
+                </li>
+                <li
+                  class="nav-item"
+                >
+                  <a
+                    class="nav-link "
+                    href="#"
+                    id="advanced-tab"
+                  >
+                    advanced
+                  </a>
+                </li>
+                <li
+                  class="nav-item"
+                >
+                  <a
+                    class="nav-link "
+                    href="#"
+                    id="clearkey-tab"
+                  >
+                    clearkey
+                  </a>
+                </li>
+                <li
+                  class="nav-item"
+                >
+                  <a
+                    class="nav-link "
+                    href="#"
+                    id="marlin-tab"
+                  >
+                    marlin
+                  </a>
+                </li>
+                <li
+                  class="nav-item"
+                >
+                  <a
+                    class="nav-link "
+                    href="#"
+                    id="ping-tab"
+                  >
+                    ping
+                  </a>
+                </li>
+                <li
+                  class="nav-item"
+                >
+                  <a
+                    class="nav-link "
+                    href="#"
+                    id="playready-tab"
+                  >
+                    playready
+                  </a>
+                </li>
+                <li
+                  class="nav-item"
+                >
+                  <a
+                    class="nav-link "
+                    href="#"
+                    id="scte35-tab"
+                  >
+                    scte35
+                  </a>
+                </li>
+              </ul>
+              <div
+                class="tab-content"
+              >
+                <div
+                  aria-labelledby="general-tab"
+                  class="tab-pane fade show active"
+                  id="general"
+                  role="tabpanel"
+                >
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-ab"
+                    >
+                      Adaptive bitrate:
+                    </label>
+                    <div
+                      class="col-4"
+                    >
+                      <input
+                        aria-describedby="field-ab"
+                        class="form-check-input "
+                        id="model-ab"
+                        name="ab"
+                        title="Adaptive bitrate"
+                        type="checkbox"
+                        value="1"
+                      />
+                    </div>
+                    <div
+                      class="col-5 form-text"
+                    >
+                      Enable or disable adaptive bitrate
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-evs"
+                    >
+                      DASH events:
+                    </label>
+                    <div
+                      class="col-4"
+                    >
+                      <select
+                        aria-describedby="field-evs"
+                        class="form-select "
+                        id="model-evs"
+                        name="evs"
+                        title="DASH events"
+                        type="select"
+                      >
+                        <option
+                          value=""
+                        >
+                          --
+                        </option>
+                        <option
+                          value="ping"
+                        >
+                          ping
+                        </option>
+                        <option
+                          value="scte35"
+                        >
+                          scte35
+                        </option>
+                      </select>
+                    </div>
+                    <div
+                      class="col-5 form-text"
+                    >
+                      A comma separated list of event formats
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-st"
+                    >
+                      Segment timeline:
+                    </label>
+                    <div
+                      class="col-4"
+                    >
+                      <input
+                        aria-describedby="field-st"
+                        class="form-check-input "
+                        id="model-st"
+                        name="st"
+                        title="Segment timeline"
+                        type="checkbox"
+                        value="0"
+                      />
+                    </div>
+                    <div
+                      class="col-5 form-text"
+                    >
+                      Enable or disable segment timeline
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-utc"
+                    >
+                      UTC timing method:
+                    </label>
+                    <div
+                      class="col-4"
+                    >
+                      <select
+                        aria-describedby="field-utc"
+                        class="form-select "
+                        id="model-utc"
+                        name="utc"
+                        title="UTC timing method"
+                        type="select"
+                      >
+                        <option
+                          value=""
+                        >
+                          --
+                        </option>
+                        <option
+                          value="direct"
+                        >
+                          direct
+                        </option>
+                        <option
+                          value="head"
+                        >
+                          head
+                        </option>
+                        <option
+                          value="http-ntp"
+                        >
+                          http-ntp
+                        </option>
+                        <option
+                          value="iso"
+                        >
+                          iso
+                        </option>
+                        <option
+                          value="ntp"
+                        >
+                          ntp
+                        </option>
+                        <option
+                          value="sntp"
+                        >
+                          sntp
+                        </option>
+                        <option
+                          value="xsd"
+                        >
+                          xsd
+                        </option>
+                      </select>
+                    </div>
+                    <div
+                      class="col-5 form-text"
+                    >
+                      Select UTCTiming element method.
+                    </div>
+                  </div>
+                </div>
+                <div
+                  aria-labelledby="advanced-tab"
+                  class="tab-pane fade "
+                  id="advanced"
+                  role="tabpanel"
+                >
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-ast"
+                    >
+                      Availability start time:
+                    </label>
+                    <div
+                      class="col-4"
+                    >
+                      <input
+                        aria-describedby="field-ast"
+                        class="form-control "
+                        id="model-ast"
+                        list="list-ast"
+                        name="ast"
+                        title="Availability start time"
+                        type="text"
+                      />
+                      <datalist
+                        id="list-ast"
+                      >
+                        <option
+                          value="year"
+                        >
+                          year
+                        </option>
+                        <option
+                          value="today"
+                        >
+                          today
+                        </option>
+                        <option
+                          value="month"
+                        >
+                          month
+                        </option>
+                        <option
+                          value="epoch"
+                        >
+                          epoch
+                        </option>
+                        <option
+                          value="now"
+                        >
+                          now
+                        </option>
+                      </datalist>
+                    </div>
+                    <div
+                      class="col-5 form-text"
+                    >
+                      Sets availabilityStartTime for live streams
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-bug"
+                    >
+                      Bug compatibility:
+                    </label>
+                    <div
+                      class="col-4"
+                    >
+                      <select
+                        aria-describedby="field-bug"
+                        class="form-select "
+                        id="model-bug"
+                        name="bug"
+                        title="Bug compatibility"
+                        type="select"
+                      >
+                        <option
+                          value=""
+                        >
+                          --
+                        </option>
+                        <option
+                          value="saio"
+                        >
+                          saio
+                        </option>
+                      </select>
+                    </div>
+                    <div
+                      class="col-5 form-text"
+                    >
+                      Produce a stream with known bugs
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-dft"
+                    >
+                      Clock drift:
+                    </label>
+                    <div
+                      class="col-4"
+                    >
+                      <input
+                        aria-describedby="field-dft"
+                        class="form-control "
+                        id="model-dft"
+                        name="dft"
+                        title="Clock drift"
+                        type="number"
+                      />
+                    </div>
+                    <div
+                      class="col-5 form-text"
+                    >
+                      Number of seconds of delay to add to wall clock time
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-lee"
+                    >
+                      Fragment expiration leeway:
+                    </label>
+                    <div
+                      class="col-4"
+                    >
+                      <input
+                        aria-describedby="field-lee"
+                        class="form-control "
+                        id="model-lee"
+                        list="list-lee"
+                        name="lee"
+                        title="Fragment expiration leeway"
+                        type="number"
+                      />
+                      <datalist
+                        id="list-lee"
+                      >
+                        <option
+                          value="16"
+                        >
+                          16
+                        </option>
+                        <option
+                          value="60"
+                        >
+                          60
+                        </option>
+                        <option
+                          value="0"
+                        >
+                          0
+                        </option>
+                      </datalist>
+                    </div>
+                    <div
+                      class="col-5 form-text"
+                    >
+                      Number of seconds after a fragment has expired before it becomes unavailable
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-mup"
+                    >
+                      Minimum update period:
+                    </label>
+                    <div
+                      class="col-4"
+                    >
+                      <input
+                        aria-describedby="field-mup"
+                        class="form-control "
+                        id="model-mup"
+                        list="list-mup"
+                        name="mup"
+                        title="Minimum update period"
+                        type="number"
+                      />
+                      <datalist
+                        id="list-mup"
+                      >
+                        <option
+                          value=""
+                        >
+                          Every 2 fragments
+                        </option>
+                        <option
+                          value="-1"
+                        >
+                          Never
+                        </option>
+                        <option
+                          value="4"
+                        >
+                          Every fragment
+                        </option>
+                        <option
+                          value="30"
+                        >
+                          Every 30 seconds
+                        </option>
+                      </datalist>
+                    </div>
+                    <div
+                      class="col-5 form-text"
+                    >
+                      Specify minimumUpdatePeriod (in seconds) or -1 to disable updates
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-ntps"
+                    >
+                      NTP time servers:
+                    </label>
+                    <div
+                      class="col-4"
+                    >
+                      <select
+                        aria-describedby="field-ntps"
+                        class="form-select "
+                        id="model-ntps"
+                        name="ntps"
+                        title="NTP time servers"
+                        type="select"
+                      >
+                        <option
+                          value=""
+                        >
+                          --
+                        </option>
+                        <option
+                          value="europe-ntp"
+                        >
+                          europe-ntp
+                        </option>
+                        <option
+                          value="google"
+                        >
+                          google
+                        </option>
+                      </select>
+                    </div>
+                    <div
+                      class="col-5 form-text"
+                    >
+                      List of servers to use for NTP requests
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-base"
+                    >
+                      Use BaseURLs:
+                    </label>
+                    <div
+                      class="col-4"
+                    >
+                      <input
+                        aria-describedby="field-base"
+                        class="form-check-input "
+                        id="model-base"
+                        name="base"
+                        title="Use BaseURLs"
+                        type="checkbox"
+                        value="1"
+                      />
+                    </div>
+                    <div
+                      class="col-5 form-text"
+                    >
+                      Include a BaseURL element?
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-patch"
+                    >
+                      Use MPD patches:
+                    </label>
+                    <div
+                      class="col-4"
+                    >
+                      <input
+                        aria-describedby="field-patch"
+                        class="form-check-input "
+                        id="model-patch"
+                        name="patch"
+                        title="Use MPD patches"
+                        type="checkbox"
+                        value="1"
+                      />
+                    </div>
+                    <div
+                      class="col-5 form-text"
+                    >
+                      Use MPD patches for live streams
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-tbd"
+                    >
+                      timeShiftBufferDepth size:
+                    </label>
+                    <div
+                      class="col-4"
+                    >
+                      <input
+                        aria-describedby="field-tbd"
+                        class="form-control "
+                        id="model-tbd"
+                        list="list-tbd"
+                        name="tbd"
+                        title="timeShiftBufferDepth size"
+                        type="number"
+                      />
+                      <datalist
+                        id="list-tbd"
+                      >
+                        <option
+                          value="1800"
+                        >
+                          1800
+                        </option>
+                        <option
+                          value="30"
+                        >
+                          30
+                        </option>
+                      </datalist>
+                    </div>
+                    <div
+                      class="col-5 form-text"
+                    >
+                      Number of seconds for timeShiftBufferDepth
+                    </div>
+                  </div>
+                </div>
+                <div
+                  aria-labelledby="clearkey-tab"
+                  class="tab-pane fade "
+                  id="clearkey"
+                  role="tabpanel"
+                >
+                  <div
+                    class="row mb-2 form-group drm-checkbox"
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-clearkey__enabled"
+                    >
+                      Clearkey DRM:
+                    </label>
+                    <div
+                      class="col-4"
+                    >
+                      <input
+                        aria-describedby="field-clearkey__enabled"
+                        class="form-check-input drm-checkbox"
+                        id="model-clearkey__enabled"
+                        name="clearkey__enabled"
+                        title="Clearkey DRM"
+                        type="checkbox"
+                        value="undefined"
+                      />
+                    </div>
+                    <div
+                      class="col-5 form-text"
+                    >
+                      Enable Clearkey DRM support?
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-clu"
+                    >
+                      Clearkey LA_URL:
+                    </label>
+                    <div
+                      class="col-4"
+                    >
+                      <input
+                        aria-describedby="field-clu"
+                        class="form-control "
+                        id="model-clu"
+                        name="clu"
+                        title="Clearkey LA_URL"
+                        type=""
+                      />
+                    </div>
+                    <div
+                      class="col-5 form-text"
+                    >
+                      Override the Clearkey license URL field
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-clearkey__drmloc"
+                    >
+                      Clearkey location:
+                    </label>
+                    <div
+                      class="col-4"
+                    >
+                      <select
+                        aria-describedby="field-clearkey__drmloc"
+                        class="form-select "
+                        id="model-clearkey__drmloc"
+                        name="clearkey__drmloc"
+                        title="Clearkey location"
+                        type="select"
+                      >
+                        <option
+                          value=""
+                        >
+                          All locations
+                        </option>
+                        <option
+                          value="pro"
+                        >
+                          mspr:pro element in MPD
+                        </option>
+                        <option
+                          value="cenc"
+                        >
+                          dash:cenc element in MPD
+                        </option>
+                        <option
+                          value="moov"
+                        >
+                          PSSH in init segment
+                        </option>
+                        <option
+                          value="cenc-pro"
+                        >
+                          mspr:pro + dash:cenc in MPD
+                        </option>
+                        <option
+                          value="moov-pro"
+                        >
+                          mspr:pro MPD + PSSH init
+                        </option>
+                        <option
+                          value="cenc-moov"
+                        >
+                          dash:cenc MPD + PSSH init
+                        </option>
+                      </select>
+                    </div>
+                    <div
+                      class="col-5 form-text"
+                    >
+                      Location to place DRM data
+                    </div>
+                  </div>
+                </div>
+                <div
+                  aria-labelledby="marlin-tab"
+                  class="tab-pane fade "
+                  id="marlin"
+                  role="tabpanel"
+                >
+                  <div
+                    class="row mb-2 form-group drm-checkbox"
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-marlin__enabled"
+                    >
+                      Marlin DRM:
+                    </label>
+                    <div
+                      class="col-4"
+                    >
+                      <input
+                        aria-describedby="field-marlin__enabled"
+                        class="form-check-input drm-checkbox"
+                        id="model-marlin__enabled"
+                        name="marlin__enabled"
+                        title="Marlin DRM"
+                        type="checkbox"
+                        value="undefined"
+                      />
+                    </div>
+                    <div
+                      class="col-5 form-text"
+                    >
+                      Enable Marlin DRM support?
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-mlu"
+                    >
+                      Marlin LA_URL:
+                    </label>
+                    <div
+                      class="col-4"
+                    >
+                      <input
+                        aria-describedby="field-mlu"
+                        class="form-control "
+                        id="model-mlu"
+                        name="mlu"
+                        title="Marlin LA_URL"
+                        type=""
+                      />
+                    </div>
+                    <div
+                      class="col-5 form-text"
+                    >
+                      Override the Marlin S-URL field
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-marlin__drmloc"
+                    >
+                      Marlin location:
+                    </label>
+                    <div
+                      class="col-4"
+                    >
+                      <select
+                        aria-describedby="field-marlin__drmloc"
+                        class="form-select "
+                        id="model-marlin__drmloc"
+                        name="marlin__drmloc"
+                        title="Marlin location"
+                        type="select"
+                      >
+                        <option
+                          value=""
+                        >
+                          All locations
+                        </option>
+                        <option
+                          value="pro"
+                        >
+                          mspr:pro element in MPD
+                        </option>
+                        <option
+                          value="cenc"
+                        >
+                          dash:cenc element in MPD
+                        </option>
+                        <option
+                          value="moov"
+                        >
+                          PSSH in init segment
+                        </option>
+                        <option
+                          value="cenc-pro"
+                        >
+                          mspr:pro + dash:cenc in MPD
+                        </option>
+                        <option
+                          value="moov-pro"
+                        >
+                          mspr:pro MPD + PSSH init
+                        </option>
+                        <option
+                          value="cenc-moov"
+                        >
+                          dash:cenc MPD + PSSH init
+                        </option>
+                      </select>
+                    </div>
+                    <div
+                      class="col-5 form-text"
+                    >
+                      Location to place DRM data
+                    </div>
+                  </div>
+                </div>
+                <div
+                  aria-labelledby="ping-tab"
+                  class="tab-pane fade "
+                  id="ping"
+                  role="tabpanel"
+                >
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-pinCoun"
+                    >
+                      Ping count:
+                    </label>
+                    <div
+                      class="col-9"
+                    >
+                      <input
+                        aria-describedby="field-pinCoun"
+                        class="form-control "
+                        id="model-pinCoun"
+                        name="pinCoun"
+                        title="Ping count"
+                        type="number"
+                      />
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-pinDura"
+                    >
+                      Ping duration:
+                    </label>
+                    <div
+                      class="col-9"
+                    >
+                      <input
+                        aria-describedby="field-pinDura"
+                        class="form-control "
+                        id="model-pinDura"
+                        name="pinDura"
+                        title="Ping duration"
+                        type="number"
+                      />
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-pinInba"
+                    >
+                      Ping inband:
+                    </label>
+                    <div
+                      class="col-9"
+                    >
+                      <input
+                        aria-describedby="field-pinInba"
+                        class="form-check-input "
+                        id="model-pinInba"
+                        name="pinInba"
+                        title="Ping inband"
+                        type="checkbox"
+                        value="undefined"
+                      />
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-pinInte"
+                    >
+                      Ping interval:
+                    </label>
+                    <div
+                      class="col-9"
+                    >
+                      <input
+                        aria-describedby="field-pinInte"
+                        class="form-control "
+                        id="model-pinInte"
+                        name="pinInte"
+                        title="Ping interval"
+                        type="number"
+                      />
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-pinStar"
+                    >
+                      Ping start:
+                    </label>
+                    <div
+                      class="col-9"
+                    >
+                      <input
+                        aria-describedby="field-pinStar"
+                        class="form-control "
+                        id="model-pinStar"
+                        name="pinStar"
+                        title="Ping start"
+                        type="number"
+                      />
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-pinTime"
+                    >
+                      Ping timescale:
+                    </label>
+                    <div
+                      class="col-9"
+                    >
+                      <input
+                        aria-describedby="field-pinTime"
+                        class="form-control "
+                        id="model-pinTime"
+                        name="pinTime"
+                        title="Ping timescale"
+                        type="number"
+                      />
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-pinValu"
+                    >
+                      Ping value:
+                    </label>
+                    <div
+                      class="col-9"
+                    >
+                      <input
+                        aria-describedby="field-pinValu"
+                        class="form-control "
+                        id="model-pinValu"
+                        name="pinValu"
+                        title="Ping value"
+                        type="text"
+                      />
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-pinVers"
+                    >
+                      Ping version:
+                    </label>
+                    <div
+                      class="col-9"
+                    >
+                      <input
+                        aria-describedby="field-pinVers"
+                        class="form-control "
+                        id="model-pinVers"
+                        name="pinVers"
+                        title="Ping version"
+                        type="number"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div
+                  aria-labelledby="playready-tab"
+                  class="tab-pane fade "
+                  id="playready"
+                  role="tabpanel"
+                >
+                  <div
+                    class="row mb-2 form-group drm-checkbox"
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-playready__enabled"
+                    >
+                      Playready DRM:
+                    </label>
+                    <div
+                      class="col-4"
+                    >
+                      <input
+                        aria-describedby="field-playready__enabled"
+                        class="form-check-input drm-checkbox"
+                        id="model-playready__enabled"
+                        name="playready__enabled"
+                        title="Playready DRM"
+                        type="checkbox"
+                        value="undefined"
+                      />
+                    </div>
+                    <div
+                      class="col-5 form-text"
+                    >
+                      Enable Playready DRM support?
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-plu"
+                    >
+                      Playready LA_URL:
+                    </label>
+                    <div
+                      class="col-4"
+                    >
+                      <input
+                        aria-describedby="field-plu"
+                        class="form-control "
+                        id="model-plu"
+                        name="plu"
+                        title="Playready LA_URL"
+                        type=""
+                      />
+                    </div>
+                    <div
+                      class="col-5 form-text"
+                    >
+                      Override the Playready LA_URL field
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-pff"
+                    >
+                      Playready PIFF:
+                    </label>
+                    <div
+                      class="col-4"
+                    >
+                      <input
+                        aria-describedby="field-pff"
+                        class="form-check-input "
+                        id="model-pff"
+                        name="pff"
+                        title="Playready PIFF"
+                        type="checkbox"
+                        value="undefined"
+                      />
+                    </div>
+                    <div
+                      class="col-5 form-text"
+                    >
+                      Include PIFF sample encryption data
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-pvn"
+                    >
+                      Playready Version:
+                    </label>
+                    <div
+                      class="col-4"
+                    >
+                      <select
+                        aria-describedby="field-pvn"
+                        class="form-select "
+                        id="model-pvn"
+                        name="pvn"
+                        title="Playready Version"
+                        type="select"
+                      >
+                        <option
+                          value=""
+                        >
+                          --
+                        </option>
+                        <option
+                          value="1.0"
+                        >
+                          1.0
+                        </option>
+                        <option
+                          value="2.0"
+                        >
+                          2.0
+                        </option>
+                        <option
+                          value="3.0"
+                        >
+                          3.0
+                        </option>
+                        <option
+                          value="4.0"
+                        >
+                          4.0
+                        </option>
+                      </select>
+                    </div>
+                    <div
+                      class="col-5 form-text"
+                    >
+                      Set the PlayReady version compatibility for this stream
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-playready__drmloc"
+                    >
+                      Playready location:
+                    </label>
+                    <div
+                      class="col-4"
+                    >
+                      <select
+                        aria-describedby="field-playready__drmloc"
+                        class="form-select "
+                        id="model-playready__drmloc"
+                        name="playready__drmloc"
+                        title="Playready location"
+                        type="select"
+                      >
+                        <option
+                          value=""
+                        >
+                          All locations
+                        </option>
+                        <option
+                          value="pro"
+                        >
+                          mspr:pro element in MPD
+                        </option>
+                        <option
+                          value="cenc"
+                        >
+                          dash:cenc element in MPD
+                        </option>
+                        <option
+                          value="moov"
+                        >
+                          PSSH in init segment
+                        </option>
+                        <option
+                          value="cenc-pro"
+                        >
+                          mspr:pro + dash:cenc in MPD
+                        </option>
+                        <option
+                          value="moov-pro"
+                        >
+                          mspr:pro MPD + PSSH init
+                        </option>
+                        <option
+                          value="cenc-moov"
+                        >
+                          dash:cenc MPD + PSSH init
+                        </option>
+                      </select>
+                    </div>
+                    <div
+                      class="col-5 form-text"
+                    >
+                      Location to place DRM data
+                    </div>
+                  </div>
+                </div>
+                <div
+                  aria-labelledby="scte35-tab"
+                  class="tab-pane fade "
+                  id="scte35"
+                  role="tabpanel"
+                >
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-sctCoun"
+                    >
+                      Scte35 count:
+                    </label>
+                    <div
+                      class="col-9"
+                    >
+                      <input
+                        aria-describedby="field-sctCoun"
+                        class="form-control "
+                        id="model-sctCoun"
+                        name="sctCoun"
+                        title="Scte35 count"
+                        type="number"
+                      />
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-sctDura"
+                    >
+                      Scte35 duration:
+                    </label>
+                    <div
+                      class="col-9"
+                    >
+                      <input
+                        aria-describedby="field-sctDura"
+                        class="form-control "
+                        id="model-sctDura"
+                        name="sctDura"
+                        title="Scte35 duration"
+                        type="number"
+                      />
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-sctInba"
+                    >
+                      Scte35 inband:
+                    </label>
+                    <div
+                      class="col-9"
+                    >
+                      <input
+                        aria-describedby="field-sctInba"
+                        class="form-check-input "
+                        id="model-sctInba"
+                        name="sctInba"
+                        title="Scte35 inband"
+                        type="checkbox"
+                        value="undefined"
+                      />
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-sctInte"
+                    >
+                      Scte35 interval:
+                    </label>
+                    <div
+                      class="col-9"
+                    >
+                      <input
+                        aria-describedby="field-sctInte"
+                        class="form-control "
+                        id="model-sctInte"
+                        name="sctInte"
+                        title="Scte35 interval"
+                        type="number"
+                      />
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-sctProg"
+                    >
+                      Scte35 program_id:
+                    </label>
+                    <div
+                      class="col-9"
+                    >
+                      <input
+                        aria-describedby="field-sctProg"
+                        class="form-control "
+                        id="model-sctProg"
+                        name="sctProg"
+                        title="Scte35 program_id"
+                        type="number"
+                      />
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-sctStar"
+                    >
+                      Scte35 start:
+                    </label>
+                    <div
+                      class="col-9"
+                    >
+                      <input
+                        aria-describedby="field-sctStar"
+                        class="form-control "
+                        id="model-sctStar"
+                        name="sctStar"
+                        title="Scte35 start"
+                        type="number"
+                      />
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-sctTime"
+                    >
+                      Scte35 timescale:
+                    </label>
+                    <div
+                      class="col-9"
+                    >
+                      <input
+                        aria-describedby="field-sctTime"
+                        class="form-control "
+                        id="model-sctTime"
+                        name="sctTime"
+                        title="Scte35 timescale"
+                        type="number"
+                      />
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-sctValu"
+                    >
+                      Scte35 value:
+                    </label>
+                    <div
+                      class="col-9"
+                    >
+                      <input
+                        aria-describedby="field-sctValu"
+                        class="form-control "
+                        id="model-sctValu"
+                        name="sctValu"
+                        title="Scte35 value"
+                        type="text"
+                      />
+                    </div>
+                  </div>
+                  <div
+                    class="row mb-2 form-group "
+                  >
+                    <label
+                      class="col-3 col-form-label"
+                      for="field-sctVers"
+                    >
+                      Scte35 version:
+                    </label>
+                    <div
+                      class="col-9"
+                    >
+                      <input
+                        aria-describedby="field-sctVers"
+                        class="form-control "
+                        id="model-sctVers"
+                        name="sctVers"
+                        title="Scte35 version"
+                        type="number"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+        </div>
+        <div
+          class="modal-footer"
+        >
+          <div
+            role="group"
+          >
+            <button
+              class="btn btn-success me-3"
+              type="button"
+            >
+              Save Changes
+            </button>
+            <button
+              class="btn btn-warning"
+              type="button"
+            >
+              Discard Changes
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
