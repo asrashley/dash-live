@@ -51,7 +51,7 @@ def create_navbar_context() -> list[NavBarItem]:
             NavBarItem(title='Log Out', className='user-login', href=flask.url_for('logout')))
     else:
         navbar.append(
-            NavBarItem(title='Log In', className='user-login', href=flask.url_for('login')))
+            NavBarItem(title='Log In', className='user-login spa', href=flask.url_for('login')))
     found_active = False
     for nav in navbar[1:]:
         if flask.request.path.startswith(nav.href):

@@ -20,6 +20,7 @@ const AddStreamPage = lazy(() => import('./mps/components/AddStreamPage'), Loadi
 const EditStreamPage = lazy(() => import('./mps/components/EditStreamPage'), LoadingSpinner);
 const HomePage = lazy(() => import('./home/components/HomePage'), LoadingSpinner);
 const ListStreamsPage = lazy(() => import('./mps/components/ListStreamsPage'), LoadingSpinner);
+const LoginPage = lazy(() => import('./user/components/LoginPage'), LoadingSpinner);
 
 export interface AppProps {
   tokens: InitialApiTokens;
@@ -58,6 +59,7 @@ export function App({children, tokens, user}: AppProps) {
         <Route component={ListStreamsPage} path={ uiRouteMap.listMps.route } />
         <Route component={AddStreamPage} path={ uiRouteMap.addMps.route } />
         <Route component={EditStreamPage} path={ uiRouteMap.editMps.route } />
+        <Route component={LoginPage} path={ uiRouteMap.login.route } />
         <Route component={HomePage} path={ uiRouteMap.home.route } />
         <Route path="*" component={PageNotFound} />
       </Switch>

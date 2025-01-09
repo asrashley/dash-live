@@ -3,7 +3,6 @@ import { useLocation } from "wouter-preact";
 import { NavBarItem } from "../types/NavBarItem";
 import { useCallback } from "preact/hooks";
 
-
 function NavItem({ active, className, href, title }: NavBarItem) {
   const setLocation = useLocation()[1];
   const itemClassName = `nav-item ${className}`;

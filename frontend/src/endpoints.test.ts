@@ -14,6 +14,13 @@ import { MpsPeriod } from "./types/MpsPeriod";
 
 describe('endpoints', () => {
     const navigate = vi.fn();
+    const noCsrfTokens: CsrfTokenCollection = {
+        files: null,
+        kids: null,
+        login: null,
+        streams: null,
+        upload: null,
+    };
     let endpoint: FakeEndpoint;
     let server: MockDashServer;
     let api: ApiRequests;
@@ -101,14 +108,8 @@ describe('endpoints', () => {
     });
 
     test('refreshes CSRF tokens', async () => {
-        const csrfTokens: CsrfTokenCollection = {
-            files: null,
-            kids: null,
-            streams: null,
-            upload: null,
-        };
         api = new ApiRequests({
-            csrfTokens,
+            csrfTokens: noCsrfTokens,
             navigate,
             accessToken: user.accessToken,
             refreshToken: user.refreshToken,
@@ -136,14 +137,8 @@ describe('endpoints', () => {
 
     test('refreshes both access token and CSRF tokens', async () => {
         const { username } = normalUser;
-        const csrfTokens: CsrfTokenCollection = {
-            files: null,
-            kids: null,
-            streams: null,
-            upload: null,
-        };
         api = new ApiRequests({
-            csrfTokens,
+            csrfTokens: noCsrfTokens,
             navigate,
             accessToken: null,
             refreshToken: user.refreshToken,
@@ -153,14 +148,8 @@ describe('endpoints', () => {
     });
 
     test('generates error trying to refresh CSRF tokens without any JWT tokens', async () => {
-        const csrfTokens: CsrfTokenCollection = {
-            files: null,
-            kids: null,
-            streams: null,
-            upload: null,
-        };
         api = new ApiRequests({
-            csrfTokens,
+            csrfTokens: noCsrfTokens,
             navigate,
             accessToken: null,
             refreshToken: null,
@@ -169,14 +158,8 @@ describe('endpoints', () => {
     });
 
     test('generates error trying to refresh CSRF tokens with invalid refresh token', async () => {
-        const csrfTokens: CsrfTokenCollection = {
-            files: null,
-            kids: null,
-            streams: null,
-            upload: null,
-        };
         api = new ApiRequests({
-            csrfTokens,
+            csrfTokens: noCsrfTokens,
             navigate,
             accessToken: null,
             refreshToken: {
