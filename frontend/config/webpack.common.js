@@ -20,6 +20,7 @@ export const commonConfig = ({ initialTokens, initialUser, publicPath, template,
     outputModule: true,
   },
   externals: {
+    '@dashlive/init': 'module /libs/initialAppState.js',
     '@dashlive/options': 'module /libs/options.js',
     '@dashlive/routemap': 'module /libs/routemap.js'
   },

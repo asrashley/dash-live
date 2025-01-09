@@ -3,7 +3,7 @@
 exports[`AddStreamPage component > allows a new stream to be added 1`] = `
 <DocumentFragment>
   <div
-    class="card"
+    class="card "
     id="edit_mps_form"
   >
     <div
@@ -189,7 +189,7 @@ exports[`AddStreamPage component > allows a new stream to be added 1`] = `
           </button>
           <a
             class="btn btn-danger m-2"
-            href="/multi-period-streams"
+            href="/api/multi-period-streams"
           >
             Cancel
           </a>

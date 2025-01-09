@@ -21,8 +21,22 @@
 #############################################################################
 
 import re
+from typing import TypedDict
+
+class RouteJavaScript(TypedDict):
+    template: str
+    rgx: str
+    title: str
+    route: str
+    urlFn: str
 
 class Route:
+    name: str
+    template: str
+    handler: str
+    title: str
+    parent: str | None
+
     def __init__(self, template: str, handler: str, title: str,
                  parent: str = None) -> None:
         self.name = ''
@@ -64,8 +78,32 @@ class Route:
         rv += ')'
         return rv
 
+    def to_javascript(self) -> RouteJavaScript:
+        remove_names: re.Pattern[str] = re.compile(r'\?P(<\w+>)')
+        find_params: re.Pattern[str] = re.compile(r'{(\w+)}')
+        rgx: str = remove_names.sub(r'?\1', self.reTemplate.pattern)
+        rgx = rgx.replace("/", "\\/")
 
-routes = {
+        names: list[str] = []
+        for name in find_params.finditer(self.formatTemplate):
+            names.append(name.group(1))
+        template: str = self.formatTemplate.replace(r'{', r'${')
+        params: str = ', '.join(names)
+        if params:
+            params = f'{{{params}}}'
+        urlFn: str = f'({params}) => `{template}`'
+
+        rv: RouteJavaScript = {
+            'template': self.formatTemplate,
+            'rgx': rgx,
+            'title': self.title,
+            'route': find_params.sub(r':\1', self.formatTemplate),
+            'urlFn': urlFn,
+        }
+        return rv
+
+
+routes: dict[str, Route] = {
     "delete-key": Route(
         r'/key/<int:kpk>/delete',
         handler='keypairs.DeleteKeyHandler',
@@ -210,10 +248,6 @@ routes = {
         r'/view/dash/<regex("(live|vod|odvod)"):mode>/<stream>/<manifest>',
         handler='htmlpage.ViewManifest',
         title='DASH manifest'),
-    "list-manifests": Route(
-        r'/api/manifests',
-        handler='manifest_requests.ListManifests',
-        title="DASH fragment"),
     "view-mps-manifest": Route(
         r'/view/mps/<regex("(live|vod)"):mode>/<mps_name>/<manifest>',
         handler='htmlpage.ViewMpsManifest',
@@ -250,30 +284,34 @@ routes = {
         r'/users/<int:upk>/delete',
         handler='user_management.DeleteUser',
         title='Delete User'),
+    "list-manifests": Route(
+        r'/api/manifests',
+        handler='manifest_requests.ListManifests',
+        title="DASH fragment"),
     "refresh-access-token": Route(
-        r'/user/refresh/access',
+        r'/api/refresh/access',
         handler='user_management.RefreshAccessToken',
         title='Refresh access token'),
     "refresh-csrf-tokens": Route(
-        r'/user/refresh/csrf',
+        r'/api/refresh/csrf',
         handler='user_management.RefreshCsrfTokens',
         title='Refresh access token'),
     'list-mps': Route(
-        r'/multi-period-streams',
+        r'/api/multi-period-streams',
         handler='multi_period_streams.ListStreams',
         title='Available DASH multi-period streams'),
     'add-mps': Route(
-        r'/multi-period-streams/.add',
+        r'/api/multi-period-streams/.add',
         handler='multi_period_streams.AddStream',
         title='Add new multi-period stream',
         parent='list-mps'),
     'edit-mps': Route(
-        r'/multi-period-streams/<mps_name>',
+        r'/api/multi-period-streams/<mps_name>',
         handler='multi_period_streams.EditStream',
         title='Edit multi-period stream',
         parent='list-mps'),
     "validate-mps": Route(
-        r'/multi-period-streams.validate',
+        r'/api/multi-period-streams.validate',
         handler='multi_period_streams.ValidateStream',
         title='Check MPS settings are valid',
         parent='list-mps'),
@@ -312,14 +350,15 @@ routes = {
         r'/libs/options.js',
         handler='esm.OptionFieldGroups',
         title='options fields'),
-    "spa-bundle": Route(
-        r'/libs/bundle/<directory>.js',
-        handler='esm.BundleDirectory',
-        title='Bundle of JS files'),
     "esm-wrapper": Route(
         r'/libs/<filename>',
         handler='esm.ModuleWrapper',
         title='ESM JavaScript wrapper'),
+    "initial-app-state": Route(
+        r'/libs/initialAppState.js',
+        handler='esm.InitialAppState',
+        title='initial app state'
+    ),
     "favicon": Route(
         r'/favicon.ico',
         handler='htmlpage.favicon',
@@ -334,7 +373,22 @@ routes = {
         title='DASH test streams'),
 }
 
+class UiRoute(Route):
+    def __init__(self, template: str) -> None:
+        super().__init__(template, handler='htmlpage.MainPage', title='')
+
+ui_routes: dict[str, UiRoute] = {
+    "home": UiRoute(r'/'),
+    'add-mps': UiRoute(r'/multi-period-streams/.add'),
+    'edit-mps': UiRoute(r'/multi-period-streams/<mps_name>'),
+    "list-mps": UiRoute(r'/multi-period-streams'),
+}
+
 for name in routes.keys():
     routes[name].name = name
     if name != 'home' and routes[name].parent is None:
         routes[name].parent = 'home'
+
+for name in ui_routes.keys():
+    ui_routes[name].name = name
+    ui_routes[name].title = name

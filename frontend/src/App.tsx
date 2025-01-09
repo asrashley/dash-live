@@ -3,24 +3,23 @@ import { useEffect, useMemo } from 'preact/hooks'
 import { Route, Switch, useLocation } from "wouter-preact";
 import lazy from 'preact-lazy';
 
-import { routeMap } from '@dashlive/routemap';
-import { BreadCrumbs } from './components/BreadCrumbs';
+import { uiRouteMap } from '@dashlive/routemap';
+import { navbar } from '@dashlive/init';
 import { LoadingSpinner } from './components/LoadingSpinner';
 import { MessagesPanel } from './components/MessagesPanel';
+import { ModalBackdrop } from './components/ModalBackdrop';
+import { NavHeader } from './components/NavHeader';
 
 import { ApiRequests, EndpointContext } from './endpoints';
 import { AppStateContext, AppStateType, createAppState } from './appState';
 import { InitialUserState } from './types/UserState';
 import { InitialApiTokens } from './types/InitialApiTokens';
+import { PageNotFound } from './components/PageNotFound';
 
 const AddStreamPage = lazy(() => import('./mps/components/AddStreamPage'), LoadingSpinner);
 const EditStreamPage = lazy(() => import('./mps/components/EditStreamPage'), LoadingSpinner);
 const HomePage = lazy(() => import('./home/components/HomePage'), LoadingSpinner);
 const ListStreamsPage = lazy(() => import('./mps/components/ListStreamsPage'), LoadingSpinner);
-
-function NotFound(params) {
-    return <p>404, Sorry the page {params["*"]} does not exist!</p>;
-}
 
 export interface AppProps {
   tokens: InitialApiTokens;
@@ -50,33 +49,21 @@ export function App({children, tokens, user}: AppProps) {
     }
   }, [backdrop.value]);
 
-  useEffect(() => {
-    const spaNavigate = (ev: Event) => {
-      ev.preventDefault();
-      const href = (ev.target as HTMLAnchorElement).getAttribute('href');
-      setLocation(href);
-    };
-    const links = document.querySelectorAll('.navbar .spa .nav-link');
-
-    links.forEach((elt) => elt.addEventListener('click', spaNavigate));
-
-    return () => {
-      links.forEach((elt) => elt.removeEventListener('click', spaNavigate));
-    };
-  }, [setLocation]);
-
   return <AppStateContext.Provider value={state}>
-  <BreadCrumbs />
   <EndpointContext.Provider value={apiRequests}>
+    <NavHeader navbar={navbar} />
     <MessagesPanel />
-    <Switch>
-      <Route component={ListStreamsPage} path={ routeMap.listMps.route } />
-      <Route component={AddStreamPage} path={ routeMap.addMps.route } />
-      <Route component={EditStreamPage} path={ routeMap.editMps.route } />
-      <Route component={HomePage} path={ routeMap.home.route } />
-      <Route path="*" component={NotFound} />
-    </Switch>
-    { children }
+    <div className="content container-fluid">
+      <Switch>
+        <Route component={ListStreamsPage} path={ uiRouteMap.listMps.route } />
+        <Route component={AddStreamPage} path={ uiRouteMap.addMps.route } />
+        <Route component={EditStreamPage} path={ uiRouteMap.editMps.route } />
+        <Route component={HomePage} path={ uiRouteMap.home.route } />
+        <Route path="*" component={PageNotFound} />
+      </Switch>
+      { children }
+    </div>
+    <ModalBackdrop />
   </EndpointContext.Provider>
 </AppStateContext.Provider>;
 }

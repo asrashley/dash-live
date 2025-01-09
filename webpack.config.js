@@ -47,6 +47,7 @@ export default {
         context: [
           '/api',
           '/libs',
+          '/streams',
         ],
         target: `http://localhost:${serverPort}/`,
       },

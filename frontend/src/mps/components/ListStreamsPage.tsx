@@ -4,7 +4,7 @@ import { useCallback, useContext } from 'preact/hooks'
 
 import { useAllMultiPeriodStreams, AllMultiPeriodStreamsContext } from '../../hooks/useAllMultiPeriodStreams';
 import { AppStateContext } from '../../appState';
-import { routeMap } from '@dashlive/routemap';
+import { uiRouteMap } from '@dashlive/routemap';
 import { SortIcon } from './SortIcon';
 
 interface TableRowProps {
@@ -14,7 +14,7 @@ interface TableRowProps {
   duration: string;
 }
 function TableRow({name, title, periods, duration}: TableRowProps) {
-  const url = routeMap.editMps.url({mps_name: name});
+  const url = uiRouteMap.editMps.url({mps_name: name});
   return <tr>
       <td className="name text-center">
         <Link to={ url }>{ name }</Link>
@@ -74,7 +74,7 @@ export default function ListStreamsPage() {
   </table>
   <div class="btn-toolbar">
     {canModify && <Link className="btn btn-primary btn-sm m-2"
-      href={routeMap.addMps.url()} >Add a Stream</Link> }
+      href={uiRouteMap.addMps.url()} >Add a Stream</Link> }
   </div>
 </AllMultiPeriodStreamsContext.Provider>;
 }

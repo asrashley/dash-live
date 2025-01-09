@@ -1,11 +1,7 @@
 import { render } from 'preact';
 import { App } from './App'
-import { getInitialState } from './appState';
-import { InitialUserState } from './types/UserState';
-import { InitialApiTokens } from './types/InitialApiTokens';
 
-const initialTokens = getInitialState<InitialApiTokens>("initialTokens");
-const user = getInitialState<InitialUserState>("user");
+import { user, initialTokens } from '@dashlive/init';
 
 let root = document.getElementById('app');
 

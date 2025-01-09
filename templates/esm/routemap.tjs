@@ -2,10 +2,20 @@ export const routeMap = {
 {%- for name, route in routes.items() %}
   {{ name }}: {
     title: "{{ route.title }}",
-    re: /{{ route.re | safe }}/,
+    re: /{{ route.rgx | safe }}/,
     route: "{{ route.route }}",
-    url: {{ route.url | safe }},
+    url: {{ route.urlFn | safe }},
   },
 {%- endfor %}
 };
 
+export const uiRouteMap = {
+{%- for name, route in ui_routes.items() %}
+  {{ name }}: {
+    title: "{{ route.title }}",
+    re: /{{ route.rgx | safe }}/,
+    route: "{{ route.route }}",
+    url: {{ route.urlFn | safe }},
+  },
+{%- endfor %}
+};
