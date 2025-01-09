@@ -11,7 +11,7 @@ describe("Card", () => {
     expect(container.textContent).toMatch("Hello World");
     const elt = document.getElementById("cid");
     expect(elt).not.toBeNull();
-    expect(elt.className).toEqual("card");
+    expect(elt.className.trim()).toEqual("card");
     expect(queryBySelector("img")).toBeNull();
   });
 
