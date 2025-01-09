@@ -27,6 +27,6 @@ export interface FormInputItem {
     step?: number;
     title: string;
     text?: string;
-    type: 'checkbox' | 'datalist' | 'hidden' | 'multiselect' | 'number' | 'select' | 'radio' | 'link' | 'text';
+    type: 'checkbox' | 'datalist' | 'hidden' | 'multiselect' | 'number' | 'password' | 'select' | 'radio' | 'link' | 'text';
     //value: boolean | number | string | null;
 }

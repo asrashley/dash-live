@@ -22,6 +22,7 @@
 
 import datetime
 import logging
+from typing import NotRequired, TypedDict
 
 import flask
 from flask_jwt_extended import jwt_required
@@ -33,7 +34,7 @@ from dashlive.server.requesthandler.csrf import CsrfProtection, CsrfTokenCollect
 from dashlive.utils.json_object import JsonObject
 
 from .base import HTMLHandlerBase, DeleteModelBase
-from .decorators import login_required, modifies_user_model, modifying_user
+from .decorators import login_required, modifies_user_model, modifying_user, spa_handler
 from .exceptions import CsrfFailureException
 from .utils import is_ajax, jsonify
 
@@ -45,75 +46,66 @@ def decorate_user(user: models.User) -> JsonObject:
             js['groups'][grp.name] = True
     return js
 
+class UserSummaryJson(TypedDict):
+    email: str
+    username: str
+    pk: int
+    last_login: str
+    groups: list[str]
+
+class LoginResponseJson(TypedDict):
+    success: bool
+    mustChange: NotRequired[bool]
+    csrf_token: str
+    accessToken: NotRequired[str]
+    refreshToken: NotRequired[str]
+    user: UserSummaryJson
 
 class LoginPage(HTMLHandlerBase):
     """
     handler for logging into the site
     """
 
-    def get(self):
-        context = self.create_context()
-        csrf_key = self.generate_csrf_cookie()
-        context['csrf_token'] = self.generate_csrf_token('login', csrf_key)
-        if is_ajax():
-            return jsonify({
-                'csrf_token': context['csrf_token']
-            })
-        return flask.render_template('users/login.html', **context)
+    decorators = [spa_handler]
 
-    def post(self):
-        if is_ajax():
-            data = flask.request.json
-            try:
-                self.check_csrf('login', data)
-            except (ValueError, CsrfFailureException) as err:
-                return jsonify({'error': str(err)}, 400)
-            username = data.get("username", None)
-            password = data.get("password", None)
-            rememberme = data.get("rememberme", False)
-        else:
-            try:
-                self.check_csrf('login', flask.request.form)
-            except (ValueError, CsrfFailureException) as err:
-                flask.flash(f'CSRF failure: {err}', 'error')
-                return self.get()
-            username = flask.request.form.get("username", None)
-            password = flask.request.form.get("password", None)
-            rememberme = flask.request.form.get("rememberme", '') == 'on'
+    def post(self) -> flask.Response:
+        if not is_ajax():
+            return flask.redirect(flask.url_for('home'))
+        data: JsonObject = flask.request.json
+        #try:
+        #    self.check_csrf('login', data)
+        #except (ValueError, CsrfFailureException) as err:
+        #    return jsonify({'error': str(err)}, 400)
+        username: str | None = data.get("username", None)
+        password: str | None = data.get("password", None)
+        rememberme = data.get("rememberme", False)
         user = models.User.get_one(username=username)
         if not user:
-            user = models.User.get_one(email=username)
-        if not user or not user.check_password(password):
-            context = self.create_context()
-            context['error'] = "Wrong username or password"
-            csrf_key = self.generate_csrf_cookie()
-            context['csrf_token'] = self.generate_csrf_token('login', csrf_key)
-            context['username'] = username
-            if is_ajax():
-                result = {}
-                for field in ['error', 'csrf_token']:
-                    result[field] = context[field]
-                return jsonify(result)
-            return flask.render_template('users/login.html', **context)
+            user: models.User | None = models.User.get_one(email=username)
+        if user is None or not user.check_password(password):
+            csrf_key: str = self.generate_csrf_cookie()
+            result: LoginResponseJson = {
+                'error': "Wrong username or password",
+                'csrf_token': self.generate_csrf_token('login', csrf_key),
+                'success': False,
+            }
+            return jsonify(result)
         login_user(user, remember=rememberme)
         user.last_login = datetime.datetime.now()
         models.db.session.commit()
-        if is_ajax():
-            csrf_key = self.generate_csrf_cookie()
-            result = {
-                'success': True,
-                'csrf_token': self.generate_csrf_token('login', csrf_key),
-                'user': user.to_dict(only={'email', 'username', 'pk', 'last_login'})
-            }
-            result['user']['groups'] = user.get_groups()
-            return jsonify(result)
-        if user.must_change:
-            flask.flash('You must change your password', 'info')
-            return flask.redirect(flask.url_for('change-password'))
-        next_url = flask.request.args.get('next')
-        # TODO: check if next is to an allowed location
-        response = flask.make_response(flask.redirect(next_url or flask.url_for('home')))
-        return response
+        csrf_key = self.generate_csrf_cookie()
+        access_token: models.Token = models.Token.generate_api_token(user, models.TokenType.ACCESS)
+        refresh_token: models.Token = models.Token.generate_api_token(current_user, models.TokenType.REFRESH)
+        result: LoginResponseJson = {
+            'success': True,
+            'mustChange': user.must_change,
+            'csrf_token': self.generate_csrf_token('login', csrf_key),
+            'accessToken': access_token.to_dict(only={'expires', 'jti'}),
+            'refreshToken': refresh_token.to_dict(only={'expires', 'jti'}),
+            'user': user.to_dict(only={'email', 'username', 'pk', 'last_login'})
+        }
+        result['user']['groups'] = user.get_groups()
+        return jsonify(result)
 
 
 class LogoutPage(HTMLHandlerBase):

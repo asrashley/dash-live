@@ -227,12 +227,6 @@ export const routeMap = {
     route: "/options",
     url: () => `/options`,
   },
-  login: {
-    title: "Log into site",
-    re: /\/login/,
-    route: "/login",
-    url: () => `/login`,
-  },
   logout: {
     title: "Log out of site",
     re: /\/logout/,
@@ -274,6 +268,12 @@ export const routeMap = {
     re: /\/api\/manifests/,
     route: "/api/manifests",
     url: () => `/api/manifests`,
+  },
+  login: {
+    title: "Log into site",
+    re: /\/api\/login/,
+    route: "/api/login",
+    url: () => `/api/login`,
   },
   refreshAccessToken: {
     title: "Refresh access token",
@@ -392,12 +392,6 @@ export const routeMap = {
 };
 
 export const uiRouteMap = {
-  home: {
-    title: "home",
-    re: /\//,
-    route: "/",
-    url: () => `/`,
-  },
   addMps: {
     title: "add-mps",
     re: /\/multi-period-streams\/.add/,
@@ -410,10 +404,22 @@ export const uiRouteMap = {
     route: "/multi-period-streams/:mps_name",
     url: ({mps_name}) => `/multi-period-streams/${mps_name}`,
   },
+  home: {
+    title: "home",
+    re: /\//,
+    route: "/",
+    url: () => `/`,
+  },
   listMps: {
     title: "list-mps",
     re: /\/multi-period-streams/,
     route: "/multi-period-streams",
     url: () => `/multi-period-streams`,
+  },
+  login: {
+    title: "login",
+    re: /\/login/,
+    route: "/login",
+    url: () => `/login`,
   },
 };

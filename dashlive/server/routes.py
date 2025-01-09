@@ -256,10 +256,6 @@ routes: dict[str, Route] = {
         r'/options',
         handler='htmlpage.CgiOptionsPage',
         title='Manifest and Media CGI options'),
-    "login": Route(
-        r'/login',
-        handler='user_management.LoginPage',
-        title='Log into site'),
     "logout": Route(
         r'/logout',
         handler='user_management.LogoutPage',
@@ -288,6 +284,10 @@ routes: dict[str, Route] = {
         r'/api/manifests',
         handler='manifest_requests.ListManifests',
         title="DASH fragment"),
+    "login": Route(
+        r'/api/login',
+        handler='user_management.LoginPage',
+        title='Log into site'),
     "refresh-access-token": Route(
         r'/api/refresh/access',
         handler='user_management.RefreshAccessToken',
@@ -378,10 +378,11 @@ class UiRoute(Route):
         super().__init__(template, handler='htmlpage.MainPage', title='')
 
 ui_routes: dict[str, UiRoute] = {
-    "home": UiRoute(r'/'),
     'add-mps': UiRoute(r'/multi-period-streams/.add'),
     'edit-mps': UiRoute(r'/multi-period-streams/<mps_name>'),
+    "home": UiRoute(r'/'),
     "list-mps": UiRoute(r'/multi-period-streams'),
+    "login": UiRoute(r'/login'),
 }
 
 for name in routes.keys():

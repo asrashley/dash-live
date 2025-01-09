@@ -1,6 +1,8 @@
 export interface InitialUserState {
     pk?: number;
     username?: string;
+    email?: string;
+    last_login?: string;
     isAuthenticated: boolean;
     groups: string[];
 }

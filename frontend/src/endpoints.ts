@@ -1,7 +1,7 @@
 import { createContext } from 'preact';
 import log from 'loglevel';
 
-import { routeMap } from '@dashlive/routemap';
+import { routeMap, uiRouteMap} from '@dashlive/routemap';
 import { type RouteMap } from './types/RouteMap';
 import { CsrfTokenStore } from './CsrfTokenStore';
 import { CsrfTokenCollection } from './types/CsrfTokenCollection';
@@ -14,10 +14,13 @@ import { AllMultiPeriodStreamsJson } from './types/AllMultiPeriodStreams';
 import { ContentRolesMap } from './types/ContentRolesMap';
 import { ModifyMultiPeriodStreamJson } from './types/ModifyMultiPeriodStreamJson';
 import { InitialApiTokens } from './types/InitialApiTokens';
+import { LoginRequest } from './types/LoginRequest';
+import { LoginResponse } from './types/LoginResponse';
 
 type TokenStoreCollection = {
   files: CsrfTokenStore;
   kids: CsrfTokenStore;
+  login: CsrfTokenStore;
   streams: CsrfTokenStore;
   upload: CsrfTokenStore;
 };
@@ -25,7 +28,7 @@ type TokenStoreCollection = {
 export type ApiRequestOptions = {
   authorization?: string;
   body: RequestInit['body'];
-  service: 'streams' | 'files' | 'kids' | 'upload';
+  service: keyof TokenStoreCollection;
   signal?: AbortSignal;
   method: RequestInit['method'];
   rejectOnError?: boolean;
@@ -57,6 +60,7 @@ export class ApiRequests {
     this.csrfTokens = {
       files: new CsrfTokenStore(csrfTokens?.files),
       kids: new CsrfTokenStore(csrfTokens?.kids),
+      login: new CsrfTokenStore(csrfTokens?.login),
       streams: new CsrfTokenStore(csrfTokens?.streams),
       upload: new CsrfTokenStore(csrfTokens?.upload),
     }
@@ -73,7 +77,25 @@ export class ApiRequests {
     return this.sendApiRequest(routeMap.contentRoles.url(), options);
   }
 
-  async getAllStreams({ withDetails = false, ...options}: Partial<GetAllStreamsProps>  = {}): Promise<AllStreamsJson> {
+  async loginUser(request: LoginRequest, options: Partial<GetAllStreamsProps> = {}): Promise<LoginResponse> {
+    const response: LoginResponse = await this.sendApiRequest(routeMap.login.url(), {
+      body: JSON.stringify(request),
+      method: 'POST',
+      service: 'login',
+      ...options,
+    });
+    if (response.success) {
+      if (response.accessToken) {
+        this.accessToken = response.accessToken;
+      }
+      if (response.refreshToken) {
+        this.refreshToken = response.refreshToken;
+      }
+    }
+    return response;
+  }
+
+  async getAllStreams({ withDetails = false, ...options}: Partial<GetAllStreamsProps> = {}): Promise<AllStreamsJson> {
     const service = 'streams';
     const csrf_token = await this.csrfTokens[service].getToken(
       options?.signal, this.getCsrfTokens);
@@ -293,7 +315,7 @@ export class ApiRequests {
     const data: RefreshAccessTokenResponse = await this.sendApiRequest(routeMap.refreshAccessToken.url(), options);
     const { accessToken, csrfTokens, ok, status } = data ?? {};
     if (ok === false && status === 401) {
-      this.navigate(routeMap.login.url());
+      this.navigate(uiRouteMap.login.url());
     }
     if (accessToken) {
       this.accessToken = accessToken;

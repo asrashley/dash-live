@@ -8,6 +8,7 @@ import { App } from "./App";
 import { AllStreamsJson } from "./types/AllStreams";
 import { MultiPeriodStreamJson } from "./types/MultiPeriodStream";
 import { AppStateContext, AppStateType } from "./appState";
+import { AllMultiPeriodStreamsJson } from "./types/AllMultiPeriodStreams";
 
 vi.mock('./endpoints.js', async (importOriginal) => {
   const ApiRequests = vi.fn();
@@ -99,7 +100,7 @@ describe("main entry-point app", () => {
         apiRequestMock.getAllMultiPeriodStreams.mockImplementation(async () => {
           const streams = await import("./test/fixtures/multi-period-streams/index.json");
           resolve();
-          return streams;
+          return streams.default as AllMultiPeriodStreamsJson;
         });
       }),
       getMultiPeriodStream: new Promise<void>(resolve => {

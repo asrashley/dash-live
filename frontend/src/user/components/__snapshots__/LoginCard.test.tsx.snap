@@ -1,0 +1,106 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`LoginCard component > matches snapshot 1`] = `
+<DocumentFragment>
+  <div
+    class="card "
+    id="login"
+  >
+    <div
+      class="card-header"
+    >
+      Log into DASH server
+    </div>
+    <div
+      class="card-body"
+    >
+      <form
+        class=""
+        id="login-form"
+        name="login"
+      >
+        <div
+          class="d-none"
+          role="alert"
+        />
+        <div
+          class="row mb-2 form-group "
+        >
+          <label
+            class="col-2 col-form-label"
+            for="model-username"
+          >
+            Username:
+          </label>
+          <div
+            class="col-10"
+          >
+            <input
+              aria-describedby="field-username"
+              class="form-control "
+              id="model-username"
+              name="username"
+              title="Username"
+              type="text"
+            />
+          </div>
+        </div>
+        <div
+          class="row mb-2 form-group "
+        >
+          <label
+            class="col-2 col-form-label"
+            for="model-password"
+          >
+            Password:
+          </label>
+          <div
+            class="col-10"
+          >
+            <input
+              aria-describedby="field-password"
+              class="form-control "
+              id="model-password"
+              name="password"
+              title="Password"
+              type="password"
+            />
+          </div>
+        </div>
+        <div
+          class="row mb-2 form-group "
+        >
+          <label
+            class="col-2 col-form-label"
+            for="model-rememberme"
+          >
+            Remember Me:
+          </label>
+          <div
+            class="col-10"
+          >
+            <input
+              aria-describedby="field-rememberme"
+              class="form-check-input "
+              id="model-rememberme"
+              name="rememberme"
+              title="Remember Me"
+              type="checkbox"
+              value="false"
+            />
+          </div>
+        </div>
+        <div>
+          <button
+            class="btn btn-primary"
+            disabled=""
+            type="submit"
+          >
+            Login
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</DocumentFragment>
+`;
