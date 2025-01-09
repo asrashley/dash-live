@@ -8,7 +8,7 @@
 from functools import wraps
 import html
 import logging
-from typing import cast, Any, Callable, Iterable
+from typing import cast, Callable, Iterable
 
 import flask  # type: ignore
 from flask_login import current_user
@@ -22,16 +22,12 @@ from dashlive.server.models import (
     MediaFile,
     MultiPeriodStream,
     Stream,
-    Token,
-    TokenType,
     User
 )
-from dashlive.server.routes import routes
 
-from .csrf import CsrfProtection, CsrfTokenCollection
+from .csrf import CsrfProtection
 from .exceptions import CsrfFailureException
-from .navbar import create_navbar_context, NavBarItem
-from .template_context import TemplateContext, create_template_context
+from .spa_context import SpaTemplateContext, create_spa_template_context
 from .utils import is_ajax, jsonify
 
 def needs_login_response(admin: bool, html: bool, permission: Group | None) -> flask.Response:
@@ -283,40 +279,6 @@ def spa_handler(func):
     def decorated_function(*args, **kwargs):
         if is_ajax():
             return func(*args, **kwargs)
-        csrf_key = CsrfProtection.generate_cookie()
-        csrf_tokens = CsrfTokenCollection(
-            streams=CsrfProtection.generate_token('streams', csrf_key),
-            files=None,
-            kids=None,
-            upload=None)
-        user: User = current_user
-        if not current_user.is_authenticated:
-            user = User.get_guest_user()
-        access_token = Token.generate_api_token(user, TokenType.ACCESS)
-        initial_tokens = {
-            'csrfTokens': csrf_tokens.to_dict(),
-            'accessToken': access_token.to_dict(only={'expires', 'jti'}),
-            'refreshToken': None,
-        }
-        user_context: dict[str, Any] = {
-            'isAuthenticated': current_user.is_authenticated,
-            'pk': user.pk,
-            'username': user.username,
-            'groups': user.get_groups(),
-        }
-        if current_user.is_authenticated:
-            refresh_token: Token = Token.generate_api_token(
-                current_user, TokenType.REFRESH)
-            initial_tokens['refreshToken'] = refresh_token.to_dict(
-                only={'expires', 'jti'})
-        navbar = create_navbar_context()
-        breadcrumbs: list[NavBarItem] = [
-            NavBarItem(title='Home', active=True)
-        ]
-        context: TemplateContext = create_template_context(
-            title='DASH Test Streams', params=kwargs,
-            navbar=navbar, routes=routes, breadcrumbs=breadcrumbs,
-            initialTokens=initial_tokens, user=user_context,
-            force_es5=('es5' in flask.request.args))
+        context: SpaTemplateContext = create_spa_template_context()
         return flask.render_template('spa/index.html', **context)
     return decorated_function

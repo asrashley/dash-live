@@ -1,6 +1,8 @@
 export interface InitialUserState {
-    isAuthenticated: boolean,
-    groups: string[],
+    pk?: number;
+    username?: string;
+    isAuthenticated: boolean;
+    groups: string[];
 }
 
 export interface UserState extends InitialUserState {

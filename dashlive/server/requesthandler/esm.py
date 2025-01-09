@@ -35,7 +35,9 @@ from dashlive.server.options.dash_option import DashOption
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.options.types import OptionUsage
 from dashlive.mpeg.dash.content_role import ContentRole
-from dashlive.server.routes import routes
+from dashlive.server.routes import routes, ui_routes, RouteJavaScript
+
+from .spa_context import SpaTemplateContext, create_spa_template_context
 from .utils import jsonify
 
 class ModuleWrapper(MethodView):
@@ -66,37 +68,21 @@ class RouteMap(MethodView):
     Returns a URL routing map for use by a single-page application.
     """
     def get(self) -> flask.Response:
-        remove_names = re.compile(r'\?P(<\w+>)')
-        find_params = re.compile(r'{(\w+)}')
-        route_map: dict[str, dict] = {
+        route_map: dict[str, RouteJavaScript] = {
             "css": RouteMap.static_route('css', 'style sheets'),
             "fonts": RouteMap.static_route('fonts', 'fonts'),
             "icons": RouteMap.static_route('icons', 'icons'),
             "images": RouteMap.static_route('img', 'images'),
         }
         for name, route in routes.items():
-            parts = [p.title() for p in name.split('-')]
-            parts[0] = parts[0].lower()
-            name: str = ''.join(parts)
-            rgx: str = remove_names.sub(r'?\1', route.reTemplate.pattern)
-            # rgx = rgx.replace("\\", "\\\\")
-            rgx = rgx.replace("/", "\\/")
-            route_map[name] = {
-                'template': route.formatTemplate,
-                're': rgx,
-                'title': route.title,
-                'route': find_params.sub(r':\1', route.formatTemplate),
-            }
-        for item in route_map.values():
-            names: list[str] = []
-            for name in find_params.finditer(item["template"]):
-                names.append(name.group(1))
-            template: str = item["template"].replace(r'{', r'${')
-            params: str = ', '.join(names)
-            if params:
-                params = f'{{{params}}}'
-            item["url"] = f'({params}) => `{template}`'
-        body: str = flask.render_template('esm/routemap.tjs', routes=route_map)
+            route_map[self.to_camel_case(name)] = route.to_javascript()
+
+        ui_route_map: dict[str, RouteJavaScript] = {}
+        for name, route in ui_routes.items():
+            ui_route_map[self.to_camel_case(name)] = route.to_javascript()
+
+        body: str = flask.render_template(
+            'esm/routemap.tjs', routes=route_map, ui_routes=ui_route_map)
         headers: dict[str, str] = {
             'Content-Type': 'application/javascript',
             'Content-Length': len(body),
@@ -104,16 +90,21 @@ class RouteMap(MethodView):
         return flask.make_response((body, 200, headers))
 
     @staticmethod
-    def static_route(directory: str, title: str) -> dict:
+    def to_camel_case(name: str) -> str:
+        parts: list[str] = [p.title() for p in name.split('-')]
+        parts[0] = parts[0].lower()
+        return ''.join(parts)
+
+    @staticmethod
+    def static_route(directory: str, title: str) -> RouteJavaScript:
         filename = f"{directory}/"
+        prefix = flask.url_for('static', filename=filename)
         return {
-            "template": flask.url_for('static', filename=filename) + r"{filename}",
-            "route": flask.url_for('static', filename=filename) + r":filename",
-            "re": (
-                flask.url_for('static', filename=filename).replace('/', r'\/') +
-                r'(?<filename>[\w_.-]+)'
-            ),
+            "template":  prefix + r"{filename}",
+            "route": prefix + r":filename",
+            "rgx": prefix.replace('/', r'\/') + r'(?<filename>[\w_.-]+)',
             "title": f"static {title}",
+            "urlFn": f"({{filename}}) => `{prefix}${{filename}}`",
         }
 
 
@@ -245,3 +236,22 @@ class BundleDirectory(MethodView):
                     continue
                 code.append(line)
         return code
+
+class InitialAppState(MethodView):
+    """
+    Handler that is used to populate the initial app state for the development
+    server used by webpack-dev-server
+    """
+    def get(self) -> flask.Response:
+        context: SpaTemplateContext = create_spa_template_context()
+        body: str = flask.render_template(
+            'esm/initial_app_state.tjs',
+            initialTokens=context["initialTokens"],
+            navbar=context["navbar"],
+            user=context["user"])
+        headers: dict[str, str] = {
+            'Content-Type': 'application/javascript',
+            'Content-Length': len(body),
+        }
+        return flask.make_response((body, 200, headers))
+
