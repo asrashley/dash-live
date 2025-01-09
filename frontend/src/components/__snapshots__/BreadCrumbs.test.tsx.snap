@@ -1,15 +1,80 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`BreadCrumbs > should display Breadcrumbs 1`] = `
+exports[`BreadCrumbs > should display Breadcrumbs for / 1`] = `
 <DocumentFragment>
-  <header>
-    
-          
-    <div
+  <div>
+    <nav
+      aria-label="breadcrumb"
       class="breadcrumbs"
+      data-location="/"
     >
-      
-            
+      <ol
+        class="breadcrumb"
+      >
+        <li
+          class="breadcrumb-item active"
+          id="crumb_0"
+        >
+          <span>
+            Home
+          </span>
+        </li>
+      </ol>
+    </nav>
+    <div>
+      home page
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`BreadCrumbs > should display Breadcrumbs for /multi-period-streams 1`] = `
+<DocumentFragment>
+  <div>
+    <nav
+      aria-label="breadcrumb"
+      class="breadcrumbs"
+      data-location="/multi-period-streams"
+    >
+      <ol
+        class="breadcrumb"
+      >
+        <li
+          class="breadcrumb-item "
+          id="crumb_0"
+        >
+          <a
+            href="/"
+            title="Home"
+          >
+            Home
+          </a>
+        </li>
+        <li
+          class="breadcrumb-item active"
+          id="crumb_1"
+        >
+          <span>
+            multi-period-streams
+          </span>
+        </li>
+      </ol>
+    </nav>
+    <div>
+      list MPS
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`BreadCrumbs > should display Breadcrumbs for /multi-period-streams/.add 1`] = `
+<DocumentFragment>
+  <div>
+    <nav
+      aria-label="breadcrumb"
+      class="breadcrumbs"
+      data-location="/multi-period-streams/.add"
+    >
       <ol
         class="breadcrumb"
       >
@@ -39,24 +104,14 @@ exports[`BreadCrumbs > should display Breadcrumbs 1`] = `
           class="breadcrumb-item active"
           id="crumb_2"
         >
-          .add
+          <span>
+            .add
+          </span>
         </li>
       </ol>
-    </div>
-    
-        
-  </header>
-  <div
-    id="app"
-  >
+    </nav>
     <div>
-      <div>
-        <div
-          data-location="/multi-period-streams/.add"
-          style="display: none;"
-        />
-        <div />
-      </div>
+      edit MPS
     </div>
   </div>
 </DocumentFragment>
