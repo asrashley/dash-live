@@ -1,0 +1,56 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PageNotFound component > matches snapshot 1`] = `
+<DocumentFragment>
+  <div
+    class="card m-3"
+    id="page-not-found"
+  >
+    <div
+      class="card-header"
+    >
+      Sorry I don't know about this page
+    </div>
+    <div
+      class="card-body"
+    >
+      <div
+        class="d-flex flex-row mb-3"
+      >
+        <div>
+          <img
+            alt="Vector image of a dog looking sad"
+            class="not-found-img"
+            src="/static/img/sad-puppy-dog.svg"
+          />
+          <a
+            class="fs-6 link-opacity-50"
+            href="https://www.wannapik.com/vectors/88"
+          >
+            Image designed by Wannapik
+          </a>
+        </div>
+        <div>
+          <p
+            class="fs-3"
+          >
+            This page might have moved, or it might be a bug in this site.
+          </p>
+          <p
+            class="fs-4"
+          >
+            Probably a good idea to 
+            <a
+              class="link link-underline-light"
+              href="/"
+            >
+              return to the home page
+            </a>
+            .
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
