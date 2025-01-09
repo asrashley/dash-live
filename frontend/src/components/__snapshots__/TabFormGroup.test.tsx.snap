@@ -99,7 +99,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-abr"
+            for="model-abr"
           >
             Adaptive bitrate:
           </label>
@@ -127,7 +127,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-acodec"
+            for="model-acodec"
           >
             Audio Codec:
           </label>
@@ -170,7 +170,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-events"
+            for="model-events"
           >
             DASH events:
           </label>
@@ -213,7 +213,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-timeline"
+            for="model-timeline"
           >
             Segment timeline:
           </label>
@@ -241,7 +241,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-time"
+            for="model-time"
           >
             UTC timing method:
           </label>
@@ -309,7 +309,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-player"
+            for="model-player"
           >
             Video Player:
           </label>
@@ -359,7 +359,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-ad_audio"
+            for="model-ad_audio"
           >
             Audio Description:
           </label>
@@ -386,7 +386,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-start"
+            for="model-start"
           >
             Availability start time:
           </label>
@@ -443,7 +443,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-bugs"
+            for="model-bugs"
           >
             Bug compatibility:
           </label>
@@ -481,7 +481,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-drift"
+            for="model-drift"
           >
             Clock drift:
           </label>
@@ -508,7 +508,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-leeway"
+            for="model-leeway"
           >
             Fragment expiration leeway:
           </label>
@@ -555,7 +555,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-main_audio"
+            for="model-main_audio"
           >
             Main audio track:
           </label>
@@ -582,7 +582,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-main_text"
+            for="model-main_text"
           >
             Main text track:
           </label>
@@ -609,7 +609,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-mup"
+            for="model-mup"
           >
             Minimum update period:
           </label>
@@ -661,7 +661,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-ntp_servers"
+            for="model-ntp_servers"
           >
             NTP time servers:
           </label>
@@ -704,7 +704,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-tcodec"
+            for="model-tcodec"
           >
             Text Codec:
           </label>
@@ -742,7 +742,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-tlang"
+            for="model-tlang"
           >
             Text Language:
           </label>
@@ -769,7 +769,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-base"
+            for="model-base"
           >
             Use BaseURLs:
           </label>
@@ -797,7 +797,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-patch"
+            for="model-patch"
           >
             Use MPD patches:
           </label>
@@ -825,7 +825,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-depth"
+            for="model-depth"
           >
             timeShiftBufferDepth size:
           </label>
@@ -874,7 +874,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-clearkey__enabled"
+            for="model-clearkey__enabled"
           >
             Clearkey DRM:
           </label>
@@ -902,7 +902,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-clearkey__la_url"
+            for="model-clearkey__la_url"
           >
             Clearkey LA_URL:
           </label>
@@ -929,7 +929,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-clearkey__drmloc"
+            for="model-clearkey__drmloc"
           >
             Clearkey location:
           </label>
@@ -999,7 +999,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-marlin__enabled"
+            for="model-marlin__enabled"
           >
             Marlin DRM:
           </label>
@@ -1027,7 +1027,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-marlin__la_url"
+            for="model-marlin__la_url"
           >
             Marlin LA_URL:
           </label>
@@ -1054,7 +1054,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-marlin__drmloc"
+            for="model-marlin__drmloc"
           >
             Marlin location:
           </label>
@@ -1124,7 +1124,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-ping__count"
+            for="model-ping__count"
           >
             Ping count:
           </label>
@@ -1146,7 +1146,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-ping__duration"
+            for="model-ping__duration"
           >
             Ping duration:
           </label>
@@ -1168,7 +1168,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-ping__inband"
+            for="model-ping__inband"
           >
             Ping inband:
           </label>
@@ -1191,7 +1191,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-ping__interval"
+            for="model-ping__interval"
           >
             Ping interval:
           </label>
@@ -1213,7 +1213,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-ping__start"
+            for="model-ping__start"
           >
             Ping start:
           </label>
@@ -1235,7 +1235,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-ping__timescale"
+            for="model-ping__timescale"
           >
             Ping timescale:
           </label>
@@ -1257,7 +1257,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-ping__value"
+            for="model-ping__value"
           >
             Ping value:
           </label>
@@ -1279,7 +1279,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-ping__version"
+            for="model-ping__version"
           >
             Ping version:
           </label>
@@ -1308,7 +1308,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-playready__enabled"
+            for="model-playready__enabled"
           >
             Playready DRM:
           </label>
@@ -1336,7 +1336,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-playready__la_url"
+            for="model-playready__la_url"
           >
             Playready LA_URL:
           </label>
@@ -1363,7 +1363,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-playready__piff"
+            for="model-playready__piff"
           >
             Playready PIFF:
           </label>
@@ -1391,7 +1391,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-playready__version"
+            for="model-playready__version"
           >
             Playready Version:
           </label>
@@ -1444,7 +1444,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-playready__drmloc"
+            for="model-playready__drmloc"
           >
             Playready location:
           </label>
@@ -1514,7 +1514,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-scte35__count"
+            for="model-scte35__count"
           >
             Scte35 count:
           </label>
@@ -1536,7 +1536,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-scte35__duration"
+            for="model-scte35__duration"
           >
             Scte35 duration:
           </label>
@@ -1558,7 +1558,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-scte35__inband"
+            for="model-scte35__inband"
           >
             Scte35 inband:
           </label>
@@ -1581,7 +1581,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-scte35__interval"
+            for="model-scte35__interval"
           >
             Scte35 interval:
           </label>
@@ -1603,7 +1603,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-scte35__program_id"
+            for="model-scte35__program_id"
           >
             Scte35 program_id:
           </label>
@@ -1625,7 +1625,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-scte35__start"
+            for="model-scte35__start"
           >
             Scte35 start:
           </label>
@@ -1647,7 +1647,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-scte35__timescale"
+            for="model-scte35__timescale"
           >
             Scte35 timescale:
           </label>
@@ -1669,7 +1669,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-scte35__value"
+            for="model-scte35__value"
           >
             Scte35 value:
           </label>
@@ -1691,7 +1691,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-scte35__version"
+            for="model-scte35__version"
           >
             Scte35 version:
           </label>
@@ -1813,7 +1813,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-abr"
+            for="model-abr"
           >
             Adaptive bitrate:
           </label>
@@ -1841,7 +1841,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-audioCodec"
+            for="model-audioCodec"
           >
             Audio Codec:
           </label>
@@ -1884,7 +1884,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-eventTypes"
+            for="model-eventTypes"
           >
             DASH events:
           </label>
@@ -1927,7 +1927,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-segmentTimeline"
+            for="model-segmentTimeline"
           >
             Segment timeline:
           </label>
@@ -1955,7 +1955,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-utcMethod"
+            for="model-utcMethod"
           >
             UTC timing method:
           </label>
@@ -2023,7 +2023,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-videoPlayer"
+            for="model-videoPlayer"
           >
             Video Player:
           </label>
@@ -2073,7 +2073,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-audioDescription"
+            for="model-audioDescription"
           >
             Audio Description:
           </label>
@@ -2100,7 +2100,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-availabilityStartTime"
+            for="model-availabilityStartTime"
           >
             Availability start time:
           </label>
@@ -2157,7 +2157,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-bugCompatibility"
+            for="model-bugCompatibility"
           >
             Bug compatibility:
           </label>
@@ -2195,7 +2195,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-clockDrift"
+            for="model-clockDrift"
           >
             Clock drift:
           </label>
@@ -2222,7 +2222,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-leeway"
+            for="model-leeway"
           >
             Fragment expiration leeway:
           </label>
@@ -2269,7 +2269,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-mainAudio"
+            for="model-mainAudio"
           >
             Main audio track:
           </label>
@@ -2296,7 +2296,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-mainText"
+            for="model-mainText"
           >
             Main text track:
           </label>
@@ -2323,7 +2323,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-minimumUpdatePeriod"
+            for="model-minimumUpdatePeriod"
           >
             Minimum update period:
           </label>
@@ -2375,7 +2375,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-ntpSources"
+            for="model-ntpSources"
           >
             NTP time servers:
           </label>
@@ -2418,7 +2418,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-textCodec"
+            for="model-textCodec"
           >
             Text Codec:
           </label>
@@ -2456,7 +2456,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-textLanguage"
+            for="model-textLanguage"
           >
             Text Language:
           </label>
@@ -2483,7 +2483,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-useBaseUrls"
+            for="model-useBaseUrls"
           >
             Use BaseURLs:
           </label>
@@ -2511,7 +2511,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-patch"
+            for="model-patch"
           >
             Use MPD patches:
           </label>
@@ -2539,7 +2539,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-timeShiftBufferDepth"
+            for="model-timeShiftBufferDepth"
           >
             timeShiftBufferDepth size:
           </label>
@@ -2588,7 +2588,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-clearkey__enabled"
+            for="model-clearkey__enabled"
           >
             Clearkey DRM:
           </label>
@@ -2616,7 +2616,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-clearkey__licenseUrl"
+            for="model-clearkey__licenseUrl"
           >
             Clearkey LA_URL:
           </label>
@@ -2643,7 +2643,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-clearkey__drmloc"
+            for="model-clearkey__drmloc"
           >
             Clearkey location:
           </label>
@@ -2713,7 +2713,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-marlin__enabled"
+            for="model-marlin__enabled"
           >
             Marlin DRM:
           </label>
@@ -2741,7 +2741,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-marlin__licenseUrl"
+            for="model-marlin__licenseUrl"
           >
             Marlin LA_URL:
           </label>
@@ -2768,7 +2768,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-marlin__drmloc"
+            for="model-marlin__drmloc"
           >
             Marlin location:
           </label>
@@ -2838,7 +2838,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-ping__count"
+            for="model-ping__count"
           >
             Ping count:
           </label>
@@ -2860,7 +2860,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-ping__duration"
+            for="model-ping__duration"
           >
             Ping duration:
           </label>
@@ -2882,7 +2882,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-ping__inband"
+            for="model-ping__inband"
           >
             Ping inband:
           </label>
@@ -2905,7 +2905,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-ping__interval"
+            for="model-ping__interval"
           >
             Ping interval:
           </label>
@@ -2927,7 +2927,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-ping__start"
+            for="model-ping__start"
           >
             Ping start:
           </label>
@@ -2949,7 +2949,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-ping__timescale"
+            for="model-ping__timescale"
           >
             Ping timescale:
           </label>
@@ -2971,7 +2971,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-ping__value"
+            for="model-ping__value"
           >
             Ping value:
           </label>
@@ -2993,7 +2993,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-ping__version"
+            for="model-ping__version"
           >
             Ping version:
           </label>
@@ -3022,7 +3022,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-playready__enabled"
+            for="model-playready__enabled"
           >
             Playready DRM:
           </label>
@@ -3050,7 +3050,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-playready__licenseUrl"
+            for="model-playready__licenseUrl"
           >
             Playready LA_URL:
           </label>
@@ -3077,7 +3077,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-playready__piff"
+            for="model-playready__piff"
           >
             Playready PIFF:
           </label>
@@ -3105,7 +3105,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-playready__version"
+            for="model-playready__version"
           >
             Playready Version:
           </label>
@@ -3158,7 +3158,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-playready__drmloc"
+            for="model-playready__drmloc"
           >
             Playready location:
           </label>
@@ -3228,7 +3228,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-scte35__count"
+            for="model-scte35__count"
           >
             Scte35 count:
           </label>
@@ -3250,7 +3250,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-scte35__duration"
+            for="model-scte35__duration"
           >
             Scte35 duration:
           </label>
@@ -3272,7 +3272,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-scte35__inband"
+            for="model-scte35__inband"
           >
             Scte35 inband:
           </label>
@@ -3295,7 +3295,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-scte35__interval"
+            for="model-scte35__interval"
           >
             Scte35 interval:
           </label>
@@ -3317,7 +3317,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-scte35__program_id"
+            for="model-scte35__program_id"
           >
             Scte35 program_id:
           </label>
@@ -3339,7 +3339,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-scte35__start"
+            for="model-scte35__start"
           >
             Scte35 start:
           </label>
@@ -3361,7 +3361,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-scte35__timescale"
+            for="model-scte35__timescale"
           >
             Scte35 timescale:
           </label>
@@ -3383,7 +3383,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-scte35__value"
+            for="model-scte35__value"
           >
             Scte35 value:
           </label>
@@ -3405,7 +3405,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-scte35__version"
+            for="model-scte35__version"
           >
             Scte35 version:
           </label>
@@ -3527,7 +3527,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-ab"
+            for="model-ab"
           >
             Adaptive bitrate:
           </label>
@@ -3555,7 +3555,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-ac"
+            for="model-ac"
           >
             Audio Codec:
           </label>
@@ -3598,7 +3598,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-evs"
+            for="model-evs"
           >
             DASH events:
           </label>
@@ -3641,7 +3641,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-st"
+            for="model-st"
           >
             Segment timeline:
           </label>
@@ -3669,7 +3669,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-utc"
+            for="model-utc"
           >
             UTC timing method:
           </label>
@@ -3737,7 +3737,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-vp"
+            for="model-vp"
           >
             Video Player:
           </label>
@@ -3787,7 +3787,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-ad"
+            for="model-ad"
           >
             Audio Description:
           </label>
@@ -3814,7 +3814,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-ast"
+            for="model-ast"
           >
             Availability start time:
           </label>
@@ -3871,7 +3871,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-bug"
+            for="model-bug"
           >
             Bug compatibility:
           </label>
@@ -3909,7 +3909,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-dft"
+            for="model-dft"
           >
             Clock drift:
           </label>
@@ -3936,7 +3936,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-lee"
+            for="model-lee"
           >
             Fragment expiration leeway:
           </label>
@@ -3983,7 +3983,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-ma"
+            for="model-ma"
           >
             Main audio track:
           </label>
@@ -4010,7 +4010,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-mt"
+            for="model-mt"
           >
             Main text track:
           </label>
@@ -4037,7 +4037,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-mup"
+            for="model-mup"
           >
             Minimum update period:
           </label>
@@ -4089,7 +4089,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-ntps"
+            for="model-ntps"
           >
             NTP time servers:
           </label>
@@ -4132,7 +4132,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-tc"
+            for="model-tc"
           >
             Text Codec:
           </label>
@@ -4170,7 +4170,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-tl"
+            for="model-tl"
           >
             Text Language:
           </label>
@@ -4197,7 +4197,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-base"
+            for="model-base"
           >
             Use BaseURLs:
           </label>
@@ -4225,7 +4225,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-patch"
+            for="model-patch"
           >
             Use MPD patches:
           </label>
@@ -4253,7 +4253,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-tbd"
+            for="model-tbd"
           >
             timeShiftBufferDepth size:
           </label>
@@ -4302,7 +4302,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-clearkey__enabled"
+            for="model-clearkey__enabled"
           >
             Clearkey DRM:
           </label>
@@ -4330,7 +4330,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-clu"
+            for="model-clu"
           >
             Clearkey LA_URL:
           </label>
@@ -4357,7 +4357,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-clearkey__drmloc"
+            for="model-clearkey__drmloc"
           >
             Clearkey location:
           </label>
@@ -4427,7 +4427,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-marlin__enabled"
+            for="model-marlin__enabled"
           >
             Marlin DRM:
           </label>
@@ -4455,7 +4455,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-mlu"
+            for="model-mlu"
           >
             Marlin LA_URL:
           </label>
@@ -4482,7 +4482,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-marlin__drmloc"
+            for="model-marlin__drmloc"
           >
             Marlin location:
           </label>
@@ -4552,7 +4552,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-pinCoun"
+            for="model-pinCoun"
           >
             Ping count:
           </label>
@@ -4574,7 +4574,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-pinDura"
+            for="model-pinDura"
           >
             Ping duration:
           </label>
@@ -4596,7 +4596,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-pinInba"
+            for="model-pinInba"
           >
             Ping inband:
           </label>
@@ -4619,7 +4619,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-pinInte"
+            for="model-pinInte"
           >
             Ping interval:
           </label>
@@ -4641,7 +4641,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-pinStar"
+            for="model-pinStar"
           >
             Ping start:
           </label>
@@ -4663,7 +4663,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-pinTime"
+            for="model-pinTime"
           >
             Ping timescale:
           </label>
@@ -4685,7 +4685,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-pinValu"
+            for="model-pinValu"
           >
             Ping value:
           </label>
@@ -4707,7 +4707,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-pinVers"
+            for="model-pinVers"
           >
             Ping version:
           </label>
@@ -4736,7 +4736,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-playready__enabled"
+            for="model-playready__enabled"
           >
             Playready DRM:
           </label>
@@ -4764,7 +4764,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-plu"
+            for="model-plu"
           >
             Playready LA_URL:
           </label>
@@ -4791,7 +4791,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-pff"
+            for="model-pff"
           >
             Playready PIFF:
           </label>
@@ -4819,7 +4819,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-pvn"
+            for="model-pvn"
           >
             Playready Version:
           </label>
@@ -4872,7 +4872,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-playready__drmloc"
+            for="model-playready__drmloc"
           >
             Playready location:
           </label>
@@ -4942,7 +4942,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-sctCoun"
+            for="model-sctCoun"
           >
             Scte35 count:
           </label>
@@ -4964,7 +4964,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-sctDura"
+            for="model-sctDura"
           >
             Scte35 duration:
           </label>
@@ -4986,7 +4986,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-sctInba"
+            for="model-sctInba"
           >
             Scte35 inband:
           </label>
@@ -5009,7 +5009,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-sctInte"
+            for="model-sctInte"
           >
             Scte35 interval:
           </label>
@@ -5031,7 +5031,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-sctProg"
+            for="model-sctProg"
           >
             Scte35 program_id:
           </label>
@@ -5053,7 +5053,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-sctStar"
+            for="model-sctStar"
           >
             Scte35 start:
           </label>
@@ -5075,7 +5075,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-sctTime"
+            for="model-sctTime"
           >
             Scte35 timescale:
           </label>
@@ -5097,7 +5097,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-sctValu"
+            for="model-sctValu"
           >
             Scte35 value:
           </label>
@@ -5119,7 +5119,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
         >
           <label
             class="col-3 col-form-label"
-            for="field-sctVers"
+            for="model-sctVers"
           >
             Scte35 version:
           </label>

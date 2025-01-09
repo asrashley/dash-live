@@ -162,7 +162,7 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
           >
             <label
               class="col-2 col-form-label"
-              for="field-name"
+              for="model-name"
             >
               Name:
             </label>
@@ -187,7 +187,7 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
           >
             <label
               class="col-2 col-form-label"
-              for="field-title"
+              for="model-title"
             >
               Title:
             </label>
@@ -212,7 +212,7 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
           >
             <label
               class="col-2 col-form-label"
-              for="field-options"
+              for="model-options"
             >
               Stream Options:
             </label>
@@ -262,7 +262,7 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
           >
             <label
               class="col-2 col-form-label"
-              for="field-periods"
+              for="model-periods"
             >
               Periods:
             </label>
@@ -792,7 +792,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-mode"
+                    for="model-mode"
                   >
                     Playback Mode:
                   </label>
@@ -856,7 +856,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-manifest"
+                    for="model-manifest"
                   >
                     Manifest:
                   </label>
@@ -929,7 +929,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-stream"
+                    for="model-stream"
                   >
                     Stream:
                   </label>
@@ -972,7 +972,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-drms"
+                    for="model-drms"
                   >
                     DRM systems:
                   </label>
@@ -1044,7 +1044,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-abr"
+                    for="model-abr"
                   >
                     Adaptive bitrate:
                   </label>
@@ -1072,7 +1072,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-acodec"
+                    for="model-acodec"
                   >
                     Audio Codec:
                   </label>
@@ -1115,7 +1115,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-events"
+                    for="model-events"
                   >
                     DASH events:
                   </label>
@@ -1158,7 +1158,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-timeline"
+                    for="model-timeline"
                   >
                     Segment timeline:
                   </label>
@@ -1186,7 +1186,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-time"
+                    for="model-time"
                   >
                     UTC timing method:
                   </label>
@@ -1254,7 +1254,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-player"
+                    for="model-player"
                   >
                     Video Player:
                   </label>
@@ -1320,7 +1320,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-ad_audio"
+                    for="model-ad_audio"
                   >
                     Audio Description:
                   </label>
@@ -1347,7 +1347,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-start"
+                    for="model-start"
                   >
                     Availability start time:
                   </label>
@@ -1404,7 +1404,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-bugs"
+                    for="model-bugs"
                   >
                     Bug compatibility:
                   </label>
@@ -1442,7 +1442,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-drift"
+                    for="model-drift"
                   >
                     Clock drift:
                   </label>
@@ -1469,7 +1469,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-leeway"
+                    for="model-leeway"
                   >
                     Fragment expiration leeway:
                   </label>
@@ -1516,7 +1516,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-main_audio"
+                    for="model-main_audio"
                   >
                     Main audio track:
                   </label>
@@ -1543,7 +1543,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-main_text"
+                    for="model-main_text"
                   >
                     Main text track:
                   </label>
@@ -1570,7 +1570,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-mup"
+                    for="model-mup"
                   >
                     Minimum update period:
                   </label>
@@ -1622,7 +1622,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-ntp_servers"
+                    for="model-ntp_servers"
                   >
                     NTP time servers:
                   </label>
@@ -1665,7 +1665,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-tcodec"
+                    for="model-tcodec"
                   >
                     Text Codec:
                   </label>
@@ -1703,7 +1703,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-tlang"
+                    for="model-tlang"
                   >
                     Text Language:
                   </label>
@@ -1730,7 +1730,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-base"
+                    for="model-base"
                   >
                     Use BaseURLs:
                   </label>
@@ -1758,7 +1758,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-patch"
+                    for="model-patch"
                   >
                     Use MPD patches:
                   </label>
@@ -1786,7 +1786,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-depth"
+                    for="model-depth"
                   >
                     timeShiftBufferDepth size:
                   </label>
@@ -1851,7 +1851,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-clearkey__la_url"
+                    for="model-clearkey__la_url"
                   >
                     Clearkey LA_URL:
                   </label>
@@ -1878,7 +1878,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-clearkey__drmloc"
+                    for="model-clearkey__drmloc"
                   >
                     Clearkey location:
                   </label>
@@ -1964,7 +1964,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-marlin__la_url"
+                    for="model-marlin__la_url"
                   >
                     Marlin LA_URL:
                   </label>
@@ -1991,7 +1991,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-marlin__drmloc"
+                    for="model-marlin__drmloc"
                   >
                     Marlin location:
                   </label>
@@ -2077,7 +2077,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-ping__count"
+                    for="model-ping__count"
                   >
                     Ping count:
                   </label>
@@ -2099,7 +2099,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-ping__duration"
+                    for="model-ping__duration"
                   >
                     Ping duration:
                   </label>
@@ -2121,7 +2121,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-ping__inband"
+                    for="model-ping__inband"
                   >
                     Ping inband:
                   </label>
@@ -2144,7 +2144,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-ping__interval"
+                    for="model-ping__interval"
                   >
                     Ping interval:
                   </label>
@@ -2166,7 +2166,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-ping__start"
+                    for="model-ping__start"
                   >
                     Ping start:
                   </label>
@@ -2188,7 +2188,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-ping__timescale"
+                    for="model-ping__timescale"
                   >
                     Ping timescale:
                   </label>
@@ -2210,7 +2210,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-ping__value"
+                    for="model-ping__value"
                   >
                     Ping value:
                   </label>
@@ -2232,7 +2232,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-ping__version"
+                    for="model-ping__version"
                   >
                     Ping version:
                   </label>
@@ -2277,7 +2277,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-playready__la_url"
+                    for="model-playready__la_url"
                   >
                     Playready LA_URL:
                   </label>
@@ -2304,7 +2304,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-playready__piff"
+                    for="model-playready__piff"
                   >
                     Playready PIFF:
                   </label>
@@ -2332,7 +2332,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-playready__version"
+                    for="model-playready__version"
                   >
                     Playready Version:
                   </label>
@@ -2385,7 +2385,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-playready__drmloc"
+                    for="model-playready__drmloc"
                   >
                     Playready location:
                   </label>
@@ -2471,7 +2471,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-scte35__count"
+                    for="model-scte35__count"
                   >
                     Scte35 count:
                   </label>
@@ -2493,7 +2493,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-scte35__duration"
+                    for="model-scte35__duration"
                   >
                     Scte35 duration:
                   </label>
@@ -2515,7 +2515,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-scte35__inband"
+                    for="model-scte35__inband"
                   >
                     Scte35 inband:
                   </label>
@@ -2538,7 +2538,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-scte35__interval"
+                    for="model-scte35__interval"
                   >
                     Scte35 interval:
                   </label>
@@ -2560,7 +2560,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-scte35__program_id"
+                    for="model-scte35__program_id"
                   >
                     Scte35 program_id:
                   </label>
@@ -2582,7 +2582,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-scte35__start"
+                    for="model-scte35__start"
                   >
                     Scte35 start:
                   </label>
@@ -2604,7 +2604,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-scte35__timescale"
+                    for="model-scte35__timescale"
                   >
                     Scte35 timescale:
                   </label>
@@ -2626,7 +2626,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-scte35__value"
+                    for="model-scte35__value"
                   >
                     Scte35 value:
                   </label>
@@ -2648,7 +2648,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                 >
                   <label
                     class="col-2 col-form-label"
-                    for="field-scte35__version"
+                    for="model-scte35__version"
                   >
                     Scte35 version:
                   </label>
