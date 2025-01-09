@@ -27,7 +27,7 @@ import hashlib
 import hmac
 import logging
 import secrets
-from typing import ClassVar
+from typing import ClassVar, TypedDict
 import urllib.parse
 
 import flask  # type: ignore
@@ -39,6 +39,12 @@ from dashlive.utils.json_object import JsonObject
 from .exceptions import CsrfFailureException
 from .utils import is_https_request
 
+class CsrfTokenCollectionJson(TypedDict):
+    files: str
+    kids: str
+    streams: str
+    upload: str | None
+
 @dataclass(slots=True, kw_only=True)
 class CsrfTokenCollection:
     files: str
@@ -46,8 +52,8 @@ class CsrfTokenCollection:
     streams: str
     upload: str | None = None
 
-    def to_dict(self) -> JsonObject:
-        rv: JsonObject = {
+    def to_dict(self) -> CsrfTokenCollectionJson:
+        rv: CsrfTokenCollectionJson = {
             'files': self.files,
             'kids': self.kids,
             'streams': self.streams,

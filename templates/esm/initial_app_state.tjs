@@ -1,0 +1,3 @@
+export const initialTokens = {{ initialTokens | toJson }};
+export const navbar = {{ navbar | toJson }};
+export const user = {{ user | toJson }};
