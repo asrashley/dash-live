@@ -134,7 +134,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-ab"
+                      for="model-ab"
                     >
                       Adaptive bitrate:
                     </label>
@@ -162,7 +162,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-evs"
+                      for="model-evs"
                     >
                       DASH events:
                     </label>
@@ -205,7 +205,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-st"
+                      for="model-st"
                     >
                       Segment timeline:
                     </label>
@@ -233,7 +233,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-utc"
+                      for="model-utc"
                     >
                       UTC timing method:
                     </label>
@@ -308,7 +308,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-ast"
+                      for="model-ast"
                     >
                       Availability start time:
                     </label>
@@ -365,7 +365,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-bug"
+                      for="model-bug"
                     >
                       Bug compatibility:
                     </label>
@@ -403,7 +403,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-dft"
+                      for="model-dft"
                     >
                       Clock drift:
                     </label>
@@ -430,7 +430,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-lee"
+                      for="model-lee"
                     >
                       Fragment expiration leeway:
                     </label>
@@ -477,7 +477,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-mup"
+                      for="model-mup"
                     >
                       Minimum update period:
                     </label>
@@ -529,7 +529,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-ntps"
+                      for="model-ntps"
                     >
                       NTP time servers:
                     </label>
@@ -572,7 +572,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-base"
+                      for="model-base"
                     >
                       Use BaseURLs:
                     </label>
@@ -600,7 +600,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-patch"
+                      for="model-patch"
                     >
                       Use MPD patches:
                     </label>
@@ -628,7 +628,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-tbd"
+                      for="model-tbd"
                     >
                       timeShiftBufferDepth size:
                     </label>
@@ -677,7 +677,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-clearkey__enabled"
+                      for="model-clearkey__enabled"
                     >
                       Clearkey DRM:
                     </label>
@@ -705,7 +705,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-clu"
+                      for="model-clu"
                     >
                       Clearkey LA_URL:
                     </label>
@@ -732,7 +732,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-clearkey__drmloc"
+                      for="model-clearkey__drmloc"
                     >
                       Clearkey location:
                     </label>
@@ -802,7 +802,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-marlin__enabled"
+                      for="model-marlin__enabled"
                     >
                       Marlin DRM:
                     </label>
@@ -830,7 +830,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-mlu"
+                      for="model-mlu"
                     >
                       Marlin LA_URL:
                     </label>
@@ -857,7 +857,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-marlin__drmloc"
+                      for="model-marlin__drmloc"
                     >
                       Marlin location:
                     </label>
@@ -927,7 +927,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-pinCoun"
+                      for="model-pinCoun"
                     >
                       Ping count:
                     </label>
@@ -949,7 +949,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-pinDura"
+                      for="model-pinDura"
                     >
                       Ping duration:
                     </label>
@@ -971,7 +971,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-pinInba"
+                      for="model-pinInba"
                     >
                       Ping inband:
                     </label>
@@ -994,7 +994,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-pinInte"
+                      for="model-pinInte"
                     >
                       Ping interval:
                     </label>
@@ -1016,7 +1016,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-pinStar"
+                      for="model-pinStar"
                     >
                       Ping start:
                     </label>
@@ -1038,7 +1038,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-pinTime"
+                      for="model-pinTime"
                     >
                       Ping timescale:
                     </label>
@@ -1060,7 +1060,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-pinValu"
+                      for="model-pinValu"
                     >
                       Ping value:
                     </label>
@@ -1082,7 +1082,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-pinVers"
+                      for="model-pinVers"
                     >
                       Ping version:
                     </label>
@@ -1111,7 +1111,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-playready__enabled"
+                      for="model-playready__enabled"
                     >
                       Playready DRM:
                     </label>
@@ -1139,7 +1139,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-plu"
+                      for="model-plu"
                     >
                       Playready LA_URL:
                     </label>
@@ -1166,7 +1166,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-pff"
+                      for="model-pff"
                     >
                       Playready PIFF:
                     </label>
@@ -1194,7 +1194,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-pvn"
+                      for="model-pvn"
                     >
                       Playready Version:
                     </label>
@@ -1247,7 +1247,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-playready__drmloc"
+                      for="model-playready__drmloc"
                     >
                       Playready location:
                     </label>
@@ -1317,7 +1317,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-sctCoun"
+                      for="model-sctCoun"
                     >
                       Scte35 count:
                     </label>
@@ -1339,7 +1339,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-sctDura"
+                      for="model-sctDura"
                     >
                       Scte35 duration:
                     </label>
@@ -1361,7 +1361,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-sctInba"
+                      for="model-sctInba"
                     >
                       Scte35 inband:
                     </label>
@@ -1384,7 +1384,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-sctInte"
+                      for="model-sctInte"
                     >
                       Scte35 interval:
                     </label>
@@ -1406,7 +1406,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-sctProg"
+                      for="model-sctProg"
                     >
                       Scte35 program_id:
                     </label>
@@ -1428,7 +1428,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-sctStar"
+                      for="model-sctStar"
                     >
                       Scte35 start:
                     </label>
@@ -1450,7 +1450,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-sctTime"
+                      for="model-sctTime"
                     >
                       Scte35 timescale:
                     </label>
@@ -1472,7 +1472,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-sctValu"
+                      for="model-sctValu"
                     >
                       Scte35 value:
                     </label>
@@ -1494,7 +1494,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                   >
                     <label
                       class="col-3 col-form-label"
-                      for="field-sctVers"
+                      for="model-sctVers"
                     >
                       Scte35 version:
                     </label>

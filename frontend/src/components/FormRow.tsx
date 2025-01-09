@@ -37,7 +37,7 @@ export function FormRow({ className = "", name, layout, label, text, children, e
     middle += right;
   }
   return <div className={`row mb-2 form-group ${className}`}>
-      <label className={`col-${left} col-form-label`} htmlFor={`field-${name}`}>{label}:</label>
+      <label className={`col-${left} col-form-label`} htmlFor={`model-${name}`}>{label}:</label>
       <div className={`col-${middle}`}>{children}</div>
       <FormText text={text} className={`col-${right}`} />
       <ErrorFeedback error={error} />
