@@ -13,13 +13,15 @@ export interface CardProps {
   id: string;
   header?: string | ComponentChildren;
   children?: ComponentChildren;
+  className?: string;
   image?: CardImageProps;
 }
 
-export function Card({ header, image, children, id }: CardProps) {
+export function Card({ className="", header, image, children, id }: CardProps) {
   const cardHeader = header ? <div className="card-header">{header}</div> : "";
+  const clsName = `card ${className}`;
   return (
-    <div className="card" id={id}>
+    <div className={clsName} id={id}>
       {image ? <CardImage {...image} /> : ""}
       {cardHeader}
       <div className="card-body">{children}</div>
