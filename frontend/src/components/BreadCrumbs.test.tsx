@@ -1,38 +1,55 @@
-import { describe, expect, test } from "vitest";
-import { Route } from "wouter-preact";
+import { afterEach, describe, expect, test, vi } from "vitest";
+import { Route, Switch, useLocation } from "wouter-preact";
 
 import { renderWithProviders } from "../test/renderWithProviders";
-import { elementAsFragment } from '../test/asFragment';
 import { BreadCrumbs } from "./BreadCrumbs";
+import { fireEvent } from "@testing-library/preact";
+
+vi.mock('wouter-preact', async (importOriginal) => {
+  return {
+    ...await importOriginal(),
+    useLocation: vi.fn(),
+  };
+});
 
 describe("BreadCrumbs", () => {
-  test("should display Breadcrumbs", () => {
-    document.body.innerHTML = `<header>
-          <div class="breadcrumbs">
-            <ol class="breadcrumb" />
-          </div>
-        </header><div id="app" />`;
-    const baseElement = document.getElementById("app");
-    expect(baseElement).toBeDefined();
-    expect(baseElement).not.toBeNull();
-    renderWithProviders(
-      <div>
-        <BreadCrumbs />
-        <Route path="/multi-period-streams/:stream">
-          <div />
-        </Route>
-      </div>,
-      {
-        baseElement,
-        path: "/multi-period-streams/.add",
-      }
-    );
-    expect(document.querySelector("ol.breadcrumb")?.innerHTML).toBe(
-      '<li id="crumb_0" class="breadcrumb-item "><a href="/" title="Home">Home</a></li>' +
-        '<li id="crumb_1" class="breadcrumb-item "><a href="/multi-period-streams" ' +
-        'title="multi-period-streams">multi-period-streams</a></li>' +
-        '<li id="crumb_2" class="breadcrumb-item active">.add</li>'
-    );
-    expect(elementAsFragment(document.body)).toMatchSnapshot();
+  const useLocationMock = vi.mocked(useLocation);
+  const setLocation = vi.fn();
+
+  afterEach(() => {
+    vi.clearAllMocks();
   });
+
+  test.each<string>(["/multi-period-streams/.add", "/multi-period-streams", "/"])(
+    "should display Breadcrumbs for %s",
+    (path: string) => {
+      useLocationMock.mockReturnValue([path, setLocation]);
+      const { asFragment, getBySelector } = renderWithProviders(
+        <div>
+          <BreadCrumbs />
+          <Switch>
+            <Route path="/multi-period-streams/:stream">
+              <div>edit MPS</div>
+            </Route>
+            <Route path="/multi-period-streams">
+              <div>list MPS</div>
+            </Route>
+            <Route path="/">
+              <div>home page</div>
+            </Route>
+          </Switch>
+        </div>,
+        {
+          path,
+        }
+      );
+      expect(asFragment()).toMatchSnapshot();
+      if (path != '/') {
+        const elt = getBySelector('#crumb_0 > a');
+        fireEvent.click(elt);
+        expect(setLocation).toHaveBeenCalledTimes(1);
+        expect(setLocation).toHaveBeenCalledWith('/');
+      }
+    }
+  );
 });
