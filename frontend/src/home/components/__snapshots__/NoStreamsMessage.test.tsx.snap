@@ -3,7 +3,7 @@
 exports[`NoStreamsMessage > should display message 1`] = `
 <DocumentFragment>
   <div
-    class="card"
+    class="card "
     id="no-streams-msg"
   >
     <div

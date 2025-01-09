@@ -117,20 +117,7 @@ describe("main entry-point app", () => {
         });
       })
     };
-    document.body.innerHTML = `<header>
-    <nav class="navbar">
-      <div class="collapse navbar-collapse" id="navbarSupportedContent">
-        <ul class="navbar-nav mr-auto">
-          <li class="nav-item spa"><a class="nav-link active" href="/" aria-current="page">Home</a></li>
-          <li class="nav-item "><a class="nav-link" href="/streams">Streams</a></li>
-          <li class="nav-item spa"><a class="nav-link" id="nav-mps" href="/multi-period-streams">Multi-Period</a></li>
-          <li class="nav-item user-login"><a class="nav-link" href="/logout">Log Out</a></li>
-        </ul>
-      </div>
-    </nav>
-    <nav class="breadcrumbs"><ol class="breadcrumb" /></nav></header>
-    <div class="content"><div id="app" /></div>
-    <div class="modal-backdrop hidden" />`;
+    document.body.innerHTML = '<div id="app" />';
     const app = document.getElementById('app');
     expect(app).not.toBeNull();
     baseElement = app as HTMLDivElement;
@@ -183,8 +170,7 @@ describe("main entry-point app", () => {
       <App tokens={initialTokens} user={user} />,
       { baseElement }
     );
-    getByText('404, Sorry the page',  { exact: false});
-    getByText('does not exist',  { exact: false});
+    getByText("Sorry I don't know about this page");
   });
 
   test("modal backdrop is displayed", async () => {
@@ -227,7 +213,7 @@ describe("main entry-point app", () => {
     );
     await Promise.all([promises.getAllManifests, promises.getAllStreams, promises.getAllMultiPeriodStreams]);
     await findByText("Stream to play");
-    const elt = document.getElementById("nav-mps");
+    const elt = document.querySelector('a[href="/multi-period-streams"]');
     expect(elt).not.toBeNull();
     fireEvent.click(elt);
     expect(setLocation).toHaveBeenCalled();

@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, test } from "vitest";
+import { mock } from "vitest-mock-extended";
 import { act } from "@testing-library/preact";
 import { Route } from "wouter-preact";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import EditStreamPage from "./EditStreamPage";
 import { ApiRequests, EndpointContext } from "../../endpoints";
-import { routeMap } from "../../test/fixtures/routemap.js";
-import { mock } from "vitest-mock-extended";
+import { uiRouteMap } from "../../test/fixtures/routemap.js";
 import { AllStreamsJson } from "../../types/AllStreams";
 import { MultiPeriodStreamJson } from "../../types/MultiPeriodStream";
 
@@ -41,13 +41,13 @@ describe("EditStreamPage component", () => {
     const path = "/multi-period-streams/demo";
     const { asFragment, findByText, getBySelector, getByText } = renderWithProviders(
       <EndpointContext.Provider value={apiRequests}>
-      <Route component={EditStreamPage} path={routeMap.editMps.route} />
+      <Route component={EditStreamPage} path={uiRouteMap.editMps.route} />
       </EndpointContext.Provider>,
       { userInfo, path }
     );
     await act(async () => {
         await fetchPromises;
-    })
+    });
     await findByText('Editing Multi-Period stream "demo"');
     const btn = getByText("Save Changes") as HTMLButtonElement;
     expect(btn.disabled).toEqual(true);

@@ -16,20 +16,25 @@ export default defineConfig({
             exclude: [
                 "frontend/src/main.tsx",
                 "frontend/src/test/*.ts",
+                "frontend/src/test/*.tsx",
                 "frontend/src/types/*.ts",
                 "frontend/src/**/*.test.ts",
                 "frontend/src/**/*.test.tsx",
             ],
             thresholds: {
-                branches: 75,
-                functions: 75,
-                lines: 70,
-                statements: 70
+                branches: 80,
+                functions: 80,
+                lines: 75,
+                statements: 75
             }
         },
 	},
 	resolve: {
 		alias: [
+			{
+				find: '@dashlive/init',
+				replacement: resolve(projectRootDir, 'frontend/src/test/fixtures/initialAppState.js')
+			},
 			{
 				find: '@dashlive/routemap',
 				replacement: resolve(projectRootDir, 'frontend/src/test/fixtures/routemap.js')

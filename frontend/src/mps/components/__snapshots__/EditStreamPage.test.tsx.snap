@@ -3,7 +3,7 @@
 exports[`EditStreamPage component > allows an existing stream to be edited 1`] = `
 <DocumentFragment>
   <div
-    class="card"
+    class="card "
     id="edit_mps_form"
   >
     <div
@@ -418,7 +418,7 @@ exports[`EditStreamPage component > allows an existing stream to be edited 1`] =
           </button>
           <a
             class="btn m-2 btn-primary"
-            href="/multi-period-streams"
+            href="/api/multi-period-streams"
           >
             Back
           </a>

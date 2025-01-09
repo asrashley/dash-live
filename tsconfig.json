@@ -17,5 +17,5 @@
   "include": [
     "frontend/src/**/*.ts",
     "frontend/src/**/*.tsx"
-  ],
+, "frontend/@types/@dashlive/init.d.ts"  ],
 }

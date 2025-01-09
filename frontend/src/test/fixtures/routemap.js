@@ -215,12 +215,6 @@ export const routeMap = {
     route: "/view/dash/:mode/:stream/:manifest",
     url: ({mode, stream, manifest}) => `/view/dash/${mode}/${stream}/${manifest}`,
   },
-  listManifests: {
-    title: "DASH fragment",
-    re: /\/manifests/,
-    route: "/manifests",
-    url: () => `/manifests`,
-  },
   viewMpsManifest: {
     title: "DASH manifest",
     re: /\/view\/mps\/(?<mode>(live|vod))\/(?<mps_name>\w+)\/(?<manifest>\w+)/,
@@ -275,41 +269,47 @@ export const routeMap = {
     route: "/users/:upk/delete",
     url: ({upk}) => `/users/${upk}/delete`,
   },
+  listManifests: {
+    title: "DASH fragment",
+    re: /\/api\/manifests/,
+    route: "/api/manifests",
+    url: () => `/api/manifests`,
+  },
   refreshAccessToken: {
     title: "Refresh access token",
-    re: /\/user\/refresh\/access/,
-    route: "/user/refresh/access",
-    url: () => `/user/refresh/access`,
+    re: /\/api\/refresh\/access/,
+    route: "/api/refresh/access",
+    url: () => `/api/refresh/access`,
   },
   refreshCsrfTokens: {
     title: "Refresh access token",
-    re: /\/user\/refresh\/csrf/,
-    route: "/user/refresh/csrf",
-    url: () => `/user/refresh/csrf`,
+    re: /\/api\/refresh\/csrf/,
+    route: "/api/refresh/csrf",
+    url: () => `/api/refresh/csrf`,
   },
   listMps: {
     title: "Available DASH multi-period streams",
-    re: /\/multi-period-streams/,
-    route: "/multi-period-streams",
-    url: () => `/multi-period-streams`,
+    re: /\/api\/multi-period-streams/,
+    route: "/api/multi-period-streams",
+    url: () => `/api/multi-period-streams`,
   },
   addMps: {
     title: "Add new multi-period stream",
-    re: /\/multi-period-streams\/.add/,
-    route: "/multi-period-streams/.add",
-    url: () => `/multi-period-streams/.add`,
+    re: /\/api\/multi-period-streams\/.add/,
+    route: "/api/multi-period-streams/.add",
+    url: () => `/api/multi-period-streams/.add`,
   },
   editMps: {
     title: "Edit multi-period stream",
-    re: /\/multi-period-streams\/(?<mps_name>\w+)/,
-    route: "/multi-period-streams/:mps_name",
-    url: ({mps_name}) => `/multi-period-streams/${mps_name}`,
+    re: /\/api\/multi-period-streams\/(?<mps_name>\w+)/,
+    route: "/api/multi-period-streams/:mps_name",
+    url: ({mps_name}) => `/api/multi-period-streams/${mps_name}`,
   },
   validateMps: {
     title: "Check MPS settings are valid",
-    re: /\/multi-period-streams.validate/,
-    route: "/multi-period-streams.validate",
-    url: () => `/multi-period-streams.validate`,
+    re: /\/api\/multi-period-streams.validate/,
+    route: "/api/multi-period-streams.validate",
+    url: () => `/api/multi-period-streams.validate`,
   },
   mpsManifest: {
     title: "DASH multi-period manifests",
@@ -349,9 +349,9 @@ export const routeMap = {
   },
   contentRoles: {
     title: "MPEG content roles",
-    re: /\/libs\/content_roles.js/,
-    route: "/libs/content_roles.js",
-    url: () => `/libs/content_roles.js`,
+    re: /\/api\/ContentRoles.json/,
+    route: "/api/ContentRoles.json",
+    url: () => `/api/ContentRoles.json`,
   },
   optionFieldGroups: {
     title: "options fields",
@@ -359,17 +359,17 @@ export const routeMap = {
     route: "/libs/options.js",
     url: () => `/libs/options.js`,
   },
-  spaBundle: {
-    title: "Bundle of JS files",
-    re: /\/libs\/bundle\/(?<directory>\w+).js/,
-    route: "/libs/bundle/:directory.js",
-    url: ({directory}) => `/libs/bundle/${directory}.js`,
-  },
   esmWrapper: {
     title: "ESM JavaScript wrapper",
     re: /\/libs\/(?<filename>\w+)/,
     route: "/libs/:filename",
     url: ({filename}) => `/libs/${filename}`,
+  },
+  initialAppState: {
+    title: "initial app state",
+    re: /\/libs\/initialAppState.js/,
+    route: "/libs/initialAppState.js",
+    url: () => `/libs/initialAppState.js`,
   },
   favicon: {
     title: "favicon",
@@ -388,5 +388,32 @@ export const routeMap = {
     re: /\//,
     route: "/",
     url: () => `/`,
+  },
+};
+
+export const uiRouteMap = {
+  home: {
+    title: "home",
+    re: /\//,
+    route: "/",
+    url: () => `/`,
+  },
+  addMps: {
+    title: "add-mps",
+    re: /\/multi-period-streams\/.add/,
+    route: "/multi-period-streams/.add",
+    url: () => `/multi-period-streams/.add`,
+  },
+  editMps: {
+    title: "edit-mps",
+    re: /\/multi-period-streams\/(?<mps_name>\w+)/,
+    route: "/multi-period-streams/:mps_name",
+    url: ({mps_name}) => `/multi-period-streams/${mps_name}`,
+  },
+  listMps: {
+    title: "list-mps",
+    re: /\/multi-period-streams/,
+    route: "/multi-period-streams",
+    url: () => `/multi-period-streams`,
   },
 };

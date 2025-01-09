@@ -71,8 +71,7 @@ export default tseslint.config({
       "error",
       {
         ignore: [
-          "^@dashlive/options$",
-          "^@dashlive/routemap$",
+          "^@dashlive/",
           "socket.io",
           "^wouter-preact/memory-location",
           "^wouter-preact/use-browser-location",

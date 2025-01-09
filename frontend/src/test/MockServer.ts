@@ -227,8 +227,8 @@ export class MockDashServer {
 
     private returnSimpleFixture = async (props: ServerRouteProps) => {
         const url = new URL(props.url, document.location.href);
-        return jsonResponse(await this.endpoint.fetchFixtureJson<object>(
-            `${url.pathname}.json`));
+        const filename = url.pathname.replace("/api", "");
+        return jsonResponse(await this.endpoint.fetchFixtureJson<object>(`${filename}.json`));
     };
 
     private getContentRoles = async () => {

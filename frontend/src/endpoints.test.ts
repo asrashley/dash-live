@@ -55,7 +55,7 @@ describe('endpoints', () => {
     });
 
     test('get all multi-period streams', async () => {
-        const {streams} = await import('./test/fixtures/multi-period-streams/index.json');
+        const { streams } = await import('./test/fixtures/multi-period-streams/index.json');
         await expect(api.getAllMultiPeriodStreams()).resolves.toEqual({
             csrfTokens: expect.objectContaining({
                 streams: expect.any(String),
@@ -122,7 +122,7 @@ describe('endpoints', () => {
             username,
             accessToken: null,
         })).toEqual(true);
-        expect(server.getUser({username})?.accessToken).toBeNull();
+        expect(server.getUser({ username })?.accessToken).toBeNull();
         const csrfTokens: CsrfTokenCollection = server.generateCsrfTokens(user);
         api = new ApiRequests({
             csrfTokens,
@@ -131,7 +131,7 @@ describe('endpoints', () => {
             refreshToken: user.refreshToken,
         });
         await expect(api.getAllStreams()).resolves.toEqual(allStdStreams);
-        expect(server.getUser({username})?.accessToken).not.toBeNull();
+        expect(server.getUser({ username })?.accessToken).not.toBeNull();
     });
 
     test('refreshes both access token and CSRF tokens', async () => {
@@ -149,7 +149,7 @@ describe('endpoints', () => {
             refreshToken: user.refreshToken,
         });
         await expect(api.getAllStreams()).resolves.toEqual(allStdStreams);
-        expect(server.getUser({username})?.accessToken).not.toBeNull();
+        expect(server.getUser({ username })?.accessToken).not.toBeNull();
     });
 
     test('generates error trying to refresh CSRF tokens without any JWT tokens', async () => {
