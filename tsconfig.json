@@ -15,7 +15,8 @@
     "lib": ["es2024.promise"]
   },
   "include": [
-    "frontend/src/**/*.ts",
-    "frontend/src/**/*.tsx"
-, "frontend/@types/@dashlive/init.d.ts"  ],
+    "./frontend/src/**/*.ts",
+    "./frontend/src/**/*.tsx",
+    "./frontend/@types/@dashlive/*.d.ts"
+  ]
 }
