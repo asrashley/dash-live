@@ -22,5 +22,6 @@ static/css/prefixer.css
 static/css/spa.css
 static/css/validator.css
 static/css/video.css
+static/html
 tests/runner.py
 virtualenv

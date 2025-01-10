@@ -11,7 +11,7 @@ export const rootDir = path.resolve(
 
 const dateNow = new Date();
 
-export const commonConfig = ({ initialTokens, initialUser, publicPath, template, tsConfigFile }) => ({
+export const commonConfig = ({ publicPath, tsConfigFile }) => ({
   devtool: "source-map",
   entry: {
     main: "./frontend/src/main",
@@ -25,8 +25,9 @@ export const commonConfig = ({ initialTokens, initialUser, publicPath, template,
     '@dashlive/routemap': 'module /libs/routemap.js'
   },
   output: {
-    path: path.resolve(rootDir, "templates", "spa"),
+    path: path.resolve(rootDir, "static", "html"),
     filename: "[name].[contenthash].js",
+    clean: true,
     module: true
   },
   resolve: {
@@ -58,7 +59,7 @@ export const commonConfig = ({ initialTokens, initialUser, publicPath, template,
   plugins: [
     new HtmlWebpackPlugin({
       filename: "index.html",
-      template,
+      template: path.join(rootDir, "frontend/html/index.hbs"),
       hash: true,
       chunks: ["main"],
       publicPath: publicPath === "" ? "/" : publicPath,
@@ -73,8 +74,6 @@ export const commonConfig = ({ initialTokens, initialUser, publicPath, template,
           title: 'DASH live server',
           dateNow,
           publicPath,
-          initialTokens,
-          initialUser,
         },
       }),
     }),
