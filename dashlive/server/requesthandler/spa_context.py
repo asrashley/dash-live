@@ -5,7 +5,7 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-from typing import Any, TypedDict, cast
+from typing import TypedDict, cast
 
 import flask
 from flask_login import current_user

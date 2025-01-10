@@ -103,6 +103,11 @@ class Route:
         return rv
 
 
+class UiRoute(Route):
+    def __init__(self, template: str) -> None:
+        super().__init__(template, handler='htmlpage.MainPage', title='')
+
+
 routes: dict[str, Route] = {
     "delete-key": Route(
         r'/key/<int:kpk>/delete',
@@ -372,10 +377,6 @@ routes: dict[str, Route] = {
         handler='htmlpage.MainPage',
         title='DASH test streams'),
 }
-
-class UiRoute(Route):
-    def __init__(self, template: str) -> None:
-        super().__init__(template, handler='htmlpage.MainPage', title='')
 
 ui_routes: dict[str, UiRoute] = {
     'add-mps': UiRoute(r'/multi-period-streams/.add'),

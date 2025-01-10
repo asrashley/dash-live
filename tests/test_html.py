@@ -1,19 +1,5 @@
 #############################################################################
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
-#############################################################################
-#
 #  Project Name        :    Simulated MPEG DASH service
 #
 #  Author              :    Alex Ashley
@@ -22,21 +8,26 @@
 
 import json
 import logging
+from pathlib import Path
+from typing import ClassVar
 import unittest
 from urllib.parse import urlparse, parse_qs
 
 from bs4 import BeautifulSoup
 import flask
+from pyfakefs.fake_filesystem_unittest import TestCaseMixin
 
 from dashlive.server import manifests, models
-from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.options.types import OptionUsage
 from dashlive.server.template_tags import dateTimeFormat, sizeFormat
 
 from .mixins.flask_base import FlaskTestBase
 from .mixins.stream_fixtures import BBB_FIXTURE
 
-class TestHtmlPageHandlers(FlaskTestBase):
+class TestHtmlPageHandlers(FlaskTestBase, TestCaseMixin):
+    TEMPLATES_PATH: ClassVar[Path] = (Path(__file__).parent.parent / "templates").absolute()
+    STATIC_PATH: ClassVar[Path] = (Path(__file__).parent.parent / "static").absolute()
+
     def _assert_true(self, result, a, b, msg, template):
         if not result:
             current_url = getattr(self, "current_url")
@@ -46,24 +37,30 @@ class TestHtmlPageHandlers(FlaskTestBase):
                 raise AssertionError(msg)
             raise AssertionError(template.format(a, b))
 
+    def setup_fake_fs(self) -> None:
+        self.setUpPyfakefs()
+        self.fs.add_real_directory(self.FIXTURES_PATH, read_only=True, lazy_read=True)
+        self.fs.add_real_directory(self.TEMPLATES_PATH, read_only=True, lazy_read=True)
+        self.fs.create_dir(f"{self.STATIC_PATH}")
+        self.fs.create_dir(f"{self.STATIC_PATH / 'html'}")
+        html_page: str = """<!doctype html>
+<html lang="en">
+<body>
+  <div id="app"></div>
+</body>
+</html>
+"""
+        self.fs.create_file(f"{self.STATIC_PATH / 'html' / 'index.html'}", encoding="utf-8", contents=html_page)
+
     def test_spa_index_page(self) -> None:
+        self.setup_fake_fs()
         url: str = flask.url_for('home')
         # self.logout_user()
         response = self.client.get(url)
         self.assertEqual(response.status, '200 OK')
         html = BeautifulSoup(response.text, 'lxml')
         self.assertIsNotNone(html)
-        self.assertIn('Log In', response.text)
-        media_list_url: str = flask.url_for('list-streams')
-        self.assertIn(f'href="{media_list_url}"', response.text)
-        self.login_user(is_admin=True)
-        response = self.client.get(url)
-        self.assertEqual(response.status, '200 OK')
-        self.assertNotIn('Log In', response.text)
-        self.assertIn(f'href="{media_list_url}"', response.text)
-        self.assertIn('Log Out', response.text)
-        user_admin_url: str = flask.url_for('list-users')
-        self.assertIn(f'href="{user_admin_url}"', response.text)
+        self.assertIn('<div id="app">', response.text)
 
     def test_es5_index_page(self) -> None:
         self.setup_media()

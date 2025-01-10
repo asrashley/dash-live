@@ -8,6 +8,7 @@
 from functools import wraps
 import html
 import logging
+from pathlib import Path
 from typing import cast, Callable, Iterable
 
 import flask  # type: ignore
@@ -27,7 +28,6 @@ from dashlive.server.models import (
 
 from .csrf import CsrfProtection
 from .exceptions import CsrfFailureException
-from .spa_context import SpaTemplateContext, create_spa_template_context
 from .utils import is_ajax, jsonify
 
 def needs_login_response(admin: bool, html: bool, permission: Group | None) -> flask.Response:
@@ -279,6 +279,6 @@ def spa_handler(func):
     def decorated_function(*args, **kwargs):
         if is_ajax():
             return func(*args, **kwargs)
-        context: SpaTemplateContext = create_spa_template_context()
-        return flask.render_template('spa/index.html', **context)
+        static_dir: Path = Path(flask.current_app.config['STATIC_FOLDER'])
+        return flask.send_from_directory(static_dir / 'html', 'index.html')
     return decorated_function

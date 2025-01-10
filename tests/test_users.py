@@ -1,19 +1,5 @@
 #############################################################################
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
-#############################################################################
-#
 #  Project Name        :    Simulated MPEG DASH service
 #
 #  Author              :    Alex Ashley
@@ -28,88 +14,54 @@ import flask
 from werkzeug.test import TestResponse
 
 from dashlive.server.models import Group, User, db
+from dashlive.server.requesthandler.user_management import LoginResponseJson
 
 from .mixins.flask_base import FlaskTestBase
 from .mixins.mock_time import MockTime
 
 class TestUserManagementHandlers(FlaskTestBase):
 
-    def test_html_login_page(self):
+    def test_login_unknown_user(self):
+        self.check_login_failure('not.known', 'password')
+
+    def test_login_wrong_password(self):
+        self.check_login_failure(self.STD_USER, 'password')
+        self.check_login_failure(self.STD_USER, self.ADMIN_PASSWORD)
+
+    def check_login_failure(self, username: str, password: str) -> None:
         url = flask.url_for('login')
-        response = self.client.get(url)
-        self.assert200(response)
-        html = BeautifulSoup(response.text, 'lxml')
-        self.assertIsNotNone(html)
-        form = html.find(id="login-form")
-        self.assertIsNotNone(form)
-        csrf_token = None
-        for input_field in form.find_all('input'):
-            name = input_field.get('name')
-            if name == 'csrf_token':
-                self.assertEqual(
-                    input_field.get('type'),
-                    'hidden')
-                csrf_token = input_field.get('value')
-        self.assertIsNotNone(csrf_token)
         data = {
-            'csrf_token': csrf_token,
-            'username': self.STD_USER,
-            'password': self.STD_PASSWORD,
-        }
-        response = self.client.post(url, data=data)
-        self.assertEqual(response.status_code, 302)
-
-    def test_html_login_unknown_user(self):
-        self.check_html_login_failure('not.known', 'password')
-
-    def test_html_login_wrong_password(self):
-        self.check_html_login_failure(self.STD_USER, 'password')
-        self.check_html_login_failure(self.STD_USER, self.ADMIN_PASSWORD)
-
-    def check_html_login_failure(self, username: str, password: str) -> None:
-        url = flask.url_for('login')
-        response = self.client.get(url)
-        self.assert200(response)
-        html = BeautifulSoup(response.text, 'lxml')
-        self.assertIsNotNone(html)
-        form = html.find(id="login-form")
-        self.assertIsNotNone(form)
-        csrf_token = None
-        for input_field in form.find_all('input'):
-            name = input_field.get('name')
-            if name == 'csrf_token':
-                self.assertEqual(
-                    input_field.get('type'),
-                    'hidden')
-                csrf_token = input_field.get('value')
-        self.assertIsNotNone(csrf_token)
-        data = {
-            'csrf_token': csrf_token,
             'username': username,
             'password': password,
         }
-        response = self.client.post(url, data=data)
+        response = self.client.post(url, json=data, headers={
+            'content-type': 'application/json',
+        })
         self.assertEqual(response.status_code, 200)
-        self.assertIn("Wrong username or password", response.text)
+        self.assertDictEqual({
+            "success": False,
+            "error": "Wrong username or password",
+            "csrf_token": response.json['csrf_token'],
+        }, response.json)
 
     @MockTime("2023-07-18T20:10:02Z")
     def test_ajax_login_page(self):
-        url = flask.url_for('login', ajax=1)
-        response = self.client.get(url)
-        self.assert200(response)
-        self.assertIn('csrf_token', response.json)
+        url = flask.url_for('login')
         payload = {
-            'csrf_token': response.json['csrf_token'],
             'username': self.STD_USER,
             'password': self.STD_PASSWORD,
             'rememberme': False,
         }
         response = self.client.post(url, json=payload)
         self.assert200(response)
-        self.assertNotIn('error', response.json)
+        js_response: LoginResponseJson = response.json
+        self.assertNotIn('error', js_response)
         expected = {
-            'csrf_token': response.json['csrf_token'],
+            'csrf_token': js_response['csrf_token'],
             'success': True,
+            'accessToken': js_response['accessToken'],
+            'refreshToken': js_response['refreshToken'],
+            'mustChange': False,
             'user': {
                 'email': self.STD_EMAIL,
                 'groups': ['USER'],
@@ -118,7 +70,8 @@ class TestUserManagementHandlers(FlaskTestBase):
                 'username': self.STD_USER,
             }
         }
-        self.assertDictEqual(expected, response.json)
+        self.maxDiff = None
+        self.assertDictEqual(expected, js_response)
 
     def check_requires_admin(self, url: str, html: bool = False) -> TestResponse:
         response = self.client.get(url)

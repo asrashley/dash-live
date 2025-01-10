@@ -72,10 +72,10 @@ class LoginPage(HTMLHandlerBase):
         if not is_ajax():
             return flask.redirect(flask.url_for('home'))
         data: JsonObject = flask.request.json
-        #try:
-        #    self.check_csrf('login', data)
-        #except (ValueError, CsrfFailureException) as err:
-        #    return jsonify({'error': str(err)}, 400)
+        # try:
+        #     self.check_csrf('login', data)
+        # except (ValueError, CsrfFailureException) as err:
+        #     return jsonify({'error': str(err)}, 400)
         username: str | None = data.get("username", None)
         password: str | None = data.get("password", None)
         rememberme = data.get("rememberme", False)
