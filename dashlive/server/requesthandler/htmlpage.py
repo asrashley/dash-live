@@ -21,6 +21,7 @@
 #############################################################################
 import html
 import logging
+from pathlib import Path
 import urllib.request
 import urllib.parse
 import urllib.error
@@ -43,23 +44,19 @@ from .decorators import (
     current_stream,
     uses_multi_period_stream,
     current_mps,
-    spa_handler,
 )
 from .manifest_context import ManifestContext
 from .navbar import NavBarItem
 from .utils import add_allowed_origins, is_https_request
-
 
 class MainPage(HTMLHandlerBase):
     """
     handler for main index page
     """
 
-    decorators = [spa_handler]
-
-    def get(self) -> flask.Response:
-        # spa_handler will have returned an HTML page
-        return flask.make_response("Server Error", 500)
+    def get(self, **kwargs) -> flask.Response:
+        static_dir: Path = Path(flask.current_app.config['STATIC_FOLDER'])
+        return flask.send_from_directory(static_dir / 'html', 'index.html')
 
 
 class ES5MainPage(HTMLHandlerBase):

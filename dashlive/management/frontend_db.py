@@ -1,19 +1,5 @@
 #############################################################################
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
-#############################################################################
-#
 #  Project Name        :    Simulated MPEG DASH service
 #
 #  Author              :    Alex Ashley
@@ -56,18 +42,10 @@ class FrontendDatabaseAccess(DatabaseAccess):
         if self.user:
             return True
         login_url = self.url_for('login')
-        self.log.debug('GET %s', login_url)
-        result = self.session.get(f'{login_url}?ajax=1')
-        if result.status_code != 200:
-            self.log.warning('Get login form HTTP status %d', result.status_code)
-            self.log.debug('HTTP headers %s', str(result.headers))
-            return False
         fields = {
             "username": self.username,
             "password": self.password,
-            "rememberme": 0,
-            "action": "Login",
-            "csrf_token": result.json()['csrf_token']
+            "rememberme": False,
         }
         result = self.session.post(login_url, json=fields)
         if result.status_code != 200:

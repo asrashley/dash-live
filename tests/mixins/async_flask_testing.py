@@ -6,9 +6,10 @@ Copied from flask_testing.utils
 from abc import abstractmethod
 import asyncio
 import json
-from typing import Callable, TypeVar
+from typing import Callable, ClassVar, TypeVar
 from unittest import IsolatedAsyncioTestCase
 
+from flask import Flask
 from flask.testing import FlaskClient
 from werkzeug import Response
 from werkzeug.utils import cached_property
@@ -60,7 +61,8 @@ def _make_test_response(response_class):
     return TestResponse
 
 class AsyncFlaskTestCase(IsolatedAsyncioTestCase):
-    render_templates = True
+    render_templates: ClassVar[bool] = True
+    app: Flask
 
     @abstractmethod
     def create_app(self):
@@ -74,7 +76,7 @@ class AsyncFlaskTestCase(IsolatedAsyncioTestCase):
         await self._pre_setup()
         self.addAsyncCleanup(self._post_teardown)
 
-    async def _pre_setup(self):
+    async def _pre_setup(self) -> None:
         self.app = self.create_app()
 
         self._orig_response_class = self.app.response_class
@@ -86,7 +88,7 @@ class AsyncFlaskTestCase(IsolatedAsyncioTestCase):
         self._ctx = self.app.test_request_context()
         self._ctx.push()
 
-    async def _post_teardown(self):
+    async def _post_teardown(self) -> None:
         if getattr(self, '_ctx', None) is not None:
             self._ctx.pop()
             del self._ctx
@@ -102,14 +104,14 @@ class AsyncFlaskTestCase(IsolatedAsyncioTestCase):
         if hasattr(self, 'client'):
             del self.client
 
-    def assert200(self, response):
+    def assert200(self, response) -> None:
         self.assertEqual(response.status_code, 200)
 
-    def assert400(self, response):
+    def assert400(self, response) -> None:
         self.assertEqual(response.status_code, 400)
 
-    def assert401(self, response):
+    def assert401(self, response) -> None:
         self.assertEqual(response.status_code, 401)
 
-    def assert404(self, response):
+    def assert404(self, response) -> None:
         self.assertEqual(response.status_code, 404)

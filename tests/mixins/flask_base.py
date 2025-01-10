@@ -1,19 +1,5 @@
 #############################################################################
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
-#############################################################################
-#
 #  Project Name        :    Simulated MPEG DASH service
 #
 #  Author              :    Alex Ashley
@@ -29,10 +15,11 @@ import multiprocessing
 from pathlib import Path
 import shutil
 import tempfile
-from typing import Any, ClassVar, Optional, Type
+from typing import Any, ClassVar, Optional
 
-from bs4 import BeautifulSoup, element
+from bs4 import element
 import flask
+from werkzeug.test import TestResponse
 
 from dashlive.drm.playready import PlayReady
 from dashlive.mpeg import mp4
@@ -58,7 +45,7 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
     MEDIA_USER: ClassVar[str] = 'media'
     MEDIA_EMAIL: ClassVar[str] = 'media@dashlive.unit.test'
     MEDIA_PASSWORD: ClassVar[str] = r'm3d!a'
-    LOG_LEVEL: ClassVar[Type[logging.WARNING]] = logging.WARNING
+    LOG_LEVEL: ClassVar[int] = logging.WARNING
     log_context: ClassVar[Optional[ContextFilter]] = None
     checked_urls: ClassVar[set[str]]
 
@@ -107,7 +94,7 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
             'LOG_LEVEL': 'critical',
             'PREFERRED_URL_SCHEME': 'http',
         }
-        app = create_app(config=config, create_default_user=False, wss=self.ENABLE_WSS)
+        app: flask.Flask = create_app(config=config, create_default_user=False, wss=self.ENABLE_WSS)
         with app.app_context():
             admin = models.User(
                 username=self.ADMIN_USER,
@@ -334,8 +321,7 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
     def login_user(self, username: str | None = None,
                    password: str | None = None,
                    is_admin: bool = False,
-                   rememberme: bool = False,
-                   ajax: bool = True):
+                   rememberme: bool = False) -> TestResponse:
         if is_admin:
             if username is None:
                 username = self.ADMIN_USER
@@ -344,35 +330,18 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
             if username is None:
                 username = self.STD_USER
                 password = self.STD_PASSWORD
-        login_url = flask.url_for('login')
-        if ajax:
-            login_url += '?ajax=1'
-        resp = self.client.get(login_url)
-        self.assertEqual(resp.status_code, 200)
-        if ajax:
-            csrf_token = resp.json['csrf_token']
-            return self.client.post(
-                login_url,
-                json={
-                    'username': username,
-                    'password': password,
-                    'rememberme': rememberme,
-                    'csrf_token': csrf_token
-                },
-                content_type='application/json')
-        html = BeautifulSoup(resp.text, 'lxml')
-        csrf_token = html.find(name='csrf_token')['value']
+        login_url: str = flask.url_for('login')
         return self.client.post(
             login_url,
-            data={
+            json={
                 'username': username,
                 'password': password,
                 'rememberme': rememberme,
-                'csrf_token': csrf_token
-            })
+            },
+            content_type='application/json')
 
-    def logout_user(self):
-        logout_url = flask.url_for('logout')
+    def logout_user(self) -> TestResponse:
+        logout_url: str = flask.url_for('logout')
         return self.client.get(logout_url)
 
     def assertNotAuthorized(self, response, ajax: int) -> None:

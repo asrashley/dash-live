@@ -1,19 +1,5 @@
 #############################################################################
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
-#############################################################################
-#
 #  Project Name        :    Simulated MPEG DASH service
 #
 #  Author              :    Alex Ashley
@@ -47,7 +33,7 @@ from dashlive.utils.json_object import JsonObject
 from .anonymous_user import AnonymousUser
 from .asyncio_loop import asyncio_loop
 from .folders import AppFolders
-from .routes import routes
+from .routes import Route, routes, ui_routes
 from .template_tags import custom_tags
 # from .thread_pool import pool_executor
 
@@ -73,22 +59,29 @@ def no_api_cache(response: Response) -> Response:
         response.cache_control.must_revalidate = True
     return response
 
+def add_a_route(app: Flask, name: str, route: Route):
+    full_path: str = f'dashlive.server.requesthandler.{route.handler}'
+    pos: int = full_path.rindex('.')
+    module_name: str = full_path[:pos]
+    handler_name: str = full_path[pos + 1:]
+    module = importlib.import_module(module_name)
+    view = getattr(module, handler_name)
+    try:
+        view_func = view.as_view(name)
+    except AttributeError:
+        view_func = view
+    app.add_url_rule(route.template, endpoint=name, view_func=view_func)
+
 def add_routes(app: Flask) -> None:
     app.url_map.converters['regex'] = RegexConverter
     app.after_request(no_api_cache)
     for name, route in routes.items():
-        full_path = f'dashlive.server.requesthandler.{route.handler}'
-        pos = full_path.rindex('.')
-        module_name = full_path[:pos]
-        handler_name = full_path[pos + 1:]
-        module = importlib.import_module(module_name)
-        view = getattr(module, handler_name)
-        try:
-            view_func = view.as_view(name)
-        except AttributeError:
-            view_func = view
-        app.add_url_rule(route.template, endpoint=name,
-                         view_func=view_func)
+        add_a_route(app, name, route)
+        # if name == 'home':
+        #    app.add_url_rule(
+        #        r'/<path:path>', endpoint='fallback', view_func=view_func)
+    for name, route in ui_routes.items():
+        add_a_route(app, f"ui-{name}", route)
 
 def create_app(config: JsonObject | None = None,
                instance_path: str | None = None,
@@ -154,7 +147,7 @@ def create_app(config: JsonObject | None = None,
 
     if config is not None:
         app.config.update(config)
-    log_level = app.config.get('LOG_LEVEL')
+    log_level: str | None = app.config.get('LOG_LEVEL')
     if log_level:
         logging.getLogger().setLevel(log_level.upper())
     for module in ['fio', 'mp4']:

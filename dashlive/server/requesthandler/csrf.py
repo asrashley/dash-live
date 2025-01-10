@@ -33,8 +33,7 @@ import urllib.parse
 import flask  # type: ignore
 
 from dashlive.server.models.token import Token, TokenType, KEY_LIFETIMES
-from dashlive.server.models import db
-from dashlive.utils.json_object import JsonObject
+from dashlive.server.models.db import db
 
 from .exceptions import CsrfFailureException
 from .utils import is_https_request
