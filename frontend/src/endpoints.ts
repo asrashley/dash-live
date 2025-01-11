@@ -16,6 +16,7 @@ import { ModifyMultiPeriodStreamJson } from './types/ModifyMultiPeriodStreamJson
 import { InitialApiTokens } from './types/InitialApiTokens';
 import { LoginRequest } from './types/LoginRequest';
 import { LoginResponse } from './types/LoginResponse';
+import { MultiPeriodStreamValidationRequest, MultiPeriodStreamValidationResponse } from './types/MpsValidation';
 
 type TokenStoreCollection = {
   files: CsrfTokenStore;
@@ -182,7 +183,8 @@ export class ApiRequests {
     });
   }
 
-  async validateMultiPeriodStream(data, options) {
+  async validateMultiPeriodStream(data: MultiPeriodStreamValidationRequest,
+        options: Partial<ApiRequestOptions> = {}): Promise<MultiPeriodStreamValidationResponse> {
     const service = 'streams';
     const csrf_token = await this.csrfTokens[service].getToken(
       options?.signal, this.getCsrfTokens);
@@ -212,9 +214,6 @@ export class ApiRequests {
         headers.set('Authorization', `Bearer ${this.accessToken.jti}`);
         usedAccessToken = true;
       } else if (service) {
-        if (this.csrfTokens[service] === undefined) {
-          throw new Error(`Unknown service "${service}"`);
-        }
         const token = await this.csrfTokens[service].getToken(signal);
         if (query === undefined) {
           query = new URLSearchParams({csrf_token: token});
