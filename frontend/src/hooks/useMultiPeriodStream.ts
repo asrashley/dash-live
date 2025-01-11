@@ -230,7 +230,7 @@ async function saveChangesToModel({
     if (signal.aborted) {
       return false;
     }
-    result.errors?.forEach((err) => appendMessage(err, "warning"));
+    result.errors?.forEach((err) => appendMessage("warning", err));
     if (result?.success === true) {
       if (data.pk === null) {
         appendMessage("success", `Added new stream ${name}`);

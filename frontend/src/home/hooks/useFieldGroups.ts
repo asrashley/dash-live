@@ -1,5 +1,5 @@
 import { useContext } from "preact/hooks";
-import { Signal, useComputed } from "@preact/signals";
+import { type ReadonlySignal, useComputed } from "@preact/signals";
 
 import { fieldGroups, drmSystems } from '@dashlive/options';
 import { useAllManifests  } from '../../hooks/useAllManifests';
@@ -11,13 +11,13 @@ import { InputFormGroup } from "../../types/InputFormGroup";
 const drmSkipNames = new RegExp(`^${drmSystems.map(name => `${name}__enabled`).join('|')}$`);
 
 interface UseFieldGroupsHook {
-  homeFieldGroups: Signal<InputFormGroup[]>;
+  homeFieldGroups: ReadonlySignal<InputFormGroup[]>;
 }
 
 export function useFieldGroups(): UseFieldGroupsHook {
   const { allManifests, names } = useAllManifests();
   const { streamNames, streamsMap } = useContext(UseCombinedStreams);
-  const { stream, manifest, mode, drms } = useContext(StreamOptionsContext);
+  const { stream, manifest, drms } = useContext(StreamOptionsContext);
 
   const homeFieldGroups = useComputed<InputFormGroup[]>(() => {
     const playbackMode: FormInputItem = {
@@ -30,17 +30,14 @@ export function useFieldGroups(): UseFieldGroupsHook {
         {
           title: "Video On Demand (using live profile)",
           value: "vod",
-          selected: mode.value === "vod",
         },
         {
           title: "Live stream (using live profile)",
           value: "live",
-          selected: mode.value === "live",
         },
         {
           title: "Video On Demand (using on-demand profile)",
           value: "odvod",
-          selected: mode.value === "odvod",
           disabled: stream.value.mps,
         },
       ],

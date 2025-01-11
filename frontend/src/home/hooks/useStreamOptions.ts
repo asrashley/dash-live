@@ -1,5 +1,5 @@
 import { useCallback } from "preact/hooks";
-import { type Signal, useComputed, useSignal } from "@preact/signals";
+import { type ReadonlySignal, type Signal, useComputed, useSignal } from "@preact/signals";
 
 import { defaultCgiOptions, drmSystems } from "@dashlive/options";
 import { CombinedStream } from "../../hooks/useCombinedStreams";
@@ -23,6 +23,7 @@ const skipKeys = new RegExp(`^(${[
   ...drmSystems.map(name => `${name}__enabled`),
   ...drmSystems.map(name => `${name}__drmloc`),
   'drms', 'manifest', 'stream', 'mode'].join('|')})$`);
+
 const manifestSkipKeys = /^(player|dashjs|shaka)/;
 
 export type EnabledDrmSystems = {
@@ -31,25 +32,25 @@ export type EnabledDrmSystems = {
 
 export interface UseStreamOptionsHook {
   data: Signal<object>;
-  drms: Signal<EnabledDrmSystems>;
-  stream: Signal<CombinedStream>;
-  mode: Signal<string>;
-  manifest: Signal<string>;
-  nonDefaultOptions: Signal<object>;
-  manifestOptions: Signal<object>;
+  drms: ReadonlySignal<EnabledDrmSystems>;
+  stream: ReadonlySignal<CombinedStream>;
+  mode: ReadonlySignal<string>;
+  manifest: ReadonlySignal<string>;
+  nonDefaultOptions: ReadonlySignal<object>;
+  manifestOptions: ReadonlySignal<object>;
   setValue: (name: string, value: string | number | boolean) => void;
   resetAllValues: () => void;
 }
 
-const emptyStream: CombinedStream ={
+const emptyStream: CombinedStream = {
   title: "",
   value: "",
   mps: false
 }
 
 export interface UseStreamOptionsProps {
-  streamNames: Signal<string[]>;
-  streamsMap: Signal<Map<string, CombinedStream>>;
+  streamNames: ReadonlySignal<string[]>;
+  streamsMap: ReadonlySignal<Map<string, CombinedStream>>;
 }
 export function useStreamOptions({ streamNames, streamsMap }: UseStreamOptionsProps): UseStreamOptionsHook {
   const data = useSignal<object>(getDefaultOptions());
@@ -77,7 +78,7 @@ export function useStreamOptions({ streamNames, streamsMap }: UseStreamOptionsPr
     Object.entries(nonDefaultOptions.value).filter(([key]) => !manifestSkipKeys.test(key))));
 
   const setValue = useCallback(
-    (name, value) => {
+    (name: string, value: string | number | boolean) => {
       if (value === true) {
         value = "1";
       } else if (value === false) {
@@ -88,7 +89,7 @@ export function useStreamOptions({ streamNames, streamsMap }: UseStreamOptionsPr
         [name]: value,
       };
       if (name === "stream" && mode.value === "odvod") {
-        const nextStream = streamsMap.value.get(value);
+        const nextStream = streamsMap.value.get(value as string);
         if (nextStream?.mps) {
           data.value = {
             ...data.value,
