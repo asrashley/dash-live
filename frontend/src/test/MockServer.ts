@@ -1,6 +1,6 @@
 import log from 'loglevel';
 import { routeMap } from './fixtures/routemap.js';
-import { FakeEndpoint, HttpRequestHandler, jsonResponse, ServerRouteProps } from './FakeEndpoint'
+import { FakeEndpoint, HttpRequestHandler, jsonResponse, notFound, ServerRouteProps } from './FakeEndpoint'
 import { ContentRolesMap } from '../types/ContentRolesMap';
 import { CsrfTokenCollection } from '../types/CsrfTokenCollection';
 import { JwtToken } from '../types/JwtToken';
@@ -124,8 +124,10 @@ export class MockDashServer {
             .get(routeMap.contentRoles.url(), this.getContentRoles)
             .get(routeMap.listStreams.url(), this.returnSimpleFixture)
             .get(routeMap.listMps.url(), protectedRoute(this.getAllMpStreams))
-            .get(routeMap.editMps.url({mps_name: 'demo'}), this.returnSimpleFixture)
+            .get(routeMap.editMps.re, protectedRoute(this.returnSimpleFixture))
             .put(routeMap.addMps.url(), protectedRoute(this.addMultiPeriodStream))
+            .post(routeMap.editMps.re, protectedRoute(this.editMultiPeriodStream))
+            .delete(routeMap.editMps.re, protectedRoute(this.deleteMultiPeriodStream))
             .get(routeMap.refreshCsrfTokens.url(), protectedRoute(this.refreshCsrfTokens))
             .get(routeMap.refreshAccessToken.url(), this.refreshAccessToken);
     }
