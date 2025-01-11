@@ -1,5 +1,5 @@
 import { useContext } from "preact/hooks";
-import { Signal, useComputed } from "@preact/signals";
+import { type ReadonlySignal, Signal, useComputed } from "@preact/signals";
 
 import { routeMap } from "@dashlive/routemap";
 import { AccordionFormGroup } from "../../components/AccordionFormGroup";
@@ -24,10 +24,13 @@ interface UrlGenFnProps {
   mps_name?: string;
 }
 
-function generateUrl(stdUrlFn: (props: UrlGenFnProps) => string,
-mpsUrlFn: (props: UrlGenFnProps) => string, mode: Signal<string>,
-manifest: Signal<string>, stream: Signal<CombinedStream>,
-nonDefaultOptions: Signal<object>): URL {
+function generateUrl(
+    stdUrlFn: (props: UrlGenFnProps) => string,
+    mpsUrlFn: (props: UrlGenFnProps) => string,
+    mode: ReadonlySignal<string>,
+    manifest: ReadonlySignal<string>,
+    stream: ReadonlySignal<CombinedStream>,
+    nonDefaultOptions: ReadonlySignal<object>): URL {
   const url = new URL(stream.value.mps ?
     mpsUrlFn({
       mode: mode.value,
@@ -45,7 +48,7 @@ nonDefaultOptions: Signal<object>): URL {
   return url;
 }
 
-function doNothing(ev: Event) {
+function doNothing(ev: Event): boolean {
   ev.preventDefault();
   return false;
 }
