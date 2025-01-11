@@ -11,6 +11,7 @@ import { ModifyMultiPeriodStreamJson } from '../types/ModifyMultiPeriodStreamJso
 import { MultiPeriodStream, MultiPeriodStreamJson } from '../types/MultiPeriodStream';
 import { LoginRequest } from "../types/LoginRequest";
 import { LoginResponse } from "../types/LoginResponse";
+import { MultiPeriodStreamValidationRequest, MultiPeriodStreamValidationResponse } from "../types/MpsValidation";
 
 enum UserGroups {
     USER = "USER",
@@ -127,6 +128,9 @@ export class MockDashServer {
             };
         };
         endpoint
+            .post(routeMap.login.url(), this.loginUser)
+            .get(routeMap.refreshCsrfTokens.url(), protectedRoute(this.refreshCsrfTokens))
+            .get(routeMap.refreshAccessToken.url(), this.refreshAccessToken)
             .get(routeMap.listManifests.url(), this.returnSimpleFixture)
             .get(routeMap.contentRoles.url(), this.getContentRoles)
             .get(routeMap.listStreams.url(), this.returnSimpleFixture)
@@ -135,9 +139,7 @@ export class MockDashServer {
             .put(routeMap.addMps.url(), protectedRoute(this.addMultiPeriodStream))
             .post(routeMap.editMps.re, protectedRoute(this.editMultiPeriodStream))
             .delete(routeMap.editMps.re, protectedRoute(this.deleteMultiPeriodStream))
-            .post(routeMap.login.url(), this.loginUser)
-            .get(routeMap.refreshCsrfTokens.url(), protectedRoute(this.refreshCsrfTokens))
-            .get(routeMap.refreshAccessToken.url(), this.refreshAccessToken);
+            .post(routeMap.validateMps.url(), protectedRoute(this.validateMultiPeriodStream));
     }
 
     addUser(user: UserModel) {
@@ -343,8 +345,8 @@ export class MockDashServer {
         return jsonResponse(result);
     };
 
-    private deleteMultiPeriodStream = async (props: ServerRouteProps) => {
-        const { mps_name } = props.routeParams ?? {};
+    private deleteMultiPeriodStream = async ({ routeParams={} }: ServerRouteProps) => {
+        const { mps_name } = routeParams;
         if (!mps_name) {
             return notFound();
         }
@@ -355,6 +357,26 @@ export class MockDashServer {
         }
         this.mpsStreams = this.mpsStreams.filter(m => m !== mps);
         return jsonResponse('', 204);
+    };
+
+    private validateMultiPeriodStream = async ({jsonParam}: ServerRouteProps) => {
+        const req = jsonParam as MultiPeriodStreamValidationRequest;
+        if (!req) {
+            return jsonResponse('', 400);
+        }
+        const allMps = await this.getMpsStreams();
+        const resp: MultiPeriodStreamValidationResponse = {
+            errors: {}
+        };
+        if (req.name === "") {
+            resp.errors.name = 'a name is required';
+        } else if (allMps.some(m => m.name === req.name && m.pk !== req.pk)) {
+            resp.errors.name = `duplicate name "${req.name}"`;
+        }
+        if (req.title === "") {
+            resp.errors.title = 'a title is required';
+        }
+        return jsonResponse(resp);
     };
 
     //

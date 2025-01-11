@@ -13,6 +13,9 @@ import { DecoratedMultiPeriodStream } from "./types/DecoratedMultiPeriodStream";
 import { MpsPeriod } from "./types/MpsPeriod";
 import { LoginRequest } from "./types/LoginRequest";
 
+import { model as demoMps} from './test/fixtures/multi-period-streams/demo.json';
+import { MultiPeriodStreamValidationRequest } from "./types/MpsValidation";
+
 describe('endpoints', () => {
     const navigate = vi.fn();
     const noCsrfTokens: CsrfTokenCollection = {
@@ -129,8 +132,12 @@ describe('endpoints', () => {
     });
 
     test('get details of a multi-period stream', async () => {
-        const demoMps = await import('./test/fixtures/multi-period-streams/demo.json');
-        await expect(api.getMultiPeriodStream('demo')).resolves.toEqual(demoMps.default);
+        await expect(api.getMultiPeriodStream('demo')).resolves.toEqual({
+            csrfTokens: {
+                streams: expect.any(String),
+            },
+            model: demoMps,
+        });
     });
 
     test('add a multi-period stream', async () => {
@@ -165,7 +172,6 @@ describe('endpoints', () => {
     });
 
     test('modify a multi-period stream', async () => {
-        const demoMps = await import('./test/fixtures/multi-period-streams/demo.json');
         const periods: MpsPeriod[] = [{
             parent: null,
             pid: 'p1',
@@ -177,7 +183,7 @@ describe('endpoints', () => {
             duration: "PT30S",
             tracks: [],
         }];
-        const { pk, options, name } = demoMps.model;
+        const { pk, options, name } = demoMps;
         const newMps: DecoratedMultiPeriodStream = {
             pk,
             options,
@@ -201,6 +207,45 @@ describe('endpoints', () => {
         await expect(api.deleteMultiPeriodStream('demo')).resolves.toEqual(expect.objectContaining({
             status: 204,
         }));
+    });
+
+    test('validate name of a multi-period stream', async () => {
+        const req: MultiPeriodStreamValidationRequest = {
+            pk: null,
+            name: '',
+            title: 'a title',
+        };
+        await expect(api.validateMultiPeriodStream(req)).resolves.toEqual({
+            errors: {
+                name: 'a name is required'
+            }
+        });
+    });
+
+    test('duplicate name of a multi-period stream', async () => {
+        const req: MultiPeriodStreamValidationRequest = {
+            pk: null,
+            name: demoMps.name,
+            title: 'a title',
+        };
+        await expect(api.validateMultiPeriodStream(req)).resolves.toEqual({
+            errors: {
+                name: 'duplicate name "demo"'
+            }
+        });
+    });
+
+    test('validate title of a multi-period stream', async () => {
+        const req: MultiPeriodStreamValidationRequest = {
+            pk: demoMps.pk,
+            name: 'demo',
+            title: '',
+        };
+        await expect(api.validateMultiPeriodStream(req)).resolves.toEqual({
+            errors: {
+                title: 'a title is required'
+            }
+        });
     });
 
     test('refreshes CSRF tokens', async () => {
