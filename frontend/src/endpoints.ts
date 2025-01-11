@@ -2,7 +2,6 @@ import { createContext } from 'preact';
 import log from 'loglevel';
 
 import { routeMap, uiRouteMap} from '@dashlive/routemap';
-import { type RouteMap } from './types/RouteMap';
 import { CsrfTokenStore } from './CsrfTokenStore';
 import { CsrfTokenCollection } from './types/CsrfTokenCollection';
 import { AllManifests } from './types/AllManifests';
