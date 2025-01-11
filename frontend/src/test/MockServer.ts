@@ -9,6 +9,8 @@ import { JwtToken } from '../types/JwtToken';
 import { AllMultiPeriodStreamsJson, MultiPeriodStreamSummary } from '../types/AllMultiPeriodStreams';
 import { ModifyMultiPeriodStreamJson } from '../types/ModifyMultiPeriodStreamJson';
 import { MultiPeriodStream, MultiPeriodStreamJson } from '../types/MultiPeriodStream';
+import { LoginRequest } from "../types/LoginRequest";
+import { LoginResponse } from "../types/LoginResponse";
 
 enum UserGroups {
     USER = "USER",
@@ -133,6 +135,7 @@ export class MockDashServer {
             .put(routeMap.addMps.url(), protectedRoute(this.addMultiPeriodStream))
             .post(routeMap.editMps.re, protectedRoute(this.editMultiPeriodStream))
             .delete(routeMap.editMps.re, protectedRoute(this.deleteMultiPeriodStream))
+            .post(routeMap.login.url(), this.loginUser)
             .get(routeMap.refreshCsrfTokens.url(), protectedRoute(this.refreshCsrfTokens))
             .get(routeMap.refreshAccessToken.url(), this.refreshAccessToken);
     }
@@ -158,7 +161,6 @@ export class MockDashServer {
             refreshToken: this.generateRefreshToken(dbEntry.username),
             accessToken: this.generateAccessToken(dbEntry.username),
         };
-        delete user.password;
         this.userDatabase = this.userDatabase.map(usr => {
             if (usr.pk === user.pk) {
                 return user;
@@ -209,6 +211,39 @@ export class MockDashServer {
     //
     // JSON REST API
     //
+    private loginUser = async ({jsonParam}: ServerRouteProps) => {
+        if (!jsonParam) {
+            return jsonResponse('', 400);
+        }
+        const { username, password } = jsonParam as LoginRequest;
+        log.trace('login', username, password);
+        const user = this.userDatabase.find(usr => (usr.username === username || usr.email === username) && usr.password === password);
+        if (!user) {
+            const result: LoginResponse = {
+                success: false,
+                error: "Wrong username or password",
+                csrf_token: randomToken(12),
+            };
+            return jsonResponse(result);
+        }
+        const result: LoginResponse = {
+            success: true,
+            mustChange: user.mustChange,
+            csrf_token: `${user.username}.${randomToken(12)}`,
+            accessToken: this.generateAccessToken(user.username),
+            refreshToken: this.generateRefreshToken(user.username),
+            user: {
+                pk: user.pk,
+                email: user.email,
+                username: user.username,
+                groups: user.groups,
+                last_login: user.lastLogin,
+                isAuthenticated: true,
+            }
+        };
+        user.lastLogin = new Date().toISOString();
+        return jsonResponse(result);
+    };
 
     private refreshCsrfTokens = async ({ context }: ServerRouteProps) => {
         const { currentUser } = context as RequestContext;
