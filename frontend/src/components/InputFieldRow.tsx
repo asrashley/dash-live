@@ -43,7 +43,7 @@ export function InputFieldRow({
     }
     return data.value[fullName];
   });
-  const name =
+  const name: string =
     mode === "shortName"
       ? shortName
       : mode === "cgi"
