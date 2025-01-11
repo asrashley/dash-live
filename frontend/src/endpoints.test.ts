@@ -107,6 +107,45 @@ describe('endpoints', () => {
         });
     });
 
+    test('modify a multi-period stream', async () => {
+        const demoMps = await import('./test/fixtures/multi-period-streams/demo.json');
+        const periods: MpsPeriod[] = [{
+            parent: null,
+            pid: 'p1',
+            pk: 'p1',
+            new: true,
+            ordering: 1,
+            stream: 5,
+            start: "PT0S",
+            duration: "PT30S",
+            tracks: [],
+        }];
+        const { pk, options, name } = demoMps.model;
+        const newMps: DecoratedMultiPeriodStream = {
+            pk,
+            options,
+            name,
+            title: 'modify a multi-period stream',
+            modified: true,
+            lastModified: 123,
+            periods,
+        };
+        await expect(api.modifyMultiPeriodStream(name, newMps)).resolves.toEqual({
+            model: newMps,
+            success: true,
+            errors: [],
+            csrfTokens: expect.objectContaining({
+                streams: expect.any(String),
+            })
+        });
+    });
+
+    test('delete a multi-period stream', async () => {
+        await expect(api.deleteMultiPeriodStream('demo')).resolves.toEqual(expect.objectContaining({
+            status: 204,
+        }));
+    });
+
     test('refreshes CSRF tokens', async () => {
         api = new ApiRequests({
             csrfTokens: noCsrfTokens,
@@ -117,13 +156,33 @@ describe('endpoints', () => {
         await expect(api.getAllStreams()).resolves.toEqual(allStdStreams);
     });
 
-    test('refreshes access token', async () => {
+    test('gets an access token using a refresh token', async () => {
         const { username } = normalUser;
         expect(server.modifyUser({
             username,
             accessToken: null,
         })).toEqual(true);
         expect(server.getUser({ username })?.accessToken).toBeNull();
+        const csrfTokens: CsrfTokenCollection = server.generateCsrfTokens(user);
+        api = new ApiRequests({
+            csrfTokens,
+            navigate,
+            accessToken: null,
+            refreshToken: user.refreshToken,
+        });
+        await expect(api.getAllStreams()).resolves.toEqual(allStdStreams);
+        expect(server.getUser({ username })?.accessToken).not.toBeNull();
+    });
+
+    test('refreshes an access token', async () => {
+        const { username } = normalUser;
+        expect(server.modifyUser({
+            username,
+            accessToken: {
+                expires: '2024-12-01T01:02:03Z',
+                jti: 'not.valid',
+            },
+        })).toEqual(true);
         const csrfTokens: CsrfTokenCollection = server.generateCsrfTokens(user);
         api = new ApiRequests({
             csrfTokens,

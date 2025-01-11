@@ -153,7 +153,8 @@ export class ApiRequests {
     });
   }
 
-  async modifyMultiPeriodStream(mps_name: string, data: DecoratedMultiPeriodStream, options: Partial<ApiRequestOptions> = {}) {
+  async modifyMultiPeriodStream(mps_name: string, data: DecoratedMultiPeriodStream,
+     options: Partial<ApiRequestOptions> = {}): Promise<ModifyMultiPeriodStreamJson> {
     const service = 'streams';
     const csrf_token = await this.csrfTokens[service].getToken(
       options?.signal, this.getCsrfTokens);
@@ -165,7 +166,7 @@ export class ApiRequests {
     });
   }
 
-  async deleteMultiPeriodStream(mps_name, options) {
+  async deleteMultiPeriodStream(mps_name: string, options: Partial<ApiRequestOptions> = {}): Promise<Response> {
     const service = 'streams';
     const csrf_token = await this.csrfTokens[service].getToken(
       options?.signal, this.getCsrfTokens
@@ -342,18 +343,6 @@ export class ApiRequests {
       this.updateCsrfTokens(csrfTokens);
     }
   };
-}
-
-export function routeFromUrl(url: string) {
-  for (const [name, route] of Object.entries(routeMap as RouteMap)) {
-    if (route.re.test(url)) {
-      return {
-        name,
-        ...route,
-      };
-    }
-  }
-  return undefined;
 }
 
 export const EndpointContext = createContext<ApiRequests>(null);
