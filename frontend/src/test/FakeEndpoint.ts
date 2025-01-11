@@ -9,10 +9,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export type ServerRouteProps = CallLog & {
-    notFound: () => RouteResponse;
     jsonParam?: object;
+    routeParams?: RegExpExecArray["groups"];
     context: object;
-}
+};
 
 export type HttpRequestHandler = (props: ServerRouteProps) => RouteResponse;
 
@@ -24,25 +24,41 @@ type PendingPromiseType = {
     reject: (reason?: any) => void;
 };
 
+type ParamHandler = {
+    re: RegExp;
+    method: string;
+    handler: HttpRequestHandler;
+};
 export class FakeEndpoint {
     private isShutdown: boolean = false;
     private serverStatus: number | null = null;
     private responseModifiers: Map<string, HttpRequestModifier> = new Map();
     private pendingPromises: Map<string, PendingPromiseType> = new Map();
-    private handlers: Map<string, HttpRequestHandler> = new Map();
+    private pathHandlers: Map<string, HttpRequestHandler> = new Map();
+    private paramHandlers: ParamHandler[] = [];
 
     constructor(private origin: string) {
         log.trace(`FakeEndpoint "begin:${origin}/"`);
         fetchMock.route(`begin:${origin}/`, this.routeHandler);
     }
 
-    get(path: string, handler: HttpRequestHandler): FakeEndpoint {
+    get(path: RegExp | string, handler: HttpRequestHandler): FakeEndpoint {
         this.setHandler('get', path, handler);
         return this;
     }
 
-    put(path: string, handler: HttpRequestHandler): FakeEndpoint {
+    post(path: RegExp | string, handler: HttpRequestHandler): FakeEndpoint {
+        this.setHandler('post', path, handler);
+        return this;
+    }
+
+    put(path: RegExp | string, handler: HttpRequestHandler): FakeEndpoint {
         this.setHandler('put', path, handler);
+        return this;
+    }
+
+    delete(path: RegExp | string, handler: HttpRequestHandler): FakeEndpoint {
+        this.setHandler('delete', path, handler);
         return this;
     }
 
@@ -76,10 +92,18 @@ export class FakeEndpoint {
         return JSON.parse(text) as T;
     }
 
-    private setHandler(method: string, path: string, handler: HttpRequestHandler) {
-        const key = `${method}.${path}`;
-        log.trace(`setHandler ${method} ${path} key="${key}"`);
-        this.handlers.set(key, handler);
+    private setHandler(method: string, path: RegExp | string, handler: HttpRequestHandler) {
+        if (typeof path === "string") {
+            const key = `${method}.${path}`;
+            this.pathHandlers.set(key, handler);
+        }
+        else {
+            this.paramHandlers.push({
+                handler,
+                method,
+                re: path as RegExp,
+            });
+        }
     }
 
     private routeHandler = async (props: CallLog) => {
@@ -87,23 +111,34 @@ export class FakeEndpoint {
         const { body, method } = options;
         const fullUrl = new URL(url, document.location.href);
         const key = `${method}.${fullUrl.pathname}`;
-        log.trace(`routeHandler key="${key}"`);
+
+        log.trace(`routeHandler ${key}`);
         if (this.serverStatus !== null) {
-            log.trace(`serverStatus=${this.serverStatus}`);
             return this.serverStatus;
         }
-        const handler = this.handlers.get(key);
+        let handler: HttpRequestHandler | undefined = this.pathHandlers.get(key);
+        let match: RegExpExecArray | null = null;
+        if (handler === undefined) {
+            log.debug(`check paramHandlers ${key}`);
+            for (const rgx of this.paramHandlers.filter(ph => ph.method === method)) {
+                match = rgx.re.exec(fullUrl.pathname);
+                if (match) {
+                    handler = rgx.handler;
+                    break;
+                }
+            }
+        }
         if (!handler) {
-            log.trace(`url=${fullUrl} not found`);
-            return 404;
+            log.trace(`No handler found ${fullUrl.pathname}`);
+            return notFound();
         }
         const srp: ServerRouteProps = {
             ...props,
             context: {},
-            notFound: () => {
-                return jsonResponse('', 404);
-            }
         };
+        if (match) {
+            srp.routeParams = match.groups;
+        }
         if (body) {
             srp.jsonParam = typeof body === 'string' ? JSON.parse(body as string) : body;
         }
@@ -124,13 +159,6 @@ export class FakeEndpoint {
     }
 }
 
-/*
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isPromise(item: any): boolean {
-    return (typeof item === 'object' && typeof item?.then === 'function' && typeof item?.catch === 'function');
-}
-*/
-
 export function jsonResponse(payload: object | string, status: number = 200): RouteResponse {
     const body = status !== 204 ? JSON.stringify(payload) : undefined;
     const contentLength = status !== 204 ? body.length : 0;
@@ -145,6 +173,6 @@ export function jsonResponse(payload: object | string, status: number = 200): Ro
     };
 }
 
-
-
-
+export function notFound(): RouteResponse {
+    return jsonResponse('', 404);
+}
