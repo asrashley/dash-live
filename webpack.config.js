@@ -27,7 +27,9 @@ export default {
       {
         context: [
           '/api',
+          '/dash',
           '/libs',
+          '/play',
           '/streams',
         ],
         target: `http://localhost:${serverPort}/`,
