@@ -11,6 +11,7 @@ import contentRoles from './test/fixtures/content_roles.json';
 import allStdStreams from './test/fixtures/streams.json';
 import { DecoratedMultiPeriodStream } from "./types/DecoratedMultiPeriodStream";
 import { MpsPeriod } from "./types/MpsPeriod";
+import { LoginRequest } from "./types/LoginRequest";
 
 describe('endpoints', () => {
     const navigate = vi.fn();
@@ -55,6 +56,62 @@ describe('endpoints', () => {
 
     test('get content roles', async () => {
         await expect(api.getContentRoles()).resolves.toEqual(contentRoles);
+    });
+
+    test.each(['username', 'email'])('can login using %s', async (field: string) => {
+        const { email, username, password } = normalUser;
+        const request: LoginRequest = {
+            username: field === 'username' ? username : email,
+            password,
+            rememberme: false,
+        };
+        await expect(api.loginUser(request)).resolves.toEqual(expect.objectContaining({
+            success: true,
+            mustChange: false,
+            csrf_token: expect.any(String),
+            accessToken: {
+                expires: expect.any(String),
+                jti: expect.any(String),
+            },
+            refreshToken: {
+                expires: expect.any(String),
+                jti: expect.any(String),
+            },
+            user: {
+                pk: normalUser.pk,
+                email: normalUser.email,
+                username: normalUser.username,
+                groups: normalUser.groups,
+                last_login: null,
+                isAuthenticated: true,
+            },
+        }));
+    });
+
+    test('can login fails with unknown user', async () => {
+        const { password } = normalUser;
+        const request: LoginRequest = {
+            username: 'not-a-user',
+            password,
+            rememberme: false,
+        };
+        await expect(api.loginUser(request)).resolves.toEqual(expect.objectContaining({
+            success: false,
+            error: "Wrong username or password",
+        }));
+    });
+
+    test('can login fails with wrong password', async () => {
+        const { username } = normalUser;
+        const request: LoginRequest = {
+            username,
+            password: 'wrong!',
+            rememberme: false,
+        };
+        await expect(api.loginUser(request)).resolves.toEqual(expect.objectContaining({
+            success: false,
+            error: "Wrong username or password",
+        }));
     });
 
     test('get all conventional streams', async () => {
