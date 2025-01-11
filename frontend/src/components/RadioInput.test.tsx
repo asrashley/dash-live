@@ -10,14 +10,12 @@ describe("RadioInput", () => {
   const name = "rtest";
   const options: SelectOptionType[] = [
     {
-      name,
       selected: true,
       title: "option one",
       value: "one",
       disabled: false,
     },
     {
-      name,
       selected: false,
       title: "option two",
       value: "two",
@@ -31,7 +29,7 @@ describe("RadioInput", () => {
 
   test("should display radio inputs", () => {
     const { asFragment, getBySelector, getByText } = renderWithProviders(
-      <RadioInput options={options} setValue={setValue} />
+      <RadioInput options={options} name={name} value="one" setValue={setValue} />
     );
     getByText(options[0].title);
     getByText(options[1].title);
@@ -42,7 +40,7 @@ describe("RadioInput", () => {
 
   test("can set value", () => {
     const { getBySelector } = renderWithProviders(
-      <RadioInput options={options} setValue={setValue} />
+      <RadioInput options={options} value="one" name={name} setValue={setValue} />
     );
     const inp = getBySelector(`#radio-${name}-${options[1].value}`) as HTMLInputElement;
     expect(inp.disabled).toEqual(false);
@@ -57,7 +55,7 @@ describe("RadioInput", () => {
         disabled: true,
     }];
     const { getBySelector } = renderWithProviders(
-      <RadioInput options={opts} setValue={setValue} />
+      <RadioInput options={opts} name={name} value="one" setValue={setValue} />
     );
     const inp = getBySelector(`#radio-${name}-${options[1].value}`) as HTMLInputElement;
     expect(inp.disabled).toEqual(true);

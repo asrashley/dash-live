@@ -118,13 +118,14 @@ exports[`HomePage > matches snapshot 1`] = `
                     >
                       <input
                         class="form-check-input"
-                        id="radio-undefined-vod"
+                        id="radio-mode-vod"
+                        name="mode"
                         type="radio"
                         value="vod"
                       />
                       <label
                         class="form-check-label"
-                        for="radio-undefined-vod"
+                        for="radio-mode-vod"
                       >
                         Video On Demand (using live profile)
                       </label>
@@ -134,13 +135,14 @@ exports[`HomePage > matches snapshot 1`] = `
                     >
                       <input
                         class="form-check-input"
-                        id="radio-undefined-live"
+                        id="radio-mode-live"
+                        name="mode"
                         type="radio"
                         value="live"
                       />
                       <label
                         class="form-check-label"
-                        for="radio-undefined-live"
+                        for="radio-mode-live"
                       >
                         Live stream (using live profile)
                       </label>
@@ -150,13 +152,14 @@ exports[`HomePage > matches snapshot 1`] = `
                     >
                       <input
                         class="form-check-input"
-                        id="radio-undefined-odvod"
+                        id="radio-mode-odvod"
+                        name="mode"
                         type="radio"
                         value="odvod"
                       />
                       <label
                         class="form-check-label"
-                        for="radio-undefined-odvod"
+                        for="radio-mode-odvod"
                       >
                         Video On Demand (using on-demand profile)
                       </label>
