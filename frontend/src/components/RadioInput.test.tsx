@@ -8,23 +8,23 @@ import { SelectOptionType } from "../types/SelectOptionType";
 
 describe("RadioInput", () => {
   const currentValue = signal<string>("one");
+  const disabledFields = signal<Record<string, boolean>>({});
   const setValue = vi.fn();
   const name = "rtest";
   const options: SelectOptionType[] = [
     {
       title: "option one",
       value: "one",
-      disabled: false,
     },
     {
       title: "option two",
       value: "two",
-      disabled: false,
     },
   ];
 
   beforeEach(() => {
     currentValue.value = "one";
+    disabledFields.value = {};
   });
 
   afterEach(() => {
@@ -33,7 +33,7 @@ describe("RadioInput", () => {
 
   test("should display radio inputs", () => {
     const { asFragment, getBySelector, getByText } = renderWithProviders(
-      <RadioInput options={options} name={name} value={currentValue} setValue={setValue} />
+      <RadioInput options={options} name={name} value={currentValue} disabledFields={disabledFields} setValue={setValue} />
     );
     getByText(options[0].title);
     getByText(options[1].title);
@@ -44,7 +44,7 @@ describe("RadioInput", () => {
 
   test("can set value", () => {
     const { getBySelector } = renderWithProviders(
-      <RadioInput options={options} value={currentValue} name={name} setValue={setValue} />
+      <RadioInput options={options} value={currentValue} name={name} disabledFields={disabledFields} setValue={setValue} />
     );
     const inp = getBySelector(`#radio-${name}-${options[1].value}`) as HTMLInputElement;
     expect(inp.disabled).toEqual(false);
@@ -54,12 +54,12 @@ describe("RadioInput", () => {
   });
 
   test("can disable option", () => {
-    const opts = [ options[0], {
-        ...options[1],
-        disabled: true,
-    }];
+    disabledFields.value = {
+      [`${name}__${options[1].value}`]: true,
+    };
+    console.dir(disabledFields.value);
     const { getBySelector } = renderWithProviders(
-      <RadioInput options={opts} name={name} value={currentValue} setValue={setValue} />
+      <RadioInput options={options} name={name} value={currentValue} disabledFields={disabledFields} setValue={setValue} />
     );
     const inp = getBySelector(`#radio-${name}-${options[1].value}`) as HTMLInputElement;
     expect(inp.disabled).toEqual(true);

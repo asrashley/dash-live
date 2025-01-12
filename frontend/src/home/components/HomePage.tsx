@@ -1,5 +1,5 @@
 import { useContext } from "preact/hooks";
-import { type ReadonlySignal, Signal, useComputed } from "@preact/signals";
+import { type ReadonlySignal, useComputed } from "@preact/signals";
 
 import { routeMap } from "@dashlive/routemap";
 import { AccordionFormGroup } from "../../components/AccordionFormGroup";
@@ -16,7 +16,6 @@ import { NoStreamsMessage } from './NoStreamsMessage';
 import { useStreamOptions } from "../hooks/useStreamOptions";
 import { StreamOptionsContext } from '../types/StreamOptionsHook';
 import { useFieldGroups } from "../hooks/useFieldGroups";
-import { InputFormData } from "../../types/InputFormData";
 
 interface UrlGenFnProps {
   mode: string;
@@ -56,14 +55,15 @@ function doNothing(ev: Event): boolean {
 
 const formLayout = [2, 5, 5];
 
-function StreamOptionsForm({data}: {data: Signal<InputFormData>}) {
-  const { setValue } = useContext(StreamOptionsContext);
+function StreamOptionsForm() {
+  const { data, disabledFields, setValue } = useContext(StreamOptionsContext);
   const { homeFieldGroups } = useFieldGroups();
 
   return <form name="mpsOptions" onSubmit={doNothing}>
     <AccordionFormGroup
       groups={homeFieldGroups.value}
       data={data}
+      disabledFields={disabledFields}
       expand="general"
       mode="cgi"
       setValue={setValue}
@@ -75,7 +75,7 @@ function StreamOptionsForm({data}: {data: Signal<InputFormData>}) {
 export default function HomePage() {
   const combinedStreams = useCombinedStreams();
   const streamOptionsHook = useStreamOptions(combinedStreams);
-  const { data, stream, mode, manifest, nonDefaultOptions, manifestOptions } = streamOptionsHook;
+  const { stream, mode, manifest, nonDefaultOptions, manifestOptions } = streamOptionsHook;
   const manifestUrl = useComputed<URL>(() =>
     generateUrl(routeMap.dashMpdV3.url, routeMap.mpsManifest.url, mode, manifest, stream, manifestOptions));
   const viewUrl = useComputed<URL>(() =>
@@ -93,7 +93,7 @@ export default function HomePage() {
         <ManifestUrl manifestUrl={manifestUrl} />
         <div id="with-modules">
           <ButtonRow videoUrl={videoUrl} viewUrl={viewUrl} stream={stream} />
-          <StreamOptionsForm data={data} />
+          <StreamOptionsForm />
         </div>
         <CgiInfoPanel />
       </div>

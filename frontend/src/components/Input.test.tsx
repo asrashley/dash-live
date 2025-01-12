@@ -1,5 +1,5 @@
 import { signal } from "@preact/signals";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 
 import { renderWithProviders } from "../test/renderWithProviders";
@@ -12,7 +12,12 @@ import { InputFormData } from "../types/InputFormData";
 
 describe("Input component", () => {
   const data = signal<InputFormData>({});
+  const disabledFields = signal<Record<string, boolean>>({});
   const setValue = vi.fn();
+
+  beforeEach(() => {
+    disabledFields.value = {};
+  });
 
   afterEach(() => {
     vi.clearAllMocks();
@@ -37,20 +42,20 @@ describe("Input component", () => {
         {
           title: "Video On Demand (using on-demand profile)",
           value: "odvod",
-          disabled: true,
         },
       ],
     };
-
     const props: InputProps = {
       ...playbackMode,
       data,
+      disabledFields,
       mode: 'cgi',
       setValue,
     };
     data.value = {
         mode: "vod",
     };
+    disabledFields['mode__odvod'] = true;
     const { getAllBySelector, getBySelector, asFragment } = renderWithProviders(
       <Input {...props} />
     );
@@ -90,6 +95,7 @@ describe("Input component", () => {
         ...selectManifest,
         mode: 'cgi',
         data,
+        disabledFields,
         setValue,
       };
       data.value = {
@@ -132,6 +138,7 @@ describe("Input component", () => {
             ...selectDrmSystem,
             mode: 'cgi',
             data,
+            disabledFields,
             setValue,
         };
         data.value = {
@@ -150,6 +157,12 @@ describe("Input component", () => {
             const label = getBySelector(`label[for="${elt.getAttribute('id')}"]`);
             expect(label.innerHTML).toEqual(opt.title);
         });
+        await user.click(elts[0]);
+        expect(setValue).toHaveBeenCalledTimes(1);
+        expect(setValue).toHaveBeenLastCalledWith(drmSystems[0], true);
+        await user.click(elts[2]);
+        expect(setValue).toHaveBeenCalledTimes(2);
+        expect(setValue).toHaveBeenLastCalledWith(drmSystems[2], true);
         expect(asFragment()).toMatchSnapshot();
     });
 });

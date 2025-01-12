@@ -1,5 +1,5 @@
 import { signal } from "@preact/signals";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { renderWithProviders } from "../test/renderWithProviders";
 import {
@@ -11,9 +11,11 @@ import {
 
 import { TabFormGroup } from "./TabFormGroup";
 import { FormRowMode } from "../types/FormRowMode";
+import { InputFormData } from "../types/InputFormData";
 
 describe("TabFormGroup", () => {
-  const data = signal();
+  const data = signal<InputFormData>();
+  const disabledFields = signal<Record<string, boolean>>({});
   const setValue = vi.fn();
   const formLayout = [3, 4, 5];
   const cgiData = {
@@ -31,6 +33,10 @@ describe("TabFormGroup", () => {
     patch: "1",
     utc: null,
   };
+
+  beforeEach(() => {
+    disabledFields.value  = {};
+  });
 
   afterEach(() => {
     vi.clearAllMocks();
@@ -64,6 +70,7 @@ describe("TabFormGroup", () => {
         <TabFormGroup
           groups={fieldGroups}
           data={data}
+          disabledFields={disabledFields}
           expand="general"
           mode={mode}
           setValue={setValue}
@@ -78,9 +85,6 @@ describe("TabFormGroup", () => {
               : mode === "shortName"
               ? field.shortName
               : field.fullName;
-          if (name === undefined) {
-            console.log(JSON.stringify(field));
-          }
           expect(name).toBeDefined();
           if (mode === 'fullName' && field.prefix) {
             name = `${field.prefix}__${name}`;

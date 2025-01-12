@@ -47,6 +47,7 @@ export function OptionsDialog({ onClose }: OptionsDialogProps) {
   const form = useRef(null);
   const isActive = useComputed<boolean>(() => dialog.value?.mpsOptions?.name !== undefined);
   const data = useSignal<InputFormData | null>(null);
+  const disabledFields = useSignal<Record<string, boolean>>({});
   const lastUpdated = useSignal<null | number>(null);
 
   const onSubmit = useCallback((ev: Event) => {
@@ -93,7 +94,7 @@ export function OptionsDialog({ onClose }: OptionsDialogProps) {
 
   return <ModalDialog onClose={onClose} title="Stream Options" size='xl' footer={footer}>
       <form name="mpsOptions" ref={form} onSubmit={onSubmit}>
-        <TabFormGroup groups={streamFieldGroups} layout={formLayout} data={data} setValue={setValue} mode="shortName" />
+        <TabFormGroup groups={streamFieldGroups} layout={formLayout} data={data} disabledFields={disabledFields} setValue={setValue} mode="shortName" />
       </form>
     </ModalDialog>;
 }

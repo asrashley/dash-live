@@ -17,7 +17,7 @@ interface UseFieldGroupsHook {
 export function useFieldGroups(): UseFieldGroupsHook {
   const { allManifests, names } = useAllManifests();
   const { streamNames, streamsMap } = useContext(UseCombinedStreams);
-  const { stream, manifest, drms } = useContext(StreamOptionsContext);
+  const { stream, manifest } = useContext(StreamOptionsContext);
 
   const homeFieldGroups = useComputed<InputFormGroup[]>(() => {
     const playbackMode: FormInputItem = {
@@ -38,7 +38,7 @@ export function useFieldGroups(): UseFieldGroupsHook {
         {
           title: "Video On Demand (using on-demand profile)",
           value: "odvod",
-          disabled: stream.value.mps,
+          //disabled: stream.value.mps,
         },
       ],
     };
@@ -57,7 +57,6 @@ export function useFieldGroups(): UseFieldGroupsHook {
           selected: name === manifest.value,
         };
       }),
-      //value: manifest.value,
     };
     const selectStream: FormInputItem = {
       name: "stream",
@@ -71,7 +70,6 @@ export function useFieldGroups(): UseFieldGroupsHook {
         value,
         selected: value === stream.value,
       })),
-      //value: stream.value,
     };
     const selectDrmSystem: FormInputItem = {
       name: "drms",
@@ -84,7 +82,7 @@ export function useFieldGroups(): UseFieldGroupsHook {
         name,
         title: name,
         value: name,
-        checked: !!drms.value[name],
+        //checked: !!drms.value[name],
       })),
     };
     const generalOptions: InputFormGroup = {

@@ -1,4 +1,4 @@
-import { useComputed, type ReadonlySignal } from '@preact/signals';
+import { type ReadonlySignal, useComputed } from '@preact/signals';
 
 import { DataListInput } from './DataListInput';
 import { MultiSelectInput } from './MultiSelectInput';
@@ -8,9 +8,11 @@ import type { SetValueFunc } from '../types/SetValueFunc';
 import type { InputFormData } from '../types/InputFormData';
 import type { FormInputItem } from '../types/FormInputItem';
 import type { FormRowMode } from '../types/FormRowMode';
+import { FormGroupsProps } from '../types/FormGroupsProps';
 
 export interface InputProps extends FormInputItem {
-  data: ReadonlySignal<InputFormData>;
+  data: FormGroupsProps['data'];
+  disabledFields: FormGroupsProps['disabledFields'];
   mode: FormRowMode;
   validation?: "was-validated" | "has-validation" | "needs-validation";
   setValue: SetValueFunc;
@@ -23,6 +25,7 @@ type BaseInputProps = {
   className: string;
   title: string;
   "aria-describedby": string;
+  disabled: ReadonlySignal<boolean>;
   onInput: (ev: Event) => void;
 };
 
@@ -58,6 +61,7 @@ export function Input({
   prefix,
   mode,
   data,
+  disabledFields,
   setValue,
   error,
   validation,
@@ -77,6 +81,7 @@ export function Input({
   });
   const prefixData = useComputed<InputFormData>(() => (mode === 'fullName' && prefix) ? (data.value[prefix] as InputFormData): data.value);
   const stringValue = useComputed<string>(() => value.value === undefined ? "" : typeof value.value === "string" ? value.value : `${value.value}`);
+  const disabled = useComputed<boolean>(() => !!disabledFields[name]);
   const inputClass =
     type === "checkbox"
       ? "form-check-input"
@@ -91,8 +96,9 @@ export function Input({
   const inpProps: BaseInputProps = {
     name,
     type,
-    className: `${inputClass}${validationClass} ${className}`,
     title,
+    disabled,
+    className: `${inputClass}${validationClass} ${className}`,
     id: `model-${name}`,
     "aria-describedby": `field-${name}`,
     onInput: (ev: Event) => {
@@ -102,7 +108,7 @@ export function Input({
   };
   switch (type) {
     case "radio":
-      return <RadioInput setValue={setValue} value={stringValue} options={options} {...inpProps} />;
+      return <RadioInput setValue={setValue} value={stringValue} options={options} disabledFields={disabledFields} {...inpProps} />;
     case "select":
       return <SelectInput setValue={setValue} value={stringValue} options={options} {...inpProps} />;
     case "multiselect":

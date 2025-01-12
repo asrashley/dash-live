@@ -1,9 +1,10 @@
 import { useCallback } from "preact/hooks";
-import { type ReadonlySignal, type Signal, useComputed, useSignal } from "@preact/signals";
+import { type ReadonlySignal, useComputed, useSignal } from "@preact/signals";
 
 import { defaultCgiOptions, drmSystems } from "@dashlive/options";
 import { CombinedStream } from "../../hooks/useCombinedStreams";
 import { InputFormData } from "../../types/InputFormData";
+import { FormGroupsProps } from "../../types/FormGroupsProps";
 
 const keyName = "dashlive.homepage.options";
 
@@ -32,7 +33,8 @@ export type EnabledDrmSystems = {
 };
 
 export interface UseStreamOptionsHook {
-  data: Signal<InputFormData>;
+  data: FormGroupsProps['data'];
+  disabledFields: FormGroupsProps['disabledFields'];
   drms: ReadonlySignal<EnabledDrmSystems>;
   stream: ReadonlySignal<CombinedStream>;
   mode: ReadonlySignal<string>;
@@ -62,7 +64,7 @@ export function useStreamOptions({ streamNames, streamsMap }: UseStreamOptionsPr
   const mode = useComputed<string>(() => data.value['mode'] as string);
   const manifest = useComputed<string>(() => data.value['manifest'] as string);
   const drms = useComputed<EnabledDrmSystems>(() => Object.fromEntries(drmSystems.map(name => [name, data.value[name] === "1"])));
-  const nonDefaultOptions = useComputed<object>(() => {
+  const nonDefaultOptions = useComputed<InputFormData>(() => {
     const params = Object.entries(data.value)
       .filter(([key, value]) => defaultCgiOptions[key] != value)
       .filter(([key]) => !skipKeys.test(key));
@@ -75,8 +77,14 @@ export function useStreamOptions({ streamNames, streamsMap }: UseStreamOptionsPr
     }
     return Object.fromEntries(params);
   });
-  const manifestOptions = useComputed<object>(() => Object.fromEntries(
+  const manifestOptions = useComputed<InputFormData>(() => Object.fromEntries(
     Object.entries(nonDefaultOptions.value).filter(([key]) => !manifestSkipKeys.test(key))));
+  const disabledFields = useComputed<Record<string, boolean>>(() => {
+    const disabled: Record<string, boolean> = {
+      mode__odvod: stream.value.mps,
+    };
+    return disabled;
+  });
 
   const setValue = useCallback(
     (name: string, value: string | number | boolean) => {
@@ -113,5 +121,16 @@ export function useStreamOptions({ streamNames, streamsMap }: UseStreamOptionsPr
     localStorage.removeItem(keyName);
   }, [data]);
 
-  return { data, drms, stream, mode, manifest, nonDefaultOptions, manifestOptions, setValue, resetAllValues };
+  return {
+    data,
+    disabledFields,
+    drms,
+    stream,
+    mode,
+    manifest,
+    nonDefaultOptions,
+    manifestOptions,
+    setValue,
+    resetAllValues,
+  };
 }

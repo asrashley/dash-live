@@ -37,6 +37,7 @@ function TabLink({activeTab, setActive, disabled, name}: TabLinkProps) {
 interface TabContentProps extends InputFormGroup {
   activeTab: string;
   data: FormGroupsProps['data'];
+  disabledFields: FormGroupsProps['disabledFields'];
   mode: FormRowMode;
   setValue: SetValueFunc;
 }

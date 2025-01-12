@@ -1,25 +1,30 @@
-import { type ReadonlySignal } from "@preact/signals";
+import { useComputed, type ReadonlySignal } from "@preact/signals";
 import { useCallback } from "preact/hooks";
 
 import { SelectOptionType } from "../types/SelectOptionType";
+import { FormGroupsProps } from "../types/FormGroupsProps";
 
 interface RadioOptionProps extends SelectOptionType {
   setValue: (name: string, value: string | number) => void;
-  selected: boolean;
+  currentValue: ReadonlySignal<string>;
+  disabledFields: FormGroupsProps['disabledFields'];
 }
 
 function RadioOption({
   name,
-  selected,
   title,
   value,
-  disabled,
+  currentValue,
+  disabledFields,
   setValue,
 }: RadioOptionProps) {
   const onClick = useCallback(() => {
     setValue(name, value);
   }, [name, setValue, value]);
+  const checked = useComputed<boolean>(() => value === currentValue.value);
+  const disabled = useComputed<boolean>(() => !!disabledFields.value[`${name}__${value}`]);
   const id = `radio-${name}-${value}`;
+
   return (
     <div class="form-check">
       <input
@@ -29,7 +34,7 @@ function RadioOption({
         id={id}
         onClick={onClick}
         value={value}
-        checked={selected}
+        checked={checked}
         disabled={disabled}
       />
       <label class="form-check-label" for={id}>
@@ -44,12 +49,14 @@ export interface RadioInputProps {
   options: SelectOptionType[];
   setValue: RadioOptionProps["setValue"];
   value: ReadonlySignal<string>;
+  disabledFields: FormGroupsProps['disabledFields'];
 }
 
 export function RadioInput({
   name,
   options,
   value,
+  disabledFields,
   setValue,
 }: RadioInputProps) {
   return (
@@ -58,8 +65,9 @@ export function RadioInput({
         <RadioOption
           key={opt.value}
           name={name}
+          disabledFields={disabledFields}
           setValue={setValue}
-          selected={value.value === opt.value}
+          currentValue={value}
           {...opt}
         />
       ))}

@@ -1,5 +1,5 @@
 import { signal } from "@preact/signals";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { AccordionFormGroup } from "./AccordionFormGroup";
 import { FormRowMode } from "../types/FormRowMode";
@@ -10,9 +10,11 @@ import {
   defaultShortOptions,
   fieldGroups,
 } from "../test/fixtures/options.js";
+import { InputFormData } from "../types/InputFormData";
 
 describe("AccordionFormGroup", () => {
-  const data = signal();
+  const data = signal<InputFormData>({});
+  const disabledFields = signal<Record<string, boolean>>({});
   const setValue = vi.fn();
   const formLayout = [3, 4, 5];
   const cgiData = {
@@ -30,6 +32,10 @@ describe("AccordionFormGroup", () => {
     patch: "1",
     utc: null,
   };
+
+  beforeEach(() => {
+    disabledFields.value = {};
+  });
 
   afterEach(() => {
     vi.clearAllMocks();
@@ -63,6 +69,7 @@ describe("AccordionFormGroup", () => {
         <AccordionFormGroup
           groups={fieldGroups}
           data={data}
+          disabledFields={disabledFields}
           expand="general"
           mode={mode}
           setValue={setValue}
