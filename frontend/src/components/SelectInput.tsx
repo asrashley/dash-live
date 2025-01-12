@@ -1,3 +1,4 @@
+import { type ReadonlySignal } from "@preact/signals";
 import { SelectOptionType } from "../types/SelectOptionType";
 import { SetValueFunc } from "../types/SetValueFunc";
 import { SelectOption } from "./SelectOption";
@@ -5,7 +6,7 @@ import { SelectOption } from "./SelectOption";
 export interface SelectInputProps {
   className: string;
   options: SelectOptionType[];
-  value: string | number;
+  value: ReadonlySignal<string>;
   setValue: SetValueFunc;
 }
 
@@ -18,7 +19,7 @@ export function SelectInput({
   return (
     <select className={className} value={value} {...props}>
       {options.map((opt) => (
-        <SelectOption key={opt.value} selected={value === opt.value} {...opt} />
+        <SelectOption key={opt.value} currentValue={value} {...opt} />
       ))}
     </select>
   );

@@ -1,8 +1,11 @@
+import { type ReadonlySignal } from "@preact/signals";
 import { useCallback } from "preact/hooks";
+
 import { SelectOptionType } from "../types/SelectOptionType";
 
 interface RadioOptionProps extends SelectOptionType {
   setValue: (name: string, value: string | number) => void;
+  selected: boolean;
 }
 
 function RadioOption({
@@ -40,7 +43,7 @@ export interface RadioInputProps {
   name: string;
   options: SelectOptionType[];
   setValue: RadioOptionProps["setValue"];
-  value: string;
+  value: ReadonlySignal<string>;
 }
 
 export function RadioInput({
@@ -56,7 +59,7 @@ export function RadioInput({
           key={opt.value}
           name={name}
           setValue={setValue}
-          selected={value === opt.value}
+          selected={value.value === opt.value}
           {...opt}
         />
       ))}

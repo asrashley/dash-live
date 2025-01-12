@@ -6,6 +6,7 @@ import { InputFieldRow } from "../../components/InputFieldRow";
 
 import { SetValueFunc } from "../../types/SetValueFunc";
 import { LoginRequest } from "../../types/LoginRequest";
+import { InputFormData } from "../../types/InputFormData";
 
 function LoginError({error}: { error: ReadonlySignal<string | undefined>}) {
 	const className = useComputed<string>(() => error.value ? "alert alert-danger": "d-none");
@@ -19,7 +20,7 @@ export interface LoginCardProps {
   onLogin: (request: LoginRequest) => void;
 }
 export function LoginCard({ error, submitting, onLogin }: LoginCardProps) {
-  const data = useSignal<LoginRequest>({
+  const data = useSignal<InputFormData>({
     username: "",
     password: "",
     rememberme: false,
@@ -36,8 +37,8 @@ export function LoginCard({ error, submitting, onLogin }: LoginCardProps) {
     [data]
   );
   const onSubmit = useCallback((ev: Event) => {
-	ev.preventDefault();
-	onLogin(data.value);
+	  ev.preventDefault();
+	  onLogin(data.value as unknown as LoginRequest);
   }, [data, onLogin]);
 
   return (

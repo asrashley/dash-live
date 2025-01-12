@@ -113,7 +113,6 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
               name="abr"
               title="Adaptive bitrate"
               type="checkbox"
-              value="1"
             />
           </div>
           <div
@@ -227,7 +226,6 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
               name="timeline"
               title="Segment timeline"
               type="checkbox"
-              value="1"
             />
           </div>
           <div
@@ -783,7 +781,6 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
               name="base"
               title="Use BaseURLs"
               type="checkbox"
-              value="1"
             />
           </div>
           <div
@@ -811,7 +808,6 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
               name="patch"
               title="Use MPD patches"
               type="checkbox"
-              value="0"
             />
           </div>
           <div
@@ -888,7 +884,6 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
               name="clearkey__enabled"
               title="Clearkey DRM"
               type="checkbox"
-              value="undefined"
             />
           </div>
           <div
@@ -1013,7 +1008,6 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
               name="marlin__enabled"
               title="Marlin DRM"
               type="checkbox"
-              value="undefined"
             />
           </div>
           <div
@@ -1182,7 +1176,6 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
               name="ping__inband"
               title="Ping inband"
               type="checkbox"
-              value="1"
             />
           </div>
         </div>
@@ -1322,7 +1315,6 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
               name="playready__enabled"
               title="Playready DRM"
               type="checkbox"
-              value="undefined"
             />
           </div>
           <div
@@ -1377,7 +1369,6 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
               name="playready__piff"
               title="Playready PIFF"
               type="checkbox"
-              value="1"
             />
           </div>
           <div
@@ -1572,7 +1563,6 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
               name="scte35__inband"
               title="Scte35 inband"
               type="checkbox"
-              value="1"
             />
           </div>
         </div>
@@ -1827,7 +1817,6 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
               name="abr"
               title="Adaptive bitrate"
               type="checkbox"
-              value="true"
             />
           </div>
           <div
@@ -1941,7 +1930,6 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
               name="segmentTimeline"
               title="Segment timeline"
               type="checkbox"
-              value="false"
             />
           </div>
           <div
@@ -2497,7 +2485,6 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
               name="useBaseUrls"
               title="Use BaseURLs"
               type="checkbox"
-              value="true"
             />
           </div>
           <div
@@ -2525,7 +2512,6 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
               name="patch"
               title="Use MPD patches"
               type="checkbox"
-              value="false"
             />
           </div>
           <div
@@ -2602,7 +2588,6 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
               name="clearkey__enabled"
               title="Clearkey DRM"
               type="checkbox"
-              value="undefined"
             />
           </div>
           <div
@@ -2727,7 +2712,6 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
               name="marlin__enabled"
               title="Marlin DRM"
               type="checkbox"
-              value="undefined"
             />
           </div>
           <div
@@ -2896,7 +2880,6 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
               name="ping__inband"
               title="Ping inband"
               type="checkbox"
-              value="true"
             />
           </div>
         </div>
@@ -3036,7 +3019,6 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
               name="playready__enabled"
               title="Playready DRM"
               type="checkbox"
-              value="undefined"
             />
           </div>
           <div
@@ -3091,7 +3073,6 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
               name="playready__piff"
               title="Playready PIFF"
               type="checkbox"
-              value="true"
             />
           </div>
           <div
@@ -3286,7 +3267,6 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
               name="scte35__inband"
               title="Scte35 inband"
               type="checkbox"
-              value="true"
             />
           </div>
         </div>
@@ -3541,7 +3521,6 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
               name="ab"
               title="Adaptive bitrate"
               type="checkbox"
-              value="1"
             />
           </div>
           <div
@@ -3655,7 +3634,6 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
               name="st"
               title="Segment timeline"
               type="checkbox"
-              value="0"
             />
           </div>
           <div
@@ -4211,7 +4189,6 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
               name="base"
               title="Use BaseURLs"
               type="checkbox"
-              value="1"
             />
           </div>
           <div
@@ -4239,7 +4216,6 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
               name="patch"
               title="Use MPD patches"
               type="checkbox"
-              value="1"
             />
           </div>
           <div
@@ -4316,7 +4292,6 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
               name="clearkey__enabled"
               title="Clearkey DRM"
               type="checkbox"
-              value="undefined"
             />
           </div>
           <div
@@ -4441,7 +4416,6 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
               name="marlin__enabled"
               title="Marlin DRM"
               type="checkbox"
-              value="undefined"
             />
           </div>
           <div
@@ -4610,7 +4584,6 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
               name="pinInba"
               title="Ping inband"
               type="checkbox"
-              value="undefined"
             />
           </div>
         </div>
@@ -4750,7 +4723,6 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
               name="playready__enabled"
               title="Playready DRM"
               type="checkbox"
-              value="undefined"
             />
           </div>
           <div
@@ -4805,7 +4777,6 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
               name="pff"
               title="Playready PIFF"
               type="checkbox"
-              value="undefined"
             />
           </div>
           <div
@@ -5000,7 +4971,6 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
               name="sctInba"
               title="Scte35 inband"
               type="checkbox"
-              value="undefined"
             />
           </div>
         </div>

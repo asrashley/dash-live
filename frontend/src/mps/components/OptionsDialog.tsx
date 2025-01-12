@@ -7,6 +7,7 @@ import { MultiPeriodModelContext } from "../../hooks/useMultiPeriodStream";
 import { fieldGroups, defaultShortOptions } from '@dashlive/options';
 
 import { AppStateContext } from "../../appState";
+import { InputFormData } from "../../types/InputFormData";
 
 const excludeFields = new Set([
   'acodec', 'ad_audio', 'main_audio', 'main_text',
@@ -45,7 +46,7 @@ export function OptionsDialog({ onClose }: OptionsDialogProps) {
   const { setFields } = useContext(MultiPeriodModelContext);
   const form = useRef(null);
   const isActive = useComputed<boolean>(() => dialog.value?.mpsOptions?.name !== undefined);
-  const data = useSignal<object | null>(null);
+  const data = useSignal<InputFormData | null>(null);
   const lastUpdated = useSignal<null | number>(null);
 
   const onSubmit = useCallback((ev: Event) => {
@@ -82,7 +83,6 @@ export function OptionsDialog({ onClose }: OptionsDialogProps) {
         ...options,
     };
     lastUpdated.value = lastModified;
-    // optionsToFormData(shortNamesToOptions(dialog.value.mpsOptions.options)),
   });
 
   if (!isActive.value || data.value === null) {

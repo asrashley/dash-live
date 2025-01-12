@@ -3,10 +3,11 @@ import { type ReadonlySignal, type Signal, useComputed, useSignal } from "@preac
 
 import { defaultCgiOptions, drmSystems } from "@dashlive/options";
 import { CombinedStream } from "../../hooks/useCombinedStreams";
+import { InputFormData } from "../../types/InputFormData";
 
 const keyName = "dashlive.homepage.options";
 
-function getDefaultOptions(): object {
+function getDefaultOptions(): InputFormData {
   const lsKey = localStorage.getItem(keyName);
   const previousOptions = lsKey ? JSON.parse(lsKey) : {};
   return {
@@ -31,7 +32,7 @@ export type EnabledDrmSystems = {
 };
 
 export interface UseStreamOptionsHook {
-  data: Signal<object>;
+  data: Signal<InputFormData>;
   drms: ReadonlySignal<EnabledDrmSystems>;
   stream: ReadonlySignal<CombinedStream>;
   mode: ReadonlySignal<string>;
@@ -53,13 +54,13 @@ export interface UseStreamOptionsProps {
   streamsMap: ReadonlySignal<Map<string, CombinedStream>>;
 }
 export function useStreamOptions({ streamNames, streamsMap }: UseStreamOptionsProps): UseStreamOptionsHook {
-  const data = useSignal<object>(getDefaultOptions());
+  const data = useSignal<InputFormData>(getDefaultOptions());
   const stream = useComputed<CombinedStream>(() => {
-    const name: string = data.value['stream'] ?? streamNames.value[0];
+    const name: string = (data.value['stream'] as string | undefined) ?? streamNames.value[0];
     return streamsMap.value.get(name) ?? emptyStream;
   });
-  const mode = useComputed<string>(() => data.value['mode']);
-  const manifest = useComputed<string>(() => data.value['manifest']);
+  const mode = useComputed<string>(() => data.value['mode'] as string);
+  const manifest = useComputed<string>(() => data.value['manifest'] as string);
   const drms = useComputed<EnabledDrmSystems>(() => Object.fromEntries(drmSystems.map(name => [name, data.value[name] === "1"])));
   const nonDefaultOptions = useComputed<object>(() => {
     const params = Object.entries(data.value)
