@@ -4,7 +4,6 @@ export interface FormInputItem {
     columns?: string[];
     className?: string;
     datalist_type?: 'text' | 'number';
-    disabled?: boolean;
     error?: string;
     featured?: boolean;
     fullName: string;

@@ -30,11 +30,12 @@ function AccordionHeader({ expanded, index, title, onClick }: AccordionHeaderPro
   </div>;
 }
 
-interface AccordionCollapseProps extends Omit<InputFormGroup, 'value'> {
+interface AccordionCollapseProps extends InputFormGroup {
   index: number;
   expanded: boolean;
   mode: FormRowMode;
   data: FormGroupsProps['data'];
+  disabledFields: FormGroupsProps['disabledFields'];
   layout?: FormGroupsProps['layout'];
   setValue: SetValueFunc;
 }
@@ -52,6 +53,7 @@ export interface AccordionItemProps {
   expand?: string;
   group: InputFormGroup;
   data: FormGroupsProps['data'];
+  disabledFields: FormGroupsProps['disabledFields'];
   mode: FormRowMode;
   setValue: SetValueFunc;
 }

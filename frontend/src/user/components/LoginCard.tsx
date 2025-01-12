@@ -25,6 +25,7 @@ export function LoginCard({ error, submitting, onLogin }: LoginCardProps) {
     password: "",
     rememberme: false,
   });
+  const disabledFields = useSignal<Record<string, boolean>>({});
   const className = useComputed<string>(() => submitting.value ? "opacity-25": "");
   const disableSubmit = useComputed<boolean>(() => submitting.value || data.value.username === "" || data.value.password === "");
   const setValue: SetValueFunc = useCallback(
@@ -53,6 +54,7 @@ export function LoginCard({ error, submitting, onLogin }: LoginCardProps) {
           fullName=""
           mode="cgi"
           data={data}
+          disabledFields={disabledFields}
           setValue={setValue}
         />
         <InputFieldRow
@@ -63,6 +65,7 @@ export function LoginCard({ error, submitting, onLogin }: LoginCardProps) {
           fullName=""
           mode="cgi"
           data={data}
+          disabledFields={disabledFields}
           setValue={setValue}
         />
         <InputFieldRow
@@ -73,6 +76,7 @@ export function LoginCard({ error, submitting, onLogin }: LoginCardProps) {
           fullName=""
           mode="cgi"
           data={data}
+          disabledFields={disabledFields}
           setValue={setValue}
         />
         <div>

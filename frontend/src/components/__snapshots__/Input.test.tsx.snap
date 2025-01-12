@@ -100,7 +100,6 @@ exports[`Input component > renders a Radio button 1`] = `
     >
       <input
         class="form-check-input"
-        disabled=""
         id="radio-mode-odvod"
         name="mode"
         type="radio"

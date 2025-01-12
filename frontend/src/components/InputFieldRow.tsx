@@ -1,14 +1,13 @@
-import { type ReadonlySignal } from "@preact/signals";
-import { InputFormData } from "../types/InputFormData";
 import { FormRow, FormRowProps } from "./FormRow";
 import { Input, InputProps } from "./Input";
+import { FormGroupsProps } from "../types/FormGroupsProps";
 
-export interface InputFieldRowProps
-  extends Omit<InputProps, "title"> {
+export interface InputFieldRowProps extends Omit<InputProps, "title"> {
   layout?: FormRowProps["layout"];
   text?: FormRowProps["text"];
+  data: FormGroupsProps['data'];
+  disabledFields: FormGroupsProps['disabledFields'];
   title: string;
-  data: ReadonlySignal<InputFormData>;
 }
 
 export function InputFieldRow({
