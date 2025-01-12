@@ -1,5 +1,63 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`Input component > renders a MultiSelectInput 1`] = `
+<DocumentFragment>
+  <div
+    class="form-control "
+    data-testid="msi-drms"
+  >
+    <div
+      class="form-check form-check-inline"
+    >
+      <input
+        class="form-check-input"
+        id="msimarlin"
+        name="marlin"
+        type="checkbox"
+      />
+      <label
+        class="form-check-label me-3"
+        for="msimarlin"
+      >
+        marlin
+      </label>
+    </div>
+    <div
+      class="form-check form-check-inline"
+    >
+      <input
+        class="form-check-input"
+        id="msiplayready"
+        name="playready"
+        type="checkbox"
+      />
+      <label
+        class="form-check-label me-3"
+        for="msiplayready"
+      >
+        playready
+      </label>
+    </div>
+    <div
+      class="form-check form-check-inline"
+    >
+      <input
+        class="form-check-input"
+        id="msiclearkey"
+        name="clearkey"
+        type="checkbox"
+      />
+      <label
+        class="form-check-label me-3"
+        for="msiclearkey"
+      >
+        clearkey
+      </label>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
 exports[`Input component > renders a Radio button 1`] = `
 <DocumentFragment>
   <div>
@@ -56,5 +114,64 @@ exports[`Input component > renders a Radio button 1`] = `
       </label>
     </div>
   </div>
+</DocumentFragment>
+`;
+
+exports[`Input component > renders a Select input 1`] = `
+<DocumentFragment>
+  <select
+    aria-describedby="field-manifest"
+    class="form-select "
+    id="model-manifest"
+    name="manifest"
+    title="Manifest"
+    type="select"
+  >
+    <option
+      value="hand_made.mpd"
+    >
+      Hand-made manifest
+    </option>
+    <option
+      value="manifest_a.mpd"
+    >
+      Vendor A live profile
+    </option>
+    <option
+      value="manifest_b.mpd"
+    >
+      Vendor B VOD using live profile
+    </option>
+    <option
+      value="manifest_e.mpd"
+    >
+      Vendor E live profile
+    </option>
+    <option
+      value="manifest_ef.mpd"
+    >
+      Vendor EF live profile
+    </option>
+    <option
+      value="manifest_h.mpd"
+    >
+      Vendor H live profile
+    </option>
+    <option
+      value="manifest_i.mpd"
+    >
+      Vendor I live profile
+    </option>
+    <option
+      value="manifest_n.mpd"
+    >
+      Provider N live profile
+    </option>
+    <option
+      value="manifest_vod_aiv.mpd"
+    >
+      AIV on demand profile
+    </option>
+  </select>
 </DocumentFragment>
 `;

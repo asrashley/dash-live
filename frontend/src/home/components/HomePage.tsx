@@ -16,6 +16,7 @@ import { NoStreamsMessage } from './NoStreamsMessage';
 import { useStreamOptions } from "../hooks/useStreamOptions";
 import { StreamOptionsContext } from '../types/StreamOptionsHook';
 import { useFieldGroups } from "../hooks/useFieldGroups";
+import { InputFormData } from "../../types/InputFormData";
 
 interface UrlGenFnProps {
   mode: string;
@@ -55,7 +56,7 @@ function doNothing(ev: Event): boolean {
 
 const formLayout = [2, 5, 5];
 
-function StreamOptionsForm({data}: {data: Signal<object>}) {
+function StreamOptionsForm({data}: {data: Signal<InputFormData>}) {
   const { setValue } = useContext(StreamOptionsContext);
   const { homeFieldGroups } = useFieldGroups();
 

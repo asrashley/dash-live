@@ -1061,7 +1061,6 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                       name="abr"
                       title="Adaptive bitrate"
                       type="checkbox"
-                      value="1"
                     />
                   </div>
                   <div
@@ -1175,7 +1174,6 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                       name="timeline"
                       title="Segment timeline"
                       type="checkbox"
-                      value="0"
                     />
                   </div>
                   <div
@@ -1747,7 +1745,6 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                       name="base"
                       title="Use BaseURLs"
                       type="checkbox"
-                      value="1"
                     />
                   </div>
                   <div
@@ -1775,7 +1772,6 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                       name="patch"
                       title="Use MPD patches"
                       type="checkbox"
-                      value="0"
                     />
                   </div>
                   <div
@@ -2138,7 +2134,6 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                       name="ping__inband"
                       title="Ping inband"
                       type="checkbox"
-                      value="1"
                     />
                   </div>
                 </div>
@@ -2321,7 +2316,6 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                       name="playready__piff"
                       title="Playready PIFF"
                       type="checkbox"
-                      value="1"
                     />
                   </div>
                   <div
@@ -2532,7 +2526,6 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                       name="scte35__inband"
                       title="Scte35 inband"
                       type="checkbox"
-                      value="1"
                     />
                   </div>
                 </div>

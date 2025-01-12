@@ -1,19 +1,14 @@
-import { type Signal, useComputed } from "@preact/signals";
-
+import { type ReadonlySignal } from "@preact/signals";
+import { InputFormData } from "../types/InputFormData";
 import { FormRow, FormRowProps } from "./FormRow";
 import { Input, InputProps } from "./Input";
-import { FormRowMode } from "../types/FormRowMode";
 
 export interface InputFieldRowProps
-  extends Omit<InputProps, "title" | "value"> {
-  data: Signal<object>;
-  fullName: string;
+  extends Omit<InputProps, "title"> {
   layout?: FormRowProps["layout"];
-  mode: FormRowMode;
-  name: string;
-  shortName: string;
   text?: FormRowProps["text"];
   title: string;
+  data: ReadonlySignal<InputFormData>;
 }
 
 export function InputFieldRow({
@@ -28,21 +23,6 @@ export function InputFieldRow({
   text,
   ...props
 }: InputFieldRowProps) {
-  const value = useComputed(() => {
-    if (!data.value) {
-      return undefined;
-    }
-    if (mode === "shortName") {
-      return data.value[shortName];
-    }
-    if (mode === "cgi") {
-      return data.value[cgiName];
-    }
-    if (prefix) {
-      return data.value[prefix][fullName];
-    }
-    return data.value[fullName];
-  });
   const name: string =
     mode === "shortName"
       ? shortName
@@ -54,7 +34,8 @@ export function InputFieldRow({
       <Input
         {...props}
         name={name}
-        value={value}
+        mode={mode}
+        data={data}
         title={title}
         prefix={prefix}
         shortName={shortName}

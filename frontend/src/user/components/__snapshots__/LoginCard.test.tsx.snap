@@ -86,7 +86,6 @@ exports[`LoginCard component > matches snapshot 1`] = `
               name="rememberme"
               title="Remember Me"
               type="checkbox"
-              value="false"
             />
           </div>
         </div>
