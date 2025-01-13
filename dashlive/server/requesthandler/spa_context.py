@@ -60,7 +60,7 @@ def create_spa_template_context() -> SpaTemplateContext:
         refresh_token: Token = Token.generate_api_token(
             current_user, TokenType.REFRESH)
         initial_tokens['refreshToken'] = refresh_token.to_decoded_jwt()
-    navbar: list[NavBarItem] = create_navbar_context()
+    navbar: list[NavBarItem] = create_navbar_context(with_login=False)
     context: SpaTemplateContext = {
         "navbar": navbar,
         "initialTokens": initial_tokens,

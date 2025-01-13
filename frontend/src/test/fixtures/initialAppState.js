@@ -42,13 +42,7 @@ export const navbar = [
     className: "",
     href: "/media/inspect",
     title: "Inspect",
-  },
-  {
-    active: false,
-    className: "user-login",
-    href: "/login",
-    title: "Log In",
-  },
+  }
 ];
 
 export const user = {
