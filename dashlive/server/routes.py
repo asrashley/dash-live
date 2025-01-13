@@ -289,37 +289,6 @@ routes: dict[str, Route] = {
         r'/api/manifests',
         handler='manifest_requests.ListManifests',
         title="DASH fragment"),
-    "login": Route(
-        r'/api/login',
-        handler='user_management.LoginPage',
-        title='Log into site'),
-    "refresh-access-token": Route(
-        r'/api/refresh/access',
-        handler='user_management.RefreshAccessToken',
-        title='Refresh access token'),
-    "refresh-csrf-tokens": Route(
-        r'/api/refresh/csrf',
-        handler='user_management.RefreshCsrfTokens',
-        title='Refresh access token'),
-    'list-mps': Route(
-        r'/api/multi-period-streams',
-        handler='multi_period_streams.ListStreams',
-        title='Available DASH multi-period streams'),
-    'add-mps': Route(
-        r'/api/multi-period-streams/.add',
-        handler='multi_period_streams.AddStream',
-        title='Add new multi-period stream',
-        parent='list-mps'),
-    'edit-mps': Route(
-        r'/api/multi-period-streams/<mps_name>',
-        handler='multi_period_streams.EditStream',
-        title='Edit multi-period stream',
-        parent='list-mps'),
-    "validate-mps": Route(
-        r'/api/multi-period-streams.validate',
-        handler='multi_period_streams.ValidateStream',
-        title='Check MPS settings are valid',
-        parent='list-mps'),
     "mps-manifest": Route(
         r'/mps/<regex("(live|vod)"):mode>/<mps_name>/<manifest>',
         handler='manifest_requests.ServeMultiPeriodManifest',
@@ -364,6 +333,34 @@ routes: dict[str, Route] = {
         handler='esm.InitialAppState',
         title='initial app state'
     ),
+    "api-login": Route(
+        r'/api/login',
+        handler='user_management.LoginPage',
+        title='Log into site'),
+    "api-refresh-access-token": Route(
+        r'/api/refresh/access',
+        handler='user_management.RefreshAccessToken',
+        title='Refresh access token'),
+    "api-refresh-csrf-tokens": Route(
+        r'/api/refresh/csrf',
+        handler='user_management.RefreshCsrfTokens',
+        title='Refresh access token'),
+    'api-list-mps': Route(
+        r'/api/multi-period-streams',
+        handler='multi_period_streams.ListStreams',
+        title='Available DASH multi-period streams'),
+    'api-add-mps': Route(
+        r'/api/multi-period-streams/.add',
+        handler='multi_period_streams.AddStream',
+        title='Add new multi-period stream'),
+    'api-edit-mps': Route(
+        r'/api/multi-period-streams/<mps_name>',
+        handler='multi_period_streams.EditStream',
+        title='Edit multi-period stream'),
+    "api-validate-mps": Route(
+        r'/api/multi-period-streams.validate',
+        handler='multi_period_streams.ValidateStream',
+        title='Check MPS settings are valid'),
     "favicon": Route(
         r'/favicon.ico',
         handler='htmlpage.favicon',

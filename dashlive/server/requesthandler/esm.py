@@ -78,6 +78,8 @@ class RouteMap(MethodView):
     @staticmethod
     def to_camel_case(name: str) -> str:
         parts: list[str] = [p.title() for p in name.split('-')]
+        if parts[0] in {'Api', 'Ui'}:
+            parts.pop(0)
         parts[0] = parts[0].lower()
         return ''.join(parts)
 

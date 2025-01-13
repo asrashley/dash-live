@@ -330,7 +330,7 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
             if username is None:
                 username = self.STD_USER
                 password = self.STD_PASSWORD
-        login_url: str = flask.url_for('login')
+        login_url: str = flask.url_for('api-login')
         return self.client.post(
             login_url,
             json={

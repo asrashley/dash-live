@@ -34,9 +34,10 @@ class NavBarItem:
 
 def create_navbar_context() -> list[NavBarItem]:
     navbar: list[NavBarItem] = [
-        NavBarItem(title='Home', href=flask.url_for('home'), className='spa'),
-        NavBarItem(title='Streams', href='/streams'),
-        NavBarItem(title='Multi-Period', href='/multi-period-streams', className='spa'),
+        NavBarItem(title='Home', href=flask.url_for('ui-home'), className='spa'),
+        NavBarItem(title='Streams', href=flask.url_for('list-streams')),
+        NavBarItem(title='Multi-Period', href=flask.url_for('ui-list-mps'),
+                   className='spa'),
         NavBarItem(title='Validate', href=flask.url_for('validate-stream')),
         NavBarItem(title='Inspect', href=flask.url_for('inspect-media')),
     ]
@@ -48,10 +49,12 @@ def create_navbar_context() -> list[NavBarItem]:
             navbar.append(
                 NavBarItem(title='My Account', href=flask.url_for('change-password')))
         navbar.append(
-            NavBarItem(title='Log Out', className='user-login', href=flask.url_for('logout')))
+            NavBarItem(title='Log Out', className='user-login',
+                       href=flask.url_for('logout')))
     else:
         navbar.append(
-            NavBarItem(title='Log In', className='user-login spa', href=flask.url_for('login')))
+            NavBarItem(title='Log In', className='user-login spa',
+                       href=flask.url_for('ui-login')))
     found_active = False
     for nav in navbar[1:]:
         if flask.request.path.startswith(nav.href):
