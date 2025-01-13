@@ -28,6 +28,7 @@ export function LoginCard({ error, submitting, onLogin }: LoginCardProps) {
   const disabledFields = useSignal<Record<string, boolean>>({});
   const className = useComputed<string>(() => submitting.value ? "opacity-25": "");
   const disableSubmit = useComputed<boolean>(() => submitting.value || data.value.username === "" || data.value.password === "");
+  const header = useComputed<string>(() => submitting.value ? "Logging into DASH server..." : "Log into DASH server");
   const setValue: SetValueFunc = useCallback(
     (name, value) => {
       data.value = {
@@ -43,7 +44,7 @@ export function LoginCard({ error, submitting, onLogin }: LoginCardProps) {
   }, [data, onLogin]);
 
   return (
-    <Card id="login" header="Log into DASH server">
+    <Card id="login" header={header}>
       <form id="login-form" name="login" onSubmit={onSubmit}  className={className}>
 		<LoginError error={error} />
         <InputFieldRow
