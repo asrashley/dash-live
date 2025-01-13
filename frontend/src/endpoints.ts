@@ -95,6 +95,17 @@ export class ApiRequests {
     return response;
   }
 
+  async logoutUser(options: Partial<GetAllStreamsProps> = {}): Promise<Response> {
+    const response: Response = await this.sendApiRequest(routeMap.login.url(), {
+      method: 'DELETE',
+      service: 'login',
+      ...options,
+    });
+    this.accessToken = null;
+    this.refreshToken = null;
+    return response;
+  }
+
   async getAllStreams({ withDetails = false, ...options}: Partial<GetAllStreamsProps> = {}): Promise<AllStreamsJson> {
     const service = 'streams';
     const csrf_token = await this.csrfTokens[service].getToken(
@@ -242,13 +253,13 @@ export class ApiRequests {
       signal,
     });
     if (signal?.aborted) {
-      throw signal.reason;
+      throw new Error(signal.reason);
     }
     if (fetchResult.status === 401 && usedAccessToken && this.refreshToken) {
       const { jti } = this.accessToken;
       await this.getAccessToken(signal);
       if (signal?.aborted) {
-        throw signal.reason;
+        throw new Error(signal.reason);
       }
       if (!this.accessToken?.jti || jti === this.accessToken.jti) {
         throw new Error('Failed to refresh access token');

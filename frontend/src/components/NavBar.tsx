@@ -1,30 +1,6 @@
-import { type JSX } from "preact";
-import { useLocation } from "wouter-preact";
 import { NavBarItem } from "../types/NavBarItem";
-import { useCallback } from "preact/hooks";
-
-function NavItem({ active, className, href, title }: NavBarItem) {
-  const setLocation = useLocation()[1];
-  const itemClassName = `nav-item ${className}`;
-  const linkClass = `nav-link${active ? " active" : ""} ${className}`;
-  const spaNavigate  = useCallback((ev: Event) => {
-    ev.preventDefault();
-    const href = (ev.target as HTMLAnchorElement).getAttribute('href');
-    setLocation(href);
-    }, [setLocation]);
-
-  const anchorProps: JSX.AnchorHTMLAttributes = {
-    className: linkClass,
-    href,
-  };
-  if (active) {
-    anchorProps["aria-current"] = "page";
-  }
-  if (/spa/.test(className)) {
-    anchorProps.onClick = spaNavigate;
-  }
-  return <li className={itemClassName}><a {...anchorProps}>{title}</a></li>;
-}
+import { LoginLogoutLink } from "./LoginLogoutLink";
+import { NavItem } from "./NavItem";
 
 export interface NavBarProps {
   items: NavBarItem[];
@@ -48,6 +24,7 @@ export function NavBar({ items }: NavBarProps) {
           {items.map((item) => (
             <NavItem key={item.title} {...item} />
           ))}
+          <LoginLogoutLink />
         </ul>
       </div>
     </nav>

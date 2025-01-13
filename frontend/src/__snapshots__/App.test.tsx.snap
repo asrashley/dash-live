@@ -85,9 +85,9 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
           >
             <a
               class="nav-link user-login"
-              href="/login"
+              href="#"
             >
-              Log In
+              Log Out
             </a>
           </li>
         </ul>
@@ -656,9 +656,9 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
           >
             <a
               class="nav-link user-login"
-              href="/login"
+              href="#"
             >
-              Log In
+              Log Out
             </a>
           </li>
         </ul>
@@ -2771,9 +2771,9 @@ exports[`main entry-point app > matches snapshot for list MPS 1`] = `
           >
             <a
               class="nav-link user-login"
-              href="/login"
+              href="#"
             >
-              Log In
+              Log Out
             </a>
           </li>
         </ul>

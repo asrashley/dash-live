@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import fetchMock from '@fetch-mock/vitest';
+import { type RouteResponse } from "fetch-mock";
 import log from 'loglevel';
 
 import { MockDashServer, normalUser, UserModel } from "./test/MockServer";
@@ -15,6 +16,7 @@ import { LoginRequest } from "./types/LoginRequest";
 
 import { model as demoMps} from './test/fixtures/multi-period-streams/demo.json';
 import { MultiPeriodStreamValidationRequest } from "./types/MpsValidation";
+import { routeMap } from "@dashlive/routemap";
 
 describe('endpoints', () => {
     const navigate = vi.fn();
@@ -115,6 +117,15 @@ describe('endpoints', () => {
             success: false,
             error: "Wrong username or password",
         }));
+    });
+
+    test('can log out', async () => {
+        await expect(api.logoutUser()).resolves.toEqual(expect.objectContaining({
+            status: 204,
+        }));
+        user = server.getUser(normalUser);
+        expect(user).toBeDefined();
+        expect(user.accessToken).toBeUndefined();
     });
 
     test('get all conventional streams', async () => {
@@ -272,7 +283,20 @@ describe('endpoints', () => {
             accessToken: null,
             refreshToken: user.refreshToken,
         });
+        const prom = endpoint.addResponsePromise('get', routeMap.refreshAccessToken.url());
         await expect(api.getAllStreams()).resolves.toEqual(allStdStreams);
+        const response: RouteResponse = await prom;
+        expect(response).toEqual(expect.objectContaining({
+            status: 200,
+            body: expect.any(String),
+        }));
+        const body = JSON.parse(response['body']);
+        expect(body).toEqual(expect.objectContaining({
+            accessToken: expect.objectContaining({
+                expires: expect.any(String),
+                jti: expect.any(String),
+            }),
+        }));
         expect(server.getUser({ username })?.accessToken).not.toBeNull();
     });
 

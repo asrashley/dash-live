@@ -27,8 +27,8 @@ export type UserModel = {
     mustChange: boolean;
     lastLogin: string | null;
     groups: UserGroups[];
-    refreshToken?: JwtToken;
-    accessToken?: JwtToken;
+    refreshToken: JwtToken | null;
+    accessToken: JwtToken | null;
 };
 
 export const normalUser: UserModel = {
@@ -129,6 +129,7 @@ export class MockDashServer {
         };
         endpoint
             .post(routeMap.login.url(), this.loginUser)
+            .delete(routeMap.login.url(), protectedRoute(this.logoutUser))
             .get(routeMap.refreshCsrfTokens.url(), protectedRoute(this.refreshCsrfTokens))
             .get(routeMap.refreshAccessToken.url(), this.refreshAccessToken)
             .get(routeMap.listManifests.url(), this.returnSimpleFixture)
@@ -245,6 +246,21 @@ export class MockDashServer {
         };
         user.lastLogin = new Date().toISOString();
         return jsonResponse(result);
+    };
+
+    private logoutUser = async ({context}: ServerRouteProps) => {
+        const { currentUser } = context as RequestContext;
+        this.userDatabase = this.userDatabase.map(user => {
+            if (user.pk !== currentUser.pk) {
+                return user;
+            }
+            return {
+                ...user,
+                accessToken: undefined,
+                refreshToken: undefined,
+            };
+        });
+        return jsonResponse('', 204);
     };
 
     private refreshCsrfTokens = async ({ context }: ServerRouteProps) => {
@@ -403,7 +419,7 @@ export class MockDashServer {
         const { headers } = options;
         if (!headers['authorization']) {
             log.trace('Request does not contain an Authorization header');
-            return null;
+            return undefined;
         }
         const token = (headers['authorization'] as string).split(' ')[1];
         const user = this.userDatabase.find(usr => usr.accessToken?.jti === token);

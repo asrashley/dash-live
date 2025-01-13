@@ -57,7 +57,6 @@ describe("RadioInput", () => {
     disabledFields.value = {
       [`${name}__${options[1].value}`]: true,
     };
-    console.dir(disabledFields.value);
     const { getBySelector } = renderWithProviders(
       <RadioInput options={options} name={name} value={currentValue} disabledFields={disabledFields} setValue={setValue} />
     );
