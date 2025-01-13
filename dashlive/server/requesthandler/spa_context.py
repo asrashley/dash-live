@@ -5,28 +5,20 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-from typing import TypedDict, cast
+from typing import TypedDict
 
-import flask
 from flask_login import current_user
 
-from dashlive.server.models.token import Token, TokenType
+from dashlive.server.models.token import DecodedJwtToken, Token, TokenType
 from dashlive.server.models.user import User
-from dashlive.server.routes import routes, Route
 
 from .csrf import CsrfProtection, CsrfTokenCollection, CsrfTokenCollectionJson
 from .navbar import create_navbar_context, NavBarItem
-from .template_context import create_template_context, TemplateContext
-
-class JwtToken(TypedDict):
-    jti: str
-    expired: str
-
 
 class InitialTokensType(TypedDict):
     csrfTokens: CsrfTokenCollectionJson
-    accessToken: JwtToken | None
-    refreshToken: JwtToken | None
+    accessToken: DecodedJwtToken | None
+    refreshToken: DecodedJwtToken | None
 
 
 class UserContextType(TypedDict):
@@ -36,11 +28,8 @@ class UserContextType(TypedDict):
     groups: list[str]
 
 
-class SpaTemplateContext(TemplateContext):
-    force_es5: bool
+class SpaTemplateContext(TypedDict):
     navbar: list[NavBarItem]
-    routes: dict[str, Route]
-    breadcrumbs: list[NavBarItem]
     initialTokens: InitialTokensType
     user: UserContextType
 
@@ -58,7 +47,7 @@ def create_spa_template_context() -> SpaTemplateContext:
     access_token: Token = Token.generate_api_token(user, TokenType.ACCESS)
     initial_tokens: InitialTokensType = {
         'csrfTokens': csrf_tokens.to_dict(),
-        'accessToken': access_token.to_dict(only={'expires', 'jti'}),
+        'accessToken': access_token.to_decoded_jwt(),
         'refreshToken': None,
     }
     user_context: UserContextType = {
@@ -70,15 +59,11 @@ def create_spa_template_context() -> SpaTemplateContext:
     if current_user.is_authenticated:
         refresh_token: Token = Token.generate_api_token(
             current_user, TokenType.REFRESH)
-        initial_tokens['refreshToken'] = refresh_token.to_dict(
-            only={'expires', 'jti'})
+        initial_tokens['refreshToken'] = refresh_token.to_decoded_jwt()
     navbar: list[NavBarItem] = create_navbar_context()
-    breadcrumbs: list[NavBarItem] = [
-        NavBarItem(title='Home', active=True)
-    ]
-    context: SpaTemplateContext = cast(SpaTemplateContext, create_template_context(
-        title='DASH Test Streams',
-        navbar=navbar, routes=routes, breadcrumbs=breadcrumbs,
-        initialTokens=initial_tokens, user=user_context,
-        force_es5=('es5' in flask.request.args)))
+    context: SpaTemplateContext = {
+        "navbar": navbar,
+        "initialTokens": initial_tokens,
+        "user": user_context,
+    }
     return context

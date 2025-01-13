@@ -232,11 +232,7 @@ class InitialAppState(MethodView):
     """
     def get(self) -> flask.Response:
         context: SpaTemplateContext = create_spa_template_context()
-        body: str = flask.render_template(
-            'esm/initial_app_state.tjs',
-            initialTokens=context["initialTokens"],
-            navbar=context["navbar"],
-            user=context["user"])
+        body: str = flask.render_template('esm/initial_app_state.tjs', **context)
         headers: dict[str, str] = {
             'Content-Type': 'application/javascript',
             'Content-Length': len(body),
