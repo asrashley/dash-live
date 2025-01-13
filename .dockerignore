@@ -3,6 +3,8 @@
 .gaedata
 tests
 media
+node_modules
+*.db3
 **/*.mp4
 **/*.pyc
 src/server/settings.py
