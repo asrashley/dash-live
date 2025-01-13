@@ -1,4 +1,22 @@
-FROM python:3.11 as base
+#
+# Build client app
+#
+FROM node:22 as clientbuild
+ENV HOME=/home/dash
+ENV CI=1
+RUN mkdir -p ${HOME}/static/html
+WORKDIR ${HOME}
+COPY *.js ${HOME}/
+COPY *.json ${HOME}/
+COPY frontend ${HOME}/frontend
+COPY patches/eslint*.patch ${HOME}/patches/
+RUN npm ci
+RUN npm run build
+RUN tar czf ${HOME}/front-end.tar.gz -C static/html .
+#
+# Build Python server container
+#
+FROM python:3.11 as dashlive
 EXPOSE 5000
 ARG DEFAULT_PASSWORD=""
 ARG PROXY_DEPTH="1"
@@ -33,11 +51,15 @@ RUN echo "#!/bin/bash" > $HOME/dash-live/lesscpy.sh
 RUN echo "source $HOME/.venv/bin/activate && python -m lesscpy static/css -o static/css/" >> $HOME/dash-live/lesscpy.sh
 COPY deploy/runtests.sh $HOME/dash-live/
 RUN chmod +x $HOME/dash-live/*.sh
+COPY --from=clientbuild ${HOME}/front-end.tar.gz /tmp/
+RUN mkdir -p ${HOME}/static/html && tar -C ${HOME}/static/html -xzf /tmp/front-end.tar.gz && rm /tmp/front-end.tar.gz
 RUN $HOME/dash-live/lesscpy.sh
 RUN python -m compileall -f -j 0 /home/dash/dash-live/dashlive
 ENTRYPOINT ["/home/dash/dash-live/runserver.sh"]
-
-FROM base as dashlive-nginx
+#
+# build container to serve HTTP requests
+#
+FROM dashlive as dashlive-nginx
 EXPOSE 80
 ENV SERVER_NAME="_"
 ENV USER_GID=""
