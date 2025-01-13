@@ -29,7 +29,7 @@ class TestUserManagementHandlers(FlaskTestBase):
         self.check_login_failure(self.STD_USER, self.ADMIN_PASSWORD)
 
     def check_login_failure(self, username: str, password: str) -> None:
-        url = flask.url_for('login')
+        url = flask.url_for('api-login')
         data = {
             'username': username,
             'password': password,
@@ -46,7 +46,7 @@ class TestUserManagementHandlers(FlaskTestBase):
 
     @MockTime("2023-07-18T20:10:02Z")
     def test_ajax_login_page(self):
-        url = flask.url_for('login')
+        url = flask.url_for('api-login')
         payload = {
             'username': self.STD_USER,
             'password': self.STD_PASSWORD,

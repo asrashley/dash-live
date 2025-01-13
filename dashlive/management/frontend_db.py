@@ -41,7 +41,7 @@ class FrontendDatabaseAccess(DatabaseAccess):
     def login(self) -> bool:
         if self.user:
             return True
-        login_url = self.url_for('login')
+        login_url = self.url_for('api-login')
         fields = {
             "username": self.username,
             "password": self.password,
