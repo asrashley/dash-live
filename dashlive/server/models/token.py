@@ -16,6 +16,8 @@ from sqlalchemy.orm.exc import NoResultFound
 from flask_jwt_extended import create_access_token
 
 from .base import Base
+from dashlive.utils.date_time import to_iso_datetime
+
 from .db import db
 from .session import DatabaseSession
 from .mixin import ModelMixin
@@ -32,9 +34,20 @@ class TokenType(IntEnum):
     GUEST = 3
     CSRF = 4
 
+    @classmethod
+    def from_int(cls, num: int) -> "TokenType":
+        """
+        Create a TokenType from its number
+        """
+
+        return cls(num)
+
+
 class DecodedJwtToken(TypedDict):
     jti: str
     type: str  # 'access' or 'refresh'
+    sub: str | None  # subject
+    exp: str | None  # expiration
 
 
 KEY_LIFETIMES: dict[TokenType, timedelta] = {
@@ -70,13 +83,22 @@ class Token(ModelMixin["Token"], Base):
             return False
         return self.expires <= datetime.now()
 
+    def to_decoded_jwt(self) -> DecodedJwtToken:
+        djt: DecodedJwtToken = {
+            "jti": self.jti,
+            "type": TokenType.from_int(self.token_type).name.lower(),
+            "sub": self.user.username if self.user is not None else None,
+            "exp": to_iso_datetime(self.expires) if self.expires is not None else None,
+        }
+        return djt
+
     @classmethod
     def get(cls, **kwargs) -> Optional["Token"]:
         return cls.get_one(**kwargs)
 
     @classmethod
     def generate_api_token(cls, user: "User", token_type: TokenType) -> "Token":
-        token: Token | None = Token.get(user_pk=user.pk, token_type=token_type)
+        token: Token | None = Token.get(user_pk=user.pk, token_type=token_type.value)
         if token is not None and token.has_expired():
             db.session.delete(token)
             token = None
@@ -84,7 +106,7 @@ class Token(ModelMixin["Token"], Base):
             expires: datetime = datetime.now() + KEY_LIFETIMES[token_type]
             jti = create_access_token(identity=user.username)
             token = Token(
-                user_pk=user.pk, token_type=token_type, jti=jti,
+                user=user, token_type=token_type.value, jti=jti,
                 expires=expires, revoked=False)
             db.session.add(token)
         return token
