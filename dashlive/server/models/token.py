@@ -116,13 +116,12 @@ class Token(ModelMixin["Token"], Base):
         """
         Has the specified token been revoked?
         """
-        jti = decoded_token['jti']
-        token_type = decoded_token['type']
+        jti: str = decoded_token['jti']
         try:
             token = db.session.query(cls).filter_by(jti=jti).one()
             return token.revoked
         except NoResultFound:
-            return token_type != 'access'
+            return decoded_token['type'] != 'access'
 
     @classmethod
     def prune_database(cls, all_csrf: bool, session: DatabaseSession) -> None:
