@@ -11,7 +11,7 @@ import logging
 from typing import NotRequired, TypedDict
 
 import flask
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, current_user as jwt_current_user
 from flask_login import current_user, login_user, logout_user
 from flask.views import MethodView
 
@@ -22,7 +22,7 @@ from dashlive.utils.json_object import JsonObject
 from .base import HTMLHandlerBase, DeleteModelBase
 from .decorators import login_required, modifies_user_model, modifying_user, spa_handler
 from .exceptions import CsrfFailureException
-from .utils import is_ajax, jsonify
+from .utils import is_ajax, jsonify, jsonify_no_content
 
 def decorate_user(user: models.User) -> JsonObject:
     js = user.to_dict()
@@ -93,13 +93,25 @@ class LoginPage(HTMLHandlerBase):
         result['user']['groups'] = user.get_groups()
         return jsonify(result)
 
+    @jwt_required()
+    def delete(self) -> flask.Response:
+        for token in jwt_current_user.tokens:
+            token.revoked = True
+        logout_user()
+        models.db.session.commit()
+        return jsonify_no_content(204)
+
 
 class LogoutPage(HTMLHandlerBase):
     """
     Logs user out of site
     """
     def get(self) -> flask.Response:
+        if current_user.is_authenticated:
+            for token in current_user.tokens:
+                token.revoked = True
         logout_user()
+        models.db.session.commit()
         return flask.redirect(flask.url_for('ui-home'))
 
 class ListUsers(HTMLHandlerBase):

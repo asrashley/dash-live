@@ -13,7 +13,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.orm.exc import NoResultFound
-from flask_jwt_extended import create_access_token
+from flask_jwt_extended import create_access_token, create_refresh_token
 
 from .base import Base
 from dashlive.utils.date_time import to_iso_datetime
@@ -31,7 +31,6 @@ class TokenType(IntEnum):
     """
     ACCESS = 1
     REFRESH = 2
-    GUEST = 3
     CSRF = 4
 
     @classmethod
@@ -52,7 +51,6 @@ class DecodedJwtToken(TypedDict):
 
 KEY_LIFETIMES: dict[TokenType, timedelta] = {
     TokenType.ACCESS: timedelta(hours=2),
-    TokenType.GUEST: timedelta(hours=6),
     TokenType.REFRESH: timedelta(days=7),
     TokenType.CSRF: timedelta(minutes=20),
 }
@@ -104,11 +102,15 @@ class Token(ModelMixin["Token"], Base):
             token = None
         if token is None:
             expires: datetime = datetime.now() + KEY_LIFETIMES[token_type]
-            jti = create_access_token(identity=user.username)
+            if token_type == TokenType.REFRESH:
+                jti: str = create_refresh_token(identity=user.username)
+            else:
+                jti = create_access_token(identity=user.username)
             token = Token(
                 user=user, token_type=token_type.value, jti=jti,
                 expires=expires, revoked=False)
-            db.session.add(token)
+            if token_type == TokenType.REFRESH:
+                db.session.add(token)
         return token
 
     @classmethod
