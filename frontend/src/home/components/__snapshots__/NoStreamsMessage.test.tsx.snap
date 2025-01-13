@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`NoStreamsMessage > should display message 1`] = `
+exports[`NoStreamsMessage > should display message for a user who is already logged in 1`] = `
 <DocumentFragment>
   <div
     class="card "
@@ -27,7 +27,49 @@ exports[`NoStreamsMessage > should display message 1`] = `
         >
           the streams page
         </a>
-         and add some streams.
+         to add some media files.
+      </p>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`NoStreamsMessage > should display message with a login link 1`] = `
+<DocumentFragment>
+  <div
+    class="card "
+    id="no-streams-msg"
+  >
+    <div
+      class="card-header"
+    >
+      Please add some media files
+    </div>
+    <div
+      class="card-body"
+    >
+      <p>
+        <span
+          aria-label="camera-video-off icon"
+          class="bi icon bi-camera-video-off fs-2 me-2"
+          role="img"
+        />
+        There are no streams in the database. Please 
+        <a
+          class="link"
+          data-testid="needs-login"
+          href="/login"
+        >
+          login
+        </a>
+         and then go to 
+        <a
+          class="link"
+          href="/streams"
+        >
+          the streams page
+        </a>
+         to add some media files.
       </p>
     </div>
   </div>
