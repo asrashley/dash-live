@@ -6,17 +6,37 @@ exports[`HomePage > matches snapshot 1`] = `
     <div
       class="manifest-url rounded border"
     >
-      <span
-        class="fw-semibold"
+      <form
+        id="mpd-form"
       >
-        Manifest URL: 
-      </span>
-      <a
-        href="http://localhost:3000/dash/vod/bbb/hand_made.mpd"
-        id="dashurl"
-      >
-        /dash/vod/bbb/hand_made.mpd
-      </a>
+        <div
+          class="form-group d-flex flex-row row-field-title"
+        >
+          <label
+            class="col-form-label fw-semibold me-1"
+            for="id_mpd_url"
+          >
+            MPD URL :
+          </label>
+          <div
+            class="flex-fill"
+          >
+            <input
+              class="form-control d-none"
+              id="id_mpd_url"
+              name="mpd_url"
+              type="text"
+            />
+            <a
+              class="link link-underline-opacity-25"
+              href="http://localhost:3000/dash/vod/bbb/hand_made.mpd"
+              id="dashurl"
+            >
+              /dash/vod/bbb/hand_made.mpd
+            </a>
+          </div>
+        </div>
+      </form>
     </div>
     <div
       id="with-modules"
@@ -46,9 +66,8 @@ exports[`HomePage > matches snapshot 1`] = `
         <div
           class="view-manifest-button flex-fill text-center"
         >
-          <a
+          <button
             class="btn btn-lg btn-primary"
-            href="#"
           >
             <span
               aria-label="eyeglasses icon"
@@ -56,7 +75,7 @@ exports[`HomePage > matches snapshot 1`] = `
               role="img"
             />
             View Manifest
-          </a>
+          </button>
         </div>
         <div
           class="reset-all-button flex-fill text-center"
@@ -1994,3 +2013,5 @@ exports[`HomePage > matches snapshot 1`] = `
   </div>
 </DocumentFragment>
 `;
+
+exports[`HomePage > shows manifest contents 1`] = `[Function]`;

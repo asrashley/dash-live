@@ -1,19 +1,28 @@
-import { beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { mock } from "vitest-mock-extended";
+import userEvent from "@testing-library/user-event";
+import fetchMock from '@fetch-mock/vitest';
 
 import { renderWithProviders } from "../../test/renderWithProviders";
-import HomePage from './HomePage';
 import { ApiRequests, EndpointContext } from "../../endpoints";
-import { mock } from "vitest-mock-extended";
 import { AllManifests } from "../../types/AllManifests";
 import { AllStreamsJson } from "../../types/AllStreams";
+import HomePage from "./HomePage";
+import { FakeEndpoint } from "../../test/FakeEndpoint";
+import { MockDashServer } from "../../test/MockServer";
 
 describe("HomePage", () => {
   const apiRequests = mock<ApiRequests>();
   let getManifests: Promise<void>;
   let getStdStreams: Promise<void>;
   let getMpsStreams: Promise<void>;
+  let endpoint: FakeEndpoint;
 
   beforeEach(() => {
+    endpoint = new FakeEndpoint(document.location.origin);
+    new MockDashServer({
+      endpoint,
+    });
     getManifests = new Promise<void>((resolve) => {
       apiRequests.getAllManifests.mockImplementation(async () => {
         const manifests = await import("../../test/fixtures/manifests.json");
@@ -39,9 +48,17 @@ describe("HomePage", () => {
     });
   });
 
+  afterEach(() => {
+    endpoint.shutdown();
+    fetchMock.mockReset();
+    vi.clearAllMocks();
+  });
+
   test("matches snapshot", async () => {
     const { asFragment, findByText } = renderWithProviders(
-      <EndpointContext.Provider value={apiRequests}><HomePage /></EndpointContext.Provider>
+      <EndpointContext.Provider value={apiRequests}>
+        <HomePage />
+      </EndpointContext.Provider>
     );
     await Promise.all([getManifests, getStdStreams, getMpsStreams]);
     await findByText("Stream to play");
@@ -72,8 +89,26 @@ describe("HomePage", () => {
       };
     });
     const { findByText } = renderWithProviders(
-      <EndpointContext.Provider value={apiRequests}><HomePage /></EndpointContext.Provider>
+      <EndpointContext.Provider value={apiRequests}>
+        <HomePage />
+      </EndpointContext.Provider>
     );
     await findByText("no streams in the database", { exact: false });
+  });
+
+  test("shows manifest contents", async () => {
+    const user = userEvent.setup();
+
+    const { asFragment, findByText } = renderWithProviders(
+      <EndpointContext.Provider value={apiRequests}>
+        <HomePage />
+      </EndpointContext.Provider>
+    );
+    await Promise.all([getManifests, getStdStreams, getMpsStreams]);
+    await findByText("Play Big Buck Bunny");
+    const btn = (await findByText("View Manifest")) as HTMLButtonElement;
+    await user.click(btn);
+    await findByText("urn:mpeg:dash:profile:isoff-live:2011", { exact: false });
+    expect(asFragment).toMatchSnapshot();
   });
 });

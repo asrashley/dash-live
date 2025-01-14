@@ -1,0 +1,81 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ManifestUrl component > allows manifest to be edited 1`] = `
+<DocumentFragment>
+  <div
+    class="manifest-url rounded border"
+  >
+    <form
+      id="mpd-form"
+    >
+      <div
+        class="form-group d-flex flex-row row-field-title"
+      >
+        <label
+          class="col-form-label fw-semibold me-1"
+          for="id_mpd_url"
+        >
+          MPD URL :
+        </label>
+        <div
+          class="flex-fill"
+        >
+          <input
+            class="form-control"
+            id="id_mpd_url"
+            name="mpd_url"
+            type="text"
+          />
+          <a
+            class="d-none"
+            href="http://localhost:3000/dash/live/netflix/manifest_e.mpd"
+            id="dashurl"
+          >
+            /dash/live/netflix/manifest_e.mpd
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`ManifestUrl component > shows manifest link 1`] = `
+<DocumentFragment>
+  <div
+    class="manifest-url rounded border"
+  >
+    <form
+      id="mpd-form"
+    >
+      <div
+        class="form-group d-flex flex-row row-field-title"
+      >
+        <label
+          class="col-form-label fw-semibold me-1"
+          for="id_mpd_url"
+        >
+          MPD URL :
+        </label>
+        <div
+          class="flex-fill"
+        >
+          <input
+            class="form-control d-none"
+            id="id_mpd_url"
+            name="mpd_url"
+            type="text"
+          />
+          <a
+            class="link link-underline-opacity-25"
+            href="http://localhost:3000/dash/live/netflix/manifest_e.mpd"
+            id="dashurl"
+          >
+            /dash/live/netflix/manifest_e.mpd
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+</DocumentFragment>
+`;

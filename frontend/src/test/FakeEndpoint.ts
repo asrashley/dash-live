@@ -126,6 +126,7 @@ export class FakeEndpoint {
             srp.jsonParam = typeof body === 'string' ? JSON.parse(body as string) : body;
         }
         if (this.serverStatus !== null) {
+            log.trace(`serverStatus: ${this.serverStatus}`);
             result = this.serverStatus;
         } else {
             let handler: HttpRequestHandler | undefined = this.pathHandlers.get(key);
