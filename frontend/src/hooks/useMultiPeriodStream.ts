@@ -275,7 +275,7 @@ export interface UseMultiPeriodModelHook {
   setFields: (fields: Partial<MultiPeriodStream>) => void;
   addPeriod: () => void;
   setPeriodOrdering: (pks: (number | string)[]) => void;
-  removePeriod: (pk : number | string) => void;
+  removePeriod: (pk: number | string) => void;
   modifyPeriod: (props: Omit<ModifyPeriodProps, 'model'>) => void;
   saveChanges: ({signal}: { signal: AbortSignal}) => Promise<boolean>;
   deleteStream: ({signal}: { signal: AbortSignal}) => Promise<boolean>;
@@ -284,11 +284,16 @@ export interface UseMultiPeriodModelHook {
   isValid: Signal<boolean>;
 }
 
-export function useMultiPeriodModel({ model, name }): UseMultiPeriodModelHook {
+export interface UseMultiPeriodModelProps {
+  name: string;
+  model: Signal<DecoratedMultiPeriodStream>;
+}
+
+export function useMultiPeriodModel({ model, name }: UseMultiPeriodModelProps): UseMultiPeriodModelHook {
   const apiRequests = useContext(EndpointContext);
   const { appendMessage } = useMessages();
-  const modified = useComputed(() => model.value?.modified ?? false);
-  const lastModified = useComputed(() => model.value?.lastModified ?? 0);
+  const modified = useComputed<boolean>(() => model.value?.modified ?? false);
+  const lastModified = useComputed<number>(() => model.value?.lastModified ?? 0);
   const localErrors = useComputed<MpsModelValidationErrors>(() => validateModel({ model }));
   const serverErrors = useSignal<ServerMpsModelValidationErrors>({ errors: {}, lastChecked: Date.now() });
   const errors = useComputed<MpsModelValidationErrors>(() => ({
@@ -304,10 +309,10 @@ export function useMultiPeriodModel({ model, name }): UseMultiPeriodModelHook {
   const addPeriod = useCallback(() => addPeriodToModel({ model }), [model]);
 
   const removePeriod = useCallback(
-    (pk) => {
+    (pk: number | string) => {
       model.value = {
         ...model.value,
-        periods: model.value.periods.filter((prd) => prd.pk !== pk),
+        periods: model.value.periods.filter((prd: MpsPeriod) => prd.pk !== pk),
         modified: true,
         lastModified: Date.now(),
       };

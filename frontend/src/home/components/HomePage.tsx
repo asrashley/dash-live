@@ -1,4 +1,4 @@
-import { useCallback, useState } from "preact/hooks";
+import { useCallback } from "preact/hooks";
 import { type ReadonlySignal, useComputed, useSignal } from "@preact/signals";
 
 import { routeMap } from "@dashlive/routemap";
