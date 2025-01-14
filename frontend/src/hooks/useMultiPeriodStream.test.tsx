@@ -187,6 +187,31 @@ describe("useMultiPeriodStream hook", () => {
     });
   });
 
+  test("can remove a period", async () => {
+    const { result } = renderHookWithProviders(
+      () =>
+        useMultiPeriodStream({
+          name: "demo",
+          newStream: false,
+        }),
+      { Wrapper }
+    );
+    await act(async () => {
+      await getMultiPeriodStreamPromise;
+    });
+    const { removePeriod, modified } = result;
+    removePeriod(expectedModel.periods[0].pk);
+    expect(modified.value).toEqual(true);
+    expect(result.model.value).toEqual({
+      ...expectedModel,
+      lastModified: expect.any(Number),
+      modified: true,
+      periods: [
+        expectedModel.periods[1],
+      ],
+    });
+  });
+
   test("can modify a track within a period", async () => {
     const { result } = renderHookWithProviders(
       () =>
