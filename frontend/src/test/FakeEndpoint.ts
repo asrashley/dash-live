@@ -86,8 +86,14 @@ export class FakeEndpoint {
     }
 
     async fetchFixtureJson<T>(filename: string): Promise<T> {
-        const text = await readFile(path.join(__dirname, 'fixtures', filename), { encoding: 'utf-8'});
+        const text = await this.fetchFixtureText(filename);
         return JSON.parse(text) as T;
+    }
+
+    async fetchFixtureText(filename: string): Promise<string> {
+        const fullName = path.join(__dirname, 'fixtures', filename);
+        log.trace(`readFile "${fullName}"`);
+        return await readFile(fullName, { encoding: 'utf-8' });
     }
 
     private setHandler(method: string, path: RegExp | string, handler: HttpRequestHandler) {
@@ -163,6 +169,18 @@ export function jsonResponse(payload: object | string, status: number = 200): Ro
         headers: {
             'Cache-Control': 'max-age = 0, no_cache, no_store, must_revalidate',
             'Content-Type': 'application/json',
+            'Content-Length': contentLength,
+        },
+    };
+}
+
+export function dataResponse(body: string, contentType: string, status: number = 200): RouteResponse {
+    const contentLength = status !== 204 ? body.length : 0;
+    return {
+        body,
+        status,
+        headers: {
+            'Content-Type': contentType,
             'Content-Length': contentLength,
         },
     };
