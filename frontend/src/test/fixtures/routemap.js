@@ -209,18 +209,6 @@ export const routeMap = {
     route: "/play/mps/:mode/:mps_name/:manifest/index.html",
     url: ({mode, mps_name, manifest}) => `/play/mps/${mode}/${mps_name}/${manifest}/index.html`,
   },
-  viewManifest: {
-    title: "DASH manifest",
-    re: /\/view\/dash\/(?<mode>(live|vod|odvod))\/(?<stream>\w+)\/(?<manifest>\w+)/,
-    route: "/view/dash/:mode/:stream/:manifest",
-    url: ({mode, stream, manifest}) => `/view/dash/${mode}/${stream}/${manifest}`,
-  },
-  viewMpsManifest: {
-    title: "DASH manifest",
-    re: /\/view\/mps\/(?<mode>(live|vod))\/(?<mps_name>\w+)\/(?<manifest>\w+)/,
-    route: "/view/mps/:mode/:mps_name/:manifest",
-    url: ({mode, mps_name, manifest}) => `/view/mps/${mode}/${mps_name}/${manifest}`,
-  },
   cgiOptions: {
     title: "Manifest and Media CGI options",
     re: /\/options/,

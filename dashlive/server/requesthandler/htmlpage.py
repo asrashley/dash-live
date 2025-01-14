@@ -352,60 +352,6 @@ class VideoPlayer(HTMLHandlerBase):
         return flask.render_template("video.html", **context)
 
 
-class ViewManifest(HTMLHandlerBase):
-    """
-    Responds with an HTML page that shows the contents of a manifest
-    """
-
-    decorators = [uses_stream]
-
-    def get(self, mode: str, stream: str, manifest: str) -> flask.Response:
-        context = self.create_context(title=current_stream.title)
-        try:
-            options = self.calculate_options(mode, flask.request.args)
-        except ValueError as err:
-            logging.error("Invalid CGI parameters: %s", err)
-            return flask.make_response("Invalid CGI parameters", 400)
-        mpd_url = flask.url_for(
-            "dash-mpd-v3", stream=stream, manifest=manifest, mode=mode
-        )
-        options.remove_unused_parameters(mode, use=~OptionUsage.HTML)
-        mpd_url += options.generate_cgi_parameters_string()
-        context.update(
-            {
-                "mpd_url": mpd_url,
-            }
-        )
-        return flask.render_template("manifest.html", **context)
-
-
-class ViewMpsManifest(HTMLHandlerBase):
-    """
-    Responds with an HTML page that shows the contents of a multi-period manifest
-    """
-
-    decorators = [uses_multi_period_stream]
-
-    def get(self, mode: str, mps_name: str, manifest: str) -> flask.Response:
-        context = self.create_context(title=current_mps.title)
-        try:
-            options = self.calculate_options(mode, flask.request.args)
-        except ValueError as err:
-            logging.error("Invalid CGI parameters: %s", err)
-            return flask.make_response("Invalid CGI parameters", 400)
-        mpd_url = flask.url_for(
-            "mps-manifest", mps_name=mps_name, manifest=manifest, mode=mode
-        )
-        options.remove_unused_parameters(mode, use=~OptionUsage.HTML)
-        mpd_url += options.generate_cgi_parameters_string()
-        context.update(
-            {
-                "mpd_url": mpd_url,
-            }
-        )
-        return flask.render_template("manifest.html", **context)
-
-
 class DashValidator(HTMLHandlerBase):
     """
     Responds with an HTML page that allows a manifest to be validated

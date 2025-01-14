@@ -2,7 +2,7 @@ import { Temporal } from "temporal-polyfill";
 
 import log from 'loglevel';
 import { routeMap } from './fixtures/routemap.js';
-import { FakeEndpoint, HttpRequestHandler, jsonResponse, notFound, ServerRouteProps } from './FakeEndpoint'
+import { dataResponse, FakeEndpoint, HttpRequestHandler, jsonResponse, notFound, ServerRouteProps } from './FakeEndpoint'
 import { ContentRolesMap } from '../types/ContentRolesMap';
 import { CsrfTokenCollection } from '../types/CsrfTokenCollection';
 import { JwtToken } from '../types/JwtToken';
@@ -132,11 +132,13 @@ export class MockDashServer {
             .delete(routeMap.login.url(), protectedRoute(this.logoutUser))
             .get(routeMap.refreshCsrfTokens.url(), protectedRoute(this.refreshCsrfTokens))
             .get(routeMap.refreshAccessToken.url(), this.refreshAccessToken)
-            .get(routeMap.listManifests.url(), this.returnSimpleFixture)
+            .get(routeMap.dashMpdV3.re, this.returnManifestFixture)
+            .get(routeMap.mpsManifest.re, this.returnManifestFixture)
+            .get(routeMap.listManifests.url(), this.returnJsonFixture)
             .get(routeMap.contentRoles.url(), this.getContentRoles)
-            .get(routeMap.listStreams.url(), this.returnSimpleFixture)
+            .get(routeMap.listStreams.url(), this.returnJsonFixture)
             .get(routeMap.listMps.url(), protectedRoute(this.getAllMpStreams))
-            .get(routeMap.editMps.re, protectedRoute(this.returnSimpleFixture))
+            .get(routeMap.editMps.re, protectedRoute(this.returnJsonFixture))
             .put(routeMap.addMps.url(), protectedRoute(this.addMultiPeriodStream))
             .post(routeMap.editMps.re, protectedRoute(this.editMultiPeriodStream))
             .delete(routeMap.editMps.re, protectedRoute(this.deleteMultiPeriodStream))
@@ -285,10 +287,17 @@ export class MockDashServer {
         });
     };
 
-    private returnSimpleFixture = async (props: ServerRouteProps) => {
+    private returnJsonFixture = async (props: ServerRouteProps) => {
         const url = new URL(props.url, document.location.href);
+        log.trace(`Loading fixture for URL ${url}`);
         const filename = url.pathname.replace("/api", "");
         return jsonResponse(await this.endpoint.fetchFixtureJson<object>(`${filename}.json`));
+    };
+
+    private returnManifestFixture = async ({url}: ServerRouteProps) => {
+        const fullUrl = new URL(url, document.location.href);
+        log.trace(`Loading fixture for URL ${url}`);
+        return dataResponse(await this.endpoint.fetchFixtureText(fullUrl.pathname), "application/dash+xml");
     };
 
     private getContentRoles = async () => {

@@ -249,14 +249,6 @@ routes: dict[str, Route] = {
         r'/play/mps/<regex("(live|vod)"):mode>/<mps_name>/<manifest>/index.html',
         handler='htmlpage.VideoPlayer',
         title='DASH test stream player'),
-    "view-manifest": Route(
-        r'/view/dash/<regex("(live|vod|odvod)"):mode>/<stream>/<manifest>',
-        handler='htmlpage.ViewManifest',
-        title='DASH manifest'),
-    "view-mps-manifest": Route(
-        r'/view/mps/<regex("(live|vod)"):mode>/<mps_name>/<manifest>',
-        handler='htmlpage.ViewMpsManifest',
-        title='DASH manifest'),
     "cgi-options": Route(
         r'/options',
         handler='htmlpage.CgiOptionsPage',

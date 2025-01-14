@@ -48,11 +48,11 @@ exports[`HomePage > matches snapshot 1`] = `
         >
           <a
             class="btn btn-lg btn-primary"
-            href="http://localhost:3000/view/dash/vod/bbb/hand_made.mpd"
+            href="#"
           >
             <span
-              aria-label="search icon"
-              class="bi icon bi-search pe-2"
+              aria-label="eyeglasses icon"
+              class="bi icon bi-eyeglasses pe-2"
               role="img"
             />
             View Manifest

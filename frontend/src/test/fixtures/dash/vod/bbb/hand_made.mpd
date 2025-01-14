@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MPD xmlns="urn:mpeg:dash:schema:mpd:2011"
+     xmlns:cenc="urn:mpeg:cenc:2013"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="urn:mpeg:dash:schema:mpd:2011 DASH-MPD.xsd"
+     publishTime="2025-01-14T07:37:34Z"
+     id="bbb"
+    type="static"
+    mediaPresentationDuration="PT9M51.458S"
+  profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014"
+  minBufferTime="PT1.5S"
+>
+ <ProgramInformation>
+  <Title>Big Buck Bunny </Title>
+ </ProgramInformation>
+ <Location>http://localhost:8765/dash/vod/bbb/hand_made.mpd</Location>
+   <Period start="PT0S" id="p0"
+   ><BaseURL>http://localhost:8765/dash/vod/bbb/</BaseURL>
+     
+       <AdaptationSet
+         id="1"
+         mimeType="video/mp4"
+         contentType="video"
+         segmentAlignment="true"
+         startWithSAP="1"
+           maxWidth="1920"
+           maxHeight="1080"
+           maxFrameRate="24"
+           par="16:9"
+         >
+         
+  
+    
+<InbandEventStream
+ schemeIdUri="urn:dash-live:pingpong:2022"
+ timescale="100"
+ value="0"
+ />
+
+  
+
+         
+         <ContentComponent
+             id="1"
+             contentType="video" />
+               <SegmentTemplate
+                   startNumber="1"
+                   timescale="240"
+                   duration="960"
+                   initialization="$RepresentationID$/init.m4v"
+                   media="$RepresentationID$/$Number$.m4v">
+               </SegmentTemplate>
+           <Representation
+               id="bbb_v7"
+               mimeType="video/mp4"
+               codecs="avc3.640028"
+                 width="1920"
+                 height="1080"
+               startWithSAP="1"
+               bandwidth="189666"
+           >
+           </Representation>
+           <Representation
+               id="bbb_v6"
+               mimeType="video/mp4"
+               codecs="avc3.640028"
+                 width="1920"
+                 height="1080"
+               startWithSAP="1"
+               bandwidth="372594"
+           >
+           </Representation>
+           <Representation
+               id="bbb_v5"
+               mimeType="video/mp4"
+               codecs="avc3.640028"
+                 width="1920"
+                 height="1080"
+               startWithSAP="1"
+               bandwidth="572786"
+           >
+           </Representation>
+           <Representation
+               id="bbb_v4"
+               mimeType="video/mp4"
+               codecs="avc3.640028"
+                 width="1920"
+                 height="1080"
+               startWithSAP="1"
+               bandwidth="659759"
+           >
+           </Representation>
+           <Representation
+               id="bbb_v3"
+               mimeType="video/mp4"
+               codecs="avc3.640028"
+                 width="1920"
+                 height="1080"
+               startWithSAP="1"
+               bandwidth="1027100"
+           >
+           </Representation>
+           <Representation
+               id="bbb_v2"
+               mimeType="video/mp4"
+               codecs="avc3.640028"
+                 width="1920"
+                 height="1080"
+               startWithSAP="1"
+               bandwidth="1807672"
+           >
+           </Representation>
+           <Representation
+               id="bbb_v1"
+               mimeType="video/mp4"
+               codecs="avc3.640028"
+                 width="1920"
+                 height="1080"
+               startWithSAP="1"
+               bandwidth="2953886"
+           >
+           </Representation> 
+       </AdaptationSet>
+       <AdaptationSet
+         id="2"
+         mimeType="audio/mp4"
+         contentType="audio"
+         segmentAlignment="true"
+         startWithSAP=""
+         >
+         
+         
+         <ContentComponent
+             id="2"
+             contentType="audio" />
+           <Role
+             schemeIdUri="urn:mpeg:dash:role:2011"
+             value="main"
+           />
+         <AudioChannelConfiguration
+             schemeIdUri="urn:mpeg:dash:23003:3:audio_channel_configuration:2011"
+             value="2" />
+               <SegmentTemplate
+                   startNumber="1"
+                   timescale="44100"
+                   duration="176399"
+                   initialization="$RepresentationID$/init.m4a"
+                   media="$RepresentationID$/$Number$.m4a">
+               </SegmentTemplate>
+           <Representation
+               id="bbb_a1"
+               mimeType="audio/mp4"
+               codecs="mp4a.40.2"
+                   audioSamplingRate="44100"
+               startWithSAP="1"
+               bandwidth="98247"
+           >
+           </Representation> 
+       </AdaptationSet> 
+   </Period> 
+</MPD>
