@@ -6,11 +6,16 @@ import { CombinedStream } from "../../hooks/useCombinedStreams";
 import { InputFormData } from "../../types/InputFormData";
 import { FormGroupsProps } from "../../types/FormGroupsProps";
 
-const keyName = "dashlive.homepage.options";
+export const previousOptionsKeyName = "dashlive.homepage.options";
 
 function getDefaultOptions(): InputFormData {
-  const lsKey = localStorage.getItem(keyName);
-  const previousOptions = lsKey ? JSON.parse(lsKey) : {};
+  const lsKey = localStorage.getItem(previousOptionsKeyName);
+  let previousOptions: Partial<InputFormData> = {};
+  try {
+    previousOptions = lsKey ? JSON.parse(lsKey) : {};
+  } catch (err) {
+    console.warn(`Failed to parse ${previousOptionsKeyName}: ${err}`);
+  }
   return {
     ...defaultCgiOptions,
     manifest: "hand_made.mpd",
@@ -111,14 +116,14 @@ export function useStreamOptions({ streamNames, streamsMap }: UseStreamOptionsPr
           ([key, value]) => defaultCgiOptions[key] !== value
         )
       );
-      localStorage.setItem(keyName, JSON.stringify(params));
+      localStorage.setItem(previousOptionsKeyName, JSON.stringify(params));
     },
     [data, mode, streamsMap]
   );
 
   const resetAllValues = useCallback(() => {
+    localStorage.removeItem(previousOptionsKeyName);
     data.value = { ...getDefaultOptions() };
-    localStorage.removeItem(keyName);
   }, [data]);
 
   return {
