@@ -15,6 +15,7 @@ import { useMultiPeriodStream, blankModel } from "./useMultiPeriodStream";
 import { ApiRequests, EndpointContext } from '../endpoints';
 import { mock } from "vitest-mock-extended";
 import { MultiPeriodStreamJson } from "../types/MultiPeriodStream";
+import { ModifyMultiPeriodStreamJson } from "../types/ModifyMultiPeriodStreamJson";
 
 const expectedModel = {
   name: "demo",
@@ -230,5 +231,41 @@ describe("useMultiPeriodStream hook", () => {
       lastModified: expect.any(Number),
       periods,
     });
+  });
+
+  test("can save changes", async () => {
+    const { result } = renderHookWithProviders(
+      () =>
+        useMultiPeriodStream({
+          name: "demo",
+          newStream: false,
+        }),
+      { Wrapper }
+    );
+    await act(async () => {
+      await getMultiPeriodStreamPromise;
+    });
+    const { modifyPeriod, setFields, saveChanges } = result;
+    act(() => {
+      modifyPeriod({
+        periodPk: 2,
+        track: {
+          encrypted: true,
+          role: "alternate",
+          track_id: 2,
+        },
+      });
+      setFields({title: 'a new title'});
+    });
+    const model = structuredClone(result.model.value);
+    const modifyMps: ModifyMultiPeriodStreamJson = {
+      csrfTokens: undefined,
+      errors: [],
+      success: true,
+      model,
+    };
+    apiRequests.modifyMultiPeriodStream.mockResolvedValueOnce(modifyMps);
+    const controller = new AbortController();
+    await expect(saveChanges({signal: controller.signal})).resolves.toEqual(true);
   });
 });
