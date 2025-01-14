@@ -327,7 +327,7 @@ export function useMultiPeriodModel({ model, name }): UseMultiPeriodModelHook {
   );
 
   const setFields = useCallback(
-    (props) => {
+    (props: Partial<MultiPeriodStream>) => {
       model.value = {
         ...model.value,
         ...props,
@@ -339,7 +339,7 @@ export function useMultiPeriodModel({ model, name }): UseMultiPeriodModelHook {
   );
 
   const saveChanges = useCallback(
-    ({ signal }) =>
+    ({ signal }: { signal: AbortSignal}) =>
       saveChangesToModel({
         apiRequests,
         model,
