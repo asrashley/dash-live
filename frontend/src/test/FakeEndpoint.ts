@@ -65,9 +65,7 @@ export class FakeEndpoint {
     shutdown() {
         this.isShutdown = true;
         this.serverStatus = 503;
-        for (const [url, { reject }] of Object.entries(this.pendingPromises)) {
-            reject(new Error(url));
-        }
+        Object.values(this.pendingPromises).forEach(({reject}) => reject(new Error("shutdown")));
         this.pendingPromises = new Map();
     }
 
@@ -107,48 +105,45 @@ export class FakeEndpoint {
     }
 
     private routeHandler = async (props: CallLog) => {
-        const {url, options} = props;
+        const { url, options } = props;
         const { body, method } = options;
         const fullUrl = new URL(url, document.location.href);
         const key = `${method}.${fullUrl.pathname}`;
 
         log.trace(`routeHandler ${key}`);
-        if (this.serverStatus !== null) {
-            return this.serverStatus;
-        }
-        let handler: HttpRequestHandler | undefined = this.pathHandlers.get(key);
-        let match: RegExpExecArray | null = null;
-        if (handler === undefined) {
-            log.debug(`check paramHandlers ${key}`);
-            for (const rgx of this.paramHandlers.filter(ph => ph.method === method)) {
-                match = rgx.re.exec(fullUrl.pathname);
-                if (match) {
-                    handler = rgx.handler;
-                    break;
-                }
-            }
-        }
-        if (!handler) {
-            log.trace(`No handler found ${fullUrl.pathname}`);
-            return notFound();
-        }
+        let result: RouteResponse = notFound();
         const srp: ServerRouteProps = {
             ...props,
             context: {},
         };
-        if (match) {
-            srp.routeParams = match.groups;
-        }
         if (body) {
             srp.jsonParam = typeof body === 'string' ? JSON.parse(body as string) : body;
         }
-        let result = await handler(srp);
+        if (this.serverStatus !== null) {
+            result = this.serverStatus;
+        } else {
+            let handler: HttpRequestHandler | undefined = this.pathHandlers.get(key);
+            if (handler === undefined) {
+                log.trace(`check paramHandlers key="${key}"`);
+                for (const rgx of this.paramHandlers.filter(ph => ph.method === method)) {
+                    const match = rgx.re.exec(fullUrl.pathname);
+                    if (match) {
+                        log.trace(`Found handler "${rgx.re}"`);
+                        srp.routeParams = match.groups;
+                        handler = rgx.handler;
+                        break;
+                    }
+                }
+            }
+            if (handler) {
+                result = await handler(srp);
+            } else {
+                log.trace(`No handler found ${fullUrl.pathname}`);
+            }
+        }
         const modFn = this.responseModifiers.get(key);
         if (modFn) {
             result = await modFn(srp, result);
-        }
-        if (this.serverStatus !== null) {
-            return this.serverStatus;
         }
         const pending = this.pendingPromises.get(key);
         if (pending) {
