@@ -53,12 +53,21 @@ export default function HomePage() {
   const combinedStreams = useCombinedStreams();
   const streamOptionsHook = useStreamOptions(combinedStreams);
   const viewing = useSignal<boolean>(false);
+  const editUrl = useSignal<URL>();
   const { stream, mode, manifest, nonDefaultOptions, manifestOptions } = streamOptionsHook;
-  const manifestUrl = useComputed<URL>(() =>
-    generateUrl(routeMap.dashMpdV3.url, routeMap.mpsManifest.url, mode, manifest, stream, manifestOptions));
+  const genManifest = useComputed<URL>(() => generateUrl(routeMap.dashMpdV3.url, routeMap.mpsManifest.url,
+     mode, manifest, stream, manifestOptions));
+  const manifestUrl = useComputed<URL>(() => viewing.value ? editUrl.value : genManifest.value);
   const manifestBaseName = useComputed<string>(() => manifest.value.slice(0, -4));
   const videoUrl = useComputed<URL>(() =>
     generateUrl(routeMap.video.url, routeMap.videoMps.url, mode, manifestBaseName, stream, nonDefaultOptions));
+  const setViewing = useCallback((flag: boolean) => {
+    viewing.value = flag;
+    editUrl.value = new URL(genManifest.value.href);
+  }, [editUrl, genManifest, viewing]);
+  const setManifestValue = useCallback((url: string) => {
+    editUrl.value = new URL(url, document.location.href);
+  }, [editUrl]);
 
   if (combinedStreams.loaded.value === false) {
     return <LoadingSpinner />;
@@ -69,10 +78,10 @@ export default function HomePage() {
   return <UseCombinedStreams.Provider value={combinedStreams}>
     <StreamOptionsContext.Provider value={streamOptionsHook}>
       <div>
-        <ManifestUrl manifestUrl={manifestUrl} />
+        <ManifestUrl manifestUrl={manifestUrl} editable={viewing} setValue={setManifestValue} />
         <div id="with-modules">
-          <ButtonRow videoUrl={videoUrl} stream={stream} viewing={viewing} />
-          {viewing.value ? <ViewManifest url={manifestUrl} /> : <StreamOptionsForm />}
+          <ButtonRow videoUrl={videoUrl} stream={stream} viewing={viewing} setViewing={setViewing} />
+          {viewing.value ? <ViewManifest manifestUrl={manifestUrl} /> : <StreamOptionsForm />}
         </div>
         <CgiInfoPanel />
       </div>
