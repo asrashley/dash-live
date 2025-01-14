@@ -10,6 +10,8 @@ import { AllStreamsJson } from "../../types/AllStreams";
 import HomePage from "./HomePage";
 import { FakeEndpoint } from "../../test/FakeEndpoint";
 import { MockDashServer } from "../../test/MockServer";
+import { routeMap } from "@dashlive/routemap";
+import { previousOptionsKeyName } from "../hooks/useStreamOptions";
 
 describe("HomePage", () => {
   const apiRequests = mock<ApiRequests>();
@@ -52,6 +54,7 @@ describe("HomePage", () => {
     endpoint.shutdown();
     fetchMock.mockReset();
     vi.clearAllMocks();
+    localStorage.clear();
   });
 
   test("matches snapshot", async () => {
@@ -66,6 +69,52 @@ describe("HomePage", () => {
     await findByText("Play Big Buck Bunny");
     await findByText("/dash/vod/bbb/hand_made.mpd", { exact: false });
     expect(asFragment()).toMatchSnapshot();
+  });
+
+  test('can select a multi-period stream', async () => {
+    const user = userEvent.setup();
+    const { getBySelector, findByText } = renderWithProviders(
+      <EndpointContext.Provider value={apiRequests}>
+        <HomePage />
+      </EndpointContext.Provider>
+    );
+    await Promise.all([getManifests, getStdStreams, getMpsStreams]);
+    const streamSelect = getBySelector('#model-stream') as HTMLSelectElement;
+    await user.selectOptions(streamSelect, ["first title"]);
+    await findByText("Play first title");
+    const playBtn = getBySelector('.play-button > .btn') as HTMLAnchorElement;
+    const playUrl = new URL(routeMap.videoMps.url({
+      mode: 'vod',
+      mps_name: 'demo',
+      manifest: 'hand_made',
+    }), document.location.href);
+    expect(playBtn.getAttribute('href')).toEqual(playUrl.href);
+    const anchor = getBySelector('#dashurl') as HTMLAnchorElement;
+    const mpdUrl = new URL(routeMap.mpsManifest.url({
+      mode: 'vod',
+      mps_name: 'demo',
+      manifest: 'hand_made.mpd',
+    }), document.location.href);
+    expect(anchor.getAttribute('href')).toEqual(mpdUrl.href);
+  });
+
+  test("can reset previous options", async () => {
+    const user = userEvent.setup();
+    localStorage.setItem(previousOptionsKeyName, JSON.stringify({
+      manifest: "hand_made.mpd",
+      mode: "vod",
+      stream: "mps.demo"
+    }));
+    const { getBySelector, findByText } = renderWithProviders(
+      <EndpointContext.Provider value={apiRequests}>
+        <HomePage />
+      </EndpointContext.Provider>
+    );
+    await Promise.all([getManifests, getStdStreams, getMpsStreams]);
+    await findByText("Play first title");
+    await user.click(getBySelector('.reset-all-button > .btn'));
+    expect(localStorage.getItem(previousOptionsKeyName)).toBeNull();
+    await findByText("Play Big Buck Bunny");
   });
 
   test("shows message if there are no streams", async () => {
