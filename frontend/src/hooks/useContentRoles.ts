@@ -1,14 +1,14 @@
 import { createContext } from "preact";
 import { useContext, useEffect } from "preact/hooks";
-import { Signal, useSignal } from "@preact/signals";
+import { type ReadonlySignal, useSignal } from "@preact/signals";
 
 import { EndpointContext } from "../endpoints";
 import { ContentRolesMap } from "../types/ContentRolesMap";
 
 export interface UseContentRolesHook {
-  contentRoles: Signal<ContentRolesMap>;
-  loaded: Signal<boolean>;
-  error: Signal<string | null>;
+  contentRoles: ReadonlySignal<ContentRolesMap>;
+  loaded: ReadonlySignal<boolean>;
+  error: ReadonlySignal<string | null>;
 }
 
 export const ContentRolesContext = createContext<UseContentRolesHook>(null);
@@ -32,19 +32,22 @@ export function useContentRoles(): UseContentRolesHook {
           if (!signal.aborted) {
             contentRoles.value = data;
             error.value = null;
+            loaded.value = true;
           }
         } catch (err) {
           if (!signal.aborted) {
-            console.error(err);
-            error.value = `${err}`;
+            error.value = `Failed to fetch content roles - ${err}`;
           }
         }
       }
     };
+
     fetchContentRolesIfRequired();
 
     return () => {
-      controller.abort();
+      if (!loaded.value) {
+        controller.abort();
+      }
     };
   }, [apiRequests, error, loaded, contentRoles]);
 
