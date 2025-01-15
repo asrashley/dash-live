@@ -1,0 +1,46 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PeriodOrder component > matches snapshot 1`] = `
+<DocumentFragment>
+  <div
+    class="dropdown"
+  >
+    <a
+      aria-expanded="false"
+      class=" dropdown-toggle"
+      href="#"
+      role="button"
+    >
+      <span
+        aria-label="three-dots icon"
+        class="bi icon bi-three-dots "
+        role="img"
+      />
+    </a>
+    <ul
+      class="dropdown-menu "
+    >
+      <li
+        data-testid="ddi_0"
+      >
+        <a
+          class="dropdown-item"
+          href="#"
+        >
+          Add another Period
+        </a>
+      </li>
+      <li
+        data-testid="ddi_1"
+      >
+        <a
+          class="dropdown-item"
+          href="#"
+        >
+          Delete Period
+        </a>
+      </li>
+    </ul>
+  </div>
+</DocumentFragment>
+`;

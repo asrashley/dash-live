@@ -3,8 +3,6 @@ import { useCallback, useContext } from "preact/hooks";
 import { useComputed } from "@preact/signals";
 
 import { Alert } from '../../components/Alert';
-import { DropDownMenu } from "../../components/DropDownMenu";
-import { Icon } from '../../components/Icon';
 import { RenderItemProps, SortableList } from '../../components/SortableList';
 import { TextInput } from '../../components/TextInput';
 import { TimeDeltaInput }  from '../../components/TimeDeltaInput';
@@ -12,31 +10,12 @@ import { TimeDeltaInput }  from '../../components/TimeDeltaInput';
 import { AllStreamsContext } from '../../hooks/useAllStreams';
 import { MpsPeriodValidationErrors, MultiPeriodModelContext } from '../../hooks/useMultiPeriodStream';
 import { AppStateContext } from "../../appState";
-import { MenuItemType } from "../../types/MenuItemType";
 import { MpsPeriod } from "../../types/MpsPeriod";
 import { MpsTrack } from "../../types/MpsTrack";
 import { DecoratedStream } from "../../types/DecoratedStream";
+import { PeriodOrder } from "./PeriodOrder";
 
-interface PeriodOrderProps {
-  addPeriod: (ev: JSX.TargetedEvent<HTMLAnchorElement>) => void;
-  deletePeriod: (ev: JSX.TargetedEvent<HTMLAnchorElement>) => void;
-}
-function PeriodOrder({ addPeriod, deletePeriod }: PeriodOrderProps) {
-  const menu: MenuItemType[] = [
-    {
-      title: "Add another Period",
-      onClick: addPeriod,
-    },
-    {
-      title: "Delete Period",
-      onClick: deletePeriod,
-    },
-  ];
 
-  return<DropDownMenu linkClass="" menu={menu}>
-    <Icon name="three-dots" />
-  </DropDownMenu>;
-}
 interface StreamSelectProps {
   value?: DecoratedStream,
   onChange: (props: {name: string, value: number}) => void;
