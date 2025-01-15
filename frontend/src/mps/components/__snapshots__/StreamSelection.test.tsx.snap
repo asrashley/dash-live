@@ -1,0 +1,27 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`StreamSelection component > matches snapshot 1`] = `
+<DocumentFragment>
+  <select
+    class="form-select is-valid"
+    name="sel"
+    required=""
+  >
+    <option
+      value=""
+    >
+      --Select a stream--
+    </option>
+    <option
+      value="1"
+    >
+      Big Buck Bunny
+    </option>
+    <option
+      value="2"
+    >
+      Tears of Steel
+    </option>
+  </select>
+</DocumentFragment>
+`;

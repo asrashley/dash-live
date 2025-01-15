@@ -12,48 +12,8 @@ import { MpsPeriodValidationErrors, MultiPeriodModelContext } from '../../hooks/
 import { AppStateContext } from "../../appState";
 import { MpsPeriod } from "../../types/MpsPeriod";
 import { MpsTrack } from "../../types/MpsTrack";
-import { DecoratedStream } from "../../types/DecoratedStream";
 import { PeriodOrder } from "./PeriodOrder";
-
-
-interface StreamSelectProps {
-  value?: DecoratedStream,
-  onChange: (props: {name: string, value: number}) => void;
-  name: string;
-  error?: string;
-  required?: boolean;
- }
-function StreamSelect({ value, onChange, name, error, required }: StreamSelectProps) {
-  const { allStreams } = useContext(AllStreamsContext);
-  const streams = useComputed(() => allStreams.value ?? []);
-  const validationClass = error
-    ? " is-invalid"
-    : value
-    ? " is-valid"
-    : "";
-  const className = `form-select${validationClass}`;
-
-  const changeHandler = useCallback(
-    (ev) => {
-      onChange({
-        name,
-        value: parseInt(ev.target.value, 10),
-      });
-    },
-    [onChange, name]
-  );
-
-  return <select
-    className={className}
-    value={value?.pk}
-    name={name}
-    onChange={changeHandler}
-    required={required}
-  >
-    <option value="">--Select a stream--</option>
-    {streams.value.map((s) => <option key={s.pk} value={s.pk}>{s.title}</option>)}
-  </select>;
-}
+import { StreamSelection } from "./StreamSelection";
 
 const rowColours = ["bg-secondary-subtle", "bg-primary-subtle"];
 
@@ -261,7 +221,7 @@ function PeriodRow({ className = "", index, item: period }: PeriodRowProps) {
       />
     </div>
     <div class="col period-stream">
-      <StreamSelect
+      <StreamSelection
         name={`stream_${pk}`}
         value={currentStream}
         onChange={setStream}
