@@ -207,8 +207,8 @@ function PeriodRow({ className = "", index, item: period }: PeriodRowProps) {
     MultiPeriodModelContext
   );
   const prdErrors = useComputed<MpsPeriodValidationErrors>(() => errors?.[period?.pid] ?? {});
-  const currentStream = period ? streamsMap.value.get(`${period.stream}`) : undefined;
-  const { pid, pk, start, duration } = period ?? {};
+  const currentStream = streamsMap.value.get(`${period.stream}`);
+  const { pid, pk, start, duration } = period;
 
   const selectTracks = useCallback(() => {
     if (currentStream === undefined) {
@@ -346,8 +346,8 @@ export function PeriodsTable() {
   });
 
   const setPeriodOrder = useCallback(
-    (items) => {
-      const pks = items.map((prd) => prd.pk);
+    (items: MpsPeriod[]) => {
+      const pks = items.map((prd: MpsPeriod) => prd.pk);
       setPeriodOrdering(pks);
     },
     [setPeriodOrdering]
@@ -362,12 +362,12 @@ export function PeriodsTable() {
   );
 
   const renderItem = useCallback(
-    (props: RenderItemProps) => {
-      const item = props.item as PeriodRowProps;
+    ({item, ...props}: RenderItemProps) => {
+      const row = item as MpsPeriod;
       if (!user.value.permissions.media) {
-        return <GuestPeriodRow {...item} />;
+        return <GuestPeriodRow {...props} item={row} />;
       }
-      return <PeriodRow {...item} />;
+      return <PeriodRow {...props} item={row} />;
     },
     [user.value.permissions.media]
   );
