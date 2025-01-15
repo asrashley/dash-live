@@ -171,7 +171,7 @@ exports[`EditStreamPage component > allows an existing stream to be edited 1`] =
                 </div>
                 <ul>
                   <li
-                    class="row mt-1 p-1 undefined "
+                    class="row mt-1 p-1 bg-secondary-subtle "
                   >
                     <div
                       class="col period-ordering"
@@ -222,8 +222,8 @@ exports[`EditStreamPage component > allows an existing stream to be edited 1`] =
                     >
                       <input
                         class="form-control is-valid"
-                        id="field-pid_undefined"
-                        name="pid_undefined"
+                        id="field-pid_2"
+                        name="pid_2"
                         required=""
                         type="text"
                       />
@@ -232,8 +232,8 @@ exports[`EditStreamPage component > allows an existing stream to be edited 1`] =
                       class="col period-stream"
                     >
                       <select
-                        class="form-select"
-                        name="stream_undefined"
+                        class="form-select is-valid"
+                        name="stream_2"
                         required=""
                       >
                         <option
@@ -259,7 +259,7 @@ exports[`EditStreamPage component > allows an existing stream to be edited 1`] =
                       <input
                         class="form-control is-valid"
                         min="00:00:00"
-                        name="start_undefined"
+                        name="start_2"
                         step="1"
                         type="time"
                       />
@@ -270,17 +270,24 @@ exports[`EditStreamPage component > allows an existing stream to be edited 1`] =
                       <input
                         class="form-control is-valid"
                         min="00:00:01"
-                        name="duration_undefined"
+                        name="duration_2"
                         step="1"
                         type="time"
                       />
                     </div>
                     <div
                       class="col period-tracks"
-                    />
+                    >
+                      <a
+                        aria-disabled="false"
+                        class="btn btn-sm m-1 btn-success"
+                      >
+                        2/3 tracks
+                      </a>
+                    </div>
                   </li>
                   <li
-                    class="row mt-1 p-1 undefined "
+                    class="row mt-1 p-1 bg-primary-subtle "
                   >
                     <div
                       class="col period-ordering"
@@ -331,8 +338,8 @@ exports[`EditStreamPage component > allows an existing stream to be edited 1`] =
                     >
                       <input
                         class="form-control is-valid"
-                        id="field-pid_undefined"
-                        name="pid_undefined"
+                        id="field-pid_1"
+                        name="pid_1"
                         required=""
                         type="text"
                       />
@@ -341,8 +348,8 @@ exports[`EditStreamPage component > allows an existing stream to be edited 1`] =
                       class="col period-stream"
                     >
                       <select
-                        class="form-select"
-                        name="stream_undefined"
+                        class="form-select is-valid"
+                        name="stream_1"
                         required=""
                       >
                         <option
@@ -368,7 +375,7 @@ exports[`EditStreamPage component > allows an existing stream to be edited 1`] =
                       <input
                         class="form-control is-valid"
                         min="00:00:00"
-                        name="start_undefined"
+                        name="start_1"
                         step="1"
                         type="time"
                       />
@@ -379,14 +386,21 @@ exports[`EditStreamPage component > allows an existing stream to be edited 1`] =
                       <input
                         class="form-control is-valid"
                         min="00:00:01"
-                        name="duration_undefined"
+                        name="duration_1"
                         step="1"
                         type="time"
                       />
                     </div>
                     <div
                       class="col period-tracks"
-                    />
+                    >
+                      <a
+                        aria-disabled="false"
+                        class="btn btn-sm m-1 btn-success"
+                      >
+                        2/3 tracks
+                      </a>
+                    </div>
                   </li>
                 </ul>
                 <div
