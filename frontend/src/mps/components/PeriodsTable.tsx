@@ -11,47 +11,13 @@ import { AllStreamsContext } from '../../hooks/useAllStreams';
 import { MpsPeriodValidationErrors, MultiPeriodModelContext } from '../../hooks/useMultiPeriodStream';
 import { AppStateContext } from "../../appState";
 import { MpsPeriod } from "../../types/MpsPeriod";
-import { MpsTrack } from "../../types/MpsTrack";
 import { PeriodOrder } from "./PeriodOrder";
 import { StreamSelection } from "./StreamSelection";
+import { TrackSelectionButton } from "./TrackSelectionButton";
 
 const rowColours = ["bg-secondary-subtle", "bg-primary-subtle"];
 
 function doNothing() {
-}
-
-function tracksDescription(tracks: MpsTrack[], stream) {
-  const enabledCount = tracks.filter(tk => tk.enabled).length;
-  const numTracks = stream?.tracks.length ?? 0;
-  if (numTracks === 0) {
-    return "----";
-  }
-  if (tracks.length === 1 && numTracks === 1) {
-    return "1 track";
-  }
-  return `${enabledCount}/${numTracks} tracks`;
-}
-
-interface TrackSelectionButtonProps {
-  period?: MpsPeriod,
-  stream,
-  selectTracks: (ev: Event) => void;
-}
-function TrackSelectionButton({ period, stream, selectTracks }: TrackSelectionButtonProps) {
-  if (!period) {
-    return <div className="col period-tracks" />;
-  }
-  const { tracks } = period;
-  const description = tracksDescription(tracks, stream);
-  const hasActiveTracks = tracks.some(tk => tk.enabled);
-  const disabled = stream === undefined;
-  const className = `btn btn-sm m-1 ${hasActiveTracks ? "btn-success" : "btn-warning"}${disabled ? ' disabled': ''}`;
-
-  return <div className="col period-tracks">
-  <a className={className} onClick={selectTracks} aria-disabled={disabled}>
-    {description}
-  </a>
-</div>;
 }
 
 interface PeriodRowProps {
