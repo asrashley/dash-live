@@ -1,14 +1,14 @@
 import { createContext } from "preact";
 import { useEffect, useState, useContext, useCallback } from "preact/hooks";
-import { Signal, useSignal } from "@preact/signals";
+import { type ReadonlySignal, useSignal } from "@preact/signals";
 
 import { EndpointContext } from "../endpoints";
 import { AllMultiPeriodStreamsJson, MultiPeriodStreamSummary } from "../types/AllMultiPeriodStreams";
 
 export interface UseAllMultiPeriodStreamsHook {
-  error: Signal<string | null>;
-  streams: Signal<MultiPeriodStreamSummary[]>;
-  loaded: Signal<boolean>;
+  error: ReadonlySignal<string | null>;
+  streams: ReadonlySignal<MultiPeriodStreamSummary[]>;
+  loaded: ReadonlySignal<boolean>;
   sort: (field: string, ascending: boolean) => void;
   sortField: string;
   sortAscending: boolean;
@@ -16,8 +16,9 @@ export interface UseAllMultiPeriodStreamsHook {
 
 export const AllMultiPeriodStreamsContext = createContext<UseAllMultiPeriodStreamsHook>(null);
 
-function sortStreams(streams: Signal<MultiPeriodStreamSummary[]>, field: string, ascending: boolean) {
-  streams.value.sort((a, b) => {
+function sortStreams(streams: ReadonlySignal<MultiPeriodStreamSummary[]>, field: string, ascending: boolean): MultiPeriodStreamSummary[] {
+  const newOrder = [...streams.value];
+  newOrder.sort((a, b) => {
     const left = a[field];
     const right = b[field];
     if (left === right) {
@@ -28,6 +29,7 @@ function sortStreams(streams: Signal<MultiPeriodStreamSummary[]>, field: string,
     }
     return ascending ? 1 : -1;
   });
+  return newOrder;
 }
 
 export function useAllMultiPeriodStreams(): UseAllMultiPeriodStreamsHook {
@@ -35,14 +37,14 @@ export function useAllMultiPeriodStreams(): UseAllMultiPeriodStreamsHook {
   const streams = useSignal<MultiPeriodStreamSummary[]>([]);
   const loaded = useSignal<boolean>(false);
   const error = useSignal<string | null>(null);
-  const [sortField, setSortField] = useState("name");
-  const [sortAscending, setSortAscending] = useState(true);
+  const [sortField, setSortField] = useState<string>("name");
+  const [sortAscending, setSortAscending] = useState<boolean>(true);
 
   const sort = useCallback(
-    (field, ascending) => {
+    (field: string, ascending: boolean) => {
       setSortField(field);
       setSortAscending(ascending);
-      sortStreams(streams, field, ascending);
+      streams.value = sortStreams(streams, field, ascending);
     },
     [streams]
   );
@@ -63,8 +65,7 @@ export function useAllMultiPeriodStreams(): UseAllMultiPeriodStreamsHook {
           }
         } catch (err) {
           if (!signal.aborted) {
-            console.error(err);
-            error.value = `${err}`;
+            error.value = `Fetching multi-period streams list failed: ${err}`;
           }
         }
       }
