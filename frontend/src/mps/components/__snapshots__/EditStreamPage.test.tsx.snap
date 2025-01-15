@@ -278,12 +278,12 @@ exports[`EditStreamPage component > allows an existing stream to be edited 1`] =
                     <div
                       class="col period-tracks"
                     >
-                      <a
+                      <button
                         aria-disabled="false"
                         class="btn btn-sm m-1 btn-success"
                       >
                         2/3 tracks
-                      </a>
+                      </button>
                     </div>
                   </li>
                   <li
@@ -394,12 +394,12 @@ exports[`EditStreamPage component > allows an existing stream to be edited 1`] =
                     <div
                       class="col period-tracks"
                     >
-                      <a
+                      <button
                         aria-disabled="false"
                         class="btn btn-sm m-1 btn-success"
                       >
                         2/3 tracks
-                      </a>
+                      </button>
                     </div>
                   </li>
                 </ul>

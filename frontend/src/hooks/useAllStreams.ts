@@ -8,7 +8,7 @@ import { StreamTrack } from "../types/StreamTrack";
 import { DecoratedStream } from "../types/DecoratedStream";
 
 function findStreamTracks(stream: Stream): StreamTrack[] {
-  const tracks = new Map();
+  const tracks = new Map<number, StreamTrack>();
   for (const mf of stream.media_files) {
     const { track_id, content_type, codec_fourcc } = mf;
     let track: StreamTrack = tracks.get(track_id);

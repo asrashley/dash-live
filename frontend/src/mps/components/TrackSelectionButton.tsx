@@ -28,9 +28,9 @@ export function TrackSelectionButton({ period, stream, selectTracks }: TrackSele
   const className = `btn btn-sm m-1 ${hasActiveTracks ? "btn-success" : "btn-warning"}${disabled ? ' disabled': ''}`;
 
   return <div className="col period-tracks">
-  <a className={className} onClick={selectTracks} aria-disabled={disabled}>
+  <button className={className} onClick={selectTracks} disabled={disabled} aria-disabled={disabled}>
     {description}
-  </a>
+  </button>
 </div>;
 }
 

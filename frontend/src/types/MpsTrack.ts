@@ -3,7 +3,7 @@ export type MpsTrack = {
     content_type: string;
     encrypted: boolean;
     lang: string | null;
-    pk: number;
+    pk?: number;
     role: string;
     track_id: number;
     enabled?: boolean;
