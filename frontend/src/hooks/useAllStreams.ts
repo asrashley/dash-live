@@ -1,6 +1,6 @@
 import { createContext } from "preact";
 import { useContext, useEffect } from "preact/hooks";
-import { useSignal, useComputed, type Signal } from "@preact/signals";
+import { useSignal, useComputed, type ReadonlySignal } from "@preact/signals";
 
 import { EndpointContext } from "../endpoints";
 import { Stream } from "../types/Stream";
@@ -44,10 +44,10 @@ export function decorateAllStreams(streams: Stream[]): DecoratedStream[] {
 }
 
 export interface UseAllStreamsHook {
-  allStreams: Signal<DecoratedStream[]>,
-  loaded: Signal<boolean>,
-  streamsMap: Signal<Map<string, DecoratedStream>>,
-  error: Signal<string | null>;
+  allStreams: ReadonlySignal<DecoratedStream[]>,
+  loaded: ReadonlySignal<boolean>,
+  streamsMap: ReadonlySignal<Map<string, DecoratedStream>>,
+  error: ReadonlySignal<string | null>;
 }
 
 export const AllStreamsContext = createContext<UseAllStreamsHook>(null);
@@ -62,7 +62,7 @@ export function useAllStreams(): UseAllStreamsHook {
     const rv = new Map();
     if (allStreams.value) {
       for (const stream of allStreams.value) {
-        rv.set(stream.pk, stream);
+        rv.set(`${stream.pk}`, stream);
       }
     }
     return rv;
@@ -86,8 +86,7 @@ export function useAllStreams(): UseAllStreamsHook {
           }
         } catch (err) {
           if (!signal.aborted) {
-            console.error(err);
-            error.value = `${err}`;
+            error.value = `Fetching streams list failed - ${err}`;
           }
         }
       }
@@ -96,7 +95,9 @@ export function useAllStreams(): UseAllStreamsHook {
     fetchAllStreamsIfRequired();
 
     return () => {
-      controller.abort();
+      if (!loaded.value) {
+        controller.abort();
+      }
     };
   }, [apiRequests, error, loaded, streams]);
 
