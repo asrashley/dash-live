@@ -18,6 +18,7 @@ export default defineConfig({
                 "frontend/src/test/*.ts",
                 "frontend/src/test/*.tsx",
                 "frontend/src/types/*.ts",
+                "frontend/src/mps/types/*.ts",
                 "frontend/src/**/*.test.ts",
                 "frontend/src/**/*.test.tsx",
             ],
