@@ -480,6 +480,10 @@ function createMpsSummary(mps: MultiPeriodStream): MultiPeriodStreamSummary {
       const dur = Temporal.Duration.from(prd.duration);
       duration = duration.add(dur);
     }
+    duration = duration.round({
+        largestUnit: 'hour',
+        smallestUnit: 'second',
+    });
     const summary: MultiPeriodStreamSummary = {
         name,
         duration: duration.toString(),
