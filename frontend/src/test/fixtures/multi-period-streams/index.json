@@ -19,6 +19,18 @@
       ],
       "pk": 1,
       "title": "first title"
+    },
+    {
+      "duration": "PT1M4S",
+      "name": "second",
+      "options": {
+      },
+      "periods": [
+        4,
+        5
+      ],
+      "pk": 2,
+      "title": "a second example"
     }
   ]
 }

@@ -85,6 +85,36 @@ exports[`ListStreamsPage > should display list of multi-period streams 1`] = `
           PT1M55S
         </td>
       </tr>
+      <tr>
+        <td
+          class="name text-center"
+        >
+          <a
+            href="/multi-period-streams/second"
+          >
+            second
+          </a>
+        </td>
+        <td
+          class="title text-center"
+        >
+          <a
+            href="/multi-period-streams/second"
+          >
+            a second example
+          </a>
+        </td>
+        <td
+          class="num-periods text-end"
+        >
+          2
+        </td>
+        <td
+          class="duration text-end"
+        >
+          PT1M4S
+        </td>
+      </tr>
     </tbody>
   </table>
   <div

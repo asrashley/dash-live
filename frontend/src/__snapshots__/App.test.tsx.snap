@@ -977,6 +977,11 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                         Tears of Steel
                       </option>
                       <option
+                        value="mps.second"
+                      >
+                        a second example
+                      </option>
+                      <option
                         value="mps.demo"
                       >
                         first title
@@ -2915,6 +2920,36 @@ exports[`main entry-point app > matches snapshot for list MPS 1`] = `
             class="duration text-end"
           >
             PT1M55S
+          </td>
+        </tr>
+        <tr>
+          <td
+            class="name text-center"
+          >
+            <a
+              href="/multi-period-streams/second"
+            >
+              second
+            </a>
+          </td>
+          <td
+            class="title text-center"
+          >
+            <a
+              href="/multi-period-streams/second"
+            >
+              a second example
+            </a>
+          </td>
+          <td
+            class="num-periods text-end"
+          >
+            2
+          </td>
+          <td
+            class="duration text-end"
+          >
+            PT1M4S
           </td>
         </tr>
       </tbody>

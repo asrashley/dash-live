@@ -1,0 +1,72 @@
+{
+  "csrfTokens": {
+    "streams": "OIXwYv8kb%27J4ulLi0tgrS8gzzAieNe27dj"
+  },
+  "model": {
+    "name": "second",
+    "options": {
+    },
+    "periods": [
+      {
+        "duration": "PT30S",
+        "ordering": 1,
+        "parent": 1,
+        "pid": "p1",
+        "pk": 4,
+        "start": "PT0S",
+        "stream": 1,
+        "tracks": [
+          {
+            "codec_fourcc": "avc1",
+            "content_type": "video",
+            "encrypted": false,
+            "lang": null,
+            "pk": 13,
+            "role": "main",
+            "track_id": 1
+          },
+          {
+            "codec_fourcc": "mp4a",
+            "content_type": "audio",
+            "encrypted": false,
+            "lang": null,
+            "pk": 14,
+            "role": "main",
+            "track_id": 2
+          }
+        ]
+      },
+      {
+        "duration": "PT34S",
+        "ordering": 2,
+        "parent": 1,
+        "pid": "p2",
+        "pk": 5,
+        "start": "PT0S",
+        "stream": 1,
+        "tracks": [
+          {
+            "codec_fourcc": "avc3",
+            "content_type": "video",
+            "encrypted": false,
+            "lang": null,
+            "pk": 11,
+            "role": "main",
+            "track_id": 1
+          },
+          {
+            "codec_fourcc": "mp4a",
+            "content_type": "audio",
+            "encrypted": false,
+            "lang": null,
+            "pk": 12,
+            "role": "main",
+            "track_id": 2
+          }
+        ]
+      }
+    ],
+    "pk": 2,
+    "title": "a second example"
+  }
+}

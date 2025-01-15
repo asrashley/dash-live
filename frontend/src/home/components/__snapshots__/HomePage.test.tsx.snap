@@ -290,6 +290,11 @@ exports[`HomePage > matches snapshot 1`] = `
                       Tears of Steel
                     </option>
                     <option
+                      value="mps.second"
+                    >
+                      a second example
+                    </option>
+                    <option
                       value="mps.demo"
                     >
                       first title
