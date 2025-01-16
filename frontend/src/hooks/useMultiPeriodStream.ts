@@ -170,7 +170,7 @@ function addPeriodToModel({ model }: {model: Signal<DecoratedMultiPeriodStream>}
   };
 }
 
-function decorateLoadedModel(model: MultiPeriodStream): DecoratedMultiPeriodStream {
+export function decorateMultiPeriodStream(model: MultiPeriodStream): DecoratedMultiPeriodStream {
   const periods: MpsPeriod[] = model.periods.map((prd: MpsPeriod) => {
     const tracks: MpsTrack[] = prd.tracks.map((tk) => ({ ...tk, enabled: true }));
     const dmp: MpsPeriod = {
@@ -238,7 +238,7 @@ async function saveChangesToModel({
         appendMessage("success", `Saved changes to ${name}`);
       }
       model.value = {
-        ...decorateLoadedModel(result.model),
+        ...decorateMultiPeriodStream(result.model),
         lastModified: Date.now(),
       };
       return true;
@@ -455,7 +455,7 @@ export function useMultiPeriodStream({ name, newStream }: UseMultiPeriodStreamPr
         const data: MultiPeriodStreamJson = await apiRequests.getMultiPeriodStream(name, { signal });
         if (!signal.aborted) {
           loaded.value = name;
-          model.value = decorateLoadedModel(data.model);
+          model.value = decorateMultiPeriodStream(data.model);
         }
       }
     };
