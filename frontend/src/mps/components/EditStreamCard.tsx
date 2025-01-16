@@ -1,11 +1,10 @@
 import { useCallback, useContext, useEffect } from "preact/hooks";
-import { useSignal, useComputed, type Signal } from "@preact/signals";
+import { useSignal, useComputed } from "@preact/signals";
 import { navigate } from "wouter-preact/use-browser-location";
 import { routeMap } from "@dashlive/routemap";
 
 import { Card } from "../../components/Card";
 import { FormRow } from "../../components/FormRow";
-import { PrettyJson } from "../../components/PrettyJson";
 import { TextInputRow } from "../../components/TextInputRow";
 import { ButtonToolbar } from "./ButtonToolbar";
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
@@ -17,33 +16,7 @@ import { AppStateContext } from "../../appState";
 import { AllStreamsContext, useAllStreams  } from "../../hooks/useAllStreams";
 import { useMultiPeriodStream, MultiPeriodModelContext } from "../../hooks/useMultiPeriodStream";
 import { useMessages } from "../../hooks/useMessages";
-
-interface OptionsRowProps {
-  name: string;
-  canModify: Signal<boolean>;
-}
-function OptionsRow({ name, canModify }: OptionsRowProps) {
-  const { model } = useContext(MultiPeriodModelContext)
-  const { dialog } = useContext(AppStateContext);
-  const options = useComputed(() => model.value.options ?? {});
-
-  const openDialog = () => {
-    dialog.value = {
-      mpsOptions: {
-        options: options.value,
-        lastModified: model.value.lastModified,
-        name,
-      },
-      backdrop: true,
-    };
-  };
-
-  return <FormRow name="options" label="Stream Options">
-  <div className="d-flex flex-row">
-<PrettyJson className="flex-fill me-1" data={options.value} />
-{ canModify.value ? <button className="btn btn-primary" onClick={openDialog}>Options</button>: null }
-  </div></FormRow>;
-}
+import { OptionsRow } from "./OptionsRow";
 
 interface EditStreamFormProps {
   name: string;
@@ -93,8 +66,7 @@ function EditStreamForm({ name, newStream }: EditStreamFormProps) {
     }).catch(err => appendMessage("warning", `${err}`));
   }, [abortController.value, appendMessage, newStream, saveChanges]);
 
-  const onDelete = useCallback(
-    (ev) => {
+  const onDelete = useCallback((ev: Event) => {
       ev.preventDefault();
       dialog.value = {
         backdrop: true,

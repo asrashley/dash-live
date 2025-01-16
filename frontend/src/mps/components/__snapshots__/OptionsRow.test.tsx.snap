@@ -1,0 +1,56 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`OptionsRow component > matches snapshot 1`] = `
+<DocumentFragment>
+  <div
+    class="row mb-2 form-group "
+  >
+    <label
+      class="col-2 col-form-label"
+      for="model-options"
+    >
+      Stream Options:
+    </label>
+    <div
+      class="col-10"
+    >
+      <div
+        class="d-flex flex-row"
+      >
+        <div
+          class="json bg-secondary-subtle border border-dark-subtle flex-fill me-1"
+        >
+          <span
+            class="key"
+          >
+            ntps
+          </span>
+          : 
+          <span
+            class="value"
+          >
+            "europe-ntp"
+          </span>
+          , 
+          <span
+            class="key"
+          >
+            st
+          </span>
+          : 
+          <span
+            class="value"
+          >
+            true
+          </span>
+        </div>
+        <button
+          class="btn btn-primary"
+        >
+          Options
+        </button>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
