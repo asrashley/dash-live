@@ -1,0 +1,878 @@
+[
+  {
+    "description": "<p>Enable or disable adaptive bitrate</p>",
+    "featured": true,
+    "name": "abr",
+    "options": [
+      [
+        "Enabled",
+        "abr=1"
+      ],
+      [
+        "Disabled",
+        "abr=0"
+      ]
+    ],
+    "syntax": "(1|0)",
+    "title": "Adaptive bitrate",
+    "usage": [
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p>Filter audio adaptation sets by audio codec (AAC or E-AC3)</p>",
+    "featured": true,
+    "name": "acodec",
+    "options": [
+      [
+        "HEAAC codec",
+        "acodec=mp4a"
+      ],
+      [
+        "EAC3 codec",
+        "acodec=ec-3"
+      ],
+      [
+        "Any codec",
+        "acodec=any"
+      ]
+    ],
+    "syntax": "(mp4a|ec-3|any)",
+    "title": "Audio Codec",
+    "usage": [
+      "audio",
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p>Include a BaseURL element?</p>",
+    "featured": false,
+    "name": "base",
+    "options": [
+      [
+        "Yes",
+        "base=1"
+      ],
+      [
+        "No",
+        "base=0"
+      ]
+    ],
+    "syntax": "(1|0)",
+    "title": "Use BaseURLs",
+    "usage": [
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p>Produce a stream with known bugs</p>",
+    "featured": false,
+    "name": "bugs",
+    "options": [
+      [
+        "None",
+        "bugs=none"
+      ],
+      [
+        "saio",
+        "bugs=saio"
+      ]
+    ],
+    "syntax": "(saio)",
+    "title": "Bug compatibility",
+    "usage": [
+      "audio",
+      "video",
+      "manifest",
+      "text"
+    ]
+  },
+  {
+    "description": "<p>dash.js DASH player version</p>",
+    "featured": false,
+    "name": "dashjs",
+    "options": [
+      [
+        "None",
+        "dashjs=none"
+      ],
+      [
+        "4.7.4",
+        "dashjs=4.7.4"
+      ],
+      [
+        "4.7.1",
+        "dashjs=4.7.1"
+      ]
+    ],
+    "syntax": "(4.7.4|4.7.1)",
+    "title": "dash.js version",
+    "usage": [
+      "html"
+    ]
+  },
+  {
+    "description": "<p>Number of seconds for timeShiftBufferDepth</p>",
+    "featured": false,
+    "name": "depth",
+    "options": [
+      [
+        "1800",
+        "depth=1800"
+      ],
+      [
+        "30",
+        "depth=30"
+      ]
+    ],
+    "syntax": "<seconds>",
+    "title": "timeShiftBufferDepth size",
+    "usage": [
+      "audio",
+      "video",
+      "manifest",
+      "text"
+    ]
+  },
+  {
+    "description": "<p>Number of seconds of delay to add to wall clock time</p>",
+    "featured": false,
+    "name": "drift",
+    "options": [
+      [
+        "None",
+        "drift=none"
+      ],
+      [
+        "10",
+        "drift=10"
+      ]
+    ],
+    "syntax": "<seconds>",
+    "title": "Clock drift",
+    "usage": [
+      "time",
+      "manifest"
+    ]
+  },
+  {
+    "description": "\n<p>A comma separated list of DRMs:</p>\n<ul>\n  <li>all - All supported DRMs</li>\n  <li>clearkey - W3C ClearKey</li>\n  <li>marlin - Intertrust Marlin</li>\n  <li>none - No DRM</li>\n <li>playready - Microsoft PlayReady</li>\n</ul>\n<p>For example: <span class=\"pre\">drm=playready,marlin</span></p>\n<p style=\"margin-top: 0.5em\">Optionally with a hyphen separated list of locations for the DRM data:</p>\n<ul>\n  <li>pro - An mspr:pro element in the MPD (only applicable to PlayReady)</li>\n  <li>cenc - A cenc:pssh element in the MPD</li>\n  <li>moov - A PSSH box in the init segment</li>\n</ul>\n<p>For example: <span class=\"pre\">drm=playready-pro-cenc,clearkey-moov</span></p>\n",
+    "featured": true,
+    "name": "drm",
+    "options": [
+      [
+        "None",
+        "drm=none"
+      ],
+      [
+        "all",
+        "drm=all"
+      ],
+      [
+        "clearkey",
+        "drm=clearkey"
+      ],
+      [
+        "marlin",
+        "drm=marlin"
+      ],
+      [
+        "playready",
+        "drm=playready"
+      ]
+    ],
+    "syntax": "<drm>,.. or <drm>-<location>,..",
+    "title": "Encryption",
+    "usage": [
+      "audio",
+      "video",
+      "manifest",
+      "text"
+    ]
+  },
+  {
+    "description": "\n<p>A comma separated list of event formats:</p>\n<ul>\n  <li>\n    <a href=\"#ping\" class=\"link\">ping</a> - produces a payload that alternates\n    between 'ping' and 'pong'.\n  </li>\n  <li>\n    <a href=\"#scte35\" class=\"link\">scte35</a> - SCTE35 events that alternate\n    between placement opportunity start and end.\n  </li>\n</ul>\n",
+    "featured": true,
+    "name": "events",
+    "options": [
+      [
+        "None",
+        "events=none"
+      ],
+      [
+        "ping",
+        "events=ping"
+      ],
+      [
+        "scte35",
+        "events=scte35"
+      ]
+    ],
+    "syntax": "<format>,..",
+    "title": "DASH events",
+    "usage": [
+      "audio",
+      "video",
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p>Number of seconds after a fragment has expired before it becomes unavailable</p>",
+    "featured": false,
+    "name": "leeway",
+    "options": [
+      [
+        "16",
+        "leeway=16"
+      ],
+      [
+        "60",
+        "leeway=60"
+      ],
+      [
+        "0",
+        "leeway=0"
+      ]
+    ],
+    "syntax": "(16|60|0)",
+    "title": "Fragment expiration leeway",
+    "usage": [
+      "audio",
+      "video",
+      "manifest",
+      "text"
+    ]
+  },
+  {
+    "description": "<p>DASH operating mode</p>",
+    "featured": true,
+    "name": "mode",
+    "options": [
+      [
+        "VOD live profile",
+        "mode=vod"
+      ],
+      [
+        "Live stream",
+        "mode=live"
+      ],
+      [
+        "VOD OnDemand profile",
+        "mode=odvod"
+      ]
+    ],
+    "syntax": "(vod|live|odvod)",
+    "title": "Operating mode",
+    "usage": [
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p>Specify minimumUpdatePeriod (in seconds) or -1 to disable updates</p>",
+    "featured": false,
+    "name": "mup",
+    "options": [
+      [
+        "Every 2 fragments",
+        "mup=none"
+      ],
+      [
+        "Never",
+        "mup=-1"
+      ],
+      [
+        "Every fragment",
+        "mup=4"
+      ],
+      [
+        "Every 30 seconds",
+        "mup=30"
+      ]
+    ],
+    "syntax": "<number>",
+    "title": "Minimum update period",
+    "usage": [
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p>List of servers to use for NTP requests</p>",
+    "featured": false,
+    "name": "ntp_servers",
+    "options": [
+      [
+        "None",
+        "ntp_servers=none"
+      ],
+      [
+        "europe-ntp",
+        "ntp_servers=europe-ntp"
+      ],
+      [
+        "google",
+        "ntp_servers=google"
+      ]
+    ],
+    "syntax": "(europe-ntp|google|<server>,..)",
+    "title": "NTP time servers",
+    "usage": [
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p>Use MPD patches for live streams</p>",
+    "featured": false,
+    "name": "patch",
+    "options": [
+      [
+        "No",
+        "patch=0"
+      ],
+      [
+        "Yes",
+        "patch=1"
+      ]
+    ],
+    "syntax": "(0|1)",
+    "title": "Use MPD patches",
+    "usage": [
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p></p>",
+    "featured": false,
+    "name": "ping__count",
+    "options": [
+      [
+        "0",
+        "ping__count=0"
+      ]
+    ],
+    "syntax": "<int>",
+    "title": "Ping count",
+    "usage": [
+      "audio",
+      "video",
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p></p>",
+    "featured": false,
+    "name": "ping__duration",
+    "options": [
+      [
+        "200",
+        "ping__duration=200"
+      ]
+    ],
+    "syntax": "<int>",
+    "title": "Ping duration",
+    "usage": [
+      "audio",
+      "video",
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p></p>",
+    "featured": false,
+    "name": "ping__inband",
+    "options": [
+      [
+        "True",
+        "ping__inband=True"
+      ],
+      [
+        "False",
+        "ping__inband=False"
+      ]
+    ],
+    "syntax": "(0|1)",
+    "title": "Ping inband",
+    "usage": [
+      "audio",
+      "video",
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p></p>",
+    "featured": false,
+    "name": "ping__interval",
+    "options": [
+      [
+        "1000",
+        "ping__interval=1000"
+      ]
+    ],
+    "syntax": "<int>",
+    "title": "Ping interval",
+    "usage": [
+      "audio",
+      "video",
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p></p>",
+    "featured": false,
+    "name": "ping__start",
+    "options": [
+      [
+        "0",
+        "ping__start=0"
+      ]
+    ],
+    "syntax": "<int>",
+    "title": "Ping start",
+    "usage": [
+      "audio",
+      "video",
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p></p>",
+    "featured": false,
+    "name": "ping__timescale",
+    "options": [
+      [
+        "100",
+        "ping__timescale=100"
+      ]
+    ],
+    "syntax": "<int>",
+    "title": "Ping timescale",
+    "usage": [
+      "audio",
+      "video",
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p></p>",
+    "featured": false,
+    "name": "ping__value",
+    "options": [
+      [
+        "0",
+        "ping__value=0"
+      ]
+    ],
+    "syntax": "(0)",
+    "title": "Ping value",
+    "usage": [
+      "audio",
+      "video",
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p></p>",
+    "featured": false,
+    "name": "ping__version",
+    "options": [
+      [
+        "0",
+        "ping__version=0"
+      ]
+    ],
+    "syntax": "<int>",
+    "title": "Ping version",
+    "usage": [
+      "audio",
+      "video",
+      "manifest"
+    ]
+  },
+  {
+    "description": "\n<p>Only relevant when using the Video Player page.</p>\n<ol>\n  <li> native - use native &lt;video&gt; element playback</li>\n  <li> shaka - use Shaka player</li>\n  <li> dashjs - use dash.js player</li>\n</ol>\n",
+    "featured": true,
+    "name": "player",
+    "options": [
+      [
+        "Native video element",
+        "player=native"
+      ],
+      [
+        "dash.js",
+        "player=dashjs"
+      ],
+      [
+        "Shaka",
+        "player=shaka"
+      ]
+    ],
+    "syntax": "(native|dashjs|shaka)",
+    "title": "Video Player",
+    "usage": [
+      "html"
+    ]
+  },
+  {
+    "description": "<p>Include PIFF sample encryption data</p>",
+    "featured": false,
+    "name": "playready__piff",
+    "options": [
+      [
+        "1",
+        "playready__piff=1"
+      ],
+      [
+        "0",
+        "playready__piff=0"
+      ]
+    ],
+    "syntax": "(1|0)",
+    "title": "Playready PIFF",
+    "usage": [
+      "audio",
+      "video",
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p>Set the PlayReady version compatibility for this stream</p>",
+    "featured": false,
+    "name": "playready__version",
+    "options": [
+      [
+        "None",
+        "playready__version=none"
+      ],
+      [
+        "1.0",
+        "playready__version=1.0"
+      ],
+      [
+        "2.0",
+        "playready__version=2.0"
+      ],
+      [
+        "3.0",
+        "playready__version=3.0"
+      ],
+      [
+        "4.0",
+        "playready__version=4.0"
+      ]
+    ],
+    "syntax": "(1.0|2.0|3.0|4.0)",
+    "title": "Playready Version",
+    "usage": [
+      "audio",
+      "video",
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p></p>",
+    "featured": false,
+    "name": "scte35__count",
+    "options": [
+      [
+        "0",
+        "scte35__count=0"
+      ]
+    ],
+    "syntax": "<int>",
+    "title": "Scte35 count",
+    "usage": [
+      "audio",
+      "video",
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p></p>",
+    "featured": false,
+    "name": "scte35__duration",
+    "options": [
+      [
+        "200",
+        "scte35__duration=200"
+      ]
+    ],
+    "syntax": "<int>",
+    "title": "Scte35 duration",
+    "usage": [
+      "audio",
+      "video",
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p></p>",
+    "featured": false,
+    "name": "scte35__inband",
+    "options": [
+      [
+        "True",
+        "scte35__inband=True"
+      ],
+      [
+        "False",
+        "scte35__inband=False"
+      ]
+    ],
+    "syntax": "(0|1)",
+    "title": "Scte35 inband",
+    "usage": [
+      "audio",
+      "video",
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p></p>",
+    "featured": false,
+    "name": "scte35__interval",
+    "options": [
+      [
+        "1000",
+        "scte35__interval=1000"
+      ]
+    ],
+    "syntax": "<int>",
+    "title": "Scte35 interval",
+    "usage": [
+      "audio",
+      "video",
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p></p>",
+    "featured": false,
+    "name": "scte35__program_id",
+    "options": [
+      [
+        "1620",
+        "scte35__program_id=1620"
+      ]
+    ],
+    "syntax": "<int>",
+    "title": "Scte35 program_id",
+    "usage": [
+      "audio",
+      "video",
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p></p>",
+    "featured": false,
+    "name": "scte35__start",
+    "options": [
+      [
+        "0",
+        "scte35__start=0"
+      ]
+    ],
+    "syntax": "<int>",
+    "title": "Scte35 start",
+    "usage": [
+      "audio",
+      "video",
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p></p>",
+    "featured": false,
+    "name": "scte35__timescale",
+    "options": [
+      [
+        "100",
+        "scte35__timescale=100"
+      ]
+    ],
+    "syntax": "<int>",
+    "title": "Scte35 timescale",
+    "usage": [
+      "audio",
+      "video",
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p></p>",
+    "featured": false,
+    "name": "scte35__value",
+    "options": [],
+    "syntax": "()",
+    "title": "Scte35 value",
+    "usage": [
+      "audio",
+      "video",
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p></p>",
+    "featured": false,
+    "name": "scte35__version",
+    "options": [
+      [
+        "0",
+        "scte35__version=0"
+      ]
+    ],
+    "syntax": "<int>",
+    "title": "Scte35 version",
+    "usage": [
+      "audio",
+      "video",
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p>Shaka DASH player version</p>",
+    "featured": false,
+    "name": "shaka",
+    "options": [
+      [
+        "None",
+        "shaka=none"
+      ],
+      [
+        "4.11.2",
+        "shaka=4.11.2"
+      ],
+      [
+        "4.3.8",
+        "shaka=4.3.8"
+      ],
+      [
+        "2.5.4",
+        "shaka=2.5.4"
+      ]
+    ],
+    "syntax": "(4.11.2|4.3.8|2.5.4)",
+    "title": "Shaka version",
+    "usage": [
+      "html"
+    ]
+  },
+  {
+    "description": "\n<p>\n  Specify availabilityStartTime as \"today\", \"now\", \"year\",\n  \"month\", \"epoch\" or an ISO datetime (YYYY-MM-DDTHH:MM:SSZ).\n  \"today\" will select midnight UTC today,\n  \"month\" will select midnight UTC at the start of this month,\n  \"year\" will select midnight UTC at the start of this year,\n  \"now\" will select  publishTime - timeShiftBufferDepth, and\n  \"epoch\" will select the Unix epoch (Jan 1 1970).\n</p>\n",
+    "featured": false,
+    "name": "start",
+    "options": [
+      [
+        "year",
+        "start=year"
+      ],
+      [
+        "today",
+        "start=today"
+      ],
+      [
+        "month",
+        "start=month"
+      ],
+      [
+        "epoch",
+        "start=epoch"
+      ],
+      [
+        "now",
+        "start=now"
+      ]
+    ],
+    "syntax": "(today|month|year|epoch|now|<iso-datetime>)",
+    "title": "Availability start time",
+    "usage": [
+      "audio",
+      "video",
+      "manifest",
+      "text"
+    ]
+  },
+  {
+    "description": "<p>Filter text adaptation sets by text codec</p>",
+    "featured": false,
+    "name": "tcodec",
+    "options": [
+      [
+        "Any codec",
+        "tcodec=none"
+      ],
+      [
+        "im1t codec",
+        "tcodec=im1t|etd1"
+      ]
+    ],
+    "syntax": "(im1t|etd1)",
+    "title": "Text Codec",
+    "usage": [
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p>Select UTCTiming element method.</p>",
+    "featured": true,
+    "name": "time",
+    "options": [
+      [
+        "None",
+        "time=none"
+      ],
+      [
+        "direct",
+        "time=direct"
+      ],
+      [
+        "head",
+        "time=head"
+      ],
+      [
+        "http-ntp",
+        "time=http-ntp"
+      ],
+      [
+        "iso",
+        "time=iso"
+      ],
+      [
+        "ntp",
+        "time=ntp"
+      ],
+      [
+        "sntp",
+        "time=sntp"
+      ],
+      [
+        "xsd",
+        "time=xsd"
+      ]
+    ],
+    "syntax": "(direct|head|http-ntp|iso|ntp|sntp|xsd)",
+    "title": "UTC timing method",
+    "usage": [
+      "manifest"
+    ]
+  },
+  {
+    "description": "<p>Enable or disable segment timeline</p>",
+    "featured": true,
+    "name": "timeline",
+    "options": [
+      [
+        "No (use $Number$)",
+        "timeline=0"
+      ],
+      [
+        "Yes (use $Time$)",
+        "timeline=1"
+      ]
+    ],
+    "syntax": "(0|1)",
+    "title": "Segment timeline",
+    "usage": [
+      "manifest"
+    ]
+  }
+]

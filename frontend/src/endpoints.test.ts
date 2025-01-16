@@ -3,20 +3,22 @@ import fetchMock from '@fetch-mock/vitest';
 import { type RouteResponse } from "fetch-mock";
 import log from 'loglevel';
 
+import { routeMap } from "@dashlive/routemap";
+
 import { MockDashServer, normalUser, UserModel } from "./test/MockServer";
+import { FakeEndpoint } from "./test/FakeEndpoint";
 import { ApiRequests } from "./endpoints";
 import { CsrfTokenCollection } from "./types/CsrfTokenCollection";
-import { FakeEndpoint } from "./test/FakeEndpoint";
-import allManifests from './test/fixtures/manifests.json';
-import contentRoles from './test/fixtures/content_roles.json';
-import allStdStreams from './test/fixtures/streams.json';
 import { DecoratedMultiPeriodStream } from "./types/DecoratedMultiPeriodStream";
 import { MpsPeriod } from "./types/MpsPeriod";
 import { LoginRequest } from "./types/LoginRequest";
-
-import { model as demoMps} from './test/fixtures/multi-period-streams/demo.json';
 import { MultiPeriodStreamValidationRequest } from "./types/MpsValidation";
-import { routeMap } from "@dashlive/routemap";
+
+import allManifests from './test/fixtures/manifests.json';
+import contentRoles from './test/fixtures/content_roles.json';
+import allStdStreams from './test/fixtures/streams.json';
+import { model as demoMps} from './test/fixtures/multi-period-streams/demo.json';
+import cgiOptions from './test/fixtures/cgiOptions.json';
 
 describe('endpoints', () => {
     const navigate = vi.fn();
@@ -61,6 +63,10 @@ describe('endpoints', () => {
 
     test('get content roles', async () => {
         await expect(api.getContentRoles()).resolves.toEqual(contentRoles);
+    });
+
+    test('get cgi options', async () => {
+        await expect(api.getCgiOptions()).resolves.toEqual(cgiOptions);
     });
 
     test.each(['username', 'email'])('can login using %s', async (field: string) => {

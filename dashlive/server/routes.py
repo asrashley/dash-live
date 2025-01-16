@@ -249,10 +249,6 @@ routes: dict[str, Route] = {
         r'/play/mps/<regex("(live|vod)"):mode>/<mps_name>/<manifest>/index.html',
         handler='htmlpage.VideoPlayer',
         title='DASH test stream player'),
-    "cgi-options": Route(
-        r'/options',
-        handler='htmlpage.CgiOptionsPage',
-        title='Manifest and Media CGI options'),
     "logout": Route(
         r'/logout',
         handler='user_management.LogoutPage',
@@ -325,6 +321,10 @@ routes: dict[str, Route] = {
         handler='esm.InitialAppState',
         title='initial app state'
     ),
+    "api-cgi-options": Route(
+        r'/api/cgiOptions',
+        handler='esm.CgiOptionsPage',
+        title='Manifest and Media CGI options'),
     "api-login": Route(
         r'/api/login',
         handler='user_management.LoginPage',
@@ -368,8 +368,9 @@ routes: dict[str, Route] = {
 }
 
 ui_routes: dict[str, UiRoute] = {
-    'add-mps': UiRoute(r'/multi-period-streams/.add'),
-    'edit-mps': UiRoute(r'/multi-period-streams/<mps_name>'),
+    "add-mps": UiRoute(r'/multi-period-streams/.add'),
+    "cgi-options": UiRoute(r'/options'),
+    "edit-mps": UiRoute(r'/multi-period-streams/<mps_name>'),
     "home": UiRoute(r'/'),
     "list-mps": UiRoute(r'/multi-period-streams'),
     "login": UiRoute(r'/login'),
