@@ -1,5 +1,6 @@
 import { Component, type JSX } from "preact";
-import { type Signal } from "@preact/signals";
+import { type ReadonlySignal } from "@preact/signals";
+import log from 'loglevel';
 
 export type RenderItemProps = {
   item: object;
@@ -16,7 +17,7 @@ export type RenderItemProps = {
 export interface SortableListProps {
   RenderItem: (props: RenderItemProps) => JSX.Element;
   dataKey: string;
-  items: Signal<object[]>;
+  items: ReadonlySignal<object[]>;
   setItems: (items: object[]) => void;
 }
 
@@ -38,20 +39,32 @@ export class SortableList extends Component<SortableListProps, SortableListState
     };
   }
 
-  findItem(id: string): object | undefined {
+  render() {
+    const { RenderItem, items } = this.props;
+    return <ul onDragEnter={this.onDragEnter} onDragOver={this.onDragOver} onDrop={this.onDrop}>
+      {items.value.map((item, index) => {
+        const props = this.itemProps(item, index);
+        // eslint-disable-next-line react/jsx-key
+        return <RenderItem {...props} />;
+      })}
+    </ul>;
+  }
+
+  private findItem(id: string): object | undefined {
     const { items, dataKey } = this.props;
     return items.value.find(i => `${i[dataKey]}` === id);
   }
 
-  onDragStart = (e: DragEvent) => {
+  private onDragStart = (e: DragEvent) => {
     const target = e.target as HTMLElement;
     const el = target.closest('[data-item-id]');
     el?.setAttribute('dragging', '');
     const item = this.findItem(el?.getAttribute('data-item-id'));
+    log.debug('start dragging', item);
     this.setState({draggingItem: item});
   };
 
-  onDrag = (e: DragEvent) => {
+  private onDrag = (e: DragEvent) => {
     const { draggingItem, nearestItem, lastY } = this.state;
     e.preventDefault();
     if (!draggingItem) return;
@@ -60,14 +73,17 @@ export class SortableList extends Component<SortableListProps, SortableListState
       const isAfter = lastY > (top + height / 2);
       const after = isAfter ? nearestItem.nextElementSibling : nearestItem;
       const draggingTarget = this.findItem(after?.getAttribute('data-item-id')) || 'end';
+      log.debug('drag event', draggingTarget);
       this.setState({draggingTarget});
     } else {
+      log.debug('drag event - discarding target');
       this.setState({draggingTarget: undefined});
     }
   };
 
-  onDragEnd = (e: DragEvent) => {
+  private onDragEnd = (e: DragEvent) => {
     const el = (e.target as HTMLElement).closest('[data-item-id]');
+    log.debug(`drag end data-item-id=${el?.getAttribute('data-item-id')}`);
     el?.removeAttribute('dragging');
     this.setState({
       nearestItem: undefined,
@@ -76,26 +92,30 @@ export class SortableList extends Component<SortableListProps, SortableListState
     });
   };
 
-  onDragEnter = (ev: DragEvent) => {
+  private onDragEnter = (ev: DragEvent) => {
     ev.preventDefault();
     if (!ev.target) {
+      log.debug('drag enter with no event target!');
       return;
     }
     const nearestItem = (ev.target as HTMLElement).closest(`[data-item-id]`);
+    log.debug(`drag enter data-item-id=${nearestItem?.getAttribute('data-item-id')}`);
     this.setState({nearestItem});
   };
 
-  onDragOver = (e: DragEvent) => {
-    this.setState({lastY: e.y});
+  private onDragOver = (e: DragEvent) => {
     e.preventDefault();
+    this.setState({lastY: e.y});
+    log.debug(`drag over ${e.y}`);
   };
 
-  onDrop = (e: DragEvent) => {
+  private onDrop = (e: DragEvent) => {
     const { draggingItem, draggingTarget } = this.state;
     const { items, setItems } = this.props;
 
     e.preventDefault();
     if (!draggingItem) {
+      log.debug('drop - no item being dragged');
       return;
     }
 
@@ -137,16 +157,5 @@ export class SortableList extends Component<SortableListProps, SortableListState
       onDrag: this.onDrag,
       onDragEnd: this.onDragEnd,
     };
-  }
-
-  render() {
-    const { RenderItem, items } = this.props;
-    return <ul onDragEnter={this.onDragEnter} onDragOver={this.onDragOver} onDrop={this.onDrop}>
-      {items.value.map((item, index) => {
-        const props = this.itemProps(item, index);
-        // eslint-disable-next-line react/jsx-key
-        return <RenderItem {...props} />;
-      })}
-    </ul>;
   }
 }
