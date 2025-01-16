@@ -1,126 +1,14 @@
-import { useCallback, useContext, useEffect } from "preact/hooks";
-import { useSignal, useComputed } from "@preact/signals";
-import { navigate } from "wouter-preact/use-browser-location";
-import { routeMap } from "@dashlive/routemap";
+import { useCallback, useContext } from "preact/hooks";
 
 import { Card } from "../../components/Card";
-import { FormRow } from "../../components/FormRow";
-import { TextInputRow } from "../../components/TextInputRow";
-import { ButtonToolbar } from "./ButtonToolbar";
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
-import { PeriodsTable } from "./PeriodsTable";
 import { TrackSelectionDialog } from './TrackSelectionDialog';
 import { OptionsDialog } from './OptionsDialog';
 
 import { AppStateContext } from "../../appState";
 import { AllStreamsContext, useAllStreams  } from "../../hooks/useAllStreams";
 import { useMultiPeriodStream, MultiPeriodModelContext } from "../../hooks/useMultiPeriodStream";
-import { useMessages } from "../../hooks/useMessages";
-import { OptionsRow } from "./OptionsRow";
-
-interface EditStreamFormProps {
-  name: string;
-  newStream: boolean;
-}
-
-function EditStreamForm({ name, newStream }: EditStreamFormProps) {
-  const { model, modified, errors, setFields, saveChanges, deleteStream } = useContext(MultiPeriodModelContext)
-  const { allStreams } = useContext(AllStreamsContext);
-  const { dialog, user } = useContext(AppStateContext);
-  const { appendMessage } = useMessages();
-  const abortController = useSignal(new AbortController());
-  const deleteConfirmed = useComputed(
-    () => dialog.value?.confirmDelete?.confirmed === true
-  );
-  const canModify = useComputed(() => user.value.permissions.media);
-  const validationClass = useComputed<string>(() => {
-    if(!modified.value || !canModify.value) {
-      return '';
-    }
-    return Object.keys(errors.value).length === 0 ? 'was-validated' : 'has-validation';
-  });
-
-  const setName = useCallback(
-    (ev) => {
-      setFields({name: ev.target.value});
-    },
-    [setFields]
-  );
-
-  const setTitle = useCallback(
-    (ev) => {
-      setFields({
-        title: ev.target.value,
-      });
-    },
-    [setFields]
-  );
-
-  const onSaveChanges = useCallback(() => {
-    const { signal } = abortController.value;
-    saveChanges({signal}).then(success => {
-      if (success && newStream) {
-        const href = routeMap.listMps.url();
-        navigate(href, { replace: true });
-      }
-    }).catch(err => appendMessage("warning", `${err}`));
-  }, [abortController.value, appendMessage, newStream, saveChanges]);
-
-  const onDelete = useCallback((ev: Event) => {
-      ev.preventDefault();
-      dialog.value = {
-        backdrop: true,
-        confirmDelete: {
-          name,
-          confirmed: false,
-        },
-      };
-    },
-    [dialog, name]
-  );
-
-  useEffect(() => {
-    const { signal } = abortController.value;
-    const deleteStreamIfConfirmed = async () => {
-      if (!deleteConfirmed.value) {
-        return;
-      }
-      const success = await deleteStream({signal});
-      if (success){
-        navigate(routeMap.listMps.url(), { replace: true });
-      }
-      dialog.value = null;
-    };
-    deleteStreamIfConfirmed();
-  }, [abortController.value, allStreams, deleteConfirmed.value, deleteStream, dialog]);
-
-  useEffect(() => {
-    return () => {
-      abortController.value.abort();
-    }
-  }, [abortController]);
-
-  if (!model.value) {
-    return <h3>Fetching data for stream "{name}"...</h3>;
-  }
-
-  const formRowClass = canModify.value ? 'has-validation' : '';
-
-  return <div className={ validationClass.value }>
-  <TextInputRow name="name" label="Name" value={model.value.name}
-     text="Unique name for this stream" onInput={setName}
-     error={errors.value.name} disabled={!canModify.value} />
-  <TextInputRow name="title" label="Title" value={model.value.title}
-    text="Title for this stream" onInput={setTitle}
-    error={errors.value.title} disabled={!canModify.value} />
-  <OptionsRow name={name} canModify={canModify} />
-  <FormRow className={formRowClass} name="periods" label="Periods">
-    <PeriodsTable />
-  </FormRow>
-  <ButtonToolbar errors={errors} model={model} newStream={newStream}
-    onSaveChanges={onSaveChanges} deleteStream={onDelete} />
-</div>;
-}
+import { EditStreamForm } from "./EditStreamForm";
 
 interface HeaderProps {
   newStream: boolean;
