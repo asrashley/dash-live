@@ -79,35 +79,6 @@ class TestHtmlPageHandlers(FlaskTestBase, TestCaseMixin):
             mpd_url = mpd_url.replace('/live/', '/{mode}/')
             self.assertIn(mpd_url, response.text)
 
-    def test_cgi_options_page(self):
-        url = flask.url_for('cgi-options')
-        self.logout_user()
-        response = self.client.get(url)
-        self.assertEqual(response.status, '200 OK')
-        html = BeautifulSoup(response.text, 'lxml')
-        self.assertIsNotNone(html)
-        self.assertIn('Log In', response.text)
-        media_list_url = flask.url_for('list-streams')
-        self.assertIn(f'href="{media_list_url}"', response.text)
-        for option in OptionsRepository.get_cgi_options():
-            self.assertIn(option.name, response.text)
-        response = self.client.get(f'{url}?json=1')
-        self.assertEqual(response.status_code, 200)
-        html = BeautifulSoup(response.text, 'lxml')
-        self.assertIsNotNone(html)
-        for option in OptionsRepository.get_dash_options():
-            row = html.find(id=f"opt_{option.short_name}")
-            self.assertIsNotNone(row)
-            name = row.find(class_='short-name')
-            self.assertIsNotNone(name)
-            self.assertEqual(name.string, option.short_name)
-            name = row.find(class_='full-name')
-            self.assertIsNotNone(name)
-            self.assertEqual(name.string, option.full_name)
-            param = row.find(class_='cgi-param')
-            self.assertIsNotNone(param)
-            self.assertEqual(param.string, str(option.cgi_name))
-
     def test_media_page(self):
         self.setup_media()
         url = flask.url_for('list-streams')

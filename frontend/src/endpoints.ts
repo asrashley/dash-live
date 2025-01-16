@@ -16,6 +16,7 @@ import { InitialApiTokens } from './types/InitialApiTokens';
 import { LoginRequest } from './types/LoginRequest';
 import { LoginResponse } from './types/LoginResponse';
 import { MultiPeriodStreamValidationRequest, MultiPeriodStreamValidationResponse } from './types/MpsValidation';
+import { CgiOptionDescription } from './types/CgiOptionDescription';
 
 type TokenStoreCollection = {
   files: CsrfTokenStore;
@@ -75,6 +76,10 @@ export class ApiRequests {
 
   getContentRoles(options: Partial<ApiRequestOptions> = {}): Promise<ContentRolesMap> {
     return this.sendApiRequest(routeMap.contentRoles.url(), options);
+  }
+
+  getCgiOptions(options: Partial<ApiRequestOptions> = {}) : Promise<CgiOptionDescription[]> {
+    return this.sendApiRequest(routeMap.cgiOptions.url(), options);
   }
 
   async loginUser(request: LoginRequest, options: Partial<GetAllStreamsProps> = {}): Promise<LoginResponse> {

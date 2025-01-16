@@ -1,19 +1,5 @@
 #############################################################################
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
-#############################################################################
-#
 #  Project Name        :    Simulated MPEG DASH service
 #
 #  Author              :    Alex Ashley
@@ -36,8 +22,11 @@ import flask
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.mpeg.dash.segment import Segment
 from dashlive.server import models
+from dashlive.server.options.repository import OptionsRepository
+from dashlive.server.options.types import CgiOption
 from dashlive.server.requesthandler.streams import ViewStreamAjaxResponse
 from dashlive.utils.date_time import to_iso_datetime
+from dashlive.utils.json_object import JsonObject
 
 from .mixins.flask_base import FlaskTestBase
 from .mixins.stream_fixtures import BBB_FIXTURE
@@ -901,6 +890,20 @@ class TestRestApi(FlaskTestBase):
         response = self.client.delete(csrf_url)
         self.assertEqual(response.json["deleted"], mfid)
         self.assertEqual(models.MediaFile.count(), num_files - 1)
+
+    def test_cgi_options(self):
+        url = flask.url_for('api-cgi-options')
+        self.logout_user()
+        response = self.client.get(url)
+        self.assertEqual(response.status, '200 OK')
+        option_map: dict[str, CgiOption] = {}
+        for option in OptionsRepository.get_cgi_options():
+            option_map[option.name] = option
+        for cgi_opt in response.json:
+            expected: JsonObject = option_map[cgi_opt["name"]].toJSON(pure=True)
+            expected["description"] = expected["html"]
+            del expected["html"]
+            self.assertDictEqual(expected, cgi_opt)
 
 
 if os.environ.get("TESTS"):

@@ -1,19 +1,5 @@
 #############################################################################
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
-#############################################################################
-#
 #  Project Name        :    Simulated MPEG DASH service
 #
 #  Author              :    Alex Ashley
@@ -40,10 +26,7 @@ from dashlive.server.options.types import OptionUsage
 
 from .base import HTMLHandlerBase
 from .decorators import (
-    uses_stream,
     current_stream,
-    uses_multi_period_stream,
-    current_mps,
 )
 from .manifest_context import ManifestContext
 from .navbar import NavBarItem
@@ -187,40 +170,6 @@ class ES5MainPage(HTMLHandlerBase):
             NavBarItem(title="Home", active=True)
         ]
         return breadcrumbs
-
-
-class CgiOptionsPage(HTMLHandlerBase):
-    """
-    handler for page that describes each CGI option
-    """
-
-    def get(self) -> flask.Response:
-        context = self.create_context(
-            title="Available CGI options",
-            cgi_options=OptionsRepository.get_cgi_options(),
-        )
-
-        sort_key: str = flask.request.args.get("sort", "short_name")
-        sort_order: bool = self.get_bool_param("order")
-
-        if not flask.request.args.get("json"):
-            return flask.render_template("cgi_options.html", **context)
-
-        def sort_fn(item) -> str:
-            value = getattr(item, sort_key)
-            if isinstance(value, list):
-                return value[0]
-            return value
-
-        context["json"] = []
-        for opt in OptionsRepository.get_dash_options():
-            context["json"].append(opt)
-        context["json"].sort(key=sort_fn, reverse=sort_order)
-        context["sort_key"] = sort_key
-        context["sort_order"] = sort_order
-        context["reverse_order"] = "0" if sort_order else "1"
-        return flask.render_template("cgi_options.html", **context)
-
 
 class VideoPlayer(HTMLHandlerBase):
     """

@@ -19,9 +19,10 @@ from dashlive.drm.system import DrmSystem
 from dashlive.server.options.container import OptionsContainer
 from dashlive.server.options.dash_option import DashOption
 from dashlive.server.options.repository import OptionsRepository
-from dashlive.server.options.types import OptionUsage
+from dashlive.server.options.types import CgiOption, OptionUsage
 from dashlive.mpeg.dash.content_role import ContentRole
 from dashlive.server.routes import routes, ui_routes, RouteJavaScript
+from dashlive.utils.json_object import JsonObject
 
 from .spa_context import SpaTemplateContext, create_spa_template_context
 from .utils import jsonify
@@ -238,3 +239,16 @@ class InitialAppState(MethodView):
             'Content-Length': len(body),
         }
         return flask.make_response((body, 200, headers))
+
+class CgiOptionsPage(MethodView):
+    """
+    handler for page that describes each CGI option
+    """
+    def get(self) -> flask.Response:
+        options: list[JsonObject] = [opt.toJSON(pure=True) for opt in OptionsRepository.get_cgi_options()]
+        for opt in options:
+            opt['description'] = opt['html']
+            del opt['html']
+        return jsonify(options)
+
+

@@ -1,0 +1,246 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`useOptionsDetails hook > get all options 1`] = `
+[
+  {
+    "cgiName": "abr",
+    "fullName": "abr",
+    "shortName": "ab",
+  },
+  {
+    "cgiName": "acodec",
+    "fullName": "audioCodec",
+    "shortName": "ac",
+  },
+  {
+    "cgiName": "ad_audio",
+    "fullName": "audioDescription",
+    "shortName": "ad",
+  },
+  {
+    "cgiName": "start",
+    "fullName": "availabilityStartTime",
+    "shortName": "ast",
+  },
+  {
+    "cgiName": "bugs",
+    "fullName": "bugCompatibility",
+    "shortName": "bug",
+  },
+  {
+    "cgiName": "drift",
+    "fullName": "clockDrift",
+    "shortName": "dft",
+  },
+  {
+    "cgiName": "ping__count",
+    "fullName": "count",
+    "shortName": "pinCoun",
+  },
+  {
+    "cgiName": "scte35__count",
+    "fullName": "count",
+    "shortName": "sctCoun",
+  },
+  {
+    "cgiName": "clearkey__drmloc",
+    "fullName": "drmloc",
+    "shortName": "clearkey__drmloc",
+  },
+  {
+    "cgiName": "marlin__drmloc",
+    "fullName": "drmloc",
+    "shortName": "marlin__drmloc",
+  },
+  {
+    "cgiName": "playready__drmloc",
+    "fullName": "drmloc",
+    "shortName": "playready__drmloc",
+  },
+  {
+    "cgiName": "ping__duration",
+    "fullName": "duration",
+    "shortName": "pinDura",
+  },
+  {
+    "cgiName": "scte35__duration",
+    "fullName": "duration",
+    "shortName": "sctDura",
+  },
+  {
+    "cgiName": "clearkey__enabled",
+    "fullName": "enabled",
+    "shortName": "clearkey__enabled",
+  },
+  {
+    "cgiName": "marlin__enabled",
+    "fullName": "enabled",
+    "shortName": "marlin__enabled",
+  },
+  {
+    "cgiName": "playready__enabled",
+    "fullName": "enabled",
+    "shortName": "playready__enabled",
+  },
+  {
+    "cgiName": "events",
+    "fullName": "eventTypes",
+    "shortName": "evs",
+  },
+  {
+    "cgiName": "ping__inband",
+    "fullName": "inband",
+    "shortName": "pinInba",
+  },
+  {
+    "cgiName": "scte35__inband",
+    "fullName": "inband",
+    "shortName": "sctInba",
+  },
+  {
+    "cgiName": "ping__interval",
+    "fullName": "interval",
+    "shortName": "pinInte",
+  },
+  {
+    "cgiName": "scte35__interval",
+    "fullName": "interval",
+    "shortName": "sctInte",
+  },
+  {
+    "cgiName": "leeway",
+    "fullName": "leeway",
+    "shortName": "lee",
+  },
+  {
+    "cgiName": "clearkey__la_url",
+    "fullName": "licenseUrl",
+    "shortName": "clu",
+  },
+  {
+    "cgiName": "marlin__la_url",
+    "fullName": "licenseUrl",
+    "shortName": "mlu",
+  },
+  {
+    "cgiName": "playready__la_url",
+    "fullName": "licenseUrl",
+    "shortName": "plu",
+  },
+  {
+    "cgiName": "main_audio",
+    "fullName": "mainAudio",
+    "shortName": "ma",
+  },
+  {
+    "cgiName": "main_text",
+    "fullName": "mainText",
+    "shortName": "mt",
+  },
+  {
+    "cgiName": "mup",
+    "fullName": "minimumUpdatePeriod",
+    "shortName": "mup",
+  },
+  {
+    "cgiName": "ntp_servers",
+    "fullName": "ntpSources",
+    "shortName": "ntps",
+  },
+  {
+    "cgiName": "patch",
+    "fullName": "patch",
+    "shortName": "patch",
+  },
+  {
+    "cgiName": "playready__piff",
+    "fullName": "piff",
+    "shortName": "pff",
+  },
+  {
+    "cgiName": "scte35__program_id",
+    "fullName": "program_id",
+    "shortName": "sctProg",
+  },
+  {
+    "cgiName": "timeline",
+    "fullName": "segmentTimeline",
+    "shortName": "st",
+  },
+  {
+    "cgiName": "ping__start",
+    "fullName": "start",
+    "shortName": "pinStar",
+  },
+  {
+    "cgiName": "scte35__start",
+    "fullName": "start",
+    "shortName": "sctStar",
+  },
+  {
+    "cgiName": "tcodec",
+    "fullName": "textCodec",
+    "shortName": "tc",
+  },
+  {
+    "cgiName": "tlang",
+    "fullName": "textLanguage",
+    "shortName": "tl",
+  },
+  {
+    "cgiName": "depth",
+    "fullName": "timeShiftBufferDepth",
+    "shortName": "tbd",
+  },
+  {
+    "cgiName": "ping__timescale",
+    "fullName": "timescale",
+    "shortName": "pinTime",
+  },
+  {
+    "cgiName": "scte35__timescale",
+    "fullName": "timescale",
+    "shortName": "sctTime",
+  },
+  {
+    "cgiName": "base",
+    "fullName": "useBaseUrls",
+    "shortName": "base",
+  },
+  {
+    "cgiName": "time",
+    "fullName": "utcMethod",
+    "shortName": "utc",
+  },
+  {
+    "cgiName": "ping__value",
+    "fullName": "value",
+    "shortName": "pinValu",
+  },
+  {
+    "cgiName": "scte35__value",
+    "fullName": "value",
+    "shortName": "sctValu",
+  },
+  {
+    "cgiName": "ping__version",
+    "fullName": "version",
+    "shortName": "pinVers",
+  },
+  {
+    "cgiName": "playready__version",
+    "fullName": "version",
+    "shortName": "pvn",
+  },
+  {
+    "cgiName": "scte35__version",
+    "fullName": "version",
+    "shortName": "sctVers",
+  },
+  {
+    "cgiName": "player",
+    "fullName": "videoPlayer",
+    "shortName": "vp",
+  },
+]
+`;

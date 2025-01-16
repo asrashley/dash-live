@@ -72,14 +72,17 @@ class CgiOption:
 
     def toJSON(self, pure: bool = False,
                exclude: AbstractSet | None = None) -> JsonObject:
-        rv = {
+        rv: JsonObject = {
             'featured': self.featured,
             'html': self.html,
             'name': self.name,
             'options': self.options,
             'syntax': self.syntax,
             'title': self.title,
+            'usage': list(self.usage),
         }
+        if pure:
+            rv['options'] = [[o.description, o.value] for o in self.options]
         if exclude is None:
             return rv
         for k in rv.keys():
