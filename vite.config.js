@@ -18,15 +18,16 @@ export default defineConfig({
                 "frontend/src/test/*.ts",
                 "frontend/src/test/*.tsx",
                 "frontend/src/types/*.ts",
+                "frontend/src/cgi/types/*.ts",
                 "frontend/src/mps/types/*.ts",
                 "frontend/src/**/*.test.ts",
                 "frontend/src/**/*.test.tsx",
             ],
             thresholds: {
                 branches: 80,
-                functions: 80,
-                lines: 75,
-                statements: 75
+                functions: 85,
+                lines: 80,
+                statements: 80
             }
         },
 	},
