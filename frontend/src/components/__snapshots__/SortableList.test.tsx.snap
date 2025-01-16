@@ -1,0 +1,40 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`SortableList component > matches snapshot 1`] = `
+<DocumentFragment>
+  <ul>
+    <li
+      class=""
+      data-item-id="1"
+      draggable="true"
+      key="1"
+    >
+      0: Item One
+    </li>
+    <li
+      class=""
+      data-item-id="2"
+      draggable="true"
+      key="2"
+    >
+      1: Item Two
+    </li>
+    <li
+      class=""
+      data-item-id="3"
+      draggable="true"
+      key="3"
+    >
+      2: Item Three
+    </li>
+    <li
+      class=""
+      data-item-id="4"
+      draggable="true"
+      key="4"
+    >
+      3: Item Four
+    </li>
+  </ul>
+</DocumentFragment>
+`;
