@@ -42,7 +42,7 @@ describe("main entry-point app", () => {
   const initialTokens = {
     accessToken: {
       expires: "2024-12-14T16:42:22.606208Z",
-      jti: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTczNDE4NzM0MiwianRpIjoiYmJiYzRmZGQtODk5Ni00Zjg0LThlNjAtOTBiNjU4ZWViYjQ0IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6ImFkbWluIiwibmJmIjoxNzM0MTg3MzQyLCJjc3JmIjoiODVhMmFlNjktNzJlZi00OTgyLTg0YzktNjM2ZGQ0ZjAwMTZhIiwiZXhwIjoxNzM0MTg4MjQyfQ.7drJGq_ZVEkqOAO9R1JOPPNjpHHPv-mlopAlweRblJs",
+      jwt: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTczNDE4NzM0MiwianRpIjoiYmJiYzRmZGQtODk5Ni00Zjg0LThlNjAtOTBiNjU4ZWViYjQ0IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6ImFkbWluIiwibmJmIjoxNzM0MTg3MzQyLCJjc3JmIjoiODVhMmFlNjktNzJlZi00OTgyLTg0YzktNjM2ZGQ0ZjAwMTZhIiwiZXhwIjoxNzM0MTg4MjQyfQ.7drJGq_ZVEkqOAO9R1JOPPNjpHHPv-mlopAlweRblJs",
     },
     csrfTokens: {
       files: null,
@@ -52,7 +52,7 @@ describe("main entry-point app", () => {
     },
     refreshToken: {
       expires: "2024-12-21T14:42:22.611946Z",
-      jti: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTczNDE4NzM0MiwianRpIjoiODI4OWYxMTUtMzg4OC00ODVkLTlmMWUtZWM2YzAwMzA1N2RiIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6ImFkbWluIiwibmJmIjoxNzM0MTg3MzQyLCJjc3JmIjoiYjJiMjI4ZTgtZjliMS00ODc5LThhMTAtNzZkZmU1OWI4Mjc4IiwiZXhwIjoxNzM0MTg4MjQyfQ.LOuYwbGVbnyQUMCJJ4b0E0Jm0bGO41z07b9ZTa-l34c",
+      jwt: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTczNDE4NzM0MiwianRpIjoiODI4OWYxMTUtMzg4OC00ODVkLTlmMWUtZWM2YzAwMzA1N2RiIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6ImFkbWluIiwibmJmIjoxNzM0MTg3MzQyLCJjc3JmIjoiYjJiMjI4ZTgtZjliMS00ODc5LThhMTAtNzZkZmU1OWI4Mjc4IiwiZXhwIjoxNzM0MTg4MjQyfQ.LOuYwbGVbnyQUMCJJ4b0E0Jm0bGO41z07b9ZTa-l34c",
     },
   };
   const user = {

@@ -1,7 +1,7 @@
 import { CsrfTokenCollection } from "./CsrfTokenCollection";
-import { JwtToken } from "./JwtToken";
+import { JWToken } from "./JWToken";
 
 export interface RefreshAccessTokenResponse {
-    accessToken: JwtToken;
+    accessToken: JWToken;
     csrfTokens: CsrfTokenCollection;
 }

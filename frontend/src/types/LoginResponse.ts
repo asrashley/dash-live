@@ -1,4 +1,4 @@
-import { JwtToken } from "./JwtToken";
+import { JWToken } from "./JWToken";
 import { InitialUserState } from "./UserState";
 
 export interface LoginResponse {
@@ -6,7 +6,7 @@ export interface LoginResponse {
     error?: string;
     mustChange?: boolean;
     csrf_token: string;
-    accessToken?: JwtToken;
-    refreshToken?: JwtToken;
+    accessToken?: JWToken;
+    refreshToken?: JWToken;
     user?: InitialUserState
 }
