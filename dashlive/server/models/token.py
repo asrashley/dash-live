@@ -9,7 +9,7 @@ from typing import ClassVar, Optional, TypedDict, TYPE_CHECKING
 
 from sqlalchemy import (
     Boolean, DateTime, String, Integer,
-    ForeignKey, func, delete
+    ForeignKey, func, delete, select
 )
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.orm.exc import NoResultFound
@@ -109,8 +109,7 @@ class Token(ModelMixin["Token"], Base):
             token = Token(
                 user=user, token_type=token_type.value, jti=jti,
                 expires=expires, revoked=False)
-            if token_type == TokenType.REFRESH:
-                db.session.add(token)
+            db.session.add(token)
         return token
 
     @classmethod
@@ -119,11 +118,13 @@ class Token(ModelMixin["Token"], Base):
         Has the specified token been revoked?
         """
         jti: str = decoded_token['jti']
+        print('is_revoked', jti)
         try:
-            token = db.session.query(cls).filter_by(jti=jti).one()
+            stmt = select(Token).where(Token.jti == jti)
+            token: Token = db.session.execute(stmt).one()
             return token.revoked
         except NoResultFound:
-            return decoded_token['type'] != 'access'
+            return True
 
     @classmethod
     def prune_database(cls, all_csrf: bool, session: DatabaseSession) -> None:

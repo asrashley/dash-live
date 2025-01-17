@@ -46,7 +46,8 @@ class User(ModelMixin["User"], Base):
     groups_mask: Mapped[int] = mapped_column(Integer, nullable=False, default=Group.USER.value)
     reset_expires: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     reset_token: Mapped[str | None] = mapped_column(String(__RESET_TOKEN_LENGTH * 2), nullable=True)
-    tokens: Mapped[list["Token"]] = relationship("Token", back_populates="user", lazy='dynamic')
+    tokens: Mapped[list["Token"]] = relationship(
+        "Token", back_populates="user", lazy='dynamic', cascade="all, delete")
 
     @classmethod
     def get(cls, **kwargs) -> Optional["User"]:
