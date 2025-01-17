@@ -1,4 +1,4 @@
-from typing import AbstractSet, Generic, Iterable, Optional, TypeVar
+from typing import AbstractSet, Generic, Iterable, Optional, TypeVar, cast
 
 from sqlalchemy import Column
 from sqlalchemy.orm import class_mapper, ColumnProperty, RelationshipProperty
@@ -38,8 +38,8 @@ class ModelMixin(Generic[T]):
         """
         if session is None:
             session = db.session
-        return session.execute(
-            db.select(cls).filter_by(**kwargs)).scalar_one_or_none()
+        return cast(Optional[T], session.execute(
+            db.select(cls).filter_by(**kwargs)).scalar_one_or_none())
 
     @classmethod
     def search(clz, max_items: int | None = None,
