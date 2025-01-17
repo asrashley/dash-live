@@ -263,16 +263,10 @@ export class ApiRequests {
       method,
       signal,
     });
-    if (signal?.aborted) {
-      throw new Error(signal.reason);
-    }
     log.trace(`url=${url} status=${fetchResult.status} usedAccessToken=${usedAccessToken}`);
     if (fetchResult.status === 401 && usedAccessToken && this.refreshToken) {
       const { jti } = this.accessToken;
       await this.getAccessToken(signal);
-      if (signal?.aborted) {
-        throw new Error(signal.reason);
-      }
       if (!this.accessToken?.jti || jti === this.accessToken.jti) {
         throw new Error('Failed to refresh access token');
       }
@@ -294,9 +288,6 @@ export class ApiRequests {
       } else {
         return fetchResult as T;
       }
-    }
-    if (signal?.aborted) {
-      throw new Error(signal.reason);
     }
     if (fetchResult.status !== 200) {
       return fetchResult as T;
@@ -335,7 +326,7 @@ export class ApiRequests {
       rejectOnError: false,
       signal,
     };
-    const data: RefreshAccessTokenResponse = await this.sendApiRequest(routeMap.refreshAccessToken.url(), options);
+    const data = await this.sendApiRequest<RefreshAccessTokenResponse>(routeMap.refreshAccessToken.url(), options);
     const { accessToken, csrfTokens, ok, status } = data ?? {};
     if (ok === false && status === 401) {
       this.navigate(uiRouteMap.login.url());
