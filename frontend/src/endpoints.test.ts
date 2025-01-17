@@ -344,8 +344,8 @@ describe('endpoints', () => {
                 jti: 'abc123',
             },
         });
-        await expect(api.getAllStreams()).rejects.toThrowError("Cannot request CSRF tokens");
-        expect(navigate).toHaveBeenCalled();
+        await expect(api.getAllStreams()).rejects.toThrowError("Failed to refresh access token");
+        expect(navigate).toHaveBeenCalledTimes(1);
         expect(navigate).toHaveBeenCalledWith('/login');
     });
 
