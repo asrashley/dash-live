@@ -153,13 +153,14 @@ class CsrfProtection:
             cur_url = urllib.parse.urlparse(flask.request.url, 'http')
             origin = '{}://{}'.format(cur_url.scheme, cur_url.netloc)
         logging.debug(f'check_csrf origin: "{origin}"')
-        existing_key = Token.get(jti=token, token_type=TokenType.CSRF)
+        existing_key: Token | None = Token.get_one(jti=token, token_type=TokenType.CSRF.value)
         if existing_key is not None:
             raise CsrfFailureException("Re-use of csrf_token")
         expires = datetime.datetime.now() + KEY_LIFETIMES[TokenType.CSRF]
         existing_key = Token(
-            jti=token, token_type=TokenType.CSRF, expires=expires, revoked=False)
+            jti=token, token_type=TokenType.CSRF.value, expires=expires, revoked=False)
         db.session.add(existing_key)
+        db.session.flush()
         salt = token[:Token.CSRF_SALT_LENGTH]
         logging.debug(f'check_csrf salt: "{salt}"')
         token = token[Token.CSRF_SALT_LENGTH:]

@@ -5,15 +5,16 @@ Database table for storing refresh tokens and expired access tokens
 from datetime import datetime, timedelta
 from enum import IntEnum
 import hashlib
-from typing import ClassVar, Optional, TypedDict, TYPE_CHECKING
+import logging
+from typing import ClassVar, NamedTuple, TypedDict, TYPE_CHECKING
 
 from sqlalchemy import (
     Boolean, DateTime, String, Integer,
-    ForeignKey, func, delete, select
+    ForeignKey, func, delete
 )
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from sqlalchemy.orm.exc import NoResultFound
-from flask_jwt_extended import create_access_token, create_refresh_token
+from flask_jwt_extended import create_access_token, create_refresh_token, get_jti
 
 from .base import Base
 from dashlive.utils.date_time import to_iso_datetime
@@ -38,9 +39,21 @@ class TokenType(IntEnum):
         """
         Create a TokenType from its number
         """
-
         return cls(num)
 
+    @classmethod
+    def from_string(cls, name: str) -> "TokenType":
+        """
+        Create a TokenType from its name
+        """
+        return cls[name.upper()]
+
+
+KEY_LIFETIMES: dict[TokenType, timedelta] = {
+    TokenType.ACCESS: timedelta(hours=2),
+    TokenType.REFRESH: timedelta(days=7),
+    TokenType.CSRF: timedelta(minutes=20),
+}
 
 class DecodedJwtToken(TypedDict):
     jti: str
@@ -49,11 +62,21 @@ class DecodedJwtToken(TypedDict):
     exp: str | None  # expiration
 
 
-KEY_LIFETIMES: dict[TokenType, timedelta] = {
-    TokenType.ACCESS: timedelta(hours=2),
-    TokenType.REFRESH: timedelta(days=7),
-    TokenType.CSRF: timedelta(minutes=20),
-}
+class EncodedJWTokenJson(TypedDict):
+    jwt: str
+    expires: str
+
+
+class EncodedJWToken(NamedTuple):
+    jwt: str
+    expires: datetime
+
+    def toJSON(self) -> EncodedJWTokenJson:
+        js: EncodedJWTokenJson = {
+            "jwt": self.jwt,
+            "expires": to_iso_datetime(self.expires),
+        }
+        return js
 
 class Token(ModelMixin["Token"], Base):
     """
@@ -91,26 +114,20 @@ class Token(ModelMixin["Token"], Base):
         return djt
 
     @classmethod
-    def get(cls, **kwargs) -> Optional["Token"]:
-        return cls.get_one(**kwargs)
-
-    @classmethod
-    def generate_api_token(cls, user: "User", token_type: TokenType) -> "Token":
-        token: Token | None = Token.get(user_pk=user.pk, token_type=token_type.value)
-        if token is not None and token.has_expired():
-            db.session.delete(token)
-            token = None
-        if token is None:
-            expires: datetime = datetime.now() + KEY_LIFETIMES[token_type]
-            if token_type == TokenType.REFRESH:
-                jti: str = create_refresh_token(identity=user.username)
-            else:
-                jti = create_access_token(identity=user.username)
+    def generate_api_token(cls, user: "User", token_type: TokenType) -> EncodedJWToken:
+        expires: datetime = datetime.now() + KEY_LIFETIMES[token_type]
+        if token_type == TokenType.REFRESH:
+            jwt: str = create_refresh_token(identity=user.username)
+            jti: str | None = get_jti(jwt)
+            assert jti is not None
             token = Token(
                 user=user, token_type=token_type.value, jti=jti,
                 expires=expires, revoked=False)
             db.session.add(token)
-        return token
+            db.session.flush()
+        else:
+            jwt = create_access_token(identity=user.username)
+        return EncodedJWToken(jwt=jwt, expires=expires)
 
     @classmethod
     def is_revoked(cls, decoded_token: DecodedJwtToken) -> bool:
@@ -118,13 +135,12 @@ class Token(ModelMixin["Token"], Base):
         Has the specified token been revoked?
         """
         jti: str = decoded_token['jti']
-        print('is_revoked', jti)
         try:
-            stmt = select(Token).where(Token.jti == jti)
-            token: Token = db.session.execute(stmt).one()
+            tok_type: TokenType = TokenType.from_string(decoded_token["type"])
+            token: Token = db.session.query(cls).filter_by(jti=jti, token_type=tok_type.value).one()
             return token.revoked
         except NoResultFound:
-            return True
+            return tok_type == TokenType.REFRESH
 
     @classmethod
     def prune_database(cls, all_csrf: bool, session: DatabaseSession) -> None:
