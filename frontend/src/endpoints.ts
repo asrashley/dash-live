@@ -265,11 +265,7 @@ export class ApiRequests {
     });
     log.trace(`url=${url} status=${fetchResult.status} usedAccessToken=${usedAccessToken}`);
     if (fetchResult.status === 401 && usedAccessToken && this.refreshToken) {
-      const { jti } = this.accessToken;
       await this.getAccessToken(signal);
-      if (!this.accessToken?.jti || jti === this.accessToken.jti) {
-        throw new Error('Failed to refresh access token');
-      }
       headers.set('Authorization', `Bearer ${this.accessToken.jti}`);
       log.trace(`retrying sendApiRequest(${url})`);
       fetchResult = await fetch(url, {
@@ -280,7 +276,7 @@ export class ApiRequests {
           headers,
           method,
           signal,
-        });
+      });
     }
     if (!fetchResult.ok) {
       if (rejectOnError) {
@@ -317,7 +313,7 @@ export class ApiRequests {
     }
   }
 
-  private async getAccessToken(signal: AbortSignal): Promise<void> {
+  private async getAccessToken(signal: AbortSignal): Promise<JwtToken> {
     if (!this.refreshToken) {
       throw new Error('Cannot request an access token without a refresh token');
     }
@@ -331,12 +327,14 @@ export class ApiRequests {
     if (ok === false && status === 401) {
       this.navigate(uiRouteMap.login.url());
     }
-    if (accessToken) {
-      this.accessToken = accessToken;
+    if (!accessToken) {
+      throw new Error('Failed to refresh access token');
     }
+    this.accessToken = accessToken;
     if (csrfTokens) {
       this.updateCsrfTokens(csrfTokens);
     }
+    return accessToken;
   }
 
   private getCsrfTokens = async (signal: AbortSignal): Promise<void> => {
