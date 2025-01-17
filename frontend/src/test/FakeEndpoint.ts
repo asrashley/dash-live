@@ -14,9 +14,13 @@ export type ServerRouteProps = CallLog & {
     context: object;
 };
 
-export type HttpRequestHandler = (props: ServerRouteProps) => RouteResponse;
+export type HttpRequestHandlerResponse = ResponseInit & {
+    body?: string | Buffer;
+};
 
-export type HttpRequestModifier = (props: ServerRouteProps, response: RouteResponse) => Promise<RouteResponse>;
+export type HttpRequestHandler = (props: ServerRouteProps) => Promise<HttpRequestHandlerResponse>;
+
+export type HttpRequestModifier = (props: ServerRouteProps, response: HttpRequestHandlerResponse) => Promise<HttpRequestHandlerResponse>;
 
 type PendingPromiseType = {
     resolve: (value: RouteResponse) => void;
@@ -117,7 +121,7 @@ export class FakeEndpoint {
         const key = `${method}.${fullUrl.pathname}`;
 
         log.trace(`routeHandler ${key}`);
-        let result: RouteResponse = notFound();
+        let result: HttpRequestHandlerResponse = notFound();
         const srp: ServerRouteProps = {
             ...props,
             context: {},
@@ -127,7 +131,7 @@ export class FakeEndpoint {
         }
         if (this.serverStatus !== null) {
             log.trace(`serverStatus: ${this.serverStatus}`);
-            result = this.serverStatus;
+            result = { status: this.serverStatus };
         } else {
             let handler: HttpRequestHandler | undefined = this.pathHandlers.get(key);
             if (handler === undefined) {
@@ -161,32 +165,32 @@ export class FakeEndpoint {
     }
 }
 
-export function jsonResponse(payload: object | string, status: number = 200): RouteResponse {
+export function jsonResponse(payload: object | string, status: number = 200): HttpRequestHandlerResponse {
     const body = status !== 204 ? JSON.stringify(payload) : undefined;
     const contentLength = status !== 204 ? body.length : 0;
     return {
         body,
         status,
         headers: {
-            'Cache-Control': 'max-age = 0, no_cache, no_store, must_revalidate',
-            'Content-Type': 'application/json',
-            'Content-Length': contentLength,
+            'cache-control': 'max-age = 0, no_cache, no_store, must_revalidate',
+            'content-type': 'application/json',
+            'content-length': `${contentLength}`,
         },
     };
 }
 
-export function dataResponse(body: string, contentType: string, status: number = 200): RouteResponse {
+export function dataResponse(body: string, contentType: string, status: number = 200): HttpRequestHandlerResponse {
     const contentLength = status !== 204 ? body.length : 0;
     return {
         body,
         status,
         headers: {
-            'Content-Type': contentType,
-            'Content-Length': contentLength,
+            'content-type': contentType,
+            'content-length': `${contentLength}`,
         },
     };
 }
 
-export function notFound(): RouteResponse {
+export function notFound(): HttpRequestHandlerResponse {
     return jsonResponse('', 404);
 }
