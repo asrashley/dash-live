@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 import userEvent from "@testing-library/user-event";
-import fetchMock from '@fetch-mock/vitest';
+import fetchMock from "@fetch-mock/vitest";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import { ApiRequests, EndpointContext } from "../../endpoints";
@@ -41,11 +41,11 @@ describe("HomePage", () => {
     });
     getMpsStreams = new Promise<void>((resolve) => {
       apiRequests.getAllMultiPeriodStreams.mockImplementation(async () => {
-        const streams = await import(
+        const { streams } = await import(
           "../../test/fixtures/multi-period-streams/index.json"
         );
         resolve();
-        return streams.default;
+        return streams;
       });
     });
   });
@@ -71,7 +71,7 @@ describe("HomePage", () => {
     expect(asFragment()).toMatchSnapshot();
   });
 
-  test('can select a multi-period stream', async () => {
+  test("can select a multi-period stream", async () => {
     const user = userEvent.setup();
     const { getBySelector, findByText } = renderWithProviders(
       <EndpointContext.Provider value={apiRequests}>
@@ -79,32 +79,41 @@ describe("HomePage", () => {
       </EndpointContext.Provider>
     );
     await Promise.all([getManifests, getStdStreams, getMpsStreams]);
-    const streamSelect = getBySelector('#model-stream') as HTMLSelectElement;
+    const streamSelect = getBySelector("#model-stream") as HTMLSelectElement;
     await user.selectOptions(streamSelect, ["first title"]);
     await findByText("Play first title");
-    const playBtn = getBySelector('.play-button > .btn') as HTMLAnchorElement;
-    const playUrl = new URL(routeMap.videoMps.url({
-      mode: 'vod',
-      mps_name: 'demo',
-      manifest: 'hand_made',
-    }), document.location.href);
-    expect(playBtn.getAttribute('href')).toEqual(playUrl.href);
-    const anchor = getBySelector('#dashurl') as HTMLAnchorElement;
-    const mpdUrl = new URL(routeMap.mpsManifest.url({
-      mode: 'vod',
-      mps_name: 'demo',
-      manifest: 'hand_made.mpd',
-    }), document.location.href);
-    expect(anchor.getAttribute('href')).toEqual(mpdUrl.href);
+    const playBtn = getBySelector(".play-button > .btn") as HTMLAnchorElement;
+    const playUrl = new URL(
+      routeMap.videoMps.url({
+        mode: "vod",
+        mps_name: "demo",
+        manifest: "hand_made",
+      }),
+      document.location.href
+    );
+    expect(playBtn.getAttribute("href")).toEqual(playUrl.href);
+    const anchor = getBySelector("#dashurl") as HTMLAnchorElement;
+    const mpdUrl = new URL(
+      routeMap.mpsManifest.url({
+        mode: "vod",
+        mps_name: "demo",
+        manifest: "hand_made.mpd",
+      }),
+      document.location.href
+    );
+    expect(anchor.getAttribute("href")).toEqual(mpdUrl.href);
   });
 
   test("can reset previous options", async () => {
     const user = userEvent.setup();
-    localStorage.setItem(previousOptionsKeyName, JSON.stringify({
-      manifest: "hand_made.mpd",
-      mode: "vod",
-      stream: "mps.demo"
-    }));
+    localStorage.setItem(
+      previousOptionsKeyName,
+      JSON.stringify({
+        manifest: "hand_made.mpd",
+        mode: "vod",
+        stream: "mps.demo",
+      })
+    );
     const { getBySelector, findByText } = renderWithProviders(
       <EndpointContext.Provider value={apiRequests}>
         <HomePage />
@@ -112,7 +121,7 @@ describe("HomePage", () => {
     );
     await Promise.all([getManifests, getStdStreams, getMpsStreams]);
     await findByText("Play first title");
-    await user.click(getBySelector('.reset-all-button > .btn'));
+    await user.click(getBySelector(".reset-all-button > .btn"));
     expect(localStorage.getItem(previousOptionsKeyName)).toBeNull();
     await findByText("Play Big Buck Bunny");
   });
@@ -131,12 +140,7 @@ describe("HomePage", () => {
         streams: [],
       };
     });
-    apiRequests.getAllMultiPeriodStreams.mockImplementation(async () => {
-      return {
-        csrfTokens: csrf_tokens,
-        streams: [],
-      };
-    });
+    apiRequests.getAllMultiPeriodStreams.mockResolvedValue([]);
     const { findByText } = renderWithProviders(
       <EndpointContext.Provider value={apiRequests}>
         <HomePage />

@@ -5,11 +5,11 @@ import { routeMap, uiRouteMap} from '@dashlive/routemap';
 import { CsrfTokenStore } from './CsrfTokenStore';
 import { CsrfTokenCollection } from './types/CsrfTokenCollection';
 import { AllManifests } from './types/AllManifests';
-import { AllStreamsJson } from './types/AllStreams';
+import { AllStreamsJson, AllStreamsResponse } from './types/AllStreams';
 import { JwtToken } from './types/JwtToken';
-import { MultiPeriodStreamJson } from './types/MultiPeriodStream';
+import { MultiPeriodStream, MultiPeriodStreamJson } from './types/MultiPeriodStream';
 import { DecoratedMultiPeriodStream } from "./types/DecoratedMultiPeriodStream";
-import { AllMultiPeriodStreamsJson } from './types/AllMultiPeriodStreams';
+import { AllMultiPeriodStreamsJson, MultiPeriodStreamSummary } from './types/AllMultiPeriodStreams';
 import { ContentRolesMap } from './types/ContentRolesMap';
 import { ModifyMultiPeriodStreamJson } from './types/ModifyMultiPeriodStreamJson';
 import { InitialApiTokens } from './types/InitialApiTokens';
@@ -71,7 +71,7 @@ export class ApiRequests {
   }
 
   getAllManifests(options: Partial<ApiRequestOptions> = {}): Promise<AllManifests> {
-    return this.sendApiRequest(routeMap.listManifests.url(), options);
+    return this.sendApiRequest<AllManifests>(routeMap.listManifests.url(), options);
   }
 
   getContentRoles(options: Partial<ApiRequestOptions> = {}): Promise<ContentRolesMap> {
@@ -111,7 +111,7 @@ export class ApiRequests {
     return response;
   }
 
-  async getAllStreams({ withDetails = false, ...options}: Partial<GetAllStreamsProps> = {}): Promise<AllStreamsJson> {
+  async getAllStreams({ withDetails = false, ...options}: Partial<GetAllStreamsProps> = {}): Promise<AllStreamsResponse> {
     const service = 'streams';
     const csrf_token = await this.csrfTokens[service].getToken(
       options?.signal, this.getCsrfTokens);
@@ -119,39 +119,42 @@ export class ApiRequests {
       details: withDetails ? "1" : "0",
       csrf_token,
     });
-    return await this.sendApiRequest(routeMap.listStreams.url(), {
+    const { streams, keys } = await this.sendApiRequest<AllStreamsJson>(routeMap.listStreams.url(), {
       service,
       query,
       ...options,
     });
+    return { streams, keys};
   }
 
-  async getAllMultiPeriodStreams(options: Partial<ApiRequestOptions> = {}): Promise<AllMultiPeriodStreamsJson> {
+  async getAllMultiPeriodStreams(options: Partial<ApiRequestOptions> = {}): Promise<MultiPeriodStreamSummary[]> {
     const service = 'streams';
     const csrf_token = await this.csrfTokens[service].getToken(
       options?.signal, this.getCsrfTokens);
     const query = new URLSearchParams({
       csrf_token,
     });
-    return await this.sendApiRequest(routeMap.listMps.url(), {
+    const { streams } = await this.sendApiRequest<AllMultiPeriodStreamsJson>(routeMap.listMps.url(), {
       service,
       query,
       ...options,
     });
+    return streams;
   }
 
-  async getMultiPeriodStream(mps_name: string, options: Partial<ApiRequestOptions> = {}): Promise<MultiPeriodStreamJson> {
+  async getMultiPeriodStream(mps_name: string, options: Partial<ApiRequestOptions> = {}): Promise<MultiPeriodStream> {
     const service = 'streams';
     const csrf_token = await this.csrfTokens[service].getToken(
       options?.signal, this.getCsrfTokens);
     const query = new URLSearchParams({
       csrf_token,
     });
-    return await this.sendApiRequest(routeMap.editMps.url({mps_name}), {
+    const { model } = await this.sendApiRequest<MultiPeriodStreamJson>(routeMap.editMps.url({mps_name}), {
       service,
       query,
       ...options,
     });
+    return model;
   }
 
   async addMultiPeriodStream(data: DecoratedMultiPeriodStream, options: Partial<ApiRequestOptions> = {}): Promise<ModifyMultiPeriodStreamJson> {
@@ -174,7 +177,7 @@ export class ApiRequests {
     const service = 'streams';
     const csrf_token = await this.csrfTokens[service].getToken(
       options?.signal, this.getCsrfTokens);
-    return await this.sendApiRequest(routeMap.editMps.url({mps_name}), {
+    return await this.sendApiRequest<ModifyMultiPeriodStreamJson>(routeMap.editMps.url({mps_name}), {
       ...options,
       service,
       body: JSON.stringify({...data, csrf_token}),
@@ -190,7 +193,7 @@ export class ApiRequests {
     const query = new URLSearchParams({
       csrf_token,
     });
-    return this.sendApiRequest(routeMap.editMps.url({mps_name}), {
+    return this.sendApiRequest<Response>(routeMap.editMps.url({mps_name}), {
       ...options,
       service,
       query,
@@ -203,7 +206,7 @@ export class ApiRequests {
     const service = 'streams';
     const csrf_token = await this.csrfTokens[service].getToken(
       options?.signal, this.getCsrfTokens);
-    return this.sendApiRequest(routeMap.validateMps.url(), {
+    return this.sendApiRequest<MultiPeriodStreamValidationResponse>(routeMap.validateMps.url(), {
       ...options,
       method: 'POST',
       service: 'streams',
@@ -211,7 +214,7 @@ export class ApiRequests {
     });
   }
 
-  private async sendApiRequest(url: string, options: Partial<ApiRequestOptions>) {
+  private async sendApiRequest<T>(url: string, options: Partial<ApiRequestOptions>): Promise<T> {
     const { authorization, body, service, signal, method='GET',
       rejectOnError = true } = options;
     let { query } = options;
@@ -260,6 +263,7 @@ export class ApiRequests {
     if (signal?.aborted) {
       throw new Error(signal.reason);
     }
+    log.trace(`url=${url} status=${fetchResult.status} usedAccessToken=${usedAccessToken}`);
     if (fetchResult.status === 401 && usedAccessToken && this.refreshToken) {
       const { jti } = this.accessToken;
       await this.getAccessToken(signal);
@@ -284,14 +288,14 @@ export class ApiRequests {
       if (rejectOnError) {
         throw new Error(`${ url }: ${ fetchResult.status }`);
       } else {
-        return fetchResult;
+        return fetchResult as T;
       }
     }
     if (signal?.aborted) {
       throw new Error(signal.reason);
     }
     if (fetchResult.status !== 200) {
-      return fetchResult;
+      return fetchResult as T;
     }
     const data = await fetchResult.json();
     if (signal?.aborted) {
@@ -305,7 +309,7 @@ export class ApiRequests {
       this.updateCsrfTokens({[service]: data.csrf_token});
     }
 
-    return data;
+    return data as T;
   }
 
   private updateCsrfTokens(tokens: Partial<CsrfTokenCollection>) {
@@ -351,7 +355,7 @@ export class ApiRequests {
       authorization: this.accessToken.jti,
       signal,
     };
-    const data = await this.sendApiRequest(routeMap.refreshCsrfTokens.url(), options);
+    const data = await this.sendApiRequest<RefreshAccessTokenResponse>(routeMap.refreshCsrfTokens.url(), options);
     const { csrfTokens } = data ?? {};
     if (csrfTokens) {
       this.updateCsrfTokens(csrfTokens);

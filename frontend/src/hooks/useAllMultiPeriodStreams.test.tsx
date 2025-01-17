@@ -4,8 +4,11 @@ import { act, renderHook } from "@testing-library/preact";
 import { mock } from "vitest-mock-extended";
 
 import { ApiRequests, EndpointContext } from "../endpoints";
-import { useAllMultiPeriodStreams, UseAllMultiPeriodStreamsHook } from "./useAllMultiPeriodStreams";
-import { AllMultiPeriodStreamsJson } from "../types/AllMultiPeriodStreams";
+import {
+  useAllMultiPeriodStreams,
+  UseAllMultiPeriodStreamsHook,
+} from "./useAllMultiPeriodStreams";
+import { MultiPeriodStreamSummary } from "../types/AllMultiPeriodStreams";
 
 import allMpsJson from "../test/fixtures/multi-period-streams/index.json";
 
@@ -24,7 +27,7 @@ describe("useAllMultiPeriodStreams hook", () => {
     return new Promise<void>((resolve) => {
       apiRequests.getAllMultiPeriodStreams.mockImplementation(async () => {
         resolve();
-        return allMpsJson as AllMultiPeriodStreamsJson;
+        return allMpsJson.streams;
       });
     });
   }
@@ -63,39 +66,33 @@ describe("useAllMultiPeriodStreams hook", () => {
     expect(streams).toEqual(allMpsJson.streams);
     expect(result.current.sortField).toEqual("name");
     await act(async () => {
-        sort('title', true);
+      sort("title", true);
     });
     expect(result.current.sortField).toEqual("title");
     expect(streams).toEqual(allMpsJson.streams);
     expect(result.current.streams.value).not.toEqual(streams);
-    expect(result.current.streams.value).toEqual([
-        streams[1],
-        streams[0],
-    ]);
+    expect(result.current.streams.value).toEqual([streams[1], streams[0]]);
     await act(async () => {
-        sort('title', false);
+      sort("title", false);
     });
     expect(result.current.streams.value).toEqual(streams);
   });
 
   test("can sort streams with duplicate titles", async () => {
-    const { csrfTokens, streams } = allMpsJson;
-    const duplicatedTitle: AllMultiPeriodStreamsJson = {
-        csrfTokens,
-        streams: [
-            streams[0],
-            {
-                ...streams[1],
-                title: streams[0].title,
-            }
-        ]
-    };
+    const { streams } = allMpsJson;
+    const duplicatedTitle: MultiPeriodStreamSummary[] = [
+      streams[0],
+      {
+        ...streams[1],
+        title: streams[0].title,
+      },
+    ];
     const getAllMultiPeriodStreamsPromise = new Promise<void>((resolve) => {
-        apiRequests.getAllMultiPeriodStreams.mockImplementation(async () => {
-          resolve();
-          return duplicatedTitle;
-        });
+      apiRequests.getAllMultiPeriodStreams.mockImplementation(async () => {
+        resolve();
+        return duplicatedTitle;
       });
+    });
 
     const { result } = renderHook<UseAllMultiPeriodStreamsHook, void>(
       () => useAllMultiPeriodStreams(),
@@ -110,19 +107,19 @@ describe("useAllMultiPeriodStreams hook", () => {
     expect(streamsValue).not.toEqual(allMpsJson.streams);
     expect(result.current.sortField).toEqual("name");
     await act(async () => {
-        sort('title', true);
+      sort("title", true);
     });
-    expect(result.current.streams.value).toEqual(duplicatedTitle.streams);
+    expect(result.current.streams.value).toEqual(duplicatedTitle);
   });
 
   test("fails to fetch list from server", async () => {
     const getAllMultiPeriodStreamsPromise = new Promise<void>((resolve) => {
-        apiRequests.getAllMultiPeriodStreams.mockImplementation(async () => {
-          resolve();
-          throw new Error('Connection failed');
-        });
+      apiRequests.getAllMultiPeriodStreams.mockImplementation(async () => {
+        resolve();
+        throw new Error("Connection failed");
       });
-      const { result } = renderHook<UseAllMultiPeriodStreamsHook, void>(
+    });
+    const { result } = renderHook<UseAllMultiPeriodStreamsHook, void>(
       () => useAllMultiPeriodStreams(),
       { wrapper }
     );
@@ -131,7 +128,9 @@ describe("useAllMultiPeriodStreams hook", () => {
     });
     const { error, loaded, streams } = result.current;
     expect(loaded.value).toEqual(false);
-    expect(error.value).toEqual(expect.stringContaining("Fetching multi-period streams list failed"));
+    expect(error.value).toEqual(
+      expect.stringContaining("Fetching multi-period streams list failed")
+    );
     expect(streams.value).toEqual([]);
   });
 });

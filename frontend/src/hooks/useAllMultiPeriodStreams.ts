@@ -3,7 +3,7 @@ import { useEffect, useState, useContext, useCallback } from "preact/hooks";
 import { type ReadonlySignal, useSignal } from "@preact/signals";
 
 import { EndpointContext } from "../endpoints";
-import { AllMultiPeriodStreamsJson, MultiPeriodStreamSummary } from "../types/AllMultiPeriodStreams";
+import { MultiPeriodStreamSummary } from "../types/AllMultiPeriodStreams";
 
 export interface UseAllMultiPeriodStreamsHook {
   error: ReadonlySignal<string | null>;
@@ -56,10 +56,10 @@ export function useAllMultiPeriodStreams(): UseAllMultiPeriodStreamsHook {
     const fetchStreamsIfRequired = async () => {
       if (!loaded.value) {
         try {
-          const data: AllMultiPeriodStreamsJson = await apiRequests.getAllMultiPeriodStreams({ signal });
+          const data = await apiRequests.getAllMultiPeriodStreams({ signal });
           if (!signal.aborted) {
             loaded.value = true;
-            streams.value = data.streams;
+            streams.value = data;
             error.value = null;
             sortStreams(streams, sortField, sortAscending);
           }

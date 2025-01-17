@@ -452,10 +452,10 @@ export function useMultiPeriodStream({ name, newStream }: UseMultiPeriodStreamPr
           model.value = JSON.parse(JSON.stringify(blankModel));
           return;
         }
-        const data: MultiPeriodStreamJson = await apiRequests.getMultiPeriodStream(name, { signal });
+        const data: MultiPeriodStream = await apiRequests.getMultiPeriodStream(name, { signal });
         if (!signal.aborted) {
           loaded.value = name;
-          model.value = decorateMultiPeriodStream(data.model);
+          model.value = decorateMultiPeriodStream(data);
         }
       }
     };

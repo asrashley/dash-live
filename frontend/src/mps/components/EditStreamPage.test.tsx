@@ -8,7 +8,6 @@ import EditStreamPage from "./EditStreamPage";
 import { ApiRequests, EndpointContext } from "../../endpoints";
 import { uiRouteMap } from "../../test/fixtures/routemap.js";
 import { AllStreamsJson } from "../../types/AllStreams";
-import { MultiPeriodStreamJson } from "../../types/MultiPeriodStream";
 
 describe("EditStreamPage component", () => {
   const apiRequests = mock<ApiRequests>();
@@ -29,9 +28,9 @@ describe("EditStreamPage component", () => {
       }),
       new Promise<void>((resolve) => {
         apiRequests.getMultiPeriodStream.mockImplementation(async () => {
-          const demo = await import("../../test/fixtures/multi-period-streams/demo.json");
+          const { model } = await import("../../test/fixtures/multi-period-streams/demo.json");
           resolve();
-          return demo.default as MultiPeriodStreamJson;
+          return model;
         });
       }),
     ]);
