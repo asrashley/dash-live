@@ -6,9 +6,7 @@ import { useLocation } from 'wouter-preact';
 import { ApiRequests } from "./endpoints";
 import { App } from "./App";
 import { AllStreamsJson } from "./types/AllStreams";
-import { MultiPeriodStreamJson } from "./types/MultiPeriodStream";
 import { AppStateContext, AppStateType } from "./appState";
-import { AllMultiPeriodStreamsJson } from "./types/AllMultiPeriodStreams";
 
 vi.mock('./endpoints.js', async (importOriginal) => {
   const ApiRequests = vi.fn();
@@ -98,16 +96,16 @@ describe("main entry-point app", () => {
       }),
       getAllMultiPeriodStreams: new Promise<void>(resolve => {
         apiRequestMock.getAllMultiPeriodStreams.mockImplementation(async () => {
-          const streams = await import("./test/fixtures/multi-period-streams/index.json");
+          const {streams} = await import("./test/fixtures/multi-period-streams/index.json");
           resolve();
-          return streams.default as AllMultiPeriodStreamsJson;
+          return streams;
         });
       }),
       getMultiPeriodStream: new Promise<void>(resolve => {
         apiRequestMock.getMultiPeriodStream.mockImplementation(async () => {
-          const demo = await import("./test/fixtures/multi-period-streams/demo.json");
+          const { model } = await import("./test/fixtures/multi-period-streams/demo.json");
           resolve();
-          return demo.default as MultiPeriodStreamJson;
+          return model;
         });
       }),
       getContentRoles: new Promise<void>(resolve => {

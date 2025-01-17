@@ -15,8 +15,8 @@ describe("ListStreamsPage", () => {
 
   beforeEach(() => {
     apiRequests.getAllMultiPeriodStreams.mockImplementation(async () => {
-      const mps = await import("../../test/fixtures/multi-period-streams/index.json") as AllMultiPeriodStreamsJson;
-      return mps;
+      const { streams } = await import("../../test/fixtures/multi-period-streams/index.json") as AllMultiPeriodStreamsJson;
+      return streams;
     });
   });
 

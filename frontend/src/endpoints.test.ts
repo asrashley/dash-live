@@ -6,7 +6,7 @@ import log from 'loglevel';
 import { routeMap } from "@dashlive/routemap";
 
 import { MockDashServer, normalUser, UserModel } from "./test/MockServer";
-import { FakeEndpoint } from "./test/FakeEndpoint";
+import { FakeEndpoint, ServerRouteProps } from "./test/FakeEndpoint";
 import { ApiRequests } from "./endpoints";
 import { CsrfTokenCollection } from "./types/CsrfTokenCollection";
 import { DecoratedMultiPeriodStream } from "./types/DecoratedMultiPeriodStream";
@@ -135,26 +135,17 @@ describe('endpoints', () => {
     });
 
     test('get all conventional streams', async () => {
-        await expect(api.getAllStreams()).resolves.toEqual(allStdStreams);
+        const { keys, streams } = allStdStreams;
+        await expect(api.getAllStreams()).resolves.toEqual({keys, streams});
     });
 
     test('get all multi-period streams', async () => {
         const { streams } = await import('./test/fixtures/multi-period-streams/index.json');
-        await expect(api.getAllMultiPeriodStreams()).resolves.toEqual({
-            csrfTokens: expect.objectContaining({
-                streams: expect.any(String),
-            }),
-            streams,
-        });
+        await expect(api.getAllMultiPeriodStreams()).resolves.toEqual(streams);
     });
 
     test('get details of a multi-period stream', async () => {
-        await expect(api.getMultiPeriodStream('demo')).resolves.toEqual({
-            csrfTokens: {
-                streams: expect.any(String),
-            },
-            model: demoMps,
-        });
+        await expect(api.getMultiPeriodStream('demo')).resolves.toEqual(demoMps);
     });
 
     test('add a multi-period stream', async () => {
@@ -272,7 +263,8 @@ describe('endpoints', () => {
             accessToken: user.accessToken,
             refreshToken: user.refreshToken,
         });
-        await expect(api.getAllStreams()).resolves.toEqual(allStdStreams);
+        const { keys, streams } = allStdStreams;
+        await expect(api.getAllStreams()).resolves.toEqual({keys, streams});
     });
 
     test('gets an access token using a refresh token', async () => {
@@ -290,7 +282,7 @@ describe('endpoints', () => {
             refreshToken: user.refreshToken,
         });
         const prom = endpoint.addResponsePromise('get', routeMap.refreshAccessToken.url());
-        await expect(api.getAllStreams()).resolves.toEqual(allStdStreams);
+        await expect(api.getMultiPeriodStream( 'demo')).resolves.toEqual(demoMps);
         const response: RouteResponse = await prom;
         expect(response).toEqual(expect.objectContaining({
             status: 200,
@@ -308,21 +300,17 @@ describe('endpoints', () => {
 
     test('refreshes an access token', async () => {
         const { username } = normalUser;
-        expect(server.modifyUser({
-            username,
-            accessToken: {
-                expires: '2024-12-01T01:02:03Z',
-                jti: 'not.valid',
-            },
-        })).toEqual(true);
         const csrfTokens: CsrfTokenCollection = server.generateCsrfTokens(user);
         api = new ApiRequests({
             csrfTokens,
             navigate,
-            accessToken: null,
+            accessToken: {
+                expires: '2024-12-01T01:02:03Z',
+                jti: 'not.valid',
+            },
             refreshToken: user.refreshToken,
         });
-        await expect(api.getAllStreams()).resolves.toEqual(allStdStreams);
+        await expect(api.getMultiPeriodStream( 'demo')).resolves.toEqual(demoMps);
         expect(server.getUser({ username })?.accessToken).not.toBeNull();
     });
 
@@ -334,7 +322,7 @@ describe('endpoints', () => {
             accessToken: null,
             refreshToken: user.refreshToken,
         });
-        await expect(api.getAllStreams()).resolves.toEqual(allStdStreams);
+        await expect(api.getMultiPeriodStream( 'demo')).resolves.toEqual(demoMps);
         expect(server.getUser({ username })?.accessToken).not.toBeNull();
     });
 
@@ -361,6 +349,22 @@ describe('endpoints', () => {
         await expect(api.getAllStreams()).rejects.toThrowError("Cannot request CSRF tokens");
         expect(navigate).toHaveBeenCalled();
         expect(navigate).toHaveBeenCalledWith('/login');
+    });
+
+    test('can abort a request', async () => {
+        const controller = new AbortController();
+        const { promise, resolve } = Promise.withResolvers<void>();
+        endpoint.setResponseModifier(
+            'get',
+            routeMap.listManifests.url(),
+            async (_props: ServerRouteProps, response: RouteResponse) => {
+                await promise;
+                return response;
+            }
+        );
+        controller.abort("abort the request");
+        resolve();
+        await expect(api.getAllManifests({ signal: controller.signal })).rejects.toThrow("abort the request");
     });
 
 });

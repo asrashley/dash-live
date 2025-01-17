@@ -14,7 +14,7 @@ import { renderHookWithProviders } from "../test/renderHookWithProviders";
 import { useMultiPeriodStream, blankModel } from "./useMultiPeriodStream";
 import { ApiRequests, EndpointContext } from '../endpoints';
 import { mock } from "vitest-mock-extended";
-import { MultiPeriodStreamJson } from "../types/MultiPeriodStream";
+import { MultiPeriodStream } from "../types/MultiPeriodStream";
 import { ModifyMultiPeriodStreamJson } from "../types/ModifyMultiPeriodStreamJson";
 
 const expectedModel = {
@@ -100,9 +100,9 @@ describe("useMultiPeriodStream hook", () => {
   beforeEach(() => {
     getMultiPeriodStreamPromise = new Promise<void>((resolve) => {
       apiRequests.getMultiPeriodStream.mockImplementation(async () => {
-        const data = await import("../test/fixtures/multi-period-streams/demo.json");
+        const {model} = await import("../test/fixtures/multi-period-streams/demo.json");
         resolve();
-        return data.default as MultiPeriodStreamJson;
+        return model as MultiPeriodStream;
       });
     });
   });
