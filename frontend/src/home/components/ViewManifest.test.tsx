@@ -55,7 +55,7 @@ describe("ViewManifest component", () => {
     const { findByText } = renderWithProviders(
       <ViewManifest manifestUrl={manifestUrl} />
     );
-    await expect(prom).resolves.toEqual(500);
+    await expect(prom).resolves.toEqual(expect.objectContaining({status: 500}));
     await findByText("Fetching manifest failed", { exact: false });
     expect(messagesMock.appendMessage).toHaveBeenCalledTimes(1);
     expect(messagesMock.appendMessage).toHaveBeenCalledWith(

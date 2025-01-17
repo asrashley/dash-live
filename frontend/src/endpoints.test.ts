@@ -354,7 +354,7 @@ describe('endpoints', () => {
         endpoint.setResponseModifier(
             'get',
             routeMap.listManifests.url(),
-            async (_props: ServerRouteProps, response: RouteResponse) => {
+            async (_props: ServerRouteProps, response: HttpRequestHandlerResponse) => {
                 await promise;
                 return response;
             }

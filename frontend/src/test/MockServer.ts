@@ -111,11 +111,11 @@ export class MockDashServer {
                 const user = this.getUserFromAccessToken(props);
                 if (!user) {
                     log.trace('failed to find user from access token');
-                    return jsonResponse('', 401);
+                    return Promise.resolve(jsonResponse('', 401));
                 }
                 if (group && !user.groups.includes(group)) {
                     log.trace(`user is not a member of group ${group}`);
-                    return jsonResponse('', 401);
+                    return Promise.resolve(jsonResponse('', 401));
                 }
                 const nextProps = {
                     ...props,
