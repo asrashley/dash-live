@@ -1,4 +1,3 @@
-import { type JSX } from "preact";
 import { useCallback, useContext } from "preact/hooks";
 import { Signal, useComputed } from "@preact/signals";
 
@@ -8,145 +7,10 @@ import { AppStateContext } from "../../appState";
 import { MpsTrack } from "../../types/MpsTrack";
 import { TrackPickerDialogState } from "../../types/DialogState";
 import { MultiPeriodStream } from "../../types/MultiPeriodStream";
-import { ContentRolesMap } from "../../types/ContentRolesMap";
 import { DecoratedMpsTrack } from "../../types/DecoratedMpsTrack";
 import { useContentRoles } from "../../hooks/useContentRoles";
 import { StreamTrack } from "../../types/StreamTrack";
-
-interface RoleSelectProps {
-  name: string;
-  roles: Signal<string[]>;
-  value: string | number;
-  onChange: (ev: JSX.TargetedEvent<HTMLSelectElement>) => void;
-  className: string;
-  disabled?: boolean;
-}
-
-function RoleSelect({
-  name,
-  roles,
-  value,
-  onChange,
-  className,
-  disabled,
-}: RoleSelectProps) {
-  return (
-    <select
-      className={className}
-      name={name}
-      value={value}
-      onChange={onChange}
-      disabled={disabled}
-    >
-      {roles.value.map((role) => (
-        <option key={role} value={role}>
-          {role}
-        </option>
-      ))}
-    </select>
-  );
-}
-
-function allowedTrackRoles(
-  track: MpsTrack,
-  contentRoles: Signal<ContentRolesMap>
-): string[] {
-  const roles: string[] = [];
-  for (const [name, usage] of Object.entries(contentRoles.value)) {
-    if (usage.includes(track.content_type)) {
-      roles.push(name);
-    }
-  }
-  return roles;
-}
-
-interface TrackSelectRowProps {
-  contentRoles: Signal<ContentRolesMap>;
-  track: DecoratedMpsTrack;
-  onChange: (track: DecoratedMpsTrack) => void;
-  guest?: boolean;
-}
-
-function TrackSelectRow({
-  contentRoles,
-  track,
-  onChange,
-  guest,
-}: TrackSelectRowProps) {
-  const roles = useComputed(() => allowedTrackRoles(track, contentRoles));
-  const { track_id, enabled, encrypted, clearBitrates, encryptedBitrates } =
-    track;
-  const bitrates = encrypted ? encryptedBitrates : clearBitrates;
-  const bitratesText = bitrates > 1 ? `, ${bitrates} bitrates` : "";
-  const label = `${track.content_type} track ${track_id} (${track.codec_fourcc}${bitratesText})`;
-
-  const onToggleEnabled = () => {
-    if (guest) {
-      return;
-    }
-    onChange({
-      ...track,
-      enabled: !enabled,
-    });
-  };
-
-  const onToggleEncrypted = () => {
-    if (guest) {
-      return;
-    }
-    onChange({
-      ...track,
-      encrypted: !encrypted,
-    });
-  };
-
-  const onRoleChange = (ev: Event) => {
-    if (guest) {
-      return;
-    }
-    onChange({
-      ...track,
-      role: (ev.target as HTMLInputElement).value,
-    });
-  };
-
-  return (
-    <div className="input-group mb-3 row border p-1">
-      <div className="col-1">
-        <input
-          type="checkbox"
-          class="form-check-input"
-          id={`id_enable_${track_id}`}
-          name={`enable_${track_id}`}
-          checked={enabled}
-          onClick={onToggleEnabled}
-          disabled={guest}
-        />
-      </div>
-      <label className="form-check-label col-6" for={`id_enable_${track_id}`}>
-        {label}
-      </label>
-      <RoleSelect
-        roles={roles}
-        value={track.role}
-        className="form-select col-3"
-        disabled={guest}
-        name={`role_${track_id}`}
-        onChange={onRoleChange}
-      />
-      <div className="col-1">
-        <input
-          className="form-check-input"
-          type="checkbox"
-          checked={encrypted}
-          name={`enc_${track_id}`}
-          onClick={onToggleEncrypted}
-          disabled={guest || encryptedBitrates === 0}
-        />
-      </div>
-    </div>
-  );
-}
+import { TrackSelectRow } from "./TrackSelectRow";
 
 function generateMediaTracks(
   trackPicker: Signal<TrackPickerDialogState | undefined>,
@@ -242,7 +106,6 @@ export function TrackSelectionDialog({ onClose }: TrackSelectionDialogProps) {
         <div className="col-3 text-center">Role</div>
         <div className="col-2 text-end">Encrypted</div>
       </div>
-      $
       {mediaTracks.value.map((trk) => (
         <TrackSelectRow
           key={trk.pk}

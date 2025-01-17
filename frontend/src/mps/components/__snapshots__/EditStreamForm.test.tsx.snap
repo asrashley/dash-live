@@ -418,7 +418,7 @@ exports[`EditStreamForm component > matches snapshot for an existing stream 1`] 
       </button>
       <a
         class="btn m-2 btn-primary"
-        href="/api/multi-period-streams"
+        href="/multi-period-streams"
       >
         Back
       </a>

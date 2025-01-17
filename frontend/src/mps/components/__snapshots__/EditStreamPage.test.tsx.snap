@@ -432,7 +432,7 @@ exports[`EditStreamPage component > allows an existing stream to be edited 1`] =
           </button>
           <a
             class="btn m-2 btn-primary"
-            href="/api/multi-period-streams"
+            href="/multi-period-streams"
           >
             Back
           </a>

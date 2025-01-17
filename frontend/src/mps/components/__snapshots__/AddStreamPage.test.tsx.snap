@@ -189,7 +189,7 @@ exports[`AddStreamPage component > allows a new stream to be added 1`] = `
           </button>
           <a
             class="btn btn-danger m-2"
-            href="/api/multi-period-streams"
+            href="/multi-period-streams"
           >
             Cancel
           </a>
