@@ -15,7 +15,7 @@ import { useMultiPeriodStream, blankModel } from "./useMultiPeriodStream";
 import { ApiRequests, EndpointContext } from '../endpoints';
 import { mock } from "vitest-mock-extended";
 import { MultiPeriodStream } from "../types/MultiPeriodStream";
-import { ModifyMultiPeriodStreamJson } from "../types/ModifyMultiPeriodStreamJson";
+import { ModifyMultiPeriodStreamJson } from "../types/ModifyMultiPeriodStreamResponse";
 
 const expectedModel = {
   name: "demo",

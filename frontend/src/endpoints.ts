@@ -11,7 +11,7 @@ import { MultiPeriodStream, MultiPeriodStreamJson } from './types/MultiPeriodStr
 import { DecoratedMultiPeriodStream } from "./types/DecoratedMultiPeriodStream";
 import { AllMultiPeriodStreamsJson, MultiPeriodStreamSummary } from './types/AllMultiPeriodStreams';
 import { ContentRolesMap } from './types/ContentRolesMap';
-import { ModifyMultiPeriodStreamJson } from './types/ModifyMultiPeriodStreamJson';
+import { ModifyMultiPeriodStreamJson, ModifyMultiPeriodStreamResponse } from './types/ModifyMultiPeriodStreamResponse';
 import { InitialApiTokens } from './types/InitialApiTokens';
 import { LoginRequest } from './types/LoginRequest';
 import { LoginResponse } from './types/LoginResponse';
@@ -157,11 +157,13 @@ export class ApiRequests {
     return model;
   }
 
-  async addMultiPeriodStream(data: DecoratedMultiPeriodStream, options: Partial<ApiRequestOptions> = {}): Promise<ModifyMultiPeriodStreamJson> {
+  async addMultiPeriodStream(
+      data: DecoratedMultiPeriodStream,
+      options: Partial<ApiRequestOptions> = {}): Promise<ModifyMultiPeriodStreamResponse> {
     const service = 'streams';
     const csrf_token = await this.csrfTokens[service].getToken(
       options?.signal, this.getCsrfTokens);
-    return await this.sendApiRequest(routeMap.addMps.url(), {
+    const { errors, success, model } = await this.sendApiRequest<ModifyMultiPeriodStreamJson>(routeMap.addMps.url(), {
       ...options,
       service,
       body: JSON.stringify({
@@ -170,6 +172,7 @@ export class ApiRequests {
       }),
       method: 'PUT',
     });
+    return { errors, success, model };
   }
 
   async modifyMultiPeriodStream(mps_name: string, data: DecoratedMultiPeriodStream,

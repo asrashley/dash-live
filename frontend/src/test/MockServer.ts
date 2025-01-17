@@ -7,7 +7,7 @@ import { ContentRolesMap } from '../types/ContentRolesMap';
 import { CsrfTokenCollection } from '../types/CsrfTokenCollection';
 import { JwtToken } from '../types/JwtToken';
 import { AllMultiPeriodStreamsJson, MultiPeriodStreamSummary } from '../types/AllMultiPeriodStreams';
-import { ModifyMultiPeriodStreamJson } from '../types/ModifyMultiPeriodStreamJson';
+import { ModifyMultiPeriodStreamJson } from '../types/ModifyMultiPeriodStreamResponse.js';
 import { MultiPeriodStream, MultiPeriodStreamJson } from '../types/MultiPeriodStream';
 import { LoginRequest } from "../types/LoginRequest";
 import { LoginResponse } from "../types/LoginResponse";

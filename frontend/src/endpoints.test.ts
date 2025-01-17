@@ -173,9 +173,6 @@ describe('endpoints', () => {
             model: newMps,
             success: true,
             errors: [],
-            csrfTokens: expect.objectContaining({
-                streams: expect.any(String),
-            })
         });
     });
 
