@@ -6,7 +6,7 @@ import log from 'loglevel';
 import { routeMap } from "@dashlive/routemap";
 
 import { MockDashServer, normalUser, UserModel } from "./test/MockServer";
-import { FakeEndpoint, ServerRouteProps } from "./test/FakeEndpoint";
+import { FakeEndpoint, HttpRequestHandlerResponse, ServerRouteProps } from "./test/FakeEndpoint";
 import { ApiRequests } from "./endpoints";
 import { CsrfTokenCollection } from "./types/CsrfTokenCollection";
 import { DecoratedMultiPeriodStream } from "./types/DecoratedMultiPeriodStream";
@@ -308,7 +308,8 @@ describe('endpoints', () => {
             refreshToken: user.refreshToken,
         });
         await expect(api.getMultiPeriodStream( 'demo')).resolves.toEqual(demoMps);
-        expect(server.getUser({ username })?.accessToken).not.toBeNull();
+        expect(server.getUser({ username })?.accessToken).toBeDefined();
+        expect(server.getUser({ username })?.accessToken.jti).not.toEqual('not.valid');
     });
 
     test('refreshes both access token and CSRF tokens', async () => {
@@ -363,5 +364,32 @@ describe('endpoints', () => {
         resolve();
         await expect(api.getAllManifests({ signal: controller.signal })).rejects.toThrow("abort the request");
     });
+
+    test('can abort after refreshing an access token', async () => {
+        const controller = new AbortController();
+        const { username } = normalUser;
+        const url: string = routeMap.editMps.url({mps_name: "demo"});
+        const csrfTokens: CsrfTokenCollection = server.generateCsrfTokens(user);
+        api = new ApiRequests({
+            csrfTokens,
+            navigate,
+            accessToken: {
+                expires: '2024-12-01T01:02:03Z',
+                jti: 'not.valid',
+            },
+            refreshToken: user.refreshToken,
+        });
+        const responseSpy = vi.fn();
+        endpoint.setResponseModifier('get', url, responseSpy);
+        responseSpy.mockImplementationOnce(async (_props: ServerRouteProps, response: HttpRequestHandlerResponse) => {
+            controller.abort("abort request");
+            return response;
+        });
+        await expect(api.getMultiPeriodStream('demo', {signal: controller.signal})).rejects.toThrow("aborted");
+        expect(responseSpy).toHaveBeenCalledTimes(1);
+        expect(server.getUser({ username })?.accessToken).toBeDefined();
+        expect(server.getUser({ username })?.accessToken.jti).not.toEqual('not.valid');
+    });
+
 
 });

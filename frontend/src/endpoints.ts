@@ -277,6 +277,7 @@ export class ApiRequests {
         throw new Error('Failed to refresh access token');
       }
       headers.set('Authorization', `Bearer ${this.accessToken.jti}`);
+      log.trace(`retrying sendApiRequest(${url})`);
       fetchResult = await fetch(url, {
           cache,
           credentials,
