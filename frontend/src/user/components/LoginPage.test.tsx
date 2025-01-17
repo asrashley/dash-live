@@ -24,11 +24,11 @@ describe("LoginPage component", () => {
     const loginResponse: LoginResponse = {
         success: true,
         accessToken: {
-            jti: 'access.abc123',
+            jwt: 'access.abc123',
             expires: '2025-01-09T22:33:44Z',
         },
         refreshToken: {
-            jti: 'refresh.abc123',
+            jwt: 'refresh.abc123',
             expires: '2025-01-09T22:33:44Z',
         },
         user: {

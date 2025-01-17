@@ -303,13 +303,13 @@ describe('endpoints', () => {
             navigate,
             accessToken: {
                 expires: '2024-12-01T01:02:03Z',
-                jti: 'not.valid',
+                jwt: 'not.valid',
             },
             refreshToken: user.refreshToken,
         });
         await expect(api.getMultiPeriodStream( 'demo')).resolves.toEqual(demoMps);
         expect(server.getUser({ username })?.accessToken).toBeDefined();
-        expect(server.getUser({ username })?.accessToken.jti).not.toEqual('not.valid');
+        expect(server.getUser({ username })?.accessToken.jwt).not.toEqual('not.valid');
     });
 
     test('refreshes both access token and CSRF tokens', async () => {
@@ -341,7 +341,7 @@ describe('endpoints', () => {
             accessToken: null,
             refreshToken: {
                 expires: '2024-12-01T01:23:45Z',
-                jti: 'abc123',
+                jwt: 'abc123',
             },
         });
         await expect(api.getAllStreams()).rejects.toThrowError("Failed to refresh access token");
@@ -375,7 +375,7 @@ describe('endpoints', () => {
             navigate,
             accessToken: {
                 expires: '2024-12-01T01:02:03Z',
-                jti: 'not.valid',
+                jwt: 'not.valid',
             },
             refreshToken: user.refreshToken,
         });
@@ -388,7 +388,7 @@ describe('endpoints', () => {
         await expect(api.getMultiPeriodStream('demo', {signal: controller.signal})).rejects.toThrow("aborted");
         expect(responseSpy).toHaveBeenCalledTimes(1);
         expect(server.getUser({ username })?.accessToken).toBeDefined();
-        expect(server.getUser({ username })?.accessToken.jti).not.toEqual('not.valid');
+        expect(server.getUser({ username })?.accessToken.jwt).not.toEqual('not.valid');
     });
 
 

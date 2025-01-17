@@ -5,9 +5,9 @@ import { routeMap } from './fixtures/routemap.js';
 import { dataResponse, FakeEndpoint, HttpRequestHandler, jsonResponse, notFound, ServerRouteProps } from './FakeEndpoint'
 import { ContentRolesMap } from '../types/ContentRolesMap';
 import { CsrfTokenCollection } from '../types/CsrfTokenCollection';
-import { JwtToken } from '../types/JwtToken';
+import { JWToken } from '../types/JWToken';
 import { AllMultiPeriodStreamsJson, MultiPeriodStreamSummary } from '../types/AllMultiPeriodStreams';
-import { ModifyMultiPeriodStreamJson } from '../types/ModifyMultiPeriodStreamResponse.js';
+import { ModifyMultiPeriodStreamJson } from '../types/ModifyMultiPeriodStreamResponse';
 import { MultiPeriodStream, MultiPeriodStreamJson } from '../types/MultiPeriodStream';
 import { LoginRequest } from "../types/LoginRequest";
 import { LoginResponse } from "../types/LoginResponse";
@@ -27,8 +27,8 @@ export type UserModel = {
     mustChange: boolean;
     lastLogin: string | null;
     groups: UserGroups[];
-    refreshToken: JwtToken | null;
-    accessToken: JwtToken | null;
+    refreshToken: JWToken | null;
+    accessToken: JWToken | null;
 };
 
 export const normalUser: UserModel = {
@@ -277,7 +277,7 @@ export class MockDashServer {
             return jsonResponse('Missing Authorization header', 401);
         }
         const token = (headers['authorization'] as string).split(' ')[1];
-        const user = this.userDatabase.find(usr => usr.refreshToken?.jti === token);
+        const user = this.userDatabase.find(usr => usr.refreshToken?.jwt === token);
         if (!user) {
             return jsonResponse('Refresh token mismatch', 401);
         }
@@ -432,7 +432,7 @@ export class MockDashServer {
             return undefined;
         }
         const token = (headers['authorization'] as string).split(' ')[1];
-        const user = this.userDatabase.find(usr => usr.accessToken?.jti === token);
+        const user = this.userDatabase.find(usr => usr.accessToken?.jwt === token);
         return user;
     }
 
@@ -451,19 +451,19 @@ export class MockDashServer {
         });
     }
 
-    private generateAccessToken(username: string): JwtToken {
+    private generateAccessToken(username: string): JWToken {
         const expires = new Date(Date.now() + this.accessTokenLifetime).toISOString();
         return {
             expires,
-            jti: `access.${username}.${this.nextAccessTokenId++}`,
+            jwt: `access.${username}.${this.nextAccessTokenId++}`,
         };
     }
 
-    private generateRefreshToken(username: string): JwtToken {
+    private generateRefreshToken(username: string): JWToken {
         const expires = new Date(Date.now() + this.refreshTokenLifetime).toISOString();
         return {
             expires,
-            jti: `refresh.${username}.${this.nextAccessTokenId++}`,
+            jwt: `refresh.${username}.${this.nextAccessTokenId++}`,
         };
     }
 }

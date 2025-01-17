@@ -1,8 +1,8 @@
 import { CsrfTokenCollection } from "./CsrfTokenCollection";
-import { JwtToken } from "./JwtToken";
+import { JWToken } from "./JWToken";
 
 export interface InitialApiTokens {
     csrfTokens: Partial<CsrfTokenCollection>;
-    accessToken: JwtToken | null;
-    refreshToken: JwtToken | null;
+    accessToken: JWToken | null;
+    refreshToken: JWToken | null;
 }

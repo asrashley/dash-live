@@ -6,7 +6,7 @@ import { CsrfTokenStore } from './CsrfTokenStore';
 import { CsrfTokenCollection } from './types/CsrfTokenCollection';
 import { AllManifests } from './types/AllManifests';
 import { AllStreamsJson, AllStreamsResponse } from './types/AllStreams';
-import { JwtToken } from './types/JwtToken';
+import { JWToken } from './types/JWToken';
 import { MultiPeriodStream, MultiPeriodStreamJson } from './types/MultiPeriodStream';
 import { DecoratedMultiPeriodStream } from "./types/DecoratedMultiPeriodStream";
 import { AllMultiPeriodStreamsJson, MultiPeriodStreamSummary } from './types/AllMultiPeriodStreams';
@@ -41,7 +41,7 @@ export type GetAllStreamsProps = ApiRequestOptions & {
 };
 
 type RefreshAccessTokenResponse = {
-  accessToken?: JwtToken;
+  accessToken?: JWToken;
   csrfTokens: CsrfTokenCollection;
   ok: boolean;
   status: number;
@@ -53,8 +53,8 @@ export interface ApiRequestsProps extends InitialApiTokens {
 
 export class ApiRequests {
   private csrfTokens: TokenStoreCollection;
-  private accessToken: JwtToken | null;
-  private refreshToken: JwtToken | null;
+  private accessToken: JWToken | null;
+  private refreshToken: JWToken | null;
   private navigate: ApiRequestsProps['navigate'];
 
   constructor({csrfTokens, accessToken, refreshToken, navigate}: ApiRequestsProps) {
@@ -232,7 +232,7 @@ export class ApiRequests {
         await this.getAccessToken(signal);
       }
       if (this.accessToken) {
-        headers.set('Authorization', `Bearer ${this.accessToken.jti}`);
+        headers.set('Authorization', `Bearer ${this.accessToken.jwt}`);
         usedAccessToken = true;
       } else if (service) {
         const token = await this.csrfTokens[service].getToken(signal);
@@ -266,7 +266,7 @@ export class ApiRequests {
     log.trace(`url=${url} status=${fetchResult.status} usedAccessToken=${usedAccessToken}`);
     if (fetchResult.status === 401 && usedAccessToken && this.refreshToken) {
       await this.getAccessToken(signal);
-      headers.set('Authorization', `Bearer ${this.accessToken.jti}`);
+      headers.set('Authorization', `Bearer ${this.accessToken.jwt}`);
       log.trace(`retrying sendApiRequest(${url})`);
       fetchResult = await fetch(url, {
           cache,
@@ -313,12 +313,12 @@ export class ApiRequests {
     }
   }
 
-  private async getAccessToken(signal: AbortSignal): Promise<JwtToken> {
+  private async getAccessToken(signal: AbortSignal): Promise<JWToken> {
     if (!this.refreshToken) {
       throw new Error('Cannot request an access token without a refresh token');
     }
     const options = {
-      authorization: this.refreshToken.jti,
+      authorization: this.refreshToken.jwt,
       rejectOnError: false,
       signal,
     };
@@ -345,7 +345,7 @@ export class ApiRequests {
       throw new Error('Cannot request CSRF tokens without an access token');
     }
     const options = {
-      authorization: this.accessToken.jti,
+      authorization: this.accessToken.jwt,
       signal,
     };
     const data = await this.sendApiRequest<RefreshAccessTokenResponse>(routeMap.refreshCsrfTokens.url(), options);
