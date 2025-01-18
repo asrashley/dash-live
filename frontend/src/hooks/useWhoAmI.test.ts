@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { act, renderHook } from "@testing-library/preact";
 import { mock } from "vitest-mock-extended";
 
-import { useWhoAmI, UseWhoAmIHook, UseWhoAmIProps } from "./useWhoAmI";
+import { useWhoAmI, UseWhoAmIHook } from "./useWhoAmI";
 import { ApiRequests } from "../endpoints";
 import { UserState } from "../types/UserState";
 import { LoginResponse } from "../types/LoginResponse";
@@ -25,9 +25,11 @@ describe('useWhoAmI hook', () => {
     });
 
     test('initial user state, no refresh token', async () => {
-        const { result } = renderHook<UseWhoAmIHook, UseWhoAmIProps>(() => useWhoAmI({ apiRequests, refreshToken: null }));
+        apiRequests.getUserInfo.mockResolvedValue(new Response(null, {status: 401}));
+        const { result } = renderHook<UseWhoAmIHook, [ApiRequests]>(() => useWhoAmI(apiRequests));
+        await Promise.resolve();
         expect(result.current.checked.value).toEqual(true);
-        expect(apiRequests.getUserInfo).not.toHaveBeenCalled();
+        expect(apiRequests.getUserInfo).toHaveBeenCalled();
     });
 
     test('initial user state, expired refresh token', async () => {
@@ -39,13 +41,7 @@ describe('useWhoAmI hook', () => {
                 return new Response(null, { status: 401 });
             });
         });
-        const { result } = renderHook<UseWhoAmIHook, UseWhoAmIProps>(() => useWhoAmI({
-            apiRequests,
-            refreshToken: {
-                expires: '2025-01-18T14:58:00Z',
-                jwt: 'ghhjkjhkh',
-            },
-        }));
+        const { result } = renderHook(() => useWhoAmI(apiRequests));
         expect(result.current.checked.value).toEqual(false);
         expect(result.current.user.value).toEqual(blankUser);
         await act(async () => {
@@ -72,13 +68,7 @@ describe('useWhoAmI hook', () => {
                 return response;
             });
         });
-        const { result } = renderHook<UseWhoAmIHook, UseWhoAmIProps>(() => useWhoAmI({
-            apiRequests,
-            refreshToken: {
-                expires: '2025-18-01T10:57:00Z',
-                jwt: 'abcdef',
-            },
-        }));
+        const { result } = renderHook(() => useWhoAmI(apiRequests));
         await expect(prom).resolves.toBeUndefined();
         expect(result.current.user.value).toEqual({
             ...mediaUser,

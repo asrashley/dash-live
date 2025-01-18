@@ -1,13 +1,12 @@
+import { createContext } from "preact";
 import { useCallback, useEffect } from "preact/hooks";
 import { type ReadonlySignal, useComputed, useSignal } from "@preact/signals";
 import log from "loglevel";
 
 import { ApiRequests } from "../endpoints";
-import { JWToken } from "../types/JWToken";
 import { LoginResponse } from "../types/LoginResponse";
 import { InitialUserState, UserState } from "../types/UserState";
 import { useMessages } from "./useMessages";
-import { createContext } from "preact";
 
 export interface UseWhoAmIHook {
   error: ReadonlySignal<string | null>;
@@ -16,14 +15,9 @@ export interface UseWhoAmIHook {
   setUser: (ius: InitialUserState) => void;
 }
 
-export interface UseWhoAmIProps {
-    apiRequests: ApiRequests;
-    refreshToken: Readonly<JWToken | null>;
-}
-
 export const WhoAmIContext = createContext<UseWhoAmIHook>(null);
 
-export function useWhoAmI({ apiRequests, refreshToken }: UseWhoAmIProps): UseWhoAmIHook {
+export function useWhoAmI(apiRequests: ApiRequests): UseWhoAmIHook {
   const { appendMessage } = useMessages();
   const checked = useSignal<boolean>(false);
   const userInfo = useSignal<InitialUserState>({isAuthenticated: false, groups:[]});
@@ -46,12 +40,8 @@ export function useWhoAmI({ apiRequests, refreshToken }: UseWhoAmIProps): UseWho
     const { signal } = controller;
 
     const checkUserInfoIfRequired = async () => {
-      log.trace(`getUserInfo hook checked=${checked.value} error=${error.value} token=${refreshToken}`);
+      log.trace(`getUserInfo hook checked=${checked.value} error=${error.value}`);
       if (!checked.value) {
-        if (refreshToken === null) {
-            checked.value = true;
-            return;
-        }
         try {
           log.trace('Trying to fetch user info..');
           const response = await apiRequests.getUserInfo(signal);
@@ -80,7 +70,7 @@ export function useWhoAmI({ apiRequests, refreshToken }: UseWhoAmIProps): UseWho
         controller.abort();
       }
     };
-  }, [apiRequests, error, checked, refreshToken, userInfo, appendMessage]);
+  }, [apiRequests, error, checked, userInfo, appendMessage]);
 
   return { checked, error, user, setUser };
 }

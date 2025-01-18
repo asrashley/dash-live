@@ -4,10 +4,12 @@ import { Route, Switch, useLocation } from "wouter-preact";
 import lazy from "preact-lazy";
 
 import { uiRouteMap } from "@dashlive/routemap";
+
 import { LoadingSpinner } from "./components/LoadingSpinner";
 import { MessagesPanel } from "./components/MessagesPanel";
 import { ModalBackdrop } from "./components/ModalBackdrop";
 import { NavHeader } from "./components/NavHeader";
+import { WhoAmIProvider } from "./WhoAmIProvider";
 
 import { ApiRequests, EndpointContext } from "./endpoints";
 import { AppStateContext, AppStateType, createAppState } from "./appState";
@@ -15,7 +17,6 @@ import { PageNotFound } from "./components/PageNotFound";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { InitialApiTokens } from "./types/InitialApiTokens";
 import { NavBarItem } from "./types/NavBarItem";
-import { useWhoAmI, WhoAmIContext } from "./hooks/useWhoAmI";
 
 const AddStreamPage = lazy(
   () => import("./mps/components/AddStreamPage"),
@@ -75,10 +76,6 @@ export function App({ children, navbar, tokens }: AppProps) {
     [refreshToken, setLocation, tokens]
   );
   const state: AppStateType = useMemo(() => createAppState(), []);
-  const whoAmI = useWhoAmI({
-    apiRequests,
-    refreshToken: refreshToken ?? tokens.refreshToken,
-  });
   const { backdrop } = state;
 
   useEffect(() => {
@@ -92,14 +89,14 @@ export function App({ children, navbar, tokens }: AppProps) {
   return (
     <AppStateContext.Provider value={state}>
       <EndpointContext.Provider value={apiRequests}>
-        <WhoAmIContext.Provider value={whoAmI}>
+        <WhoAmIProvider>
           <NavHeader navbar={navbar} />
           <MessagesPanel />
           <div className="content container-fluid">
-            {whoAmI.checked.value ? <AppRoutes /> : <LoadingSpinner />}
+            <AppRoutes />
             {children}
           </div>
-        </WhoAmIContext.Provider>
+        </WhoAmIProvider>
       </EndpointContext.Provider>
       <ModalBackdrop />
     </AppStateContext.Provider>
