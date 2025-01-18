@@ -1,10 +1,9 @@
 import { beforeEach, describe, expect, test } from "vitest";
+import { mock } from "vitest-mock-extended";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import ListStreamsPage from "./ListStreamsPage";
 import { ApiRequests, EndpointContext } from "../../endpoints";
-import { mock } from "vitest-mock-extended";
-import { AllMultiPeriodStreamsJson } from "../../types/AllMultiPeriodStreams";
 
 describe("ListStreamsPage", () => {
   const apiRequests = mock<ApiRequests>();
@@ -15,8 +14,8 @@ describe("ListStreamsPage", () => {
 
   beforeEach(() => {
     apiRequests.getAllMultiPeriodStreams.mockImplementation(async () => {
-      const { streams } = await import("../../test/fixtures/multi-period-streams/index.json") as AllMultiPeriodStreamsJson;
-      return streams;
+      const streams = await import("../../test/fixtures/multi-period-streams/index.json");
+      return streams.default;
     });
   });
 

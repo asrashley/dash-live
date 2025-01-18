@@ -1,73 +1,107 @@
-import { type ComponentChildren } from 'preact';
-import { useEffect, useMemo } from 'preact/hooks'
+import { type ComponentChildren } from "preact";
+import { useEffect, useMemo } from "preact/hooks";
 import { Route, Switch, useLocation } from "wouter-preact";
-import lazy from 'preact-lazy';
+import lazy from "preact-lazy";
 
-import { uiRouteMap } from '@dashlive/routemap';
-import { navbar } from '@dashlive/init';
-import { LoadingSpinner } from './components/LoadingSpinner';
-import { MessagesPanel } from './components/MessagesPanel';
-import { ModalBackdrop } from './components/ModalBackdrop';
-import { NavHeader } from './components/NavHeader';
+import { uiRouteMap } from "@dashlive/routemap";
+import { LoadingSpinner } from "./components/LoadingSpinner";
+import { MessagesPanel } from "./components/MessagesPanel";
+import { ModalBackdrop } from "./components/ModalBackdrop";
+import { NavHeader } from "./components/NavHeader";
 
-import { ApiRequests, EndpointContext } from './endpoints';
-import { AppStateContext, AppStateType, createAppState } from './appState';
-import { InitialUserState } from './types/UserState';
-import { InitialApiTokens } from './types/InitialApiTokens';
-import { PageNotFound } from './components/PageNotFound';
+import { ApiRequests, EndpointContext } from "./endpoints";
+import { AppStateContext, AppStateType, createAppState } from "./appState";
+import { PageNotFound } from "./components/PageNotFound";
+import { useLocalStorage } from "./hooks/useLocalStorage";
+import { InitialApiTokens } from "./types/InitialApiTokens";
+import { NavBarItem } from "./types/NavBarItem";
+import { useWhoAmI, WhoAmIContext } from "./hooks/useWhoAmI";
 
-const AddStreamPage = lazy(() => import('./mps/components/AddStreamPage'), LoadingSpinner);
-const EditStreamPage = lazy(() => import('./mps/components/EditStreamPage'), LoadingSpinner);
-const HomePage = lazy(() => import('./home/components/HomePage'), LoadingSpinner);
-const ListStreamsPage = lazy(() => import('./mps/components/ListStreamsPage'), LoadingSpinner);
-const LoginPage = lazy(() => import('./user/components/LoginPage'), LoadingSpinner);
-const CgiOptionsPage = lazy(() => import('./cgi/components/CgiOptionsPage'), LoadingSpinner);
+const AddStreamPage = lazy(
+  () => import("./mps/components/AddStreamPage"),
+  LoadingSpinner
+);
+const EditStreamPage = lazy(
+  () => import("./mps/components/EditStreamPage"),
+  LoadingSpinner
+);
+const HomePage = lazy(
+  () => import("./home/components/HomePage"),
+  LoadingSpinner
+);
+const ListStreamsPage = lazy(
+  () => import("./mps/components/ListStreamsPage"),
+  LoadingSpinner
+);
+const LoginPage = lazy(
+  () => import("./user/components/LoginPage"),
+  LoadingSpinner
+);
+const CgiOptionsPage = lazy(
+  () => import("./cgi/components/CgiOptionsPage"),
+  LoadingSpinner
+);
+
+function AppRoutes() {
+  return (
+    <Switch>
+      <Route component={ListStreamsPage} path={uiRouteMap.listMps.route} />
+      <Route component={AddStreamPage} path={uiRouteMap.addMps.route} />
+      <Route component={EditStreamPage} path={uiRouteMap.editMps.route} />
+      <Route component={LoginPage} path={uiRouteMap.login.route} />
+      <Route component={CgiOptionsPage} path={uiRouteMap.cgiOptions.route} />
+      <Route component={HomePage} path={uiRouteMap.home.route} />
+      <Route path="*" component={PageNotFound} />
+    </Switch>
+  );
+}
 
 export interface AppProps {
   tokens: InitialApiTokens;
-  user: InitialUserState;
+  navbar: NavBarItem[];
   children?: ComponentChildren;
 }
 
-export function App({children, tokens, user}: AppProps) {
+export function App({ children, navbar, tokens }: AppProps) {
   const setLocation = useLocation()[1];
-  const apiRequests = useMemo(() => new ApiRequests({
-    ...tokens,
-    navigate: setLocation
-  }), [setLocation, tokens]);
-  const state: AppStateType = useMemo(() => createAppState(user), [user]);
+  const { refreshToken } = useLocalStorage();
+  const apiRequests = useMemo(
+    () =>
+      new ApiRequests({
+        accessToken: refreshToken ? null : tokens.accessToken,
+        refreshToken: refreshToken ?? tokens.refreshToken,
+        navigate: setLocation,
+      }),
+    [refreshToken, setLocation, tokens]
+  );
+  const state: AppStateType = useMemo(() => createAppState(), []);
+  const whoAmI = useWhoAmI({
+    apiRequests,
+    refreshToken: refreshToken ?? tokens.refreshToken,
+  });
   const { backdrop } = state;
 
   useEffect(() => {
-    const elt = document.querySelector('.modal-backdrop');
     if (backdrop.value) {
-      elt.classList.add('show');
-      elt.classList.remove('hidden');
-      document.body.classList.add('modal-open');
+      document.body.classList.add("modal-open");
     } else {
-      elt.classList.remove('show');
-      elt.classList.add('hidden');
-      document.body.classList.remove('modal-open');
+      document.body.classList.remove("modal-open");
     }
   }, [backdrop.value]);
 
-  return <AppStateContext.Provider value={state}>
-  <EndpointContext.Provider value={apiRequests}>
-    <NavHeader navbar={navbar} />
-    <MessagesPanel />
-    <div className="content container-fluid">
-      <Switch>
-        <Route component={ListStreamsPage} path={ uiRouteMap.listMps.route } />
-        <Route component={AddStreamPage} path={ uiRouteMap.addMps.route } />
-        <Route component={EditStreamPage} path={ uiRouteMap.editMps.route } />
-        <Route component={LoginPage} path={ uiRouteMap.login.route } />
-        <Route component={CgiOptionsPage} path={ uiRouteMap.cgiOptions.route } />
-        <Route component={HomePage} path={ uiRouteMap.home.route } />
-        <Route path="*" component={PageNotFound} />
-      </Switch>
-      { children }
-    </div>
-    <ModalBackdrop />
-  </EndpointContext.Provider>
-</AppStateContext.Provider>;
+  return (
+    <AppStateContext.Provider value={state}>
+      <EndpointContext.Provider value={apiRequests}>
+        <WhoAmIContext.Provider value={whoAmI}>
+          <NavHeader navbar={navbar} />
+          <MessagesPanel />
+          <div className="content container-fluid">
+            {whoAmI.checked.value ? <AppRoutes /> : <LoadingSpinner />}
+            {children}
+          </div>
+        </WhoAmIContext.Provider>
+      </EndpointContext.Provider>
+      <ModalBackdrop />
+    </AppStateContext.Provider>
+  );
 }

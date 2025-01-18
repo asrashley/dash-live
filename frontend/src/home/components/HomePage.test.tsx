@@ -1,52 +1,32 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { mock } from "vitest-mock-extended";
 import userEvent from "@testing-library/user-event";
 import fetchMock from "@fetch-mock/vitest";
 
+import { routeMap } from "@dashlive/routemap";
+
 import { renderWithProviders } from "../../test/renderWithProviders";
 import { ApiRequests, EndpointContext } from "../../endpoints";
-import { AllManifests } from "../../types/AllManifests";
-import { AllStreamsJson } from "../../types/AllStreams";
 import HomePage from "./HomePage";
-import { FakeEndpoint } from "../../test/FakeEndpoint";
-import { MockDashServer } from "../../test/MockServer";
-import { routeMap } from "@dashlive/routemap";
-import { previousOptionsKeyName } from "../hooks/useStreamOptions";
+import { FakeEndpoint, jsonResponse } from "../../test/FakeEndpoint";
+import { mediaUser, MockDashServer } from "../../test/MockServer";
+import { LocalStorageKeys } from "../../hooks/useLocalStorage";
 
 describe("HomePage", () => {
-  const apiRequests = mock<ApiRequests>();
-  let getManifests: Promise<void>;
-  let getStdStreams: Promise<void>;
-  let getMpsStreams: Promise<void>;
+  const navigate = vi.fn();
+  let apiRequests: ApiRequests;
   let endpoint: FakeEndpoint;
 
   beforeEach(() => {
     endpoint = new FakeEndpoint(document.location.origin);
-    new MockDashServer({
+    const server = new MockDashServer({
       endpoint,
     });
-    getManifests = new Promise<void>((resolve) => {
-      apiRequests.getAllManifests.mockImplementation(async () => {
-        const manifests = await import("../../test/fixtures/manifests.json");
-        resolve();
-        return manifests.default as AllManifests;
-      });
-    });
-    getStdStreams = new Promise<void>((resolve) => {
-      apiRequests.getAllStreams.mockImplementation(async () => {
-        const streams = await import("../../test/fixtures/streams.json");
-        resolve();
-        return streams.default as AllStreamsJson;
-      });
-    });
-    getMpsStreams = new Promise<void>((resolve) => {
-      apiRequests.getAllMultiPeriodStreams.mockImplementation(async () => {
-        const { streams } = await import(
-          "../../test/fixtures/multi-period-streams/index.json"
-        );
-        resolve();
-        return streams;
-      });
+    const user = server.login(mediaUser.username, mediaUser.password);
+    apiRequests = new ApiRequests({
+      csrfTokens: {},
+      accessToken: user.accessToken,
+      refreshToken: user.refreshToken,
+      navigate,
     });
   });
 
@@ -63,8 +43,8 @@ describe("HomePage", () => {
         <HomePage />
       </EndpointContext.Provider>
     );
-    await Promise.all([getManifests, getStdStreams, getMpsStreams]);
     await findByText("Stream to play");
+    await findByText("Hand-made manifest");
     await findByText("Video Player:");
     await findByText("Play Big Buck Bunny");
     await findByText("/dash/vod/bbb/hand_made.mpd", { exact: false });
@@ -73,16 +53,15 @@ describe("HomePage", () => {
 
   test("can select a multi-period stream", async () => {
     const user = userEvent.setup();
-    const { getBySelector, findByText } = renderWithProviders(
+    const { findBySelector, findByText } = renderWithProviders(
       <EndpointContext.Provider value={apiRequests}>
         <HomePage />
       </EndpointContext.Provider>
     );
-    await Promise.all([getManifests, getStdStreams, getMpsStreams]);
-    const streamSelect = getBySelector("#model-stream") as HTMLSelectElement;
+    const streamSelect = await findBySelector("#model-stream") as HTMLSelectElement;
     await user.selectOptions(streamSelect, ["first title"]);
     await findByText("Play first title");
-    const playBtn = getBySelector(".play-button > .btn") as HTMLAnchorElement;
+    const playBtn = await findBySelector(".play-button > .btn") as HTMLAnchorElement;
     const playUrl = new URL(
       routeMap.videoMps.url({
         mode: "vod",
@@ -92,7 +71,7 @@ describe("HomePage", () => {
       document.location.href
     );
     expect(playBtn.getAttribute("href")).toEqual(playUrl.href);
-    const anchor = getBySelector("#dashurl") as HTMLAnchorElement;
+    const anchor = await findBySelector("#dashurl") as HTMLAnchorElement;
     const mpdUrl = new URL(
       routeMap.mpsManifest.url({
         mode: "vod",
@@ -107,7 +86,7 @@ describe("HomePage", () => {
   test("can reset previous options", async () => {
     const user = userEvent.setup();
     localStorage.setItem(
-      previousOptionsKeyName,
+      LocalStorageKeys.DASH_OPTIONS,
       JSON.stringify({
         manifest: "hand_made.mpd",
         mode: "vod",
@@ -119,10 +98,9 @@ describe("HomePage", () => {
         <HomePage />
       </EndpointContext.Provider>
     );
-    await Promise.all([getManifests, getStdStreams, getMpsStreams]);
     await findByText("Play first title");
     await user.click(getBySelector(".reset-all-button > .btn"));
-    expect(localStorage.getItem(previousOptionsKeyName)).toBeNull();
+    expect(localStorage.getItem(LocalStorageKeys.DASH_OPTIONS)).toBeNull();
     await findByText("Play Big Buck Bunny");
   });
 
@@ -133,14 +111,16 @@ describe("HomePage", () => {
       streams: "S_f42Pmob",
       upload: "geVWPK6i",
     };
-    apiRequests.getAllStreams.mockImplementation(async () => {
-      return {
+    endpoint.setResponseModifier('get', routeMap.listStreams.url(), async () => {
+      return jsonResponse({
         csrf_tokens,
         keys: [],
         streams: [],
-      };
+      });
     });
-    apiRequests.getAllMultiPeriodStreams.mockResolvedValue([]);
+    endpoint.setResponseModifier('get', routeMap.listMps.url(), async () => {
+      return jsonResponse([]);
+    });
     const { findByText } = renderWithProviders(
       <EndpointContext.Provider value={apiRequests}>
         <HomePage />
@@ -157,7 +137,6 @@ describe("HomePage", () => {
         <HomePage />
       </EndpointContext.Provider>
     );
-    await Promise.all([getManifests, getStdStreams, getMpsStreams]);
     await findByText("Play Big Buck Bunny");
     const btn = (await findByText("View Manifest")) as HTMLButtonElement;
     await user.click(btn);

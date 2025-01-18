@@ -1,25 +1,16 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import { act, fireEvent, render } from "@testing-library/preact";
 import { useContext } from "preact/hooks";
 import { useLocation } from 'wouter-preact';
 
-import { ApiRequests } from "./endpoints";
-import { App } from "./App";
-import { AllStreamsJson } from "./types/AllStreams";
-import { AppStateContext, AppStateType } from "./appState";
+import { navbar } from "@dashlive/init";
 
-vi.mock('./endpoints.js', async (importOriginal) => {
-  const ApiRequests = vi.fn();
-  ApiRequests.prototype.getAllManifests = vi.fn();
-  ApiRequests.prototype.getAllMultiPeriodStreams = vi.fn();
-  ApiRequests.prototype.getAllStreams = vi.fn();
-  ApiRequests.prototype.getMultiPeriodStream = vi.fn();
-  ApiRequests.prototype.getContentRoles = vi.fn();
-  return {
-    ...await importOriginal(),
-    ApiRequests,
-   };
-});
+import { App } from "./App";
+import { AppStateContext, AppStateType } from "./appState";
+import { mediaUser, MockDashServer, UserModel } from "./test/MockServer";
+import { FakeEndpoint } from "./test/FakeEndpoint";
+import { InitialApiTokens } from "./types/InitialApiTokens";
+import log from "loglevel";
 
 vi.mock('wouter-preact', async (importOriginal) => {
   return {
@@ -28,47 +19,19 @@ vi.mock('wouter-preact', async (importOriginal) => {
   };
 });
 
-type ApiRequestPromises = {
-  getAllManifests: Promise<void>;
-  getAllStreams: Promise<void>;
-  getAllMultiPeriodStreams: Promise<void>;
-  getMultiPeriodStream: Promise<void>;
-  getContentRoles: Promise<void>;
-};
-
 describe("main entry-point app", () => {
   const useLocationSpy = vi.mocked(useLocation);
   const setLocation = vi.fn();
-  const initialTokens = {
-    accessToken: {
-      expires: "2024-12-14T16:42:22.606208Z",
-      jwt: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTczNDE4NzM0MiwianRpIjoiYmJiYzRmZGQtODk5Ni00Zjg0LThlNjAtOTBiNjU4ZWViYjQ0IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6ImFkbWluIiwibmJmIjoxNzM0MTg3MzQyLCJjc3JmIjoiODVhMmFlNjktNzJlZi00OTgyLTg0YzktNjM2ZGQ0ZjAwMTZhIiwiZXhwIjoxNzM0MTg4MjQyfQ.7drJGq_ZVEkqOAO9R1JOPPNjpHHPv-mlopAlweRblJs",
-    },
-    csrfTokens: {
-      files: null,
-      kids: null,
-      streams: "afU1XsoYb%27jhIBvJbHhwNJ1/Dq3Bqamj174Gk%3D%27",
-      upload: null,
-    },
-    refreshToken: {
-      expires: "2024-12-21T14:42:22.611946Z",
-      jwt: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTczNDE4NzM0MiwianRpIjoiODI4OWYxMTUtMzg4OC00ODVkLTlmMWUtZWM2YzAwMzA1N2RiIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6ImFkbWluIiwibmJmIjoxNzM0MTg3MzQyLCJjc3JmIjoiYjJiMjI4ZTgtZjliMS00ODc5LThhMTAtNzZkZmU1OWI4Mjc4IiwiZXhwIjoxNzM0MTg4MjQyfQ.LOuYwbGVbnyQUMCJJ4b0E0Jm0bGO41z07b9ZTa-l34c",
-    },
-  };
-  const user = {
-    groups: ["USER", "MEDIA", "ADMIN"],
-    isAuthenticated: true,
-    pk: 1,
-    username: "admin",
-  };
   const mockLocation = {
     ...new URL(document.location.href),
     pathname: '/',
     replace: vi.fn(),
   };
-  const apiRequestMock = vi.mocked(ApiRequests.prototype);
+  let endpoint: FakeEndpoint;
+  let server: MockDashServer;
   let baseElement: HTMLDivElement;
-  let promises: ApiRequestPromises;
+  let user: UserModel;
+  let tokens: InitialApiTokens;
 
   beforeAll(() => {
     vi.stubGlobal('location', mockLocation);
@@ -79,42 +42,16 @@ describe("main entry-point app", () => {
   });
 
   beforeEach(() => {
-    promises = {
-      getAllManifests: new Promise<void>(resolve => {
-        apiRequestMock.getAllManifests.mockImplementation(async () => {
-          const manifests = await import("./test/fixtures/manifests.json");
-          resolve();
-          return manifests.default;
-        });
-      }),
-      getAllStreams: new Promise<void>(resolve => {
-        apiRequestMock.getAllStreams.mockImplementation(async () => {
-          const streams = await import("./test/fixtures/streams.json");
-          resolve();
-          return streams.default as AllStreamsJson;
-        });
-      }),
-      getAllMultiPeriodStreams: new Promise<void>(resolve => {
-        apiRequestMock.getAllMultiPeriodStreams.mockImplementation(async () => {
-          const {streams} = await import("./test/fixtures/multi-period-streams/index.json");
-          resolve();
-          return streams;
-        });
-      }),
-      getMultiPeriodStream: new Promise<void>(resolve => {
-        apiRequestMock.getMultiPeriodStream.mockImplementation(async () => {
-          const { model } = await import("./test/fixtures/multi-period-streams/demo.json");
-          resolve();
-          return model;
-        });
-      }),
-      getContentRoles: new Promise<void>(resolve => {
-        apiRequestMock.getContentRoles.mockImplementation(async () => {
-          const roles = await import('./test/fixtures/content_roles.json');
-          resolve();
-          return roles.default;
-        });
-      })
+    log.setLevel('error');
+    endpoint = new FakeEndpoint(document.location.origin);
+    server = new MockDashServer({
+      endpoint,
+    });
+    user = server.login(mediaUser.email, mediaUser.password);
+    expect(user).not.toBeNull();
+    tokens = {
+      accessToken: user.accessToken,
+      refreshToken: user.refreshToken,
     };
     document.body.innerHTML = '<div id="app" />';
     const app = document.getElementById('app');
@@ -122,14 +59,20 @@ describe("main entry-point app", () => {
     baseElement = app as HTMLDivElement;
   });
 
+  afterEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+  });
+
   test("matches snapshot for home page", async () => {
     mockLocation.pathname = "/";
     useLocationSpy.mockReturnValue([mockLocation.pathname, setLocation]);
     const { asFragment, findByText } = render(
-      <App tokens={initialTokens} user={user} />,
+      <App tokens={tokens} navbar={navbar} />,
       { baseElement }
     );
-    await Promise.all([promises.getAllManifests, promises.getAllStreams, promises.getAllMultiPeriodStreams]);
+    await findByText("Log Out");
+    await findByText("Hand-made manifest");
     await findByText("Stream to play");
     await findByText("Video Player:");
     await findByText("Play Big Buck Bunny");
@@ -141,10 +84,9 @@ describe("main entry-point app", () => {
     mockLocation.pathname = '/multi-period-streams';
     useLocationSpy.mockReturnValue([mockLocation.pathname, setLocation]);
     const { asFragment, findByText } = render(
-      <App tokens={initialTokens} user={user} />,
+      <App tokens={tokens} navbar={navbar} />,
       { baseElement }
     );
-    await promises.getAllMultiPeriodStreams;
     await findByText('first title');
     await findByText('Add a Stream');
     expect(asFragment()).toMatchSnapshot();
@@ -154,22 +96,23 @@ describe("main entry-point app", () => {
     mockLocation.pathname = '/multi-period-streams/demo';
     useLocationSpy.mockReturnValue([mockLocation.pathname, setLocation]);
     const { asFragment, findByText } = render(
-      <App tokens={initialTokens} user={user} />,
+      <App tokens={tokens} navbar={navbar} />,
       { baseElement }
     );
-    await Promise.all([promises.getAllStreams, promises.getMultiPeriodStream]);
+    await findByText("Log Out");
     await findByText("Delete Stream");
+    await findByText('"europe-ntp"');
     expect(asFragment()).toMatchSnapshot();
   });
 
-  test("unknown page", () => {
+  test("unknown page", async () => {
     mockLocation.pathname = '/unknown';
     useLocationSpy.mockReturnValue([mockLocation.pathname, setLocation]);
-    const { getByText } = render(
-      <App tokens={initialTokens} user={user} />,
+    const { findByText } = render(
+      <App tokens={tokens} navbar={navbar} />,
       { baseElement }
     );
-    getByText("Sorry I don't know about this page");
+    await findByText("Sorry I don't know about this page");
   });
 
   test("modal backdrop is displayed", async () => {
@@ -181,10 +124,9 @@ describe("main entry-point app", () => {
     mockLocation.pathname = "/";
     useLocationSpy.mockReturnValue([mockLocation.pathname, setLocation]);
     const { findByText } = render(
-      <App tokens={initialTokens} user={user}><StateSpy /></App>,
+      <App tokens={tokens} navbar={navbar}><StateSpy /></App>,
       { baseElement }
     );
-    await Promise.all([promises.getAllManifests, promises.getAllStreams, promises.getAllMultiPeriodStreams]);
     await findByText("Stream to play");
     expect(appState).toBeDefined();
     const elt = document.querySelector('.modal-backdrop');
@@ -207,10 +149,9 @@ describe("main entry-point app", () => {
     mockLocation.pathname = "/";
     useLocationSpy.mockReturnValue(["/", setLocation]);
     const { findByText } = render(
-      <App tokens={initialTokens} user={user} />,
+      <App tokens={tokens}  navbar={navbar} />,
       { baseElement }
     );
-    await Promise.all([promises.getAllManifests, promises.getAllStreams, promises.getAllMultiPeriodStreams]);
     await findByText("Stream to play");
     const elt = document.querySelector('a[href="/multi-period-streams"]');
     expect(elt).not.toBeNull();

@@ -3,7 +3,7 @@ import { useEffect, useState, useContext, useCallback } from "preact/hooks";
 import { type ReadonlySignal, useSignal } from "@preact/signals";
 
 import { EndpointContext } from "../endpoints";
-import { MultiPeriodStreamSummary } from "../types/AllMultiPeriodStreams";
+import { MultiPeriodStreamSummary } from "../types/MultiPeriodStreamSummary";
 
 export interface UseAllMultiPeriodStreamsHook {
   error: ReadonlySignal<string | null>;

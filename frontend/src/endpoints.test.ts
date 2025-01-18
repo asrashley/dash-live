@@ -82,11 +82,11 @@ describe('endpoints', () => {
             csrf_token: expect.any(String),
             accessToken: {
                 expires: expect.any(String),
-                jti: expect.any(String),
+                jwt: expect.any(String),
             },
             refreshToken: {
                 expires: expect.any(String),
-                jti: expect.any(String),
+                jwt: expect.any(String),
             },
             user: {
                 pk: normalUser.pk,
@@ -140,8 +140,8 @@ describe('endpoints', () => {
     });
 
     test('get all multi-period streams', async () => {
-        const { streams } = await import('./test/fixtures/multi-period-streams/index.json');
-        await expect(api.getAllMultiPeriodStreams()).resolves.toEqual(streams);
+        const streams = await import('./test/fixtures/multi-period-streams/index.json');
+        await expect(api.getAllMultiPeriodStreams()).resolves.toEqual(streams.default);
     });
 
     test('get details of a multi-period stream', async () => {
@@ -287,10 +287,10 @@ describe('endpoints', () => {
         }));
         const body = JSON.parse(response['body']);
         expect(body).toEqual(expect.objectContaining({
-            accessToken: expect.objectContaining({
+            accessToken: {
                 expires: expect.any(String),
-                jti: expect.any(String),
-            }),
+                jwt: expect.any(String),
+            },
         }));
         expect(server.getUser({ username })?.accessToken).not.toBeNull();
     });
@@ -320,7 +320,7 @@ describe('endpoints', () => {
             accessToken: null,
             refreshToken: user.refreshToken,
         });
-        await expect(api.getMultiPeriodStream( 'demo')).resolves.toEqual(demoMps);
+        await expect(api.getMultiPeriodStream('demo')).resolves.toEqual(demoMps);
         expect(server.getUser({ username })?.accessToken).not.toBeNull();
     });
 
@@ -331,7 +331,7 @@ describe('endpoints', () => {
             accessToken: null,
             refreshToken: null,
         });
-        await expect(api.getAllStreams()).rejects.toThrowError("Cannot request CSRF tokens");
+        await expect(api.getMultiPeriodStream('demo')).rejects.toThrow(routeMap.editMps.url({mps_name: "demo"}));
     });
 
     test('generates error trying to refresh CSRF tokens with invalid refresh token', async () => {
@@ -344,7 +344,7 @@ describe('endpoints', () => {
                 jwt: 'abc123',
             },
         });
-        await expect(api.getAllStreams()).rejects.toThrowError("Failed to refresh access token");
+        await expect(api.getMultiPeriodStream('demo')).rejects.toThrowError("Failed to refresh access token");
         expect(navigate).toHaveBeenCalledTimes(1);
         expect(navigate).toHaveBeenCalledWith('/login');
     });

@@ -3,10 +3,10 @@ import { useContext } from "preact/hooks";
 import { routeMap, uiRouteMap } from "@dashlive/routemap";
 import { Card } from "../../components/Card";
 import { Icon } from "../../components/Icon";
-import { AppStateContext } from "../../appState";
+import { WhoAmIContext } from "../../hooks/useWhoAmI";
 
 function PleaseLogin() {
-  const { user } = useContext(AppStateContext);
+  const { user } = useContext(WhoAmIContext);
 
   if (user.value.isAuthenticated) {
     return null;

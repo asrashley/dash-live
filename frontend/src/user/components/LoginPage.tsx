@@ -7,11 +7,11 @@ import { LoginCard } from "./LoginCard";
 import { EndpointContext } from "../../endpoints";
 import { LoginRequest } from "../../types/LoginRequest";
 import { LoginResponse } from "../../types/LoginResponse";
-import { AppStateContext } from "../../appState";
+import { WhoAmIContext } from "../../hooks/useWhoAmI";
 
 export default function LoginPage() {
   const apiRequests = useContext(EndpointContext);
-  const { setUser } = useContext(AppStateContext);
+  const { setUser } = useContext(WhoAmIContext);
   const setLocation = useLocation()[1];
   const error = useSignal<string | undefined>();
   const submitting = useSignal<boolean>(false);

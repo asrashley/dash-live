@@ -59,7 +59,7 @@ describe("GuestPeriodRow component", () => {
 
   test("opens track view dialog", () => {
     const period = model.periods[0];
-    const { getBySelector, state } = renderWithProviders(
+    const { getBySelector, appState: state } = renderWithProviders(
       <AllStreamsContext.Provider value={allStreamsHook}>
         <GuestPeriodRow index={2} item={period} className="guest-period-row" />
       </AllStreamsContext.Provider>

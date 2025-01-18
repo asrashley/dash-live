@@ -2,8 +2,8 @@ import { useContext } from "preact/hooks";
 import { useComputed } from "@preact/signals";
 import { Link } from "wouter-preact";
 
-import { AppStateContext } from "../../appState";
 import { uiRouteMap } from "@dashlive/routemap";
+import { WhoAmIContext } from "../../hooks/useWhoAmI";
 
 export interface ButtonToolbarProps {
   errors,
@@ -14,7 +14,7 @@ export interface ButtonToolbarProps {
 }
 
 export function ButtonToolbar({errors, onSaveChanges, deleteStream, model, newStream}: ButtonToolbarProps) {
-  const { user } = useContext(AppStateContext);
+  const { user } = useContext(WhoAmIContext);
   const cancelUrl = uiRouteMap.listMps.url();
   const disableSave = useComputed(() => {
     if (Object.keys(errors.value).length > 0) {

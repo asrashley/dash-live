@@ -7,14 +7,10 @@ import { AppStateType, createAppState } from "../../appState";
 
 describe("ConfirmDeleteDialog component", () => {
   const onClose = vi.fn();
-  const userInfo = {
-    isAuthenticated: true,
-    groups: ["MEDIA"],
-  };
-  const state: AppStateType = createAppState(userInfo);
+  const appState: AppStateType = createAppState();
 
   beforeEach(() => {
-    state.dialog.value = {
+    appState.dialog.value = {
       backdrop: true,
       confirmDelete: {
         name: "testname",
@@ -26,23 +22,23 @@ describe("ConfirmDeleteDialog component", () => {
   test("should display dialog box", async () => {
     const { getByText } = renderWithProviders(
       <ConfirmDeleteDialog onClose={onClose} />,
-      { state }
+      { appState }
     );
     getByText("Confirm deletion of stream");
   });
 
   test("can confirm", async () => {
-    const { confirmDelete } = state.dialog.value;
+    const { confirmDelete } = appState.dialog.value;
     const { getByText } = renderWithProviders(
       <ConfirmDeleteDialog onClose={onClose} />,
-      { state }
+      { appState }
     );
     const btn = getByText("Yes, I'm sure") as HTMLButtonElement;
     act(() => {
       fireEvent.click(btn);
     });
     expect(onClose).not.toHaveBeenCalled();
-    expect(state.dialog.value).toEqual({
+    expect(appState.dialog.value).toEqual({
       backdrop: true,
       confirmDelete: {
         ...confirmDelete,
@@ -54,7 +50,7 @@ describe("ConfirmDeleteDialog component", () => {
   test("can cancel", async () => {
     const { getByText } = renderWithProviders(
       <ConfirmDeleteDialog onClose={onClose} />,
-      { state }
+      { appState }
     );
     const btn = getByText("Cancel") as HTMLButtonElement;
     fireEvent.click(btn);

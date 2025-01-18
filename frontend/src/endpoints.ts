@@ -9,7 +9,7 @@ import { AllStreamsJson, AllStreamsResponse } from './types/AllStreams';
 import { JWToken } from './types/JWToken';
 import { MultiPeriodStream, MultiPeriodStreamJson } from './types/MultiPeriodStream';
 import { DecoratedMultiPeriodStream } from "./types/DecoratedMultiPeriodStream";
-import { AllMultiPeriodStreamsJson, MultiPeriodStreamSummary } from './types/AllMultiPeriodStreams';
+import { MultiPeriodStreamSummary } from './types/MultiPeriodStreamSummary';
 import { ContentRolesMap } from './types/ContentRolesMap';
 import { ModifyMultiPeriodStreamJson, ModifyMultiPeriodStreamResponse } from './types/ModifyMultiPeriodStreamResponse';
 import { InitialApiTokens } from './types/InitialApiTokens';
@@ -47,7 +47,7 @@ type RefreshAccessTokenResponse = {
   status: number;
 };
 
-export interface ApiRequestsProps extends InitialApiTokens {
+export interface ApiRequestsProps extends Readonly<InitialApiTokens> {
   navigate: (url: string) => void;
 }
 
@@ -82,8 +82,25 @@ export class ApiRequests {
     return this.sendApiRequest(routeMap.cgiOptions.url(), options);
   }
 
+  async getUserInfo(signal: AbortSignal): Promise<LoginResponse | Response> {
+    if (!this.refreshToken) {
+      throw new Error('Cannot get user info without a refresh token');
+    }
+    const options: Partial<ApiRequestOptions> = {
+      authorization: this.refreshToken.jwt,
+      method: 'GET',
+      rejectOnError: false,
+      signal,
+    };
+    const response = await this.sendApiRequest<LoginResponse | Response>(routeMap.login.url(), options);
+    if (response['success']) {
+      this.accessToken = (response as LoginResponse).accessToken;
+    }
+    return response;
+  }
+
   async loginUser(request: LoginRequest, options: Partial<GetAllStreamsProps> = {}): Promise<LoginResponse> {
-    const response: LoginResponse = await this.sendApiRequest(routeMap.login.url(), {
+    const response: LoginResponse = await this.sendApiRequest<LoginResponse>(routeMap.login.url(), {
       body: JSON.stringify(request),
       method: 'POST',
       service: 'login',
@@ -111,49 +128,17 @@ export class ApiRequests {
     return response;
   }
 
-  async getAllStreams({ withDetails = false, ...options}: Partial<GetAllStreamsProps> = {}): Promise<AllStreamsResponse> {
-    const service = 'streams';
-    const csrf_token = await this.csrfTokens[service].getToken(
-      options?.signal, this.getCsrfTokens);
-    const query = new URLSearchParams({
-      details: withDetails ? "1" : "0",
-      csrf_token,
-    });
-    const { streams, keys } = await this.sendApiRequest<AllStreamsJson>(routeMap.listStreams.url(), {
-      service,
-      query,
-      ...options,
-    });
+  async getAllStreams(options: Partial<GetAllStreamsProps> = {}): Promise<AllStreamsResponse> {
+    const { streams, keys } = await this.sendApiRequest<AllStreamsJson>(routeMap.listStreams.url(), options);
     return { streams, keys};
   }
 
-  async getAllMultiPeriodStreams(options: Partial<ApiRequestOptions> = {}): Promise<MultiPeriodStreamSummary[]> {
-    const service = 'streams';
-    const csrf_token = await this.csrfTokens[service].getToken(
-      options?.signal, this.getCsrfTokens);
-    const query = new URLSearchParams({
-      csrf_token,
-    });
-    const { streams } = await this.sendApiRequest<AllMultiPeriodStreamsJson>(routeMap.listMps.url(), {
-      service,
-      query,
-      ...options,
-    });
-    return streams;
+  getAllMultiPeriodStreams(options: Partial<ApiRequestOptions> = {}): Promise<MultiPeriodStreamSummary[]> {
+    return this.sendApiRequest<MultiPeriodStreamSummary[]>(routeMap.listMps.url(), options);
   }
 
   async getMultiPeriodStream(mps_name: string, options: Partial<ApiRequestOptions> = {}): Promise<MultiPeriodStream> {
-    const service = 'streams';
-    const csrf_token = await this.csrfTokens[service].getToken(
-      options?.signal, this.getCsrfTokens);
-    const query = new URLSearchParams({
-      csrf_token,
-    });
-    const { model } = await this.sendApiRequest<MultiPeriodStreamJson>(routeMap.editMps.url({mps_name}), {
-      service,
-      query,
-      ...options,
-    });
+    const { model } = await this.sendApiRequest<MultiPeriodStreamJson>(routeMap.editMps.url({mps_name}), options);
     return model;
   }
 

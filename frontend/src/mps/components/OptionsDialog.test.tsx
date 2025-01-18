@@ -46,7 +46,7 @@ describe("OptionsDialog component", () => {
       <MultiPeriodModelContext.Provider value={useMpsHookMock}>
         <OptionsDialog onClose={onClose} />
       </MultiPeriodModelContext.Provider>,
-      { state }
+      { appState: state }
     );
     for (const grp of fieldGroups) {
       for (const field of grp.fields) {

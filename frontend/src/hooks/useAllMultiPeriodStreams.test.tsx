@@ -8,7 +8,7 @@ import {
   useAllMultiPeriodStreams,
   UseAllMultiPeriodStreamsHook,
 } from "./useAllMultiPeriodStreams";
-import { MultiPeriodStreamSummary } from "../types/AllMultiPeriodStreams";
+import { MultiPeriodStreamSummary } from "../types/MultiPeriodStreamSummary";
 
 import allMpsJson from "../test/fixtures/multi-period-streams/index.json";
 
@@ -27,7 +27,7 @@ describe("useAllMultiPeriodStreams hook", () => {
     return new Promise<void>((resolve) => {
       apiRequests.getAllMultiPeriodStreams.mockImplementation(async () => {
         resolve();
-        return allMpsJson.streams;
+        return allMpsJson;
       });
     });
   }
@@ -48,7 +48,7 @@ describe("useAllMultiPeriodStreams hook", () => {
     const { error, loaded, streams } = result.current;
     expect(loaded.value).toEqual(true);
     expect(error.value).toBeNull();
-    expect(streams.value).toEqual(allMpsJson.streams);
+    expect(streams.value).toEqual(allMpsJson);
   });
 
   test("can sort streams", async () => {
@@ -63,13 +63,13 @@ describe("useAllMultiPeriodStreams hook", () => {
     const { loaded, sort } = result.current;
     const streams = structuredClone(result.current.streams.value);
     expect(loaded.value).toEqual(true);
-    expect(streams).toEqual(allMpsJson.streams);
+    expect(streams).toEqual(allMpsJson);
     expect(result.current.sortField).toEqual("name");
     await act(async () => {
       sort("title", true);
     });
     expect(result.current.sortField).toEqual("title");
-    expect(streams).toEqual(allMpsJson.streams);
+    expect(streams).toEqual(allMpsJson);
     expect(result.current.streams.value).not.toEqual(streams);
     expect(result.current.streams.value).toEqual([streams[1], streams[0]]);
     await act(async () => {
@@ -79,12 +79,11 @@ describe("useAllMultiPeriodStreams hook", () => {
   });
 
   test("can sort streams with duplicate titles", async () => {
-    const { streams } = allMpsJson;
     const duplicatedTitle: MultiPeriodStreamSummary[] = [
-      streams[0],
+      allMpsJson[0],
       {
-        ...streams[1],
-        title: streams[0].title,
+        ...allMpsJson[1],
+        title: allMpsJson[0].title,
       },
     ];
     const getAllMultiPeriodStreamsPromise = new Promise<void>((resolve) => {
@@ -104,7 +103,7 @@ describe("useAllMultiPeriodStreams hook", () => {
     const { loaded, sort } = result.current;
     const streamsValue = structuredClone(result.current.streams.value);
     expect(loaded.value).toEqual(true);
-    expect(streamsValue).not.toEqual(allMpsJson.streams);
+    expect(streamsValue).not.toEqual(allMpsJson);
     expect(result.current.sortField).toEqual("name");
     await act(async () => {
       sort("title", true);

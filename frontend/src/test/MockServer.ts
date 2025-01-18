@@ -6,7 +6,7 @@ import { dataResponse, FakeEndpoint, HttpRequestHandler, jsonResponse, notFound,
 import { ContentRolesMap } from '../types/ContentRolesMap';
 import { CsrfTokenCollection } from '../types/CsrfTokenCollection';
 import { JWToken } from '../types/JWToken';
-import { AllMultiPeriodStreamsJson, MultiPeriodStreamSummary } from '../types/AllMultiPeriodStreams';
+import { MultiPeriodStreamSummary } from '../types/MultiPeriodStreamSummary';
 import { ModifyMultiPeriodStreamJson } from '../types/ModifyMultiPeriodStreamResponse';
 import { MultiPeriodStream, MultiPeriodStreamJson } from '../types/MultiPeriodStream';
 import { LoginRequest } from "../types/LoginRequest";
@@ -128,6 +128,7 @@ export class MockDashServer {
             };
         };
         endpoint
+            .get(routeMap.login.url(), this.getUserInfo)
             .post(routeMap.login.url(), this.loginUser)
             .delete(routeMap.login.url(), protectedRoute(this.logoutUser))
             .get(routeMap.refreshCsrfTokens.url(), protectedRoute(this.refreshCsrfTokens))
@@ -138,7 +139,7 @@ export class MockDashServer {
             .get(routeMap.cgiOptions.url(), this.returnJsonFixture)
             .get(routeMap.contentRoles.url(), this.getContentRoles)
             .get(routeMap.listStreams.url(), this.returnJsonFixture)
-            .get(routeMap.listMps.url(), protectedRoute(this.getAllMpStreams))
+            .get(routeMap.listMps.url(), this.getAllMpStreams)
             .get(routeMap.editMps.re, protectedRoute(this.returnJsonFixture))
             .put(routeMap.addMps.url(), protectedRoute(this.addMultiPeriodStream))
             .post(routeMap.editMps.re, protectedRoute(this.editMultiPeriodStream))
@@ -217,6 +218,29 @@ export class MockDashServer {
     //
     // JSON REST API
     //
+    private getUserInfo = async (props: ServerRouteProps) => {
+        const user = this.getUserFromRefreshToken(props);
+        if (!user) {
+            log.trace('failed to find user from refresh token');
+            return jsonResponse('', 401);
+        }
+        const result: LoginResponse = {
+            success: true,
+            mustChange: user.mustChange,
+            csrf_token: `${user.username}.${randomToken(12)}`,
+            accessToken: this.generateAccessToken(user.username),
+            user: {
+                pk: user.pk,
+                email: user.email,
+                username: user.username,
+                groups: user.groups,
+                last_login: user.lastLogin,
+                isAuthenticated: true,
+            }
+        };
+        return jsonResponse(result);
+    };
+
     private loginUser = async ({jsonParam}: ServerRouteProps) => {
         if (!jsonParam) {
             return jsonResponse('', 400);
@@ -305,13 +329,9 @@ export class MockDashServer {
         return jsonResponse(await this.endpoint.fetchFixtureJson<ContentRolesMap>('content_roles.json'));
     };
 
-    private getAllMpStreams = async ({context}: ServerRouteProps) => {
+    private getAllMpStreams = async () => {
         const mpStreams = await this.getMpsStreams();
-        const result: AllMultiPeriodStreamsJson = {
-            streams: mpStreams.map(createMpsSummary),
-            csrfTokens: this.generateCsrfTokens((context as RequestContext).currentUser),
-        };
-        return jsonResponse(result);
+        return jsonResponse(mpStreams.map(createMpsSummary));
     };
 
     private addMultiPeriodStream = async ({context, jsonParam}: ServerRouteProps) => {
@@ -411,7 +431,7 @@ export class MockDashServer {
 
     private async getMpsStreams() {
         if (this.mpsStreams === undefined) {
-            const { streams } = await this.endpoint.fetchFixtureJson<AllMultiPeriodStreamsJson>(
+            const streams = await this.endpoint.fetchFixtureJson<MultiPeriodStreamSummary[]>(
                 'multi-period-streams/index.json');
             const mpsStreams = [];
             for (const item of streams) {
@@ -433,6 +453,17 @@ export class MockDashServer {
         }
         const token = (headers['authorization'] as string).split(' ')[1];
         const user = this.userDatabase.find(usr => usr.accessToken?.jwt === token);
+        return user;
+    }
+
+    private getUserFromRefreshToken({options}: ServerRouteProps): UserModel | undefined {
+        const { headers } = options;
+        if (!headers['authorization']) {
+            log.trace('Request does not contain an Authorization header');
+            return undefined;
+        }
+        const token = (headers['authorization'] as string).split(' ')[1];
+        const user = this.userDatabase.find(usr => usr.refreshToken?.jwt === token);
         return user;
     }
 
