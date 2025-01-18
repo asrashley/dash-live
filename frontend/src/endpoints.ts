@@ -84,7 +84,7 @@ export class ApiRequests {
 
   async getUserInfo(signal: AbortSignal): Promise<LoginResponse | Response> {
     if (!this.refreshToken) {
-      throw new Error('Cannot get user info without a refresh token');
+      return new Response(null, { status: 401});
     }
     const options: Partial<ApiRequestOptions> = {
       authorization: this.refreshToken.jwt,
