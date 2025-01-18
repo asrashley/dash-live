@@ -1,0 +1,27 @@
+diff --git a/node_modules/fetch-mock/dist/esm/Router.js b/node_modules/fetch-mock/dist/esm/Router.js
+index 599e79f..ef9ed5d 100644
+--- a/node_modules/fetch-mock/dist/esm/Router.js
++++ b/node_modules/fetch-mock/dist/esm/Router.js
+@@ -84,10 +84,19 @@ export default class Router {
+                     const error = new DOMException('The operation was aborted.', 'AbortError');
+                     const requestBody = request?.body || options?.body;
+                     if (requestBody instanceof ReadableStream) {
+-                        requestBody.cancel(error);
++                        if (requestBody.locked) {
++							requestBody.getReader().cancel(error);
++						} else {
++							requestBody.cancel(error);
++						}
+                     }
+-                    if (callLog?.response?.body) {
+-                        callLog.response.body.cancel(error);
++                    const responseBody = callLog?.response?.body;
++                    if (responseBody) {
++                        if (responseBody instanceof ReadableStream && responseBody.locked) {
++							responseBody.getReader().cancel(error);
++                        } else {
++                            responseBody.cancel(error);
++                        }
+                     }
+                     reject(error);
+                 };
