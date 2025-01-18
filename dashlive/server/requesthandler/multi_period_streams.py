@@ -19,6 +19,7 @@ from dashlive.server.models.adaptation_set import AdaptationSetJson
 from dashlive.server.options.form_input_field import FormInputContext
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.utils.date_time import from_isodatetime, timecode_to_timedelta
+from dashlive.utils.json_object import JsonObject
 from dashlive.utils.timezone import UTC
 
 from .base import HTMLHandlerBase, RequestHandlerBase, TemplateContext
@@ -185,7 +186,6 @@ class ListStreams(HTMLHandlerBase):
     in the database.
     """
     decorators = [
-        csrf_token_required('streams'),
         spa_handler,  # must be the last decorator so that it called before the others
     ]
 
@@ -197,25 +197,12 @@ class ListStreams(HTMLHandlerBase):
             logging.error('the spa_handler decorator should have handled this request')
             return jsonify_no_content(500)
 
-        csrf_key = self.generate_csrf_cookie()
-        csrf_tokens = CsrfTokenCollection(
-            files=self.generate_csrf_token('files', csrf_key),
-            kids=self.generate_csrf_token('keys', csrf_key),
-            streams=self.generate_csrf_token('streams', csrf_key),
-            upload=None)
-
-        streams = cast(
-            list[models.MultiPeriodStream], models.MultiPeriodStream.get_all())
-
-        result = {
-            'csrfTokens': csrf_tokens,
-            'streams': [],
-        }
-        for s in streams:
+        streams: list[JsonObject] = []
+        for s in models.MultiPeriodStream.get_all():
             js = s.to_dict(with_collections=True)
             js['duration'] = s.total_duration()
-            result['streams'].append(js)
-        return jsonify(result)
+            streams.append(js)
+        return jsonify(streams)
 
 
 class AddStream(HTMLHandlerBase):
@@ -299,7 +286,6 @@ class PeriodFormInputs(NamedTuple):
 
 class EditStream(HTMLHandlerBase):
     decorators = [
-        csrf_token_required('streams'),
         uses_multi_period_stream,
         jwt_required(),
         spa_handler,
@@ -324,6 +310,7 @@ class EditStream(HTMLHandlerBase):
         }
         return jsonify(result)
 
+    @csrf_token_required('streams')
     def post(self, mps_name: str) -> flask.Response:
         data = flask.request.json
         if not data:
@@ -337,15 +324,16 @@ class EditStream(HTMLHandlerBase):
                 'errors': errors,
                 'csrf_token': csrf_token,
             })
-        return self.handle_spa_data(mps_name, csrf_token)
+        return self.process_json_body(mps_name, csrf_token)
 
+    @csrf_token_required('streams')
     def delete(self, mps_name: str) -> flask.Response:
         logging.info('Deleting MultiPeriodStream: %s', mps_name)
         models.db.session.delete(current_mps)
         models.db.session.commit()
         return jsonify_no_content(204)
 
-    def handle_spa_data(self, name: str, csrf_token: str) -> flask.Response:
+    def process_json_body(self, name: str, csrf_token: str) -> flask.Response:
         data = flask.request.json
         current_mps.name = data['name']
         current_mps.title = data['title']

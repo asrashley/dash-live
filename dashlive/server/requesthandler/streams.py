@@ -1,17 +1,3 @@
-############################################################################
-#
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
 #############################################################################
 #
 #  Project Name        :    Simulated MPEG DASH service
@@ -64,8 +50,6 @@ class ListStreams(HTMLHandlerBase):
     View handler that provides a list of all media in the
     database.
     """
-    decorators = []
-
     def get(self) -> flask.Response:
         """
         Get list of all streams
@@ -99,12 +83,10 @@ class ListStreams(HTMLHandlerBase):
             for stream in streams:
                 jss: JsonObject = stream.to_dict(with_collections=True)
                 jss['duration'] = stream.duration()
-                if flask.request.args.get('details', '0') == '1':
-                    media_files: list[JsonObject] = []
-                    for mf in stream.media_files:
-                        media_files.append(mf.to_dict(
-                            with_collections=False, exclude={'rep', 'blob'}))
-                    jss['media_files'] = media_files
+                media_files: list[JsonObject] = []
+                for mf in stream.media_files:
+                    media_files.append(mf.to_dict(with_collections=False, exclude={'rep', 'blob'}))
+                jss['media_files'] = media_files
                 result['streams'].append(jss)
             return jsonify(result)
 

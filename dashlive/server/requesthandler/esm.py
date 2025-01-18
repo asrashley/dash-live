@@ -16,10 +16,11 @@ from flask.views import MethodView  # type: ignore
 
 from dashlive.components.field_group import InputFieldGroupJson
 from dashlive.drm.system import DrmSystem
+from dashlive.server.models.user import User
 from dashlive.server.options.container import OptionsContainer
 from dashlive.server.options.dash_option import DashOption
 from dashlive.server.options.repository import OptionsRepository
-from dashlive.server.options.types import CgiOption, OptionUsage
+from dashlive.server.options.types import OptionUsage
 from dashlive.mpeg.dash.content_role import ContentRole
 from dashlive.server.routes import routes, ui_routes, RouteJavaScript
 from dashlive.utils.json_object import JsonObject
@@ -232,7 +233,8 @@ class InitialAppState(MethodView):
     server used by webpack-dev-server
     """
     def get(self) -> flask.Response:
-        context: SpaTemplateContext = create_spa_template_context()
+        user: User = User.get_guest_user()
+        context: SpaTemplateContext = create_spa_template_context(user)
         body: str = flask.render_template('esm/initial_app_state.tjs', **context)
         headers: dict[str, str] = {
             'Content-Type': 'application/javascript',
@@ -250,5 +252,3 @@ class CgiOptionsPage(MethodView):
             opt['description'] = opt['html']
             del opt['html']
         return jsonify(options)
-
-
