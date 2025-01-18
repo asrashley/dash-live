@@ -8,6 +8,9 @@ export default defineConfig({
 		environment: 'jsdom',
         globalSetup: 'frontend/src/test/globalSetup.ts',
         setupFiles: 'frontend/src/test/setup.ts',
+        chaiConfig: {
+            includeStack: true
+        },
         coverage: {
             include: [
                 "frontend/src/**/*.ts",
