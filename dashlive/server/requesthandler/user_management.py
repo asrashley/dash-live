@@ -8,26 +8,30 @@
 
 import datetime
 import logging
-from typing import NotRequired, TypedDict
+from typing import NotRequired, TypedDict, cast
 
 import flask
-from flask_jwt_extended import jwt_required, current_user as jwt_current_user
+from flask_jwt_extended import get_jwt, jwt_required, current_user as jwt_current_user
 from flask_login import current_user, login_user, logout_user
 from flask.views import MethodView
 
-from dashlive.server import models
-from dashlive.server.requesthandler.csrf import CsrfProtection, CsrfTokenCollection
+from dashlive.server.models.db import db
+from dashlive.server.models.group import Group
+from dashlive.server.models.token import TokenType, Token
+from dashlive.server.models.user import User
 from dashlive.utils.json_object import JsonObject
 
 from .base import HTMLHandlerBase, DeleteModelBase
-from .decorators import login_required, modifies_user_model, modifying_user, spa_handler
+from .csrf import CsrfProtection, CsrfTokenCollection
+from .decorators import login_required, modifies_user_model, modifying_user
 from .exceptions import CsrfFailureException
+from .spa_context import EncodedJWTokenJson
 from .utils import is_ajax, jsonify, jsonify_no_content
 
-def decorate_user(user: models.User) -> JsonObject:
+def decorate_user(user: User) -> JsonObject:
     js = user.to_dict()
     js['groups'] = {}
-    for grp in models.Group:
+    for grp in Group:
         if user.is_member_of(grp):
             js['groups'][grp.name] = True
     return js
@@ -52,22 +56,29 @@ class LoginPage(HTMLHandlerBase):
     handler for logging into the site
     """
 
-    decorators = [spa_handler]
+    @jwt_required(refresh=True)
+    def get(self) -> flask.Response:
+        user: User = cast(User, jwt_current_user)
+        csrf_key: str = CsrfProtection.generate_cookie()
+        access_token: EncodedJWTokenJson = Token.generate_api_token(user, TokenType.ACCESS).toJSON()
+        result: LoginResponseJson = {
+            'success': True,
+            'mustChange': user.must_change,
+            'csrf_token': self.generate_csrf_token('login', csrf_key),
+            'accessToken': access_token,
+            'user': user.to_dict(only={'email', 'username', 'pk', 'last_login'})
+        }
+        result['user']['groups'] = user.get_groups()
+        return jsonify(result)
 
     def post(self) -> flask.Response:
-        if not is_ajax():
-            return flask.redirect(flask.url_for('home'))
         data: JsonObject = flask.request.json
-        # try:
-        #     self.check_csrf('login', data)
-        # except (ValueError, CsrfFailureException) as err:
-        #     return jsonify({'error': str(err)}, 400)
         username: str | None = data.get("username", None)
         password: str | None = data.get("password", None)
-        rememberme = data.get("rememberme", False)
-        user = models.User.get_one(username=username)
+        rememberme: bool = data.get("rememberme", False)
+        user: User | None = User.get_one(username=username)
         if not user:
-            user: models.User | None = models.User.get_one(email=username)
+            user = User.get_one(email=username)
         if user is None or not user.check_password(password):
             csrf_key: str = self.generate_csrf_cookie()
             result: LoginResponseJson = {
@@ -78,17 +89,17 @@ class LoginPage(HTMLHandlerBase):
             return jsonify(result)
         login_user(user, remember=rememberme)
         user.last_login = datetime.datetime.now()
-        models.db.session.commit()
+        db.session.commit()
         csrf_key = self.generate_csrf_cookie()
-        access_token: models.Token = models.Token.generate_api_token(user, models.TokenType.ACCESS)
-        refresh_token: models.Token = models.Token.generate_api_token(current_user, models.TokenType.REFRESH)
+        access_token: Token = Token.generate_api_token(user, TokenType.ACCESS)
+        refresh_token: Token = Token.generate_api_token(current_user, TokenType.REFRESH)
         result: LoginResponseJson = {
             'success': True,
             'mustChange': user.must_change,
             'csrf_token': self.generate_csrf_token('login', csrf_key),
-            'accessToken': access_token.to_dict(only={'expires', 'jti'}),
-            'refreshToken': refresh_token.to_dict(only={'expires', 'jti'}),
-            'user': user.to_dict(only={'email', 'username', 'pk', 'last_login'})
+            'accessToken': access_token.toJSON(),
+            'refreshToken': refresh_token.toJSON(),
+            'user': user.to_dict(only={'email', 'username', 'pk', 'last_login'}),
         }
         result['user']['groups'] = user.get_groups()
         return jsonify(result)
@@ -97,8 +108,14 @@ class LoginPage(HTMLHandlerBase):
     def delete(self) -> flask.Response:
         for token in jwt_current_user.tokens:
             token.revoked = True
+        jti: str = get_jwt()["jti"]
+        refresh_token: Token | None = Token.get_one(jti=jti, token_type=TokenType.REFRESH.value)
+        if refresh_token is None:
+            refresh_token = Token(jti=jti, token_type=TokenType.REFRESH.value, user=jwt_current_user)
+            db.session.add(refresh_token)
+        refresh_token.revoked = True
+        db.session.commit()
         logout_user()
-        models.db.session.commit()
         return jsonify_no_content(204)
 
 
@@ -111,7 +128,7 @@ class LogoutPage(HTMLHandlerBase):
             for token in current_user.tokens:
                 token.revoked = True
         logout_user()
-        models.db.session.commit()
+        db.session.commit()
         return flask.redirect(flask.url_for('ui-home'))
 
 class ListUsers(HTMLHandlerBase):
@@ -124,11 +141,11 @@ class ListUsers(HTMLHandlerBase):
         context = self.create_context()
         context.update({
             'users': [
-                decorate_user(u) for u in models.User.all()],
-            'field_names': models.User.get_column_names(
+                decorate_user(u) for u in User.all()],
+            'field_names': User.get_column_names(
                 exclude={'password', 'groups_mask', 'tokens',
                          'reset_token', 'reset_expires'}),
-            'group_names': models.Group.names(),
+            'group_names': Group.names(),
         })
         return flask.render_template('users/index.html', **context)
 
@@ -159,7 +176,7 @@ class EditUser(HTMLHandlerBase):
             'fields': user.get_fields(
                 with_confirm_password=True, with_must_change=current_user.is_admin,
                 **kwargs),
-            'group_names': models.Group.names(),
+            'group_names': Group.names(),
             'model': decorate_user(user),
         })
         if not current_user.is_admin:
@@ -191,9 +208,9 @@ class EditUser(HTMLHandlerBase):
         if flask.request.form['new_item'] == '1':
             if not flask.request.form['password']:
                 return self.get(upk, error='A password must be provided', **flask.request.form)
-            if models.User.count(username=user.username) > 0:
+            if User.count(username=user.username) > 0:
                 return self.get(upk, error=f'User {user.username} already exists', **flask.request.form)
-            if models.User.count(email=user.email) > 0:
+            if User.count(email=user.email) > 0:
                 return self.get(
                     upk, error=f'User with email address {user.email} already exists',
                     **flask.request.form)
@@ -201,23 +218,23 @@ class EditUser(HTMLHandlerBase):
             if flask.request.form['password'] != flask.request.form['confirm_password']:
                 return self.get(upk, error='Passwords do not match', **flask.request.form)
             user.set_password(flask.request.form['password'])
-        groups: list[models.Group] = []
-        for group in models.Group.names():
+        groups: list[Group] = []
+        for group in Group.names():
             field_name = f'{group.lower()}_group'
             if flask.request.form.get(field_name, '').lower() in {'on', '1', 'checked'}:
-                groups.append(models.Group[group.upper()])
+                groups.append(Group[group.upper()])
         user.set_groups(groups)
         if flask.request.form['new_item'] == '1':
             user.add(commit=True)
             flask.flash(f'Added new user "{user.username}"', 'success')
         else:
-            models.db.session.commit()
+            db.session.commit()
             flask.flash(f'Saved changes to "{user.username}"', 'success')
         if not current_user.is_admin:
             return flask.redirect(flask.url_for('home'))
         return flask.redirect(flask.url_for('list-users'))
 
-    def get_model(self) -> models.User:
+    def get_model(self) -> User:
         return modifying_user
 
 
@@ -227,14 +244,14 @@ class AddUser(EditUser):
     """
     decorators = [login_required(admin=True)]
 
-    def get_model(self) -> models.User:
-        return models.User(groups_mask=models.Group.USER.value)
+    def get_model(self) -> User:
+        return User(groups_mask=Group.USER.value)
 
 
 class EditSelf(EditUser):
     decorators = [login_required(admin=False)]
 
-    def get_model(self) -> models.User:
+    def get_model(self) -> User:
         return current_user
 
 
@@ -267,8 +284,8 @@ class DeleteUser(DeleteModelBase):
             "username": modifying_user.username,
             "email": modifying_user.email
         }
-        models.db.session.delete(modifying_user)
-        models.db.session.commit()
+        db.session.delete(modifying_user)
+        db.session.commit()
         return result
 
     def get_next_url(self) -> str:
@@ -277,7 +294,7 @@ class DeleteUser(DeleteModelBase):
 
 def generate_csrf_tokens() -> CsrfTokenCollection:
     csrf_key: str = CsrfProtection.generate_cookie()
-    if current_user.has_permission(models.Group.MEDIA):
+    if current_user.has_permission(Group.MEDIA):
         return CsrfTokenCollection(
             streams=CsrfProtection.generate_token('streams', csrf_key),
             files=CsrfProtection.generate_token('files', csrf_key),
@@ -297,8 +314,8 @@ class RefreshAccessToken(MethodView):
     ]
 
     def get(self) -> flask.Response:
-        access_token: models.Token = models.Token.generate_api_token(
-            current_user, models.TokenType.ACCESS)
+        access_token: EncodedJWTokenJson = Token.generate_api_token(
+            current_user, TokenType.ACCESS)
         return jsonify({
             'accessToken': access_token,
             'csrfTokens': generate_csrf_tokens().to_dict(),
