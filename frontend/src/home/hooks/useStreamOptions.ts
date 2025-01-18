@@ -1,29 +1,11 @@
 import { useCallback } from "preact/hooks";
-import { type ReadonlySignal, useComputed, useSignal } from "@preact/signals";
+import { type ReadonlySignal, useComputed } from "@preact/signals";
 
 import { defaultCgiOptions, drmSystems } from "@dashlive/options";
 import { CombinedStream } from "../../hooks/useCombinedStreams";
 import { InputFormData } from "../../types/InputFormData";
 import { FormGroupsProps } from "../../types/FormGroupsProps";
-
-export const previousOptionsKeyName = "dashlive.homepage.options";
-
-function getDefaultOptions(): InputFormData {
-  const lsKey = localStorage.getItem(previousOptionsKeyName);
-  let previousOptions: Partial<InputFormData> = {};
-  try {
-    previousOptions = lsKey ? JSON.parse(lsKey) : {};
-  } catch (err) {
-    console.warn(`Failed to parse ${previousOptionsKeyName}: ${err}`);
-  }
-  return {
-    ...defaultCgiOptions,
-    manifest: "hand_made.mpd",
-    mode: "vod",
-    stream: undefined,
-    ...previousOptions,
-  };
-}
+import { useLocalStorage } from "../../hooks/useLocalStorage";
 
 const skipKeys = new RegExp(`^(${[
   ...drmSystems,
@@ -61,7 +43,7 @@ export interface UseStreamOptionsProps {
   streamsMap: ReadonlySignal<Map<string, CombinedStream>>;
 }
 export function useStreamOptions({ streamNames, streamsMap }: UseStreamOptionsProps): UseStreamOptionsHook {
-  const data = useSignal<InputFormData>(getDefaultOptions());
+  const { dashOptions: data, setDashOption, resetDashOptions } = useLocalStorage();
   const stream = useComputed<CombinedStream>(() => {
     const name: string = (data.value['stream'] as string | undefined) ?? streamNames.value[0];
     return streamsMap.value.get(name) ?? emptyStream;
@@ -93,38 +75,16 @@ export function useStreamOptions({ streamNames, streamsMap }: UseStreamOptionsPr
 
   const setValue = useCallback(
     (name: string, value: string | number | boolean) => {
-      if (value === true) {
-        value = "1";
-      } else if (value === false) {
-        value = "0";
-      }
-      data.value = {
-        ...data.value,
-        [name]: value,
-      };
+      setDashOption(name, value);
       if (name === "stream" && mode.value === "odvod") {
         const nextStream = streamsMap.value.get(value as string);
         if (nextStream?.mps) {
-          data.value = {
-            ...data.value,
-            mode: "vod",
-          };
+          setDashOption("mode", "vod");
         }
       }
-      const params = Object.fromEntries(
-        Object.entries(data.value).filter(
-          ([key, value]) => defaultCgiOptions[key] !== value
-        )
-      );
-      localStorage.setItem(previousOptionsKeyName, JSON.stringify(params));
     },
-    [data, mode, streamsMap]
+    [mode, setDashOption, streamsMap]
   );
-
-  const resetAllValues = useCallback(() => {
-    localStorage.removeItem(previousOptionsKeyName);
-    data.value = { ...getDefaultOptions() };
-  }, [data]);
 
   return {
     data,
@@ -136,6 +96,6 @@ export function useStreamOptions({ streamNames, streamsMap }: UseStreamOptionsPr
     nonDefaultOptions,
     manifestOptions,
     setValue,
-    resetAllValues,
+    resetAllValues: resetDashOptions,
   };
 }

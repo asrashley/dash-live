@@ -51,7 +51,7 @@ describe("OptionsRow component", () => {
   });
 
   test("can open options dialog", () => {
-    const { getByText, state } = renderWithProviders(
+    const { getByText, appState: state } = renderWithProviders(
       <MultiPeriodModelContext.Provider value={multiPeriodStreamHook}>
         <OptionsRow name="rowtest" canModify={canModify} />
       </MultiPeriodModelContext.Provider>

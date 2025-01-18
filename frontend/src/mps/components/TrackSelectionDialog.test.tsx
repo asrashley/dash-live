@@ -20,11 +20,7 @@ import { DecoratedMultiPeriodStream } from "../../types/DecoratedMultiPeriodStre
 
 describe("TrackSelectionDialog component", () => {
   const onClose = vi.fn();
-  const userInfo = {
-    isAuthenticated: true,
-    groups: ["MEDIA"],
-  };
-  const state = createAppState(userInfo);
+  const appState = createAppState();
   const model = signal<DecoratedMultiPeriodStream>();
   const mpsContext: UseMultiPeriodStreamHook = {
     model,
@@ -114,7 +110,7 @@ describe("TrackSelectionDialog component", () => {
   let rolesPromise: Promise<void>;
 
   beforeEach(() => {
-    state.dialog.value = {
+    appState.dialog.value = {
       backdrop: true,
       trackPicker: { ...trackPicker },
     };
@@ -147,7 +143,7 @@ describe("TrackSelectionDialog component", () => {
           <TrackSelectionDialog onClose={onClose} />
         </MultiPeriodModelContext.Provider>
       </EndpointContext.Provider>,
-      { state }
+      { appState }
     );
     await act(async () => {
       await rolesPromise;
@@ -163,7 +159,7 @@ describe("TrackSelectionDialog component", () => {
           <TrackSelectionDialog onClose={onClose} />
         </MultiPeriodModelContext.Provider>
       </EndpointContext.Provider>,
-      { state }
+      { appState }
     );
     const btn = getByText("Close") as HTMLButtonElement;
     fireEvent.click(btn);
@@ -195,7 +191,7 @@ describe("TrackSelectionDialog component", () => {
           <TrackSelectionDialog onClose={onClose} />
         </MultiPeriodModelContext.Provider>
       </EndpointContext.Provider>,
-      { state }
+      { appState }
     );
     await act(async () => {
       await rolesPromise;
@@ -224,7 +220,7 @@ describe("TrackSelectionDialog component", () => {
           <TrackSelectionDialog onClose={onClose} />
         </MultiPeriodModelContext.Provider>
       </EndpointContext.Provider>,
-      { state }
+      { appState }
     );
     await act(async () => {
       await rolesPromise;
@@ -251,7 +247,7 @@ describe("TrackSelectionDialog component", () => {
           <TrackSelectionDialog onClose={onClose} />
         </MultiPeriodModelContext.Provider>
       </EndpointContext.Provider>,
-      { state }
+      { appState }
     );
     await act(async () => {
       await rolesPromise;
@@ -279,7 +275,7 @@ describe("TrackSelectionDialog component", () => {
           <TrackSelectionDialog onClose={onClose} />
         </MultiPeriodModelContext.Provider>
       </EndpointContext.Provider>,
-      { state }
+      { appState }
     );
     await act(async () => {
       await rolesPromise;
@@ -301,7 +297,7 @@ describe("TrackSelectionDialog component", () => {
   });
 
   test("hide when not active", () => {
-    state.dialog.value = {
+    appState.dialog.value = {
       backdrop: false,
     };
     const { container } = renderWithProviders(
@@ -310,7 +306,7 @@ describe("TrackSelectionDialog component", () => {
           <TrackSelectionDialog onClose={onClose} />
         </MultiPeriodModelContext.Provider>
       </EndpointContext.Provider>,
-      { state }
+      { appState }
     );
     expect(container.innerHTML).toEqual("");
   });

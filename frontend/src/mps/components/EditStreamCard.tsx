@@ -4,11 +4,12 @@ import { Card } from "../../components/Card";
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog';
 import { TrackSelectionDialog } from './TrackSelectionDialog';
 import { OptionsDialog } from './OptionsDialog';
+import { EditStreamForm } from "./EditStreamForm";
 
 import { AppStateContext } from "../../appState";
 import { AllStreamsContext, useAllStreams  } from "../../hooks/useAllStreams";
 import { useMultiPeriodStream, MultiPeriodModelContext } from "../../hooks/useMultiPeriodStream";
-import { EditStreamForm } from "./EditStreamForm";
+import { WhoAmIContext } from "../../hooks/useWhoAmI";
 
 interface HeaderProps {
   newStream: boolean;
@@ -16,7 +17,7 @@ interface HeaderProps {
 }
 
 function Header({newStream, name}: HeaderProps) {
-  const { user } = useContext(AppStateContext);
+  const { user } = useContext(WhoAmIContext);
   if (newStream) {
     return <h2>Add new Multi-Period stream</h2>;
   }

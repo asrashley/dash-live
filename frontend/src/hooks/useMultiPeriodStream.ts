@@ -4,7 +4,7 @@ import { useSignal, useSignalEffect, useComputed, type Signal, type ReadonlySign
 
 import { ApiRequests, EndpointContext } from "../endpoints";
 import { AppendMessageFn, useMessages } from "./useMessages";
-import { MultiPeriodStream, MultiPeriodStreamJson } from "../types/MultiPeriodStream";
+import { MultiPeriodStream } from "../types/MultiPeriodStream";
 import { DecoratedMultiPeriodStream } from "../types/DecoratedMultiPeriodStream";
 import { MpsPeriod } from "../types/MpsPeriod";
 import { MpsTrack } from "../types/MpsTrack";

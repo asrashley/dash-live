@@ -60,7 +60,7 @@ describe("LoginLogoutLink component", () => {
     expect(asFragment()).toMatchSnapshot();
   });
 
-  test("shows log out link", async () => {
+  test("shows  log out link", async () => {
     const prom = new Promise<void>((resolve) => {
       apiRequests.logoutUser.mockImplementationOnce(() => {
         resolve();
@@ -72,7 +72,7 @@ describe("LoginLogoutLink component", () => {
       });
     });
 
-    const { asFragment, findByText, getBySelector, state } =
+    const { asFragment, findByText, getBySelector, whoAmI } =
       renderWithProviders(
         <EndpointContext.Provider value={apiRequests}>
           <LoginLogoutLink />
@@ -80,11 +80,11 @@ describe("LoginLogoutLink component", () => {
         { userInfo }
       );
     await findByText("Log Out");
-    expect(state.user.value.isAuthenticated).toEqual(true);
+    expect(whoAmI.user.value.isAuthenticated).toEqual(true);
     const link = getBySelector(".nav-link") as HTMLAnchorElement;
     fireEvent.click(link);
     await prom;
-    expect(state.user.value.isAuthenticated).toEqual(false);
+    expect(whoAmI.user.value.isAuthenticated).toEqual(false);
     expect(setLocation).toHaveBeenCalledTimes(1);
     expect(setLocation).toHaveBeenCalledWith(uiRouteMap.home.url());
     await findByText("Log In");
@@ -104,7 +104,7 @@ describe("LoginLogoutLink component", () => {
       });
     });
 
-    const { findByText, getBySelector, state } = renderWithProviders(
+    const { findByText, getBySelector, whoAmI } = renderWithProviders(
       <EndpointContext.Provider value={apiRequests}>
         <LoginLogoutLink />
       </EndpointContext.Provider>,
@@ -113,7 +113,7 @@ describe("LoginLogoutLink component", () => {
     const link = getBySelector(".nav-link") as HTMLAnchorElement;
     fireEvent.click(link);
     await prom;
-    expect(state.user.value.isAuthenticated).toEqual(false);
+    expect(whoAmI.user.value.isAuthenticated).toEqual(false);
     expect(setLocation).toHaveBeenCalledTimes(1);
     expect(setLocation).toHaveBeenCalledWith(uiRouteMap.home.url());
     await findByText("Log In");

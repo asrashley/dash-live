@@ -1,7 +1,7 @@
 import { render } from 'preact';
 import { App } from './App'
 
-import { user, initialTokens } from '@dashlive/init';
+import { navbar, initialTokens } from '@dashlive/init';
 
 let root = document.getElementById('app');
 
@@ -11,4 +11,4 @@ if (root === null) {
     document.body.appendChild(root);
 }
 
-render(<App tokens={initialTokens} user={user} />, root);
+render(<App tokens={initialTokens} navbar={navbar} />, root);

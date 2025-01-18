@@ -5,17 +5,17 @@ import { Alert } from '../../components/Alert';
 import { RenderItemProps, SortableList } from '../../components/SortableList';
 
 import { MultiPeriodModelContext } from '../../hooks/useMultiPeriodStream';
-import { AppStateContext } from "../../appState";
 import { MpsPeriod } from "../../types/MpsPeriod";
 import { GuestPeriodRow } from "./GuestPeriodRow";
 import { PeriodRow } from "./PeriodRow";
+import { WhoAmIContext } from "../../hooks/useWhoAmI";
 
 interface ButtonToolbarProps {
   onAddPeriod: (ev: Event) => void;
 }
 
 function ButtonToolbar({ onAddPeriod }: ButtonToolbarProps) {
-  const { user } = useContext(AppStateContext);
+  const { user } = useContext(WhoAmIContext);
   if (!user.value.permissions.media) {
     return null;
   }
@@ -27,7 +27,7 @@ function ButtonToolbar({ onAddPeriod }: ButtonToolbarProps) {
 }
 
 export function PeriodsTable() {
-  const { user } = useContext(AppStateContext);
+  const { user } = useContext(WhoAmIContext);
   const { errors, model, addPeriod, setPeriodOrdering } = useContext(
     MultiPeriodModelContext
   );

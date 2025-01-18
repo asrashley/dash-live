@@ -3,9 +3,9 @@ import { Link } from 'wouter-preact';
 import { useCallback, useContext } from 'preact/hooks'
 
 import { useAllMultiPeriodStreams, AllMultiPeriodStreamsContext } from '../../hooks/useAllMultiPeriodStreams';
-import { AppStateContext } from '../../appState';
 import { uiRouteMap } from '@dashlive/routemap';
 import { SortIcon } from './SortIcon';
+import { WhoAmIContext } from '../../hooks/useWhoAmI';
 
 interface TableRowProps {
   name: string;
@@ -52,7 +52,7 @@ function SortableHeading({name, children, className=""}: SortableHeadingProps) {
 }
 
 export default function ListStreamsPage() {
-  const { user } = useContext(AppStateContext);
+  const { user } = useContext(WhoAmIContext);
   const allMpsContext = useAllMultiPeriodStreams();
   const canModify = user.value.permissions.media === true;
 

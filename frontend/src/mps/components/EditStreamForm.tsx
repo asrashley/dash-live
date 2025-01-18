@@ -4,7 +4,6 @@ import { useLocation } from "wouter-preact";
 
 import { routeMap, uiRouteMap } from "@dashlive/routemap";
 
-import { AppStateContext } from "../../appState";
 import { FormRow } from "../../components/FormRow";
 import { TextInputRow } from "../../components/TextInputRow";
 import { useMessages } from "../../hooks/useMessages";
@@ -12,6 +11,8 @@ import { MultiPeriodModelContext } from "../../hooks/useMultiPeriodStream";
 import { ButtonToolbar } from "./ButtonToolbar";
 import { OptionsRow } from "./OptionsRow";
 import { PeriodsTable } from "./PeriodsTable";
+import { WhoAmIContext } from "../../hooks/useWhoAmI";
+import { AppStateContext } from "../../appState";
 
 export interface EditStreamFormProps {
   name: string;
@@ -22,7 +23,8 @@ export function EditStreamForm({ name, newStream }: EditStreamFormProps) {
   const setLocation = useLocation()[1];
   const { model, modified, errors, setFields, saveChanges, deleteStream } =
     useContext(MultiPeriodModelContext);
-  const { dialog, user } = useContext(AppStateContext);
+  const { dialog } = useContext(AppStateContext);
+  const { user } = useContext(WhoAmIContext);
   const { appendMessage } = useMessages();
   const deleteConfirmed = useComputed<boolean>(
     () => dialog.value?.confirmDelete?.confirmed === true

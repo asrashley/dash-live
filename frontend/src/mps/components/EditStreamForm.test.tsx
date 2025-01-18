@@ -92,11 +92,11 @@ describe("EditStreamForm component", () => {
   });
 
   test("matches snapshot for an existing stream", async () => {
-    const { asFragment, findByText, findAllByText, state } =
+    const { asFragment, findByText, findAllByText, whoAmI } =
       renderWithProviders(<Wrapper newStream={false} name={mps_name} />, {
         userInfo,
       });
-    expect(state.user.value).toEqual({
+    expect(whoAmI.user.value).toEqual({
       ...userInfo,
       permissions: {
         admin: false,
@@ -137,11 +137,11 @@ describe("EditStreamForm component", () => {
   });
 
   test("can delete a stream", async () => {
-    const { findByText, state } = renderWithProviders(
+    const { findByText, appState, whoAmI } = renderWithProviders(
       <Wrapper newStream={false} name={mps_name} />,
       { userInfo }
     );
-    expect(state.user.value).toEqual({
+    expect(whoAmI.user.value).toEqual({
       ...userInfo,
       permissions: {
         admin: false,
@@ -151,10 +151,10 @@ describe("EditStreamForm component", () => {
     });
     expect(useLocationMock).toHaveBeenCalled();
     await findByText('"europe-ntp"');
-    expect(state.dialog.value).toBeNull();
+    expect(appState.dialog.value).toBeNull();
     const btn = (await findByText("Delete Stream")) as HTMLButtonElement;
     fireEvent.click(btn);
-    expect(state.dialog.value).toEqual({
+    expect(appState.dialog.value).toEqual({
       backdrop: true,
       confirmDelete: {
         confirmed: false,
@@ -166,7 +166,7 @@ describe("EditStreamForm component", () => {
       routeMap.editMps.url({ mps_name })
     );
     act(() => {
-      state.dialog.value = {
+      appState.dialog.value = {
         backdrop: true,
         confirmDelete: {
           confirmed: true,

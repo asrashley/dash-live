@@ -4,7 +4,10 @@ import { Router } from "wouter-preact";
 
 import { AppStateContext, AppStateType, createAppState } from "../appState";
 import { bySelectorQueries, BySelectorQueryFunctions } from "./queries";
-import { InitialUserState } from "../types/UserState";
+import { InitialUserState, UserState } from "../types/UserState";
+import { computed, signal } from "@preact/signals";
+import { vi } from "vitest";
+import { UseWhoAmIHook, WhoAmIContext } from "../hooks/useWhoAmI";
 
 const initialUserState: InitialUserState = {
   isAuthenticated: false,
@@ -13,27 +16,50 @@ const initialUserState: InitialUserState = {
 
 export type RenderWithProvidersProps = RenderOptions & {
   userInfo: InitialUserState;
+  whoAmI: UseWhoAmIHook;
   path: string;
   base: string;
   search: string;
-  state: AppStateType;
+  appState: AppStateType;
 };
 
 type AllQueryFunctions = Queries & BySelectorQueryFunctions;
 
 export type RenderWithProvidersResult = RenderResult<AllQueryFunctions> & {
-  state: AppStateType;
+  appState: AppStateType;
+  whoAmI: UseWhoAmIHook;
 };
 
 export function renderWithProviders(
   ui,
-  { userInfo, state, path = "/", ...renderOptions }: Partial<RenderWithProvidersProps> = {}
+  { userInfo, appState, whoAmI, path = "/", ...renderOptions }: Partial<RenderWithProvidersProps> = {}
 ): RenderWithProvidersResult {
   if (userInfo === undefined) {
     userInfo = structuredClone(initialUserState);
   }
-  if (state === undefined) {
-    state = createAppState(userInfo);
+  const userData = signal<InitialUserState>(userInfo);
+  const setUser = vi.fn();
+  setUser.mockImplementation((ius) => userData.value = structuredClone(ius));
+  if (appState === undefined) {
+    appState = createAppState();
+  }
+  if (whoAmI === undefined) {
+    const user = computed<UserState>(() => {
+      return {
+        ...userData.value,
+        permissions: {
+          admin: userData.value.groups.includes('ADMIN'),
+          media: userData.value.groups.includes('MEDIA'),
+          user: userData.value.groups.includes('USER'),
+        },
+      };
+    });
+    whoAmI = {
+      error: signal<string | null>(null),
+      checked: signal<boolean>(true),
+      user,
+      setUser,
+    };
   }
 
   const { hook } = memoryLocation({
@@ -42,12 +68,17 @@ export function renderWithProviders(
   });
 
   const Wrapper = ({ children }) => {
-    return <AppStateContext.Provider value={state}
-      ><Router hook={hook}>{children}</Router></AppStateContext.Provider>;
+    return <AppStateContext.Provider value={appState}>
+      <WhoAmIContext.Provider value={whoAmI}>
+        <Router hook={hook}>
+          {children}
+        </Router>
+      </WhoAmIContext.Provider></AppStateContext.Provider>;
   };
 
   return {
-    state,
+    appState,
+    whoAmI,
     ...render(ui, {
       wrapper: Wrapper,
       queries: {

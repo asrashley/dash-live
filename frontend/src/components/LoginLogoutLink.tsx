@@ -2,13 +2,13 @@ import { useCallback, useContext } from "preact/hooks";
 import { useLocation } from "wouter-preact";
 import { uiRouteMap } from "@dashlive/routemap";
 
-import { AppStateContext } from "../appState";
 import { EndpointContext } from "../endpoints";
 import { useMessages } from "../hooks/useMessages";
 import { useComputed } from "@preact/signals";
+import { WhoAmIContext } from "../hooks/useWhoAmI";
 
 export function LoginLogoutLink() {
-  const { user, setUser } = useContext(AppStateContext);
+  const { user, setUser } = useContext(WhoAmIContext);
   const api = useContext(EndpointContext);
   const { appendMessage } = useMessages();
   const setLocation = useLocation()[1];
