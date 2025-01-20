@@ -1,6 +1,6 @@
 import { createContext } from "preact";
 import { useCallback, useContext, useEffect } from "preact/hooks";
-import { useSignal, useSignalEffect, useComputed, type Signal, type ReadonlySignal } from "@preact/signals";
+import { useSignal, useSignalEffect, useComputed, type Signal, type ReadonlySignal, batch } from "@preact/signals";
 
 import { ApiRequests, EndpointContext } from "../endpoints";
 import { AppendMessageFn, useMessages } from "./useMessages";
@@ -279,9 +279,9 @@ export interface UseMultiPeriodModelHook {
   modifyPeriod: (props: Omit<ModifyPeriodProps, 'model'>) => void;
   saveChanges: ({signal}: { signal: AbortSignal}) => Promise<boolean>;
   deleteStream: ({signal}: { signal: AbortSignal}) => Promise<boolean>;
-  modified: Signal<boolean>;
-  errors: Signal<MpsModelValidationErrors>;
-  isValid: Signal<boolean>;
+  modified: ReadonlySignal<boolean>;
+  errors: ReadonlySignal<MpsModelValidationErrors>;
+  isValid: ReadonlySignal<boolean>;
 }
 
 export interface UseMultiPeriodModelProps {
@@ -429,7 +429,7 @@ export interface UseMultiPeriodStreamProps {
 }
 
 export interface UseMultiPeriodStreamHook extends UseMultiPeriodModelHook {
-  loaded: ReadonlySignal<string | undefined>;
+  loaded: ReadonlySignal<string | null>;
   model: ReadonlySignal<DecoratedMultiPeriodStream>;
 }
 
@@ -437,7 +437,8 @@ export const MultiPeriodModelContext = createContext<UseMultiPeriodStreamHook>(n
 
 export function useMultiPeriodStream({ name, newStream }: UseMultiPeriodStreamProps): UseMultiPeriodStreamHook {
   const apiRequests = useContext(EndpointContext);
-  const loaded = useSignal<string | undefined>();
+  const { appendMessage } = useMessages();
+  const loaded = useSignal<string | null>(null);
   const model = useSignal<DecoratedMultiPeriodStream>(blankModel);
   const modifiers = useMultiPeriodModel({ model, name });
 
@@ -452,10 +453,14 @@ export function useMultiPeriodStream({ name, newStream }: UseMultiPeriodStreamPr
           model.value = JSON.parse(JSON.stringify(blankModel));
           return;
         }
-        const data: MultiPeriodStream = await apiRequests.getMultiPeriodStream(name, { signal });
-        if (!signal.aborted) {
-          loaded.value = name;
-          model.value = decorateMultiPeriodStream(data);
+        try{
+          const data: MultiPeriodStream = await apiRequests.getMultiPeriodStream(name, { signal });
+          batch(() => {
+            loaded.value = name;
+            model.value = decorateMultiPeriodStream(data);
+          });
+        } catch(err) {
+          appendMessage("danger", `Failed to get multi-period stream list: ${err}`);
         }
       }
     };
@@ -467,7 +472,7 @@ export function useMultiPeriodStream({ name, newStream }: UseMultiPeriodStreamPr
         controller.abort();
       }
     };
-  }, [apiRequests, loaded, name, newStream, model]);
+  }, [apiRequests, loaded, name, newStream, model, appendMessage]);
 
   return {
     model,

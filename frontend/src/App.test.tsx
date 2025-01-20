@@ -2,6 +2,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi 
 import { act, fireEvent, render } from "@testing-library/preact";
 import { useContext } from "preact/hooks";
 import { useLocation } from 'wouter-preact';
+import log from "loglevel";
 
 import { navbar } from "@dashlive/init";
 
@@ -9,8 +10,8 @@ import { App } from "./App";
 import { AppStateContext, AppStateType } from "./appState";
 import { mediaUser, MockDashServer, UserModel } from "./test/MockServer";
 import { FakeEndpoint } from "./test/FakeEndpoint";
-import { InitialApiTokens } from "./types/InitialApiTokens";
-import log from "loglevel";
+import { JWToken } from "./types/JWToken";
+import { LocalStorageKeys } from "./hooks/useLocalStorage";
 
 vi.mock('wouter-preact', async (importOriginal) => {
   return {
@@ -31,7 +32,7 @@ describe("main entry-point app", () => {
   let server: MockDashServer;
   let baseElement: HTMLDivElement;
   let user: UserModel;
-  let tokens: InitialApiTokens;
+  let accessToken: JWToken | null;
 
   beforeAll(() => {
     vi.stubGlobal('location', mockLocation);
@@ -49,10 +50,8 @@ describe("main entry-point app", () => {
     });
     user = server.login(mediaUser.email, mediaUser.password);
     expect(user).not.toBeNull();
-    tokens = {
-      accessToken: user.accessToken,
-      refreshToken: user.refreshToken,
-    };
+    accessToken = null;
+    localStorage.setItem(LocalStorageKeys.REFRESH_TOKEN, JSON.stringify(user.refreshToken));
     document.body.innerHTML = '<div id="app" />';
     const app = document.getElementById('app');
     expect(app).not.toBeNull();
@@ -68,7 +67,7 @@ describe("main entry-point app", () => {
     mockLocation.pathname = "/";
     useLocationSpy.mockReturnValue([mockLocation.pathname, setLocation]);
     const { asFragment, findByText } = render(
-      <App tokens={tokens} navbar={navbar} />,
+      <App accessToken={accessToken} navbar={navbar} />,
       { baseElement }
     );
     await findByText("Log Out");
@@ -84,9 +83,10 @@ describe("main entry-point app", () => {
     mockLocation.pathname = '/multi-period-streams';
     useLocationSpy.mockReturnValue([mockLocation.pathname, setLocation]);
     const { asFragment, findByText } = render(
-      <App tokens={tokens} navbar={navbar} />,
+      <App accessToken={accessToken} navbar={navbar} />,
       { baseElement }
     );
+    await findByText("Log Out");
     await findByText('first title');
     await findByText('Add a Stream');
     expect(asFragment()).toMatchSnapshot();
@@ -95,13 +95,14 @@ describe("main entry-point app", () => {
   test("matches snapshot for edit MPS", async () => {
     mockLocation.pathname = '/multi-period-streams/demo';
     useLocationSpy.mockReturnValue([mockLocation.pathname, setLocation]);
-    const { asFragment, findByText } = render(
-      <App tokens={tokens} navbar={navbar} />,
+    const { asFragment, findByText, findAllByText } = render(
+      <App accessToken={accessToken} navbar={navbar} />,
       { baseElement }
     );
     await findByText("Log Out");
     await findByText("Delete Stream");
     await findByText('"europe-ntp"');
+    await findAllByText("2/3 tracks");
     expect(asFragment()).toMatchSnapshot();
   });
 
@@ -109,7 +110,7 @@ describe("main entry-point app", () => {
     mockLocation.pathname = '/unknown';
     useLocationSpy.mockReturnValue([mockLocation.pathname, setLocation]);
     const { findByText } = render(
-      <App tokens={tokens} navbar={navbar} />,
+      <App accessToken={accessToken} navbar={navbar} />,
       { baseElement }
     );
     await findByText("Sorry I don't know about this page");
@@ -124,7 +125,7 @@ describe("main entry-point app", () => {
     mockLocation.pathname = "/";
     useLocationSpy.mockReturnValue([mockLocation.pathname, setLocation]);
     const { findByText } = render(
-      <App tokens={tokens} navbar={navbar}><StateSpy /></App>,
+      <App accessToken={accessToken} navbar={navbar}><StateSpy /></App>,
       { baseElement }
     );
     await findByText("Stream to play");
@@ -149,7 +150,7 @@ describe("main entry-point app", () => {
     mockLocation.pathname = "/";
     useLocationSpy.mockReturnValue(["/", setLocation]);
     const { findByText } = render(
-      <App tokens={tokens}  navbar={navbar} />,
+      <App accessToken={accessToken}  navbar={navbar} />,
       { baseElement }
     );
     await findByText("Stream to play");

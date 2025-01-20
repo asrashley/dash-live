@@ -6,8 +6,8 @@ import { useLocation } from "wouter-preact";
 import { uiRouteMap } from "@dashlive/routemap";
 import { renderWithProviders } from "../test/renderWithProviders";
 import { ApiRequests, EndpointContext } from "../endpoints";
-import { InitialUserState } from "../types/UserState";
 import { useMessages, UseMessagesHook } from "../hooks/useMessages";
+import { normalUser } from "../test/MockServer";
 
 import { LoginLogoutLink } from "./LoginLogoutLink";
 
@@ -31,11 +31,6 @@ describe("LoginLogoutLink component", () => {
   const setLocation = vi.fn();
   const apiRequests = mock<ApiRequests>();
   const messagesMock = mock<UseMessagesHook>();
-  const userInfo: InitialUserState = {
-    pk: 3,
-    isAuthenticated: true,
-    groups: ["USER"],
-  };
 
   beforeEach(() => {
     useLocationMock.mockReturnValue(["/", setLocation]);
@@ -77,7 +72,7 @@ describe("LoginLogoutLink component", () => {
         <EndpointContext.Provider value={apiRequests}>
           <LoginLogoutLink />
         </EndpointContext.Provider>,
-        { userInfo }
+        { userInfo: normalUser }
       );
     await findByText("Log Out");
     expect(whoAmI.user.value.isAuthenticated).toEqual(true);
@@ -108,7 +103,7 @@ describe("LoginLogoutLink component", () => {
       <EndpointContext.Provider value={apiRequests}>
         <LoginLogoutLink />
       </EndpointContext.Provider>,
-      { userInfo }
+      { userInfo: normalUser }
     );
     const link = getBySelector(".nav-link") as HTMLAnchorElement;
     fireEvent.click(link);

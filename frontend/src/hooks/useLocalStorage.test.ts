@@ -24,7 +24,7 @@ describe('useLocalStorage hook', () => {
     test('empty local storage', () => {
         const { result } = renderHook(() => useLocalStorage());
         const { dashOptions, refreshToken } = result.current;
-        expect(refreshToken).toBeNull();
+        expect(refreshToken.value).toBeNull();
         expect(dashOptions.value).toEqual(defaultDashOptions);
         expect(warnSpy).not.toHaveBeenCalled();
     });
@@ -67,7 +67,7 @@ describe('useLocalStorage hook', () => {
         localStorage.setItem(LocalStorageKeys.DASH_OPTIONS, "not valid JSON");
         const { result } = renderHook(() => useLocalStorage());
         const { dashOptions, refreshToken } = result.current;
-        expect(refreshToken).toBeNull();
+        expect(refreshToken.value).toBeNull();
         expect(dashOptions.value).toEqual(defaultDashOptions);
         expect(warnSpy).toHaveBeenCalled();
     });
@@ -79,7 +79,7 @@ describe('useLocalStorage hook', () => {
         }));
         const { result } = renderHook(() => useLocalStorage());
         const { refreshToken } = result.current;
-        expect(refreshToken).toEqual({
+        expect(refreshToken.value).toEqual({
             expires: 'expires',
             jwt: 'jwt',
         });
@@ -112,7 +112,7 @@ describe('useLocalStorage hook', () => {
         localStorage.setItem(LocalStorageKeys.REFRESH_TOKEN, "not valid JSON");
         const { result } = renderHook(() => useLocalStorage());
         const { refreshToken } = result.current;
-        expect(refreshToken).toBeNull();
+        expect(refreshToken.value).toBeNull();
         expect(warnSpy).toHaveBeenCalled();
     });
 

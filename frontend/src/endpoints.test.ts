@@ -8,7 +8,6 @@ import { routeMap } from "@dashlive/routemap";
 import { MockDashServer, normalUser, UserModel } from "./test/MockServer";
 import { FakeEndpoint, HttpRequestHandlerResponse, ServerRouteProps } from "./test/FakeEndpoint";
 import { ApiRequests } from "./endpoints";
-import { CsrfTokenCollection } from "./types/CsrfTokenCollection";
 import { DecoratedMultiPeriodStream } from "./types/DecoratedMultiPeriodStream";
 import { MpsPeriod } from "./types/MpsPeriod";
 import { LoginRequest } from "./types/LoginRequest";
@@ -19,16 +18,11 @@ import contentRoles from './test/fixtures/content_roles.json';
 import allStdStreams from './test/fixtures/streams.json';
 import { model as demoMps} from './test/fixtures/multi-period-streams/demo.json';
 import cgiOptions from './test/fixtures/cgiOptions.json';
+import { InitialUserState } from "./types/UserState";
 
 describe('endpoints', () => {
-    const navigate = vi.fn();
-    const noCsrfTokens: CsrfTokenCollection = {
-        files: null,
-        kids: null,
-        login: null,
-        streams: null,
-        upload: null,
-    };
+    const needsRefreshToken = vi.fn();
+    const hasUserInfo = vi.fn();
     let endpoint: FakeEndpoint;
     let server: MockDashServer;
     let api: ApiRequests;
@@ -42,12 +36,9 @@ describe('endpoints', () => {
         });
         user = server.login(normalUser.email, normalUser.password);
         expect(user).not.toBeNull();
-        const csrfTokens: CsrfTokenCollection = server.generateCsrfTokens(user);
         api = new ApiRequests({
-            csrfTokens,
-            navigate,
-            accessToken: user.accessToken,
-            refreshToken: user.refreshToken,
+            hasUserInfo,
+            needsRefreshToken,
         });
     });
 
@@ -59,14 +50,20 @@ describe('endpoints', () => {
 
     test('fetch manifest list', async () => {
         await expect(api.getAllManifests()).resolves.toEqual(allManifests);
+        expect(hasUserInfo).not.toHaveBeenCalled();
+        expect(needsRefreshToken).not.toHaveBeenCalled();
     });
 
     test('get content roles', async () => {
         await expect(api.getContentRoles()).resolves.toEqual(contentRoles);
+        expect(hasUserInfo).not.toHaveBeenCalled();
+        expect(needsRefreshToken).not.toHaveBeenCalled();
     });
 
     test('get cgi options', async () => {
         await expect(api.getCgiOptions()).resolves.toEqual(cgiOptions);
+        expect(hasUserInfo).not.toHaveBeenCalled();
+        expect(needsRefreshToken).not.toHaveBeenCalled();
     });
 
     test.each(['username', 'email'])('can login using %s', async (field: string) => {
@@ -75,6 +72,13 @@ describe('endpoints', () => {
             username: field === 'username' ? username : email,
             password,
             rememberme: false,
+        };
+        const user: InitialUserState = {
+            pk: normalUser.pk,
+            email: normalUser.email,
+            username: normalUser.username,
+            groups: normalUser.groups,
+            last_login: null,
         };
         await expect(api.loginUser(request)).resolves.toEqual(expect.objectContaining({
             success: true,
@@ -88,15 +92,11 @@ describe('endpoints', () => {
                 expires: expect.any(String),
                 jwt: expect.any(String),
             },
-            user: {
-                pk: normalUser.pk,
-                email: normalUser.email,
-                username: normalUser.username,
-                groups: normalUser.groups,
-                last_login: null,
-                isAuthenticated: true,
-            },
+            user,
         }));
+        expect(hasUserInfo).toHaveBeenCalledTimes(1);
+        expect(hasUserInfo).toHaveBeenCalledWith(user);
+        expect(needsRefreshToken).not.toHaveBeenCalled();
     });
 
     test('can login fails with unknown user', async () => {
@@ -125,13 +125,39 @@ describe('endpoints', () => {
         }));
     });
 
-    test('can log out', async () => {
+    test('can log out with a valid access token', async () => {
+        api.setRefreshToken(user.refreshToken);
+        api.setAccessToken(user.accessToken);
         await expect(api.logoutUser()).resolves.toEqual(expect.objectContaining({
             status: 204,
         }));
         user = server.getUser(normalUser);
         expect(user).toBeDefined();
         expect(user.accessToken).toBeUndefined();
+        expect(user.refreshToken).toBeUndefined();
+        expect(hasUserInfo).toHaveBeenCalledTimes(1);
+        expect(hasUserInfo).toHaveBeenCalledWith(null);
+    });
+
+    test('can log out with a no access token + valid refresh token', async () => {
+        api.setRefreshToken(user.refreshToken);
+        await expect(api.logoutUser()).resolves.toEqual(expect.objectContaining({
+            status: 204,
+        }));
+        user = server.getUser(normalUser);
+        expect(user).toBeDefined();
+        expect(user.accessToken).toBeUndefined();
+        expect(user.refreshToken).toBeUndefined();
+        expect(hasUserInfo).toHaveBeenCalledTimes(1);
+        expect(hasUserInfo).toHaveBeenCalledWith(null);
+    });
+
+    test('log out without a refresh token', async () => {
+        await expect(api.logoutUser()).resolves.toEqual(expect.objectContaining({
+            status: 401,
+        }));
+        expect(hasUserInfo).toHaveBeenCalledTimes(1);
+        expect(hasUserInfo).toHaveBeenCalledWith(null);
     });
 
     test('get all conventional streams', async () => {
@@ -145,6 +171,8 @@ describe('endpoints', () => {
     });
 
     test('get details of a multi-period stream', async () => {
+        api.setRefreshToken(user.refreshToken);
+        api.setAccessToken(user.accessToken);
         await expect(api.getMultiPeriodStream('demo')).resolves.toEqual(demoMps);
     });
 
@@ -169,6 +197,8 @@ describe('endpoints', () => {
             lastModified: 123,
             periods,
         };
+        api.setRefreshToken(user.refreshToken);
+        api.setAccessToken(user.accessToken);
         await expect(api.addMultiPeriodStream(newMps)).resolves.toEqual({
             model: newMps,
             success: true,
@@ -198,6 +228,8 @@ describe('endpoints', () => {
             lastModified: 123,
             periods,
         };
+        api.setRefreshToken(user.refreshToken);
+        api.setAccessToken(user.accessToken);
         await expect(api.modifyMultiPeriodStream(name, newMps)).resolves.toEqual({
             model: newMps,
             success: true,
@@ -209,6 +241,8 @@ describe('endpoints', () => {
     });
 
     test('delete a multi-period stream', async () => {
+        api.setRefreshToken(user.refreshToken);
+        api.setAccessToken(user.accessToken);
         await expect(api.deleteMultiPeriodStream('demo')).resolves.toEqual(expect.objectContaining({
             status: 204,
         }));
@@ -220,6 +254,8 @@ describe('endpoints', () => {
             name: '',
             title: 'a title',
         };
+        api.setRefreshToken(user.refreshToken);
+        api.setAccessToken(user.accessToken);
         await expect(api.validateMultiPeriodStream(req)).resolves.toEqual({
             errors: {
                 name: 'a name is required'
@@ -233,6 +269,7 @@ describe('endpoints', () => {
             name: demoMps.name,
             title: 'a title',
         };
+        api.setRefreshToken(user.refreshToken);
         await expect(api.validateMultiPeriodStream(req)).resolves.toEqual({
             errors: {
                 name: 'duplicate name "demo"'
@@ -246,6 +283,7 @@ describe('endpoints', () => {
             name: 'demo',
             title: '',
         };
+        api.setRefreshToken(user.refreshToken);
         await expect(api.validateMultiPeriodStream(req)).resolves.toEqual({
             errors: {
                 title: 'a title is required'
@@ -254,13 +292,8 @@ describe('endpoints', () => {
     });
 
     test('refreshes CSRF tokens', async () => {
-        api = new ApiRequests({
-            csrfTokens: noCsrfTokens,
-            navigate,
-            accessToken: user.accessToken,
-            refreshToken: user.refreshToken,
-        });
         const { keys, streams } = allStdStreams;
+        api.setRefreshToken(user.refreshToken);
         await expect(api.getAllStreams()).resolves.toEqual({keys, streams});
     });
 
@@ -271,13 +304,7 @@ describe('endpoints', () => {
             accessToken: null,
         })).toEqual(true);
         expect(server.getUser({ username })?.accessToken).toBeNull();
-        const csrfTokens: CsrfTokenCollection = server.generateCsrfTokens(user);
-        api = new ApiRequests({
-            csrfTokens,
-            navigate,
-            accessToken: null,
-            refreshToken: user.refreshToken,
-        });
+        api.setRefreshToken(user.refreshToken);
         const prom = endpoint.addResponsePromise('get', routeMap.refreshAccessToken.url());
         await expect(api.getMultiPeriodStream( 'demo')).resolves.toEqual(demoMps);
         const response: RouteResponse = await prom;
@@ -297,15 +324,10 @@ describe('endpoints', () => {
 
     test('refreshes an access token', async () => {
         const { username } = normalUser;
-        const csrfTokens: CsrfTokenCollection = server.generateCsrfTokens(user);
-        api = new ApiRequests({
-            csrfTokens,
-            navigate,
-            accessToken: {
-                expires: '2024-12-01T01:02:03Z',
-                jwt: 'not.valid',
-            },
-            refreshToken: user.refreshToken,
+        api.setRefreshToken(user.refreshToken);
+        api.setAccessToken({
+            expires: '2024-12-01T01:02:03Z',
+            jwt: 'not.valid',
         });
         await expect(api.getMultiPeriodStream( 'demo')).resolves.toEqual(demoMps);
         expect(server.getUser({ username })?.accessToken).toBeDefined();
@@ -314,39 +336,23 @@ describe('endpoints', () => {
 
     test('refreshes both access token and CSRF tokens', async () => {
         const { username } = normalUser;
-        api = new ApiRequests({
-            csrfTokens: noCsrfTokens,
-            navigate,
-            accessToken: null,
-            refreshToken: user.refreshToken,
-        });
+        api.setRefreshToken(user.refreshToken);
+        api.setAccessToken(null);
         await expect(api.getMultiPeriodStream('demo')).resolves.toEqual(demoMps);
         expect(server.getUser({ username })?.accessToken).not.toBeNull();
     });
 
     test('generates error trying to refresh CSRF tokens without any JWT tokens', async () => {
-        api = new ApiRequests({
-            csrfTokens: noCsrfTokens,
-            navigate,
-            accessToken: null,
-            refreshToken: null,
-        });
         await expect(api.getMultiPeriodStream('demo')).rejects.toThrow(routeMap.editMps.url({mps_name: "demo"}));
     });
 
     test('generates error trying to refresh CSRF tokens with invalid refresh token', async () => {
-        api = new ApiRequests({
-            csrfTokens: noCsrfTokens,
-            navigate,
-            accessToken: null,
-            refreshToken: {
-                expires: '2024-12-01T01:23:45Z',
-                jwt: 'abc123',
-            },
+        api.setRefreshToken({
+            expires: '2024-12-01T01:23:45Z',
+            jwt: 'abc123',
         });
         await expect(api.getMultiPeriodStream('demo')).rejects.toThrowError("Failed to refresh access token");
-        expect(navigate).toHaveBeenCalledTimes(1);
-        expect(navigate).toHaveBeenCalledWith('/login');
+        expect(needsRefreshToken).toHaveBeenCalledTimes(1);
     });
 
     test('can abort a request', async () => {
@@ -369,15 +375,10 @@ describe('endpoints', () => {
         const controller = new AbortController();
         const { username } = normalUser;
         const url: string = routeMap.editMps.url({mps_name: "demo"});
-        const csrfTokens: CsrfTokenCollection = server.generateCsrfTokens(user);
-        api = new ApiRequests({
-            csrfTokens,
-            navigate,
-            accessToken: {
-                expires: '2024-12-01T01:02:03Z',
-                jwt: 'not.valid',
-            },
-            refreshToken: user.refreshToken,
+        api.setRefreshToken(user.refreshToken);
+        api.setAccessToken({
+            expires: '2024-12-01T01:02:03Z',
+            jwt: 'not.valid',
         });
         const responseSpy = vi.fn();
         endpoint.setResponseModifier('get', url, responseSpy);
@@ -390,6 +391,4 @@ describe('endpoints', () => {
         expect(server.getUser({ username })?.accessToken).toBeDefined();
         expect(server.getUser({ username })?.accessToken.jwt).not.toEqual('not.valid');
     });
-
-
 });

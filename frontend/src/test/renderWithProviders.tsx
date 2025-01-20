@@ -1,4 +1,10 @@
-import { render, queries, type RenderOptions, type RenderResult, type Queries } from "@testing-library/preact";
+import {
+  render,
+  queries,
+  type RenderOptions,
+  type RenderResult,
+  type Queries,
+} from "@testing-library/preact";
 import { memoryLocation } from "wouter-preact/memory-location";
 import { Router } from "wouter-preact";
 
@@ -10,7 +16,6 @@ import { vi } from "vitest";
 import { UseWhoAmIHook, WhoAmIContext } from "../hooks/useWhoAmI";
 
 const initialUserState: InitialUserState = {
-  isAuthenticated: false,
   groups: [],
 };
 
@@ -32,14 +37,25 @@ export type RenderWithProvidersResult = RenderResult<AllQueryFunctions> & {
 
 export function renderWithProviders(
   ui,
-  { userInfo, appState, whoAmI, path = "/", ...renderOptions }: Partial<RenderWithProvidersProps> = {}
+  {
+    userInfo,
+    appState,
+    whoAmI,
+    path = "/",
+    ...renderOptions
+  }: Partial<RenderWithProvidersProps> = {}
 ): RenderWithProvidersResult {
-  if (userInfo === undefined) {
+  if (!userInfo) {
     userInfo = structuredClone(initialUserState);
   }
   const userData = signal<InitialUserState>(userInfo);
   const setUser = vi.fn();
-  setUser.mockImplementation((ius) => userData.value = structuredClone(ius));
+  setUser.mockImplementation(
+    (ius: InitialUserState | null) =>
+      (userData.value = ius
+        ? structuredClone(ius)
+        : structuredClone(initialUserState))
+  );
   if (appState === undefined) {
     appState = createAppState();
   }
@@ -47,16 +63,15 @@ export function renderWithProviders(
     const user = computed<UserState>(() => {
       return {
         ...userData.value,
+        isAuthenticated: userData.value.pk !== undefined,
         permissions: {
-          admin: userData.value.groups.includes('ADMIN'),
-          media: userData.value.groups.includes('MEDIA'),
-          user: userData.value.groups.includes('USER'),
+          admin: userData.value.groups.includes("ADMIN"),
+          media: userData.value.groups.includes("MEDIA"),
+          user: userData.value.groups.includes("USER"),
         },
       };
     });
     whoAmI = {
-      error: signal<string | null>(null),
-      checked: signal<boolean>(true),
       user,
       setUser,
     };
@@ -68,12 +83,13 @@ export function renderWithProviders(
   });
 
   const Wrapper = ({ children }) => {
-    return <AppStateContext.Provider value={appState}>
-      <WhoAmIContext.Provider value={whoAmI}>
-        <Router hook={hook}>
-          {children}
-        </Router>
-      </WhoAmIContext.Provider></AppStateContext.Provider>;
+    return (
+      <AppStateContext.Provider value={appState}>
+        <WhoAmIContext.Provider value={whoAmI}>
+          <Router hook={hook}>{children}</Router>
+        </WhoAmIContext.Provider>
+      </AppStateContext.Provider>
+    );
   };
 
   return {

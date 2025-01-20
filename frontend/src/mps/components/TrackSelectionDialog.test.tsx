@@ -7,6 +7,7 @@ import { renderWithProviders } from "../../test/renderWithProviders";
 import { TrackSelectionDialog } from "./TrackSelectionDialog";
 import { createAppState } from "../../appState";
 import {
+  MpsModelValidationErrors,
   MultiPeriodModelContext,
   UseMultiPeriodStreamHook,
 } from "../../hooks/useMultiPeriodStream";
@@ -22,9 +23,16 @@ describe("TrackSelectionDialog component", () => {
   const onClose = vi.fn();
   const appState = createAppState();
   const model = signal<DecoratedMultiPeriodStream>();
+  const loaded = signal<string | undefined>();
+  const modified = signal<boolean>(false);
+  const errors = signal<MpsModelValidationErrors>({});
+  const isValid = signal<boolean>(true);
   const mpsContext: UseMultiPeriodStreamHook = {
     model,
-    loaded: signal<string | undefined>(),
+    errors,
+    loaded,
+    modified,
+    isValid,
     setFields: vi.fn(),
     addPeriod: vi.fn(),
     setPeriodOrdering: vi.fn(),
@@ -32,9 +40,6 @@ describe("TrackSelectionDialog component", () => {
     modifyPeriod: vi.fn(),
     saveChanges: vi.fn(),
     deleteStream: vi.fn(),
-    modified: undefined,
-    errors: undefined,
-    isValid: undefined,
   };
   const stream: DecoratedStream = {
     tracks: [

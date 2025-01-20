@@ -29,7 +29,7 @@ export default function LoginPage() {
             error.value = resp.error ?? 'Unknown error';
         }
     }).catch(err => {
-        error.value = `${err}`;
+        error.value = `Login failed - ${err}`;
     }).finally(() =>{
         submitting.value = false;
     });

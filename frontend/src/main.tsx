@@ -11,4 +11,4 @@ if (root === null) {
     document.body.appendChild(root);
 }
 
-render(<App tokens={initialTokens} navbar={navbar} />, root);
+render(<App accessToken={initialTokens.accessToken} navbar={navbar} />, root);

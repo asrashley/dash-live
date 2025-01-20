@@ -1,29 +1,21 @@
 import { createContext } from "preact";
-import { useCallback, useEffect } from "preact/hooks";
+import { useCallback } from "preact/hooks";
 import { type ReadonlySignal, useComputed, useSignal } from "@preact/signals";
-import log from "loglevel";
 
-import { ApiRequests } from "../endpoints";
-import { LoginResponse } from "../types/LoginResponse";
 import { InitialUserState, UserState } from "../types/UserState";
-import { useMessages } from "./useMessages";
 
 export interface UseWhoAmIHook {
-  error: ReadonlySignal<string | null>;
-  checked: ReadonlySignal<boolean>;
   user: ReadonlySignal<UserState>;
-  setUser: (ius: InitialUserState) => void;
+  setUser: (ius: InitialUserState | null) => void;
 }
 
 export const WhoAmIContext = createContext<UseWhoAmIHook>(null);
 
-export function useWhoAmI(apiRequests: ApiRequests): UseWhoAmIHook {
-  const { appendMessage } = useMessages();
-  const checked = useSignal<boolean>(false);
-  const userInfo = useSignal<InitialUserState>({isAuthenticated: false, groups:[]});
-  const error = useSignal<string | null>(null);
+export function useWhoAmI(): UseWhoAmIHook {
+  const userInfo = useSignal<InitialUserState>({groups:[]});
   const user = useComputed<UserState>(() => ({
     ...userInfo.value,
+    isAuthenticated: userInfo.value.pk !== undefined,
     permissions: {
       admin: userInfo.value.groups.includes('ADMIN'),
       media: userInfo.value.groups.includes('MEDIA'),
@@ -31,46 +23,13 @@ export function useWhoAmI(apiRequests: ApiRequests): UseWhoAmIHook {
     },
   }));
 
-  const setUser = useCallback((ius: InitialUserState) => {
-    userInfo.value = structuredClone(ius);
+  const setUser = useCallback((ius: InitialUserState | null) => {
+    if (ius) {
+      userInfo.value = structuredClone(ius);
+    } else {
+      userInfo.value = { groups: [] };
+    }
   }, [userInfo]);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    const { signal } = controller;
-
-    const checkUserInfoIfRequired = async () => {
-      log.trace(`getUserInfo hook checked=${checked.value} error=${error.value}`);
-      if (!checked.value) {
-        try {
-          log.trace('Trying to fetch user info..');
-          const response = await apiRequests.getUserInfo(signal);
-          if (!signal.aborted) {
-            if (response["success"] !== undefined) {
-                const { user } = response as LoginResponse;
-                userInfo.value = user;
-            }
-            checked.value = true;
-            error.value = null;
-          }
-        } catch (err) {
-          if (!signal.aborted) {
-            error.value = `${err}`;
-            checked.value = true;
-            appendMessage("danger", `Failed to fetch user information: ${err}`);
-          }
-        }
-      }
-    };
-
-    checkUserInfoIfRequired();
-
-    return () => {
-      if (!checked.value) {
-        controller.abort();
-      }
-    };
-  }, [apiRequests, error, checked, userInfo, appendMessage]);
-
-  return { checked, error, user, setUser };
+  return { user, setUser };
 }
