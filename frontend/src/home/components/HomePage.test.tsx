@@ -144,4 +144,24 @@ describe("HomePage", () => {
     await findByText("urn:mpeg:dash:profile:isoff-live:2011", { exact: false });
     expect(asFragment).toMatchSnapshot();
   });
+
+  test('set an advanced option', async () => {
+    const user = userEvent.setup();
+
+    const { findByText, findByLabelText } = renderWithProviders(
+      <EndpointContext.Provider value={apiRequests}>
+        <HomePage />
+      </EndpointContext.Provider>
+    );
+    await findByText("Play Big Buck Bunny");
+    const btn = await findByText('Advanced Options') as HTMLButtonElement;
+    await user.click(btn);
+    const inp = await findByLabelText("Availability start time:") as HTMLInputElement;
+    await user.type(inp, 'month{enter}');
+    expect(JSON.parse(localStorage.getItem(LocalStorageKeys.DASH_OPTIONS))).toEqual({
+      manifest: "hand_made.mpd",
+      mode: "vod",
+      start: 'month',
+    });
+  });
 });

@@ -3,18 +3,13 @@ import { StreamOptionsContext } from "../types/StreamOptionsHook";
 import { useFieldGroups } from "../hooks/useFieldGroups";
 import { AccordionFormGroup } from "../../components/AccordionFormGroup";
 
-function doNothing(ev: Event): boolean {
-  ev.preventDefault();
-  return false;
-}
-
 const formLayout = [2, 5, 5];
 
 export function StreamOptionsForm() {
   const { data, disabledFields, setValue } = useContext(StreamOptionsContext);
   const { homeFieldGroups } = useFieldGroups();
 
-  return <form name="mpsOptions" onSubmit={doNothing}>
+  return <form name="mpsOptions">
     <AccordionFormGroup
       groups={homeFieldGroups.value}
       data={data}
