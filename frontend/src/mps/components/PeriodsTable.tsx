@@ -9,6 +9,7 @@ import { MpsPeriod } from "../../types/MpsPeriod";
 import { GuestPeriodRow } from "./GuestPeriodRow";
 import { PeriodRow } from "./PeriodRow";
 import { WhoAmIContext } from "../../hooks/useWhoAmI";
+import { rowColours } from "./rowColours";
 
 interface ButtonToolbarProps {
   onAddPeriod: (ev: Event) => void;
@@ -59,12 +60,13 @@ export function PeriodsTable() {
   );
 
   const renderItem = useCallback(
-    ({item, ...props}: RenderItemProps) => {
+    ({item, index, className, ...props}: RenderItemProps) => {
       const row = item as MpsPeriod;
+      const clsNames = `row mt-1 p-1 ${className} ${rowColours[index % rowColours.length]}`;
       if (!user.value.permissions.media) {
-        return <GuestPeriodRow {...props} item={row} />;
+        return <li className={clsNames} {...props}><GuestPeriodRow period={row} /></li>;
       }
-      return <PeriodRow {...props} item={row} />;
+      return <li className={clsNames} {...props}><PeriodRow period={row} /></li>;
     },
     [user.value.permissions.media]
   );

@@ -15,21 +15,6 @@ exports[`LoginLogoutLink component > shows  log out link 1`] = `
 </DocumentFragment>
 `;
 
-exports[`LoginLogoutLink component > shows log out link 1`] = `
-<DocumentFragment>
-  <li
-    class="nav-item user-login"
-  >
-    <a
-      class="nav-link user-login"
-      href="/login"
-    >
-      Log In
-    </a>
-  </li>
-</DocumentFragment>
-`;
-
 exports[`LoginLogoutLink component > shows login link 1`] = `
 <DocumentFragment>
   <li

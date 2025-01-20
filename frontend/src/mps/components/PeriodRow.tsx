@@ -1,4 +1,4 @@
-import { type JSX } from "preact";
+import { Fragment, type JSX } from "preact";
 import { useComputed } from "@preact/signals";
 import { useContext, useCallback } from "preact/hooks";
 
@@ -9,7 +9,6 @@ import { AllStreamsContext } from "../../hooks/useAllStreams";
 import { MultiPeriodModelContext, MpsPeriodValidationErrors, UseMultiPeriodStreamHook } from "../../hooks/useMultiPeriodStream";
 import { PeriodRowProps } from "../types/PeriodRowProps";
 import { PeriodOrder } from "./PeriodOrder";
-import { rowColours } from "./rowColours";
 import { StreamSelection } from "./StreamSelection";
 import { TrackSelectionButton } from "./TrackSelectionButton";
 import { DecoratedStream } from "../../types/DecoratedStream";
@@ -51,7 +50,7 @@ function setPeriodStream(periodPk: string | number, stream: DecoratedStream, cur
   });
 }
 
-export function PeriodRow({ className = "", index, item: period }: PeriodRowProps) {
+export function PeriodRow({ period }: PeriodRowProps) {
   const { streamsMap } = useContext(AllStreamsContext);
   const { dialog } = useContext(AppStateContext);
   const { errors, modifyPeriod, addPeriod, removePeriod } = useContext(
@@ -113,9 +112,7 @@ export function PeriodRow({ className = "", index, item: period }: PeriodRowProp
     removePeriod(pk);
   }, [pk, removePeriod]);
 
-  const clsNames = `row mt-1 p-1 ${rowColours[index % rowColours.length]} ${className}`;
-
-  return <li className={clsNames}>
+  return <Fragment>
     <div className="col period-ordering">
       <PeriodOrder addPeriod={addPeriod} deletePeriod={deletePeriodBtn} />
     </div>
@@ -153,5 +150,5 @@ export function PeriodRow({ className = "", index, item: period }: PeriodRowProp
         required />
     </div>
     <TrackSelectionButton period={period} stream={currentStream} selectTracks={selectTracks} />
-  </li>;
+  </Fragment>;
 }
