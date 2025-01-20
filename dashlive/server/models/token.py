@@ -5,7 +5,6 @@ Database table for storing refresh tokens and expired access tokens
 from datetime import datetime, timedelta
 from enum import IntEnum
 import hashlib
-import logging
 from typing import ClassVar, NamedTuple, TypedDict, TYPE_CHECKING
 
 from sqlalchemy import (
@@ -124,7 +123,7 @@ class Token(ModelMixin["Token"], Base):
                 user=user, token_type=token_type.value, jti=jti,
                 expires=expires, revoked=False)
             db.session.add(token)
-            db.session.flush()
+            db.session.commit()
         else:
             jwt = create_access_token(identity=user.username)
         return EncodedJWToken(jwt=jwt, expires=expires)
