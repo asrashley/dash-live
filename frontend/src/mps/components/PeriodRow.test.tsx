@@ -64,7 +64,7 @@ describe("PeriodRow component", () => {
       const { asFragment, findByText } = renderWithProviders(
         <AllStreamsContext.Provider value={allStreamsHook}>
           <MultiPeriodModelContext.Provider value={multiPeriodStreamHook}>
-            <PeriodRow index={2} item={item} className="guest-period-row" />
+            <PeriodRow period={item} />
           </MultiPeriodModelContext.Provider>
         </AllStreamsContext.Provider>
       );
@@ -80,7 +80,7 @@ describe("PeriodRow component", () => {
     const { getBySelector, appState: state } = renderWithProviders(
       <AllStreamsContext.Provider value={allStreamsHook}>
         <MultiPeriodModelContext.Provider value={multiPeriodStreamHook}>
-          <PeriodRow index={2} item={period} className="guest-period-row" />
+          <PeriodRow period={period} />
         </MultiPeriodModelContext.Provider>
       </AllStreamsContext.Provider>
     );
@@ -105,7 +105,7 @@ describe("PeriodRow component", () => {
     const { getBySelector } = renderWithProviders(
       <AllStreamsContext.Provider value={allStreamsHook}>
         <MultiPeriodModelContext.Provider value={multiPeriodStreamHook}>
-          <PeriodRow index={2} item={period} className="guest-period-row" />
+          <PeriodRow period={period} />
         </MultiPeriodModelContext.Provider>
       </AllStreamsContext.Provider>
     );
@@ -127,7 +127,7 @@ describe("PeriodRow component", () => {
     const { getBySelector } = renderWithProviders(
       <AllStreamsContext.Provider value={allStreamsHook}>
         <MultiPeriodModelContext.Provider value={multiPeriodStreamHook}>
-          <PeriodRow index={2} item={period} className="guest-period-row" />
+          <PeriodRow period={period} />
         </MultiPeriodModelContext.Provider>
       </AllStreamsContext.Provider>
     );

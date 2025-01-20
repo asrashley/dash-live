@@ -309,7 +309,10 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
                   </div>
                   <ul>
                     <li
-                      class="row mt-1 p-1 bg-secondary-subtle "
+                      class="row mt-1 p-1  bg-secondary-subtle"
+                      data-item-id="2"
+                      draggable="true"
+                      key="2"
                     >
                       <div
                         class="col period-ordering"
@@ -425,7 +428,10 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
                       </div>
                     </li>
                     <li
-                      class="row mt-1 p-1 bg-primary-subtle "
+                      class="row mt-1 p-1  bg-primary-subtle"
+                      data-item-id="1"
+                      draggable="true"
+                      key="1"
                     >
                       <div
                         class="col period-ordering"

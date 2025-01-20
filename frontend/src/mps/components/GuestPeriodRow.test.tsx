@@ -47,7 +47,7 @@ describe("GuestPeriodRow component", () => {
     async (item: MpsPeriod) => {
       const { asFragment, findByText } = renderWithProviders(
         <AllStreamsContext.Provider value={allStreamsHook}>
-          <GuestPeriodRow index={2} item={item} className="guest-period-row" />
+          <GuestPeriodRow period={item} />
         </AllStreamsContext.Provider>
       );
       const decStream = streamsMap.value.get(`${item.stream}`);
@@ -61,7 +61,7 @@ describe("GuestPeriodRow component", () => {
     const period = model.periods[0];
     const { getBySelector, appState: state } = renderWithProviders(
       <AllStreamsContext.Provider value={allStreamsHook}>
-        <GuestPeriodRow index={2} item={period} className="guest-period-row" />
+        <GuestPeriodRow period={period} />
       </AllStreamsContext.Provider>
     );
     const elt = getBySelector(".period-tracks > .btn") as HTMLButtonElement;

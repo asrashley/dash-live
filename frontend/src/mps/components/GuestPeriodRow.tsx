@@ -1,21 +1,21 @@
-import { useContext } from "preact/hooks";
+import { Fragment } from "preact";
+import { useCallback, useContext } from "preact/hooks";
 
 import { AppStateContext } from "../../appState";
 import { TimeDeltaInput } from "../../components/TimeDeltaInput";
 import { AllStreamsContext } from "../../hooks/useAllStreams";
 import { PeriodRowProps } from "../types/PeriodRowProps";
-import { rowColours } from "./rowColours";
 import { TrackSelectionButton } from "./TrackSelectionButton";
 
 function doNothing() {
 }
 
-export function GuestPeriodRow({ index, item, className = "" }: PeriodRowProps) {
-  const { ordering, pid, pk, start, duration } = item;
+export function GuestPeriodRow({ period }: PeriodRowProps) {
+  const { ordering, pid, pk, start, duration } = period;
   const { streamsMap } = useContext(AllStreamsContext);
   const { dialog } = useContext(AppStateContext);
-  const stream = streamsMap.value.get(`${item.stream}`);
-  const selectTracks = () => {
+  const stream = streamsMap.value.get(`${period.stream}`);
+  const selectTracks = useCallback(() => {
     dialog.value = {
       backdrop: true,
       trackPicker: {
@@ -25,10 +25,9 @@ export function GuestPeriodRow({ index, item, className = "" }: PeriodRowProps) 
         stream,
       },
     };
-  };
-  const clsNames = `row mt-1 p-1 ${rowColours[index % rowColours.length]} ${className}`;
+  }, [dialog, pid, pk, stream]);
 
-  return <li className={clsNames}>
+  return <Fragment>
     <div className="col period-ordering">{ordering}</div>
     <div className="col period-id">{pid}</div>
     <div className="col period-stream">{stream?.title}</div>
@@ -46,6 +45,6 @@ export function GuestPeriodRow({ index, item, className = "" }: PeriodRowProps) 
         onChange={doNothing}
         disabled />
     </div>
-    <TrackSelectionButton period={item} stream={stream} selectTracks={selectTracks} />
-  </li>;
+    <TrackSelectionButton period={period} stream={stream} selectTracks={selectTracks} />
+  </Fragment>;
 }
