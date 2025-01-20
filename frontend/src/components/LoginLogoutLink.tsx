@@ -1,10 +1,11 @@
 import { useCallback, useContext } from "preact/hooks";
+import { useComputed } from "@preact/signals";
 import { useLocation } from "wouter-preact";
+
 import { uiRouteMap } from "@dashlive/routemap";
 
 import { EndpointContext } from "../endpoints";
 import { useMessages } from "../hooks/useMessages";
-import { useComputed } from "@preact/signals";
 import { WhoAmIContext } from "../hooks/useWhoAmI";
 
 export function LoginLogoutLink() {
@@ -18,7 +19,7 @@ export function LoginLogoutLink() {
     async (ev: Event) => {
       ev.preventDefault();
       if (user.value.isAuthenticated) {
-        setUser({ isAuthenticated: false, groups: [] });
+        setUser(null);
         try {
             await api.logoutUser();
             appendMessage('success', 'You have successfully logged out');

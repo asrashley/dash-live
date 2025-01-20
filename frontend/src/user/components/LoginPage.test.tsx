@@ -32,7 +32,6 @@ describe("LoginPage component", () => {
             expires: '2025-01-09T22:33:44Z',
         },
         user: {
-            isAuthenticated: true,
             pk: 42,
             username: 'my.username',
             email: 'unit.test@local',

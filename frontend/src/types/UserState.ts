@@ -3,11 +3,11 @@ export interface InitialUserState {
     username?: string;
     email?: string;
     last_login?: string;
-    isAuthenticated: boolean;
     groups: string[];
 }
 
 export interface UserState extends InitialUserState {
+    isAuthenticated: boolean;
     permissions: {
         admin: boolean,
         media: boolean,

@@ -235,7 +235,6 @@ export class MockDashServer {
                 username: user.username,
                 groups: user.groups,
                 last_login: user.lastLogin,
-                isAuthenticated: true,
             }
         };
         return jsonResponse(result);
@@ -268,7 +267,6 @@ export class MockDashServer {
                 username: user.username,
                 groups: user.groups,
                 last_login: user.lastLogin,
-                isAuthenticated: true,
             }
         };
         user.lastLogin = new Date().toISOString();

@@ -1,7 +1,7 @@
 import { createContext } from 'preact';
 import log from 'loglevel';
 
-import { routeMap, uiRouteMap} from '@dashlive/routemap';
+import { routeMap } from '@dashlive/routemap';
 import { CsrfTokenStore } from './CsrfTokenStore';
 import { CsrfTokenCollection } from './types/CsrfTokenCollection';
 import { AllManifests } from './types/AllManifests';
@@ -12,11 +12,11 @@ import { DecoratedMultiPeriodStream } from "./types/DecoratedMultiPeriodStream";
 import { MultiPeriodStreamSummary } from './types/MultiPeriodStreamSummary';
 import { ContentRolesMap } from './types/ContentRolesMap';
 import { ModifyMultiPeriodStreamJson, ModifyMultiPeriodStreamResponse } from './types/ModifyMultiPeriodStreamResponse';
-import { InitialApiTokens } from './types/InitialApiTokens';
 import { LoginRequest } from './types/LoginRequest';
 import { LoginResponse } from './types/LoginResponse';
 import { MultiPeriodStreamValidationRequest, MultiPeriodStreamValidationResponse } from './types/MpsValidation';
 import { CgiOptionDescription } from './types/CgiOptionDescription';
+import { InitialUserState } from './types/UserState';
 
 type TokenStoreCollection = {
   files: CsrfTokenStore;
@@ -47,44 +47,65 @@ type RefreshAccessTokenResponse = {
   status: number;
 };
 
-export interface ApiRequestsProps extends Readonly<InitialApiTokens> {
-  navigate: (url: string) => void;
+export interface ApiRequestsProps {
+  needsRefreshToken: () => void;
+  hasUserInfo: (ius: InitialUserState | null) => void;
 }
 
 export class ApiRequests {
   private csrfTokens: TokenStoreCollection;
-  private accessToken: JWToken | null;
-  private refreshToken: JWToken | null;
-  private navigate: ApiRequestsProps['navigate'];
+  private accessToken: JWToken | null = null;
+  private refreshToken: JWToken | null = null;
+  private refreshTokenNeedsCheck = false;
+  private refreshTokenChecker?: PromiseWithResolvers<boolean>;
+  private needsRefreshToken: ApiRequestsProps["needsRefreshToken"]
+  private hasUserInfo: ApiRequestsProps["hasUserInfo"]
 
-  constructor({csrfTokens, accessToken, refreshToken, navigate}: ApiRequestsProps) {
+  constructor({ hasUserInfo, needsRefreshToken }: ApiRequestsProps) {
     this.csrfTokens = {
-      files: new CsrfTokenStore(csrfTokens?.files),
-      kids: new CsrfTokenStore(csrfTokens?.kids),
-      login: new CsrfTokenStore(csrfTokens?.login),
-      streams: new CsrfTokenStore(csrfTokens?.streams),
-      upload: new CsrfTokenStore(csrfTokens?.upload),
+      files: new CsrfTokenStore(null),
+      kids: new CsrfTokenStore(null),
+      login: new CsrfTokenStore(null),
+      streams: new CsrfTokenStore(null),
+      upload: new CsrfTokenStore(null),
     }
-    this.accessToken = accessToken;
-    this.refreshToken = refreshToken;
-    this.navigate = navigate;
+    this.needsRefreshToken = needsRefreshToken;
+    this.hasUserInfo = hasUserInfo;
   }
 
-  getAllManifests(options: Partial<ApiRequestOptions> = {}): Promise<AllManifests> {
-    return this.sendApiRequest<AllManifests>(routeMap.listManifests.url(), options);
+  setAccessToken(token: JWToken | null) {
+    this.accessToken = token;
+    if (token !== null) {
+      this.refreshTokenNeedsCheck = false;
+    }
   }
 
-  getContentRoles(options: Partial<ApiRequestOptions> = {}): Promise<ContentRolesMap> {
-    return this.sendApiRequest(routeMap.contentRoles.url(), options);
+  setRefreshToken(token: JWToken | null) {
+    const needsCheck = token !== null && token !== this.refreshToken;
+    this.refreshToken = token;
+    this.refreshTokenNeedsCheck = needsCheck;
   }
 
-  getCgiOptions(options: Partial<ApiRequestOptions> = {}) : Promise<CgiOptionDescription[]> {
-    return this.sendApiRequest(routeMap.cgiOptions.url(), options);
+  async getAllManifests(options: Partial<ApiRequestOptions> = {}): Promise<AllManifests> {
+    await this.isRefreshTokenValid();
+    return await this.sendApiRequest<AllManifests>(routeMap.listManifests.url(), options);
   }
 
-  async getUserInfo(signal: AbortSignal): Promise<LoginResponse | Response> {
+  async getContentRoles(options: Partial<ApiRequestOptions> = {}): Promise<ContentRolesMap> {
+    await this.isRefreshTokenValid();
+    return await this.sendApiRequest(routeMap.contentRoles.url(), options);
+  }
+
+  async getCgiOptions(options: Partial<ApiRequestOptions> = {}) : Promise<CgiOptionDescription[]> {
+    await this.isRefreshTokenValid();
+    return await this.sendApiRequest(routeMap.cgiOptions.url(), options);
+  }
+
+  async getUserInfo(signal?: AbortSignal): Promise<LoginResponse | Response> {
     if (!this.refreshToken) {
-      return new Response(null, { status: 401});
+      this.refreshTokenNeedsCheck = false;
+      this.refreshTokenChecker?.reject(new Error('No refresh token'));
+      return new Response('No refresh token', { status: 401});
     }
     const options: Partial<ApiRequestOptions> = {
       authorization: this.refreshToken.jwt,
@@ -92,18 +113,35 @@ export class ApiRequests {
       rejectOnError: false,
       signal,
     };
-    const response = await this.sendApiRequest<LoginResponse | Response>(routeMap.login.url(), options);
-    if (response['success']) {
-      this.accessToken = (response as LoginResponse).accessToken;
+    try {
+      const response = await this.sendApiRequest<LoginResponse | Response>(routeMap.login.url(), options);
+      if (response['success']) {
+        const loginResp = (response as LoginResponse)
+        this.accessToken = loginResp.accessToken;
+        this.hasUserInfo(loginResp.user);
+      } else {
+        this.hasUserInfo(null);
+      }
+      this.refreshTokenChecker?.resolve(!!response['success']);
+      return response;
+    } catch(err) {
+      this.refreshTokenChecker?.reject(err);
+      if (signal?.aborted) {
+        throw err;
+      }
+      console.error(err);
+      return new Response(`${err}`, { status: 401 });
+    } finally {
+      this.refreshTokenNeedsCheck = false;
     }
-    return response;
   }
 
   async loginUser(request: LoginRequest, options: Partial<GetAllStreamsProps> = {}): Promise<LoginResponse> {
+    this.refreshToken = null;
+    this.refreshTokenNeedsCheck = true;
     const response: LoginResponse = await this.sendApiRequest<LoginResponse>(routeMap.login.url(), {
       body: JSON.stringify(request),
       method: 'POST',
-      service: 'login',
       ...options,
     });
     if (response.success) {
@@ -113,32 +151,47 @@ export class ApiRequests {
       if (response.refreshToken) {
         this.refreshToken = response.refreshToken;
       }
+      this.hasUserInfo(response.user);
     }
+    this.refreshTokenNeedsCheck = false;
+    if (this.refreshTokenChecker === undefined) {
+      this.refreshTokenChecker = Promise.withResolvers<boolean>();
+    }
+    this.refreshTokenChecker.resolve(response.success);
     return response;
   }
 
   async logoutUser(options: Partial<GetAllStreamsProps> = {}): Promise<Response> {
-    const response: Response = await this.sendApiRequest(routeMap.login.url(), {
+    if (!this.accessToken && this.refreshToken) {
+      await this.getAccessToken(options.signal);
+    }
+    const response: Response = await this.sendApiRequest<Response>(routeMap.login.url(), {
       method: 'DELETE',
-      service: 'login',
+      rejectOnError: false,
       ...options,
     });
     this.accessToken = null;
     this.refreshToken = null;
+    this.refreshTokenNeedsCheck = false;
+    this.refreshTokenChecker?.reject(new Error('logged out'));
+    this.refreshTokenChecker = undefined;
+    this.hasUserInfo(null);
     return response;
   }
 
   async getAllStreams(options: Partial<GetAllStreamsProps> = {}): Promise<AllStreamsResponse> {
+    await this.isRefreshTokenValid();
     const { streams, keys } = await this.sendApiRequest<AllStreamsJson>(routeMap.listStreams.url(), options);
     return { streams, keys};
   }
 
-  getAllMultiPeriodStreams(options: Partial<ApiRequestOptions> = {}): Promise<MultiPeriodStreamSummary[]> {
-    return this.sendApiRequest<MultiPeriodStreamSummary[]>(routeMap.listMps.url(), options);
+  async getAllMultiPeriodStreams(options: Partial<ApiRequestOptions> = {}): Promise<MultiPeriodStreamSummary[]> {
+    await this.isRefreshTokenValid();
+    return await this.sendApiRequest<MultiPeriodStreamSummary[]>(routeMap.listMps.url(), options);
   }
 
   async getMultiPeriodStream(mps_name: string, options: Partial<ApiRequestOptions> = {}): Promise<MultiPeriodStream> {
-    const { model } = await this.sendApiRequest<MultiPeriodStreamJson>(routeMap.editMps.url({mps_name}), options);
+    const { model } = await this.sendProtectedApiRequest<MultiPeriodStreamJson>(routeMap.editMps.url({mps_name}), options);
     return model;
   }
 
@@ -148,7 +201,7 @@ export class ApiRequests {
     const service = 'streams';
     const csrf_token = await this.csrfTokens[service].getToken(
       options?.signal, this.getCsrfTokens);
-    const { errors, success, model } = await this.sendApiRequest<ModifyMultiPeriodStreamJson>(routeMap.addMps.url(), {
+    const { errors, success, model } = await this.sendProtectedApiRequest<ModifyMultiPeriodStreamJson>(routeMap.addMps.url(), {
       ...options,
       service,
       body: JSON.stringify({
@@ -165,7 +218,7 @@ export class ApiRequests {
     const service = 'streams';
     const csrf_token = await this.csrfTokens[service].getToken(
       options?.signal, this.getCsrfTokens);
-    return await this.sendApiRequest<ModifyMultiPeriodStreamJson>(routeMap.editMps.url({mps_name}), {
+    return await this.sendProtectedApiRequest<ModifyMultiPeriodStreamJson>(routeMap.editMps.url({mps_name}), {
       ...options,
       service,
       body: JSON.stringify({...data, csrf_token}),
@@ -181,7 +234,7 @@ export class ApiRequests {
     const query = new URLSearchParams({
       csrf_token,
     });
-    return this.sendApiRequest<Response>(routeMap.editMps.url({mps_name}), {
+    return this.sendProtectedApiRequest<Response>(routeMap.editMps.url({mps_name}), {
       ...options,
       service,
       query,
@@ -194,12 +247,34 @@ export class ApiRequests {
     const service = 'streams';
     const csrf_token = await this.csrfTokens[service].getToken(
       options?.signal, this.getCsrfTokens);
-    return this.sendApiRequest<MultiPeriodStreamValidationResponse>(routeMap.validateMps.url(), {
+    return this.sendProtectedApiRequest<MultiPeriodStreamValidationResponse>(routeMap.validateMps.url(), {
       ...options,
       method: 'POST',
       service: 'streams',
       body: JSON.stringify({...data, csrf_token}),
     });
+  }
+
+  private async sendProtectedApiRequest<T>(url: string, options: Partial<ApiRequestOptions>): Promise<T> {
+    const ok = await this.isRefreshTokenValid(options.signal);
+    if (!ok && options.rejectOnError) {
+      throw new Error('This API request needs an access token');
+    }
+    if (!this.accessToken && this.refreshToken) {
+      await this.getAccessToken(options.signal);
+    }
+    return await this.sendApiRequest<T>(url, options);
+  }
+
+  private async isRefreshTokenValid(signal?: AbortSignal): Promise<boolean> {
+    if (!this.refreshTokenNeedsCheck) {
+      return this.refreshToken !== null;
+    }
+    if (this.refreshTokenChecker === undefined) {
+      this.refreshTokenChecker = Promise.withResolvers<boolean>();
+      this.getUserInfo(signal);
+    }
+    return await this.refreshTokenChecker.promise;
   }
 
   private async sendApiRequest<T>(url: string, options: Partial<ApiRequestOptions>): Promise<T> {
@@ -212,22 +287,18 @@ export class ApiRequests {
     });
     if (authorization !== undefined) {
       headers.set('Authorization', `Bearer ${authorization}`);
-    } else {
-      if (!this.accessToken && this.refreshToken) {
-        await this.getAccessToken(signal);
-      }
-      if (this.accessToken) {
+    } else if (this.accessToken) {
         headers.set('Authorization', `Bearer ${this.accessToken.jwt}`);
         usedAccessToken = true;
-      } else if (service) {
+    } else if (service) {
         const token = await this.csrfTokens[service].getToken(signal);
-        if (query === undefined) {
+      if (query === undefined) {
           query = new URLSearchParams({csrf_token: token});
-        } else {
+      } else {
           query.set('csrf_token', token);
-        }
       }
     }
+
     if (query) {
       url = `${url}?${query.toString()}`;
     }
@@ -310,7 +381,8 @@ export class ApiRequests {
     const data = await this.sendApiRequest<RefreshAccessTokenResponse>(routeMap.refreshAccessToken.url(), options);
     const { accessToken, csrfTokens, ok, status } = data ?? {};
     if (ok === false && status === 401) {
-      this.navigate(uiRouteMap.login.url());
+      this.refreshToken = null;
+      this.needsRefreshToken();
     }
     if (!accessToken) {
       throw new Error('Failed to refresh access token');

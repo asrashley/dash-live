@@ -1,33 +1,34 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import fetchMock from "@fetch-mock/vitest";
+import log from "loglevel";
 
 import { routeMap } from "@dashlive/routemap";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import { ApiRequests, EndpointContext } from "../../endpoints";
-import HomePage from "./HomePage";
 import { FakeEndpoint, jsonResponse } from "../../test/FakeEndpoint";
 import { mediaUser, MockDashServer } from "../../test/MockServer";
 import { LocalStorageKeys } from "../../hooks/useLocalStorage";
 
+import HomePage from "./HomePage";
+
 describe("HomePage", () => {
-  const navigate = vi.fn();
+  const hasUserInfo = vi.fn();
+  const needsRefreshToken = vi.fn();
   let apiRequests: ApiRequests;
   let endpoint: FakeEndpoint;
 
   beforeEach(() => {
+    log.setLevel("debug");
     endpoint = new FakeEndpoint(document.location.origin);
     const server = new MockDashServer({
       endpoint,
     });
     const user = server.login(mediaUser.username, mediaUser.password);
-    apiRequests = new ApiRequests({
-      csrfTokens: {},
-      accessToken: user.accessToken,
-      refreshToken: user.refreshToken,
-      navigate,
-    });
+    apiRequests = new ApiRequests({ hasUserInfo, needsRefreshToken });
+    apiRequests.setRefreshToken(user.refreshToken);
+    apiRequests.setAccessToken(user.accessToken);
   });
 
   afterEach(() => {

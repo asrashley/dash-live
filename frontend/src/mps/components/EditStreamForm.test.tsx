@@ -40,7 +40,9 @@ function AllStreams({ name, newStream }: EditStreamFormProps) {
 }
 
 describe("EditStreamForm component", () => {
-  const navigate = vi.fn();
+  const needsRefreshToken = vi.fn();
+  const hasUserInfo = vi.fn();
+  const setLocation = vi.fn();
   const useLocationMock = vi.mocked(useLocation);
   const mps_name = "demo";
   let endpoint: FakeEndpoint;
@@ -60,7 +62,7 @@ describe("EditStreamForm component", () => {
     log.setLevel("error");
     useLocationMock.mockReturnValue([
       routeMap.editMps.url({ mps_name }),
-      navigate,
+      setLocation,
     ]);
     endpoint = new FakeEndpoint(document.location.origin);
     server = new MockDashServer({
@@ -69,20 +71,16 @@ describe("EditStreamForm component", () => {
     const user = server.login(mediaUser.email, mediaUser.password);
     expect(user).not.toBeNull();
     expect(user.groups).toEqual(mediaUser.groups);
-    const csrfTokens = server.generateCsrfTokens(user);
+    const { pk, username, email, groups } = user;
     userInfo = {
-      isAuthenticated: true,
-      pk: user.pk,
-      username: user.username,
-      email: user.email,
-      groups: [...user.groups],
+      pk,
+      username,
+      email,
+      groups,
     };
-    api = new ApiRequests({
-      csrfTokens,
-      navigate,
-      accessToken: user.accessToken,
-      refreshToken: user.refreshToken,
-    });
+    api = new ApiRequests({needsRefreshToken, hasUserInfo});
+    api.setRefreshToken(user.refreshToken);
+    api.setAccessToken(user.accessToken);
   });
 
   afterEach(() => {
@@ -92,12 +90,14 @@ describe("EditStreamForm component", () => {
   });
 
   test("matches snapshot for an existing stream", async () => {
+    expect(userInfo).toBeDefined();
     const { asFragment, findByText, findAllByText, whoAmI } =
       renderWithProviders(<Wrapper newStream={false} name={mps_name} />, {
         userInfo,
       });
     expect(whoAmI.user.value).toEqual({
       ...userInfo,
+      isAuthenticated: true,
       permissions: {
         admin: false,
         user: true,
@@ -110,6 +110,7 @@ describe("EditStreamForm component", () => {
   });
 
   test("can edit form and save changes", async () => {
+    expect(userInfo).toBeDefined();
     const user = userEvent.setup();
     const { getByText, findAllByText, getBySelector } = renderWithProviders(
       <Wrapper newStream={false} name={mps_name} />,
@@ -133,16 +134,18 @@ describe("EditStreamForm component", () => {
     );
     // allow the await for saveChanges() to have been processed
     await new Promise<void>(setImmediate);
-    expect(navigate).not.toHaveBeenCalled();
+    expect(setLocation).not.toHaveBeenCalled();
   });
 
   test("can delete a stream", async () => {
+    expect(userInfo).toBeDefined();
     const { findByText, appState, whoAmI } = renderWithProviders(
       <Wrapper newStream={false} name={mps_name} />,
       { userInfo }
     );
     expect(whoAmI.user.value).toEqual({
       ...userInfo,
+      isAuthenticated: true,
       permissions: {
         admin: false,
         user: true,
@@ -179,7 +182,7 @@ describe("EditStreamForm component", () => {
     );
     // allow the await for deleteStream() to have been processed
     await new Promise<void>(setImmediate);
-    expect(navigate).toHaveBeenCalledTimes(1);
-    expect(navigate).toHaveBeenCalledWith(uiRouteMap.listMps.url());
+    expect(setLocation).toHaveBeenCalledTimes(1);
+    expect(setLocation).toHaveBeenCalledWith(uiRouteMap.listMps.url());
   });
 });

@@ -84,9 +84,6 @@ describe("AccordionFormGroup", () => {
               : mode === "shortName"
               ? field.shortName
               : field.fullName;
-          if (name === undefined) {
-            console.log(JSON.stringify(field));
-          }
           expect(name).toBeDefined();
           if (mode === 'fullName' && field.prefix) {
             name = `${field.prefix}__${name}`;

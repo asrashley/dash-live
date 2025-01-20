@@ -1,5 +1,6 @@
 import { type ComponentChildren } from "preact";
-import { useEffect, useMemo } from "preact/hooks";
+import { useCallback, useMemo, useRef } from "preact/hooks";
+import { useSignalEffect } from "@preact/signals";
 import { Route, Switch, useLocation } from "wouter-preact";
 import lazy from "preact-lazy";
 
@@ -9,14 +10,14 @@ import { LoadingSpinner } from "./components/LoadingSpinner";
 import { MessagesPanel } from "./components/MessagesPanel";
 import { ModalBackdrop } from "./components/ModalBackdrop";
 import { NavHeader } from "./components/NavHeader";
-import { WhoAmIProvider } from "./WhoAmIProvider";
+import { PageNotFound } from "./components/PageNotFound";
 
 import { ApiRequests, EndpointContext } from "./endpoints";
 import { AppStateContext, AppStateType, createAppState } from "./appState";
-import { PageNotFound } from "./components/PageNotFound";
 import { useLocalStorage } from "./hooks/useLocalStorage";
-import { InitialApiTokens } from "./types/InitialApiTokens";
 import { NavBarItem } from "./types/NavBarItem";
+import { JWToken } from "./types/JWToken";
+import { useWhoAmI, WhoAmIContext } from "./hooks/useWhoAmI";
 
 const AddStreamPage = lazy(
   () => import("./mps/components/AddStreamPage"),
@@ -58,46 +59,51 @@ function AppRoutes() {
 }
 
 export interface AppProps {
-  tokens: InitialApiTokens;
+  accessToken: JWToken | null;
   navbar: NavBarItem[];
   children?: ComponentChildren;
 }
 
-export function App({ children, navbar, tokens }: AppProps) {
+export function App({ children, navbar, accessToken }: AppProps) {
   const setLocation = useLocation()[1];
   const { refreshToken } = useLocalStorage();
-  const apiRequests = useMemo(
-    () =>
-      new ApiRequests({
-        accessToken: refreshToken ? null : tokens.accessToken,
-        refreshToken: refreshToken ?? tokens.refreshToken,
-        navigate: setLocation,
-      }),
-    [refreshToken, setLocation, tokens]
-  );
+  const whoAmI = useWhoAmI();
+  const defaultAccessToken = useRef(accessToken);
+  const needsRefreshToken = useCallback(() => {
+    setLocation(uiRouteMap.login.url());
+  }, [setLocation]);
+  const apiRequests = useRef(new ApiRequests({ hasUserInfo: whoAmI.setUser, needsRefreshToken }));
   const state: AppStateType = useMemo(() => createAppState(), []);
   const { backdrop } = state;
 
-  useEffect(() => {
+  useSignalEffect(() => {
     if (backdrop.value) {
       document.body.classList.add("modal-open");
     } else {
       document.body.classList.remove("modal-open");
     }
-  }, [backdrop.value]);
+  });
+
+  useSignalEffect(() => {
+    apiRequests.current.setRefreshToken(refreshToken.value);
+    if (refreshToken.value === null) {
+      apiRequests.current.setAccessToken(defaultAccessToken.current);
+      defaultAccessToken.current = null;
+    }
+  });
 
   return (
     <AppStateContext.Provider value={state}>
-      <EndpointContext.Provider value={apiRequests}>
-        <WhoAmIProvider>
+      <WhoAmIContext.Provider value={whoAmI}>
+        <EndpointContext.Provider value={apiRequests.current}>
           <NavHeader navbar={navbar} />
           <MessagesPanel />
           <div className="content container-fluid">
             <AppRoutes />
             {children}
           </div>
-        </WhoAmIProvider>
-      </EndpointContext.Provider>
+        </EndpointContext.Provider>
+      </WhoAmIContext.Provider>
       <ModalBackdrop />
     </AppStateContext.Provider>
   );

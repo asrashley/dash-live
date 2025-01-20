@@ -1,4 +1,4 @@
-import { useCallback, useState } from "preact/hooks";
+import { useCallback } from "preact/hooks";
 import { type ReadonlySignal, useSignal } from "@preact/signals";
 
 import { defaultCgiOptions } from "@dashlive/options";
@@ -40,7 +40,7 @@ function getRefreshToken(): JWToken | null {
 
 export interface UseLocalStorageHook {
   dashOptions: ReadonlySignal<InputFormData>;
-  refreshToken: Readonly<JWToken | null>;
+  refreshToken: ReadonlySignal<JWToken | null>;
   setDashOption: (name: string, value: string | number | boolean) => void;
   resetDashOptions: () => void;
   setRefreshToken: (token: JWToken | null) => void;
@@ -48,7 +48,7 @@ export interface UseLocalStorageHook {
 
 export function useLocalStorage(): UseLocalStorageHook {
   const dashOptions = useSignal<InputFormData>(getDefaultDashOptions());
-  const [refreshToken, setRefreshToken] = useState<JWToken | null>(getRefreshToken());
+  const refreshToken = useSignal<JWToken | null>(getRefreshToken());
 
   const setDashOption = useCallback((name: string, value: string | number | boolean) => {
     if (value === true) {
@@ -74,21 +74,21 @@ export function useLocalStorage(): UseLocalStorageHook {
     dashOptions.value = getDefaultDashOptions();
   }, [dashOptions]);
 
-  const setRefreshTokenFn = useCallback((token: JWToken | null) => {
+  const setRefreshToken = useCallback((token: JWToken | null) => {
     if (token) {
       localStorage.setItem(LocalStorageKeys.REFRESH_TOKEN, JSON.stringify(token));
     } else {
       localStorage.removeItem(LocalStorageKeys.REFRESH_TOKEN);
     }
-    setRefreshToken(token);
-  }, []);
+    refreshToken.value = token;
+  }, [refreshToken]);
 
   const hook: UseLocalStorageHook = {
     dashOptions,
     refreshToken,
     setDashOption,
     resetDashOptions,
-    setRefreshToken: setRefreshTokenFn,
+    setRefreshToken,
   };
   return hook;
 }
