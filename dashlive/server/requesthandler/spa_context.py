@@ -18,17 +18,9 @@ class InitialTokensType(TypedDict):
     accessToken: EncodedJWTokenJson | None
 
 
-class UserContextType(TypedDict):
-    isAuthenticated: bool
-    pk: int
-    username: str
-    groups: list[str]
-
-
 class SpaTemplateContext(TypedDict):
     navbar: list[NavBarItem]
     initialTokens: InitialTokensType
-    user: UserContextType
 
 
 def create_spa_template_context(user: User) -> SpaTemplateContext:
@@ -43,16 +35,9 @@ def create_spa_template_context(user: User) -> SpaTemplateContext:
         'csrfTokens': csrf_tokens.to_dict(),
         'accessToken': access_token,
     }
-    user_context: UserContextType = {
-        'isAuthenticated': user.is_authenticated,
-        'pk': user.pk,
-        'username': user.username,
-        'groups': user.get_groups(),
-    }
     navbar: list[NavBarItem] = create_navbar_context(with_login=False)
     context: SpaTemplateContext = {
         "navbar": navbar,
         "initialTokens": initial_tokens,
-        "user": user_context,
     }
     return context
