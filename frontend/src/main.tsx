@@ -3,7 +3,6 @@ import { App } from './App'
 
 import { navbar, initialTokens } from '@dashlive/init';
 import './styles/main.less';
-import './styles/spa.less';
 
 let root = document.getElementById('app');
 

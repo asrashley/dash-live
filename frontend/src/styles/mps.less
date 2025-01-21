@@ -1,0 +1,60 @@
+#edit_mps_form {
+  .period-table {
+    .table-head {
+      margin: 0;
+
+      & > .col {
+        font-size: 1.3rem;
+        text-align: center;
+      }
+    }
+
+    & > ul {
+      padding-left: 0;
+    }
+    & > ul > .row {
+      margin: 1px 2px;
+    }
+
+    .period-ordering {
+      flex-basis: 3rem;
+      flex-grow: 1;
+    }
+
+    .period-id {
+      flex-basis: 8rem;
+      flex-grow: 4;
+    }
+
+    .period-stream {
+      flex-basis: 15rem;
+      flex-grow: 8;
+    }
+
+    .period-duration,
+    .period-start {
+      > input {
+        text-align: right;
+      }
+      flex-basis: 10rem;
+      flex-grow: 2;
+    }
+
+    .period-tracks {
+      flex-basis: 7rem;
+      flex-grow: 4;
+      text-align: center;
+    }
+  }
+
+  .json {
+    font-size: 0.9rem;
+
+    .key {
+      color: #22f;
+    }
+    .value {
+      color: #199;
+    }
+  }
+}
