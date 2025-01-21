@@ -2,6 +2,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 import HtmlWebpackPlugin from "html-webpack-plugin";
+import MiniCssExtractPlugin from "mini-css-extract-plugin";
 
 export const rootDir = path.resolve(
   fileURLToPath(new URL(".", import.meta.url)),
@@ -57,6 +58,7 @@ export const commonConfig = ({ publicPath, tsConfigFile }) => ({
     ],
   },
   plugins: [
+    new MiniCssExtractPlugin(),
     new HtmlWebpackPlugin({
       filename: "index.html",
       template: path.join(rootDir, "frontend/html/index.hbs"),
