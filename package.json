@@ -12,7 +12,9 @@
   "scripts": {
     "build": "webpack --mode production --config frontend/config/webpack.prod.js",
     "coverage": "vitest run --coverage",
+    "legacy-css": "lessc -x static/css/legacy.less static/css/legacy.css",
     "lint": "eslint frontend/src/**/*.{ts,tsx}",
+    "main-css": "lessc -x frontend/src/styles/main.less static/css/main.css",
     "postinstall": "patch-package",
     "start": "webpack server --host 0.0.0.0 --port 8765 --watch-files src --color",
     "test": "vitest"
