@@ -6,7 +6,7 @@ exports[`LoginLogoutLink component > shows  log out link 1`] = `
     class="nav-item user-login"
   >
     <a
-      class="nav-link user-login"
+      class="nav-link"
       href="/login"
     >
       Log In
@@ -21,7 +21,7 @@ exports[`LoginLogoutLink component > shows login link 1`] = `
     class="nav-item user-login"
   >
     <a
-      class="nav-link user-login"
+      class="nav-link"
       href="/login"
     >
       Log In

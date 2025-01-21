@@ -36,7 +36,7 @@ export function LoginLogoutLink() {
 
   return (
     <li className="nav-item user-login">
-      <a className="nav-link user-login" href={href} onClick={onClick}>
+      <a className="nav-link" href={href} onClick={onClick}>
         {title}
       </a>
     </li>
