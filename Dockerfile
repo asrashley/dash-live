@@ -12,7 +12,9 @@ COPY frontend ${HOME}/frontend
 COPY patches/eslint*.patch ${HOME}/patches/
 RUN npm ci
 RUN npm run build
-RUN tar czf ${HOME}/front-end.tar.gz -C static/html .
+RUN npm run legacy-css
+RUN npm run main-css
+RUN tar czf ${HOME}/front-end.tar.gz static/html static/css/legacy.css static/css/main.css
 #
 # Build Python server container
 #
@@ -50,7 +52,7 @@ RUN python ./gen-settings.py --password=${DEFAULT_PASSWORD} --proxy-depth=${PROX
 COPY deploy/runtests.sh $HOME/dash-live/
 RUN chmod +x $HOME/dash-live/*.sh
 COPY --from=clientbuild ${HOME}/front-end.tar.gz /tmp/
-RUN mkdir -p ${HOME}/static/html && tar -C ${HOME}/static/html -xzf /tmp/front-end.tar.gz && rm /tmp/front-end.tar.gz
+RUN mkdir -p ${HOME}/static/html && tar -C ${HOME} -xzf /tmp/front-end.tar.gz && rm /tmp/front-end.tar.gz
 RUN python -m compileall -f -j 0 /home/dash/dash-live/dashlive
 ENTRYPOINT ["/home/dash/dash-live/runserver.sh"]
 #
