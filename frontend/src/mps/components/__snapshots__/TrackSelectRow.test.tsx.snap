@@ -1,0 +1,343 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`TrackSelectRow component > renders row when guest=false encrypted=false 1`] = `
+<DocumentFragment>
+  <div
+    class="input-group mb-3 row border p-1"
+  >
+    <div
+      class="col-1"
+    >
+      <input
+        class="form-check-input"
+        id="id_enable_1"
+        name="enable_1"
+        type="checkbox"
+      />
+    </div>
+    <label
+      class="form-check-label col-6"
+      for="id_enable_1"
+    >
+      video track 1 (avc1, 3 bitrates)
+    </label>
+    <select
+      class="form-select col-3"
+      name="role_1"
+    >
+      <option
+        value="alternate"
+      >
+        alternate
+      </option>
+      <option
+        value="caption"
+      >
+        caption
+      </option>
+      <option
+        value="easyreader"
+      >
+        easyreader
+      </option>
+      <option
+        value="emergency"
+      >
+        emergency
+      </option>
+      <option
+        value="karaoke"
+      >
+        karaoke
+      </option>
+      <option
+        value="main"
+      >
+        main
+      </option>
+      <option
+        value="sign"
+      >
+        sign
+      </option>
+      <option
+        value="subtitle"
+      >
+        subtitle
+      </option>
+      <option
+        value="supplementary"
+      >
+        supplementary
+      </option>
+    </select>
+    <div
+      class="col-1"
+    >
+      <input
+        class="form-check-input"
+        name="enc_1"
+        type="checkbox"
+      />
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`TrackSelectRow component > renders row when guest=false encrypted=true 1`] = `
+<DocumentFragment>
+  <div
+    class="input-group mb-3 row border p-1"
+  >
+    <div
+      class="col-1"
+    >
+      <input
+        class="form-check-input"
+        id="id_enable_1"
+        name="enable_1"
+        type="checkbox"
+      />
+    </div>
+    <label
+      class="form-check-label col-6"
+      for="id_enable_1"
+    >
+      video track 1 (avc1, 2 bitrates)
+    </label>
+    <select
+      class="form-select col-3"
+      name="role_1"
+    >
+      <option
+        value="alternate"
+      >
+        alternate
+      </option>
+      <option
+        value="caption"
+      >
+        caption
+      </option>
+      <option
+        value="easyreader"
+      >
+        easyreader
+      </option>
+      <option
+        value="emergency"
+      >
+        emergency
+      </option>
+      <option
+        value="karaoke"
+      >
+        karaoke
+      </option>
+      <option
+        value="main"
+      >
+        main
+      </option>
+      <option
+        value="sign"
+      >
+        sign
+      </option>
+      <option
+        value="subtitle"
+      >
+        subtitle
+      </option>
+      <option
+        value="supplementary"
+      >
+        supplementary
+      </option>
+    </select>
+    <div
+      class="col-1"
+    >
+      <input
+        class="form-check-input"
+        name="enc_1"
+        type="checkbox"
+      />
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`TrackSelectRow component > renders row when guest=true encrypted=false 1`] = `
+<DocumentFragment>
+  <div
+    class="input-group mb-3 row border p-1"
+  >
+    <div
+      class="col-1"
+    >
+      <input
+        class="form-check-input"
+        disabled=""
+        id="id_enable_1"
+        name="enable_1"
+        type="checkbox"
+      />
+    </div>
+    <label
+      class="form-check-label col-6"
+      for="id_enable_1"
+    >
+      video track 1 (avc1, 3 bitrates)
+    </label>
+    <select
+      class="form-select col-3"
+      disabled=""
+      name="role_1"
+    >
+      <option
+        value="alternate"
+      >
+        alternate
+      </option>
+      <option
+        value="caption"
+      >
+        caption
+      </option>
+      <option
+        value="easyreader"
+      >
+        easyreader
+      </option>
+      <option
+        value="emergency"
+      >
+        emergency
+      </option>
+      <option
+        value="karaoke"
+      >
+        karaoke
+      </option>
+      <option
+        value="main"
+      >
+        main
+      </option>
+      <option
+        value="sign"
+      >
+        sign
+      </option>
+      <option
+        value="subtitle"
+      >
+        subtitle
+      </option>
+      <option
+        value="supplementary"
+      >
+        supplementary
+      </option>
+    </select>
+    <div
+      class="col-1"
+    >
+      <input
+        class="form-check-input"
+        disabled=""
+        name="enc_1"
+        type="checkbox"
+      />
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`TrackSelectRow component > renders row when guest=true encrypted=true 1`] = `
+<DocumentFragment>
+  <div
+    class="input-group mb-3 row border p-1"
+  >
+    <div
+      class="col-1"
+    >
+      <input
+        class="form-check-input"
+        disabled=""
+        id="id_enable_1"
+        name="enable_1"
+        type="checkbox"
+      />
+    </div>
+    <label
+      class="form-check-label col-6"
+      for="id_enable_1"
+    >
+      video track 1 (avc1, 2 bitrates)
+    </label>
+    <select
+      class="form-select col-3"
+      disabled=""
+      name="role_1"
+    >
+      <option
+        value="alternate"
+      >
+        alternate
+      </option>
+      <option
+        value="caption"
+      >
+        caption
+      </option>
+      <option
+        value="easyreader"
+      >
+        easyreader
+      </option>
+      <option
+        value="emergency"
+      >
+        emergency
+      </option>
+      <option
+        value="karaoke"
+      >
+        karaoke
+      </option>
+      <option
+        value="main"
+      >
+        main
+      </option>
+      <option
+        value="sign"
+      >
+        sign
+      </option>
+      <option
+        value="subtitle"
+      >
+        subtitle
+      </option>
+      <option
+        value="supplementary"
+      >
+        supplementary
+      </option>
+    </select>
+    <div
+      class="col-1"
+    >
+      <input
+        class="form-check-input"
+        disabled=""
+        name="enc_1"
+        type="checkbox"
+      />
+    </div>
+  </div>
+</DocumentFragment>
+`;
