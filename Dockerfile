@@ -47,13 +47,10 @@ RUN mkdir $HOME/instance
 RUN ln -s /usr/bin/python3 /usr/bin/python
 WORKDIR /home/dash/dash-live
 RUN python ./gen-settings.py --password=${DEFAULT_PASSWORD} --proxy-depth=${PROXY_DEPTH}
-RUN echo "#!/bin/bash" > $HOME/dash-live/lesscpy.sh
-RUN echo "source $HOME/.venv/bin/activate && python -m lesscpy static/css -o static/css/" >> $HOME/dash-live/lesscpy.sh
 COPY deploy/runtests.sh $HOME/dash-live/
 RUN chmod +x $HOME/dash-live/*.sh
 COPY --from=clientbuild ${HOME}/front-end.tar.gz /tmp/
 RUN mkdir -p ${HOME}/static/html && tar -C ${HOME}/static/html -xzf /tmp/front-end.tar.gz && rm /tmp/front-end.tar.gz
-RUN $HOME/dash-live/lesscpy.sh
 RUN python -m compileall -f -j 0 /home/dash/dash-live/dashlive
 ENTRYPOINT ["/home/dash/dash-live/runserver.sh"]
 #

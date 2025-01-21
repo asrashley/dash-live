@@ -12,7 +12,7 @@ export const rootDir = path.resolve(
 
 const dateNow = new Date();
 
-export const commonConfig = ({ publicPath, tsConfigFile }) => ({
+export const commonConfig = ({ publicPath, tsConfigFile, devMode }) => ({
   devtool: "source-map",
   entry: {
     main: "./frontend/src/main",
@@ -55,10 +55,30 @@ export const commonConfig = ({ publicPath, tsConfigFile }) => ({
           },
         ],
       },
+      {
+        test: /\.less$/i,
+        use: [
+          {
+            loader: (devMode ? "style-loader" : MiniCssExtractPlugin.loader),
+          },
+          {
+            loader: "css-loader",
+          },
+          {
+            loader: "less-loader",
+            options: {
+              lessOptions: {
+              noIeCompat: true,
+              javascriptEnabled: true,
+              }
+            },
+          }
+        ],
+      },
     ],
   },
   plugins: [
-    new MiniCssExtractPlugin(),
+    ...(devMode ? [] : [new MiniCssExtractPlugin()]),
     new HtmlWebpackPlugin({
       filename: "index.html",
       template: path.join(rootDir, "frontend/html/index.hbs"),

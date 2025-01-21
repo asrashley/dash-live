@@ -6,6 +6,7 @@ const serverPort = process.env.SERVER_PORT || '5000';
 const common = commonConfig({
   publicPath: "",
   tsConfigFile: "tsconfig.json",
+  devMode: true,
 });
 
 export default {

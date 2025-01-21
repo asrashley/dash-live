@@ -1,5 +1,4 @@
 @echo off
-python -m lesscpy static/css -o static/css/
 set LC_ALL=C.UTF-8
 set LANG=C.UTF-8
 set FLASK_APP="dashlive.server.app"
