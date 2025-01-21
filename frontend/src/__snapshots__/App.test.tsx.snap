@@ -15,7 +15,7 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
         aria-controls="navbarSupportedContent"
         aria-expanded="false"
         aria-label="Toggle navigation"
-        class="navbar-toggler"
+        class="navbar-toggler collapsed"
         type="button"
       >
         <span
@@ -606,7 +606,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
         aria-controls="navbarSupportedContent"
         aria-expanded="false"
         aria-label="Toggle navigation"
-        class="navbar-toggler"
+        class="navbar-toggler collapsed"
         type="button"
       >
         <span
@@ -2745,7 +2745,7 @@ exports[`main entry-point app > matches snapshot for list MPS 1`] = `
         aria-controls="navbarSupportedContent"
         aria-expanded="false"
         aria-label="Toggle navigation"
-        class="navbar-toggler"
+        class="navbar-toggler collapsed"
         type="button"
       >
         <span
