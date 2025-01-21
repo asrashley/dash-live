@@ -6,6 +6,7 @@ import { commonConfig, rootDir } from "./webpack.common.js";
 const common = commonConfig({
   publicPath: '/static/html',
   tsConfigFile: path.resolve(rootDir, "tsconfig.json"),
+  devMode: false,
 });
 
 export default {
