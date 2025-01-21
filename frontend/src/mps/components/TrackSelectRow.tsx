@@ -59,9 +59,7 @@ function allowedTrackRoles(
     };
 
     const onRoleChange = (ev: Event) => {
-      if (guest) {
-        return;
-      }
+      // no need to check for guest, as RoleSelect element is disabled
       onChange({
         ...track,
         role: (ev.target as HTMLInputElement).value,
