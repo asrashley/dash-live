@@ -1,9 +1,9 @@
 import { createContext } from "preact";
-import { useCallback, useContext, useEffect } from "preact/hooks";
+import { useCallback, useContext, useEffect, useRef } from "preact/hooks";
 import { useSignal, useSignalEffect, useComputed, type Signal, type ReadonlySignal, batch } from "@preact/signals";
 
-import { ApiRequests, EndpointContext } from "../endpoints";
-import { AppendMessageFn, useMessages } from "./useMessages";
+import { EndpointContext } from "../endpoints";
+import { useMessages } from "./useMessages";
 import { MultiPeriodStream } from "../types/MultiPeriodStream";
 import { DecoratedMultiPeriodStream } from "../types/DecoratedMultiPeriodStream";
 import { MpsPeriod } from "../types/MpsPeriod";
@@ -16,6 +16,24 @@ export type MpsPeriodValidationErrors = {
   stream?: string;
   tracks?: string;
 };
+
+export type MpsPeriodValidationErrorsMap = {
+  [pid: string]:  MpsPeriodValidationErrors;
+};
+
+export type MpsModelValidationErrors = {
+  fetch?: string;
+  name?: string;
+  title?: string;
+  allPeriods?: string;
+  periods?: MpsPeriodValidationErrorsMap;
+};
+
+export interface ServerMpsModelValidationErrors {
+  errors: MpsModelValidationErrors;
+  lastChecked: number;
+}
+
 
 export function validatePeriod(period: MpsPeriod): MpsPeriodValidationErrors {
   const errors: MpsPeriodValidationErrors = {};
@@ -31,17 +49,6 @@ export function validatePeriod(period: MpsPeriod): MpsPeriodValidationErrors {
   }
   return errors;
 }
-
-export type MpsPeriodValidationErrorsMap = {
-  [pid: string]:  MpsPeriodValidationErrors;
-};
-
-export type MpsModelValidationErrors = {
-  name?: string;
-  title?: string;
-  allPeriods?: string;
-  periods?: MpsPeriodValidationErrorsMap;
-};
 
 export function validateModel({ model }: {model: Signal<DecoratedMultiPeriodStream>}): MpsModelValidationErrors {
   const { value } = model;
@@ -204,50 +211,6 @@ function createDataFromModel(model: Signal<DecoratedMultiPeriodStream>): Decorat
   };
 }
 
-interface SaveChangesToModelProps {
-  apiRequests: ApiRequests;
-  model: Signal<DecoratedMultiPeriodStream>;
-  name: string;
-  signal: AbortSignal;
-  appendMessage: AppendMessageFn;
-}
-async function saveChangesToModel({
-  apiRequests,
-  model,
-  name,
-  signal,
-  appendMessage,
-}: SaveChangesToModelProps): Promise<boolean> {
-  if (!model.value || signal.aborted) {
-    return false;
-  }
-  const data = createDataFromModel(model);
-  try {
-    const result =
-      data.pk === null
-        ? await apiRequests.addMultiPeriodStream(data, { signal })
-        : await apiRequests.modifyMultiPeriodStream(name, data, { signal });
-    if (signal.aborted) {
-      return false;
-    }
-    result.errors?.forEach((err) => appendMessage("warning", err));
-    if (result?.success === true) {
-      if (data.pk === null) {
-        appendMessage("success", `Added new stream ${name}`);
-      } else {
-        appendMessage("success", `Saved changes to ${name}`);
-      }
-      model.value = {
-        ...decorateMultiPeriodStream(result.model),
-        lastModified: Date.now(),
-      };
-      return true;
-    }
-  } catch (err) {
-    appendMessage("warning", `${err}`);
-  }
-}
-
 async function deleteMpsStream({ apiRequests, name, signal, appendMessage }): Promise<boolean> {
   try {
     const result = await apiRequests.deleteMultiPeriodStream(name, {
@@ -267,11 +230,21 @@ async function deleteMpsStream({ apiRequests, name, signal, appendMessage }): Pr
   return false;
 }
 
-export interface ServerMpsModelValidationErrors {
-  errors: MpsModelValidationErrors;
-  lastChecked: number;
-}
-export interface UseMultiPeriodModelHook {
+export const blankModel: MultiPeriodStream = {
+  pk: null,
+  name: "",
+  title: "",
+  options: {},
+  periods: [],
+};
+
+export interface UseMultiPeriodStreamHook {
+  loaded: ReadonlySignal<string | null>;
+  model: ReadonlySignal<DecoratedMultiPeriodStream>;
+  modified: ReadonlySignal<boolean>;
+  errors: ReadonlySignal<MpsModelValidationErrors>;
+  isValid: ReadonlySignal<boolean>;
+  discardChanges: () => void;
   setFields: (fields: Partial<MultiPeriodStream>) => void;
   addPeriod: () => void;
   setPeriodOrdering: (pks: (number | string)[]) => void;
@@ -279,19 +252,21 @@ export interface UseMultiPeriodModelHook {
   modifyPeriod: (props: Omit<ModifyPeriodProps, 'model'>) => void;
   saveChanges: ({signal}: { signal: AbortSignal}) => Promise<boolean>;
   deleteStream: ({signal}: { signal: AbortSignal}) => Promise<boolean>;
-  modified: ReadonlySignal<boolean>;
-  errors: ReadonlySignal<MpsModelValidationErrors>;
-  isValid: ReadonlySignal<boolean>;
 }
 
-export interface UseMultiPeriodModelProps {
+export interface UseMultiPeriodStreamProps {
   name: string;
-  model: Signal<DecoratedMultiPeriodStream>;
+  newStream: boolean;
 }
 
-export function useMultiPeriodModel({ model, name }: UseMultiPeriodModelProps): UseMultiPeriodModelHook {
+export const MultiPeriodModelContext = createContext<UseMultiPeriodStreamHook>(null);
+
+export function useMultiPeriodStream({ name, newStream }: UseMultiPeriodStreamProps): UseMultiPeriodStreamHook {
   const apiRequests = useContext(EndpointContext);
   const { appendMessage } = useMessages();
+  const originalData = useRef<MultiPeriodStream|null>(null);
+  const loaded = useSignal<string | null>(null);
+  const model = useSignal<DecoratedMultiPeriodStream>(decorateMultiPeriodStream(blankModel));
   const modified = useComputed<boolean>(() => model.value?.modified ?? false);
   const lastModified = useComputed<number>(() => model.value?.lastModified ?? 0);
   const localErrors = useComputed<MpsModelValidationErrors>(() => validateModel({ model }));
@@ -343,15 +318,36 @@ export function useMultiPeriodModel({ model, name }: UseMultiPeriodModelProps): 
     [model]
   );
 
-  const saveChanges = useCallback(
-    ({ signal }: { signal: AbortSignal}) =>
-      saveChangesToModel({
-        apiRequests,
-        model,
-        name,
-        signal,
-        appendMessage,
-      }),
+  const saveChanges = useCallback(async ({ signal }: { signal: AbortSignal}) => {
+      if (!model.value || signal.aborted) {
+        return false;
+      }
+      const data = createDataFromModel(model);
+      try {
+        const result =
+          data.pk === null
+            ? await apiRequests.addMultiPeriodStream(data, { signal })
+            : await apiRequests.modifyMultiPeriodStream(name, data, { signal });
+
+        result.errors?.forEach((err) => appendMessage("warning", err));
+        if (result?.success === true) {
+          if (data.pk === null) {
+            appendMessage("success", `Added new stream ${name}`);
+          } else {
+            appendMessage("success", `Saved changes to ${name}`);
+          }
+          model.value = {
+            ...decorateMultiPeriodStream(result.model),
+            lastModified: Date.now(),
+          };
+          originalData.current = result.model;
+          return true;
+        }
+      } catch (err) {
+        appendMessage("warning", `${err}`);
+      }
+      return false;
+    },
     [apiRequests, appendMessage, model, name]
   );
 
@@ -399,48 +395,15 @@ export function useMultiPeriodModel({ model, name }: UseMultiPeriodModelProps): 
     };
   });
 
-  return {
-    setFields,
-    addPeriod,
-    setPeriodOrdering,
-    removePeriod,
-    modifyPeriod: modify,
-    saveChanges,
-    deleteStream,
-    modified,
-    errors,
-    isValid,
-  };
-}
-
-export const blankModel: DecoratedMultiPeriodStream = {
-  pk: null,
-  name: "",
-  title: "",
-  options: {},
-  periods: [],
-  modified: false,
-  lastModified: 0,
-};
-
-export interface UseMultiPeriodStreamProps {
-  name: string;
-  newStream: boolean;
-}
-
-export interface UseMultiPeriodStreamHook extends UseMultiPeriodModelHook {
-  loaded: ReadonlySignal<string | null>;
-  model: ReadonlySignal<DecoratedMultiPeriodStream>;
-}
-
-export const MultiPeriodModelContext = createContext<UseMultiPeriodStreamHook>(null);
-
-export function useMultiPeriodStream({ name, newStream }: UseMultiPeriodStreamProps): UseMultiPeriodStreamHook {
-  const apiRequests = useContext(EndpointContext);
-  const { appendMessage } = useMessages();
-  const loaded = useSignal<string | null>(null);
-  const model = useSignal<DecoratedMultiPeriodStream>(blankModel);
-  const modifiers = useMultiPeriodModel({ model, name });
+  const discardChanges = useCallback(() => {
+    if (loaded.value !== name || !originalData.current) {
+      return;
+    }
+    batch(() => {
+      model.value = decorateMultiPeriodStream(originalData.current);
+      loaded.value = null;
+    });
+  }, [loaded, model, name]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -450,17 +413,30 @@ export function useMultiPeriodStream({ name, newStream }: UseMultiPeriodStreamPr
       if (loaded.value !== name) {
         if (newStream) {
           loaded.value = name;
-          model.value = JSON.parse(JSON.stringify(blankModel));
+          originalData.current = structuredClone(blankModel);
+          model.value = decorateMultiPeriodStream(blankModel);
           return;
         }
         try{
           const data: MultiPeriodStream = await apiRequests.getMultiPeriodStream(name, { signal });
+          originalData.current = data;
           batch(() => {
             loaded.value = name;
             model.value = decorateMultiPeriodStream(data);
           });
         } catch(err) {
-          appendMessage("danger", `Failed to get multi-period stream list: ${err}`);
+          const msg = `Failed to get multi-period stream "${name}": ${err}`;
+          appendMessage("danger", msg);
+          originalData.current = null;
+          batch(() => {
+            loaded.value = name;
+            serverErrors.value = {
+              errors: {
+                fetch: msg,
+              },
+              lastChecked: Date.now(),
+            };
+          });
         }
       }
     };
@@ -472,11 +448,21 @@ export function useMultiPeriodStream({ name, newStream }: UseMultiPeriodStreamPr
         controller.abort();
       }
     };
-  }, [apiRequests, loaded, name, newStream, model, appendMessage]);
+  }, [apiRequests, loaded, name, newStream, model, appendMessage, serverErrors]);
 
   return {
+    setFields,
+    addPeriod,
+    setPeriodOrdering,
+    removePeriod,
+    modifyPeriod: modify,
+    saveChanges,
+    deleteStream,
+    discardChanges,
+    modified,
+    errors,
+    isValid,
     model,
     loaded,
-    ...modifiers,
   };
 }

@@ -40,6 +40,7 @@ describe("TrackSelectionDialog component", () => {
     modifyPeriod: vi.fn(),
     saveChanges: vi.fn(),
     deleteStream: vi.fn(),
+    discardChanges: vi.fn(),
   };
   const stream: DecoratedStream = {
     tracks: [
