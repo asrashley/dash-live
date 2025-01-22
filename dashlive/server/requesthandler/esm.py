@@ -5,11 +5,8 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-import io
 import logging
 from pathlib import Path
-import re
-from typing import ClassVar
 
 import flask
 from flask.views import MethodView  # type: ignore
@@ -152,80 +149,6 @@ class OptionFieldGroups(MethodView):
         }
         return flask.make_response((body, 200, headers))
 
-
-class BundleDirectory(MethodView):
-    DEFAULT_IMPORT: ClassVar[re.Pattern] = re.compile(r'^import (?P<name>[^\s]+) from [''"](?P<library>[^''"]+)[''"];?$')
-    NAMED_IMPORT: ClassVar[re.Pattern] = re.compile(
-        r'^import\s+{\s*(?P<names>[^}]+)\s*}\s+from\s+[\'"](?P<library>[^\'"]+)[\'"];?$')
-
-    """
-    Returns a bundle of all of the UI components
-    """
-    def get(self, directory: str) -> flask.Response:
-        if directory not in {'hooks', 'components'}:
-            return flask.make_response('Unknown ESM bundle', 404)
-        static_dir: Path = Path(flask.current_app.config['STATIC_FOLDER'])
-        ui_folder: Path = static_dir / "js" / "spa" / directory
-        js_files: set[str] = set()
-        test_file: re.Pattern[str] = re.compile(r'\.test\.')
-        default_imports: dict[str, str] = {}
-        named_imports: dict[str, set[str]] = {}
-        code: list[str] = []
-        for js in ui_folder.glob("*.js"):
-            if test_file.search(js.name) or js.name == 'index.js':
-                continue
-            js_files.add(f"./{js.name}")
-            code += self.process_file(js, default_imports, named_imports)
-        body: io.TextIO = io.StringIO()
-        library: str
-        name: str
-        for library, name in default_imports.items():
-            if library not in js_files:
-                if library.startswith('../'):
-                    library = flask.url_for('static', filename=f"js/spa/{library[3:]}")
-                body.write(f"import {name} from '{library}';\n")
-        for library, names in named_imports.items():
-            if library not in js_files:
-                if library.startswith('../'):
-                    library = flask.url_for('static', filename=f"js/spa/{library[3:]}")
-                body.write(f"import {{{','.join(names)}}} from '{library}';\n")
-        for line in code:
-            body.write(f"{line}\n")
-        headers: dict[str, str] = {
-            'Content-Type': 'application/javascript',
-            'Content-Length': body.tell(),
-        }
-        return flask.make_response((body.getvalue(), 200, headers))
-
-    @classmethod
-    def process_file(cls, js_file: Path, default_imports: dict[str, str], named_imports: dict[str, set[str]]) -> list[str]:
-        code: list[str] = []
-        with js_file.open('rt') as src:
-            line: str
-            for line in src:
-                line = line.rstrip()
-                if not line:
-                    continue
-                match: re.Match[str] | None = cls.DEFAULT_IMPORT.match(line)
-                if match:
-                    default_imports[match['library']] = match['name']
-                    continue
-                match = cls.NAMED_IMPORT.match(line)
-                if match:
-                    library: str = match['library']
-                    try:
-                        name_set: set[str] = named_imports[library]
-                    except KeyError:
-                        name_set = set()
-                        named_imports[library] = name_set
-                    name: str
-                    for name in match['names'].split(','):
-                        name = name.strip()
-                        if name:
-                            name_set.add(name)
-                    continue
-                code.append(line)
-        return code
 
 class InitialAppState(MethodView):
     """
