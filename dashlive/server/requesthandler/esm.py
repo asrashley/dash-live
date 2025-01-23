@@ -7,12 +7,14 @@
 #############################################################################
 import logging
 from pathlib import Path
+from typing import TypedDict
 
 import flask
 from flask.views import MethodView  # type: ignore
 
 from dashlive.components.field_group import InputFieldGroupJson
 from dashlive.drm.system import DrmSystem
+from dashlive.server.models.token import EncodedJWTokenJson, Token, TokenType
 from dashlive.server.models.user import User
 from dashlive.server.options.container import OptionsContainer
 from dashlive.server.options.dash_option import DashOption
@@ -22,8 +24,19 @@ from dashlive.mpeg.dash.content_role import ContentRole
 from dashlive.server.routes import routes, ui_routes, RouteJavaScript
 from dashlive.utils.json_object import JsonObject
 
-from .spa_context import SpaTemplateContext, create_spa_template_context
+from .csrf import CsrfProtection, CsrfTokenCollection, CsrfTokenCollectionJson
+from .navbar import create_navbar_context, NavBarItem
 from .utils import jsonify
+
+class InitialTokensType(TypedDict):
+    csrfTokens: CsrfTokenCollectionJson
+    accessToken: EncodedJWTokenJson | None
+
+
+class SpaTemplateContext(TypedDict):
+    navbar: list[NavBarItem]
+    initialTokens: InitialTokensType
+
 
 class ModuleWrapper(MethodView):
     """
@@ -157,13 +170,34 @@ class InitialAppState(MethodView):
     """
     def get(self) -> flask.Response:
         user: User = User.get_guest_user()
-        context: SpaTemplateContext = create_spa_template_context(user)
+        context: SpaTemplateContext = self.create_template_context(user)
         body: str = flask.render_template('esm/initial_app_state.tjs', **context)
         headers: dict[str, str] = {
             'Content-Type': 'application/javascript',
             'Content-Length': len(body),
         }
         return flask.make_response((body, 200, headers))
+
+    @staticmethod
+    def create_template_context(user: User) -> SpaTemplateContext:
+        csrf_key: str = CsrfProtection.generate_cookie()
+        csrf_tokens = CsrfTokenCollection(
+            streams=CsrfProtection.generate_token('streams', csrf_key),
+            files=None,
+            kids=None,
+            upload=None)
+        access_token: EncodedJWTokenJson = Token.generate_api_token(user, TokenType.ACCESS).toJSON()
+        initial_tokens: InitialTokensType = {
+            'csrfTokens': csrf_tokens.to_dict(),
+            'accessToken': access_token,
+        }
+        navbar: list[NavBarItem] = create_navbar_context(with_login=False)
+        context: SpaTemplateContext = {
+            "navbar": navbar,
+            "initialTokens": initial_tokens,
+        }
+        return context
+
 
 class CgiOptionsPage(MethodView):
     """
