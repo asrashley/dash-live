@@ -1,5 +1,2531 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`main entry-point app > matches snapshot for CGI options 1`] = `
+<DocumentFragment>
+  <header>
+    <nav
+      class="navbar navbar-expand-lg navbar-light bg-body-tertiary"
+    >
+      <span
+        class="navbar-brand"
+      >
+        DASH server
+      </span>
+      <button
+        aria-controls="navbarSupportedContent"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
+        class="navbar-toggler collapsed"
+        type="button"
+      >
+        <span
+          class="navbar-toggler-icon"
+        />
+      </button>
+      <div
+        class="collapse navbar-collapse"
+        id="navbarSupportedContent"
+      >
+        <ul
+          class="navbar-nav mr-auto"
+        >
+          <li
+            class="nav-item spa"
+          >
+            <a
+              aria-current="page"
+              class="nav-link active spa"
+              href="/"
+            >
+              Home
+            </a>
+          </li>
+          <li
+            class="nav-item "
+          >
+            <a
+              class="nav-link "
+              href="/streams"
+            >
+              Streams
+            </a>
+          </li>
+          <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link spa"
+              href="/multi-period-streams"
+            >
+              Multi-Period
+            </a>
+          </li>
+          <li
+            class="nav-item "
+          >
+            <a
+              class="nav-link "
+              href="/validate/"
+            >
+              Validate
+            </a>
+          </li>
+          <li
+            class="nav-item "
+          >
+            <a
+              class="nav-link "
+              href="/media/inspect"
+            >
+              Inspect
+            </a>
+          </li>
+          <li
+            class="nav-item user-login"
+          >
+            <a
+              class="nav-link"
+              href="#"
+            >
+              Log Out
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+    <nav
+      aria-label="breadcrumb"
+      class="breadcrumbs"
+      data-location="/options"
+    >
+      <ol
+        class="breadcrumb"
+      >
+        <li
+          class="breadcrumb-item "
+          id="crumb_0"
+        >
+          <a
+            href="/"
+            title="Home"
+          >
+            Home
+          </a>
+        </li>
+        <li
+          class="breadcrumb-item active"
+          id="crumb_1"
+        >
+          <span>
+            options
+          </span>
+        </li>
+      </ol>
+    </nav>
+  </header>
+  <div
+    class="messages-panel"
+  />
+  <div
+    class="content container-fluid"
+  >
+    <div
+      class="cgi-parameters"
+    >
+      <span
+        class="float-end"
+      >
+        <a
+          class="link"
+          data-testid="toggle-details"
+          href="#"
+        >
+          details
+        </a>
+      </span>
+      <p
+        class="info"
+      >
+        There are a number of CGI parameters that can be used to modify manifests, media segments and time sources.
+      </p>
+      <table
+        class="cgi-params table table-striped"
+      >
+        <caption>
+          CGI parameters
+        </caption>
+        <thead>
+          <tr>
+            <th
+              class="parameter"
+            >
+              Parameter
+            </th>
+            <th
+              class="description"
+            >
+              Description
+            </th>
+            <th
+              class="manifest"
+            >
+              Manifest
+            </th>
+            <th
+              class="video"
+            >
+              Video
+            </th>
+            <th
+              class="audio"
+            >
+              Audio
+            </th>
+            <th
+              class="time"
+            >
+              Time source
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td
+              class="parameter"
+            >
+              abr=(1|0)
+            </td>
+            <td
+              class="description"
+            >
+              <p>
+                Enable or disable adaptive bitrate
+              </p>
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              acodec=(mp4a|ec-3|any)
+            </td>
+            <td
+              class="description"
+            >
+              <p>
+                Filter audio adaptation sets by audio codec (AAC or E-AC3)
+              </p>
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              base=(1|0)
+            </td>
+            <td
+              class="description"
+            >
+              <p>
+                Include a BaseURL element?
+              </p>
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              bugs=(saio)
+            </td>
+            <td
+              class="description"
+            >
+              <p>
+                Produce a stream with known bugs
+              </p>
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              dashjs=(4.7.4|4.7.1)
+            </td>
+            <td
+              class="description"
+            >
+              <p>
+                dash.js DASH player version
+              </p>
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              depth=&lt;seconds&gt;
+            </td>
+            <td
+              class="description"
+            >
+              <p>
+                Number of seconds for timeShiftBufferDepth
+              </p>
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              drift=&lt;seconds&gt;
+            </td>
+            <td
+              class="description"
+            >
+              <p>
+                Number of seconds of delay to add to wall clock time
+              </p>
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              drm=&lt;drm&gt;,.. or &lt;drm&gt;-&lt;location&gt;,..
+            </td>
+            <td
+              class="description"
+            >
+              
+
+              <p>
+                A comma separated list of DRMs:
+              </p>
+              
+
+              <ul>
+                
+  
+                <li>
+                  all - All supported DRMs
+                </li>
+                
+  
+                <li>
+                  clearkey - W3C ClearKey
+                </li>
+                
+  
+                <li>
+                  marlin - Intertrust Marlin
+                </li>
+                
+  
+                <li>
+                  none - No DRM
+                </li>
+                
+ 
+                <li>
+                  playready - Microsoft PlayReady
+                </li>
+                
+
+              </ul>
+              
+
+              <p>
+                For example: 
+                <span
+                  class="pre"
+                >
+                  drm=playready,marlin
+                </span>
+              </p>
+              
+
+              <p
+                style="margin-top: 0.5em"
+              >
+                Optionally with a hyphen separated list of locations for the DRM data:
+              </p>
+              
+
+              <ul>
+                
+  
+                <li>
+                  pro - An mspr:pro element in the MPD (only applicable to PlayReady)
+                </li>
+                
+  
+                <li>
+                  cenc - A cenc:pssh element in the MPD
+                </li>
+                
+  
+                <li>
+                  moov - A PSSH box in the init segment
+                </li>
+                
+
+              </ul>
+              
+
+              <p>
+                For example: 
+                <span
+                  class="pre"
+                >
+                  drm=playready-pro-cenc,clearkey-moov
+                </span>
+              </p>
+              
+
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              events=&lt;format&gt;,..
+            </td>
+            <td
+              class="description"
+            >
+              
+
+              <p>
+                A comma separated list of event formats:
+              </p>
+              
+
+              <ul>
+                
+  
+                <li>
+                  
+    
+                  <a
+                    class="link"
+                    href="#ping"
+                  >
+                    ping
+                  </a>
+                   - produces a payload that alternates
+    between 'ping' and 'pong'.
+  
+                </li>
+                
+  
+                <li>
+                  
+    
+                  <a
+                    class="link"
+                    href="#scte35"
+                  >
+                    scte35
+                  </a>
+                   - SCTE35 events that alternate
+    between placement opportunity start and end.
+  
+                </li>
+                
+
+              </ul>
+              
+
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              leeway=(16|60|0)
+            </td>
+            <td
+              class="description"
+            >
+              <p>
+                Number of seconds after a fragment has expired before it becomes unavailable
+              </p>
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              mode=(vod|live|odvod)
+            </td>
+            <td
+              class="description"
+            >
+              <p>
+                DASH operating mode
+              </p>
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              mup=&lt;number&gt;
+            </td>
+            <td
+              class="description"
+            >
+              <p>
+                Specify minimumUpdatePeriod (in seconds) or -1 to disable updates
+              </p>
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              ntp_servers=(europe-ntp|google|&lt;server&gt;,..)
+            </td>
+            <td
+              class="description"
+            >
+              <p>
+                List of servers to use for NTP requests
+              </p>
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              patch=(0|1)
+            </td>
+            <td
+              class="description"
+            >
+              <p>
+                Use MPD patches for live streams
+              </p>
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              ping__count=&lt;int&gt;
+            </td>
+            <td
+              class="description"
+            >
+              <p />
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              ping__duration=&lt;int&gt;
+            </td>
+            <td
+              class="description"
+            >
+              <p />
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              ping__inband=(0|1)
+            </td>
+            <td
+              class="description"
+            >
+              <p />
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              ping__interval=&lt;int&gt;
+            </td>
+            <td
+              class="description"
+            >
+              <p />
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              ping__start=&lt;int&gt;
+            </td>
+            <td
+              class="description"
+            >
+              <p />
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              ping__timescale=&lt;int&gt;
+            </td>
+            <td
+              class="description"
+            >
+              <p />
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              ping__value=(0)
+            </td>
+            <td
+              class="description"
+            >
+              <p />
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              ping__version=&lt;int&gt;
+            </td>
+            <td
+              class="description"
+            >
+              <p />
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              player=(native|dashjs|shaka)
+            </td>
+            <td
+              class="description"
+            >
+              
+
+              <p>
+                Only relevant when using the Video Player page.
+              </p>
+              
+
+              <ol>
+                
+  
+                <li>
+                   native - use native &lt;video&gt; element playback
+                </li>
+                
+  
+                <li>
+                   shaka - use Shaka player
+                </li>
+                
+  
+                <li>
+                   dashjs - use dash.js player
+                </li>
+                
+
+              </ol>
+              
+
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              playready__piff=(1|0)
+            </td>
+            <td
+              class="description"
+            >
+              <p>
+                Include PIFF sample encryption data
+              </p>
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              playready__version=(1.0|2.0|3.0|4.0)
+            </td>
+            <td
+              class="description"
+            >
+              <p>
+                Set the PlayReady version compatibility for this stream
+              </p>
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              scte35__count=&lt;int&gt;
+            </td>
+            <td
+              class="description"
+            >
+              <p />
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              scte35__duration=&lt;int&gt;
+            </td>
+            <td
+              class="description"
+            >
+              <p />
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              scte35__inband=(0|1)
+            </td>
+            <td
+              class="description"
+            >
+              <p />
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              scte35__interval=&lt;int&gt;
+            </td>
+            <td
+              class="description"
+            >
+              <p />
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              scte35__program_id=&lt;int&gt;
+            </td>
+            <td
+              class="description"
+            >
+              <p />
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              scte35__start=&lt;int&gt;
+            </td>
+            <td
+              class="description"
+            >
+              <p />
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              scte35__timescale=&lt;int&gt;
+            </td>
+            <td
+              class="description"
+            >
+              <p />
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              scte35__value=()
+            </td>
+            <td
+              class="description"
+            >
+              <p />
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              scte35__version=&lt;int&gt;
+            </td>
+            <td
+              class="description"
+            >
+              <p />
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              shaka=(4.11.2|4.3.8|2.5.4)
+            </td>
+            <td
+              class="description"
+            >
+              <p>
+                Shaka DASH player version
+              </p>
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              start=(today|month|year|epoch|now|&lt;iso-datetime&gt;)
+            </td>
+            <td
+              class="description"
+            >
+              
+
+              <p>
+                
+  Specify availabilityStartTime as "today", "now", "year",
+  "month", "epoch" or an ISO datetime (YYYY-MM-DDTHH:MM:SSZ).
+  "today" will select midnight UTC today,
+  "month" will select midnight UTC at the start of this month,
+  "year" will select midnight UTC at the start of this year,
+  "now" will select  publishTime - timeShiftBufferDepth, and
+  "epoch" will select the Unix epoch (Jan 1 1970).
+
+              </p>
+              
+
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              tcodec=(im1t|etd1)
+            </td>
+            <td
+              class="description"
+            >
+              <p>
+                Filter text adaptation sets by text codec
+              </p>
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              time=(direct|head|http-ntp|iso|ntp|sntp|xsd)
+            </td>
+            <td
+              class="description"
+            >
+              <p>
+                Select UTCTiming element method.
+              </p>
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+          <tr>
+            <td
+              class="parameter"
+            >
+              timeline=(0|1)
+            </td>
+            <td
+              class="description"
+            >
+              <p>
+                Enable or disable segment timeline
+              </p>
+            </td>
+            <td
+              class="manifest"
+            >
+              <span
+                class="bool-yes"
+              >
+                ✓
+              </span>
+            </td>
+            <td
+              class="video"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="audio"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+            <td
+              class="time"
+            >
+              <span
+                class="bool-no"
+              >
+                ✗
+              </span>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <table
+        class="table table-striped event-parameters"
+      >
+        <caption>
+          <a
+            id="ping"
+          >
+            PING event parameters (urn:dash-live:pingpong:2022
+          </a>
+        </caption>
+        <thead>
+          <tr>
+            <th>
+              Parameter
+            </th>
+            <th>
+              Default
+            </th>
+            <th
+              class="description"
+            >
+              Description
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              ping_count
+            </td>
+            <td>
+              0
+            </td>
+            <td
+              class="description"
+            >
+              Number of events to insert
+            </td>
+          </tr>
+          <tr>
+            <td>
+              ping_duration
+            </td>
+            <td>
+              200
+            </td>
+            <td
+              class="description"
+            >
+              Duration of each event
+            </td>
+          </tr>
+          <tr>
+            <td>
+              ping_inband
+            </td>
+            <td>
+              1
+            </td>
+            <td
+              class="description"
+            >
+              In-manifest (0) or inband with the media (1)
+            </td>
+          </tr>
+          <tr>
+            <td>
+              ping_interval
+            </td>
+            <td>
+              1000
+            </td>
+            <td
+              class="description"
+            >
+              Time period between events (timescale units)
+            </td>
+          </tr>
+          <tr>
+            <td>
+              ping_start
+            </td>
+            <td>
+              0
+            </td>
+            <td
+              class="description"
+            >
+              Time of first event (timescale units)
+            </td>
+          </tr>
+          <tr>
+            <td>
+              ping_timescale
+            </td>
+            <td>
+              100
+            </td>
+            <td
+              class="description"
+            >
+              Timescale (ticks per second)
+            </td>
+          </tr>
+          <tr>
+            <td>
+              ping_value
+            </td>
+            <td>
+              0
+            </td>
+            <td
+              class="description"
+            >
+              The value attribute to use for this event stream. The value field is used with the schemeIdUri to uniquely identify an event stream
+            </td>
+          </tr>
+          <tr>
+            <td>
+              ping_version
+            </td>
+            <td>
+              0
+            </td>
+            <td
+              class="description"
+            >
+              Version of emsg syntax to use for inband events
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <table
+        class="table table-striped event-parameters"
+      >
+        <caption>
+          <a
+            id="scte35"
+          >
+            SCTE35 event parameters (urn:scte:scte35:2014:xml+bin)
+          </a>
+        </caption>
+        <thead>
+          <tr>
+            <th>
+              Parameter
+            </th>
+            <th>
+              Default
+            </th>
+            <th
+              class="description"
+            >
+              Description
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              scte35_count
+            </td>
+            <td>
+              0
+            </td>
+            <td
+              class="description"
+            >
+              Number of events to insert
+            </td>
+          </tr>
+          <tr>
+            <td>
+              scte35_duration
+            </td>
+            <td>
+              200
+            </td>
+            <td
+              class="description"
+            >
+              Duration of each event
+            </td>
+          </tr>
+          <tr>
+            <td>
+              scte35_inband
+            </td>
+            <td>
+              1
+            </td>
+            <td
+              class="description"
+            >
+              In-manifest (0) or inband with the media (1)
+            </td>
+          </tr>
+          <tr>
+            <td>
+              scte35_interval
+            </td>
+            <td>
+              1000
+            </td>
+            <td
+              class="description"
+            >
+              Time period between events (timescale units)
+            </td>
+          </tr>
+          <tr>
+            <td>
+              scte35_start
+            </td>
+            <td>
+              0
+            </td>
+            <td
+              class="description"
+            >
+              Time of first event (timescale units)
+            </td>
+          </tr>
+          <tr>
+            <td>
+              scte35_timescale
+            </td>
+            <td>
+              100
+            </td>
+            <td
+              class="description"
+            >
+              Timescale (ticks per second)
+            </td>
+          </tr>
+          <tr>
+            <td>
+              scte35_value
+            </td>
+            <td>
+              0
+            </td>
+            <td
+              class="description"
+            >
+              The value attribute to use for this event stream. The value field is used with the schemeIdUri to uniquely identify an event stream
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div
+    class="modal-backdrop hidden"
+  />
+</DocumentFragment>
+`;
+
 exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
 <DocumentFragment>
   <header>
@@ -679,6 +3205,2145 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
               href="#"
             >
               Log Out
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+    <nav
+      aria-label="breadcrumb"
+      class="breadcrumbs"
+      data-location="/"
+    >
+      <ol
+        class="breadcrumb"
+      >
+        <li
+          class="breadcrumb-item active"
+          id="crumb_0"
+        >
+          <span>
+            Home
+          </span>
+        </li>
+      </ol>
+    </nav>
+  </header>
+  <div
+    class="messages-panel"
+  />
+  <div
+    class="content container-fluid"
+  >
+    <div>
+      <div
+        class="manifest-url rounded border"
+      >
+        <form
+          id="mpd-form"
+        >
+          <div
+            class="form-group d-flex flex-row row-field-title"
+          >
+            <label
+              class="col-form-label fw-semibold me-1"
+              for="id_mpd_url"
+            >
+              MPD URL :
+            </label>
+            <div
+              class="flex-fill"
+            >
+              <input
+                class="form-control d-none"
+                id="id_mpd_url"
+                name="mpd_url"
+                type="text"
+              />
+              <a
+                class="link link-underline-opacity-25"
+                href="http://localhost:3000/dash/vod/bbb/hand_made.mpd"
+                id="dashurl"
+              >
+                /dash/vod/bbb/hand_made.mpd
+              </a>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div
+        id="with-modules"
+      >
+        <div
+          class="d-flex flex-row align-self-stretch pb-3"
+        >
+          <div
+            class="play-button flex-fill text-center"
+          >
+            <a
+              class="btn btn-lg btn-primary"
+              href="http://localhost:3000/play/vod/bbb/hand_made/index.html"
+            >
+              <span
+                aria-label="play-fill icon"
+                class="bi icon bi-play-fill "
+                role="img"
+              />
+              <span
+                class="title ps-2"
+              >
+                Play Big Buck Bunny
+              </span>
+            </a>
+          </div>
+          <div
+            class="view-manifest-button flex-fill text-center"
+          >
+            <button
+              class="btn btn-lg btn-primary"
+            >
+              <span
+                aria-label="eyeglasses icon"
+                class="bi icon bi-eyeglasses pe-2"
+                role="img"
+              />
+              View Manifest
+            </button>
+          </div>
+          <div
+            class="reset-all-button flex-fill text-center"
+          >
+            <button
+              class="btn btn-lg btn-primary"
+            >
+              <span
+                aria-label="trash3-fill icon"
+                class="bi icon bi-trash3-fill pe-2"
+                role="img"
+              />
+              Reset Options
+            </button>
+          </div>
+        </div>
+        <form
+          name="mpsOptions"
+        >
+          <div
+            class="accordion mb-4"
+          >
+            <div
+              class="accordion-item"
+              data-name="general"
+              id="group-general"
+            >
+              <div
+                class="accordion-header"
+              >
+                <button
+                  aria-controls="model-group-0"
+                  aria-expanded="true"
+                  class="accordion-button"
+                  type="button"
+                >
+                  General Options
+                </button>
+              </div>
+              <div
+                class="accordion-collapse collapse p-3 show"
+                id="model-group-0"
+              >
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-mode"
+                  >
+                    Playback Mode:
+                  </label>
+                  <div
+                    class="col-10"
+                  >
+                    <div>
+                      <div
+                        class="form-check"
+                      >
+                        <input
+                          class="form-check-input"
+                          id="radio-mode-vod"
+                          name="mode"
+                          type="radio"
+                          value="vod"
+                        />
+                        <label
+                          class="form-check-label"
+                          for="radio-mode-vod"
+                        >
+                          Video On Demand (using live profile)
+                        </label>
+                      </div>
+                      <div
+                        class="form-check"
+                      >
+                        <input
+                          class="form-check-input"
+                          id="radio-mode-live"
+                          name="mode"
+                          type="radio"
+                          value="live"
+                        />
+                        <label
+                          class="form-check-label"
+                          for="radio-mode-live"
+                        >
+                          Live stream (using live profile)
+                        </label>
+                      </div>
+                      <div
+                        class="form-check"
+                      >
+                        <input
+                          class="form-check-input"
+                          id="radio-mode-odvod"
+                          name="mode"
+                          type="radio"
+                          value="odvod"
+                        />
+                        <label
+                          class="form-check-label"
+                          for="radio-mode-odvod"
+                        >
+                          Video On Demand (using on-demand profile)
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-manifest"
+                  >
+                    Manifest:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <select
+                      aria-describedby="field-manifest"
+                      class="form-select "
+                      id="model-manifest"
+                      name="manifest"
+                      title="Manifest"
+                      type="select"
+                    >
+                      <option
+                        value="hand_made.mpd"
+                      >
+                        Hand-made manifest
+                      </option>
+                      <option
+                        value="manifest_a.mpd"
+                      >
+                        Vendor A live profile
+                      </option>
+                      <option
+                        value="manifest_b.mpd"
+                      >
+                        Vendor B VOD using live profile
+                      </option>
+                      <option
+                        value="manifest_e.mpd"
+                      >
+                        Vendor E live profile
+                      </option>
+                      <option
+                        value="manifest_ef.mpd"
+                      >
+                        Vendor EF live profile
+                      </option>
+                      <option
+                        value="manifest_h.mpd"
+                      >
+                        Vendor H live profile
+                      </option>
+                      <option
+                        value="manifest_i.mpd"
+                      >
+                        Vendor I live profile
+                      </option>
+                      <option
+                        value="manifest_n.mpd"
+                      >
+                        Provider N live profile
+                      </option>
+                      <option
+                        value="manifest_vod_aiv.mpd"
+                      >
+                        AIV on demand profile
+                      </option>
+                    </select>
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Manifest template to use
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-stream"
+                  >
+                    Stream:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <select
+                      aria-describedby="field-stream"
+                      class="form-select "
+                      id="model-stream"
+                      name="stream"
+                      title="Stream"
+                      type="select"
+                    >
+                      <option
+                        value="std.bbb"
+                      >
+                        Big Buck Bunny
+                      </option>
+                      <option
+                        value="std.tears"
+                      >
+                        Tears of Steel
+                      </option>
+                      <option
+                        value="mps.second"
+                      >
+                        a second example
+                      </option>
+                      <option
+                        value="mps.demo"
+                      >
+                        first title
+                      </option>
+                    </select>
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Stream to play
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-drms"
+                  >
+                    DRM systems:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <div
+                      class="form-control "
+                      data-testid="msi-drms"
+                    >
+                      <div
+                        class="form-check form-check-inline"
+                      >
+                        <input
+                          class="form-check-input"
+                          id="msiclearkey"
+                          name="clearkey"
+                          type="checkbox"
+                        />
+                        <label
+                          class="form-check-label me-3"
+                          for="msiclearkey"
+                        >
+                          clearkey
+                        </label>
+                      </div>
+                      <div
+                        class="form-check form-check-inline"
+                      >
+                        <input
+                          class="form-check-input"
+                          id="msimarlin"
+                          name="marlin"
+                          type="checkbox"
+                        />
+                        <label
+                          class="form-check-label me-3"
+                          for="msimarlin"
+                        >
+                          marlin
+                        </label>
+                      </div>
+                      <div
+                        class="form-check form-check-inline"
+                      >
+                        <input
+                          class="form-check-input"
+                          id="msiplayready"
+                          name="playready"
+                          type="checkbox"
+                        />
+                        <label
+                          class="form-check-label me-3"
+                          for="msiplayready"
+                        >
+                          playready
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    DRM systems to enable for encrypted AdaptationSets
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-abr"
+                  >
+                    Adaptive bitrate:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <input
+                      aria-describedby="field-abr"
+                      class="form-check-input "
+                      id="model-abr"
+                      name="abr"
+                      title="Adaptive bitrate"
+                      type="checkbox"
+                    />
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Enable or disable adaptive bitrate
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-acodec"
+                  >
+                    Audio Codec:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <select
+                      aria-describedby="field-acodec"
+                      class="form-select "
+                      id="model-acodec"
+                      name="acodec"
+                      title="Audio Codec"
+                      type="select"
+                    >
+                      <option
+                        value="mp4a"
+                      >
+                        HEAAC codec
+                      </option>
+                      <option
+                        value="ec-3"
+                      >
+                        EAC3 codec
+                      </option>
+                      <option
+                        value="any"
+                      >
+                        Any codec
+                      </option>
+                    </select>
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Filter audio adaptation sets by audio codec (AAC or E-AC3)
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-events"
+                  >
+                    DASH events:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <select
+                      aria-describedby="field-events"
+                      class="form-select "
+                      id="model-events"
+                      name="events"
+                      title="DASH events"
+                      type="select"
+                    >
+                      <option
+                        value=""
+                      >
+                        --
+                      </option>
+                      <option
+                        value="ping"
+                      >
+                        ping
+                      </option>
+                      <option
+                        value="scte35"
+                      >
+                        scte35
+                      </option>
+                    </select>
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    A comma separated list of event formats
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-timeline"
+                  >
+                    Segment timeline:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <input
+                      aria-describedby="field-timeline"
+                      class="form-check-input "
+                      id="model-timeline"
+                      name="timeline"
+                      title="Segment timeline"
+                      type="checkbox"
+                    />
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Enable or disable segment timeline
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-time"
+                  >
+                    UTC timing method:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <select
+                      aria-describedby="field-time"
+                      class="form-select "
+                      id="model-time"
+                      name="time"
+                      title="UTC timing method"
+                      type="select"
+                    >
+                      <option
+                        value=""
+                      >
+                        --
+                      </option>
+                      <option
+                        value="direct"
+                      >
+                        direct
+                      </option>
+                      <option
+                        value="head"
+                      >
+                        head
+                      </option>
+                      <option
+                        value="http-ntp"
+                      >
+                        http-ntp
+                      </option>
+                      <option
+                        value="iso"
+                      >
+                        iso
+                      </option>
+                      <option
+                        value="ntp"
+                      >
+                        ntp
+                      </option>
+                      <option
+                        value="sntp"
+                      >
+                        sntp
+                      </option>
+                      <option
+                        value="xsd"
+                      >
+                        xsd
+                      </option>
+                    </select>
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Select UTCTiming element method.
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-player"
+                  >
+                    Video Player:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <select
+                      aria-describedby="field-player"
+                      class="form-select "
+                      id="model-player"
+                      name="player"
+                      title="Video Player"
+                      type="select"
+                    >
+                      <option
+                        value="native"
+                      >
+                        Native video element
+                      </option>
+                      <option
+                        value="dashjs"
+                      >
+                        dash.js
+                      </option>
+                      <option
+                        value="shaka"
+                      >
+                        Shaka
+                      </option>
+                    </select>
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Native or MSE playback control
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div
+              class="accordion-item"
+              data-name="advanced"
+              id="group-advanced"
+            >
+              <div
+                class="accordion-header"
+              >
+                <button
+                  aria-controls="model-group-1"
+                  aria-expanded="false"
+                  class="accordion-button collapsed"
+                  type="button"
+                >
+                  Advanced Options
+                </button>
+              </div>
+              <div
+                class="accordion-collapse collapse p-3"
+                id="model-group-1"
+              >
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-ad_audio"
+                  >
+                    Audio Description:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <input
+                      aria-describedby="field-ad_audio"
+                      class="form-control "
+                      id="model-ad_audio"
+                      name="ad_audio"
+                      title="Audio Description"
+                      type="audio_representation"
+                    />
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Select audio AdaptationSet that will be marked as a broadcast-mix audio description track
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-start"
+                  >
+                    Availability start time:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <input
+                      aria-describedby="field-start"
+                      class="form-control "
+                      id="model-start"
+                      list="list-start"
+                      name="start"
+                      title="Availability start time"
+                      type="text"
+                    />
+                    <datalist
+                      id="list-start"
+                    >
+                      <option
+                        value="year"
+                      >
+                        year
+                      </option>
+                      <option
+                        value="today"
+                      >
+                        today
+                      </option>
+                      <option
+                        value="month"
+                      >
+                        month
+                      </option>
+                      <option
+                        value="epoch"
+                      >
+                        epoch
+                      </option>
+                      <option
+                        value="now"
+                      >
+                        now
+                      </option>
+                    </datalist>
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Sets availabilityStartTime for live streams
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-bugs"
+                  >
+                    Bug compatibility:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <select
+                      aria-describedby="field-bugs"
+                      class="form-select "
+                      id="model-bugs"
+                      name="bugs"
+                      title="Bug compatibility"
+                      type="select"
+                    >
+                      <option
+                        value=""
+                      >
+                        --
+                      </option>
+                      <option
+                        value="saio"
+                      >
+                        saio
+                      </option>
+                    </select>
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Produce a stream with known bugs
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-drift"
+                  >
+                    Clock drift:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <input
+                      aria-describedby="field-drift"
+                      class="form-control "
+                      id="model-drift"
+                      name="drift"
+                      title="Clock drift"
+                      type="number"
+                    />
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Number of seconds of delay to add to wall clock time
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-leeway"
+                  >
+                    Fragment expiration leeway:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <input
+                      aria-describedby="field-leeway"
+                      class="form-control "
+                      id="model-leeway"
+                      list="list-leeway"
+                      name="leeway"
+                      title="Fragment expiration leeway"
+                      type="number"
+                    />
+                    <datalist
+                      id="list-leeway"
+                    >
+                      <option
+                        value="16"
+                      >
+                        16
+                      </option>
+                      <option
+                        value="60"
+                      >
+                        60
+                      </option>
+                      <option
+                        value="0"
+                      >
+                        0
+                      </option>
+                    </datalist>
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Number of seconds after a fragment has expired before it becomes unavailable
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-main_audio"
+                  >
+                    Main audio track:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <input
+                      aria-describedby="field-main_audio"
+                      class="form-control "
+                      id="model-main_audio"
+                      name="main_audio"
+                      title="Main audio track"
+                      type="audio_representation"
+                    />
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Select audio AdaptationSet that will be given the "main" role
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-main_text"
+                  >
+                    Main text track:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <input
+                      aria-describedby="field-main_text"
+                      class="form-control "
+                      id="model-main_text"
+                      name="main_text"
+                      title="Main text track"
+                      type="text_representation"
+                    />
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Select text AdaptationSet that will be given the "main" role
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-mup"
+                  >
+                    Minimum update period:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <input
+                      aria-describedby="field-mup"
+                      class="form-control "
+                      id="model-mup"
+                      list="list-mup"
+                      name="mup"
+                      title="Minimum update period"
+                      type="number"
+                    />
+                    <datalist
+                      id="list-mup"
+                    >
+                      <option
+                        value=""
+                      >
+                        Every 2 fragments
+                      </option>
+                      <option
+                        value="-1"
+                      >
+                        Never
+                      </option>
+                      <option
+                        value="4"
+                      >
+                        Every fragment
+                      </option>
+                      <option
+                        value="30"
+                      >
+                        Every 30 seconds
+                      </option>
+                    </datalist>
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Specify minimumUpdatePeriod (in seconds) or -1 to disable updates
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-ntp_servers"
+                  >
+                    NTP time servers:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <select
+                      aria-describedby="field-ntp_servers"
+                      class="form-select "
+                      id="model-ntp_servers"
+                      name="ntp_servers"
+                      title="NTP time servers"
+                      type="select"
+                    >
+                      <option
+                        value=""
+                      >
+                        --
+                      </option>
+                      <option
+                        value="europe-ntp"
+                      >
+                        europe-ntp
+                      </option>
+                      <option
+                        value="google"
+                      >
+                        google
+                      </option>
+                    </select>
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    List of servers to use for NTP requests
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-tcodec"
+                  >
+                    Text Codec:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <select
+                      aria-describedby="field-tcodec"
+                      class="form-select "
+                      id="model-tcodec"
+                      name="tcodec"
+                      title="Text Codec"
+                      type="select"
+                    >
+                      <option
+                        value=""
+                      >
+                        Any codec
+                      </option>
+                      <option
+                        value="im1t|etd1"
+                      >
+                        im1t codec
+                      </option>
+                    </select>
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Filter text adaptation sets by text codec
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-tlang"
+                  >
+                    Text Language:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <input
+                      aria-describedby="field-tlang"
+                      class="form-control "
+                      id="model-tlang"
+                      name="tlang"
+                      title="Text Language"
+                      type=""
+                    />
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Filter text adaptation sets by language
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-base"
+                  >
+                    Use BaseURLs:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <input
+                      aria-describedby="field-base"
+                      class="form-check-input "
+                      id="model-base"
+                      name="base"
+                      title="Use BaseURLs"
+                      type="checkbox"
+                    />
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Include a BaseURL element?
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-patch"
+                  >
+                    Use MPD patches:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <input
+                      aria-describedby="field-patch"
+                      class="form-check-input "
+                      id="model-patch"
+                      name="patch"
+                      title="Use MPD patches"
+                      type="checkbox"
+                    />
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Use MPD patches for live streams
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-depth"
+                  >
+                    timeShiftBufferDepth size:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <input
+                      aria-describedby="field-depth"
+                      class="form-control "
+                      id="model-depth"
+                      list="list-depth"
+                      name="depth"
+                      title="timeShiftBufferDepth size"
+                      type="number"
+                    />
+                    <datalist
+                      id="list-depth"
+                    >
+                      <option
+                        value="1800"
+                      >
+                        1800
+                      </option>
+                      <option
+                        value="30"
+                      >
+                        30
+                      </option>
+                    </datalist>
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Number of seconds for timeShiftBufferDepth
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div
+              class="accordion-item"
+              data-name="clearkey"
+              id="group-clearkey"
+            >
+              <div
+                class="accordion-header"
+              >
+                <button
+                  aria-controls="model-group-2"
+                  aria-expanded="false"
+                  class="accordion-button collapsed"
+                  type="button"
+                >
+                  Clearkey Options
+                </button>
+              </div>
+              <div
+                class="accordion-collapse collapse p-3"
+                id="model-group-2"
+              >
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-clearkey__la_url"
+                  >
+                    Clearkey LA_URL:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <input
+                      aria-describedby="field-clearkey__la_url"
+                      class="form-control "
+                      id="model-clearkey__la_url"
+                      name="clearkey__la_url"
+                      title="Clearkey LA_URL"
+                      type=""
+                    />
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Override the Clearkey license URL field
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-clearkey__drmloc"
+                  >
+                    Clearkey location:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <select
+                      aria-describedby="field-clearkey__drmloc"
+                      class="form-select "
+                      id="model-clearkey__drmloc"
+                      name="clearkey__drmloc"
+                      title="Clearkey location"
+                      type="select"
+                    >
+                      <option
+                        value=""
+                      >
+                        All locations
+                      </option>
+                      <option
+                        value="pro"
+                      >
+                        mspr:pro element in MPD
+                      </option>
+                      <option
+                        value="cenc"
+                      >
+                        dash:cenc element in MPD
+                      </option>
+                      <option
+                        value="moov"
+                      >
+                        PSSH in init segment
+                      </option>
+                      <option
+                        value="cenc-pro"
+                      >
+                        mspr:pro + dash:cenc in MPD
+                      </option>
+                      <option
+                        value="moov-pro"
+                      >
+                        mspr:pro MPD + PSSH init
+                      </option>
+                      <option
+                        value="cenc-moov"
+                      >
+                        dash:cenc MPD + PSSH init
+                      </option>
+                    </select>
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Location to place DRM data
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div
+              class="accordion-item"
+              data-name="marlin"
+              id="group-marlin"
+            >
+              <div
+                class="accordion-header"
+              >
+                <button
+                  aria-controls="model-group-3"
+                  aria-expanded="false"
+                  class="accordion-button collapsed"
+                  type="button"
+                >
+                  Marlin Options
+                </button>
+              </div>
+              <div
+                class="accordion-collapse collapse p-3"
+                id="model-group-3"
+              >
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-marlin__la_url"
+                  >
+                    Marlin LA_URL:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <input
+                      aria-describedby="field-marlin__la_url"
+                      class="form-control "
+                      id="model-marlin__la_url"
+                      name="marlin__la_url"
+                      title="Marlin LA_URL"
+                      type=""
+                    />
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Override the Marlin S-URL field
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-marlin__drmloc"
+                  >
+                    Marlin location:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <select
+                      aria-describedby="field-marlin__drmloc"
+                      class="form-select "
+                      id="model-marlin__drmloc"
+                      name="marlin__drmloc"
+                      title="Marlin location"
+                      type="select"
+                    >
+                      <option
+                        value=""
+                      >
+                        All locations
+                      </option>
+                      <option
+                        value="pro"
+                      >
+                        mspr:pro element in MPD
+                      </option>
+                      <option
+                        value="cenc"
+                      >
+                        dash:cenc element in MPD
+                      </option>
+                      <option
+                        value="moov"
+                      >
+                        PSSH in init segment
+                      </option>
+                      <option
+                        value="cenc-pro"
+                      >
+                        mspr:pro + dash:cenc in MPD
+                      </option>
+                      <option
+                        value="moov-pro"
+                      >
+                        mspr:pro MPD + PSSH init
+                      </option>
+                      <option
+                        value="cenc-moov"
+                      >
+                        dash:cenc MPD + PSSH init
+                      </option>
+                    </select>
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Location to place DRM data
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div
+              class="accordion-item"
+              data-name="ping"
+              id="group-ping"
+            >
+              <div
+                class="accordion-header"
+              >
+                <button
+                  aria-controls="model-group-4"
+                  aria-expanded="false"
+                  class="accordion-button collapsed"
+                  type="button"
+                >
+                  Ping Options
+                </button>
+              </div>
+              <div
+                class="accordion-collapse collapse p-3"
+                id="model-group-4"
+              >
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-ping__count"
+                  >
+                    Ping count:
+                  </label>
+                  <div
+                    class="col-10"
+                  >
+                    <input
+                      aria-describedby="field-ping__count"
+                      class="form-control "
+                      id="model-ping__count"
+                      name="ping__count"
+                      title="Ping count"
+                      type="number"
+                    />
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-ping__duration"
+                  >
+                    Ping duration:
+                  </label>
+                  <div
+                    class="col-10"
+                  >
+                    <input
+                      aria-describedby="field-ping__duration"
+                      class="form-control "
+                      id="model-ping__duration"
+                      name="ping__duration"
+                      title="Ping duration"
+                      type="number"
+                    />
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-ping__inband"
+                  >
+                    Ping inband:
+                  </label>
+                  <div
+                    class="col-10"
+                  >
+                    <input
+                      aria-describedby="field-ping__inband"
+                      class="form-check-input "
+                      id="model-ping__inband"
+                      name="ping__inband"
+                      title="Ping inband"
+                      type="checkbox"
+                    />
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-ping__interval"
+                  >
+                    Ping interval:
+                  </label>
+                  <div
+                    class="col-10"
+                  >
+                    <input
+                      aria-describedby="field-ping__interval"
+                      class="form-control "
+                      id="model-ping__interval"
+                      name="ping__interval"
+                      title="Ping interval"
+                      type="number"
+                    />
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-ping__start"
+                  >
+                    Ping start:
+                  </label>
+                  <div
+                    class="col-10"
+                  >
+                    <input
+                      aria-describedby="field-ping__start"
+                      class="form-control "
+                      id="model-ping__start"
+                      name="ping__start"
+                      title="Ping start"
+                      type="number"
+                    />
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-ping__timescale"
+                  >
+                    Ping timescale:
+                  </label>
+                  <div
+                    class="col-10"
+                  >
+                    <input
+                      aria-describedby="field-ping__timescale"
+                      class="form-control "
+                      id="model-ping__timescale"
+                      name="ping__timescale"
+                      title="Ping timescale"
+                      type="number"
+                    />
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-ping__value"
+                  >
+                    Ping value:
+                  </label>
+                  <div
+                    class="col-10"
+                  >
+                    <input
+                      aria-describedby="field-ping__value"
+                      class="form-control "
+                      id="model-ping__value"
+                      name="ping__value"
+                      title="Ping value"
+                      type="text"
+                    />
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-ping__version"
+                  >
+                    Ping version:
+                  </label>
+                  <div
+                    class="col-10"
+                  >
+                    <input
+                      aria-describedby="field-ping__version"
+                      class="form-control "
+                      id="model-ping__version"
+                      name="ping__version"
+                      title="Ping version"
+                      type="number"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div
+              class="accordion-item"
+              data-name="playready"
+              id="group-playready"
+            >
+              <div
+                class="accordion-header"
+              >
+                <button
+                  aria-controls="model-group-5"
+                  aria-expanded="false"
+                  class="accordion-button collapsed"
+                  type="button"
+                >
+                  Playready Options
+                </button>
+              </div>
+              <div
+                class="accordion-collapse collapse p-3"
+                id="model-group-5"
+              >
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-playready__la_url"
+                  >
+                    Playready LA_URL:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <input
+                      aria-describedby="field-playready__la_url"
+                      class="form-control "
+                      id="model-playready__la_url"
+                      name="playready__la_url"
+                      title="Playready LA_URL"
+                      type=""
+                    />
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Override the Playready LA_URL field
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-playready__piff"
+                  >
+                    Playready PIFF:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <input
+                      aria-describedby="field-playready__piff"
+                      class="form-check-input "
+                      id="model-playready__piff"
+                      name="playready__piff"
+                      title="Playready PIFF"
+                      type="checkbox"
+                    />
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Include PIFF sample encryption data
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-playready__version"
+                  >
+                    Playready Version:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <select
+                      aria-describedby="field-playready__version"
+                      class="form-select "
+                      id="model-playready__version"
+                      name="playready__version"
+                      title="Playready Version"
+                      type="select"
+                    >
+                      <option
+                        value=""
+                      >
+                        --
+                      </option>
+                      <option
+                        value="1.0"
+                      >
+                        1.0
+                      </option>
+                      <option
+                        value="2.0"
+                      >
+                        2.0
+                      </option>
+                      <option
+                        value="3.0"
+                      >
+                        3.0
+                      </option>
+                      <option
+                        value="4.0"
+                      >
+                        4.0
+                      </option>
+                    </select>
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Set the PlayReady version compatibility for this stream
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-playready__drmloc"
+                  >
+                    Playready location:
+                  </label>
+                  <div
+                    class="col-5"
+                  >
+                    <select
+                      aria-describedby="field-playready__drmloc"
+                      class="form-select "
+                      id="model-playready__drmloc"
+                      name="playready__drmloc"
+                      title="Playready location"
+                      type="select"
+                    >
+                      <option
+                        value=""
+                      >
+                        All locations
+                      </option>
+                      <option
+                        value="pro"
+                      >
+                        mspr:pro element in MPD
+                      </option>
+                      <option
+                        value="cenc"
+                      >
+                        dash:cenc element in MPD
+                      </option>
+                      <option
+                        value="moov"
+                      >
+                        PSSH in init segment
+                      </option>
+                      <option
+                        value="cenc-pro"
+                      >
+                        mspr:pro + dash:cenc in MPD
+                      </option>
+                      <option
+                        value="moov-pro"
+                      >
+                        mspr:pro MPD + PSSH init
+                      </option>
+                      <option
+                        value="cenc-moov"
+                      >
+                        dash:cenc MPD + PSSH init
+                      </option>
+                    </select>
+                  </div>
+                  <div
+                    class="col-5 form-text"
+                  >
+                    Location to place DRM data
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div
+              class="accordion-item"
+              data-name="scte35"
+              id="group-scte35"
+            >
+              <div
+                class="accordion-header"
+              >
+                <button
+                  aria-controls="model-group-6"
+                  aria-expanded="false"
+                  class="accordion-button collapsed"
+                  type="button"
+                >
+                  Scte35 Options
+                </button>
+              </div>
+              <div
+                class="accordion-collapse collapse p-3"
+                id="model-group-6"
+              >
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-scte35__count"
+                  >
+                    Scte35 count:
+                  </label>
+                  <div
+                    class="col-10"
+                  >
+                    <input
+                      aria-describedby="field-scte35__count"
+                      class="form-control "
+                      id="model-scte35__count"
+                      name="scte35__count"
+                      title="Scte35 count"
+                      type="number"
+                    />
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-scte35__duration"
+                  >
+                    Scte35 duration:
+                  </label>
+                  <div
+                    class="col-10"
+                  >
+                    <input
+                      aria-describedby="field-scte35__duration"
+                      class="form-control "
+                      id="model-scte35__duration"
+                      name="scte35__duration"
+                      title="Scte35 duration"
+                      type="number"
+                    />
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-scte35__inband"
+                  >
+                    Scte35 inband:
+                  </label>
+                  <div
+                    class="col-10"
+                  >
+                    <input
+                      aria-describedby="field-scte35__inband"
+                      class="form-check-input "
+                      id="model-scte35__inband"
+                      name="scte35__inband"
+                      title="Scte35 inband"
+                      type="checkbox"
+                    />
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-scte35__interval"
+                  >
+                    Scte35 interval:
+                  </label>
+                  <div
+                    class="col-10"
+                  >
+                    <input
+                      aria-describedby="field-scte35__interval"
+                      class="form-control "
+                      id="model-scte35__interval"
+                      name="scte35__interval"
+                      title="Scte35 interval"
+                      type="number"
+                    />
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-scte35__program_id"
+                  >
+                    Scte35 program_id:
+                  </label>
+                  <div
+                    class="col-10"
+                  >
+                    <input
+                      aria-describedby="field-scte35__program_id"
+                      class="form-control "
+                      id="model-scte35__program_id"
+                      name="scte35__program_id"
+                      title="Scte35 program_id"
+                      type="number"
+                    />
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-scte35__start"
+                  >
+                    Scte35 start:
+                  </label>
+                  <div
+                    class="col-10"
+                  >
+                    <input
+                      aria-describedby="field-scte35__start"
+                      class="form-control "
+                      id="model-scte35__start"
+                      name="scte35__start"
+                      title="Scte35 start"
+                      type="number"
+                    />
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-scte35__timescale"
+                  >
+                    Scte35 timescale:
+                  </label>
+                  <div
+                    class="col-10"
+                  >
+                    <input
+                      aria-describedby="field-scte35__timescale"
+                      class="form-control "
+                      id="model-scte35__timescale"
+                      name="scte35__timescale"
+                      title="Scte35 timescale"
+                      type="number"
+                    />
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-scte35__value"
+                  >
+                    Scte35 value:
+                  </label>
+                  <div
+                    class="col-10"
+                  >
+                    <input
+                      aria-describedby="field-scte35__value"
+                      class="form-control "
+                      id="model-scte35__value"
+                      name="scte35__value"
+                      title="Scte35 value"
+                      type="text"
+                    />
+                  </div>
+                </div>
+                <div
+                  class="row mb-2 form-group "
+                >
+                  <label
+                    class="col-2 col-form-label"
+                    for="model-scte35__version"
+                  >
+                    Scte35 version:
+                  </label>
+                  <div
+                    class="col-10"
+                  >
+                    <input
+                      aria-describedby="field-scte35__version"
+                      class="form-control "
+                      id="model-scte35__version"
+                      name="scte35__version"
+                      title="Scte35 version"
+                      type="number"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      <p
+        class="info"
+      >
+        The MPD files for live streams are dynamically generated so that they appear to be live sources, using static media files. Requests for manifests and for media fragments can be modified using various CGI parameters, which are documented on the 
+        <a
+          class="link"
+          href="/options"
+        >
+          CGI options
+        </a>
+         page.
+      </p>
+    </div>
+  </div>
+  <div
+    class="modal-backdrop hidden"
+  />
+</DocumentFragment>
+`;
+
+exports[`main entry-point app > matches snapshot for home page when user not logged in 1`] = `
+<DocumentFragment>
+  <header>
+    <nav
+      class="navbar navbar-expand-lg navbar-light bg-body-tertiary"
+    >
+      <span
+        class="navbar-brand"
+      >
+        DASH server
+      </span>
+      <button
+        aria-controls="navbarSupportedContent"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
+        class="navbar-toggler collapsed"
+        type="button"
+      >
+        <span
+          class="navbar-toggler-icon"
+        />
+      </button>
+      <div
+        class="collapse navbar-collapse"
+        id="navbarSupportedContent"
+      >
+        <ul
+          class="navbar-nav mr-auto"
+        >
+          <li
+            class="nav-item spa"
+          >
+            <a
+              aria-current="page"
+              class="nav-link active spa"
+              href="/"
+            >
+              Home
+            </a>
+          </li>
+          <li
+            class="nav-item "
+          >
+            <a
+              class="nav-link "
+              href="/streams"
+            >
+              Streams
+            </a>
+          </li>
+          <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link spa"
+              href="/multi-period-streams"
+            >
+              Multi-Period
+            </a>
+          </li>
+          <li
+            class="nav-item "
+          >
+            <a
+              class="nav-link "
+              href="/validate/"
+            >
+              Validate
+            </a>
+          </li>
+          <li
+            class="nav-item "
+          >
+            <a
+              class="nav-link "
+              href="/media/inspect"
+            >
+              Inspect
+            </a>
+          </li>
+          <li
+            class="nav-item user-login"
+          >
+            <a
+              class="nav-link"
+              href="/login"
+            >
+              Log In
             </a>
           </li>
         </ul>
