@@ -1,4 +1,4 @@
-name: check JavaScript source
+name: check JavaScript & Typescript source
 
 on:
   push:
@@ -21,9 +21,9 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
-      - name: JS lint checks for ES5 code
+      - name: JS lint checks for legacy JavaScript code
         run: npm run lint:compat
-      - name: JS lint checks for ESM code
-        run: npm run lint:esm
-      - name: Unit tests of ESM code
+      - name: JS lint checks of frontend code
+        run: npm run lint
+      - name: Unit tests of frontend code
         run: npm run coverage
