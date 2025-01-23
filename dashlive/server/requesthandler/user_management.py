@@ -17,7 +17,7 @@ from flask.views import MethodView
 
 from dashlive.server.models.db import db
 from dashlive.server.models.group import Group
-from dashlive.server.models.token import TokenType, Token
+from dashlive.server.models.token import EncodedJWTokenJson, TokenType, Token
 from dashlive.server.models.user import User
 from dashlive.utils.json_object import JsonObject
 
@@ -25,7 +25,6 @@ from .base import HTMLHandlerBase, DeleteModelBase
 from .csrf import CsrfProtection, CsrfTokenCollection
 from .decorators import login_required, modifies_user_model, modifying_user
 from .exceptions import CsrfFailureException
-from .spa_context import EncodedJWTokenJson
 from .utils import is_ajax, jsonify, jsonify_no_content
 
 def decorate_user(user: User) -> JsonObject:
