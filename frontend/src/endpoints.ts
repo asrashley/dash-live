@@ -84,6 +84,7 @@ export class ApiRequests {
     const needsCheck = token !== null && token !== this.refreshToken;
     this.refreshToken = token;
     this.refreshTokenNeedsCheck = needsCheck;
+    log.trace(`Set refresh token. Needs check: ${needsCheck}`);
   }
 
   async getAllManifests(options: Partial<ApiRequestOptions> = {}): Promise<AllManifests> {
