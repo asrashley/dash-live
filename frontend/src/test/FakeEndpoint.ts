@@ -2,7 +2,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { readFile } from 'node:fs/promises';
 import fetchMock from '@fetch-mock/vitest';
-import type { CallLog, RouteResponse } from 'fetch-mock';
+import type { CallLog } from 'fetch-mock';
 import log from 'loglevel';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -23,7 +23,7 @@ export type HttpRequestHandler = (props: ServerRouteProps) => Promise<HttpReques
 export type HttpRequestModifier = (props: ServerRouteProps, response: HttpRequestHandlerResponse) => Promise<HttpRequestHandlerResponse>;
 
 type PendingPromiseType = {
-    resolve: (value: RouteResponse) => void;
+    resolve: (value: HttpRequestHandlerResponse) => void;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     reject: (reason?: any) => void;
 };
@@ -78,9 +78,9 @@ export class FakeEndpoint {
         this.responseModifiers.set(key, fn);
     }
 
-    addResponsePromise(method: string, url: string): Promise<RouteResponse> {
+    addResponsePromise(method: string, url: string): Promise<HttpRequestHandlerResponse> {
         const key = `${method.toLowerCase()}.${url}`;
-        return new Promise<RouteResponse>((resolve, reject) => {
+        return new Promise<HttpRequestHandlerResponse>((resolve, reject) => {
             this.pendingPromises.set(key, { resolve, reject });
         });
     }
