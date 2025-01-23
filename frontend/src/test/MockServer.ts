@@ -31,6 +31,18 @@ export type UserModel = {
     accessToken: JWToken | null;
 };
 
+const guestUser: UserModel = {
+    pk: 3,
+    username: '_AnonymousUser_',
+    email: '_AnonymousUser_',
+    password: randomToken(20),
+    lastLogin: null,
+    mustChange: false,
+    groups: [],
+    accessToken: null,
+    refreshToken: null,
+};
+
 export const normalUser: UserModel = {
     pk: 100,
     username: 'user',
@@ -93,6 +105,7 @@ export class MockDashServer {
     private refreshTokenLifetime: number;
     private userDatabase: UserModel[] = structuredClone([
         adminUser,
+        guestUser,
         normalUser,
         mediaUser,
     ]);
@@ -179,6 +192,17 @@ export class MockDashServer {
 
     getUser({ email, username }: Partial<UserModel>): UserModel | undefined {
         return this.userDatabase.find(usr => usr.username === username || usr.email === email);
+    }
+
+    getGuestAccessToken(): JWToken {
+        const user = this.userDatabase.find(usr => usr.username === guestUser.username);
+        if (!user) {
+            throw new Error('Guest user not found');
+        }
+        if (!user.accessToken){
+            user.accessToken = this.generateAccessToken(user.username);
+        }
+        return user.accessToken;
     }
 
     modifyUser(props: Partial<UserModel>): boolean {
