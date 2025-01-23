@@ -1,5 +1,6 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import { act, fireEvent, render } from "@testing-library/preact";
+import fetchMock from '@fetch-mock/vitest';
 import { useContext } from "preact/hooks";
 import { useLocation } from 'wouter-preact';
 import log from "loglevel";
@@ -9,9 +10,10 @@ import { navbar } from "@dashlive/init";
 import { App } from "./App";
 import { AppStateContext, AppStateType } from "./appState";
 import { mediaUser, MockDashServer, UserModel } from "./test/MockServer";
-import { FakeEndpoint } from "./test/FakeEndpoint";
+import { FakeEndpoint, HttpRequestHandlerResponse } from "./test/FakeEndpoint";
 import { JWToken } from "./types/JWToken";
 import { LocalStorageKeys } from "./hooks/useLocalStorage";
+import { routeMap, uiRouteMap } from "@dashlive/routemap";
 
 vi.mock('wouter-preact', async (importOriginal) => {
   return {
@@ -33,6 +35,7 @@ describe("main entry-point app", () => {
   let baseElement: HTMLDivElement;
   let user: UserModel;
   let accessToken: JWToken | null;
+  let userPromise: Promise<HttpRequestHandlerResponse>;
 
   beforeAll(() => {
     vi.stubGlobal('location', mockLocation);
@@ -44,32 +47,36 @@ describe("main entry-point app", () => {
 
   beforeEach(() => {
     log.setLevel('error');
+    useLocationSpy.mockImplementation(() => [mockLocation.pathname, setLocation]);
     endpoint = new FakeEndpoint(document.location.origin);
     server = new MockDashServer({
       endpoint,
     });
     user = server.login(mediaUser.email, mediaUser.password);
     expect(user).not.toBeNull();
-    accessToken = null;
+    accessToken = server.getGuestAccessToken();
     localStorage.setItem(LocalStorageKeys.REFRESH_TOKEN, JSON.stringify(user.refreshToken));
     document.body.innerHTML = '<div id="app" />';
     const app = document.getElementById('app');
     expect(app).not.toBeNull();
     baseElement = app as HTMLDivElement;
+    userPromise = endpoint.addResponsePromise('get', routeMap.login.url());
   });
 
   afterEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    endpoint.shutdown();
+    fetchMock.mockReset();
   });
 
   test("matches snapshot for home page", async () => {
     mockLocation.pathname = "/";
-    useLocationSpy.mockReturnValue([mockLocation.pathname, setLocation]);
     const { asFragment, findByText } = render(
       <App accessToken={accessToken} navbar={navbar} />,
       { baseElement }
     );
+    await userPromise;
     await findByText("Log Out");
     await findByText("Hand-made manifest");
     await findByText("Stream to play");
@@ -79,13 +86,45 @@ describe("main entry-point app", () => {
     expect(asFragment()).toMatchSnapshot();
   });
 
-  test("matches snapshot for list MPS", async () => {
-    mockLocation.pathname = '/multi-period-streams';
-    useLocationSpy.mockReturnValue([mockLocation.pathname, setLocation]);
+  test("matches snapshot for home page when user not logged in", async () => {
+    mockLocation.pathname = "/";
+    localStorage.clear();
     const { asFragment, findByText } = render(
       <App accessToken={accessToken} navbar={navbar} />,
       { baseElement }
     );
+    await findByText("Log In");
+    await findByText("Hand-made manifest");
+    await findByText("Stream to play");
+    await findByText("Video Player:");
+    await findByText("Play Big Buck Bunny");
+    await findByText("/dash/vod/bbb/hand_made.mpd", { exact: false });
+    expect(asFragment()).toMatchSnapshot();
+  });
+
+  test("matches snapshot for CGI options", async () => {
+    mockLocation.pathname = uiRouteMap.cgiOptions.url();
+    const listMpsProm = endpoint.addResponsePromise('get', routeMap.cgiOptions.url());
+    const { asFragment, findByText } = render(
+      <App accessToken={accessToken} navbar={navbar} />,
+      { baseElement }
+    );
+    await userPromise;
+    await listMpsProm;
+    await findByText("Log Out");
+    await findByText("Enable or disable adaptive bitrate");
+    expect(asFragment()).toMatchSnapshot();
+  });
+
+  test("matches snapshot for list MPS", async () => {
+    mockLocation.pathname = uiRouteMap.listMps.url();
+    const listMpsProm = endpoint.addResponsePromise('get', routeMap.listMps.url());
+    const { asFragment, findByText } = render(
+      <App accessToken={accessToken} navbar={navbar} />,
+      { baseElement }
+    );
+    await userPromise;
+    await listMpsProm;
     await findByText("Log Out");
     await findByText('first title');
     await findByText('Add a Stream');
@@ -93,12 +132,12 @@ describe("main entry-point app", () => {
   });
 
   test("matches snapshot for edit MPS", async () => {
-    mockLocation.pathname = '/multi-period-streams/demo';
-    useLocationSpy.mockReturnValue([mockLocation.pathname, setLocation]);
+    mockLocation.pathname = uiRouteMap.editMps.url({ mps_name: 'demo' });
     const { asFragment, findByText, findAllByText } = render(
       <App accessToken={accessToken} navbar={navbar} />,
       { baseElement }
     );
+    await userPromise;
     await findByText("Log Out");
     await findByText("Delete Stream");
     await findByText('"europe-ntp"');
@@ -108,7 +147,6 @@ describe("main entry-point app", () => {
 
   test("unknown page", async () => {
     mockLocation.pathname = '/unknown';
-    useLocationSpy.mockReturnValue([mockLocation.pathname, setLocation]);
     const { findByText } = render(
       <App accessToken={accessToken} navbar={navbar} />,
       { baseElement }
@@ -123,7 +161,6 @@ describe("main entry-point app", () => {
       return <div />;
     };
     mockLocation.pathname = "/";
-    useLocationSpy.mockReturnValue([mockLocation.pathname, setLocation]);
     const { findByText } = render(
       <App accessToken={accessToken} navbar={navbar}><StateSpy /></App>,
       { baseElement }
@@ -148,7 +185,6 @@ describe("main entry-point app", () => {
 
   test("doesn't reload page when navigating to another SPA page", async () => {
     mockLocation.pathname = "/";
-    useLocationSpy.mockReturnValue(["/", setLocation]);
     const { findByText } = render(
       <App accessToken={accessToken}  navbar={navbar} />,
       { baseElement }
@@ -159,5 +195,30 @@ describe("main entry-point app", () => {
     fireEvent.click(elt);
     expect(setLocation).toHaveBeenCalled();
     expect(setLocation).toHaveBeenCalledWith('/multi-period-streams');
+  });
+
+  test("redirects to login page if refresh token has expired", async () => {
+    mockLocation.pathname = uiRouteMap.editMps.url({ mps_name: 'demo' });
+    const refreshProm = endpoint.addResponsePromise('get', routeMap.refreshAccessToken.url());
+    const locationProm = new Promise<string>(resolve => {
+      setLocation.mockImplementationOnce((url: string) => {
+        mockLocation.pathname = url;
+        resolve(url);
+      });
+    });
+    const expired: JWToken ={
+      jwt: 'expired',
+      expires: '2021-01-01T00:00:00Z',
+    };
+    localStorage.setItem(LocalStorageKeys.REFRESH_TOKEN, JSON.stringify(expired));
+    const { findByText } = render(
+      <App accessToken={accessToken} navbar={navbar} />,
+      { baseElement }
+    );
+    await refreshProm;
+    await expect(locationProm).resolves.toEqual(uiRouteMap.login.url());
+    await findByText("Log In");
+    expect(setLocation).toHaveBeenCalledTimes(1);
+    expect(setLocation).toHaveBeenCalledWith(uiRouteMap.login.url());
   });
 });
