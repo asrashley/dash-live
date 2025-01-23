@@ -100,4 +100,21 @@ export const commonConfig = ({ publicPath, tsConfigFile, devMode }) => ({
       }),
     }),
   ],
+  optimization: {
+    chunkIds: 'named',
+    splitChunks: {
+      cacheGroups: {
+        styles: {
+          name: (module, _chunks, cacheGroupKey) => {
+            const filename = module.identifier().split('|').find((item) => (/\.less$/i).test(item));
+            const modName = filename ? path.basename(filename, '.less') : cacheGroupKey;
+            return `css/${cacheGroupKey}-${modName}`;
+          },
+          test: (m) => m.constructor.name === 'CssModule',
+          chunks: 'all',
+          enforce: true,
+        },
+      },
+    },
+  },
 });
