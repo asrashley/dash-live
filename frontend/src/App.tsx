@@ -17,6 +17,7 @@ import { AppStateContext, AppStateType, createAppState } from "./appState";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { NavBarItem } from "./types/NavBarItem";
 import { useWhoAmI, WhoAmIContext } from "./hooks/useWhoAmI";
+import { Footer } from "./components/Footer";
 
 const AddStreamPage = lazy(
   () => import("./mps/components/AddStreamPage"),
@@ -95,6 +96,7 @@ export function App({ children, navbar }: AppProps) {
             <AppRoutes />
             {children}
           </div>
+          <Footer />
         </EndpointContext.Provider>
       </WhoAmIContext.Provider>
       <ModalBackdrop />
