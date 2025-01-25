@@ -31,7 +31,7 @@ export type UserModel = {
     accessToken: JWToken | null;
 };
 
-const guestUser: UserModel = {
+export const guestUser: UserModel = {
     pk: 3,
     username: '_AnonymousUser_',
     email: '_AnonymousUser_',
@@ -319,11 +319,14 @@ export class MockDashServer {
 
     private refreshAccessToken = async ({ options}: ServerRouteProps) => {
         const { headers } = options;
-        if (!headers['authorization']) {
-            return jsonResponse('Missing Authorization header', 401);
+        let user: UserModel | undefined;
+        if (headers['authorization']) {
+            const token = (headers['authorization'] as string).split(' ')[1];
+            user = this.userDatabase.find(usr => usr.refreshToken?.jwt === token);
+        } else {
+            log.trace('Request does not contain an Authorization header, using guest user');
+            user = this.findUser({ pk: guestUser.pk})
         }
-        const token = (headers['authorization'] as string).split(' ')[1];
-        const user = this.userDatabase.find(usr => usr.refreshToken?.jwt === token);
         if (!user) {
             return jsonResponse('Refresh token mismatch', 401);
         }

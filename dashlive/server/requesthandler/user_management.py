@@ -11,7 +11,7 @@ import logging
 from typing import NotRequired, TypedDict, cast
 
 import flask
-from flask_jwt_extended import get_jwt, jwt_required, current_user as jwt_current_user
+from flask_jwt_extended import get_current_user, get_jwt, jwt_required, current_user as jwt_current_user
 from flask_login import current_user, login_user, logout_user
 from flask.views import MethodView
 
@@ -308,13 +308,15 @@ def generate_csrf_tokens() -> CsrfTokenCollection:
 
 class RefreshAccessToken(MethodView):
     decorators = [
-        login_required(),
-        jwt_required(refresh=True),
+        jwt_required(refresh=True, optional=True),
     ]
 
     def get(self) -> flask.Response:
-        access_token: EncodedJWTokenJson = Token.generate_api_token(
-            current_user, TokenType.ACCESS)
+        user: User | None = get_current_user()
+        if user is None:
+            user = User.get_guest_user()
+        assert user is not None
+        access_token: EncodedJWTokenJson = Token.generate_api_token(user, TokenType.ACCESS)
         return jsonify({
             'accessToken': access_token,
             'csrfTokens': generate_csrf_tokens().to_dict(),

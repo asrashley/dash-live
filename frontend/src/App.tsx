@@ -16,7 +16,6 @@ import { ApiRequests, EndpointContext } from "./endpoints";
 import { AppStateContext, AppStateType, createAppState } from "./appState";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { NavBarItem } from "./types/NavBarItem";
-import { JWToken } from "./types/JWToken";
 import { useWhoAmI, WhoAmIContext } from "./hooks/useWhoAmI";
 
 const AddStreamPage = lazy(
@@ -59,16 +58,14 @@ function AppRoutes() {
 }
 
 export interface AppProps {
-  accessToken: JWToken | null;
   navbar: NavBarItem[];
   children?: ComponentChildren;
 }
 
-export function App({ children, navbar, accessToken }: AppProps) {
+export function App({ children, navbar }: AppProps) {
   const setLocation = useLocation()[1];
   const { refreshToken } = useLocalStorage();
   const whoAmI = useWhoAmI();
-  const defaultAccessToken = useRef(accessToken);
   const needsRefreshToken = useCallback(() => {
     setLocation(uiRouteMap.login.url());
   }, [setLocation]);
@@ -86,10 +83,6 @@ export function App({ children, navbar, accessToken }: AppProps) {
 
   useSignalEffect(() => {
     apiRequests.current.setRefreshToken(refreshToken.value);
-    if (refreshToken.value === null) {
-      apiRequests.current.setAccessToken(defaultAccessToken.current);
-      defaultAccessToken.current = null;
-    }
   });
 
   return (

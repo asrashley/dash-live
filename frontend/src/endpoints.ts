@@ -27,9 +27,9 @@ type TokenStoreCollection = {
 };
 
 export type ApiRequestOptions = {
-  authorization?: string;
-  body: RequestInit['body'];
-  service: keyof TokenStoreCollection;
+  authorization?: string | null;
+  body?: RequestInit['body'];
+  service?: keyof TokenStoreCollection;
   signal?: AbortSignal;
   method: RequestInit['method'];
   rejectOnError?: boolean;
@@ -257,7 +257,11 @@ export class ApiRequests {
   }
 
   private async sendProtectedApiRequest<T>(url: string, options: Partial<ApiRequestOptions>): Promise<T> {
-    const ok = await this.isRefreshTokenValid(options.signal);
+    let ok = await this.isRefreshTokenValid(options.signal);
+    if (!ok && this.refreshToken === null) {
+      await this.getAccessToken(options.signal);
+      ok = this.accessToken !== null;
+    }
     if (!ok && options.rejectOnError) {
       throw new Error('This API request needs an access token');
     }
@@ -286,9 +290,9 @@ export class ApiRequests {
     const headers: Headers = new Headers({
       "Content-Type": "application/json",
     });
-    if (authorization !== undefined) {
+    if (typeof authorization === "string") {
       headers.set('Authorization', `Bearer ${authorization}`);
-    } else if (this.accessToken) {
+    } else if (authorization !== null && this.accessToken) {
         headers.set('Authorization', `Bearer ${this.accessToken.jwt}`);
         usedAccessToken = true;
     } else if (service) {
@@ -371,11 +375,9 @@ export class ApiRequests {
   }
 
   private async getAccessToken(signal: AbortSignal): Promise<JWToken> {
-    if (!this.refreshToken) {
-      throw new Error('Cannot request an access token without a refresh token');
-    }
-    const options = {
-      authorization: this.refreshToken.jwt,
+    const options: ApiRequestOptions = {
+      method: 'GET',
+      authorization: this.refreshToken?.jwt || null,
       rejectOnError: false,
       signal,
     };
