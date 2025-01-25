@@ -224,17 +224,19 @@ class FrontendDatabaseAccess(DatabaseAccess):
             try:
                 js = result.json()
             except (ValueError) as err:
-                js = {'error': str(err)}
+                js = {'errors': [str(err)]}
             if 'csrf_token' in js:
                 stream.csrf_tokens['files'] = js['csrf_token']
                 params['csrf_token'] = js['csrf_token']
-            if result.status_code == 200 and 'error' not in js:
+            errors: list[str] | None = js.get('errors')
+            if result.status_code == 200 and not errors:
                 stream.media_files[name.stem]['representation'] = js['representation']
                 return True
             self.log.warning('HTTP status %d', result.status_code)
             self.log.debug('HTTP headers %s', str(result.headers))
-            if 'error' in js:
-                self.log.error('%s', str(js['error']))
+            if errors is not None:
+                for err in errors:
+                    self.log.error('%s', err)
             if result.status_code != 404 or timeout == 0:
                 if timeout == 0:
                     self.log.error('Timeout uploading file "%s"', name)
