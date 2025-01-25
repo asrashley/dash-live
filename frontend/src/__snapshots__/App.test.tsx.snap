@@ -2520,6 +2520,34 @@ exports[`main entry-point app > matches snapshot for CGI options 1`] = `
       </table>
     </div>
   </div>
+  <footer
+    class="bg-body-tertiary footer row border-top border-secondary-subtle"
+  >
+    <div
+      class="col-3 github-link"
+    >
+      <div>
+        <a
+          href="https://github.com/asrashley/dash-live"
+        >
+          github.com/asrashley/dash-live
+        </a>
+      </div>
+      <div>
+        12345abcde
+      </div>
+    </div>
+    <div
+      class="col-6 text-center service-name"
+    >
+      Simulated MPEG DASH service
+    </div>
+    <div
+      class="col-3 text-end copyright"
+    >
+      ©2025 Alexis Ashley
+    </div>
+  </footer>
   <div
     class="modal-backdrop hidden"
   />
@@ -3111,6 +3139,34 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
       </div>
     </div>
   </div>
+  <footer
+    class="bg-body-tertiary footer row border-top border-secondary-subtle"
+  >
+    <div
+      class="col-3 github-link"
+    >
+      <div>
+        <a
+          href="https://github.com/asrashley/dash-live"
+        >
+          github.com/asrashley/dash-live
+        </a>
+      </div>
+      <div>
+        12345abcde
+      </div>
+    </div>
+    <div
+      class="col-6 text-center service-name"
+    >
+      Simulated MPEG DASH service
+    </div>
+    <div
+      class="col-3 text-end copyright"
+    >
+      ©2025 Alexis Ashley
+    </div>
+  </footer>
   <div
     class="modal-backdrop hidden"
   />
@@ -5250,6 +5306,34 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
       </p>
     </div>
   </div>
+  <footer
+    class="bg-body-tertiary footer row border-top border-secondary-subtle"
+  >
+    <div
+      class="col-3 github-link"
+    >
+      <div>
+        <a
+          href="https://github.com/asrashley/dash-live"
+        >
+          github.com/asrashley/dash-live
+        </a>
+      </div>
+      <div>
+        12345abcde
+      </div>
+    </div>
+    <div
+      class="col-6 text-center service-name"
+    >
+      Simulated MPEG DASH service
+    </div>
+    <div
+      class="col-3 text-end copyright"
+    >
+      ©2025 Alexis Ashley
+    </div>
+  </footer>
   <div
     class="modal-backdrop hidden"
   />
@@ -7389,6 +7473,34 @@ exports[`main entry-point app > matches snapshot for home page when user not log
       </p>
     </div>
   </div>
+  <footer
+    class="bg-body-tertiary footer row border-top border-secondary-subtle"
+  >
+    <div
+      class="col-3 github-link"
+    >
+      <div>
+        <a
+          href="https://github.com/asrashley/dash-live"
+        >
+          github.com/asrashley/dash-live
+        </a>
+      </div>
+      <div>
+        12345abcde
+      </div>
+    </div>
+    <div
+      class="col-6 text-center service-name"
+    >
+      Simulated MPEG DASH service
+    </div>
+    <div
+      class="col-3 text-end copyright"
+    >
+      ©2025 Alexis Ashley
+    </div>
+  </footer>
   <div
     class="modal-backdrop hidden"
   />
@@ -7650,6 +7762,34 @@ exports[`main entry-point app > matches snapshot for list MPS 1`] = `
       </a>
     </div>
   </div>
+  <footer
+    class="bg-body-tertiary footer row border-top border-secondary-subtle"
+  >
+    <div
+      class="col-3 github-link"
+    >
+      <div>
+        <a
+          href="https://github.com/asrashley/dash-live"
+        >
+          github.com/asrashley/dash-live
+        </a>
+      </div>
+      <div>
+        12345abcde
+      </div>
+    </div>
+    <div
+      class="col-6 text-center service-name"
+    >
+      Simulated MPEG DASH service
+    </div>
+    <div
+      class="col-3 text-end copyright"
+    >
+      ©2025 Alexis Ashley
+    </div>
+  </footer>
   <div
     class="modal-backdrop hidden"
   />
