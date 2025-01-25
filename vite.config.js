@@ -37,10 +37,6 @@ export default defineConfig({
 	resolve: {
 		alias: [
 			{
-				find: '@dashlive/init',
-				replacement: resolve(projectRootDir, 'frontend/src/test/fixtures/initialAppState.js')
-			},
-			{
 				find: '@dashlive/routemap',
 				replacement: resolve(projectRootDir, 'frontend/src/test/fixtures/routemap.js')
 			},

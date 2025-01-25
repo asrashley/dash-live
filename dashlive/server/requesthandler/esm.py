@@ -14,8 +14,7 @@ from flask.views import MethodView  # type: ignore
 
 from dashlive.components.field_group import InputFieldGroupJson
 from dashlive.drm.system import DrmSystem
-from dashlive.server.models.token import EncodedJWTokenJson, Token, TokenType
-from dashlive.server.models.user import User
+from dashlive.server.models.token import EncodedJWTokenJson
 from dashlive.server.options.container import OptionsContainer
 from dashlive.server.options.dash_option import DashOption
 from dashlive.server.options.repository import OptionsRepository
@@ -24,7 +23,7 @@ from dashlive.mpeg.dash.content_role import ContentRole
 from dashlive.server.routes import routes, ui_routes, RouteJavaScript
 from dashlive.utils.json_object import JsonObject
 
-from .csrf import CsrfProtection, CsrfTokenCollection, CsrfTokenCollectionJson
+from .csrf import CsrfTokenCollectionJson
 from .navbar import create_navbar_context, NavBarItem
 from .utils import jsonify
 
@@ -78,9 +77,10 @@ class RouteMap(MethodView):
         ui_route_map: dict[str, RouteJavaScript] = {}
         for name, route in ui_routes.items():
             ui_route_map[self.to_camel_case(name)] = route.to_javascript()
-
+        navbar: list[NavBarItem] = create_navbar_context(with_login=False)
         body: str = flask.render_template(
-            'esm/routemap.tjs', routes=route_map, ui_routes=ui_route_map)
+            'esm/routemap.tjs', routes=route_map, ui_routes=ui_route_map,
+            navbar=navbar)
         headers: dict[str, str] = {
             'Content-Type': 'application/javascript',
             'Content-Length': len(body),
@@ -156,21 +156,6 @@ class OptionFieldGroups(MethodView):
             short_options=options.generate_short_parameters(remove_defaults=False),
             drm_systems=DrmSystem.values(),
             field_groups=field_groups)
-        headers: dict[str, str] = {
-            'Content-Type': 'application/javascript',
-            'Content-Length': len(body),
-        }
-        return flask.make_response((body, 200, headers))
-
-
-class InitialAppState(MethodView):
-    """
-    Handler that is used to populate the initial app state for the development
-    server used by webpack-dev-server
-    """
-    def get(self) -> flask.Response:
-        navbar: list[NavBarItem] = create_navbar_context(with_login=False)
-        body: str = flask.render_template('esm/initial_app_state.tjs', navbar=navbar)
         headers: dict[str, str] = {
             'Content-Type': 'application/javascript',
             'Content-Length': len(body),

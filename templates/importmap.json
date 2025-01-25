@@ -1,6 +1,5 @@
 {
   "imports": {
-    "@dashlive/init": "{{ url_for('initial-app-state') }}",
     "@dashlive/options": "{{ url_for('option-field-groups') }}",
     "@dashlive/routemap": "{{ url_for('route-map') }}",
     "jquery": "/libs/jquery.js",
