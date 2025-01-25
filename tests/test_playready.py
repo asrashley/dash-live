@@ -26,6 +26,7 @@ from concurrent.futures import ThreadPoolExecutor
 import io
 import logging
 import os
+from pathlib import Path
 from typing import Any
 import unittest
 import urllib.request
@@ -525,16 +526,20 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             self.la_url, "1AB45440532C439994DC5C5AD9584BAC", keys).encode()
         self.check_generated_pssh_v4_3(keys, mspr, pssh)
 
-    def test_insert_pssh(self):
+    def test_insert_pssh(self) -> None:
         """
         Generate a PlayReady pssh box and insert it into an init segment
         """
         self.assertEqual(len(self.keys), 1)
-        filename = self.FIXTURES_PATH / BBB_FIXTURE.name / 'bbb_a1_enc.mp4'
+        filename: Path = self.REAL_FIXTURES_PATH / BBB_FIXTURE.name / 'bbb_a1_enc.mp4'
         options = mp4.Options(mode='rw')
+        # loading this MP4 file using pyfakefs fails when it tries to seek inside the file
+        self.fs.pause()
         with filename.open('rb') as f:
             with io.BufferedReader(f) as src:
+                assert src is not None
                 segments = mp4.Mp4Atom.load(src, options=options)
+        self.fs.resume()
         init_seg = mp4.Wrapper(atom_type='wrap', options=options)
         for seg in segments:
             if seg.atom_type == 'moof':

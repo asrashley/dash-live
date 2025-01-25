@@ -8,14 +8,11 @@
 
 import json
 import logging
-from pathlib import Path
-from typing import ClassVar
 import unittest
 from urllib.parse import urlparse, parse_qs
 
 from bs4 import BeautifulSoup
 import flask
-from pyfakefs.fake_filesystem_unittest import TestCaseMixin
 
 from dashlive.server import manifests, models
 from dashlive.server.options.types import OptionUsage
@@ -24,10 +21,7 @@ from dashlive.server.template_tags import dateTimeFormat, sizeFormat
 from .mixins.flask_base import FlaskTestBase
 from .mixins.stream_fixtures import BBB_FIXTURE
 
-class TestHtmlPageHandlers(FlaskTestBase, TestCaseMixin):
-    TEMPLATES_PATH: ClassVar[Path] = (Path(__file__).parent.parent / "templates").absolute()
-    STATIC_PATH: ClassVar[Path] = (Path(__file__).parent.parent / "static").absolute()
-
+class TestHtmlPageHandlers(FlaskTestBase):
     def _assert_true(self, result, a, b, msg, template):
         if not result:
             current_url = getattr(self, "current_url")
@@ -37,23 +31,7 @@ class TestHtmlPageHandlers(FlaskTestBase, TestCaseMixin):
                 raise AssertionError(msg)
             raise AssertionError(template.format(a, b))
 
-    def setup_fake_fs(self) -> None:
-        self.setUpPyfakefs()
-        self.fs.add_real_directory(self.FIXTURES_PATH, read_only=True, lazy_read=True)
-        self.fs.add_real_directory(self.TEMPLATES_PATH, read_only=True, lazy_read=True)
-        self.fs.create_dir(f"{self.STATIC_PATH}")
-        self.fs.create_dir(f"{self.STATIC_PATH / 'html'}")
-        html_page: str = """<!doctype html>
-<html lang="en">
-<body>
-  <div id="app"></div>
-</body>
-</html>
-"""
-        self.fs.create_file(f"{self.STATIC_PATH / 'html' / 'index.html'}", encoding="utf-8", contents=html_page)
-
     def test_spa_index_page(self) -> None:
-        self.setup_fake_fs()
         url: str = flask.url_for('home')
         # self.logout_user()
         response = self.client.get(url)

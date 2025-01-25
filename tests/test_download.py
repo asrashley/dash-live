@@ -56,16 +56,17 @@ class TestDownloadDatabase(FlaskTestBase):
             ky.add()
             models.db.session.commit()
         self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)
-        tmpdir = self.create_upload_folder()
+        tmpdir: Path = Path('/tmp/download-test')
+        tmpdir.mkdir(parents=True, exist_ok=True)
         fdb = FrontendDatabaseAccess(
             url=flask.url_for('home'),
             username=self.MEDIA_USER,
             password=self.MEDIA_PASSWORD,
             session=ClientHttpSession(self.client))
         dd = DownloadDatabase(fdb)
-        result = dd.download_database(Path(tmpdir))
+        result: bool = dd.download_database(Path(tmpdir))
         self.assertTrue(result)
-        jsonfile = Path(tmpdir) / dd.OUTPUT_NAME
+        jsonfile: Path = tmpdir / dd.OUTPUT_NAME
         self.assertTrue(jsonfile.exists(), msg=f'{jsonfile} does not exist')
         with jsonfile.open('rt', encoding='utf-8') as src:
             js = json.load(src)

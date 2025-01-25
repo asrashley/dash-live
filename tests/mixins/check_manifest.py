@@ -403,12 +403,17 @@ class DashManifestCheckMixin:
                     mps=mps, options=options)
                 text = flask.render_template(
                     f'manifests/{mpd_filename}', **context)
-        fixture: Path = self.fixture_filename(
+        fixture, real_fixture = self.fixture_filename(
             mpd_filename, mode, encrypted, mps_name is not None)
-        if not fixture.exists():
-            with fixture.open('wt', encoding='utf-8') as dest:
+        # reading XML from a file using ElementTree does not work with
+        # pyfakefs, so disable it when loading or creating the fixture
+        self.fs.pause()
+        if not real_fixture.exists():
+            print('Creating MPD fixture file', real_fixture)
+            with real_fixture.open('wt', encoding='utf-8') as dest:
                 dest.write(text)
-        expected = ET.parse(str(fixture)).getroot()
+        expected = ET.parse(str(real_fixture)).getroot()
+        self.fs.resume()
         actual = ET.fromstring(bytes(text, 'utf-8'))
         self.assertXmlEqual(expected, actual)
 
@@ -434,15 +439,14 @@ class DashManifestCheckMixin:
         }
         return context
 
-    @staticmethod
-    def fixture_filename(mpd_name: str, mode: str, encrypted: bool,
-                         multi_period: bool = False) -> Path:
+    def fixture_filename(self, mpd_name: str, mode: str, encrypted: bool,
+                         multi_period: bool = False) -> tuple[Path, Path]:
         """returns absolute file path of the given fixture"""
         name, ext = os.path.splitext(mpd_name)
         enc: str = '_enc' if encrypted else ''
         mps: str = 'mps_' if multi_period else ''
         filename = f'{name}_{mps}{mode}{enc}{ext}'
-        return Path(__file__).parent.parent / 'fixtures' / filename
+        return [self.FIXTURES_PATH / filename, self.REAL_FIXTURES_PATH / filename]
 
     xmlNamespaces = {
         'cenc': 'urn:mpeg:cenc:2013',
