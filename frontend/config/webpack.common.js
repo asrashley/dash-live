@@ -1,5 +1,7 @@
 import path from "path";
 import { fileURLToPath } from "url";
+import webpack from "webpack";
+import GitRevPlugin from "git-rev-webpack-plugin";
 
 import HtmlWebpackPlugin from "html-webpack-plugin";
 import MiniCssExtractPlugin from "mini-css-extract-plugin";
@@ -11,6 +13,9 @@ export const rootDir = path.resolve(
 );
 
 const dateNow = new Date();
+
+const gitRevPlugin = new GitRevPlugin();
+const gitHash = gitRevPlugin.hash();
 
 export const commonConfig = ({ publicPath, tsConfigFile, devMode }) => ({
   devtool: "source-map",
@@ -78,6 +83,10 @@ export const commonConfig = ({ publicPath, tsConfigFile, devMode }) => ({
   },
   plugins: [
     ...(devMode ? [] : [new MiniCssExtractPlugin()]),
+    gitRevPlugin,
+    new webpack.DefinePlugin({
+      _GIT_HASH_: JSON.stringify(gitHash),
+    }),
     new HtmlWebpackPlugin({
       filename: "index.html",
       template: path.join(rootDir, "frontend/html/index.hbs"),
@@ -93,6 +102,7 @@ export const commonConfig = ({ publicPath, tsConfigFile, devMode }) => ({
         template: {
           ...options,
           title: 'DASH live server',
+          gitHash,
           dateNow,
           publicPath,
         },
