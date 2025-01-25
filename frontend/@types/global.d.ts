@@ -1,0 +1,1 @@
+declare const _GIT_HASH_: string;
