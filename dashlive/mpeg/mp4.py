@@ -31,7 +31,7 @@ import logging
 import os
 import re
 import struct
-from typing import AbstractSet, Any, ClassVar, Optional, Union
+from typing import AbstractSet, Any, BinaryIO, ClassVar, Optional, Union
 
 import bitstring
 
@@ -371,7 +371,7 @@ class Mp4Atom(ObjectWithFields):
 
     @classmethod
     def load(cls,
-             src,
+             src: BinaryIO,
              parent: Optional["Mp4Atom"] = None,
              options: Options | None = None,
              lazy_load_atoms: bool = False,
@@ -434,7 +434,8 @@ class Mp4Atom(ObjectWithFields):
                 else:
                     encoded = src.peek(sz)[:sz]
                     if len(encoded) < sz:
-                        p = src.tell()
+                        p: int = src.tell()
+                        assert p is not None
                         encoded = src.read(sz)
                         src.seek(p)
             if Box.REQUIRED_PEERS is not None:

@@ -19,6 +19,8 @@ class PopulateDatabase:
     Helper class that uses a JSON file to describe a set of
     streams, keys and files that it will upload to the server.
     """
+    log: logging.Logger
+    db: DatabaseAccess
 
     def __init__(self, db: DatabaseAccess) -> None:
         self.db = db
