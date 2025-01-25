@@ -169,34 +169,13 @@ class InitialAppState(MethodView):
     server used by webpack-dev-server
     """
     def get(self) -> flask.Response:
-        user: User = User.get_guest_user()
-        context: SpaTemplateContext = self.create_template_context(user)
-        body: str = flask.render_template('esm/initial_app_state.tjs', **context)
+        navbar: list[NavBarItem] = create_navbar_context(with_login=False)
+        body: str = flask.render_template('esm/initial_app_state.tjs', navbar=navbar)
         headers: dict[str, str] = {
             'Content-Type': 'application/javascript',
             'Content-Length': len(body),
         }
         return flask.make_response((body, 200, headers))
-
-    @staticmethod
-    def create_template_context(user: User) -> SpaTemplateContext:
-        csrf_key: str = CsrfProtection.generate_cookie()
-        csrf_tokens = CsrfTokenCollection(
-            streams=CsrfProtection.generate_token('streams', csrf_key),
-            files=None,
-            kids=None,
-            upload=None)
-        access_token: EncodedJWTokenJson = Token.generate_api_token(user, TokenType.ACCESS).toJSON()
-        initial_tokens: InitialTokensType = {
-            'csrfTokens': csrf_tokens.to_dict(),
-            'accessToken': access_token,
-        }
-        navbar: list[NavBarItem] = create_navbar_context(with_login=False)
-        context: SpaTemplateContext = {
-            "navbar": navbar,
-            "initialTokens": initial_tokens,
-        }
-        return context
 
 
 class CgiOptionsPage(MethodView):

@@ -1,17 +1,3 @@
-export const initialTokens = {
-  accessToken: {
-    expires: "2025-01-07T22:06:17.130812Z",
-    jti: "eyJhbGciOiJIUzI1NiIsVCJ9.eyJmcmVzaCI6ZmFsc2UsImlqkKVvSYHTYyuY",
-  },
-  csrfTokens: {
-    files: null,
-    kids: null,
-    streams: "67676f9ndfvdfgaQNY1juxc2oIpHvgKAgil6LAs%3D%27",
-    upload: null,
-  },
-  refreshToken: null,
-};
-
 export const navbar = [
   {
     active: true,
@@ -44,10 +30,3 @@ export const navbar = [
     title: "Inspect",
   }
 ];
-
-export const user = {
-  groups: [],
-  isAuthenticated: false,
-  pk: 3,
-  username: "_AnonymousUser_",
-};

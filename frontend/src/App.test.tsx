@@ -73,7 +73,7 @@ describe("main entry-point app", () => {
   test("matches snapshot for home page", async () => {
     mockLocation.pathname = "/";
     const { asFragment, findByText } = render(
-      <App accessToken={accessToken} navbar={navbar} />,
+      <App navbar={navbar} />,
       { baseElement }
     );
     await userPromise;
@@ -90,7 +90,7 @@ describe("main entry-point app", () => {
     mockLocation.pathname = "/";
     localStorage.clear();
     const { asFragment, findByText } = render(
-      <App accessToken={accessToken} navbar={navbar} />,
+      <App navbar={navbar} />,
       { baseElement }
     );
     await findByText("Log In");
@@ -106,7 +106,7 @@ describe("main entry-point app", () => {
     mockLocation.pathname = uiRouteMap.cgiOptions.url();
     const listMpsProm = endpoint.addResponsePromise('get', routeMap.cgiOptions.url());
     const { asFragment, findByText } = render(
-      <App accessToken={accessToken} navbar={navbar} />,
+      <App navbar={navbar} />,
       { baseElement }
     );
     await userPromise;
@@ -120,7 +120,7 @@ describe("main entry-point app", () => {
     mockLocation.pathname = uiRouteMap.listMps.url();
     const listMpsProm = endpoint.addResponsePromise('get', routeMap.listMps.url());
     const { asFragment, findByText } = render(
-      <App accessToken={accessToken} navbar={navbar} />,
+      <App navbar={navbar} />,
       { baseElement }
     );
     await userPromise;
@@ -134,7 +134,7 @@ describe("main entry-point app", () => {
   test("matches snapshot for edit MPS", async () => {
     mockLocation.pathname = uiRouteMap.editMps.url({ mps_name: 'demo' });
     const { asFragment, findByText, findAllByText } = render(
-      <App accessToken={accessToken} navbar={navbar} />,
+      <App navbar={navbar} />,
       { baseElement }
     );
     await userPromise;
@@ -148,7 +148,7 @@ describe("main entry-point app", () => {
   test("unknown page", async () => {
     mockLocation.pathname = '/unknown';
     const { findByText } = render(
-      <App accessToken={accessToken} navbar={navbar} />,
+      <App navbar={navbar} />,
       { baseElement }
     );
     await findByText("Sorry I don't know about this page");
@@ -162,7 +162,7 @@ describe("main entry-point app", () => {
     };
     mockLocation.pathname = "/";
     const { findByText } = render(
-      <App accessToken={accessToken} navbar={navbar}><StateSpy /></App>,
+      <App navbar={navbar}><StateSpy /></App>,
       { baseElement }
     );
     await findByText("Stream to play");
@@ -186,7 +186,7 @@ describe("main entry-point app", () => {
   test("doesn't reload page when navigating to another SPA page", async () => {
     mockLocation.pathname = "/";
     const { findByText } = render(
-      <App accessToken={accessToken}  navbar={navbar} />,
+      <App navbar={navbar} />,
       { baseElement }
     );
     await findByText("Stream to play");
@@ -212,7 +212,7 @@ describe("main entry-point app", () => {
     };
     localStorage.setItem(LocalStorageKeys.REFRESH_TOKEN, JSON.stringify(expired));
     const { findByText } = render(
-      <App accessToken={accessToken} navbar={navbar} />,
+      <App navbar={navbar} />,
       { baseElement }
     );
     await refreshProm;

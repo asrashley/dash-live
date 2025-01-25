@@ -70,7 +70,7 @@ class EncodedJWToken(NamedTuple):
     jwt: str
     expires: datetime
 
-    def toJSON(self) -> EncodedJWTokenJson:
+    def toJSON(self, **kwargs) -> EncodedJWTokenJson:
         js: EncodedJWTokenJson = {
             "jwt": self.jwt,
             "expires": to_iso_datetime(self.expires),
@@ -114,6 +114,7 @@ class Token(ModelMixin["Token"], Base):
 
     @classmethod
     def generate_api_token(cls, user: "User", token_type: TokenType) -> EncodedJWToken:
+        assert user is not None
         expires: datetime = datetime.now() + KEY_LIFETIMES[token_type]
         if token_type == TokenType.REFRESH:
             jwt: str = create_refresh_token(identity=user.username)

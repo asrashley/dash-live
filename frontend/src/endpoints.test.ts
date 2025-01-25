@@ -5,7 +5,7 @@ import log from 'loglevel';
 
 import { routeMap } from "@dashlive/routemap";
 
-import { MockDashServer, normalUser, UserModel } from "./test/MockServer";
+import { guestUser, MockDashServer, normalUser, UserModel } from "./test/MockServer";
 import { FakeEndpoint, HttpRequestHandlerResponse, ServerRouteProps } from "./test/FakeEndpoint";
 import { ApiRequests } from "./endpoints";
 import { DecoratedMultiPeriodStream } from "./types/DecoratedMultiPeriodStream";
@@ -322,6 +322,23 @@ describe('endpoints', () => {
         expect(server.getUser({ username })?.accessToken).not.toBeNull();
     });
 
+    test('gets a guest access token when there is no refresh token', async () => {
+        api.setRefreshToken(null);
+        const prom = endpoint.addResponsePromise('get', routeMap.refreshAccessToken.url());
+        await expect(api.getMultiPeriodStream( 'demo')).resolves.toEqual(demoMps);
+        const response: RouteResponse = await prom;
+        expect(response).toEqual(expect.objectContaining({
+            status: 200,
+            body: expect.any(String),
+        }));
+        const body = JSON.parse(response['body']);
+        const user = server.getUser({ username: guestUser.username });
+        expect(user).toBeDefined();
+        expect(body).toEqual(expect.objectContaining({
+            accessToken: user?.accessToken,
+        }));
+    });
+
     test('refreshes an access token', async () => {
         const { username } = normalUser;
         api.setRefreshToken(user.refreshToken);
@@ -340,10 +357,6 @@ describe('endpoints', () => {
         api.setAccessToken(null);
         await expect(api.getMultiPeriodStream('demo')).resolves.toEqual(demoMps);
         expect(server.getUser({ username })?.accessToken).not.toBeNull();
-    });
-
-    test('generates error trying to refresh CSRF tokens without any JWT tokens', async () => {
-        await expect(api.getMultiPeriodStream('demo')).rejects.toThrow(routeMap.editMps.url({mps_name: "demo"}));
     });
 
     test('generates error trying to refresh CSRF tokens with invalid refresh token', async () => {
