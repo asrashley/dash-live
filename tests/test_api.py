@@ -260,7 +260,7 @@ class TestRestApi(FlaskTestBase):
                 "indexed": media_file.pk,
                 "representation": media_file.rep,
             })
-        self.assertObjectEqual(expected, actual)
+        self.assertDictEqual(expected, actual)
 
     def test_delete_stream(self):
         self.assertEqual(models.Stream.count(), 0)
@@ -672,7 +672,6 @@ class TestRestApi(FlaskTestBase):
         self.assert401(response)
 
         self.login_user(is_admin=True)
-        self.create_upload_folder()
         # print('==== get upload form ====')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)

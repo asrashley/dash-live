@@ -29,7 +29,6 @@ from dashlive.server.models import Blob
 from .mixins.flask_base import FlaskTestBase
 
 class TestBlobModel(FlaskTestBase):
-
     def test_to_json(self):
         with self.app.app_context():
             blob = Blob(
@@ -85,7 +84,6 @@ class TestBlobModel(FlaskTestBase):
 
     def create_temp_file(self, auto_delete: bool = True) -> tuple[Path, Path]:
         filename = 'filename.mp4'
-        tmpdir = Path(self.create_upload_folder())
         with self.app.app_context():
             blob = Blob(
                 filename=filename,
@@ -95,11 +93,12 @@ class TestBlobModel(FlaskTestBase):
                 content_type='video/mp4',
                 auto_delete=auto_delete)
             blob.add(commit=True)
-        tmp_filename = tmpdir / filename
-        with tmp_filename.open('w') as dest:
-            dest.write('a blob file')
-        self.assertTrue(tmp_filename.exists())
-        return (tmpdir, tmp_filename)
+            upload = Path(self.app.config['UPLOAD_FOLDER'])
+            tmp_filename: Path = upload / filename
+            with tmp_filename.open('w') as dest:
+                dest.write('a blob file')
+            self.assertTrue(tmp_filename.exists())
+            return (upload, tmp_filename)
 
 
 if __name__ == '__main__':

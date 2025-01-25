@@ -84,18 +84,15 @@ class TestPopulateDatabase(FlaskTestBase):
 
     def check_populate_database(self, fixture_name: str, version: int) -> None:
         self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)
-        jsonfile = self.FIXTURES_PATH / BBB_FIXTURE.name / fixture_name
-        tmpdir = self.create_upload_folder()
-        with self.app.app_context():
-            self.app.config['BLOB_FOLDER'] = tmpdir
         da = FrontendDatabaseAccess(
             url=flask.url_for('home'),
             username=self.MEDIA_USER,
             password=self.MEDIA_PASSWORD,
             session=ClientHttpSession(self.client))
         pd = PopulateDatabase(da)
+        jsonfile: Path = self.FIXTURES_PATH / BBB_FIXTURE.name / fixture_name
         self.assertTrue(jsonfile.exists())
-        result = pd.populate_database(str(jsonfile))
+        result: bool = pd.populate_database(str(jsonfile))
         self.assertTrue(result, msg='populate_database() failed')
         self.check_database_results(jsonfile, version)
 
@@ -148,9 +145,6 @@ class TestPopulateDatabase(FlaskTestBase):
             '--silent',
             str(jsonfile),
         ]
-        tmpdir = self.create_upload_folder()
-        with self.app.app_context():
-            self.app.config['BLOB_FOLDER'] = tmpdir
         with patch('requests.Session') as mock:
             mock.return_value = ClientHttpSession(self.client)
             dashlive.upload.main(args)
@@ -325,13 +319,10 @@ class TestPopulateDatabase(FlaskTestBase):
             self.assertTrue(result, msg='populate_database() failed')
             return flask.make_response('done')
         jsonfile = self.FIXTURES_PATH / BBB_FIXTURE.name / 'upload_v2.json'
-        tmpdir = self.create_upload_folder()
-        with self.app.app_context():
-            self.app.config['UPLOAD_FOLDER'] = tmpdir
-            self.app.config['BLOB_FOLDER'] = tmpdir
-        subdir = Path(tmpdir) / 'verifier-dest'
+        upload = Path(self.app.config['UPLOAD_FOLDER'])
+        subdir: Path = upload / 'verifier-dest'
         subdir.mkdir()
-        js_dest = subdir / 'script.json'
+        js_dest: Path = subdir / 'script.json'
         shutil.copyfile(str(jsonfile), js_dest)
         with open(jsonfile) as js:
             config = json.load(js)

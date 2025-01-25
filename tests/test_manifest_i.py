@@ -37,7 +37,7 @@ class ManifestITest(FlaskTestBase, DashManifestCheckMixin):
             'manifest_i.mpd', mode='vod', acodec='mp4a', encrypted=False,
             now="2023-08-07T17:56:43Z")
 
-    def test_generated_manifest_against_fixture_live(self):
+    def test_generated_manifest_against_fixture_live(self) -> None:
         self.check_generated_manifest_against_fixture(
             'manifest_i.mpd', mode='live', acodec='mp4a', encrypted=False,
             now="2023-08-07T17:56:43Z")

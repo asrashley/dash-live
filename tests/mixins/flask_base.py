@@ -7,18 +7,17 @@
 #############################################################################
 
 import binascii
-import ctypes
 from datetime import timedelta
+from importlib import metadata
 import json
 import logging
-import multiprocessing
+import os
 from pathlib import Path
-import shutil
-import tempfile
 from typing import Any, ClassVar, Optional
 
 from bs4 import element
 import flask
+from pyfakefs.fake_filesystem_unittest import TestCaseMixin as PyfakefsTestCaseMixin
 from werkzeug.test import TestResponse
 
 from dashlive.drm.playready import PlayReady
@@ -30,15 +29,26 @@ from dashlive.utils.date_time import from_isodatetime
 
 from .async_flask_testing import AsyncFlaskTestCase
 from .context_filter import ContextFilter
-from .mixin import TestCaseMixin
+from .mixin import TestCaseMixin as DashTestCaseMixin
 from .stream_fixtures import MultiPeriodStreamFixture, StreamFixture, BBB_FIXTURE
 
-class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
+class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin):
+    SRC_DIR: ClassVar[Path] = Path(__file__).parent.parent.parent.absolute()
+    REAL_FIXTURES_PATH: ClassVar[Path] = Path(__file__).parent.parent / "fixtures"
+    TEMPLATES_PATH: ClassVar[Path] = SRC_DIR / "templates"
+    REAL_STATIC_PATH: ClassVar[Path] = SRC_DIR / "static"
+    INDEX_PAGE: ClassVar[str] = """
+<!doctype html>
+<html lang="en">
+<body>
+  <div id="app"></div>
+</body>
+</html>
+"""
     ADMIN_USER: ClassVar[str] = 'admin'
     ADMIN_EMAIL: ClassVar[str] = 'admin@dashlive.unit.test'
     ADMIN_PASSWORD: ClassVar[str] = r'suuuperSecret!'
     ENABLE_WSS: ClassVar[bool] = False
-    FIXTURES_PATH: ClassVar[Path] = Path(__file__).parent.parent / "fixtures"
     STD_USER: ClassVar[str] = 'user'
     STD_EMAIL: ClassVar[str] = 'user@dashlive.unit.test'
     STD_PASSWORD: ClassVar[str] = r'pa55word'
@@ -49,7 +59,10 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
     log_context: ClassVar[Optional[ContextFilter]] = None
     checked_urls: ClassVar[set[str]]
 
-    _temp_dir = multiprocessing.Array(ctypes.c_char, 1024)
+    FIXTURES_PATH: Path
+    STATIC_PATH: Path
+    TEMPLATES_PATH: Path
+
     current_url: str | None = None
 
     @classmethod
@@ -78,23 +91,29 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
         logging.disable(logging.NOTSET)
         super().tearDownClass()
 
+    def setUp(self) -> None:
+        super().setUp()
+        self.FIXTURES_PATH = self.REAL_FIXTURES_PATH
+        self.STATIC_PATH = self.REAL_STATIC_PATH
+
     def create_app(self) -> flask.Flask:
         config = {
             'BLOB_FOLDER': str(self.FIXTURES_PATH),
             'DASH': {
                 'ALLOWED_DOMAINS': '*',
                 'CSRF_SECRET': 'test.csrf.secret',
-                'DEFAULT_ADMIN_USERNAME': 'admin',
-                'DEFAULT_ADMIN_PASSWORD': 'test.secret!',
+                'DEFAULT_ADMIN_USERNAME': self.ADMIN_USER,
+                'DEFAULT_ADMIN_PASSWORD': self.ADMIN_PASSWORD,
             },
-            'UPLOAD_FOLDER': '/dev/null',
+            'UPLOAD_FOLDER': '/uploads',
             'SECRET_KEY': 'cookie.secret',
             'SQLALCHEMY_DATABASE_URI': "sqlite:///:memory:",
             'TESTING': True,
             'LOG_LEVEL': 'critical',
             'PREFERRED_URL_SCHEME': 'http',
         }
-        app: flask.Flask = create_app(config=config, create_default_user=False, wss=self.ENABLE_WSS)
+        app: flask.Flask = create_app(
+            config=config, create_default_user=False, wss=self.ENABLE_WSS)
         with app.app_context():
             admin = models.User(
                 username=self.ADMIN_USER,
@@ -121,7 +140,48 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
             )
             models.db.session.add(media_user)
             models.db.session.commit()
+        self.setup_fake_fs(app)
         return app
+
+    @staticmethod
+    def find_site_packages() -> Path:
+        """
+        Find the site-packages directory for the current environment
+        """
+        for pkg in ["werkzeug", "flask", "sqlalchemy"]:
+            files: list[os.PathLike[str]] = [f.locate() for f in metadata.files(pkg) if str(f).endswith('METADATA')]
+            for name in files:
+                if 'site-packages' not in str(name).lower():
+                    continue
+                pkg_dir: Path = Path(name).parent
+                while pkg_dir.parent != Path():
+                    if pkg_dir.name.lower() == 'site-packages':
+                        return pkg_dir
+                    pkg_dir = pkg_dir.parent
+        raise FileNotFoundError("Cannot find site-packages directory")
+
+    def setup_fake_fs(self, app: flask.Flask) -> None:
+        site_packages = self.find_site_packages()
+        drive: str = self.REAL_FIXTURES_PATH.drive
+        self.setUpPyfakefs()
+        self.FIXTURES_PATH = Path(f"{drive}/fixtures")
+        self.STATIC_PATH = Path(f"{drive}/static")
+        blob_folder = Path(f"{drive}/media/blobs")
+        # Flask needs to be able to read metadata files from werkzeug at runtime
+        self.fs.add_real_directory(site_packages, read_only=True, lazy_read=True)
+        self.fs.add_real_directory(
+            self.REAL_FIXTURES_PATH, read_only=True, lazy_read=True, target_path=self.FIXTURES_PATH)
+        self.fs.add_real_directory(self.TEMPLATES_PATH, read_only=True, lazy_read=True)
+        self.fs.create_dir(f"{self.STATIC_PATH}")
+        self.fs.create_dir(f"{self.STATIC_PATH / 'html'}")
+        self.fs.create_file(
+            f"{self.STATIC_PATH / 'html' / 'index.html'}", encoding="utf-8", contents=self.INDEX_PAGE)
+        uploads_dir: str = f"{drive}/uploads"
+        self.fs.create_dir(uploads_dir)
+        app.config.update(
+            BLOB_FOLDER=str(blob_folder),
+            STATIC_FOLDER=str(self.STATIC_PATH),
+            UPLOAD_FOLDER=uploads_dir)
 
     def setup_media(self, with_subs=False) -> None:
         self.setup_media_fixture(BBB_FIXTURE)
@@ -139,10 +199,15 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
             models.db.session.commit()
 
     def setup_media_fixture(self, fixture: StreamFixture, with_subs=False) -> None:
-        self.setup_content_types()
         stream: models.Stream | None = models.Stream.get(directory=fixture.name)
         if stream is not None:
             return
+        self.setup_content_types()
+        blob_folder: Path = Path(self.app.config['BLOB_FOLDER'])
+        self.fs.add_real_directory(
+            self.REAL_FIXTURES_PATH / fixture.name, read_only=True, lazy_read=False,
+            target_path=(blob_folder / fixture.name))
+        # print('add real directory', self.REAL_FIXTURES_PATH / fixture.name, blob_folder / fixture.name)
         stream = models.Stream(
             title=fixture.title,
             directory=fixture.name,
@@ -287,13 +352,6 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
                 timedelta(seconds=fixture.media_duration),
                 mps.total_duration())
 
-    def create_upload_folder(self) -> str:
-        with self.app.app_context():
-            tmpdir = tempfile.mkdtemp()
-            self._temp_dir.value = bytes(tmpdir, 'utf-8')
-            self.app.config['UPLOAD_FOLDER'] = tmpdir
-        return tmpdir
-
     def change_track_id(self, name: str, track_id: int) -> None:
         with self.app.app_context():
             mf = models.MediaFile.get(name='bbb_t1')
@@ -310,11 +368,9 @@ class FlaskTestBase(TestCaseMixin, AsyncFlaskTestCase):
 
     def tearDown(self):
         self.logout_user()
-        if hasattr(TestCaseMixin, "_orig_assert_true"):
-            TestCaseMixin._assert_true = TestCaseMixin._orig_assert_true
-            del TestCaseMixin._orig_assert_true
-        if self._temp_dir.value:
-            shutil.rmtree(self._temp_dir.value, ignore_errors=True)
+        if hasattr(DashTestCaseMixin, "_orig_assert_true"):
+            DashTestCaseMixin._assert_true = DashTestCaseMixin._orig_assert_true
+            del DashTestCaseMixin._orig_assert_true
         models.db.session.remove()
         models.db.drop_all()
 
