@@ -47,7 +47,7 @@ class AppFolders:
             self.instance_path = Path(instance_path).resolve()
         self.media_folder = self.instance_path / "media"
         self.blob_folder = self.media_folder / "blobs"
-        self.upload_folder = self.media_folder / "blobs"
+        self.upload_folder = self.media_folder / "uploads"
 
     def create_media_folders(self) -> None:
         self.media_folder.mkdir(parents=True, exist_ok=True)

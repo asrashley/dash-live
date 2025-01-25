@@ -168,11 +168,13 @@ class Stream(ModelMixin["Stream"], Base):
 
     def add_file(self, file_upload: FileStorage, commit: bool = False) -> MediaFile:
         filename = Path(secure_filename(file_upload.filename))
-        upload_folder = Path(flask.current_app.config['UPLOAD_FOLDER']) / self.directory
+        upload_folder = Path(flask.current_app.config['BLOB_FOLDER']) / self.directory
         logging.debug('upload_folder="%s"', upload_folder)
         if not upload_folder.exists():
             upload_folder.mkdir(parents=True)
+        assert upload_folder.exists()
         abs_filename = upload_folder / filename
+        logging.debug('destination file "%s"', abs_filename)
         mf = MediaFile.get(name=filename.stem)
         if mf:
             mf.delete_file()
@@ -189,6 +191,7 @@ class Stream(ModelMixin["Stream"], Base):
         with abs_filename.open('rb') as src:
             digest = hashlib.file_digest(src, 'sha1')
             blob.sha1_hash = digest.hexdigest()
+        logging.debug("%s hash=%s", abs_filename, blob.sha1_hash)
         db.session.add(blob)
         mf = MediaFile(
             name=filename.stem, stream=self, blob=blob,
