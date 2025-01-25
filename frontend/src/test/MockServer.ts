@@ -1,6 +1,7 @@
 import { Temporal } from "temporal-polyfill";
-
 import log from 'loglevel';
+import crypto from "crypto";
+
 import { routeMap } from './fixtures/routemap.js';
 import { dataResponse, FakeEndpoint, HttpRequestHandler, jsonResponse, notFound, ServerRouteProps } from './FakeEndpoint'
 import { ContentRolesMap } from '../types/ContentRolesMap';
@@ -74,13 +75,11 @@ export const adminUser: UserModel = {
 };
 
 function randomToken(length: number): string {
-    const chars = 'abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ_=+';
-    let token = '';
-    while (token.length < length) {
-        const index = Math.floor(Math.random() * chars.length);
-        token += chars[index];
-    }
-    return token;
+    const chars = 'abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ_=+#.&!-';
+    const array = new Uint8Array(length);
+    crypto.getRandomValues(array);
+    const token: string[] = [...array].map((value: number) => chars.charAt(value % chars.length));
+    return token.join('');
 }
 
 type RequestContext = {
