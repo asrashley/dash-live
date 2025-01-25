@@ -316,11 +316,6 @@ routes: dict[str, Route] = {
         r'/libs/<filename>',
         handler='esm.ModuleWrapper',
         title='ESM JavaScript wrapper'),
-    "initial-app-state": Route(
-        r'/libs/initialAppState.js',
-        handler='esm.InitialAppState',
-        title='initial app state'
-    ),
     "api-cgi-options": Route(
         r'/api/cgiOptions',
         handler='esm.CgiOptionsPage',

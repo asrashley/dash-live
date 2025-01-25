@@ -5,7 +5,7 @@ import { useContext } from "preact/hooks";
 import { useLocation } from 'wouter-preact';
 import log from "loglevel";
 
-import { navbar } from "@dashlive/init";
+import { navbar, routeMap, uiRouteMap } from "@dashlive/routemap";
 
 import { App } from "./App";
 import { AppStateContext, AppStateType } from "./appState";
@@ -13,7 +13,6 @@ import { mediaUser, MockDashServer, UserModel } from "./test/MockServer";
 import { FakeEndpoint, HttpRequestHandlerResponse } from "./test/FakeEndpoint";
 import { JWToken } from "./types/JWToken";
 import { LocalStorageKeys } from "./hooks/useLocalStorage";
-import { routeMap, uiRouteMap } from "@dashlive/routemap";
 
 vi.mock('wouter-preact', async (importOriginal) => {
   return {
@@ -34,7 +33,6 @@ describe("main entry-point app", () => {
   let server: MockDashServer;
   let baseElement: HTMLDivElement;
   let user: UserModel;
-  let accessToken: JWToken | null;
   let userPromise: Promise<HttpRequestHandlerResponse>;
 
   beforeAll(() => {
@@ -54,7 +52,6 @@ describe("main entry-point app", () => {
     });
     user = server.login(mediaUser.email, mediaUser.password);
     expect(user).not.toBeNull();
-    accessToken = server.getGuestAccessToken();
     localStorage.setItem(LocalStorageKeys.REFRESH_TOKEN, JSON.stringify(user.refreshToken));
     document.body.innerHTML = '<div id="app" />';
     const app = document.getElementById('app');

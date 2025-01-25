@@ -1,7 +1,7 @@
 import { render } from 'preact';
 import { App } from './App'
 
-import { navbar } from '@dashlive/init';
+import { navbar } from '@dashlive/routemap';
 import './styles/main.less';
 
 let root = document.getElementById('app');

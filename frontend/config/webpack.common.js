@@ -21,7 +21,6 @@ export const commonConfig = ({ publicPath, tsConfigFile, devMode }) => ({
     outputModule: true,
   },
   externals: {
-    '@dashlive/init': 'module /libs/initialAppState.js',
     '@dashlive/options': 'module /libs/options.js',
     '@dashlive/routemap': 'module /libs/routemap.js'
   },
