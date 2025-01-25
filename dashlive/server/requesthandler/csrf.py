@@ -160,7 +160,7 @@ class CsrfProtection:
         existing_key = Token(
             jti=token, token_type=TokenType.CSRF.value, expires=expires, revoked=False)
         db.session.add(existing_key)
-        db.session.flush()
+        db.session.commit()
         salt = token[:Token.CSRF_SALT_LENGTH]
         logging.debug(f'check_csrf salt: "{salt}"')
         token = token[Token.CSRF_SALT_LENGTH:]
