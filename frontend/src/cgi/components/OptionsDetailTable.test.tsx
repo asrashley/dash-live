@@ -30,24 +30,14 @@ function createOptionNames(): InputOptionName[] {
 
 describe("OptionsDetailTable component", () => {
   const allOptions = signal<InputOptionName[]>([]);
-  const sortField = signal<keyof InputOptionName>("fullName");
-  const sortOrder = signal<boolean>(true);
-  const setSort = vi.fn();
-  const setFilter = vi.fn();
   const useOptionsHook: UseOptionsDetailsHook = {
     allOptions,
-    sortField,
-    sortOrder,
-    setSort,
-    setFilter,
   };
   const useOptionsDetailsMock = vi.mocked(useOptionsDetails);
 
   beforeEach(() => {
     useOptionsDetailsMock.mockReturnValue(useOptionsHook);
     allOptions.value = createOptionNames();
-    sortField.value = "fullName";
-    sortOrder.value = true;
   });
 
   afterEach(() => {
@@ -61,13 +51,13 @@ describe("OptionsDetailTable component", () => {
     fieldGroups.forEach((grp) => {
       grp.fields.forEach((field) => {
         const row = getBySelector(`#opt_${field.shortName}`) as HTMLElement;
-        const full = row.querySelector(".full-name") as HTMLElement | null;
+        const full = row.querySelector(".fullName") as HTMLElement | null;
         expect(full).not.toBeNull();
         expect(full.innerHTML.trim()).toEqual(field.fullName);
-        const sn = row.querySelector(".short-name") as HTMLElement | null;
+        const sn = row.querySelector(".shortName") as HTMLElement | null;
         expect(sn).not.toBeNull();
         expect(sn.innerHTML.trim()).toEqual(field.shortName);
-        const cgi = row.querySelector(".cgi-param") as HTMLElement | null;
+        const cgi = row.querySelector(".cgiName") as HTMLElement | null;
         expect(cgi).not.toBeNull();
         expect(cgi.innerHTML.trim()).toEqual(field.name);
       });
@@ -76,14 +66,25 @@ describe("OptionsDetailTable component", () => {
   });
 
   test.each([
-    ["full-name", "fullName"],
-    ["short-name", "shortName"],
-    ["cgi-param", "cgiName"],
-  ])("can sort by %s", (field: keyof InputOptionName, name: string) => {
-    const { getBySelector } = renderWithProviders(<OptionsDetailTable />);
+    ["fullName"],
+    ["shortName"],
+    ["cgiName"],
+  ])("can sort by %s", (field: keyof InputOptionName) => {
+    const { getBySelector, getAllBySelector } = renderWithProviders(<OptionsDetailTable />);
     const heading = getBySelector(`th.${field} > a`) as HTMLElement;
     fireEvent.click(heading);
-    expect(setSort).toHaveBeenCalledTimes(1);
-    expect(setSort).toHaveBeenCalledWith(name, name !== sortField.value);
+    const items = [...allOptions.value];
+    items.sort((a, b) => {
+      const aVal = a[field].toLowerCase();
+      const bVal = b[field].toLowerCase();
+      if (field === "shortName"){
+        return bVal.localeCompare(aVal);
+      }
+      return aVal.localeCompare(bVal);
+    });
+    const cols = [...getAllBySelector(`td.${field}`)];
+    cols.forEach((elt, idx) => {
+      expect(elt.innerHTML.trim()).toEqual(items[idx][field]);
+    });
   });
 });

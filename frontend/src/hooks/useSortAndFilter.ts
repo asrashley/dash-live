@@ -27,15 +27,12 @@ export function useSortAndFilter<T extends Record<string, string | number | bool
     const sortedData = useComputed<T[]>(() => {
         const sorted = [...filteredData.value];
         sorted.sort((one: T, second: T) => {
-            const a = one[sortField.value];
-            const b = second[sortField.value];
-            if (a === b) {
-                return 0;
+            const a = String(one[sortField.value]);
+            const b = String(second[sortField.value]);
+            if (sortOrder.value) {
+                return a.localeCompare(b);
             }
-            if (a < b) {
-                return sortOrder.value ? -1 : 1;
-            }
-            return sortOrder.value ? 1 : -1;
+            return b.localeCompare(a);
         });
         return sorted;
     });

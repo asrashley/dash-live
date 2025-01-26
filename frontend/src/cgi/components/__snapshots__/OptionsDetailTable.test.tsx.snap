@@ -2,72 +2,59 @@
 
 exports[`OptionsDetailTable component > matches snapshot 1`] = `
 <DocumentFragment>
-  <a
-    id="json"
-  />
   <table
-    class="cgi-json-options table table-striped table-bordered"
+    class="table table-striped table-bordered"
     style="width: auto;"
   >
     <thead>
       <tr
-        class="sort_fullName"
+        class="sort_shortName"
       >
         <th
-          class="short-name"
+          class="shortName"
         >
           <a
-            class="link"
+            class=" fs-6"
             href="#"
           >
             <span
-              class="me-1"
+              class="me-1 text-dark"
             >
               Short Name
             </span>
             <span
               aria-label="sort-alpha-down icon"
-              class="bi icon bi-sort-alpha-down opacity-50"
+              class="bi icon bi-sort-alpha-down "
               role="img"
             />
           </a>
         </th>
         <th
-          class="full-name"
+          class="fullName"
         >
           <a
-            class="link fw-bold"
+            class=""
             href="#"
           >
             <span
-              class="me-1"
+              class="me-1 text-dark"
             >
               Full Name
             </span>
-            <span
-              aria-label="sort-alpha-down icon"
-              class="bi icon bi-sort-alpha-down opacity-100"
-              role="img"
-            />
           </a>
         </th>
         <th
-          class="cgi-param"
+          class="cgiName"
         >
           <a
-            class="link"
+            class=""
             href="#"
           >
             <span
-              class="me-1"
+              class="me-1 text-dark"
             >
               CGI Name
             </span>
-            <span
-              aria-label="sort-alpha-down icon"
-              class="bi icon bi-sort-alpha-down opacity-50"
-              role="img"
-            />
           </a>
         </th>
       </tr>
@@ -77,17 +64,17 @@ exports[`OptionsDetailTable component > matches snapshot 1`] = `
         id="opt_ab"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           ab
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           abr
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           abr
         </td>
@@ -96,112 +83,36 @@ exports[`OptionsDetailTable component > matches snapshot 1`] = `
         id="opt_ac"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           ac
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           audioCodec
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           acodec
-        </td>
-      </tr>
-      <tr
-        id="opt_evs"
-      >
-        <td
-          class="short-name"
-        >
-          evs
-        </td>
-        <td
-          class="full-name"
-        >
-          eventTypes
-        </td>
-        <td
-          class="cgi-param"
-        >
-          events
-        </td>
-      </tr>
-      <tr
-        id="opt_st"
-      >
-        <td
-          class="short-name"
-        >
-          st
-        </td>
-        <td
-          class="full-name"
-        >
-          segmentTimeline
-        </td>
-        <td
-          class="cgi-param"
-        >
-          timeline
-        </td>
-      </tr>
-      <tr
-        id="opt_utc"
-      >
-        <td
-          class="short-name"
-        >
-          utc
-        </td>
-        <td
-          class="full-name"
-        >
-          utcMethod
-        </td>
-        <td
-          class="cgi-param"
-        >
-          time
-        </td>
-      </tr>
-      <tr
-        id="opt_vp"
-      >
-        <td
-          class="short-name"
-        >
-          vp
-        </td>
-        <td
-          class="full-name"
-        >
-          videoPlayer
-        </td>
-        <td
-          class="cgi-param"
-        >
-          player
         </td>
       </tr>
       <tr
         id="opt_ad"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           ad
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           audioDescription
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           ad_audio
         </td>
@@ -210,264 +121,93 @@ exports[`OptionsDetailTable component > matches snapshot 1`] = `
         id="opt_ast"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           ast
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           availabilityStartTime
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           start
-        </td>
-      </tr>
-      <tr
-        id="opt_bug"
-      >
-        <td
-          class="short-name"
-        >
-          bug
-        </td>
-        <td
-          class="full-name"
-        >
-          bugCompatibility
-        </td>
-        <td
-          class="cgi-param"
-        >
-          bugs
-        </td>
-      </tr>
-      <tr
-        id="opt_dft"
-      >
-        <td
-          class="short-name"
-        >
-          dft
-        </td>
-        <td
-          class="full-name"
-        >
-          clockDrift
-        </td>
-        <td
-          class="cgi-param"
-        >
-          drift
-        </td>
-      </tr>
-      <tr
-        id="opt_lee"
-      >
-        <td
-          class="short-name"
-        >
-          lee
-        </td>
-        <td
-          class="full-name"
-        >
-          leeway
-        </td>
-        <td
-          class="cgi-param"
-        >
-          leeway
-        </td>
-      </tr>
-      <tr
-        id="opt_ma"
-      >
-        <td
-          class="short-name"
-        >
-          ma
-        </td>
-        <td
-          class="full-name"
-        >
-          mainAudio
-        </td>
-        <td
-          class="cgi-param"
-        >
-          main_audio
-        </td>
-      </tr>
-      <tr
-        id="opt_mt"
-      >
-        <td
-          class="short-name"
-        >
-          mt
-        </td>
-        <td
-          class="full-name"
-        >
-          mainText
-        </td>
-        <td
-          class="cgi-param"
-        >
-          main_text
-        </td>
-      </tr>
-      <tr
-        id="opt_mup"
-      >
-        <td
-          class="short-name"
-        >
-          mup
-        </td>
-        <td
-          class="full-name"
-        >
-          minimumUpdatePeriod
-        </td>
-        <td
-          class="cgi-param"
-        >
-          mup
-        </td>
-      </tr>
-      <tr
-        id="opt_ntps"
-      >
-        <td
-          class="short-name"
-        >
-          ntps
-        </td>
-        <td
-          class="full-name"
-        >
-          ntpSources
-        </td>
-        <td
-          class="cgi-param"
-        >
-          ntp_servers
-        </td>
-      </tr>
-      <tr
-        id="opt_tc"
-      >
-        <td
-          class="short-name"
-        >
-          tc
-        </td>
-        <td
-          class="full-name"
-        >
-          textCodec
-        </td>
-        <td
-          class="cgi-param"
-        >
-          tcodec
-        </td>
-      </tr>
-      <tr
-        id="opt_tl"
-      >
-        <td
-          class="short-name"
-        >
-          tl
-        </td>
-        <td
-          class="full-name"
-        >
-          textLanguage
-        </td>
-        <td
-          class="cgi-param"
-        >
-          tlang
         </td>
       </tr>
       <tr
         id="opt_base"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           base
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           useBaseUrls
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           base
         </td>
       </tr>
       <tr
-        id="opt_patch"
+        id="opt_bug"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
-          patch
+          bug
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
-          patch
+          bugCompatibility
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
-          patch
+          bugs
         </td>
       </tr>
       <tr
-        id="opt_tbd"
+        id="opt_clearkey__drmloc"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
-          tbd
+          clearkey__drmloc
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
-          timeShiftBufferDepth
+          drmloc
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
-          depth
+          clearkey__drmloc
         </td>
       </tr>
       <tr
         id="opt_clearkey__enabled"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           clearkey__enabled
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           enabled
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           clearkey__enabled
         </td>
@@ -476,55 +216,131 @@ exports[`OptionsDetailTable component > matches snapshot 1`] = `
         id="opt_clu"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           clu
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           licenseUrl
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           clearkey__la_url
         </td>
       </tr>
       <tr
-        id="opt_clearkey__drmloc"
+        id="opt_dft"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
-          clearkey__drmloc
+          dft
         </td>
         <td
-          class="full-name"
+          class="fullName"
+        >
+          clockDrift
+        </td>
+        <td
+          class="cgiName"
+        >
+          drift
+        </td>
+      </tr>
+      <tr
+        id="opt_evs"
+      >
+        <td
+          class="shortName"
+        >
+          evs
+        </td>
+        <td
+          class="fullName"
+        >
+          eventTypes
+        </td>
+        <td
+          class="cgiName"
+        >
+          events
+        </td>
+      </tr>
+      <tr
+        id="opt_lee"
+      >
+        <td
+          class="shortName"
+        >
+          lee
+        </td>
+        <td
+          class="fullName"
+        >
+          leeway
+        </td>
+        <td
+          class="cgiName"
+        >
+          leeway
+        </td>
+      </tr>
+      <tr
+        id="opt_ma"
+      >
+        <td
+          class="shortName"
+        >
+          ma
+        </td>
+        <td
+          class="fullName"
+        >
+          mainAudio
+        </td>
+        <td
+          class="cgiName"
+        >
+          main_audio
+        </td>
+      </tr>
+      <tr
+        id="opt_marlin__drmloc"
+      >
+        <td
+          class="shortName"
+        >
+          marlin__drmloc
+        </td>
+        <td
+          class="fullName"
         >
           drmloc
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
-          clearkey__drmloc
+          marlin__drmloc
         </td>
       </tr>
       <tr
         id="opt_marlin__enabled"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           marlin__enabled
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           enabled
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           marlin__enabled
         </td>
@@ -533,55 +349,131 @@ exports[`OptionsDetailTable component > matches snapshot 1`] = `
         id="opt_mlu"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           mlu
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           licenseUrl
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           marlin__la_url
         </td>
       </tr>
       <tr
-        id="opt_marlin__drmloc"
+        id="opt_mt"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
-          marlin__drmloc
+          mt
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
-          drmloc
+          mainText
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
-          marlin__drmloc
+          main_text
+        </td>
+      </tr>
+      <tr
+        id="opt_mup"
+      >
+        <td
+          class="shortName"
+        >
+          mup
+        </td>
+        <td
+          class="fullName"
+        >
+          minimumUpdatePeriod
+        </td>
+        <td
+          class="cgiName"
+        >
+          mup
+        </td>
+      </tr>
+      <tr
+        id="opt_ntps"
+      >
+        <td
+          class="shortName"
+        >
+          ntps
+        </td>
+        <td
+          class="fullName"
+        >
+          ntpSources
+        </td>
+        <td
+          class="cgiName"
+        >
+          ntp_servers
+        </td>
+      </tr>
+      <tr
+        id="opt_patch"
+      >
+        <td
+          class="shortName"
+        >
+          patch
+        </td>
+        <td
+          class="fullName"
+        >
+          patch
+        </td>
+        <td
+          class="cgiName"
+        >
+          patch
+        </td>
+      </tr>
+      <tr
+        id="opt_pff"
+      >
+        <td
+          class="shortName"
+        >
+          pff
+        </td>
+        <td
+          class="fullName"
+        >
+          piff
+        </td>
+        <td
+          class="cgiName"
+        >
+          playready__piff
         </td>
       </tr>
       <tr
         id="opt_pinCoun"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           pinCoun
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           count
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           ping__count
         </td>
@@ -590,17 +482,17 @@ exports[`OptionsDetailTable component > matches snapshot 1`] = `
         id="opt_pinDura"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           pinDura
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           duration
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           ping__duration
         </td>
@@ -609,17 +501,17 @@ exports[`OptionsDetailTable component > matches snapshot 1`] = `
         id="opt_pinInba"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           pinInba
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           inband
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           ping__inband
         </td>
@@ -628,17 +520,17 @@ exports[`OptionsDetailTable component > matches snapshot 1`] = `
         id="opt_pinInte"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           pinInte
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           interval
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           ping__interval
         </td>
@@ -647,17 +539,17 @@ exports[`OptionsDetailTable component > matches snapshot 1`] = `
         id="opt_pinStar"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           pinStar
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           start
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           ping__start
         </td>
@@ -666,17 +558,17 @@ exports[`OptionsDetailTable component > matches snapshot 1`] = `
         id="opt_pinTime"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           pinTime
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           timescale
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           ping__timescale
         </td>
@@ -685,17 +577,17 @@ exports[`OptionsDetailTable component > matches snapshot 1`] = `
         id="opt_pinValu"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           pinValu
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           value
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           ping__value
         </td>
@@ -704,36 +596,55 @@ exports[`OptionsDetailTable component > matches snapshot 1`] = `
         id="opt_pinVers"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           pinVers
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           version
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           ping__version
+        </td>
+      </tr>
+      <tr
+        id="opt_playready__drmloc"
+      >
+        <td
+          class="shortName"
+        >
+          playready__drmloc
+        </td>
+        <td
+          class="fullName"
+        >
+          drmloc
+        </td>
+        <td
+          class="cgiName"
+        >
+          playready__drmloc
         </td>
       </tr>
       <tr
         id="opt_playready__enabled"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           playready__enabled
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           enabled
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           playready__enabled
         </td>
@@ -742,93 +653,55 @@ exports[`OptionsDetailTable component > matches snapshot 1`] = `
         id="opt_plu"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           plu
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           licenseUrl
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           playready__la_url
-        </td>
-      </tr>
-      <tr
-        id="opt_pff"
-      >
-        <td
-          class="short-name"
-        >
-          pff
-        </td>
-        <td
-          class="full-name"
-        >
-          piff
-        </td>
-        <td
-          class="cgi-param"
-        >
-          playready__piff
         </td>
       </tr>
       <tr
         id="opt_pvn"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           pvn
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           version
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           playready__version
-        </td>
-      </tr>
-      <tr
-        id="opt_playready__drmloc"
-      >
-        <td
-          class="short-name"
-        >
-          playready__drmloc
-        </td>
-        <td
-          class="full-name"
-        >
-          drmloc
-        </td>
-        <td
-          class="cgi-param"
-        >
-          playready__drmloc
         </td>
       </tr>
       <tr
         id="opt_sctCoun"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           sctCoun
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           count
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           scte35__count
         </td>
@@ -837,17 +710,17 @@ exports[`OptionsDetailTable component > matches snapshot 1`] = `
         id="opt_sctDura"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           sctDura
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           duration
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           scte35__duration
         </td>
@@ -856,17 +729,17 @@ exports[`OptionsDetailTable component > matches snapshot 1`] = `
         id="opt_sctInba"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           sctInba
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           inband
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           scte35__inband
         </td>
@@ -875,17 +748,17 @@ exports[`OptionsDetailTable component > matches snapshot 1`] = `
         id="opt_sctInte"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           sctInte
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           interval
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           scte35__interval
         </td>
@@ -894,17 +767,17 @@ exports[`OptionsDetailTable component > matches snapshot 1`] = `
         id="opt_sctProg"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           sctProg
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           program_id
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           scte35__program_id
         </td>
@@ -913,17 +786,17 @@ exports[`OptionsDetailTable component > matches snapshot 1`] = `
         id="opt_sctStar"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           sctStar
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           start
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           scte35__start
         </td>
@@ -932,17 +805,17 @@ exports[`OptionsDetailTable component > matches snapshot 1`] = `
         id="opt_sctTime"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           sctTime
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           timescale
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           scte35__timescale
         </td>
@@ -951,17 +824,17 @@ exports[`OptionsDetailTable component > matches snapshot 1`] = `
         id="opt_sctValu"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           sctValu
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           value
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           scte35__value
         </td>
@@ -970,19 +843,133 @@ exports[`OptionsDetailTable component > matches snapshot 1`] = `
         id="opt_sctVers"
       >
         <td
-          class="short-name"
+          class="shortName"
         >
           sctVers
         </td>
         <td
-          class="full-name"
+          class="fullName"
         >
           version
         </td>
         <td
-          class="cgi-param"
+          class="cgiName"
         >
           scte35__version
+        </td>
+      </tr>
+      <tr
+        id="opt_st"
+      >
+        <td
+          class="shortName"
+        >
+          st
+        </td>
+        <td
+          class="fullName"
+        >
+          segmentTimeline
+        </td>
+        <td
+          class="cgiName"
+        >
+          timeline
+        </td>
+      </tr>
+      <tr
+        id="opt_tbd"
+      >
+        <td
+          class="shortName"
+        >
+          tbd
+        </td>
+        <td
+          class="fullName"
+        >
+          timeShiftBufferDepth
+        </td>
+        <td
+          class="cgiName"
+        >
+          depth
+        </td>
+      </tr>
+      <tr
+        id="opt_tc"
+      >
+        <td
+          class="shortName"
+        >
+          tc
+        </td>
+        <td
+          class="fullName"
+        >
+          textCodec
+        </td>
+        <td
+          class="cgiName"
+        >
+          tcodec
+        </td>
+      </tr>
+      <tr
+        id="opt_tl"
+      >
+        <td
+          class="shortName"
+        >
+          tl
+        </td>
+        <td
+          class="fullName"
+        >
+          textLanguage
+        </td>
+        <td
+          class="cgiName"
+        >
+          tlang
+        </td>
+      </tr>
+      <tr
+        id="opt_utc"
+      >
+        <td
+          class="shortName"
+        >
+          utc
+        </td>
+        <td
+          class="fullName"
+        >
+          utcMethod
+        </td>
+        <td
+          class="cgiName"
+        >
+          time
+        </td>
+      </tr>
+      <tr
+        id="opt_vp"
+      >
+        <td
+          class="shortName"
+        >
+          vp
+        </td>
+        <td
+          class="fullName"
+        >
+          videoPlayer
+        </td>
+        <td
+          class="cgiName"
+        >
+          player
         </td>
       </tr>
     </tbody>
