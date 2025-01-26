@@ -2,7 +2,7 @@ import { useCallback, useContext } from "preact/hooks";
 import { useComputed } from "@preact/signals";
 
 import { Alert } from '../../components/Alert';
-import { RenderItemProps, SortableList } from '../../components/SortableList';
+import { RenderItemProps, DragAndDropList } from '../../components/DragAndDropList';
 
 import { MultiPeriodModelContext } from '../../hooks/useMultiPeriodStream';
 import { MpsPeriod } from "../../types/MpsPeriod";
@@ -81,7 +81,7 @@ export function PeriodsTable() {
         <div className="col period-duration">Duration</div>
         <div className="col period-tracks">Tracks</div>
       </div>
-      <SortableList
+      <DragAndDropList
         items={periods}
         setItems={setPeriodOrder}
         RenderItem={renderItem}
