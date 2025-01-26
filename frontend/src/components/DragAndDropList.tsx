@@ -28,7 +28,7 @@ interface SortableListState {
   lastY: number;
 }
 
-export class SortableList extends Component<SortableListProps, SortableListState> {
+export class DragAndDropList extends Component<SortableListProps, SortableListState> {
   constructor() {
     super();
     this.state = {

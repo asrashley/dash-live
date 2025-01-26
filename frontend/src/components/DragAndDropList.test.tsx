@@ -3,7 +3,7 @@ import { createEvent, fireEvent } from "@testing-library/preact";
 import { signal } from "@preact/signals";
 
 import { renderWithProviders } from "../test/renderWithProviders";
-import { RenderItemProps, SortableList } from "./SortableList";
+import { RenderItemProps, DragAndDropList } from "./DragAndDropList";
 
 type ItemType = {
   pk: number;
@@ -28,7 +28,7 @@ function createDragOver(elt: HTMLElement, y: number): DragEvent {
     return dragOver as DragEvent;
 }
 
-describe("SortableList component", () => {
+describe("DragAndDropList component", () => {
   const items = signal<ItemType[]>([]);
   const setItems = vi.fn();
 
@@ -59,7 +59,7 @@ describe("SortableList component", () => {
 
   test("matches snapshot", () => {
     const { asFragment } = renderWithProviders(
-      <SortableList
+      <DragAndDropList
         items={items}
         RenderItem={RenderItem}
         dataKey="pk"
@@ -71,7 +71,7 @@ describe("SortableList component", () => {
 
   test("can drag and drop an item", () => {
     const { getAllBySelector } = renderWithProviders(
-      <SortableList
+      <DragAndDropList
         items={items}
         RenderItem={RenderItem}
         dataKey="pk"
