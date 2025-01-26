@@ -1,0 +1,53 @@
+import { useEffect } from "preact/hooks";
+import { batch, type ReadonlySignal, useSignal } from "@preact/signals";
+
+export interface UseJsonRequestHook<T> {
+  data: ReadonlySignal<T>;
+  loaded: ReadonlySignal<boolean>;
+  error: ReadonlySignal<string | null>;
+}
+
+export interface UseJsonRequestProps<T> {
+  request: (signal: AbortSignal) => Promise<T>;
+  initialData: T;
+  name: string;
+}
+
+export function useJsonRequest<T>({ request, initialData, name }: UseJsonRequestProps<T>): UseJsonRequestHook<T> {
+  const data = useSignal<T>(initialData);
+  const error = useSignal<string | null>(null);
+  const loaded = useSignal<boolean>(false);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const { signal } = controller;
+
+    const fetchDataIfRequired = async () => {
+      if (!loaded.value) {
+        try {
+          const response = await request(signal);
+          batch(() => {
+            data.value = response as T;
+            error.value = null;
+            loaded.value = true;
+
+          });
+        } catch (err) {
+          if (!signal.aborted) {
+            error.value = `Failed to fetch ${name} - ${err}`;
+          }
+        }
+      }
+    };
+
+    fetchDataIfRequired();
+
+    return () => {
+      if (!loaded.value) {
+        controller.abort();
+      }
+    };
+  }, [data, error, loaded, request]);
+
+  return { data, error, loaded };
+}
