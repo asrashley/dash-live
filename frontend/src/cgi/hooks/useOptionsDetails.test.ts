@@ -7,17 +7,17 @@ describe('useOptionsDetails hook', () => {
     test('get all options', () => {
         const { result } = renderHook(() => useOptionsDetails());
         expect(result.current.sortField.value).toEqual("fullName");
-        expect(result.current.sortAscending.value).toEqual(true);
+        expect(result.current.sortOrder.value).toEqual(true);
         expect(result.current.allOptions.value).toMatchSnapshot();
     });
 
     test('can sort options', () => {
         const { result } = renderHook(() => useOptionsDetails());
-        const { setSortField } = result.current;
+        const { setSort } = result.current;
         const origOptions = [...result.current.allOptions.value];
-        setSortField("fullName", false);
+        setSort("fullName", false);
         expect(result.current.allOptions.value).not.toEqual(origOptions);
-        setSortField("fullName", true);
+        setSort("fullName", true);
         expect(result.current.allOptions.value).toEqual(origOptions);
         origOptions.sort((a: InputOptionName, b: InputOptionName) => {
             const left = a.shortName;
@@ -31,7 +31,7 @@ describe('useOptionsDetails hook', () => {
             return 1;
         });
         expect(result.current.allOptions.value).not.toEqual(origOptions);
-        setSortField("shortName", true);
+        setSort("shortName", true);
         expect(result.current.allOptions.value).toEqual(origOptions);
     });
 });
