@@ -11,7 +11,7 @@ of different combinations.
 
 ## Installation
 
-Python 3.11 or greater is required by this application.
+Python v3.11 or greater and Node.js v20 or greater is required by this application.
 
 A `.env` needs to be created that contains
 
@@ -53,10 +53,23 @@ python3 -m venv virtenv
 pip install -r requirements.txt
 ```
 
+Install JavaScript libraries:
+
+```sh
+npm i
+```
+
 The CSS files need to be compiled:
 
 ```sh
-python -m lesscpy static/css -o static/css/
+npm run legacy-css
+npm run main-css
+```
+
+The front-end Typescript code needs to be compiled:
+
+```sh
+npm run build
 ```
 
 To start the server:
@@ -135,9 +148,7 @@ python2 download-db.py --host http://localhost:9080/ tmp
 
 The [dashlive.upload](./dashlive/upload.py) script from this version can
 be used to take this extracted data and upload it to the new server. This
-process should preserve all of the information between versions. The
-`Timing reference` property of each uploaded stream needs to be set before
-the streams are playable.
+process should preserve all of the information between versions.
 
 Using a checkout of the main branch to upload this data to a new
 server:
@@ -147,15 +158,36 @@ python3 -m dashlive.upload --username=admin --password=mysecret \
     --host http://localhost:5000/ tmp/downloaded.json
 ```
 
+The `Timing reference` property of each uploaded stream needs to be set before
+the streams are playable. After the media has been installed onto the server,
+each stream needs to be modified to set the stream's timing reference.
+
+From the streams list page (e.g. http://localhost:5000/streams) click on each
+stream in turn and select one media file in the "stream timing reference" drop-down
+selection. A live stream is synthesized by using static files and looping their
+playback, starting from availabilityStartTime. The stream timing reference selects
+the media file that is used when calculating when a live stream loops. This is
+required as there might be a small difference in duration between video and audio
+files within a stream. Those small differences can add up to significant audio/video
+synchronization errors after the stream has looped many times. The stream timing
+reference file is used to calculate the timing of the live stream, for all
+adaptation sets within the stream.
+
 ## Testing
 
 See [docs/testing](./docs/testing.md) for information about running the
 unit tests and coverage reports. At the time of writing, there is just
-under 80% code test coverage.
+under 80% code test coverage of the Python code.
 
 | statements | missing | excluded | branches | partial | coverage |
 | --- | --- | --- | --- | --- | --- |
 | 12484 | 2342 | 94 | 5216 | 741 | 79% |
+
+The TypeScript front-end code has just over 90% test coverage:
+
+|           | % Stmts | % Branch | % Funcs | % Lines |
+| --------- | ------- | -------- | ------- | ------- |
+| All files |   94.92 |    91.08 |   98.97 |   94.92 |
 
 ## License
 

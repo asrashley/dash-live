@@ -1,6 +1,6 @@
 # Testing
 
-## Unit Tests
+## Unit Testing Python code
 
 Install the required test libraries:
 
@@ -47,7 +47,7 @@ docker run --mount type=bind,source=`pwd`/tests,destination=/home/dash/dash-live
     -it --entrypoint /home/dash/dash-live/runtests.sh dashlive
 ```
 
-## Code Coverage
+## Code Coverage of Python code
 
 To check test code coverage:
 
@@ -59,3 +59,23 @@ coverage html
 This will create a `htmlcov` directory containing a `./htmlcov/index.html`
 file. That `index.html` file contains information about the code coverage
 of all of unit tests.
+
+## Unit Testing TypeScript code
+
+Install JavaScript libraries:
+
+```sh
+npm i
+```
+
+To run the tests:
+
+```sh
+npm run test
+```
+
+To produce a coverage report:
+
+```sh
+npm run coverage
+```
