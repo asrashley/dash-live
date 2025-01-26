@@ -30,14 +30,16 @@ function createOptionNames(): InputOptionName[] {
 
 describe("OptionsDetailTable component", () => {
   const allOptions = signal<InputOptionName[]>([]);
-  const sortField = signal<string>("fullName");
-  const sortAscending = signal<boolean>(true);
-  const setSortField = vi.fn();
+  const sortField = signal<keyof InputOptionName>("fullName");
+  const sortOrder = signal<boolean>(true);
+  const setSort = vi.fn();
+  const setFilter = vi.fn();
   const useOptionsHook: UseOptionsDetailsHook = {
     allOptions,
     sortField,
-    sortAscending,
-    setSortField,
+    sortOrder,
+    setSort,
+    setFilter,
   };
   const useOptionsDetailsMock = vi.mocked(useOptionsDetails);
 
@@ -45,7 +47,7 @@ describe("OptionsDetailTable component", () => {
     useOptionsDetailsMock.mockReturnValue(useOptionsHook);
     allOptions.value = createOptionNames();
     sortField.value = "fullName";
-    sortAscending.value = true;
+    sortOrder.value = true;
   });
 
   afterEach(() => {
@@ -77,11 +79,11 @@ describe("OptionsDetailTable component", () => {
     ["full-name", "fullName"],
     ["short-name", "shortName"],
     ["cgi-param", "cgiName"],
-  ])("can sort by %s", (field: string, name: string) => {
+  ])("can sort by %s", (field: keyof InputOptionName, name: string) => {
     const { getBySelector } = renderWithProviders(<OptionsDetailTable />);
     const heading = getBySelector(`th.${field} > a`) as HTMLElement;
     fireEvent.click(heading);
-    expect(setSortField).toHaveBeenCalledTimes(1);
-    expect(setSortField).toHaveBeenCalledWith(name, name !== sortField.value);
+    expect(setSort).toHaveBeenCalledTimes(1);
+    expect(setSort).toHaveBeenCalledWith(name, name !== sortField.value);
   });
 });

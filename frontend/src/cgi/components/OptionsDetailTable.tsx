@@ -19,25 +19,25 @@ function OptionsDetailRow({ shortName, fullName, cgiName }: InputOptionName) {
 }
 
 interface SortableHeadingProps {
-  name: string;
-  setSortField: UseOptionsDetailsHook["setSortField"];
-  sortAscending: UseOptionsDetailsHook["sortAscending"];
+  name: keyof InputOptionName;
+  setSort: UseOptionsDetailsHook["setSort"];
   sortField: UseOptionsDetailsHook["sortField"];
+  sortOrder: UseOptionsDetailsHook["sortOrder"];
   title: string;
 }
 
 function SortableHeading({
   name,
-  setSortField,
+  setSort,
   sortField,
-  sortAscending,
+  sortOrder,
   title,
 }: SortableHeadingProps) {
   const linkClass = `link${name === sortField.value ? " fw-bold" : ""}`;
   const iconClassName = name === sortField.value ? "opacity-100" : "opacity-50";
-  const iconName = sortAscending.value ? "sort-alpha-down" : "sort-alpha-up";
+  const iconName = sortOrder.value ? "sort-alpha-down" : "sort-alpha-up";
   const onClick = () => {
-    setSortField(name, name === sortField.value ? !sortAscending.value : true);
+    setSort(name, name === sortField.value ? !sortOrder.value : true);
   };
 
   return (
