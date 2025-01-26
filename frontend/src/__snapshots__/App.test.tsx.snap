@@ -2549,7 +2549,8 @@ exports[`main entry-point app > matches snapshot for CGI options 1`] = `
     </div>
   </footer>
   <div
-    class="modal-backdrop hidden"
+    class="modal-backdrop d-none"
+    data-testid="modal-backdrop"
   />
 </DocumentFragment>
 `;
@@ -3168,7 +3169,8 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
     </div>
   </footer>
   <div
-    class="modal-backdrop hidden"
+    class="modal-backdrop d-none"
+    data-testid="modal-backdrop"
   />
 </DocumentFragment>
 `;
@@ -5335,7 +5337,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
     </div>
   </footer>
   <div
-    class="modal-backdrop hidden"
+    class="modal-backdrop d-none"
+    data-testid="modal-backdrop"
   />
 </DocumentFragment>
 `;
@@ -7502,7 +7505,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
     </div>
   </footer>
   <div
-    class="modal-backdrop hidden"
+    class="modal-backdrop d-none"
+    data-testid="modal-backdrop"
   />
 </DocumentFragment>
 `;
@@ -7791,7 +7795,8 @@ exports[`main entry-point app > matches snapshot for list MPS 1`] = `
     </div>
   </footer>
   <div
-    class="modal-backdrop hidden"
+    class="modal-backdrop d-none"
+    data-testid="modal-backdrop"
   />
 </DocumentFragment>
 `;

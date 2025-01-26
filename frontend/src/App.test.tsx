@@ -165,7 +165,7 @@ describe("main entry-point app", () => {
     await findByText("Stream to play");
     expect(appState).toBeDefined();
     const elt = document.querySelector('.modal-backdrop');
-    expect(elt.className).toEqual('modal-backdrop hidden');
+    expect(elt.className).toEqual('modal-backdrop d-none');
     act(() => {
       appState!.dialog.value = {
         backdrop: true,
@@ -177,7 +177,7 @@ describe("main entry-point app", () => {
         backdrop: false,
       };
     });
-    expect(elt.className).toEqual('modal-backdrop hidden');
+    expect(elt.className).toEqual('modal-backdrop d-none');
   });
 
   test("doesn't reload page when navigating to another SPA page", async () => {

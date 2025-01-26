@@ -325,7 +325,7 @@ function showDialog() {
     dialog.addClass("dialog-active show");
     dialog.css({ display: "block", });
     $('.modal-backdrop').addClass('show');
-    $('.modal-backdrop').removeClass('hidden');
+    $('.modal-backdrop').removeClass('d-none');
     $('body').addClass('modal-open');
 }
 
