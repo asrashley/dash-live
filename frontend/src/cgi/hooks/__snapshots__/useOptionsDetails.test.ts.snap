@@ -13,6 +13,26 @@ exports[`useOptionsDetails hook > get all options 1`] = `
     "shortName": "ac",
   },
   {
+    "cgiName": "events",
+    "fullName": "eventTypes",
+    "shortName": "evs",
+  },
+  {
+    "cgiName": "timeline",
+    "fullName": "segmentTimeline",
+    "shortName": "st",
+  },
+  {
+    "cgiName": "time",
+    "fullName": "utcMethod",
+    "shortName": "utc",
+  },
+  {
+    "cgiName": "player",
+    "fullName": "videoPlayer",
+    "shortName": "vp",
+  },
+  {
     "cgiName": "ad_audio",
     "fullName": "audioDescription",
     "shortName": "ad",
@@ -33,99 +53,9 @@ exports[`useOptionsDetails hook > get all options 1`] = `
     "shortName": "dft",
   },
   {
-    "cgiName": "ping__count",
-    "fullName": "count",
-    "shortName": "pinCoun",
-  },
-  {
-    "cgiName": "scte35__count",
-    "fullName": "count",
-    "shortName": "sctCoun",
-  },
-  {
-    "cgiName": "clearkey__drmloc",
-    "fullName": "drmloc",
-    "shortName": "clearkey__drmloc",
-  },
-  {
-    "cgiName": "marlin__drmloc",
-    "fullName": "drmloc",
-    "shortName": "marlin__drmloc",
-  },
-  {
-    "cgiName": "playready__drmloc",
-    "fullName": "drmloc",
-    "shortName": "playready__drmloc",
-  },
-  {
-    "cgiName": "ping__duration",
-    "fullName": "duration",
-    "shortName": "pinDura",
-  },
-  {
-    "cgiName": "scte35__duration",
-    "fullName": "duration",
-    "shortName": "sctDura",
-  },
-  {
-    "cgiName": "clearkey__enabled",
-    "fullName": "enabled",
-    "shortName": "clearkey__enabled",
-  },
-  {
-    "cgiName": "marlin__enabled",
-    "fullName": "enabled",
-    "shortName": "marlin__enabled",
-  },
-  {
-    "cgiName": "playready__enabled",
-    "fullName": "enabled",
-    "shortName": "playready__enabled",
-  },
-  {
-    "cgiName": "events",
-    "fullName": "eventTypes",
-    "shortName": "evs",
-  },
-  {
-    "cgiName": "ping__inband",
-    "fullName": "inband",
-    "shortName": "pinInba",
-  },
-  {
-    "cgiName": "scte35__inband",
-    "fullName": "inband",
-    "shortName": "sctInba",
-  },
-  {
-    "cgiName": "ping__interval",
-    "fullName": "interval",
-    "shortName": "pinInte",
-  },
-  {
-    "cgiName": "scte35__interval",
-    "fullName": "interval",
-    "shortName": "sctInte",
-  },
-  {
     "cgiName": "leeway",
     "fullName": "leeway",
     "shortName": "lee",
-  },
-  {
-    "cgiName": "clearkey__la_url",
-    "fullName": "licenseUrl",
-    "shortName": "clu",
-  },
-  {
-    "cgiName": "marlin__la_url",
-    "fullName": "licenseUrl",
-    "shortName": "mlu",
-  },
-  {
-    "cgiName": "playready__la_url",
-    "fullName": "licenseUrl",
-    "shortName": "plu",
   },
   {
     "cgiName": "main_audio",
@@ -148,36 +78,6 @@ exports[`useOptionsDetails hook > get all options 1`] = `
     "shortName": "ntps",
   },
   {
-    "cgiName": "patch",
-    "fullName": "patch",
-    "shortName": "patch",
-  },
-  {
-    "cgiName": "playready__piff",
-    "fullName": "piff",
-    "shortName": "pff",
-  },
-  {
-    "cgiName": "scte35__program_id",
-    "fullName": "program_id",
-    "shortName": "sctProg",
-  },
-  {
-    "cgiName": "timeline",
-    "fullName": "segmentTimeline",
-    "shortName": "st",
-  },
-  {
-    "cgiName": "ping__start",
-    "fullName": "start",
-    "shortName": "pinStar",
-  },
-  {
-    "cgiName": "scte35__start",
-    "fullName": "start",
-    "shortName": "sctStar",
-  },
-  {
     "cgiName": "tcodec",
     "fullName": "textCodec",
     "shortName": "tc",
@@ -188,9 +88,74 @@ exports[`useOptionsDetails hook > get all options 1`] = `
     "shortName": "tl",
   },
   {
+    "cgiName": "base",
+    "fullName": "useBaseUrls",
+    "shortName": "base",
+  },
+  {
+    "cgiName": "patch",
+    "fullName": "patch",
+    "shortName": "patch",
+  },
+  {
     "cgiName": "depth",
     "fullName": "timeShiftBufferDepth",
     "shortName": "tbd",
+  },
+  {
+    "cgiName": "clearkey__enabled",
+    "fullName": "enabled",
+    "shortName": "clearkey__enabled",
+  },
+  {
+    "cgiName": "clearkey__la_url",
+    "fullName": "licenseUrl",
+    "shortName": "clu",
+  },
+  {
+    "cgiName": "clearkey__drmloc",
+    "fullName": "drmloc",
+    "shortName": "clearkey__drmloc",
+  },
+  {
+    "cgiName": "marlin__enabled",
+    "fullName": "enabled",
+    "shortName": "marlin__enabled",
+  },
+  {
+    "cgiName": "marlin__la_url",
+    "fullName": "licenseUrl",
+    "shortName": "mlu",
+  },
+  {
+    "cgiName": "marlin__drmloc",
+    "fullName": "drmloc",
+    "shortName": "marlin__drmloc",
+  },
+  {
+    "cgiName": "ping__count",
+    "fullName": "count",
+    "shortName": "pinCoun",
+  },
+  {
+    "cgiName": "ping__duration",
+    "fullName": "duration",
+    "shortName": "pinDura",
+  },
+  {
+    "cgiName": "ping__inband",
+    "fullName": "inband",
+    "shortName": "pinInba",
+  },
+  {
+    "cgiName": "ping__interval",
+    "fullName": "interval",
+    "shortName": "pinInte",
+  },
+  {
+    "cgiName": "ping__start",
+    "fullName": "start",
+    "shortName": "pinStar",
   },
   {
     "cgiName": "ping__timescale",
@@ -198,29 +163,9 @@ exports[`useOptionsDetails hook > get all options 1`] = `
     "shortName": "pinTime",
   },
   {
-    "cgiName": "scte35__timescale",
-    "fullName": "timescale",
-    "shortName": "sctTime",
-  },
-  {
-    "cgiName": "base",
-    "fullName": "useBaseUrls",
-    "shortName": "base",
-  },
-  {
-    "cgiName": "time",
-    "fullName": "utcMethod",
-    "shortName": "utc",
-  },
-  {
     "cgiName": "ping__value",
     "fullName": "value",
     "shortName": "pinValu",
-  },
-  {
-    "cgiName": "scte35__value",
-    "fullName": "value",
-    "shortName": "sctValu",
   },
   {
     "cgiName": "ping__version",
@@ -228,19 +173,74 @@ exports[`useOptionsDetails hook > get all options 1`] = `
     "shortName": "pinVers",
   },
   {
+    "cgiName": "playready__enabled",
+    "fullName": "enabled",
+    "shortName": "playready__enabled",
+  },
+  {
+    "cgiName": "playready__la_url",
+    "fullName": "licenseUrl",
+    "shortName": "plu",
+  },
+  {
+    "cgiName": "playready__piff",
+    "fullName": "piff",
+    "shortName": "pff",
+  },
+  {
     "cgiName": "playready__version",
     "fullName": "version",
     "shortName": "pvn",
   },
   {
+    "cgiName": "playready__drmloc",
+    "fullName": "drmloc",
+    "shortName": "playready__drmloc",
+  },
+  {
+    "cgiName": "scte35__count",
+    "fullName": "count",
+    "shortName": "sctCoun",
+  },
+  {
+    "cgiName": "scte35__duration",
+    "fullName": "duration",
+    "shortName": "sctDura",
+  },
+  {
+    "cgiName": "scte35__inband",
+    "fullName": "inband",
+    "shortName": "sctInba",
+  },
+  {
+    "cgiName": "scte35__interval",
+    "fullName": "interval",
+    "shortName": "sctInte",
+  },
+  {
+    "cgiName": "scte35__program_id",
+    "fullName": "program_id",
+    "shortName": "sctProg",
+  },
+  {
+    "cgiName": "scte35__start",
+    "fullName": "start",
+    "shortName": "sctStar",
+  },
+  {
+    "cgiName": "scte35__timescale",
+    "fullName": "timescale",
+    "shortName": "sctTime",
+  },
+  {
+    "cgiName": "scte35__value",
+    "fullName": "value",
+    "shortName": "sctValu",
+  },
+  {
     "cgiName": "scte35__version",
     "fullName": "version",
     "shortName": "sctVers",
-  },
-  {
-    "cgiName": "player",
-    "fullName": "videoPlayer",
-    "shortName": "vp",
   },
 ]
 `;
