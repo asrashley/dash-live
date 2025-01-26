@@ -1,4 +1,4 @@
-export interface InputOptionName {
+export type InputOptionName = {
     shortName: string;
     fullName: string;
     cgiName: string;
