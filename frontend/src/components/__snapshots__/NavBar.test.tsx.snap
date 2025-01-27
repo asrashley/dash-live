@@ -1,0 +1,191 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`NavBar component > matches snapshot when logged in 1`] = `
+<DocumentFragment>
+  <nav
+    class="navbar navbar-expand-lg navbar-light bg-body-tertiary"
+  >
+    <span
+      class="navbar-brand"
+    >
+      DASH server
+    </span>
+    <button
+      aria-controls="navbarSupportedContent"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+      class="navbar-toggler collapsed"
+      type="button"
+    >
+      <span
+        class="navbar-toggler-icon"
+      />
+    </button>
+    <div
+      class="collapse navbar-collapse"
+      id="navbarSupportedContent"
+    >
+      <ul
+        class="navbar-nav mr-auto"
+      >
+        <li
+          class="nav-item spa"
+        >
+          <a
+            aria-current="page"
+            class="nav-link active spa"
+            href="/"
+          >
+            Home
+          </a>
+        </li>
+        <li
+          class="nav-item "
+        >
+          <a
+            class="nav-link "
+            href="/streams"
+          >
+            Streams
+          </a>
+        </li>
+        <li
+          class="nav-item spa"
+        >
+          <a
+            class="nav-link spa"
+            href="/multi-period-streams"
+          >
+            Multi-Period
+          </a>
+        </li>
+        <li
+          class="nav-item "
+        >
+          <a
+            class="nav-link "
+            href="/validate/"
+          >
+            Validate
+          </a>
+        </li>
+        <li
+          class="nav-item "
+        >
+          <a
+            class="nav-link "
+            href="/media/inspect"
+          >
+            Inspect
+          </a>
+        </li>
+        <li
+          class="nav-item user-login"
+        >
+          <a
+            class="nav-link"
+            href="#"
+          >
+            Log Out
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+</DocumentFragment>
+`;
+
+exports[`NavBar component > matches snapshot when not logged in 1`] = `
+<DocumentFragment>
+  <nav
+    class="navbar navbar-expand-lg navbar-light bg-body-tertiary"
+  >
+    <span
+      class="navbar-brand"
+    >
+      DASH server
+    </span>
+    <button
+      aria-controls="navbarSupportedContent"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+      class="navbar-toggler collapsed"
+      type="button"
+    >
+      <span
+        class="navbar-toggler-icon"
+      />
+    </button>
+    <div
+      class="collapse navbar-collapse"
+      id="navbarSupportedContent"
+    >
+      <ul
+        class="navbar-nav mr-auto"
+      >
+        <li
+          class="nav-item spa"
+        >
+          <a
+            aria-current="page"
+            class="nav-link active spa"
+            href="/"
+          >
+            Home
+          </a>
+        </li>
+        <li
+          class="nav-item "
+        >
+          <a
+            class="nav-link "
+            href="/streams"
+          >
+            Streams
+          </a>
+        </li>
+        <li
+          class="nav-item spa"
+        >
+          <a
+            class="nav-link spa"
+            href="/multi-period-streams"
+          >
+            Multi-Period
+          </a>
+        </li>
+        <li
+          class="nav-item "
+        >
+          <a
+            class="nav-link "
+            href="/validate/"
+          >
+            Validate
+          </a>
+        </li>
+        <li
+          class="nav-item "
+        >
+          <a
+            class="nav-link "
+            href="/media/inspect"
+          >
+            Inspect
+          </a>
+        </li>
+        <li
+          class="nav-item user-login"
+        >
+          <a
+            class="nav-link"
+            href="/login"
+          >
+            Log In
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+</DocumentFragment>
+`;
