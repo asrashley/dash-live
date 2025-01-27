@@ -109,17 +109,22 @@ describe("EditStreamForm component", () => {
     expect(asFragment()).toMatchSnapshot();
   });
 
-  test("can edit form and save changes", async () => {
+  test.each<[string, boolean]>([
+    ["edit a stream", false],
+    ["create a new stream", true],
+  ])("edit %s and save changes", async (_title:string, newStream: boolean) => {
     expect(userInfo).toBeDefined();
     const user = userEvent.setup();
-    const { getByText, findAllByText, getBySelector } = renderWithProviders(
-      <Wrapper newStream={false} name={mps_name} />,
+    const { getByText, findAllByText, findBySelector, getBySelector } = renderWithProviders(
+      <Wrapper newStream={newStream} name={newStream ? ".add" : mps_name} />,
       { userInfo }
     );
-    await findAllByText("Tears of Steel");
+    if (!newStream) {
+      await findAllByText("Tears of Steel");
+    }
     const editProm = endpoint.addResponsePromise(
-      "post",
-      routeMap.editMps.url({ mps_name })
+      newStream ? "put" : "post",
+      newStream ? routeMap.addMps.url() : routeMap.editMps.url({ mps_name })
     );
     const nameElt = getBySelector('input[name="name"]') as HTMLInputElement;
     const titleElt = getBySelector('input[name="title"]') as HTMLInputElement;
@@ -127,14 +132,25 @@ describe("EditStreamForm component", () => {
     await user.type(nameElt, "newname{enter}");
     await user.clear(titleElt);
     await user.type(titleElt, "title for this stream{enter}");
-    const btn = getByText("Save Changes") as HTMLButtonElement;
+    if (newStream) {
+      const addBtn = getByText("Add a Period") as HTMLButtonElement;
+      await user.click(addBtn);
+      const streamSel = await findBySelector('.period-stream select') as HTMLSelectElement;
+      await user.selectOptions(streamSel, "Tears of Steel");
+    }
+    const btn = getByText(newStream ? "Save new stream" : "Save Changes") as HTMLButtonElement;
+    expect(btn.disabled).toEqual(false);
     await user.click(btn);
     await expect(editProm).resolves.toEqual(
       expect.objectContaining({ status: 200 })
     );
     // allow the await for saveChanges() to have been processed
     await new Promise<void>(setImmediate);
-    expect(setLocation).not.toHaveBeenCalled();
+    if (newStream) {
+      expect(setLocation).toHaveBeenCalledWith(uiRouteMap.listMps.url());
+    } else {
+      expect(setLocation).not.toHaveBeenCalled();
+    }
   });
 
   test("can delete a stream", async () => {
