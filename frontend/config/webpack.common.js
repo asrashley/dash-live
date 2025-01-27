@@ -12,10 +12,22 @@ export const rootDir = path.resolve(
   ".."
 );
 
+function getGitHash() {
+  if (process.env.GIT_SHA) {
+    return String(process.env.GIT_SHA).trim();
+  }
+  try {
+    const gitRevPlugin = new GitRevPlugin();
+    return gitRevPlugin.hash();
+  } catch (err) {
+    console.error(err);
+    return 'n/a';
+  }
+}
+
 const dateNow = new Date();
 
-const gitRevPlugin = new GitRevPlugin();
-const gitHash = gitRevPlugin.hash();
+const gitHash = getGitHash();
 
 export const commonConfig = ({ publicPath, tsConfigFile, devMode }) => ({
   devtool: "source-map",
@@ -83,7 +95,6 @@ export const commonConfig = ({ publicPath, tsConfigFile, devMode }) => ({
   },
   plugins: [
     ...(devMode ? [] : [new MiniCssExtractPlugin()]),
-    gitRevPlugin,
     new webpack.DefinePlugin({
       _GIT_HASH_: JSON.stringify(gitHash),
     }),

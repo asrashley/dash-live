@@ -4,14 +4,16 @@
 FROM node:22 as clientbuild
 ENV HOME=/home/dash
 ENV CI=1
+ARG GIT_SHA="-----"
 RUN mkdir -p ${HOME}/static/html
 WORKDIR ${HOME}
 COPY *.js ${HOME}/
 COPY *.json ${HOME}/
 COPY frontend ${HOME}/frontend
+COPY static/css ${HOME}/static/css
 COPY patches/eslint*.patch ${HOME}/patches/
 RUN npm ci
-RUN npm run build
+RUN GIT_SHA=${GIT_SHA} npm run build
 RUN npm run legacy-css
 RUN npm run main-css
 RUN tar czf ${HOME}/front-end.tar.gz static/html static/css/legacy.css static/css/main.css
@@ -52,7 +54,8 @@ RUN python ./gen-settings.py --password=${DEFAULT_PASSWORD} --proxy-depth=${PROX
 COPY deploy/runtests.sh $HOME/dash-live/
 RUN chmod +x $HOME/dash-live/*.sh
 COPY --from=clientbuild ${HOME}/front-end.tar.gz /tmp/
-RUN mkdir -p ${HOME}/static/html && tar -C ${HOME} -xzf /tmp/front-end.tar.gz && rm /tmp/front-end.tar.gz
+RUN tar -C ${HOME}/dash-live -xzf /tmp/front-end.tar.gz
+RUN rm /tmp/front-end.tar.gz
 RUN python -m compileall -f -j 0 /home/dash/dash-live/dashlive
 ENTRYPOINT ["/home/dash/dash-live/runserver.sh"]
 #
