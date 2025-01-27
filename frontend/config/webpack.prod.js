@@ -1,11 +1,9 @@
 import path from "path";
 import { commonConfig, rootDir } from "./webpack.common.js";
 
-/*   tsConfigFile: path.resolve(rootDir, "config", "tsconfig.prod.json"), */
-
 const common = commonConfig({
   publicPath: '/static/html',
-  tsConfigFile: path.resolve(rootDir, "tsconfig.json"),
+  tsConfigFile: path.resolve(rootDir, "frontend/config/tsconfig.prod.json"),
   devMode: false,
 });
 
