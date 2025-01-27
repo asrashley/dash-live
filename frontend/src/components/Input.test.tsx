@@ -165,4 +165,34 @@ describe("Input component", () => {
         expect(setValue).toHaveBeenLastCalledWith(drmSystems[2], true);
         expect(asFragment()).toMatchSnapshot();
     });
+
+    test.each(['text', 'email', 'password'])('renders a %s input', async (type: FormInputItem["type"]) => {
+      const user = userEvent.setup();
+      const inp: FormInputItem = {
+        name: "test",
+        shortName: "tst",
+        fullName: "inputTest",
+        text: `test of input type ${type}`,
+        title: "Input title",
+        placeholder: 'placeholder text',
+        type,
+      };
+      const props: InputProps = {
+        ...inp,
+        mode: 'cgi',
+        data,
+        disabledFields,
+        setValue,
+      };
+      data.value = {
+        test: 'input-value',
+      };
+      const { getBySelector } = renderWithProviders(<Input {...props} />);
+      const elt = getBySelector(`input[type="${type}"]`) as HTMLInputElement;
+      expect(elt.getAttribute('placeholder')).toEqual(inp.placeholder);
+      expect(elt.value).toEqual(data.value.test);
+      await user.clear(elt);
+      await user.type(elt, 'new.value');
+      expect(setValue).toHaveBeenCalledWith('test', 'new.value');
+    });
 });

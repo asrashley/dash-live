@@ -100,6 +100,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-abr"
+            id="label-abr"
           >
             Adaptive bitrate:
           </label>
@@ -107,7 +108,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-abr"
+              aria-describedby="text-abr"
               class="form-check-input "
               id="model-abr"
               name="abr"
@@ -117,6 +118,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-abr"
           >
             Enable or disable adaptive bitrate
           </div>
@@ -127,6 +129,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-acodec"
+            id="label-acodec"
           >
             Audio Codec:
           </label>
@@ -134,7 +137,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-acodec"
+              aria-describedby="text-acodec"
               class="form-select "
               id="model-acodec"
               name="acodec"
@@ -160,6 +163,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-acodec"
           >
             Filter audio adaptation sets by audio codec (AAC or E-AC3)
           </div>
@@ -170,6 +174,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-events"
+            id="label-events"
           >
             DASH events:
           </label>
@@ -177,7 +182,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-events"
+              aria-describedby="text-events"
               class="form-select "
               id="model-events"
               name="events"
@@ -203,6 +208,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-events"
           >
             A comma separated list of event formats
           </div>
@@ -213,6 +219,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-timeline"
+            id="label-timeline"
           >
             Segment timeline:
           </label>
@@ -220,7 +227,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-timeline"
+              aria-describedby="text-timeline"
               class="form-check-input "
               id="model-timeline"
               name="timeline"
@@ -230,6 +237,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-timeline"
           >
             Enable or disable segment timeline
           </div>
@@ -240,6 +248,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-time"
+            id="label-time"
           >
             UTC timing method:
           </label>
@@ -247,7 +256,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-time"
+              aria-describedby="text-time"
               class="form-select "
               id="model-time"
               name="time"
@@ -298,6 +307,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-time"
           >
             Select UTCTiming element method.
           </div>
@@ -308,6 +318,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-player"
+            id="label-player"
           >
             Video Player:
           </label>
@@ -315,7 +326,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-player"
+              aria-describedby="text-player"
               class="form-select "
               id="model-player"
               name="player"
@@ -341,6 +352,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-player"
           >
             Native or MSE playback control
           </div>
@@ -358,6 +370,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-ad_audio"
+            id="label-ad_audio"
           >
             Audio Description:
           </label>
@@ -365,7 +378,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-ad_audio"
+              aria-describedby="text-ad_audio"
               class="form-control "
               id="model-ad_audio"
               name="ad_audio"
@@ -375,6 +388,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-ad_audio"
           >
             Select audio AdaptationSet that will be marked as a broadcast-mix audio description track
           </div>
@@ -385,6 +399,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-start"
+            id="label-start"
           >
             Availability start time:
           </label>
@@ -392,7 +407,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-start"
+              aria-describedby="text-start"
               class="form-control "
               id="model-start"
               list="list-start"
@@ -432,6 +447,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-start"
           >
             Sets availabilityStartTime for live streams
           </div>
@@ -442,6 +458,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-bugs"
+            id="label-bugs"
           >
             Bug compatibility:
           </label>
@@ -449,7 +466,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-bugs"
+              aria-describedby="text-bugs"
               class="form-select "
               id="model-bugs"
               name="bugs"
@@ -470,6 +487,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-bugs"
           >
             Produce a stream with known bugs
           </div>
@@ -480,6 +498,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-drift"
+            id="label-drift"
           >
             Clock drift:
           </label>
@@ -487,7 +506,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-drift"
+              aria-describedby="text-drift"
               class="form-control "
               id="model-drift"
               name="drift"
@@ -497,6 +516,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-drift"
           >
             Number of seconds of delay to add to wall clock time
           </div>
@@ -507,6 +527,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-leeway"
+            id="label-leeway"
           >
             Fragment expiration leeway:
           </label>
@@ -514,7 +535,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-leeway"
+              aria-describedby="text-leeway"
               class="form-control "
               id="model-leeway"
               list="list-leeway"
@@ -544,6 +565,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-leeway"
           >
             Number of seconds after a fragment has expired before it becomes unavailable
           </div>
@@ -554,6 +576,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-main_audio"
+            id="label-main_audio"
           >
             Main audio track:
           </label>
@@ -561,7 +584,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-main_audio"
+              aria-describedby="text-main_audio"
               class="form-control "
               id="model-main_audio"
               name="main_audio"
@@ -571,6 +594,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-main_audio"
           >
             Select audio AdaptationSet that will be given the "main" role
           </div>
@@ -581,6 +605,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-main_text"
+            id="label-main_text"
           >
             Main text track:
           </label>
@@ -588,7 +613,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-main_text"
+              aria-describedby="text-main_text"
               class="form-control "
               id="model-main_text"
               name="main_text"
@@ -598,6 +623,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-main_text"
           >
             Select text AdaptationSet that will be given the "main" role
           </div>
@@ -608,6 +634,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-mup"
+            id="label-mup"
           >
             Minimum update period:
           </label>
@@ -615,7 +642,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-mup"
+              aria-describedby="text-mup"
               class="form-control "
               id="model-mup"
               list="list-mup"
@@ -650,6 +677,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-mup"
           >
             Specify minimumUpdatePeriod (in seconds) or -1 to disable updates
           </div>
@@ -660,6 +688,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-ntp_servers"
+            id="label-ntp_servers"
           >
             NTP time servers:
           </label>
@@ -667,7 +696,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-ntp_servers"
+              aria-describedby="text-ntp_servers"
               class="form-select "
               id="model-ntp_servers"
               name="ntp_servers"
@@ -693,6 +722,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-ntp_servers"
           >
             List of servers to use for NTP requests
           </div>
@@ -703,6 +733,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-tcodec"
+            id="label-tcodec"
           >
             Text Codec:
           </label>
@@ -710,7 +741,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-tcodec"
+              aria-describedby="text-tcodec"
               class="form-select "
               id="model-tcodec"
               name="tcodec"
@@ -731,6 +762,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-tcodec"
           >
             Filter text adaptation sets by text codec
           </div>
@@ -741,6 +773,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-tlang"
+            id="label-tlang"
           >
             Text Language:
           </label>
@@ -748,7 +781,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-tlang"
+              aria-describedby="text-tlang"
               class="form-control "
               id="model-tlang"
               name="tlang"
@@ -758,6 +791,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-tlang"
           >
             Filter text adaptation sets by language
           </div>
@@ -768,6 +802,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-base"
+            id="label-base"
           >
             Use BaseURLs:
           </label>
@@ -775,7 +810,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-base"
+              aria-describedby="text-base"
               class="form-check-input "
               id="model-base"
               name="base"
@@ -785,6 +820,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-base"
           >
             Include a BaseURL element?
           </div>
@@ -795,6 +831,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-patch"
+            id="label-patch"
           >
             Use MPD patches:
           </label>
@@ -802,7 +839,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-patch"
+              aria-describedby="text-patch"
               class="form-check-input "
               id="model-patch"
               name="patch"
@@ -812,6 +849,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-patch"
           >
             Use MPD patches for live streams
           </div>
@@ -822,6 +860,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-depth"
+            id="label-depth"
           >
             timeShiftBufferDepth size:
           </label>
@@ -829,7 +868,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-depth"
+              aria-describedby="text-depth"
               class="form-control "
               id="model-depth"
               list="list-depth"
@@ -854,6 +893,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-depth"
           >
             Number of seconds for timeShiftBufferDepth
           </div>
@@ -871,6 +911,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-clearkey__enabled"
+            id="label-clearkey__enabled"
           >
             Clearkey DRM:
           </label>
@@ -878,7 +919,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-clearkey__enabled"
+              aria-describedby="text-clearkey__enabled"
               class="form-check-input drm-checkbox"
               id="model-clearkey__enabled"
               name="clearkey__enabled"
@@ -888,6 +929,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-clearkey__enabled"
           >
             Enable Clearkey DRM support?
           </div>
@@ -898,6 +940,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-clearkey__la_url"
+            id="label-clearkey__la_url"
           >
             Clearkey LA_URL:
           </label>
@@ -905,7 +948,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-clearkey__la_url"
+              aria-describedby="text-clearkey__la_url"
               class="form-control "
               id="model-clearkey__la_url"
               name="clearkey__la_url"
@@ -915,6 +958,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-clearkey__la_url"
           >
             Override the Clearkey license URL field
           </div>
@@ -925,6 +969,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-clearkey__drmloc"
+            id="label-clearkey__drmloc"
           >
             Clearkey location:
           </label>
@@ -932,7 +977,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-clearkey__drmloc"
+              aria-describedby="text-clearkey__drmloc"
               class="form-select "
               id="model-clearkey__drmloc"
               name="clearkey__drmloc"
@@ -978,6 +1023,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-clearkey__drmloc"
           >
             Location to place DRM data
           </div>
@@ -995,6 +1041,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-marlin__enabled"
+            id="label-marlin__enabled"
           >
             Marlin DRM:
           </label>
@@ -1002,7 +1049,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-marlin__enabled"
+              aria-describedby="text-marlin__enabled"
               class="form-check-input drm-checkbox"
               id="model-marlin__enabled"
               name="marlin__enabled"
@@ -1012,6 +1059,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-marlin__enabled"
           >
             Enable Marlin DRM support?
           </div>
@@ -1022,6 +1070,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-marlin__la_url"
+            id="label-marlin__la_url"
           >
             Marlin LA_URL:
           </label>
@@ -1029,7 +1078,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-marlin__la_url"
+              aria-describedby="text-marlin__la_url"
               class="form-control "
               id="model-marlin__la_url"
               name="marlin__la_url"
@@ -1039,6 +1088,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-marlin__la_url"
           >
             Override the Marlin S-URL field
           </div>
@@ -1049,6 +1099,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-marlin__drmloc"
+            id="label-marlin__drmloc"
           >
             Marlin location:
           </label>
@@ -1056,7 +1107,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-marlin__drmloc"
+              aria-describedby="text-marlin__drmloc"
               class="form-select "
               id="model-marlin__drmloc"
               name="marlin__drmloc"
@@ -1102,6 +1153,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-marlin__drmloc"
           >
             Location to place DRM data
           </div>
@@ -1119,6 +1171,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-ping__count"
+            id="label-ping__count"
           >
             Ping count:
           </label>
@@ -1126,7 +1179,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-ping__count"
+              aria-describedby="label-ping__count"
               class="form-control "
               id="model-ping__count"
               name="ping__count"
@@ -1141,6 +1194,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-ping__duration"
+            id="label-ping__duration"
           >
             Ping duration:
           </label>
@@ -1148,7 +1202,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-ping__duration"
+              aria-describedby="label-ping__duration"
               class="form-control "
               id="model-ping__duration"
               name="ping__duration"
@@ -1163,6 +1217,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-ping__inband"
+            id="label-ping__inband"
           >
             Ping inband:
           </label>
@@ -1170,7 +1225,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-ping__inband"
+              aria-describedby="label-ping__inband"
               class="form-check-input "
               id="model-ping__inband"
               name="ping__inband"
@@ -1185,6 +1240,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-ping__interval"
+            id="label-ping__interval"
           >
             Ping interval:
           </label>
@@ -1192,7 +1248,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-ping__interval"
+              aria-describedby="label-ping__interval"
               class="form-control "
               id="model-ping__interval"
               name="ping__interval"
@@ -1207,6 +1263,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-ping__start"
+            id="label-ping__start"
           >
             Ping start:
           </label>
@@ -1214,7 +1271,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-ping__start"
+              aria-describedby="label-ping__start"
               class="form-control "
               id="model-ping__start"
               name="ping__start"
@@ -1229,6 +1286,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-ping__timescale"
+            id="label-ping__timescale"
           >
             Ping timescale:
           </label>
@@ -1236,7 +1294,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-ping__timescale"
+              aria-describedby="label-ping__timescale"
               class="form-control "
               id="model-ping__timescale"
               name="ping__timescale"
@@ -1251,6 +1309,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-ping__value"
+            id="label-ping__value"
           >
             Ping value:
           </label>
@@ -1258,7 +1317,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-ping__value"
+              aria-describedby="label-ping__value"
               class="form-control "
               id="model-ping__value"
               name="ping__value"
@@ -1273,6 +1332,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-ping__version"
+            id="label-ping__version"
           >
             Ping version:
           </label>
@@ -1280,7 +1340,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-ping__version"
+              aria-describedby="label-ping__version"
               class="form-control "
               id="model-ping__version"
               name="ping__version"
@@ -1302,6 +1362,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-playready__enabled"
+            id="label-playready__enabled"
           >
             Playready DRM:
           </label>
@@ -1309,7 +1370,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-playready__enabled"
+              aria-describedby="text-playready__enabled"
               class="form-check-input drm-checkbox"
               id="model-playready__enabled"
               name="playready__enabled"
@@ -1319,6 +1380,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-playready__enabled"
           >
             Enable Playready DRM support?
           </div>
@@ -1329,6 +1391,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-playready__la_url"
+            id="label-playready__la_url"
           >
             Playready LA_URL:
           </label>
@@ -1336,7 +1399,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-playready__la_url"
+              aria-describedby="text-playready__la_url"
               class="form-control "
               id="model-playready__la_url"
               name="playready__la_url"
@@ -1346,6 +1409,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-playready__la_url"
           >
             Override the Playready LA_URL field
           </div>
@@ -1356,6 +1420,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-playready__piff"
+            id="label-playready__piff"
           >
             Playready PIFF:
           </label>
@@ -1363,7 +1428,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-playready__piff"
+              aria-describedby="text-playready__piff"
               class="form-check-input "
               id="model-playready__piff"
               name="playready__piff"
@@ -1373,6 +1438,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-playready__piff"
           >
             Include PIFF sample encryption data
           </div>
@@ -1383,6 +1449,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-playready__version"
+            id="label-playready__version"
           >
             Playready Version:
           </label>
@@ -1390,7 +1457,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-playready__version"
+              aria-describedby="text-playready__version"
               class="form-select "
               id="model-playready__version"
               name="playready__version"
@@ -1426,6 +1493,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-playready__version"
           >
             Set the PlayReady version compatibility for this stream
           </div>
@@ -1436,6 +1504,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-playready__drmloc"
+            id="label-playready__drmloc"
           >
             Playready location:
           </label>
@@ -1443,7 +1512,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-playready__drmloc"
+              aria-describedby="text-playready__drmloc"
               class="form-select "
               id="model-playready__drmloc"
               name="playready__drmloc"
@@ -1489,6 +1558,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-playready__drmloc"
           >
             Location to place DRM data
           </div>
@@ -1506,6 +1576,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-scte35__count"
+            id="label-scte35__count"
           >
             Scte35 count:
           </label>
@@ -1513,7 +1584,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-scte35__count"
+              aria-describedby="label-scte35__count"
               class="form-control "
               id="model-scte35__count"
               name="scte35__count"
@@ -1528,6 +1599,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-scte35__duration"
+            id="label-scte35__duration"
           >
             Scte35 duration:
           </label>
@@ -1535,7 +1607,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-scte35__duration"
+              aria-describedby="label-scte35__duration"
               class="form-control "
               id="model-scte35__duration"
               name="scte35__duration"
@@ -1550,6 +1622,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-scte35__inband"
+            id="label-scte35__inband"
           >
             Scte35 inband:
           </label>
@@ -1557,7 +1630,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-scte35__inband"
+              aria-describedby="label-scte35__inband"
               class="form-check-input "
               id="model-scte35__inband"
               name="scte35__inband"
@@ -1572,6 +1645,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-scte35__interval"
+            id="label-scte35__interval"
           >
             Scte35 interval:
           </label>
@@ -1579,7 +1653,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-scte35__interval"
+              aria-describedby="label-scte35__interval"
               class="form-control "
               id="model-scte35__interval"
               name="scte35__interval"
@@ -1594,6 +1668,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-scte35__program_id"
+            id="label-scte35__program_id"
           >
             Scte35 program_id:
           </label>
@@ -1601,7 +1676,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-scte35__program_id"
+              aria-describedby="label-scte35__program_id"
               class="form-control "
               id="model-scte35__program_id"
               name="scte35__program_id"
@@ -1616,6 +1691,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-scte35__start"
+            id="label-scte35__start"
           >
             Scte35 start:
           </label>
@@ -1623,7 +1699,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-scte35__start"
+              aria-describedby="label-scte35__start"
               class="form-control "
               id="model-scte35__start"
               name="scte35__start"
@@ -1638,6 +1714,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-scte35__timescale"
+            id="label-scte35__timescale"
           >
             Scte35 timescale:
           </label>
@@ -1645,7 +1722,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-scte35__timescale"
+              aria-describedby="label-scte35__timescale"
               class="form-control "
               id="model-scte35__timescale"
               name="scte35__timescale"
@@ -1660,6 +1737,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-scte35__value"
+            id="label-scte35__value"
           >
             Scte35 value:
           </label>
@@ -1667,7 +1745,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-scte35__value"
+              aria-describedby="label-scte35__value"
               class="form-control "
               id="model-scte35__value"
               name="scte35__value"
@@ -1682,6 +1760,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-scte35__version"
+            id="label-scte35__version"
           >
             Scte35 version:
           </label>
@@ -1689,7 +1768,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-scte35__version"
+              aria-describedby="label-scte35__version"
               class="form-control "
               id="model-scte35__version"
               name="scte35__version"
@@ -1804,6 +1883,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-abr"
+            id="label-abr"
           >
             Adaptive bitrate:
           </label>
@@ -1811,7 +1891,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-abr"
+              aria-describedby="text-abr"
               class="form-check-input "
               id="model-abr"
               name="abr"
@@ -1821,6 +1901,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-abr"
           >
             Enable or disable adaptive bitrate
           </div>
@@ -1831,6 +1912,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-audioCodec"
+            id="label-audioCodec"
           >
             Audio Codec:
           </label>
@@ -1838,7 +1920,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-audioCodec"
+              aria-describedby="text-audioCodec"
               class="form-select "
               id="model-audioCodec"
               name="audioCodec"
@@ -1864,6 +1946,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-audioCodec"
           >
             Filter audio adaptation sets by audio codec (AAC or E-AC3)
           </div>
@@ -1874,6 +1957,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-eventTypes"
+            id="label-eventTypes"
           >
             DASH events:
           </label>
@@ -1881,7 +1965,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-eventTypes"
+              aria-describedby="text-eventTypes"
               class="form-select "
               id="model-eventTypes"
               name="eventTypes"
@@ -1907,6 +1991,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-eventTypes"
           >
             A comma separated list of event formats
           </div>
@@ -1917,6 +2002,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-segmentTimeline"
+            id="label-segmentTimeline"
           >
             Segment timeline:
           </label>
@@ -1924,7 +2010,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-segmentTimeline"
+              aria-describedby="text-segmentTimeline"
               class="form-check-input "
               id="model-segmentTimeline"
               name="segmentTimeline"
@@ -1934,6 +2020,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-segmentTimeline"
           >
             Enable or disable segment timeline
           </div>
@@ -1944,6 +2031,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-utcMethod"
+            id="label-utcMethod"
           >
             UTC timing method:
           </label>
@@ -1951,7 +2039,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-utcMethod"
+              aria-describedby="text-utcMethod"
               class="form-select "
               id="model-utcMethod"
               name="utcMethod"
@@ -2002,6 +2090,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-utcMethod"
           >
             Select UTCTiming element method.
           </div>
@@ -2012,6 +2101,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-videoPlayer"
+            id="label-videoPlayer"
           >
             Video Player:
           </label>
@@ -2019,7 +2109,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-videoPlayer"
+              aria-describedby="text-videoPlayer"
               class="form-select "
               id="model-videoPlayer"
               name="videoPlayer"
@@ -2045,6 +2135,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-videoPlayer"
           >
             Native or MSE playback control
           </div>
@@ -2062,6 +2153,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-audioDescription"
+            id="label-audioDescription"
           >
             Audio Description:
           </label>
@@ -2069,7 +2161,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-audioDescription"
+              aria-describedby="text-audioDescription"
               class="form-control "
               id="model-audioDescription"
               name="audioDescription"
@@ -2079,6 +2171,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-audioDescription"
           >
             Select audio AdaptationSet that will be marked as a broadcast-mix audio description track
           </div>
@@ -2089,6 +2182,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-availabilityStartTime"
+            id="label-availabilityStartTime"
           >
             Availability start time:
           </label>
@@ -2096,7 +2190,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-availabilityStartTime"
+              aria-describedby="text-availabilityStartTime"
               class="form-control "
               id="model-availabilityStartTime"
               list="list-availabilityStartTime"
@@ -2136,6 +2230,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-availabilityStartTime"
           >
             Sets availabilityStartTime for live streams
           </div>
@@ -2146,6 +2241,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-bugCompatibility"
+            id="label-bugCompatibility"
           >
             Bug compatibility:
           </label>
@@ -2153,7 +2249,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-bugCompatibility"
+              aria-describedby="text-bugCompatibility"
               class="form-select "
               id="model-bugCompatibility"
               name="bugCompatibility"
@@ -2174,6 +2270,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-bugCompatibility"
           >
             Produce a stream with known bugs
           </div>
@@ -2184,6 +2281,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-clockDrift"
+            id="label-clockDrift"
           >
             Clock drift:
           </label>
@@ -2191,7 +2289,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-clockDrift"
+              aria-describedby="text-clockDrift"
               class="form-control "
               id="model-clockDrift"
               name="clockDrift"
@@ -2201,6 +2299,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-clockDrift"
           >
             Number of seconds of delay to add to wall clock time
           </div>
@@ -2211,6 +2310,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-leeway"
+            id="label-leeway"
           >
             Fragment expiration leeway:
           </label>
@@ -2218,7 +2318,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-leeway"
+              aria-describedby="text-leeway"
               class="form-control "
               id="model-leeway"
               list="list-leeway"
@@ -2248,6 +2348,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-leeway"
           >
             Number of seconds after a fragment has expired before it becomes unavailable
           </div>
@@ -2258,6 +2359,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-mainAudio"
+            id="label-mainAudio"
           >
             Main audio track:
           </label>
@@ -2265,7 +2367,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-mainAudio"
+              aria-describedby="text-mainAudio"
               class="form-control "
               id="model-mainAudio"
               name="mainAudio"
@@ -2275,6 +2377,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-mainAudio"
           >
             Select audio AdaptationSet that will be given the "main" role
           </div>
@@ -2285,6 +2388,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-mainText"
+            id="label-mainText"
           >
             Main text track:
           </label>
@@ -2292,7 +2396,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-mainText"
+              aria-describedby="text-mainText"
               class="form-control "
               id="model-mainText"
               name="mainText"
@@ -2302,6 +2406,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-mainText"
           >
             Select text AdaptationSet that will be given the "main" role
           </div>
@@ -2312,6 +2417,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-minimumUpdatePeriod"
+            id="label-minimumUpdatePeriod"
           >
             Minimum update period:
           </label>
@@ -2319,7 +2425,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-minimumUpdatePeriod"
+              aria-describedby="text-minimumUpdatePeriod"
               class="form-control "
               id="model-minimumUpdatePeriod"
               list="list-minimumUpdatePeriod"
@@ -2354,6 +2460,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-minimumUpdatePeriod"
           >
             Specify minimumUpdatePeriod (in seconds) or -1 to disable updates
           </div>
@@ -2364,6 +2471,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-ntpSources"
+            id="label-ntpSources"
           >
             NTP time servers:
           </label>
@@ -2371,7 +2479,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-ntpSources"
+              aria-describedby="text-ntpSources"
               class="form-select "
               id="model-ntpSources"
               name="ntpSources"
@@ -2397,6 +2505,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-ntpSources"
           >
             List of servers to use for NTP requests
           </div>
@@ -2407,6 +2516,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-textCodec"
+            id="label-textCodec"
           >
             Text Codec:
           </label>
@@ -2414,7 +2524,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-textCodec"
+              aria-describedby="text-textCodec"
               class="form-select "
               id="model-textCodec"
               name="textCodec"
@@ -2435,6 +2545,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-textCodec"
           >
             Filter text adaptation sets by text codec
           </div>
@@ -2445,6 +2556,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-textLanguage"
+            id="label-textLanguage"
           >
             Text Language:
           </label>
@@ -2452,7 +2564,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-textLanguage"
+              aria-describedby="text-textLanguage"
               class="form-control "
               id="model-textLanguage"
               name="textLanguage"
@@ -2462,6 +2574,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-textLanguage"
           >
             Filter text adaptation sets by language
           </div>
@@ -2472,6 +2585,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-useBaseUrls"
+            id="label-useBaseUrls"
           >
             Use BaseURLs:
           </label>
@@ -2479,7 +2593,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-useBaseUrls"
+              aria-describedby="text-useBaseUrls"
               class="form-check-input "
               id="model-useBaseUrls"
               name="useBaseUrls"
@@ -2489,6 +2603,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-useBaseUrls"
           >
             Include a BaseURL element?
           </div>
@@ -2499,6 +2614,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-patch"
+            id="label-patch"
           >
             Use MPD patches:
           </label>
@@ -2506,7 +2622,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-patch"
+              aria-describedby="text-patch"
               class="form-check-input "
               id="model-patch"
               name="patch"
@@ -2516,6 +2632,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-patch"
           >
             Use MPD patches for live streams
           </div>
@@ -2526,6 +2643,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-timeShiftBufferDepth"
+            id="label-timeShiftBufferDepth"
           >
             timeShiftBufferDepth size:
           </label>
@@ -2533,7 +2651,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-timeShiftBufferDepth"
+              aria-describedby="text-timeShiftBufferDepth"
               class="form-control "
               id="model-timeShiftBufferDepth"
               list="list-timeShiftBufferDepth"
@@ -2558,6 +2676,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-timeShiftBufferDepth"
           >
             Number of seconds for timeShiftBufferDepth
           </div>
@@ -2575,6 +2694,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-clearkey__enabled"
+            id="label-clearkey__enabled"
           >
             Clearkey DRM:
           </label>
@@ -2582,7 +2702,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-clearkey__enabled"
+              aria-describedby="text-clearkey__enabled"
               class="form-check-input drm-checkbox"
               id="model-clearkey__enabled"
               name="clearkey__enabled"
@@ -2592,6 +2712,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-clearkey__enabled"
           >
             Enable Clearkey DRM support?
           </div>
@@ -2602,6 +2723,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-clearkey__licenseUrl"
+            id="label-clearkey__licenseUrl"
           >
             Clearkey LA_URL:
           </label>
@@ -2609,7 +2731,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-clearkey__licenseUrl"
+              aria-describedby="text-clearkey__licenseUrl"
               class="form-control "
               id="model-clearkey__licenseUrl"
               name="clearkey__licenseUrl"
@@ -2619,6 +2741,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-clearkey__licenseUrl"
           >
             Override the Clearkey license URL field
           </div>
@@ -2629,6 +2752,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-clearkey__drmloc"
+            id="label-clearkey__drmloc"
           >
             Clearkey location:
           </label>
@@ -2636,7 +2760,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-clearkey__drmloc"
+              aria-describedby="text-clearkey__drmloc"
               class="form-select "
               id="model-clearkey__drmloc"
               name="clearkey__drmloc"
@@ -2682,6 +2806,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-clearkey__drmloc"
           >
             Location to place DRM data
           </div>
@@ -2699,6 +2824,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-marlin__enabled"
+            id="label-marlin__enabled"
           >
             Marlin DRM:
           </label>
@@ -2706,7 +2832,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-marlin__enabled"
+              aria-describedby="text-marlin__enabled"
               class="form-check-input drm-checkbox"
               id="model-marlin__enabled"
               name="marlin__enabled"
@@ -2716,6 +2842,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-marlin__enabled"
           >
             Enable Marlin DRM support?
           </div>
@@ -2726,6 +2853,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-marlin__licenseUrl"
+            id="label-marlin__licenseUrl"
           >
             Marlin LA_URL:
           </label>
@@ -2733,7 +2861,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-marlin__licenseUrl"
+              aria-describedby="text-marlin__licenseUrl"
               class="form-control "
               id="model-marlin__licenseUrl"
               name="marlin__licenseUrl"
@@ -2743,6 +2871,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-marlin__licenseUrl"
           >
             Override the Marlin S-URL field
           </div>
@@ -2753,6 +2882,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-marlin__drmloc"
+            id="label-marlin__drmloc"
           >
             Marlin location:
           </label>
@@ -2760,7 +2890,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-marlin__drmloc"
+              aria-describedby="text-marlin__drmloc"
               class="form-select "
               id="model-marlin__drmloc"
               name="marlin__drmloc"
@@ -2806,6 +2936,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-marlin__drmloc"
           >
             Location to place DRM data
           </div>
@@ -2823,6 +2954,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-ping__count"
+            id="label-ping__count"
           >
             Ping count:
           </label>
@@ -2830,7 +2962,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-ping__count"
+              aria-describedby="label-ping__count"
               class="form-control "
               id="model-ping__count"
               name="ping__count"
@@ -2845,6 +2977,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-ping__duration"
+            id="label-ping__duration"
           >
             Ping duration:
           </label>
@@ -2852,7 +2985,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-ping__duration"
+              aria-describedby="label-ping__duration"
               class="form-control "
               id="model-ping__duration"
               name="ping__duration"
@@ -2867,6 +3000,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-ping__inband"
+            id="label-ping__inband"
           >
             Ping inband:
           </label>
@@ -2874,7 +3008,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-ping__inband"
+              aria-describedby="label-ping__inband"
               class="form-check-input "
               id="model-ping__inband"
               name="ping__inband"
@@ -2889,6 +3023,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-ping__interval"
+            id="label-ping__interval"
           >
             Ping interval:
           </label>
@@ -2896,7 +3031,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-ping__interval"
+              aria-describedby="label-ping__interval"
               class="form-control "
               id="model-ping__interval"
               name="ping__interval"
@@ -2911,6 +3046,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-ping__start"
+            id="label-ping__start"
           >
             Ping start:
           </label>
@@ -2918,7 +3054,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-ping__start"
+              aria-describedby="label-ping__start"
               class="form-control "
               id="model-ping__start"
               name="ping__start"
@@ -2933,6 +3069,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-ping__timescale"
+            id="label-ping__timescale"
           >
             Ping timescale:
           </label>
@@ -2940,7 +3077,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-ping__timescale"
+              aria-describedby="label-ping__timescale"
               class="form-control "
               id="model-ping__timescale"
               name="ping__timescale"
@@ -2955,6 +3092,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-ping__value"
+            id="label-ping__value"
           >
             Ping value:
           </label>
@@ -2962,7 +3100,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-ping__value"
+              aria-describedby="label-ping__value"
               class="form-control "
               id="model-ping__value"
               name="ping__value"
@@ -2977,6 +3115,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-ping__version"
+            id="label-ping__version"
           >
             Ping version:
           </label>
@@ -2984,7 +3123,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-ping__version"
+              aria-describedby="label-ping__version"
               class="form-control "
               id="model-ping__version"
               name="ping__version"
@@ -3006,6 +3145,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-playready__enabled"
+            id="label-playready__enabled"
           >
             Playready DRM:
           </label>
@@ -3013,7 +3153,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-playready__enabled"
+              aria-describedby="text-playready__enabled"
               class="form-check-input drm-checkbox"
               id="model-playready__enabled"
               name="playready__enabled"
@@ -3023,6 +3163,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-playready__enabled"
           >
             Enable Playready DRM support?
           </div>
@@ -3033,6 +3174,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-playready__licenseUrl"
+            id="label-playready__licenseUrl"
           >
             Playready LA_URL:
           </label>
@@ -3040,7 +3182,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-playready__licenseUrl"
+              aria-describedby="text-playready__licenseUrl"
               class="form-control "
               id="model-playready__licenseUrl"
               name="playready__licenseUrl"
@@ -3050,6 +3192,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-playready__licenseUrl"
           >
             Override the Playready LA_URL field
           </div>
@@ -3060,6 +3203,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-playready__piff"
+            id="label-playready__piff"
           >
             Playready PIFF:
           </label>
@@ -3067,7 +3211,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-playready__piff"
+              aria-describedby="text-playready__piff"
               class="form-check-input "
               id="model-playready__piff"
               name="playready__piff"
@@ -3077,6 +3221,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-playready__piff"
           >
             Include PIFF sample encryption data
           </div>
@@ -3087,6 +3232,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-playready__version"
+            id="label-playready__version"
           >
             Playready Version:
           </label>
@@ -3094,7 +3240,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-playready__version"
+              aria-describedby="text-playready__version"
               class="form-select "
               id="model-playready__version"
               name="playready__version"
@@ -3130,6 +3276,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-playready__version"
           >
             Set the PlayReady version compatibility for this stream
           </div>
@@ -3140,6 +3287,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-playready__drmloc"
+            id="label-playready__drmloc"
           >
             Playready location:
           </label>
@@ -3147,7 +3295,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-playready__drmloc"
+              aria-describedby="text-playready__drmloc"
               class="form-select "
               id="model-playready__drmloc"
               name="playready__drmloc"
@@ -3193,6 +3341,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-playready__drmloc"
           >
             Location to place DRM data
           </div>
@@ -3210,6 +3359,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-scte35__count"
+            id="label-scte35__count"
           >
             Scte35 count:
           </label>
@@ -3217,7 +3367,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-scte35__count"
+              aria-describedby="label-scte35__count"
               class="form-control "
               id="model-scte35__count"
               name="scte35__count"
@@ -3232,6 +3382,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-scte35__duration"
+            id="label-scte35__duration"
           >
             Scte35 duration:
           </label>
@@ -3239,7 +3390,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-scte35__duration"
+              aria-describedby="label-scte35__duration"
               class="form-control "
               id="model-scte35__duration"
               name="scte35__duration"
@@ -3254,6 +3405,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-scte35__inband"
+            id="label-scte35__inband"
           >
             Scte35 inband:
           </label>
@@ -3261,7 +3413,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-scte35__inband"
+              aria-describedby="label-scte35__inband"
               class="form-check-input "
               id="model-scte35__inband"
               name="scte35__inband"
@@ -3276,6 +3428,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-scte35__interval"
+            id="label-scte35__interval"
           >
             Scte35 interval:
           </label>
@@ -3283,7 +3436,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-scte35__interval"
+              aria-describedby="label-scte35__interval"
               class="form-control "
               id="model-scte35__interval"
               name="scte35__interval"
@@ -3298,6 +3451,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-scte35__program_id"
+            id="label-scte35__program_id"
           >
             Scte35 program_id:
           </label>
@@ -3305,7 +3459,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-scte35__program_id"
+              aria-describedby="label-scte35__program_id"
               class="form-control "
               id="model-scte35__program_id"
               name="scte35__program_id"
@@ -3320,6 +3474,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-scte35__start"
+            id="label-scte35__start"
           >
             Scte35 start:
           </label>
@@ -3327,7 +3482,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-scte35__start"
+              aria-describedby="label-scte35__start"
               class="form-control "
               id="model-scte35__start"
               name="scte35__start"
@@ -3342,6 +3497,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-scte35__timescale"
+            id="label-scte35__timescale"
           >
             Scte35 timescale:
           </label>
@@ -3349,7 +3505,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-scte35__timescale"
+              aria-describedby="label-scte35__timescale"
               class="form-control "
               id="model-scte35__timescale"
               name="scte35__timescale"
@@ -3364,6 +3520,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-scte35__value"
+            id="label-scte35__value"
           >
             Scte35 value:
           </label>
@@ -3371,7 +3528,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-scte35__value"
+              aria-describedby="label-scte35__value"
               class="form-control "
               id="model-scte35__value"
               name="scte35__value"
@@ -3386,6 +3543,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-scte35__version"
+            id="label-scte35__version"
           >
             Scte35 version:
           </label>
@@ -3393,7 +3551,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-scte35__version"
+              aria-describedby="label-scte35__version"
               class="form-control "
               id="model-scte35__version"
               name="scte35__version"
@@ -3508,6 +3666,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-ab"
+            id="label-ab"
           >
             Adaptive bitrate:
           </label>
@@ -3515,7 +3674,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-ab"
+              aria-describedby="text-ab"
               class="form-check-input "
               id="model-ab"
               name="ab"
@@ -3525,6 +3684,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-ab"
           >
             Enable or disable adaptive bitrate
           </div>
@@ -3535,6 +3695,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-ac"
+            id="label-ac"
           >
             Audio Codec:
           </label>
@@ -3542,7 +3703,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-ac"
+              aria-describedby="text-ac"
               class="form-select "
               id="model-ac"
               name="ac"
@@ -3568,6 +3729,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-ac"
           >
             Filter audio adaptation sets by audio codec (AAC or E-AC3)
           </div>
@@ -3578,6 +3740,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-evs"
+            id="label-evs"
           >
             DASH events:
           </label>
@@ -3585,7 +3748,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-evs"
+              aria-describedby="text-evs"
               class="form-select "
               id="model-evs"
               name="evs"
@@ -3611,6 +3774,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-evs"
           >
             A comma separated list of event formats
           </div>
@@ -3621,6 +3785,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-st"
+            id="label-st"
           >
             Segment timeline:
           </label>
@@ -3628,7 +3793,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-st"
+              aria-describedby="text-st"
               class="form-check-input "
               id="model-st"
               name="st"
@@ -3638,6 +3803,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-st"
           >
             Enable or disable segment timeline
           </div>
@@ -3648,6 +3814,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-utc"
+            id="label-utc"
           >
             UTC timing method:
           </label>
@@ -3655,7 +3822,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-utc"
+              aria-describedby="text-utc"
               class="form-select "
               id="model-utc"
               name="utc"
@@ -3706,6 +3873,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-utc"
           >
             Select UTCTiming element method.
           </div>
@@ -3716,6 +3884,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-vp"
+            id="label-vp"
           >
             Video Player:
           </label>
@@ -3723,7 +3892,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-vp"
+              aria-describedby="text-vp"
               class="form-select "
               id="model-vp"
               name="vp"
@@ -3749,6 +3918,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-vp"
           >
             Native or MSE playback control
           </div>
@@ -3766,6 +3936,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-ad"
+            id="label-ad"
           >
             Audio Description:
           </label>
@@ -3773,7 +3944,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-ad"
+              aria-describedby="text-ad"
               class="form-control "
               id="model-ad"
               name="ad"
@@ -3783,6 +3954,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-ad"
           >
             Select audio AdaptationSet that will be marked as a broadcast-mix audio description track
           </div>
@@ -3793,6 +3965,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-ast"
+            id="label-ast"
           >
             Availability start time:
           </label>
@@ -3800,7 +3973,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-ast"
+              aria-describedby="text-ast"
               class="form-control "
               id="model-ast"
               list="list-ast"
@@ -3840,6 +4013,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-ast"
           >
             Sets availabilityStartTime for live streams
           </div>
@@ -3850,6 +4024,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-bug"
+            id="label-bug"
           >
             Bug compatibility:
           </label>
@@ -3857,7 +4032,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-bug"
+              aria-describedby="text-bug"
               class="form-select "
               id="model-bug"
               name="bug"
@@ -3878,6 +4053,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-bug"
           >
             Produce a stream with known bugs
           </div>
@@ -3888,6 +4064,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-dft"
+            id="label-dft"
           >
             Clock drift:
           </label>
@@ -3895,7 +4072,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-dft"
+              aria-describedby="text-dft"
               class="form-control "
               id="model-dft"
               name="dft"
@@ -3905,6 +4082,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-dft"
           >
             Number of seconds of delay to add to wall clock time
           </div>
@@ -3915,6 +4093,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-lee"
+            id="label-lee"
           >
             Fragment expiration leeway:
           </label>
@@ -3922,7 +4101,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-lee"
+              aria-describedby="text-lee"
               class="form-control "
               id="model-lee"
               list="list-lee"
@@ -3952,6 +4131,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-lee"
           >
             Number of seconds after a fragment has expired before it becomes unavailable
           </div>
@@ -3962,6 +4142,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-ma"
+            id="label-ma"
           >
             Main audio track:
           </label>
@@ -3969,7 +4150,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-ma"
+              aria-describedby="text-ma"
               class="form-control "
               id="model-ma"
               name="ma"
@@ -3979,6 +4160,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-ma"
           >
             Select audio AdaptationSet that will be given the "main" role
           </div>
@@ -3989,6 +4171,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-mt"
+            id="label-mt"
           >
             Main text track:
           </label>
@@ -3996,7 +4179,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-mt"
+              aria-describedby="text-mt"
               class="form-control "
               id="model-mt"
               name="mt"
@@ -4006,6 +4189,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-mt"
           >
             Select text AdaptationSet that will be given the "main" role
           </div>
@@ -4016,6 +4200,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-mup"
+            id="label-mup"
           >
             Minimum update period:
           </label>
@@ -4023,7 +4208,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-mup"
+              aria-describedby="text-mup"
               class="form-control "
               id="model-mup"
               list="list-mup"
@@ -4058,6 +4243,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-mup"
           >
             Specify minimumUpdatePeriod (in seconds) or -1 to disable updates
           </div>
@@ -4068,6 +4254,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-ntps"
+            id="label-ntps"
           >
             NTP time servers:
           </label>
@@ -4075,7 +4262,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-ntps"
+              aria-describedby="text-ntps"
               class="form-select "
               id="model-ntps"
               name="ntps"
@@ -4101,6 +4288,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-ntps"
           >
             List of servers to use for NTP requests
           </div>
@@ -4111,6 +4299,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-tc"
+            id="label-tc"
           >
             Text Codec:
           </label>
@@ -4118,7 +4307,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-tc"
+              aria-describedby="text-tc"
               class="form-select "
               id="model-tc"
               name="tc"
@@ -4139,6 +4328,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-tc"
           >
             Filter text adaptation sets by text codec
           </div>
@@ -4149,6 +4339,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-tl"
+            id="label-tl"
           >
             Text Language:
           </label>
@@ -4156,7 +4347,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-tl"
+              aria-describedby="text-tl"
               class="form-control "
               id="model-tl"
               name="tl"
@@ -4166,6 +4357,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-tl"
           >
             Filter text adaptation sets by language
           </div>
@@ -4176,6 +4368,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-base"
+            id="label-base"
           >
             Use BaseURLs:
           </label>
@@ -4183,7 +4376,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-base"
+              aria-describedby="text-base"
               class="form-check-input "
               id="model-base"
               name="base"
@@ -4193,6 +4386,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-base"
           >
             Include a BaseURL element?
           </div>
@@ -4203,6 +4397,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-patch"
+            id="label-patch"
           >
             Use MPD patches:
           </label>
@@ -4210,7 +4405,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-patch"
+              aria-describedby="text-patch"
               class="form-check-input "
               id="model-patch"
               name="patch"
@@ -4220,6 +4415,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-patch"
           >
             Use MPD patches for live streams
           </div>
@@ -4230,6 +4426,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-tbd"
+            id="label-tbd"
           >
             timeShiftBufferDepth size:
           </label>
@@ -4237,7 +4434,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-tbd"
+              aria-describedby="text-tbd"
               class="form-control "
               id="model-tbd"
               list="list-tbd"
@@ -4262,6 +4459,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-tbd"
           >
             Number of seconds for timeShiftBufferDepth
           </div>
@@ -4279,6 +4477,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-clearkey__enabled"
+            id="label-clearkey__enabled"
           >
             Clearkey DRM:
           </label>
@@ -4286,7 +4485,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-clearkey__enabled"
+              aria-describedby="text-clearkey__enabled"
               class="form-check-input drm-checkbox"
               id="model-clearkey__enabled"
               name="clearkey__enabled"
@@ -4296,6 +4495,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-clearkey__enabled"
           >
             Enable Clearkey DRM support?
           </div>
@@ -4306,6 +4506,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-clu"
+            id="label-clu"
           >
             Clearkey LA_URL:
           </label>
@@ -4313,7 +4514,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-clu"
+              aria-describedby="text-clu"
               class="form-control "
               id="model-clu"
               name="clu"
@@ -4323,6 +4524,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-clu"
           >
             Override the Clearkey license URL field
           </div>
@@ -4333,6 +4535,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-clearkey__drmloc"
+            id="label-clearkey__drmloc"
           >
             Clearkey location:
           </label>
@@ -4340,7 +4543,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-clearkey__drmloc"
+              aria-describedby="text-clearkey__drmloc"
               class="form-select "
               id="model-clearkey__drmloc"
               name="clearkey__drmloc"
@@ -4386,6 +4589,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-clearkey__drmloc"
           >
             Location to place DRM data
           </div>
@@ -4403,6 +4607,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-marlin__enabled"
+            id="label-marlin__enabled"
           >
             Marlin DRM:
           </label>
@@ -4410,7 +4615,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-marlin__enabled"
+              aria-describedby="text-marlin__enabled"
               class="form-check-input drm-checkbox"
               id="model-marlin__enabled"
               name="marlin__enabled"
@@ -4420,6 +4625,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-marlin__enabled"
           >
             Enable Marlin DRM support?
           </div>
@@ -4430,6 +4636,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-mlu"
+            id="label-mlu"
           >
             Marlin LA_URL:
           </label>
@@ -4437,7 +4644,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-mlu"
+              aria-describedby="text-mlu"
               class="form-control "
               id="model-mlu"
               name="mlu"
@@ -4447,6 +4654,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-mlu"
           >
             Override the Marlin S-URL field
           </div>
@@ -4457,6 +4665,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-marlin__drmloc"
+            id="label-marlin__drmloc"
           >
             Marlin location:
           </label>
@@ -4464,7 +4673,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-marlin__drmloc"
+              aria-describedby="text-marlin__drmloc"
               class="form-select "
               id="model-marlin__drmloc"
               name="marlin__drmloc"
@@ -4510,6 +4719,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-marlin__drmloc"
           >
             Location to place DRM data
           </div>
@@ -4527,6 +4737,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-pinCoun"
+            id="label-pinCoun"
           >
             Ping count:
           </label>
@@ -4534,7 +4745,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-pinCoun"
+              aria-describedby="label-pinCoun"
               class="form-control "
               id="model-pinCoun"
               name="pinCoun"
@@ -4549,6 +4760,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-pinDura"
+            id="label-pinDura"
           >
             Ping duration:
           </label>
@@ -4556,7 +4768,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-pinDura"
+              aria-describedby="label-pinDura"
               class="form-control "
               id="model-pinDura"
               name="pinDura"
@@ -4571,6 +4783,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-pinInba"
+            id="label-pinInba"
           >
             Ping inband:
           </label>
@@ -4578,7 +4791,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-pinInba"
+              aria-describedby="label-pinInba"
               class="form-check-input "
               id="model-pinInba"
               name="pinInba"
@@ -4593,6 +4806,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-pinInte"
+            id="label-pinInte"
           >
             Ping interval:
           </label>
@@ -4600,7 +4814,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-pinInte"
+              aria-describedby="label-pinInte"
               class="form-control "
               id="model-pinInte"
               name="pinInte"
@@ -4615,6 +4829,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-pinStar"
+            id="label-pinStar"
           >
             Ping start:
           </label>
@@ -4622,7 +4837,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-pinStar"
+              aria-describedby="label-pinStar"
               class="form-control "
               id="model-pinStar"
               name="pinStar"
@@ -4637,6 +4852,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-pinTime"
+            id="label-pinTime"
           >
             Ping timescale:
           </label>
@@ -4644,7 +4860,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-pinTime"
+              aria-describedby="label-pinTime"
               class="form-control "
               id="model-pinTime"
               name="pinTime"
@@ -4659,6 +4875,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-pinValu"
+            id="label-pinValu"
           >
             Ping value:
           </label>
@@ -4666,7 +4883,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-pinValu"
+              aria-describedby="label-pinValu"
               class="form-control "
               id="model-pinValu"
               name="pinValu"
@@ -4681,6 +4898,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-pinVers"
+            id="label-pinVers"
           >
             Ping version:
           </label>
@@ -4688,7 +4906,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-pinVers"
+              aria-describedby="label-pinVers"
               class="form-control "
               id="model-pinVers"
               name="pinVers"
@@ -4710,6 +4928,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-playready__enabled"
+            id="label-playready__enabled"
           >
             Playready DRM:
           </label>
@@ -4717,7 +4936,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-playready__enabled"
+              aria-describedby="text-playready__enabled"
               class="form-check-input drm-checkbox"
               id="model-playready__enabled"
               name="playready__enabled"
@@ -4727,6 +4946,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-playready__enabled"
           >
             Enable Playready DRM support?
           </div>
@@ -4737,6 +4957,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-plu"
+            id="label-plu"
           >
             Playready LA_URL:
           </label>
@@ -4744,7 +4965,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-plu"
+              aria-describedby="text-plu"
               class="form-control "
               id="model-plu"
               name="plu"
@@ -4754,6 +4975,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-plu"
           >
             Override the Playready LA_URL field
           </div>
@@ -4764,6 +4986,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-pff"
+            id="label-pff"
           >
             Playready PIFF:
           </label>
@@ -4771,7 +4994,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <input
-              aria-describedby="field-pff"
+              aria-describedby="text-pff"
               class="form-check-input "
               id="model-pff"
               name="pff"
@@ -4781,6 +5004,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-pff"
           >
             Include PIFF sample encryption data
           </div>
@@ -4791,6 +5015,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-pvn"
+            id="label-pvn"
           >
             Playready Version:
           </label>
@@ -4798,7 +5023,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-pvn"
+              aria-describedby="text-pvn"
               class="form-select "
               id="model-pvn"
               name="pvn"
@@ -4834,6 +5059,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-pvn"
           >
             Set the PlayReady version compatibility for this stream
           </div>
@@ -4844,6 +5070,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-playready__drmloc"
+            id="label-playready__drmloc"
           >
             Playready location:
           </label>
@@ -4851,7 +5078,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-4"
           >
             <select
-              aria-describedby="field-playready__drmloc"
+              aria-describedby="text-playready__drmloc"
               class="form-select "
               id="model-playready__drmloc"
               name="playready__drmloc"
@@ -4897,6 +5124,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           </div>
           <div
             class="col-5 form-text"
+            id="text-playready__drmloc"
           >
             Location to place DRM data
           </div>
@@ -4914,6 +5142,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-sctCoun"
+            id="label-sctCoun"
           >
             Scte35 count:
           </label>
@@ -4921,7 +5150,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-sctCoun"
+              aria-describedby="label-sctCoun"
               class="form-control "
               id="model-sctCoun"
               name="sctCoun"
@@ -4936,6 +5165,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-sctDura"
+            id="label-sctDura"
           >
             Scte35 duration:
           </label>
@@ -4943,7 +5173,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-sctDura"
+              aria-describedby="label-sctDura"
               class="form-control "
               id="model-sctDura"
               name="sctDura"
@@ -4958,6 +5188,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-sctInba"
+            id="label-sctInba"
           >
             Scte35 inband:
           </label>
@@ -4965,7 +5196,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-sctInba"
+              aria-describedby="label-sctInba"
               class="form-check-input "
               id="model-sctInba"
               name="sctInba"
@@ -4980,6 +5211,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-sctInte"
+            id="label-sctInte"
           >
             Scte35 interval:
           </label>
@@ -4987,7 +5219,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-sctInte"
+              aria-describedby="label-sctInte"
               class="form-control "
               id="model-sctInte"
               name="sctInte"
@@ -5002,6 +5234,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-sctProg"
+            id="label-sctProg"
           >
             Scte35 program_id:
           </label>
@@ -5009,7 +5242,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-sctProg"
+              aria-describedby="label-sctProg"
               class="form-control "
               id="model-sctProg"
               name="sctProg"
@@ -5024,6 +5257,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-sctStar"
+            id="label-sctStar"
           >
             Scte35 start:
           </label>
@@ -5031,7 +5265,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-sctStar"
+              aria-describedby="label-sctStar"
               class="form-control "
               id="model-sctStar"
               name="sctStar"
@@ -5046,6 +5280,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-sctTime"
+            id="label-sctTime"
           >
             Scte35 timescale:
           </label>
@@ -5053,7 +5288,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-sctTime"
+              aria-describedby="label-sctTime"
               class="form-control "
               id="model-sctTime"
               name="sctTime"
@@ -5068,6 +5303,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-sctValu"
+            id="label-sctValu"
           >
             Scte35 value:
           </label>
@@ -5075,7 +5311,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-sctValu"
+              aria-describedby="label-sctValu"
               class="form-control "
               id="model-sctValu"
               name="sctValu"
@@ -5090,6 +5326,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           <label
             class="col-3 col-form-label"
             for="model-sctVers"
+            id="label-sctVers"
           >
             Scte35 version:
           </label>
@@ -5097,7 +5334,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             class="col-9"
           >
             <input
-              aria-describedby="field-sctVers"
+              aria-describedby="label-sctVers"
               class="form-control "
               id="model-sctVers"
               name="sctVers"

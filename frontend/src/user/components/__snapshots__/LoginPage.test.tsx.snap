@@ -29,6 +29,7 @@ exports[`LoginPage component > matches snapshot 1`] = `
           <label
             class="col-2 col-form-label"
             for="model-username"
+            id="label-username"
           >
             Username:
           </label>
@@ -36,7 +37,7 @@ exports[`LoginPage component > matches snapshot 1`] = `
             class="col-10"
           >
             <input
-              aria-describedby="field-username"
+              aria-describedby="label-username"
               class="form-control "
               id="model-username"
               name="username"
@@ -51,6 +52,7 @@ exports[`LoginPage component > matches snapshot 1`] = `
           <label
             class="col-2 col-form-label"
             for="model-password"
+            id="label-password"
           >
             Password:
           </label>
@@ -58,7 +60,7 @@ exports[`LoginPage component > matches snapshot 1`] = `
             class="col-10"
           >
             <input
-              aria-describedby="field-password"
+              aria-describedby="label-password"
               class="form-control "
               id="model-password"
               name="password"
@@ -73,6 +75,7 @@ exports[`LoginPage component > matches snapshot 1`] = `
           <label
             class="col-2 col-form-label"
             for="model-rememberme"
+            id="label-rememberme"
           >
             Remember Me:
           </label>
@@ -80,7 +83,7 @@ exports[`LoginPage component > matches snapshot 1`] = `
             class="col-10"
           >
             <input
-              aria-describedby="field-rememberme"
+              aria-describedby="label-rememberme"
               class="form-check-input "
               id="model-rememberme"
               name="rememberme"

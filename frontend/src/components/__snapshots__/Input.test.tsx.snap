@@ -119,7 +119,6 @@ exports[`Input component > renders a Radio button 1`] = `
 exports[`Input component > renders a Select input 1`] = `
 <DocumentFragment>
   <select
-    aria-describedby="field-manifest"
     class="form-select "
     id="model-manifest"
     name="manifest"

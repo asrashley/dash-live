@@ -135,6 +135,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-ab"
+                      id="label-ab"
                     >
                       Adaptive bitrate:
                     </label>
@@ -142,7 +143,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-4"
                     >
                       <input
-                        aria-describedby="field-ab"
+                        aria-describedby="text-ab"
                         class="form-check-input "
                         id="model-ab"
                         name="ab"
@@ -152,6 +153,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     </div>
                     <div
                       class="col-5 form-text"
+                      id="text-ab"
                     >
                       Enable or disable adaptive bitrate
                     </div>
@@ -162,6 +164,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-evs"
+                      id="label-evs"
                     >
                       DASH events:
                     </label>
@@ -169,7 +172,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-4"
                     >
                       <select
-                        aria-describedby="field-evs"
+                        aria-describedby="text-evs"
                         class="form-select "
                         id="model-evs"
                         name="evs"
@@ -195,6 +198,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     </div>
                     <div
                       class="col-5 form-text"
+                      id="text-evs"
                     >
                       A comma separated list of event formats
                     </div>
@@ -205,6 +209,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-st"
+                      id="label-st"
                     >
                       Segment timeline:
                     </label>
@@ -212,7 +217,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-4"
                     >
                       <input
-                        aria-describedby="field-st"
+                        aria-describedby="text-st"
                         class="form-check-input "
                         id="model-st"
                         name="st"
@@ -222,6 +227,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     </div>
                     <div
                       class="col-5 form-text"
+                      id="text-st"
                     >
                       Enable or disable segment timeline
                     </div>
@@ -232,6 +238,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-utc"
+                      id="label-utc"
                     >
                       UTC timing method:
                     </label>
@@ -239,7 +246,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-4"
                     >
                       <select
-                        aria-describedby="field-utc"
+                        aria-describedby="text-utc"
                         class="form-select "
                         id="model-utc"
                         name="utc"
@@ -290,6 +297,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     </div>
                     <div
                       class="col-5 form-text"
+                      id="text-utc"
                     >
                       Select UTCTiming element method.
                     </div>
@@ -307,6 +315,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-ast"
+                      id="label-ast"
                     >
                       Availability start time:
                     </label>
@@ -314,7 +323,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-4"
                     >
                       <input
-                        aria-describedby="field-ast"
+                        aria-describedby="text-ast"
                         class="form-control "
                         id="model-ast"
                         list="list-ast"
@@ -354,6 +363,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     </div>
                     <div
                       class="col-5 form-text"
+                      id="text-ast"
                     >
                       Sets availabilityStartTime for live streams
                     </div>
@@ -364,6 +374,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-bug"
+                      id="label-bug"
                     >
                       Bug compatibility:
                     </label>
@@ -371,7 +382,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-4"
                     >
                       <select
-                        aria-describedby="field-bug"
+                        aria-describedby="text-bug"
                         class="form-select "
                         id="model-bug"
                         name="bug"
@@ -392,6 +403,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     </div>
                     <div
                       class="col-5 form-text"
+                      id="text-bug"
                     >
                       Produce a stream with known bugs
                     </div>
@@ -402,6 +414,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-dft"
+                      id="label-dft"
                     >
                       Clock drift:
                     </label>
@@ -409,7 +422,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-4"
                     >
                       <input
-                        aria-describedby="field-dft"
+                        aria-describedby="text-dft"
                         class="form-control "
                         id="model-dft"
                         name="dft"
@@ -419,6 +432,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     </div>
                     <div
                       class="col-5 form-text"
+                      id="text-dft"
                     >
                       Number of seconds of delay to add to wall clock time
                     </div>
@@ -429,6 +443,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-lee"
+                      id="label-lee"
                     >
                       Fragment expiration leeway:
                     </label>
@@ -436,7 +451,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-4"
                     >
                       <input
-                        aria-describedby="field-lee"
+                        aria-describedby="text-lee"
                         class="form-control "
                         id="model-lee"
                         list="list-lee"
@@ -466,6 +481,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     </div>
                     <div
                       class="col-5 form-text"
+                      id="text-lee"
                     >
                       Number of seconds after a fragment has expired before it becomes unavailable
                     </div>
@@ -476,6 +492,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-mup"
+                      id="label-mup"
                     >
                       Minimum update period:
                     </label>
@@ -483,7 +500,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-4"
                     >
                       <input
-                        aria-describedby="field-mup"
+                        aria-describedby="text-mup"
                         class="form-control "
                         id="model-mup"
                         list="list-mup"
@@ -518,6 +535,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     </div>
                     <div
                       class="col-5 form-text"
+                      id="text-mup"
                     >
                       Specify minimumUpdatePeriod (in seconds) or -1 to disable updates
                     </div>
@@ -528,6 +546,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-ntps"
+                      id="label-ntps"
                     >
                       NTP time servers:
                     </label>
@@ -535,7 +554,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-4"
                     >
                       <select
-                        aria-describedby="field-ntps"
+                        aria-describedby="text-ntps"
                         class="form-select "
                         id="model-ntps"
                         name="ntps"
@@ -561,6 +580,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     </div>
                     <div
                       class="col-5 form-text"
+                      id="text-ntps"
                     >
                       List of servers to use for NTP requests
                     </div>
@@ -571,6 +591,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-base"
+                      id="label-base"
                     >
                       Use BaseURLs:
                     </label>
@@ -578,7 +599,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-4"
                     >
                       <input
-                        aria-describedby="field-base"
+                        aria-describedby="text-base"
                         class="form-check-input "
                         id="model-base"
                         name="base"
@@ -588,6 +609,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     </div>
                     <div
                       class="col-5 form-text"
+                      id="text-base"
                     >
                       Include a BaseURL element?
                     </div>
@@ -598,6 +620,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-patch"
+                      id="label-patch"
                     >
                       Use MPD patches:
                     </label>
@@ -605,7 +628,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-4"
                     >
                       <input
-                        aria-describedby="field-patch"
+                        aria-describedby="text-patch"
                         class="form-check-input "
                         id="model-patch"
                         name="patch"
@@ -615,6 +638,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     </div>
                     <div
                       class="col-5 form-text"
+                      id="text-patch"
                     >
                       Use MPD patches for live streams
                     </div>
@@ -625,6 +649,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-tbd"
+                      id="label-tbd"
                     >
                       timeShiftBufferDepth size:
                     </label>
@@ -632,7 +657,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-4"
                     >
                       <input
-                        aria-describedby="field-tbd"
+                        aria-describedby="text-tbd"
                         class="form-control "
                         id="model-tbd"
                         list="list-tbd"
@@ -657,6 +682,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     </div>
                     <div
                       class="col-5 form-text"
+                      id="text-tbd"
                     >
                       Number of seconds for timeShiftBufferDepth
                     </div>
@@ -674,6 +700,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-clearkey__enabled"
+                      id="label-clearkey__enabled"
                     >
                       Clearkey DRM:
                     </label>
@@ -681,7 +708,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-4"
                     >
                       <input
-                        aria-describedby="field-clearkey__enabled"
+                        aria-describedby="text-clearkey__enabled"
                         class="form-check-input drm-checkbox"
                         id="model-clearkey__enabled"
                         name="clearkey__enabled"
@@ -691,6 +718,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     </div>
                     <div
                       class="col-5 form-text"
+                      id="text-clearkey__enabled"
                     >
                       Enable Clearkey DRM support?
                     </div>
@@ -701,6 +729,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-clu"
+                      id="label-clu"
                     >
                       Clearkey LA_URL:
                     </label>
@@ -708,7 +737,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-4"
                     >
                       <input
-                        aria-describedby="field-clu"
+                        aria-describedby="text-clu"
                         class="form-control "
                         id="model-clu"
                         name="clu"
@@ -718,6 +747,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     </div>
                     <div
                       class="col-5 form-text"
+                      id="text-clu"
                     >
                       Override the Clearkey license URL field
                     </div>
@@ -728,6 +758,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-clearkey__drmloc"
+                      id="label-clearkey__drmloc"
                     >
                       Clearkey location:
                     </label>
@@ -735,7 +766,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-4"
                     >
                       <select
-                        aria-describedby="field-clearkey__drmloc"
+                        aria-describedby="text-clearkey__drmloc"
                         class="form-select "
                         id="model-clearkey__drmloc"
                         name="clearkey__drmloc"
@@ -781,6 +812,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     </div>
                     <div
                       class="col-5 form-text"
+                      id="text-clearkey__drmloc"
                     >
                       Location to place DRM data
                     </div>
@@ -798,6 +830,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-marlin__enabled"
+                      id="label-marlin__enabled"
                     >
                       Marlin DRM:
                     </label>
@@ -805,7 +838,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-4"
                     >
                       <input
-                        aria-describedby="field-marlin__enabled"
+                        aria-describedby="text-marlin__enabled"
                         class="form-check-input drm-checkbox"
                         id="model-marlin__enabled"
                         name="marlin__enabled"
@@ -815,6 +848,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     </div>
                     <div
                       class="col-5 form-text"
+                      id="text-marlin__enabled"
                     >
                       Enable Marlin DRM support?
                     </div>
@@ -825,6 +859,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-mlu"
+                      id="label-mlu"
                     >
                       Marlin LA_URL:
                     </label>
@@ -832,7 +867,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-4"
                     >
                       <input
-                        aria-describedby="field-mlu"
+                        aria-describedby="text-mlu"
                         class="form-control "
                         id="model-mlu"
                         name="mlu"
@@ -842,6 +877,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     </div>
                     <div
                       class="col-5 form-text"
+                      id="text-mlu"
                     >
                       Override the Marlin S-URL field
                     </div>
@@ -852,6 +888,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-marlin__drmloc"
+                      id="label-marlin__drmloc"
                     >
                       Marlin location:
                     </label>
@@ -859,7 +896,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-4"
                     >
                       <select
-                        aria-describedby="field-marlin__drmloc"
+                        aria-describedby="text-marlin__drmloc"
                         class="form-select "
                         id="model-marlin__drmloc"
                         name="marlin__drmloc"
@@ -905,6 +942,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     </div>
                     <div
                       class="col-5 form-text"
+                      id="text-marlin__drmloc"
                     >
                       Location to place DRM data
                     </div>
@@ -922,6 +960,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-pinCoun"
+                      id="label-pinCoun"
                     >
                       Ping count:
                     </label>
@@ -929,7 +968,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-9"
                     >
                       <input
-                        aria-describedby="field-pinCoun"
+                        aria-describedby="label-pinCoun"
                         class="form-control "
                         id="model-pinCoun"
                         name="pinCoun"
@@ -944,6 +983,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-pinDura"
+                      id="label-pinDura"
                     >
                       Ping duration:
                     </label>
@@ -951,7 +991,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-9"
                     >
                       <input
-                        aria-describedby="field-pinDura"
+                        aria-describedby="label-pinDura"
                         class="form-control "
                         id="model-pinDura"
                         name="pinDura"
@@ -966,6 +1006,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-pinInba"
+                      id="label-pinInba"
                     >
                       Ping inband:
                     </label>
@@ -973,7 +1014,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-9"
                     >
                       <input
-                        aria-describedby="field-pinInba"
+                        aria-describedby="label-pinInba"
                         class="form-check-input "
                         id="model-pinInba"
                         name="pinInba"
@@ -988,6 +1029,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-pinInte"
+                      id="label-pinInte"
                     >
                       Ping interval:
                     </label>
@@ -995,7 +1037,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-9"
                     >
                       <input
-                        aria-describedby="field-pinInte"
+                        aria-describedby="label-pinInte"
                         class="form-control "
                         id="model-pinInte"
                         name="pinInte"
@@ -1010,6 +1052,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-pinStar"
+                      id="label-pinStar"
                     >
                       Ping start:
                     </label>
@@ -1017,7 +1060,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-9"
                     >
                       <input
-                        aria-describedby="field-pinStar"
+                        aria-describedby="label-pinStar"
                         class="form-control "
                         id="model-pinStar"
                         name="pinStar"
@@ -1032,6 +1075,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-pinTime"
+                      id="label-pinTime"
                     >
                       Ping timescale:
                     </label>
@@ -1039,7 +1083,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-9"
                     >
                       <input
-                        aria-describedby="field-pinTime"
+                        aria-describedby="label-pinTime"
                         class="form-control "
                         id="model-pinTime"
                         name="pinTime"
@@ -1054,6 +1098,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-pinValu"
+                      id="label-pinValu"
                     >
                       Ping value:
                     </label>
@@ -1061,7 +1106,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-9"
                     >
                       <input
-                        aria-describedby="field-pinValu"
+                        aria-describedby="label-pinValu"
                         class="form-control "
                         id="model-pinValu"
                         name="pinValu"
@@ -1076,6 +1121,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-pinVers"
+                      id="label-pinVers"
                     >
                       Ping version:
                     </label>
@@ -1083,7 +1129,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-9"
                     >
                       <input
-                        aria-describedby="field-pinVers"
+                        aria-describedby="label-pinVers"
                         class="form-control "
                         id="model-pinVers"
                         name="pinVers"
@@ -1105,6 +1151,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-playready__enabled"
+                      id="label-playready__enabled"
                     >
                       Playready DRM:
                     </label>
@@ -1112,7 +1159,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-4"
                     >
                       <input
-                        aria-describedby="field-playready__enabled"
+                        aria-describedby="text-playready__enabled"
                         class="form-check-input drm-checkbox"
                         id="model-playready__enabled"
                         name="playready__enabled"
@@ -1122,6 +1169,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     </div>
                     <div
                       class="col-5 form-text"
+                      id="text-playready__enabled"
                     >
                       Enable Playready DRM support?
                     </div>
@@ -1132,6 +1180,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-plu"
+                      id="label-plu"
                     >
                       Playready LA_URL:
                     </label>
@@ -1139,7 +1188,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-4"
                     >
                       <input
-                        aria-describedby="field-plu"
+                        aria-describedby="text-plu"
                         class="form-control "
                         id="model-plu"
                         name="plu"
@@ -1149,6 +1198,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     </div>
                     <div
                       class="col-5 form-text"
+                      id="text-plu"
                     >
                       Override the Playready LA_URL field
                     </div>
@@ -1159,6 +1209,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-pff"
+                      id="label-pff"
                     >
                       Playready PIFF:
                     </label>
@@ -1166,7 +1217,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-4"
                     >
                       <input
-                        aria-describedby="field-pff"
+                        aria-describedby="text-pff"
                         class="form-check-input "
                         id="model-pff"
                         name="pff"
@@ -1176,6 +1227,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     </div>
                     <div
                       class="col-5 form-text"
+                      id="text-pff"
                     >
                       Include PIFF sample encryption data
                     </div>
@@ -1186,6 +1238,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-pvn"
+                      id="label-pvn"
                     >
                       Playready Version:
                     </label>
@@ -1193,7 +1246,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-4"
                     >
                       <select
-                        aria-describedby="field-pvn"
+                        aria-describedby="text-pvn"
                         class="form-select "
                         id="model-pvn"
                         name="pvn"
@@ -1229,6 +1282,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     </div>
                     <div
                       class="col-5 form-text"
+                      id="text-pvn"
                     >
                       Set the PlayReady version compatibility for this stream
                     </div>
@@ -1239,6 +1293,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-playready__drmloc"
+                      id="label-playready__drmloc"
                     >
                       Playready location:
                     </label>
@@ -1246,7 +1301,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-4"
                     >
                       <select
-                        aria-describedby="field-playready__drmloc"
+                        aria-describedby="text-playready__drmloc"
                         class="form-select "
                         id="model-playready__drmloc"
                         name="playready__drmloc"
@@ -1292,6 +1347,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     </div>
                     <div
                       class="col-5 form-text"
+                      id="text-playready__drmloc"
                     >
                       Location to place DRM data
                     </div>
@@ -1309,6 +1365,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-sctCoun"
+                      id="label-sctCoun"
                     >
                       Scte35 count:
                     </label>
@@ -1316,7 +1373,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-9"
                     >
                       <input
-                        aria-describedby="field-sctCoun"
+                        aria-describedby="label-sctCoun"
                         class="form-control "
                         id="model-sctCoun"
                         name="sctCoun"
@@ -1331,6 +1388,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-sctDura"
+                      id="label-sctDura"
                     >
                       Scte35 duration:
                     </label>
@@ -1338,7 +1396,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-9"
                     >
                       <input
-                        aria-describedby="field-sctDura"
+                        aria-describedby="label-sctDura"
                         class="form-control "
                         id="model-sctDura"
                         name="sctDura"
@@ -1353,6 +1411,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-sctInba"
+                      id="label-sctInba"
                     >
                       Scte35 inband:
                     </label>
@@ -1360,7 +1419,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-9"
                     >
                       <input
-                        aria-describedby="field-sctInba"
+                        aria-describedby="label-sctInba"
                         class="form-check-input "
                         id="model-sctInba"
                         name="sctInba"
@@ -1375,6 +1434,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-sctInte"
+                      id="label-sctInte"
                     >
                       Scte35 interval:
                     </label>
@@ -1382,7 +1442,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-9"
                     >
                       <input
-                        aria-describedby="field-sctInte"
+                        aria-describedby="label-sctInte"
                         class="form-control "
                         id="model-sctInte"
                         name="sctInte"
@@ -1397,6 +1457,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-sctProg"
+                      id="label-sctProg"
                     >
                       Scte35 program_id:
                     </label>
@@ -1404,7 +1465,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-9"
                     >
                       <input
-                        aria-describedby="field-sctProg"
+                        aria-describedby="label-sctProg"
                         class="form-control "
                         id="model-sctProg"
                         name="sctProg"
@@ -1419,6 +1480,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-sctStar"
+                      id="label-sctStar"
                     >
                       Scte35 start:
                     </label>
@@ -1426,7 +1488,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-9"
                     >
                       <input
-                        aria-describedby="field-sctStar"
+                        aria-describedby="label-sctStar"
                         class="form-control "
                         id="model-sctStar"
                         name="sctStar"
@@ -1441,6 +1503,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-sctTime"
+                      id="label-sctTime"
                     >
                       Scte35 timescale:
                     </label>
@@ -1448,7 +1511,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-9"
                     >
                       <input
-                        aria-describedby="field-sctTime"
+                        aria-describedby="label-sctTime"
                         class="form-control "
                         id="model-sctTime"
                         name="sctTime"
@@ -1463,6 +1526,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-sctValu"
+                      id="label-sctValu"
                     >
                       Scte35 value:
                     </label>
@@ -1470,7 +1534,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-9"
                     >
                       <input
-                        aria-describedby="field-sctValu"
+                        aria-describedby="label-sctValu"
                         class="form-control "
                         id="model-sctValu"
                         name="sctValu"
@@ -1485,6 +1549,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                     <label
                       class="col-3 col-form-label"
                       for="model-sctVers"
+                      id="label-sctVers"
                     >
                       Scte35 version:
                     </label>
@@ -1492,7 +1557,7 @@ exports[`OptionsDialog component > matches snapshot 1`] = `
                       class="col-9"
                     >
                       <input
-                        aria-describedby="field-sctVers"
+                        aria-describedby="label-sctVers"
                         class="form-control "
                         id="model-sctVers"
                         name="sctVers"
