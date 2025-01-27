@@ -10,13 +10,14 @@ HTTP requests.
 To build using Docker's buildx tool:
 
 ```sh
-docker buildx build --platform linux/amd64 -t dashlive:latest --load .
+docker buildx build --platform linux/amd64 -t dashlive:latest \
+  --build-arg "GIT_SHA=$(git rev-list --abbrev-commit -1 HEAD)" --load .
 ```
 
 or to use the older build tool:
 
 ```sh
-docker build -t dashlive:latest .
+docker build -t dashlive:latest --build-arg "GIT_SHA=$(git rev-list --abbrev-commit -1 HEAD)" .
 ```
 
 A directory is needed to contain the media and database files:
@@ -77,5 +78,5 @@ you can speed up the build process by telling docker to stop after
 installing the app, before it installs the files used for normal usage.
 
 ```sh
-docker build --tag=dashlive --target=base .
+docker build --tag=dashlive --target=dashlive .
 ```
