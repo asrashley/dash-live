@@ -14,10 +14,11 @@ import {
 import { TrackPickerDialogState } from "../../types/DialogState";
 import { DecoratedStream } from "../../types/DecoratedStream";
 import { ApiRequests, EndpointContext } from "../../endpoints";
-import { ContentRolesMap } from "../../types/ContentRolesMap";
 import { MpsPeriod } from "../../types/MpsPeriod";
 import { StreamTrack } from "../../types/StreamTrack";
 import { DecoratedMultiPeriodStream } from "../../types/DecoratedMultiPeriodStream";
+
+import contentRoles from "../../test/fixtures/content_roles.json";
 
 describe("TrackSelectionDialog component", () => {
   const onClose = vi.fn();
@@ -131,9 +132,8 @@ describe("TrackSelectionDialog component", () => {
     };
     rolesPromise = new Promise<void>((resolve) => {
       apiRequests.getContentRoles.mockImplementation(async () => {
-        const data = await import("../../test/fixtures/content_roles.json");
         resolve();
-        return data.default as ContentRolesMap;
+        return contentRoles;
       });
     });
   });
