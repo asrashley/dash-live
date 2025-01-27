@@ -14,6 +14,7 @@ from flask.views import MethodView  # type: ignore
 
 from dashlive.components.field_group import InputFieldGroupJson
 from dashlive.drm.system import DrmSystem
+from dashlive.server.models.group import Group
 from dashlive.server.models.token import EncodedJWTokenJson
 from dashlive.server.options.container import OptionsContainer
 from dashlive.server.options.dash_option import DashOption
@@ -155,6 +156,7 @@ class OptionFieldGroups(MethodView):
             cgi_options=options.generate_cgi_parameters(remove_defaults=False),
             short_options=options.generate_short_parameters(remove_defaults=False),
             drm_systems=DrmSystem.values(),
+            group_names=Group.names(),
             field_groups=field_groups)
         headers: dict[str, str] = {
             'Content-Type': 'application/javascript',

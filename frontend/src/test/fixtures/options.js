@@ -177,9 +177,8 @@ export const defaultCgiOptions = {
   "vcorrupt": [],
   "verr": []
 };
-
 export const drmSystems = ["clearkey", "marlin", "playready"];
-
+export const groupNames = ["ADMIN", "MEDIA", "USER"];
 export const fieldGroups = [
   {
     "fields": [
