@@ -8,6 +8,7 @@ exports[`FormRow > can set column layout 1`] = `
     <label
       class="col-3 col-form-label"
       for="model-test"
+      id="label-test"
     >
       form label:
     </label>
@@ -20,6 +21,7 @@ exports[`FormRow > can set column layout 1`] = `
     </div>
     <div
       class="col-5 form-text"
+      id="text-test"
     >
       input description
     </div>
@@ -35,6 +37,7 @@ exports[`FormRow > can set column layout for row without text 1`] = `
     <label
       class="col-3 col-form-label"
       for="model-test"
+      id="label-test"
     >
       form label:
     </label>
@@ -57,6 +60,7 @@ exports[`FormRow > form row with text 1`] = `
     <label
       class="col-2 col-form-label"
       for="model-test"
+      id="label-test"
     >
       form label:
     </label>
@@ -69,6 +73,7 @@ exports[`FormRow > form row with text 1`] = `
     </div>
     <div
       class="col-3 form-text"
+      id="text-test"
     >
       input description
     </div>
@@ -84,6 +89,7 @@ exports[`FormRow > shows an error 1`] = `
     <label
       class="col-2 col-form-label"
       for="model-test"
+      id="label-test"
     >
       form label:
     </label>
@@ -97,6 +103,7 @@ exports[`FormRow > shows an error 1`] = `
     </div>
     <div
       class="col-3 form-text"
+      id="text-test"
     >
       input description
     </div>

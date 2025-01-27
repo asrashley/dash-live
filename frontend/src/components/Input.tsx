@@ -15,6 +15,7 @@ export interface InputProps extends FormInputItem {
   disabledFields: FormGroupsProps['disabledFields'];
   mode: FormRowMode;
   validation?: "was-validated" | "has-validation" | "needs-validation";
+  describedBy?: string;
   setValue: SetValueFunc;
 }
 
@@ -24,6 +25,7 @@ type BaseInputProps = {
   type: FormInputItem["type"];
   className: string;
   title: string;
+  placeholder?: string;
   "aria-describedby": string;
   disabled: ReadonlySignal<boolean>;
   onInput: (ev: Event) => void;
@@ -60,6 +62,7 @@ export function Input({
   fullName,
   prefix,
   mode,
+  describedBy,
   data,
   disabledFields,
   setValue,
@@ -67,6 +70,7 @@ export function Input({
   validation,
   title,
   options,
+  placeholder
 }: InputProps) {
   const name = getName({mode, shortName, cgiName, fullName, prefix});
   const value = useComputed<string | number | undefined>(() => {
@@ -98,9 +102,10 @@ export function Input({
     type,
     title,
     disabled,
+    placeholder,
     className: `${inputClass}${validationClass} ${className}`,
     id: `model-${name}`,
-    "aria-describedby": `field-${name}`,
+    "aria-describedby": describedBy,
     onInput: (ev: Event) => {
       const target = ev.target as HTMLInputElement;
       setValue(name, target.type === "checkbox" ? target.checked : target.value);
@@ -119,6 +124,6 @@ export function Input({
     case 'checkbox':
       return <input checked={value.value === "1"} {...inpProps} />;
     default:
-      return <input {...inpProps} />;
+      return <input value={value} {...inpProps} />;
   }
 }

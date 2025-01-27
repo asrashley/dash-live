@@ -28,6 +28,7 @@ export function InputFieldRow({
       : mode === "cgi"
       ? cgiName
       : `${prefix}${prefix ? "__" : ""}${fullName}`;
+  const describedBy = text ? `text-${name}`: `label-${name}`;
   return (
     <FormRow name={name} label={title} text={text} layout={layout} {...props}>
       <Input
@@ -35,6 +36,7 @@ export function InputFieldRow({
         name={name}
         mode={mode}
         data={data}
+        describedBy={describedBy}
         title={title}
         prefix={prefix}
         shortName={shortName}

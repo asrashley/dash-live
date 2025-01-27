@@ -1,14 +1,15 @@
 import { type ComponentChildren } from "preact";
 
 interface FormTextProps {
+  id?: string;
   text?: string;
   className?: string;
 }
-function FormText({text, className}: FormTextProps) {
+function FormText({id, text, className}: FormTextProps) {
   if (!text) {
     return null;
   }
-  return <div className={`${className} form-text`}>{text}</div>;
+  return <div id={id} className={`${className} form-text`}>{text}</div>;
 }
 
 interface ErrorFeedbackProps {
@@ -37,9 +38,9 @@ export function FormRow({ className = "", name, layout, label, text, children, e
     middle += right;
   }
   return <div className={`row mb-2 form-group ${className}`}>
-      <label className={`col-${left} col-form-label`} htmlFor={`model-${name}`}>{label}:</label>
+      <label id={`label-${name}`} className={`col-${left} col-form-label`} htmlFor={`model-${name}`}>{label}:</label>
       <div className={`col-${middle}`}>{children}</div>
-      <FormText text={text} className={`col-${right}`} />
+      <FormText id={`text-${name}`} text={text} className={`col-${right}`} />
       <ErrorFeedback error={error} />
     </div>;
 }
