@@ -13,6 +13,7 @@ from typing import cast, Callable, Iterable
 
 import flask  # type: ignore
 from flask_login import current_user
+from flask_jwt_extended import current_user as jwt_current_user
 from werkzeug.local import LocalProxy  # type: ignore
 
 from dashlive.mpeg.dash.profiles import primary_profiles
@@ -28,7 +29,7 @@ from dashlive.server.models import (
 
 from .csrf import CsrfProtection
 from .exceptions import CsrfFailureException
-from .utils import is_ajax, jsonify
+from .utils import is_ajax, jsonify, jsonify_no_content
 
 def needs_login_response(admin: bool, html: bool, permission: Group | None) -> flask.Response:
     if is_ajax():
@@ -52,6 +53,23 @@ def login_required(html=False, admin=False, permission: Group | None = None):
                 return needs_login_response(admin=admin, html=html, permission=permission)
             if permission and not current_user.has_permission(permission):
                 return needs_login_response(admin=admin, html=html, permission=permission)
+            return func(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+def jwt_login_required(admin=False, permission: Group | None = None):
+    """
+    Decorator that requires an AccessToken from a logged in user
+    """
+    def decorator(func):
+        @wraps(func)
+        def decorated_function(*args, **kwargs) -> flask.Response:
+            if not jwt_current_user.is_authenticated:
+                return jsonify_no_content('Not Authorized', 401)
+            if admin and not jwt_current_user.is_admin:
+                return jsonify_no_content('Not Authorized', 401)
+            if permission and not jwt_current_user.has_permission(permission):
+                return jsonify_no_content('Not Authorized', 401)
             return func(*args, **kwargs)
         return decorated_function
     return decorator
