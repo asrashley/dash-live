@@ -2,7 +2,7 @@ import { useComputed, useSignalEffect } from "@preact/signals";
 import { useContext, useCallback } from "preact/hooks";
 import { useLocation } from "wouter-preact";
 
-import { routeMap, uiRouteMap } from "@dashlive/routemap";
+import { uiRouteMap } from "@dashlive/routemap";
 
 import { FormRow } from "../../components/FormRow";
 import { TextInputRow } from "../../components/TextInputRow";
@@ -61,7 +61,7 @@ export function EditStreamForm({ name, newStream }: EditStreamFormProps) {
     try {
       const success = await saveChanges({ signal });
       if (success && newStream) {
-          const href = routeMap.listMps.url();
+          const href = uiRouteMap.listMps.url();
           setLocation(href);
       }
     } catch(err) {
