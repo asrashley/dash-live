@@ -10,11 +10,12 @@ type OptionMapWithChildren = {
 
 export const defaultFullOptions: OptionMapWithChildren;
 
-
 export const defaultShortOptions: OptionMap;
 
 export const defaultCgiOptions: OptionMap;
 
 export const drmSystems: string[];
+
+export const groupNames: string[];
 
 export const fieldGroups: InputFormGroup[];
