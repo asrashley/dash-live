@@ -150,7 +150,7 @@ class OptionFieldGroups(MethodView):
                 field['shortName'] = opt.short_name
                 field['fullName'] = opt.full_name
         body: str = flask.render_template(
-            'esm/options.js',
+            'esm/options.tjs',
             full_options=options.toJSON(exclude={"_type"}),
             cgi_options=options.generate_cgi_parameters(remove_defaults=False),
             short_options=options.generate_short_parameters(remove_defaults=False),
