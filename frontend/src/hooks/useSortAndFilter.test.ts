@@ -99,6 +99,9 @@ describe("useSortAndFilter hook", () => {
         expect(result.current.sortedData.value).toEqual([
             { id: 3, name: "Charlie", age: 35 },
         ]);
+        expect(result.current.filters.value).toEqual({
+            name: "har",
+        });
     });
 
     test("filters data by age", () => {
