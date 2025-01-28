@@ -5,7 +5,7 @@ import log from 'loglevel';
 
 import { routeMap } from "@dashlive/routemap";
 
-import { guestUser, MockDashServer, normalUser, UserModel } from "./test/MockServer";
+import { adminUser, guestUser, mediaUser, MockDashServer, normalUser, UserModel, userToInitialState } from "./test/MockServer";
 import { FakeEndpoint, HttpRequestHandlerResponse, ServerRouteProps } from "./test/FakeEndpoint";
 import { ApiRequests } from "./endpoints";
 import { DecoratedMultiPeriodStream } from "./types/DecoratedMultiPeriodStream";
@@ -16,9 +16,10 @@ import { MultiPeriodStreamValidationRequest } from "./types/MpsValidation";
 import allManifests from './test/fixtures/manifests.json';
 import contentRoles from './test/fixtures/content_roles.json';
 import allStdStreams from './test/fixtures/streams.json';
-import { model as demoMps} from './test/fixtures/multi-period-streams/demo.json';
+import { model as demoMps } from './test/fixtures/multi-period-streams/demo.json';
 import cgiOptions from './test/fixtures/cgiOptions.json';
 import { InitialUserState } from "./types/UserState";
+import { EditUserState } from "./hooks/useAllUsers";
 
 describe('endpoints', () => {
     const needsRefreshToken = vi.fn();
@@ -78,11 +79,11 @@ describe('endpoints', () => {
             email: normalUser.email,
             username: normalUser.username,
             groups: normalUser.groups,
-            last_login: null,
+            lastLogin: null,
+            mustChange: false,
         };
         await expect(api.loginUser(request)).resolves.toEqual(expect.objectContaining({
             success: true,
-            mustChange: false,
             csrf_token: expect.any(String),
             accessToken: {
                 expires: expect.any(String),
@@ -162,7 +163,7 @@ describe('endpoints', () => {
 
     test('get all conventional streams', async () => {
         const { keys, streams } = allStdStreams;
-        await expect(api.getAllStreams()).resolves.toEqual({keys, streams});
+        await expect(api.getAllStreams()).resolves.toEqual({ keys, streams });
     });
 
     test('get all multi-period streams', async () => {
@@ -294,7 +295,7 @@ describe('endpoints', () => {
     test('refreshes CSRF tokens', async () => {
         const { keys, streams } = allStdStreams;
         api.setRefreshToken(user.refreshToken);
-        await expect(api.getAllStreams()).resolves.toEqual({keys, streams});
+        await expect(api.getAllStreams()).resolves.toEqual({ keys, streams });
     });
 
     test('gets an access token using a refresh token', async () => {
@@ -306,7 +307,7 @@ describe('endpoints', () => {
         expect(server.getUser({ username })?.accessToken).toBeNull();
         api.setRefreshToken(user.refreshToken);
         const prom = endpoint.addResponsePromise('get', routeMap.refreshAccessToken.url());
-        await expect(api.getMultiPeriodStream( 'demo')).resolves.toEqual(demoMps);
+        await expect(api.getMultiPeriodStream('demo')).resolves.toEqual(demoMps);
         const response: RouteResponse = await prom;
         expect(response).toEqual(expect.objectContaining({
             status: 200,
@@ -325,7 +326,7 @@ describe('endpoints', () => {
     test('gets a guest access token when there is no refresh token', async () => {
         api.setRefreshToken(null);
         const prom = endpoint.addResponsePromise('get', routeMap.refreshAccessToken.url());
-        await expect(api.getMultiPeriodStream( 'demo')).resolves.toEqual(demoMps);
+        await expect(api.getMultiPeriodStream('demo')).resolves.toEqual(demoMps);
         const response: RouteResponse = await prom;
         expect(response).toEqual(expect.objectContaining({
             status: 200,
@@ -346,7 +347,7 @@ describe('endpoints', () => {
             expires: '2024-12-01T01:02:03Z',
             jwt: 'not.valid',
         });
-        await expect(api.getMultiPeriodStream( 'demo')).resolves.toEqual(demoMps);
+        await expect(api.getMultiPeriodStream('demo')).resolves.toEqual(demoMps);
         expect(server.getUser({ username })?.accessToken).toBeDefined();
         expect(server.getUser({ username })?.accessToken.jwt).not.toEqual('not.valid');
     });
@@ -386,8 +387,8 @@ describe('endpoints', () => {
 
     test('can abort after refreshing an access token', async () => {
         const controller = new AbortController();
-        const { username } = normalUser;
-        const url: string = routeMap.editMps.url({mps_name: "demo"});
+        const { username } = user;
+        const url: string = routeMap.editMps.url({ mps_name: "demo" });
         api.setRefreshToken(user.refreshToken);
         api.setAccessToken({
             expires: '2024-12-01T01:02:03Z',
@@ -399,9 +400,76 @@ describe('endpoints', () => {
             controller.abort("abort request");
             return response;
         });
-        await expect(api.getMultiPeriodStream('demo', {signal: controller.signal})).rejects.toThrow("aborted");
+        await expect(api.getMultiPeriodStream('demo', { signal: controller.signal })).rejects.toThrow("aborted");
         expect(responseSpy).toHaveBeenCalledTimes(1);
         expect(server.getUser({ username })?.accessToken).toBeDefined();
         expect(server.getUser({ username })?.accessToken.jwt).not.toEqual('not.valid');
     });
+
+    test('get list of all users fails for non-admin user', async () => {
+        api.setRefreshToken(user.refreshToken);
+        await expect(api.getAllUsers()).rejects.toThrow('401');
+    });
+
+    test('get list of all users as admin user', async () => {
+        user = server.login(adminUser.email, adminUser.password);
+        expect(user).not.toBeNull();
+        api.setRefreshToken(user.refreshToken);
+        const userList: InitialUserState[] = [
+            userToInitialState(normalUser),
+            userToInitialState(mediaUser),
+            userToInitialState(adminUser),
+        ];
+        userList.sort((a, b) => a.pk - b.pk);
+        await expect(api.getAllUsers()).resolves.toEqual(userList);
+    });
+
+    test('add a new user', async () => {
+        user = server.login(adminUser.email, adminUser.password);
+        expect(user).not.toBeNull();
+        api.setRefreshToken(user.refreshToken);
+        const newUser: EditUserState = {
+            username: 'newUser',
+            email: 'add.test@localhost',
+            password: 'qwerty',
+            confirmPassword: 'qwerty',
+            mustChange: true,
+            userGroup: true,
+            mediaGroup: false,
+            adminGroup: false,
+            lastLogin: null,
+        };
+        const { username, email, mustChange } = newUser;
+        const expectedUser: InitialUserState = {
+            pk: expect.any(Number),
+            username,
+            email,
+            mustChange,
+            groups: ['USER'],
+            lastLogin: null,
+        };
+        await expect(api.addUser(newUser)).resolves.toEqual({
+            errors: [],
+            success: true,
+            user: expectedUser,
+        });
+        expect(server.getUser({ username })).toBeDefined();
+    });
+
+    test('delete a user', async () => {
+        user = server.login(adminUser.email, adminUser.password);
+        expect(user).not.toBeNull();
+        api.setRefreshToken(user.refreshToken);
+        await expect(api.deleteUser(normalUser.pk)).resolves.toEqual(expect.objectContaining({
+            status: 204,
+        }));
+    });
+
+    test('delete a user that does not exist', async () => {
+        user = server.login(adminUser.email, adminUser.password);
+        expect(user).not.toBeNull();
+        api.setRefreshToken(user.refreshToken);
+        await expect(api.deleteUser(5000)).rejects.toThrow('404');
+    });
+
 });

@@ -17,6 +17,8 @@ import { LoginResponse } from './types/LoginResponse';
 import { MultiPeriodStreamValidationRequest, MultiPeriodStreamValidationResponse } from './types/MpsValidation';
 import { CgiOptionDescription } from './types/CgiOptionDescription';
 import { InitialUserState } from './types/UserState';
+import { ModifyUserResponse } from './types/ModifyUserResponse';
+import { EditUserState } from './hooks/useAllUsers';
 
 type TokenStoreCollection = {
   files: CsrfTokenStore;
@@ -178,6 +180,33 @@ export class ApiRequests {
     this.refreshTokenChecker = undefined;
     this.hasUserInfo(null);
     return response;
+  }
+
+  async getAllUsers(options: Partial<GetAllStreamsProps> = {}): Promise<InitialUserState[]> {
+    return await this.sendProtectedApiRequest<InitialUserState[]>(routeMap.listUsers.url(), options);
+  }
+
+  async addUser(user: EditUserState, options: Partial<GetAllStreamsProps> = {}): Promise<ModifyUserResponse> {
+    return await this.sendProtectedApiRequest<ModifyUserResponse>(routeMap.listUsers.url(), {
+      ...options,
+      method: 'PUT',
+      body: JSON.stringify(user),
+    });
+  }
+
+  async editUser(user: EditUserState, options: Partial<GetAllStreamsProps> = {}): Promise<ModifyUserResponse> {
+    return await this.sendProtectedApiRequest<ModifyUserResponse>(routeMap.editUser.url({ upk: user.pk }), {
+      ...options,
+      method: 'POST',
+      body: JSON.stringify(user),
+    });
+  }
+
+  async deleteUser(userPk: number, options: Partial<GetAllStreamsProps> = {}): Promise<Response> {
+    return await this.sendProtectedApiRequest<Response>(routeMap.editUser.url({ upk: userPk }), {
+      ...options,
+      method: 'DELETE',
+    });
   }
 
   async getAllStreams(options: Partial<GetAllStreamsProps> = {}): Promise<AllStreamsResponse> {
