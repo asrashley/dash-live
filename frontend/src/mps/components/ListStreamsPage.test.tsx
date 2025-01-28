@@ -4,13 +4,10 @@ import { mock } from "vitest-mock-extended";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import ListStreamsPage from "./ListStreamsPage";
 import { ApiRequests, EndpointContext } from "../../endpoints";
+import { mediaUser } from "../../test/MockServer";
 
 describe("ListStreamsPage", () => {
   const apiRequests = mock<ApiRequests>();
-  const userInfo = {
-    isAuthenticated: true,
-    groups: ["MEDIA"],
-  };
 
   beforeEach(() => {
     apiRequests.getAllMultiPeriodStreams.mockImplementation(async () => {
@@ -22,7 +19,7 @@ describe("ListStreamsPage", () => {
   test("should display list of multi-period streams", async () => {
     const { asFragment, findByText } = renderWithProviders(
       <EndpointContext.Provider value={apiRequests}><ListStreamsPage /></EndpointContext.Provider>,
-      { userInfo }
+      { userInfo: mediaUser }
     );
     await findByText("first title");
     await findByText("Add a Stream");

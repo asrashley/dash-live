@@ -15,7 +15,7 @@ function DataListOption({value, title, currentValue}: DataListOptionProps) {
 export interface DataListInputProps extends Omit<JSX.InputHTMLAttributes<HTMLInputElement>, 'value'> {
   name: string;
   options: SelectOptionType[];
-  className?: string;
+  className?: string | ReadonlySignal<string>;
   value: ReadonlySignal<string>;
 }
 

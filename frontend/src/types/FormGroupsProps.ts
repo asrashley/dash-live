@@ -1,13 +1,10 @@
-import { type ReadonlySignal } from "@preact/signals";
 import { InputFormGroup } from "./InputFormGroup";
 import { FormRowMode } from "./FormRowMode";
 import { SetValueFunc } from "./SetValueFunc";
-import { InputFormData } from "./InputFormData";
+import { InputProps } from "./InputProps";
 
-export interface FormGroupsProps {
+export interface FormGroupsProps extends Pick<InputProps, "data" | "disabledFields"> {
   groups: InputFormGroup[];
-  data: ReadonlySignal<InputFormData>;
-  disabledFields: ReadonlySignal<Record<string, boolean>>;
   expand?: string;
   mode: FormRowMode;
   layout?: number[];

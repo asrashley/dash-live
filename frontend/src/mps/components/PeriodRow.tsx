@@ -57,6 +57,8 @@ export function PeriodRow({ period }: PeriodRowProps) {
     MultiPeriodModelContext
   );
   const prdErrors = useComputed<MpsPeriodValidationErrors>(() => errors?.[period?.pid] ?? {});
+  const pidError = useComputed(() => prdErrors.value.pid);
+
   const currentStream = streamsMap.value.get(`${period.stream}`);
   const { pid, pk, start, duration } = period;
 
@@ -121,7 +123,7 @@ export function PeriodRow({ period }: PeriodRowProps) {
         value={pid}
         name={`pid_${pk}`}
         onInput={setPid}
-        error={prdErrors.value.pid}
+        error={pidError}
         required />
     </div>
     <div class="col period-stream">

@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import fetchMock from "@fetch-mock/vitest";
 import { fireEvent } from "@testing-library/preact";
-import userEvent from "@testing-library/user-event";
 import { useLocation } from "wouter-preact";
 import log from "loglevel";
 import { setImmediate } from "timers";
@@ -10,16 +9,15 @@ import { ApiRequests, EndpointContext } from "../../endpoints";
 import { FakeEndpoint } from "../../test/FakeEndpoint";
 import { MockDashServer, mediaUser } from "../../test/MockServer";
 import { renderWithProviders } from "../../test/renderWithProviders";
-import { EditStreamForm, EditStreamFormProps } from "./EditStreamForm";
+import { EditStreamFormProps } from "./EditStreamForm";
 import { AllStreamsContext, useAllStreams } from "../../hooks/useAllStreams";
 import {
   MultiPeriodModelContext,
   useMultiPeriodStream,
 } from "../../hooks/useMultiPeriodStream";
 import { InitialUserState } from "../../types/UserState";
-import { routeMap } from "@dashlive/routemap";
-import { useContext } from "preact/hooks";
-import { AppStateContext } from "../../appState";
+import { routeMap, uiRouteMap } from "@dashlive/routemap";
+import { EditStreamCard } from "./EditStreamCard";
 
 vi.mock("wouter-preact", async (importOriginal) => {
   return {
@@ -28,27 +26,6 @@ vi.mock("wouter-preact", async (importOriginal) => {
   };
 });
 
-function ConfirmDeleteButton() {
-  const { dialog } = useContext(AppStateContext);
-  const onClick = () => {
-    console.log('click', dialog.value.confirmDelete);
-    if (!dialog.value?.confirmDelete) {
-      return false;
-    }
-    dialog.value = {
-      backdrop: true,
-      confirmDelete: {
-        ...dialog.value.confirmDelete,
-        confirmed: true,
-      },
-    };
-  };
-  if (!dialog.value?.confirmDelete) {
-    return null;
-  }
-  return <button onClick={onClick}>Confirm Deletion</button>;
-}
-
 function AllStreams({ name, newStream }: EditStreamFormProps) {
   const allStreams = useAllStreams();
   const modelContext = useMultiPeriodStream({ name, newStream });
@@ -56,14 +33,13 @@ function AllStreams({ name, newStream }: EditStreamFormProps) {
   return (
     <AllStreamsContext.Provider value={allStreams}>
       <MultiPeriodModelContext.Provider value={modelContext}>
-        <EditStreamForm name={name} newStream={newStream} />
-        <ConfirmDeleteButton />
+        <EditStreamCard name={name} newStream={newStream} />
       </MultiPeriodModelContext.Provider>
     </AllStreamsContext.Provider>
   );
 }
 
-describe("EditStreamForm component", () => {
+describe("EditStreamCard", () => {
   const needsRefreshToken = vi.fn();
   const hasUserInfo = vi.fn();
   const setLocation = vi.fn();
@@ -115,70 +91,6 @@ describe("EditStreamForm component", () => {
     fetchMock.mockReset();
   });
 
-  test("matches snapshot for an existing stream", async () => {
-    expect(userInfo).toBeDefined();
-    const { asFragment, findByText, findAllByText, whoAmI } =
-      renderWithProviders(<Wrapper newStream={false} name={mps_name} />, {
-        userInfo,
-      });
-    expect(whoAmI.user.value).toEqual({
-      ...userInfo,
-      isAuthenticated: true,
-      permissions: {
-        admin: false,
-        user: true,
-        media: true,
-      },
-    });
-    await findByText('"europe-ntp"');
-    await findAllByText("Tears of Steel");
-    expect(asFragment()).toMatchSnapshot();
-  });
-
-  test.each<[string, boolean]>([
-    ["edit a stream", false],
-    ["create a new stream", true],
-  ])("edit %s and save changes", async (_title:string, newStream: boolean) => {
-    expect(userInfo).toBeDefined();
-    const user = userEvent.setup();
-    const { getByText, findAllByText, findBySelector, getBySelector } = renderWithProviders(
-      <Wrapper newStream={newStream} name={newStream ? ".add" : mps_name} />,
-      { userInfo }
-    );
-    if (!newStream) {
-      await findAllByText("Tears of Steel");
-    }
-    const editProm = endpoint.addResponsePromise(
-      newStream ? "put" : "post",
-      newStream ? routeMap.addMps.url() : routeMap.editMps.url({ mps_name })
-    );
-    const nameElt = getBySelector('input[name="name"]') as HTMLInputElement;
-    const titleElt = getBySelector('input[name="title"]') as HTMLInputElement;
-    await user.clear(nameElt);
-    await user.type(nameElt, "newname{enter}");
-    await user.clear(titleElt);
-    await user.type(titleElt, "title for this stream{enter}");
-    if (newStream) {
-      const addBtn = getByText("Add a Period") as HTMLButtonElement;
-      await user.click(addBtn);
-      const streamSel = await findBySelector('.period-stream select') as HTMLSelectElement;
-      await user.selectOptions(streamSel, "Tears of Steel");
-    }
-    const btn = getByText(newStream ? "Save new stream" : "Save Changes") as HTMLButtonElement;
-    expect(btn.disabled).toEqual(false);
-    await user.click(btn);
-    await expect(editProm).resolves.toEqual(
-      expect.objectContaining({ status: 200 })
-    );
-    // allow the await for saveChanges() to have been processed
-    await new Promise<void>(setImmediate);
-    if (newStream) {
-      expect(setLocation).toHaveBeenCalledWith(uiRouteMap.listMps.url());
-    } else {
-      expect(setLocation).not.toHaveBeenCalled();
-    }
-  });
-
   test("can delete a stream", async () => {
     expect(userInfo).toBeDefined();
     const { findByText, appState, whoAmI } = renderWithProviders(
@@ -206,5 +118,18 @@ describe("EditStreamForm component", () => {
         name: mps_name,
       },
     });
+    const delProm = endpoint.addResponsePromise(
+      "delete",
+      routeMap.editMps.url({ mps_name })
+    );
+    const delBtn = (await findByText("Yes, I'm sure")) as HTMLButtonElement;
+    fireEvent.click(delBtn);
+    await expect(delProm).resolves.toEqual(
+      expect.objectContaining({ status: 204 })
+    );
+    // allow the await for deleteStream() to have been processed
+    await new Promise<void>(setImmediate);
+    expect(setLocation).toHaveBeenCalledTimes(1);
+    expect(setLocation).toHaveBeenCalledWith(uiRouteMap.listMps.url());
   });
 });

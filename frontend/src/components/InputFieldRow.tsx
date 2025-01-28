@@ -1,13 +1,12 @@
+import { useComputed, type ReadonlySignal } from "@preact/signals";
 import { FormRow, FormRowProps } from "./FormRow";
-import { Input, InputProps } from "./Input";
-import { FormGroupsProps } from "../types/FormGroupsProps";
+import { Input } from "./Input";
+import { InputProps } from "../types/InputProps";
 
-export interface InputFieldRowProps extends Omit<InputProps, "title"> {
+export interface InputFieldRowProps extends Omit<InputProps, "error"> {
   layout?: FormRowProps["layout"];
   text?: FormRowProps["text"];
-  data: FormGroupsProps['data'];
-  disabledFields: FormGroupsProps['disabledFields'];
-  title: string;
+  errors?: ReadonlySignal<Record<string, string>>;
 }
 
 export function InputFieldRow({
@@ -20,6 +19,7 @@ export function InputFieldRow({
   layout,
   mode,
   text,
+  errors,
   ...props
 }: InputFieldRowProps) {
   const name: string =
@@ -29,14 +29,16 @@ export function InputFieldRow({
       ? cgiName
       : `${prefix}${prefix ? "__" : ""}${fullName}`;
   const describedBy = text ? `text-${name}`: `label-${name}`;
+  const error = useComputed(() => errors?.value[name]);
   return (
-    <FormRow name={name} label={title} text={text} layout={layout} {...props}>
+    <FormRow name={name} label={title} text={text} layout={layout} error={error} {...props}>
       <Input
         {...props}
         name={name}
         mode={mode}
         data={data}
         describedBy={describedBy}
+        error={error}
         title={title}
         prefix={prefix}
         shortName={shortName}

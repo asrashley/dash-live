@@ -1,9 +1,10 @@
 import { useCallback } from "preact/hooks";
+import { type ReadonlySignal } from "@preact/signals";
 import { BootstrapLevels } from "../types/BootstrapLevels";
 
 export interface AlertProps {
   id: number;
-  text: string;
+  text: string | ReadonlySignal<string>;
   level: BootstrapLevels;
   onDismiss?: (id: number) => void;
 }

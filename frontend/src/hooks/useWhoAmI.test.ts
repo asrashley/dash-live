@@ -8,6 +8,8 @@ import { mediaUser } from "../test/MockServer";
 describe('useWhoAmI hook', () => {
     const blankUser: Readonly<UserState> = {
         isAuthenticated: false,
+        mustChange: false,
+        lastLogin: null,
         groups: [],
         permissions: {
             admin: false,

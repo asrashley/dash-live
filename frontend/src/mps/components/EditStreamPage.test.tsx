@@ -8,13 +8,10 @@ import EditStreamPage from "./EditStreamPage";
 import { ApiRequests, EndpointContext } from "../../endpoints";
 import { uiRouteMap } from "../../test/fixtures/routemap.js";
 import { AllStreamsJson } from "../../types/AllStreams";
+import { mediaUser } from "../../test/MockServer";
 
 describe("EditStreamPage component", () => {
   const apiRequests = mock<ApiRequests>();
-  const userInfo = {
-    isAuthenticated: true,
-    groups: ["MEDIA"],
-  };
   let fetchPromises;
 
   beforeEach(() => {
@@ -42,7 +39,7 @@ describe("EditStreamPage component", () => {
       <EndpointContext.Provider value={apiRequests}>
       <Route component={EditStreamPage} path={uiRouteMap.editMps.route} />
       </EndpointContext.Provider>,
-      { userInfo, path }
+      { userInfo: mediaUser, path }
     );
     await act(async () => {
         await fetchPromises;

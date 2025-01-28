@@ -111,6 +111,10 @@ exports[`AddStreamPage component > allows a new stream to be added 1`] = `
               </button>
             </div>
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group has-validation"
@@ -183,6 +187,10 @@ exports[`AddStreamPage component > allows a new stream to be added 1`] = `
               </div>
             </div>
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="btn-toolbar"

@@ -30,6 +30,10 @@ exports[`TextInputRow > should match snapshot 1`] = `
     >
       description of the input
     </div>
+    <div
+      class="invalid-feedback"
+      style="display: none;"
+    />
   </div>
 </DocumentFragment>
 `;

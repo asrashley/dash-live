@@ -1,10 +1,12 @@
 import { useCallback, useState } from 'preact/hooks';
+import { type ReadonlySignal } from '@preact/signals';
 
 import { InputFieldRow } from "./InputFieldRow";
 import { FormGroupsProps } from "../types/FormGroupsProps";
 import { InputFormGroup } from '../types/InputFormGroup';
 import { SetValueFunc } from '../types/SetValueFunc';
 import { FormRowMode } from '../types/FormRowMode';
+import { InputProps } from '../types/InputProps';
 
 interface TabLinkProps {
   activeTab: string;
@@ -36,8 +38,9 @@ function TabLink({activeTab, setActive, disabled, name}: TabLinkProps) {
 
 interface TabContentProps extends InputFormGroup {
   activeTab: string;
-  data: FormGroupsProps['data'];
-  disabledFields: FormGroupsProps['disabledFields'];
+  data: InputProps['data'];
+  disabledFields?: InputProps['disabledFields'];
+  errors?: ReadonlySignal<Record<string, string>>;
   mode: FormRowMode;
   setValue: SetValueFunc;
 }

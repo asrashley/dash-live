@@ -1,11 +1,17 @@
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { renderWithProviders } from "../test/renderWithProviders";
 import { TextInputRow } from "./TextInputRow";
+import { signal } from "@preact/signals";
 
 describe("TextInputRow", () => {
   const name = "tirtest";
   const onInput = vi.fn();
+  const error = signal<string|undefined>();
+
+  beforeEach(() => {
+    error.value = undefined;
+  });
 
   afterEach(() => {
     vi.clearAllMocks();
@@ -22,6 +28,7 @@ describe("TextInputRow", () => {
         required={true}
         label={label}
         text={text}
+        error={error}
       />
     );
     getByText(label, { exact: false });
@@ -32,7 +39,7 @@ describe("TextInputRow", () => {
   test("shows error", () => {
     const label = "the input label";
     const text = "description of the input";
-    const error = "there is a problem with this value";
+    error.value = "there is a problem with this value";
     const { getByText } = renderWithProviders(
       <TextInputRow
         name={name}

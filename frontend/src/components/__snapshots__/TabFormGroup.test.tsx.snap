@@ -109,7 +109,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="text-abr"
-              class="form-check-input "
+              class="form-check-input is-valid "
               id="model-abr"
               name="abr"
               title="Adaptive bitrate"
@@ -122,6 +122,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Enable or disable adaptive bitrate
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -138,7 +142,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <select
               aria-describedby="text-acodec"
-              class="form-select "
+              class="form-select is-valid "
               id="model-acodec"
               name="acodec"
               title="Audio Codec"
@@ -167,6 +171,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Filter audio adaptation sets by audio codec (AAC or E-AC3)
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -183,7 +191,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <select
               aria-describedby="text-events"
-              class="form-select "
+              class="form-select is-valid "
               id="model-events"
               name="events"
               title="DASH events"
@@ -212,6 +220,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             A comma separated list of event formats
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -228,7 +240,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="text-timeline"
-              class="form-check-input "
+              class="form-check-input is-valid "
               id="model-timeline"
               name="timeline"
               title="Segment timeline"
@@ -241,6 +253,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Enable or disable segment timeline
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -257,7 +273,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <select
               aria-describedby="text-time"
-              class="form-select "
+              class="form-select is-valid "
               id="model-time"
               name="time"
               title="UTC timing method"
@@ -311,6 +327,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Select UTCTiming element method.
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -327,7 +347,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <select
               aria-describedby="text-player"
-              class="form-select "
+              class="form-select is-valid "
               id="model-player"
               name="player"
               title="Video Player"
@@ -356,6 +376,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Native or MSE playback control
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
       </div>
       <div
@@ -379,7 +403,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="text-ad_audio"
-              class="form-control "
+              class="form-control is-valid "
               id="model-ad_audio"
               name="ad_audio"
               title="Audio Description"
@@ -392,6 +416,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Select audio AdaptationSet that will be marked as a broadcast-mix audio description track
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -408,7 +436,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="text-start"
-              class="form-control "
+              class="form-control is-valid "
               id="model-start"
               list="list-start"
               name="start"
@@ -451,6 +479,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Sets availabilityStartTime for live streams
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -467,7 +499,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <select
               aria-describedby="text-bugs"
-              class="form-select "
+              class="form-select is-valid "
               id="model-bugs"
               name="bugs"
               title="Bug compatibility"
@@ -491,6 +523,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Produce a stream with known bugs
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -507,7 +543,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="text-drift"
-              class="form-control "
+              class="form-control is-valid "
               id="model-drift"
               name="drift"
               title="Clock drift"
@@ -520,6 +556,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Number of seconds of delay to add to wall clock time
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -536,7 +576,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="text-leeway"
-              class="form-control "
+              class="form-control is-valid "
               id="model-leeway"
               list="list-leeway"
               name="leeway"
@@ -569,6 +609,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Number of seconds after a fragment has expired before it becomes unavailable
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -585,7 +629,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="text-main_audio"
-              class="form-control "
+              class="form-control is-valid "
               id="model-main_audio"
               name="main_audio"
               title="Main audio track"
@@ -598,6 +642,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Select audio AdaptationSet that will be given the "main" role
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -614,7 +662,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="text-main_text"
-              class="form-control "
+              class="form-control is-valid "
               id="model-main_text"
               name="main_text"
               title="Main text track"
@@ -627,6 +675,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Select text AdaptationSet that will be given the "main" role
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -643,7 +695,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="text-mup"
-              class="form-control "
+              class="form-control is-valid "
               id="model-mup"
               list="list-mup"
               name="mup"
@@ -681,6 +733,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Specify minimumUpdatePeriod (in seconds) or -1 to disable updates
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -697,7 +753,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <select
               aria-describedby="text-ntp_servers"
-              class="form-select "
+              class="form-select is-valid "
               id="model-ntp_servers"
               name="ntp_servers"
               title="NTP time servers"
@@ -726,6 +782,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             List of servers to use for NTP requests
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -742,7 +802,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <select
               aria-describedby="text-tcodec"
-              class="form-select "
+              class="form-select is-valid "
               id="model-tcodec"
               name="tcodec"
               title="Text Codec"
@@ -766,6 +826,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Filter text adaptation sets by text codec
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -782,7 +846,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="text-tlang"
-              class="form-control "
+              class="form-control is-valid "
               id="model-tlang"
               name="tlang"
               title="Text Language"
@@ -795,6 +859,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Filter text adaptation sets by language
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -811,7 +879,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="text-base"
-              class="form-check-input "
+              class="form-check-input is-valid "
               id="model-base"
               name="base"
               title="Use BaseURLs"
@@ -824,6 +892,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Include a BaseURL element?
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -840,7 +912,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="text-patch"
-              class="form-check-input "
+              class="form-check-input is-valid "
               id="model-patch"
               name="patch"
               title="Use MPD patches"
@@ -853,6 +925,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Use MPD patches for live streams
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -869,7 +945,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="text-depth"
-              class="form-control "
+              class="form-control is-valid "
               id="model-depth"
               list="list-depth"
               name="depth"
@@ -897,6 +973,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Number of seconds for timeShiftBufferDepth
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
       </div>
       <div
@@ -920,7 +1000,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="text-clearkey__enabled"
-              class="form-check-input drm-checkbox"
+              class="form-check-input is-valid drm-checkbox"
               id="model-clearkey__enabled"
               name="clearkey__enabled"
               title="Clearkey DRM"
@@ -933,6 +1013,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Enable Clearkey DRM support?
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -949,7 +1033,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="text-clearkey__la_url"
-              class="form-control "
+              class="form-control is-valid "
               id="model-clearkey__la_url"
               name="clearkey__la_url"
               title="Clearkey LA_URL"
@@ -962,6 +1046,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Override the Clearkey license URL field
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -978,7 +1066,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <select
               aria-describedby="text-clearkey__drmloc"
-              class="form-select "
+              class="form-select is-valid "
               id="model-clearkey__drmloc"
               name="clearkey__drmloc"
               title="Clearkey location"
@@ -1027,6 +1115,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Location to place DRM data
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
       </div>
       <div
@@ -1050,7 +1142,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="text-marlin__enabled"
-              class="form-check-input drm-checkbox"
+              class="form-check-input is-valid drm-checkbox"
               id="model-marlin__enabled"
               name="marlin__enabled"
               title="Marlin DRM"
@@ -1063,6 +1155,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Enable Marlin DRM support?
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -1079,7 +1175,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="text-marlin__la_url"
-              class="form-control "
+              class="form-control is-valid "
               id="model-marlin__la_url"
               name="marlin__la_url"
               title="Marlin LA_URL"
@@ -1092,6 +1188,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Override the Marlin S-URL field
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -1108,7 +1208,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <select
               aria-describedby="text-marlin__drmloc"
-              class="form-select "
+              class="form-select is-valid "
               id="model-marlin__drmloc"
               name="marlin__drmloc"
               title="Marlin location"
@@ -1157,6 +1257,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Location to place DRM data
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
       </div>
       <div
@@ -1180,13 +1284,17 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="label-ping__count"
-              class="form-control "
+              class="form-control is-valid "
               id="model-ping__count"
               name="ping__count"
               title="Ping count"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -1203,13 +1311,17 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="label-ping__duration"
-              class="form-control "
+              class="form-control is-valid "
               id="model-ping__duration"
               name="ping__duration"
               title="Ping duration"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -1226,13 +1338,17 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="label-ping__inband"
-              class="form-check-input "
+              class="form-check-input is-valid "
               id="model-ping__inband"
               name="ping__inband"
               title="Ping inband"
               type="checkbox"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -1249,13 +1365,17 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="label-ping__interval"
-              class="form-control "
+              class="form-control is-valid "
               id="model-ping__interval"
               name="ping__interval"
               title="Ping interval"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -1272,13 +1392,17 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="label-ping__start"
-              class="form-control "
+              class="form-control is-valid "
               id="model-ping__start"
               name="ping__start"
               title="Ping start"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -1295,13 +1419,17 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="label-ping__timescale"
-              class="form-control "
+              class="form-control is-valid "
               id="model-ping__timescale"
               name="ping__timescale"
               title="Ping timescale"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -1318,13 +1446,17 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="label-ping__value"
-              class="form-control "
+              class="form-control is-valid "
               id="model-ping__value"
               name="ping__value"
               title="Ping value"
               type="text"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -1341,13 +1473,17 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="label-ping__version"
-              class="form-control "
+              class="form-control is-valid "
               id="model-ping__version"
               name="ping__version"
               title="Ping version"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
       </div>
       <div
@@ -1371,7 +1507,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="text-playready__enabled"
-              class="form-check-input drm-checkbox"
+              class="form-check-input is-valid drm-checkbox"
               id="model-playready__enabled"
               name="playready__enabled"
               title="Playready DRM"
@@ -1384,6 +1520,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Enable Playready DRM support?
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -1400,7 +1540,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="text-playready__la_url"
-              class="form-control "
+              class="form-control is-valid "
               id="model-playready__la_url"
               name="playready__la_url"
               title="Playready LA_URL"
@@ -1413,6 +1553,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Override the Playready LA_URL field
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -1429,7 +1573,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="text-playready__piff"
-              class="form-check-input "
+              class="form-check-input is-valid "
               id="model-playready__piff"
               name="playready__piff"
               title="Playready PIFF"
@@ -1442,6 +1586,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Include PIFF sample encryption data
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -1458,7 +1606,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <select
               aria-describedby="text-playready__version"
-              class="form-select "
+              class="form-select is-valid "
               id="model-playready__version"
               name="playready__version"
               title="Playready Version"
@@ -1497,6 +1645,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Set the PlayReady version compatibility for this stream
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -1513,7 +1665,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <select
               aria-describedby="text-playready__drmloc"
-              class="form-select "
+              class="form-select is-valid "
               id="model-playready__drmloc"
               name="playready__drmloc"
               title="Playready location"
@@ -1562,6 +1714,10 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             Location to place DRM data
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
       </div>
       <div
@@ -1585,13 +1741,17 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="label-scte35__count"
-              class="form-control "
+              class="form-control is-valid "
               id="model-scte35__count"
               name="scte35__count"
               title="Scte35 count"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -1608,13 +1768,17 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="label-scte35__duration"
-              class="form-control "
+              class="form-control is-valid "
               id="model-scte35__duration"
               name="scte35__duration"
               title="Scte35 duration"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -1631,13 +1795,17 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="label-scte35__inband"
-              class="form-check-input "
+              class="form-check-input is-valid "
               id="model-scte35__inband"
               name="scte35__inband"
               title="Scte35 inband"
               type="checkbox"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -1654,13 +1822,17 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="label-scte35__interval"
-              class="form-control "
+              class="form-control is-valid "
               id="model-scte35__interval"
               name="scte35__interval"
               title="Scte35 interval"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -1677,13 +1849,17 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="label-scte35__program_id"
-              class="form-control "
+              class="form-control is-valid "
               id="model-scte35__program_id"
               name="scte35__program_id"
               title="Scte35 program_id"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -1700,13 +1876,17 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="label-scte35__start"
-              class="form-control "
+              class="form-control is-valid "
               id="model-scte35__start"
               name="scte35__start"
               title="Scte35 start"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -1723,13 +1903,17 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="label-scte35__timescale"
-              class="form-control "
+              class="form-control is-valid "
               id="model-scte35__timescale"
               name="scte35__timescale"
               title="Scte35 timescale"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -1746,13 +1930,17 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="label-scte35__value"
-              class="form-control "
+              class="form-control is-valid "
               id="model-scte35__value"
               name="scte35__value"
               title="Scte35 value"
               type="text"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -1769,13 +1957,17 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
           >
             <input
               aria-describedby="label-scte35__version"
-              class="form-control "
+              class="form-control is-valid "
               id="model-scte35__version"
               name="scte35__version"
               title="Scte35 version"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
       </div>
     </div>
@@ -1892,7 +2084,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="text-abr"
-              class="form-check-input "
+              class="form-check-input is-valid "
               id="model-abr"
               name="abr"
               title="Adaptive bitrate"
@@ -1905,6 +2097,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Enable or disable adaptive bitrate
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -1921,7 +2117,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <select
               aria-describedby="text-audioCodec"
-              class="form-select "
+              class="form-select is-valid "
               id="model-audioCodec"
               name="audioCodec"
               title="Audio Codec"
@@ -1950,6 +2146,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Filter audio adaptation sets by audio codec (AAC or E-AC3)
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -1966,7 +2166,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <select
               aria-describedby="text-eventTypes"
-              class="form-select "
+              class="form-select is-valid "
               id="model-eventTypes"
               name="eventTypes"
               title="DASH events"
@@ -1995,6 +2195,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             A comma separated list of event formats
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -2011,7 +2215,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="text-segmentTimeline"
-              class="form-check-input "
+              class="form-check-input is-valid "
               id="model-segmentTimeline"
               name="segmentTimeline"
               title="Segment timeline"
@@ -2024,6 +2228,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Enable or disable segment timeline
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -2040,7 +2248,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <select
               aria-describedby="text-utcMethod"
-              class="form-select "
+              class="form-select is-valid "
               id="model-utcMethod"
               name="utcMethod"
               title="UTC timing method"
@@ -2094,6 +2302,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Select UTCTiming element method.
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -2110,7 +2322,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <select
               aria-describedby="text-videoPlayer"
-              class="form-select "
+              class="form-select is-valid "
               id="model-videoPlayer"
               name="videoPlayer"
               title="Video Player"
@@ -2139,6 +2351,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Native or MSE playback control
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
       </div>
       <div
@@ -2162,7 +2378,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="text-audioDescription"
-              class="form-control "
+              class="form-control is-valid "
               id="model-audioDescription"
               name="audioDescription"
               title="Audio Description"
@@ -2175,6 +2391,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Select audio AdaptationSet that will be marked as a broadcast-mix audio description track
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -2191,7 +2411,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="text-availabilityStartTime"
-              class="form-control "
+              class="form-control is-valid "
               id="model-availabilityStartTime"
               list="list-availabilityStartTime"
               name="availabilityStartTime"
@@ -2234,6 +2454,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Sets availabilityStartTime for live streams
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -2250,7 +2474,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <select
               aria-describedby="text-bugCompatibility"
-              class="form-select "
+              class="form-select is-valid "
               id="model-bugCompatibility"
               name="bugCompatibility"
               title="Bug compatibility"
@@ -2274,6 +2498,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Produce a stream with known bugs
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -2290,7 +2518,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="text-clockDrift"
-              class="form-control "
+              class="form-control is-valid "
               id="model-clockDrift"
               name="clockDrift"
               title="Clock drift"
@@ -2303,6 +2531,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Number of seconds of delay to add to wall clock time
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -2319,7 +2551,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="text-leeway"
-              class="form-control "
+              class="form-control is-valid "
               id="model-leeway"
               list="list-leeway"
               name="leeway"
@@ -2352,6 +2584,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Number of seconds after a fragment has expired before it becomes unavailable
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -2368,7 +2604,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="text-mainAudio"
-              class="form-control "
+              class="form-control is-valid "
               id="model-mainAudio"
               name="mainAudio"
               title="Main audio track"
@@ -2381,6 +2617,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Select audio AdaptationSet that will be given the "main" role
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -2397,7 +2637,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="text-mainText"
-              class="form-control "
+              class="form-control is-valid "
               id="model-mainText"
               name="mainText"
               title="Main text track"
@@ -2410,6 +2650,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Select text AdaptationSet that will be given the "main" role
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -2426,7 +2670,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="text-minimumUpdatePeriod"
-              class="form-control "
+              class="form-control is-valid "
               id="model-minimumUpdatePeriod"
               list="list-minimumUpdatePeriod"
               name="minimumUpdatePeriod"
@@ -2464,6 +2708,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Specify minimumUpdatePeriod (in seconds) or -1 to disable updates
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -2480,7 +2728,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <select
               aria-describedby="text-ntpSources"
-              class="form-select "
+              class="form-select is-valid "
               id="model-ntpSources"
               name="ntpSources"
               title="NTP time servers"
@@ -2509,6 +2757,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             List of servers to use for NTP requests
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -2525,7 +2777,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <select
               aria-describedby="text-textCodec"
-              class="form-select "
+              class="form-select is-valid "
               id="model-textCodec"
               name="textCodec"
               title="Text Codec"
@@ -2549,6 +2801,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Filter text adaptation sets by text codec
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -2565,7 +2821,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="text-textLanguage"
-              class="form-control "
+              class="form-control is-valid "
               id="model-textLanguage"
               name="textLanguage"
               title="Text Language"
@@ -2578,6 +2834,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Filter text adaptation sets by language
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -2594,7 +2854,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="text-useBaseUrls"
-              class="form-check-input "
+              class="form-check-input is-valid "
               id="model-useBaseUrls"
               name="useBaseUrls"
               title="Use BaseURLs"
@@ -2607,6 +2867,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Include a BaseURL element?
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -2623,7 +2887,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="text-patch"
-              class="form-check-input "
+              class="form-check-input is-valid "
               id="model-patch"
               name="patch"
               title="Use MPD patches"
@@ -2636,6 +2900,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Use MPD patches for live streams
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -2652,7 +2920,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="text-timeShiftBufferDepth"
-              class="form-control "
+              class="form-control is-valid "
               id="model-timeShiftBufferDepth"
               list="list-timeShiftBufferDepth"
               name="timeShiftBufferDepth"
@@ -2680,6 +2948,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Number of seconds for timeShiftBufferDepth
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
       </div>
       <div
@@ -2703,7 +2975,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="text-clearkey__enabled"
-              class="form-check-input drm-checkbox"
+              class="form-check-input is-valid drm-checkbox"
               id="model-clearkey__enabled"
               name="clearkey__enabled"
               title="Clearkey DRM"
@@ -2716,6 +2988,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Enable Clearkey DRM support?
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -2732,7 +3008,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="text-clearkey__licenseUrl"
-              class="form-control "
+              class="form-control is-valid "
               id="model-clearkey__licenseUrl"
               name="clearkey__licenseUrl"
               title="Clearkey LA_URL"
@@ -2745,6 +3021,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Override the Clearkey license URL field
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -2761,7 +3041,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <select
               aria-describedby="text-clearkey__drmloc"
-              class="form-select "
+              class="form-select is-valid "
               id="model-clearkey__drmloc"
               name="clearkey__drmloc"
               title="Clearkey location"
@@ -2810,6 +3090,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Location to place DRM data
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
       </div>
       <div
@@ -2833,7 +3117,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="text-marlin__enabled"
-              class="form-check-input drm-checkbox"
+              class="form-check-input is-valid drm-checkbox"
               id="model-marlin__enabled"
               name="marlin__enabled"
               title="Marlin DRM"
@@ -2846,6 +3130,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Enable Marlin DRM support?
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -2862,7 +3150,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="text-marlin__licenseUrl"
-              class="form-control "
+              class="form-control is-valid "
               id="model-marlin__licenseUrl"
               name="marlin__licenseUrl"
               title="Marlin LA_URL"
@@ -2875,6 +3163,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Override the Marlin S-URL field
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -2891,7 +3183,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <select
               aria-describedby="text-marlin__drmloc"
-              class="form-select "
+              class="form-select is-valid "
               id="model-marlin__drmloc"
               name="marlin__drmloc"
               title="Marlin location"
@@ -2940,6 +3232,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Location to place DRM data
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
       </div>
       <div
@@ -2963,13 +3259,17 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="label-ping__count"
-              class="form-control "
+              class="form-control is-valid "
               id="model-ping__count"
               name="ping__count"
               title="Ping count"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -2986,13 +3286,17 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="label-ping__duration"
-              class="form-control "
+              class="form-control is-valid "
               id="model-ping__duration"
               name="ping__duration"
               title="Ping duration"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -3009,13 +3313,17 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="label-ping__inband"
-              class="form-check-input "
+              class="form-check-input is-valid "
               id="model-ping__inband"
               name="ping__inband"
               title="Ping inband"
               type="checkbox"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -3032,13 +3340,17 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="label-ping__interval"
-              class="form-control "
+              class="form-control is-valid "
               id="model-ping__interval"
               name="ping__interval"
               title="Ping interval"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -3055,13 +3367,17 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="label-ping__start"
-              class="form-control "
+              class="form-control is-valid "
               id="model-ping__start"
               name="ping__start"
               title="Ping start"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -3078,13 +3394,17 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="label-ping__timescale"
-              class="form-control "
+              class="form-control is-valid "
               id="model-ping__timescale"
               name="ping__timescale"
               title="Ping timescale"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -3101,13 +3421,17 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="label-ping__value"
-              class="form-control "
+              class="form-control is-valid "
               id="model-ping__value"
               name="ping__value"
               title="Ping value"
               type="text"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -3124,13 +3448,17 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="label-ping__version"
-              class="form-control "
+              class="form-control is-valid "
               id="model-ping__version"
               name="ping__version"
               title="Ping version"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
       </div>
       <div
@@ -3154,7 +3482,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="text-playready__enabled"
-              class="form-check-input drm-checkbox"
+              class="form-check-input is-valid drm-checkbox"
               id="model-playready__enabled"
               name="playready__enabled"
               title="Playready DRM"
@@ -3167,6 +3495,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Enable Playready DRM support?
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -3183,7 +3515,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="text-playready__licenseUrl"
-              class="form-control "
+              class="form-control is-valid "
               id="model-playready__licenseUrl"
               name="playready__licenseUrl"
               title="Playready LA_URL"
@@ -3196,6 +3528,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Override the Playready LA_URL field
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -3212,7 +3548,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="text-playready__piff"
-              class="form-check-input "
+              class="form-check-input is-valid "
               id="model-playready__piff"
               name="playready__piff"
               title="Playready PIFF"
@@ -3225,6 +3561,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Include PIFF sample encryption data
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -3241,7 +3581,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <select
               aria-describedby="text-playready__version"
-              class="form-select "
+              class="form-select is-valid "
               id="model-playready__version"
               name="playready__version"
               title="Playready Version"
@@ -3280,6 +3620,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Set the PlayReady version compatibility for this stream
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -3296,7 +3640,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <select
               aria-describedby="text-playready__drmloc"
-              class="form-select "
+              class="form-select is-valid "
               id="model-playready__drmloc"
               name="playready__drmloc"
               title="Playready location"
@@ -3345,6 +3689,10 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             Location to place DRM data
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
       </div>
       <div
@@ -3368,13 +3716,17 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="label-scte35__count"
-              class="form-control "
+              class="form-control is-valid "
               id="model-scte35__count"
               name="scte35__count"
               title="Scte35 count"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -3391,13 +3743,17 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="label-scte35__duration"
-              class="form-control "
+              class="form-control is-valid "
               id="model-scte35__duration"
               name="scte35__duration"
               title="Scte35 duration"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -3414,13 +3770,17 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="label-scte35__inband"
-              class="form-check-input "
+              class="form-check-input is-valid "
               id="model-scte35__inband"
               name="scte35__inband"
               title="Scte35 inband"
               type="checkbox"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -3437,13 +3797,17 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="label-scte35__interval"
-              class="form-control "
+              class="form-control is-valid "
               id="model-scte35__interval"
               name="scte35__interval"
               title="Scte35 interval"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -3460,13 +3824,17 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="label-scte35__program_id"
-              class="form-control "
+              class="form-control is-valid "
               id="model-scte35__program_id"
               name="scte35__program_id"
               title="Scte35 program_id"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -3483,13 +3851,17 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="label-scte35__start"
-              class="form-control "
+              class="form-control is-valid "
               id="model-scte35__start"
               name="scte35__start"
               title="Scte35 start"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -3506,13 +3878,17 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="label-scte35__timescale"
-              class="form-control "
+              class="form-control is-valid "
               id="model-scte35__timescale"
               name="scte35__timescale"
               title="Scte35 timescale"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -3529,13 +3905,17 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="label-scte35__value"
-              class="form-control "
+              class="form-control is-valid "
               id="model-scte35__value"
               name="scte35__value"
               title="Scte35 value"
               type="text"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -3552,13 +3932,17 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
           >
             <input
               aria-describedby="label-scte35__version"
-              class="form-control "
+              class="form-control is-valid "
               id="model-scte35__version"
               name="scte35__version"
               title="Scte35 version"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
       </div>
     </div>
@@ -3675,7 +4059,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="text-ab"
-              class="form-check-input "
+              class="form-check-input is-valid "
               id="model-ab"
               name="ab"
               title="Adaptive bitrate"
@@ -3688,6 +4072,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Enable or disable adaptive bitrate
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -3704,7 +4092,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <select
               aria-describedby="text-ac"
-              class="form-select "
+              class="form-select is-valid "
               id="model-ac"
               name="ac"
               title="Audio Codec"
@@ -3733,6 +4121,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Filter audio adaptation sets by audio codec (AAC or E-AC3)
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -3749,7 +4141,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <select
               aria-describedby="text-evs"
-              class="form-select "
+              class="form-select is-valid "
               id="model-evs"
               name="evs"
               title="DASH events"
@@ -3778,6 +4170,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             A comma separated list of event formats
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -3794,7 +4190,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="text-st"
-              class="form-check-input "
+              class="form-check-input is-valid "
               id="model-st"
               name="st"
               title="Segment timeline"
@@ -3807,6 +4203,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Enable or disable segment timeline
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -3823,7 +4223,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <select
               aria-describedby="text-utc"
-              class="form-select "
+              class="form-select is-valid "
               id="model-utc"
               name="utc"
               title="UTC timing method"
@@ -3877,6 +4277,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Select UTCTiming element method.
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -3893,7 +4297,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <select
               aria-describedby="text-vp"
-              class="form-select "
+              class="form-select is-valid "
               id="model-vp"
               name="vp"
               title="Video Player"
@@ -3922,6 +4326,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Native or MSE playback control
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
       </div>
       <div
@@ -3945,7 +4353,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="text-ad"
-              class="form-control "
+              class="form-control is-valid "
               id="model-ad"
               name="ad"
               title="Audio Description"
@@ -3958,6 +4366,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Select audio AdaptationSet that will be marked as a broadcast-mix audio description track
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -3974,7 +4386,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="text-ast"
-              class="form-control "
+              class="form-control is-valid "
               id="model-ast"
               list="list-ast"
               name="ast"
@@ -4017,6 +4429,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Sets availabilityStartTime for live streams
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -4033,7 +4449,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <select
               aria-describedby="text-bug"
-              class="form-select "
+              class="form-select is-valid "
               id="model-bug"
               name="bug"
               title="Bug compatibility"
@@ -4057,6 +4473,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Produce a stream with known bugs
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -4073,7 +4493,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="text-dft"
-              class="form-control "
+              class="form-control is-valid "
               id="model-dft"
               name="dft"
               title="Clock drift"
@@ -4086,6 +4506,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Number of seconds of delay to add to wall clock time
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -4102,7 +4526,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="text-lee"
-              class="form-control "
+              class="form-control is-valid "
               id="model-lee"
               list="list-lee"
               name="lee"
@@ -4135,6 +4559,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Number of seconds after a fragment has expired before it becomes unavailable
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -4151,7 +4579,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="text-ma"
-              class="form-control "
+              class="form-control is-valid "
               id="model-ma"
               name="ma"
               title="Main audio track"
@@ -4164,6 +4592,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Select audio AdaptationSet that will be given the "main" role
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -4180,7 +4612,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="text-mt"
-              class="form-control "
+              class="form-control is-valid "
               id="model-mt"
               name="mt"
               title="Main text track"
@@ -4193,6 +4625,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Select text AdaptationSet that will be given the "main" role
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -4209,7 +4645,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="text-mup"
-              class="form-control "
+              class="form-control is-valid "
               id="model-mup"
               list="list-mup"
               name="mup"
@@ -4247,6 +4683,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Specify minimumUpdatePeriod (in seconds) or -1 to disable updates
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -4263,7 +4703,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <select
               aria-describedby="text-ntps"
-              class="form-select "
+              class="form-select is-valid "
               id="model-ntps"
               name="ntps"
               title="NTP time servers"
@@ -4292,6 +4732,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             List of servers to use for NTP requests
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -4308,7 +4752,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <select
               aria-describedby="text-tc"
-              class="form-select "
+              class="form-select is-valid "
               id="model-tc"
               name="tc"
               title="Text Codec"
@@ -4332,6 +4776,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Filter text adaptation sets by text codec
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -4348,7 +4796,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="text-tl"
-              class="form-control "
+              class="form-control is-valid "
               id="model-tl"
               name="tl"
               title="Text Language"
@@ -4361,6 +4809,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Filter text adaptation sets by language
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -4377,7 +4829,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="text-base"
-              class="form-check-input "
+              class="form-check-input is-valid "
               id="model-base"
               name="base"
               title="Use BaseURLs"
@@ -4390,6 +4842,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Include a BaseURL element?
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -4406,7 +4862,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="text-patch"
-              class="form-check-input "
+              class="form-check-input is-valid "
               id="model-patch"
               name="patch"
               title="Use MPD patches"
@@ -4419,6 +4875,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Use MPD patches for live streams
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -4435,7 +4895,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="text-tbd"
-              class="form-control "
+              class="form-control is-valid "
               id="model-tbd"
               list="list-tbd"
               name="tbd"
@@ -4463,6 +4923,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Number of seconds for timeShiftBufferDepth
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
       </div>
       <div
@@ -4486,7 +4950,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="text-clearkey__enabled"
-              class="form-check-input drm-checkbox"
+              class="form-check-input is-valid drm-checkbox"
               id="model-clearkey__enabled"
               name="clearkey__enabled"
               title="Clearkey DRM"
@@ -4499,6 +4963,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Enable Clearkey DRM support?
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -4515,7 +4983,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="text-clu"
-              class="form-control "
+              class="form-control is-valid "
               id="model-clu"
               name="clu"
               title="Clearkey LA_URL"
@@ -4528,6 +4996,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Override the Clearkey license URL field
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -4544,7 +5016,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <select
               aria-describedby="text-clearkey__drmloc"
-              class="form-select "
+              class="form-select is-valid "
               id="model-clearkey__drmloc"
               name="clearkey__drmloc"
               title="Clearkey location"
@@ -4593,6 +5065,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Location to place DRM data
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
       </div>
       <div
@@ -4616,7 +5092,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="text-marlin__enabled"
-              class="form-check-input drm-checkbox"
+              class="form-check-input is-valid drm-checkbox"
               id="model-marlin__enabled"
               name="marlin__enabled"
               title="Marlin DRM"
@@ -4629,6 +5105,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Enable Marlin DRM support?
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -4645,7 +5125,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="text-mlu"
-              class="form-control "
+              class="form-control is-valid "
               id="model-mlu"
               name="mlu"
               title="Marlin LA_URL"
@@ -4658,6 +5138,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Override the Marlin S-URL field
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -4674,7 +5158,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <select
               aria-describedby="text-marlin__drmloc"
-              class="form-select "
+              class="form-select is-valid "
               id="model-marlin__drmloc"
               name="marlin__drmloc"
               title="Marlin location"
@@ -4723,6 +5207,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Location to place DRM data
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
       </div>
       <div
@@ -4746,13 +5234,17 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="label-pinCoun"
-              class="form-control "
+              class="form-control is-valid "
               id="model-pinCoun"
               name="pinCoun"
               title="Ping count"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -4769,13 +5261,17 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="label-pinDura"
-              class="form-control "
+              class="form-control is-valid "
               id="model-pinDura"
               name="pinDura"
               title="Ping duration"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -4792,13 +5288,17 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="label-pinInba"
-              class="form-check-input "
+              class="form-check-input is-valid "
               id="model-pinInba"
               name="pinInba"
               title="Ping inband"
               type="checkbox"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -4815,13 +5315,17 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="label-pinInte"
-              class="form-control "
+              class="form-control is-valid "
               id="model-pinInte"
               name="pinInte"
               title="Ping interval"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -4838,13 +5342,17 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="label-pinStar"
-              class="form-control "
+              class="form-control is-valid "
               id="model-pinStar"
               name="pinStar"
               title="Ping start"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -4861,13 +5369,17 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="label-pinTime"
-              class="form-control "
+              class="form-control is-valid "
               id="model-pinTime"
               name="pinTime"
               title="Ping timescale"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -4884,13 +5396,17 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="label-pinValu"
-              class="form-control "
+              class="form-control is-valid "
               id="model-pinValu"
               name="pinValu"
               title="Ping value"
               type="text"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -4907,13 +5423,17 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="label-pinVers"
-              class="form-control "
+              class="form-control is-valid "
               id="model-pinVers"
               name="pinVers"
               title="Ping version"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
       </div>
       <div
@@ -4937,7 +5457,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="text-playready__enabled"
-              class="form-check-input drm-checkbox"
+              class="form-check-input is-valid drm-checkbox"
               id="model-playready__enabled"
               name="playready__enabled"
               title="Playready DRM"
@@ -4950,6 +5470,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Enable Playready DRM support?
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -4966,7 +5490,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="text-plu"
-              class="form-control "
+              class="form-control is-valid "
               id="model-plu"
               name="plu"
               title="Playready LA_URL"
@@ -4979,6 +5503,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Override the Playready LA_URL field
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -4995,7 +5523,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="text-pff"
-              class="form-check-input "
+              class="form-check-input is-valid "
               id="model-pff"
               name="pff"
               title="Playready PIFF"
@@ -5008,6 +5536,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Include PIFF sample encryption data
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -5024,7 +5556,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <select
               aria-describedby="text-pvn"
-              class="form-select "
+              class="form-select is-valid "
               id="model-pvn"
               name="pvn"
               title="Playready Version"
@@ -5063,6 +5595,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Set the PlayReady version compatibility for this stream
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -5079,7 +5615,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <select
               aria-describedby="text-playready__drmloc"
-              class="form-select "
+              class="form-select is-valid "
               id="model-playready__drmloc"
               name="playready__drmloc"
               title="Playready location"
@@ -5128,6 +5664,10 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             Location to place DRM data
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
       </div>
       <div
@@ -5151,13 +5691,17 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="label-sctCoun"
-              class="form-control "
+              class="form-control is-valid "
               id="model-sctCoun"
               name="sctCoun"
               title="Scte35 count"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -5174,13 +5718,17 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="label-sctDura"
-              class="form-control "
+              class="form-control is-valid "
               id="model-sctDura"
               name="sctDura"
               title="Scte35 duration"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -5197,13 +5745,17 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="label-sctInba"
-              class="form-check-input "
+              class="form-check-input is-valid "
               id="model-sctInba"
               name="sctInba"
               title="Scte35 inband"
               type="checkbox"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -5220,13 +5772,17 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="label-sctInte"
-              class="form-control "
+              class="form-control is-valid "
               id="model-sctInte"
               name="sctInte"
               title="Scte35 interval"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -5243,13 +5799,17 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="label-sctProg"
-              class="form-control "
+              class="form-control is-valid "
               id="model-sctProg"
               name="sctProg"
               title="Scte35 program_id"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -5266,13 +5826,17 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="label-sctStar"
-              class="form-control "
+              class="form-control is-valid "
               id="model-sctStar"
               name="sctStar"
               title="Scte35 start"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -5289,13 +5853,17 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="label-sctTime"
-              class="form-control "
+              class="form-control is-valid "
               id="model-sctTime"
               name="sctTime"
               title="Scte35 timescale"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -5312,13 +5880,17 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="label-sctValu"
-              class="form-control "
+              class="form-control is-valid "
               id="model-sctValu"
               name="sctValu"
               title="Scte35 value"
               type="text"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -5335,13 +5907,17 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
           >
             <input
               aria-describedby="label-sctVers"
-              class="form-control "
+              class="form-control is-valid "
               id="model-sctVers"
               name="sctVers"
               title="Scte35 version"
               type="number"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { useComputed, useSignalEffect } from "@preact/signals";
+import { useComputed } from "@preact/signals";
 import { useContext, useCallback } from "preact/hooks";
 import { useLocation } from "wouter-preact";
 
@@ -21,14 +21,11 @@ export interface EditStreamFormProps {
 
 export function EditStreamForm({ name, newStream }: EditStreamFormProps) {
   const setLocation = useLocation()[1];
-  const { model, modified, errors, setFields, saveChanges, deleteStream } =
+  const { model, modified, errors, setFields, saveChanges } =
     useContext(MultiPeriodModelContext);
   const { dialog } = useContext(AppStateContext);
   const { user } = useContext(WhoAmIContext);
   const { appendMessage } = useMessages();
-  const deleteConfirmed = useComputed<boolean>(
-    () => dialog.value?.confirmDelete?.confirmed === true
-  );
   const canModify = useComputed<boolean>(() => user.value.permissions.media);
   const validationClass = useComputed<string>(() => {
     if (!modified.value || !canModify.value) {
@@ -38,6 +35,8 @@ export function EditStreamForm({ name, newStream }: EditStreamFormProps) {
       ? "was-validated"
       : "has-validation";
   });
+  const nameError = useComputed<string>(() => errors.value.name);
+  const titleError = useComputed<string>(() => errors.value.title);
 
   const setName = useCallback(
     (ev: Event) => {
@@ -83,26 +82,6 @@ export function EditStreamForm({ name, newStream }: EditStreamFormProps) {
     [dialog, name]
   );
 
-  useSignalEffect(() => {
-    const deleteStreamIfConfirmed = async () => {
-      if (!deleteConfirmed.value) {
-        return;
-      }
-      const abortController = new AbortController();
-      const { signal } = abortController;
-      try{
-        const success = await deleteStream({ signal });
-        if (success) {
-          setLocation(uiRouteMap.listMps.url());
-        }
-      } catch (err) {
-        appendMessage("danger", `Failed to delete stream - ${err}`);
-      } finally {
-        dialog.value = null;
-      }
-    };
-    deleteStreamIfConfirmed();
-  });
 
   if (!model.value) {
     return <h3>Fetching data for stream "{name}"...</h3>;
@@ -118,7 +97,7 @@ export function EditStreamForm({ name, newStream }: EditStreamFormProps) {
         value={model.value.name}
         text="Unique name for this stream"
         onInput={setName}
-        error={errors.value.name}
+        error={nameError}
         disabled={!canModify.value}
       />
       <TextInputRow
@@ -127,7 +106,7 @@ export function EditStreamForm({ name, newStream }: EditStreamFormProps) {
         value={model.value.title}
         text="Title for this stream"
         onInput={setTitle}
-        error={errors.value.title}
+        error={titleError}
         disabled={!canModify.value}
       />
       <OptionsRow name={name} canModify={canModify} />

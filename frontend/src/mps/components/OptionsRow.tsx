@@ -1,5 +1,5 @@
 import { useContext } from "preact/hooks";
-import { useComputed, type ReadonlySignal } from "@preact/signals";
+import { useComputed, useSignal, type ReadonlySignal } from "@preact/signals";
 
 import { MultiPeriodModelContext } from "../../hooks/useMultiPeriodStream";
 import { AppStateContext } from "../../appState";
@@ -12,6 +12,7 @@ export interface OptionsRowProps {
 }
 
 export function OptionsRow({ name, canModify }: OptionsRowProps) {
+  const error = useSignal<string|undefined>();
   const { model } = useContext(MultiPeriodModelContext);
   const { dialog } = useContext(AppStateContext);
   const options = useComputed(() => model.value.options ?? {});
@@ -28,7 +29,7 @@ export function OptionsRow({ name, canModify }: OptionsRowProps) {
   };
 
   return (
-    <FormRow name="options" label="Stream Options">
+    <FormRow name="options" label="Stream Options" error={error}>
       <div className="d-flex flex-row">
         <PrettyJson className="flex-fill me-1" data={options.value} />
         {canModify.value ? (

@@ -1,4 +1,5 @@
 import { type JSX } from 'preact';
+import { type ReadonlySignal } from '@preact/signals';
 import { useCallback, useState } from 'preact/hooks';
 
 import { InputFieldRow } from "./InputFieldRow";
@@ -6,6 +7,7 @@ import { InputFormGroup } from '../types/InputFormGroup';
 import { FormRowMode } from '../types/FormRowMode';
 import { SetValueFunc } from '../types/SetValueFunc';
 import { FormGroupsProps } from '../types/FormGroupsProps';
+import { InputProps } from '../types/InputProps';
 
 interface AccordionHeaderProps {
   expanded: boolean;
@@ -34,8 +36,9 @@ interface AccordionCollapseProps extends InputFormGroup {
   index: number;
   expanded: boolean;
   mode: FormRowMode;
-  data: FormGroupsProps['data'];
-  disabledFields: FormGroupsProps['disabledFields'];
+  data: InputProps['data'];
+  disabledFields?: InputProps['disabledFields'];
+  errors?: ReadonlySignal<Record<string, string>>;
   layout?: FormGroupsProps['layout'];
   setValue: SetValueFunc;
 }
@@ -52,8 +55,9 @@ export interface AccordionItemProps {
   index: number;
   expand?: string;
   group: InputFormGroup;
-  data: FormGroupsProps['data'];
-  disabledFields: FormGroupsProps['disabledFields'];
+  data: InputProps['data'];
+  disabledFields?: InputProps['disabledFields'];
+  errors?: ReadonlySignal<Record<string, string>>;
   mode: FormRowMode;
   setValue: SetValueFunc;
 }

@@ -3,16 +3,18 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 
 import { renderWithProviders } from "../test/renderWithProviders";
-import { Input, InputProps } from "./Input";
-import { FormInputItem } from "../types/FormInputItem";
+import { Input } from "./Input";
+import { StaticInputProps } from "../types/StaticInputProps";
 import { SelectOptionType } from "../types/SelectOptionType";
 
 import allManifests from '../test/fixtures/manifests.json';
 import { InputFormData } from "../types/InputFormData";
+import { InputProps } from "../types/InputProps";
 
 describe("Input component", () => {
   const data = signal<InputFormData>({});
   const disabledFields = signal<Record<string, boolean>>({});
+  const error = signal<string|undefined>();
   const setValue = vi.fn();
 
   beforeEach(() => {
@@ -24,7 +26,7 @@ describe("Input component", () => {
   });
 
   test("renders a Radio button", () => {
-    const playbackMode: FormInputItem = {
+    const playbackMode: StaticInputProps = {
       name: "mode",
       shortName: "mode",
       fullName: "playbackMode",
@@ -49,6 +51,7 @@ describe("Input component", () => {
       ...playbackMode,
       data,
       disabledFields,
+      error,
       mode: 'cgi',
       setValue,
     };
@@ -76,7 +79,7 @@ describe("Input component", () => {
     const user = userEvent.setup();
     const names = [...Object.keys(allManifests)];
     names.sort();
-    const selectManifest: FormInputItem = {
+    const selectManifest: StaticInputProps = {
         name: "manifest",
         shortName: "manifest",
         fullName: "manifest",
@@ -96,6 +99,7 @@ describe("Input component", () => {
         mode: 'cgi',
         data,
         disabledFields,
+        error,
         setValue,
       };
       data.value = {
@@ -121,7 +125,7 @@ describe("Input component", () => {
     test('renders a MultiSelectInput', async () => {
         const user = userEvent.setup();
         const drmSystems = ['marlin', 'playready', 'clearkey'];
-        const selectDrmSystem: FormInputItem = {
+        const selectDrmSystem: StaticInputProps = {
             name: "drms",
             shortName: "drms",
             fullName: "drms",
@@ -139,6 +143,7 @@ describe("Input component", () => {
             mode: 'cgi',
             data,
             disabledFields,
+            error,
             setValue,
         };
         data.value = {
@@ -166,9 +171,9 @@ describe("Input component", () => {
         expect(asFragment()).toMatchSnapshot();
     });
 
-    test.each(['text', 'email', 'password'])('renders a %s input', async (type: FormInputItem["type"]) => {
+    test.each(['text', 'email', 'password'])('renders a %s input', async (type: StaticInputProps["type"]) => {
       const user = userEvent.setup();
-      const inp: FormInputItem = {
+      const inp: StaticInputProps = {
         name: "test",
         shortName: "tst",
         fullName: "inputTest",
@@ -182,6 +187,7 @@ describe("Input component", () => {
         mode: 'cgi',
         data,
         disabledFields,
+        error,
         setValue,
       };
       data.value = {

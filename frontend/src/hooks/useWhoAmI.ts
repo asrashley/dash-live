@@ -11,8 +11,14 @@ export interface UseWhoAmIHook {
 
 export const WhoAmIContext = createContext<UseWhoAmIHook>(null);
 
+const blankState: InitialUserState = {
+  mustChange: false,
+  lastLogin: null,
+  groups:[],
+};
+
 export function useWhoAmI(): UseWhoAmIHook {
-  const userInfo = useSignal<InitialUserState>({groups:[]});
+  const userInfo = useSignal<InitialUserState>(blankState);
   const user = useComputed<UserState>(() => ({
     ...userInfo.value,
     isAuthenticated: userInfo.value.pk !== undefined,
@@ -27,7 +33,7 @@ export function useWhoAmI(): UseWhoAmIHook {
     if (ius) {
       userInfo.value = structuredClone(ius);
     } else {
-      userInfo.value = { groups: [] };
+      userInfo.value = structuredClone(blankState);
     }
   }, [userInfo]);
 
