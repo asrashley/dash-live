@@ -25,6 +25,10 @@ exports[`FormRow > can set column layout 1`] = `
     >
       input description
     </div>
+    <div
+      class="invalid-feedback"
+      style="display: none;"
+    />
   </div>
 </DocumentFragment>
 `;
@@ -48,6 +52,10 @@ exports[`FormRow > can set column layout for row without text 1`] = `
         type="text"
       />
     </div>
+    <div
+      class="invalid-feedback"
+      style="display: none;"
+    />
   </div>
 </DocumentFragment>
 `;
@@ -77,6 +85,10 @@ exports[`FormRow > form row with text 1`] = `
     >
       input description
     </div>
+    <div
+      class="invalid-feedback"
+      style="display: none;"
+    />
   </div>
 </DocumentFragment>
 `;
@@ -111,7 +123,7 @@ exports[`FormRow > shows an error 1`] = `
       class="invalid-feedback"
       style="display: block;"
     >
-      inout validation error
+      input validation error
     </div>
   </div>
 </DocumentFragment>

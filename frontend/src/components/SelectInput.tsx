@@ -4,7 +4,7 @@ import { SetValueFunc } from "../types/SetValueFunc";
 import { SelectOption } from "./SelectOption";
 
 export interface SelectInputProps {
-  className: string;
+  className: string | ReadonlySignal<string>;
   options: SelectOptionType[];
   value: ReadonlySignal<string>;
   setValue: SetValueFunc;

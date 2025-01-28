@@ -4,7 +4,7 @@ import { type ReadonlySignal, useComputed } from "@preact/signals";
 import { fieldGroups, drmSystems } from '@dashlive/options';
 import { useAllManifests  } from '../../hooks/useAllManifests';
 import { UseCombinedStreams  } from '../../hooks/useCombinedStreams';
-import { FormInputItem } from "../../types/FormInputItem";
+import { StaticInputProps } from "../../types/StaticInputProps";
 import { InputFormGroup } from "../../types/InputFormGroup";
 
 const drmSkipNames = new RegExp(`^${drmSystems.map(name => `${name}__enabled`).join('|')}$`);
@@ -18,7 +18,7 @@ export function useFieldGroups(): UseFieldGroupsHook {
   const { streamNames, streamsMap } = useContext(UseCombinedStreams);
 
   const homeFieldGroups = useComputed<InputFormGroup[]>(() => {
-    const playbackMode: FormInputItem = {
+    const playbackMode: StaticInputProps = {
       name: "mode",
       shortName: "mode",
       fullName: "playbackMode",
@@ -39,7 +39,7 @@ export function useFieldGroups(): UseFieldGroupsHook {
         },
       ],
     };
-    const selectManifest: FormInputItem = {
+    const selectManifest: StaticInputProps = {
       name: "manifest",
       shortName: "manifest",
       fullName: "manifest",
@@ -54,7 +54,7 @@ export function useFieldGroups(): UseFieldGroupsHook {
         };
       }),
     };
-    const selectStream: FormInputItem = {
+    const selectStream: StaticInputProps = {
       name: "stream",
       shortName: "stream",
       fullName: "stream",
@@ -66,7 +66,7 @@ export function useFieldGroups(): UseFieldGroupsHook {
         value,
       })),
     };
-    const selectDrmSystem: FormInputItem = {
+    const selectDrmSystem: StaticInputProps = {
       name: "drms",
       shortName: "drms",
       fullName: "drms",

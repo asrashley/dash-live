@@ -1,12 +1,13 @@
-export interface InitialUserState {
+export type InitialUserState = {
     pk?: number;
     username?: string;
     email?: string;
-    last_login?: string;
+    lastLogin: string | null;
+    mustChange: boolean;
     groups: string[];
 }
 
-export interface UserState extends InitialUserState {
+export type UserState = InitialUserState & {
     isAuthenticated: boolean;
     permissions: {
         admin: boolean,

@@ -1,10 +1,12 @@
 import { describe, expect, test, vi } from "vitest";
+import { signal } from "@preact/signals";
 
 import { renderWithProviders } from "../test/renderWithProviders";
 import { TextInput } from "./TextInput";
 
 describe("TextInput", () => {
   const onInput = vi.fn();
+  const error = signal<string|undefined>();
 
   test("matches snapshot", () => {
     const { asFragment, getBySelector } = renderWithProviders(
@@ -13,6 +15,7 @@ describe("TextInput", () => {
         onInput={onInput}
         placeholder="search..."
         required={true}
+        error={error}
       />
     );
     const inp = getBySelector(".form-control");
@@ -23,11 +26,12 @@ describe("TextInput", () => {
   });
 
   test("text input with error", () => {
+    error.value = "input has an error";
     const { getBySelector } = renderWithProviders(
       <TextInput
         name="tname"
         onInput={onInput}
-        error="input has an error"
+        error={error}
       />
     );
     const inp = getBySelector(".form-control");

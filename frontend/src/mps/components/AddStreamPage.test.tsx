@@ -5,13 +5,10 @@ import { renderWithProviders } from "../../test/renderWithProviders";
 import AddStreamPage from "./AddStreamPage";
 import { ApiRequests, EndpointContext } from "../../endpoints";
 import { AllStreamsJson } from "../../types/AllStreams";
+import { mediaUser } from "../../test/MockServer";
 
 describe("AddStreamPage component", () => {
   const apiRequests = mock<ApiRequests>();
-  const userInfo = {
-    isAuthenticated: true,
-    groups: ["MEDIA"],
-  };
 
   beforeEach(() => {
     apiRequests.getAllStreams.mockImplementation(async () => {
@@ -23,7 +20,7 @@ describe("AddStreamPage component", () => {
   test("allows a new stream to be added", async () => {
     const { asFragment, findByText, getByText } = renderWithProviders(
       <EndpointContext.Provider value={apiRequests}><AddStreamPage /></EndpointContext.Provider>,
-      { userInfo }
+      { userInfo: mediaUser }
     );
     await findByText("Add new Multi-Period stream");
     await findByText("At least one Period is required");

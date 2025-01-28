@@ -1,7 +1,7 @@
-import { FormInputItem } from "./FormInputItem";
+import { StaticInputProps } from "./StaticInputProps";
 
 export interface InputFormGroup {
     name: string;
     title: string;
-    fields: FormInputItem[];
+    fields: StaticInputProps[];
 }

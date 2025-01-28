@@ -1,35 +1,15 @@
-import { type ReadonlySignal, useComputed } from '@preact/signals';
+import { useComputed } from '@preact/signals';
 
 import { DataListInput } from './DataListInput';
 import { MultiSelectInput } from './MultiSelectInput';
 import { RadioInput } from './RadioInput';
 import { SelectInput } from './SelectInput';
-import type { SetValueFunc } from '../types/SetValueFunc';
 import type { InputFormData } from '../types/InputFormData';
-import type { FormInputItem } from '../types/FormInputItem';
 import type { FormRowMode } from '../types/FormRowMode';
-import { FormGroupsProps } from '../types/FormGroupsProps';
+import { PasswordInput } from './PasswordInput';
+import { BaseInputProps } from '../types/BaseInputProps';
+import { InputProps } from '../types/InputProps';
 
-export interface InputProps extends FormInputItem {
-  data: FormGroupsProps['data'];
-  disabledFields: FormGroupsProps['disabledFields'];
-  mode: FormRowMode;
-  validation?: "was-validated" | "has-validation" | "needs-validation";
-  describedBy?: string;
-  setValue: SetValueFunc;
-}
-
-type BaseInputProps = {
-  name: string;
-  id: string;
-  type: FormInputItem["type"];
-  className: string;
-  title: string;
-  placeholder?: string;
-  "aria-describedby": string;
-  disabled: ReadonlySignal<boolean>;
-  onInput: (ev: Event) => void;
-};
 
 interface GetNameProps {
   cgiName: string;
@@ -54,6 +34,7 @@ function getName({ cgiName, mode, shortName, fullName, prefix }: GetNameProps): 
 }
 
 export function Input({
+  allowReveal,
   className = "",
   datalist_type,
   type,
@@ -65,9 +46,8 @@ export function Input({
   describedBy,
   data,
   disabledFields,
-  setValue,
   error,
-  validation,
+  setValue,
   title,
   options,
   placeholder
@@ -86,24 +66,19 @@ export function Input({
   const prefixData = useComputed<InputFormData>(() => (mode === 'fullName' && prefix) ? (data.value[prefix] as InputFormData): data.value);
   const stringValue = useComputed<string>(() => value.value === undefined ? "" : typeof value.value === "string" ? value.value : `${value.value}`);
   const disabled = useComputed<boolean>(() => !!disabledFields[name]);
-  const inputClass =
-    type === "checkbox"
-      ? "form-check-input"
-      : type === "select"
-      ? "form-select"
-      : "form-control";
-  const validationClass = error
-    ? " is-invalid"
-    : validation === "was-validated"
-    ? " is-valid"
-    : "";
+  const inputClass = useComputed<string>(() => {
+    const formCls = type === "checkbox" ? "form-check-input" : type === "select" ? "form-select" : "form-control";
+    const err = error.value ? " is-invalid" : " is-valid";
+    return `${formCls}${err} ${className}`;
+  });
+
   const inpProps: BaseInputProps = {
     name,
     type,
     title,
     disabled,
     placeholder,
-    className: `${inputClass}${validationClass} ${className}`,
+    className: inputClass,
     id: `model-${name}`,
     "aria-describedby": describedBy,
     onInput: (ev: Event) => {
@@ -123,6 +98,8 @@ export function Input({
       return <DataListInput options={options} value={stringValue} {...inpProps} />;
     case 'checkbox':
       return <input checked={value.value === "1"} {...inpProps} />;
+    case 'password':
+      return <PasswordInput value={stringValue} allowReveal={allowReveal} {...inpProps} />;
     default:
       return <input value={value} {...inpProps} />;
   }

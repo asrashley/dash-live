@@ -8,19 +8,28 @@ export interface SortableTableProps<
   T extends Record<string, string | number | boolean>
 > {
   data: ReadonlySignal<T[]>;
+  caption?: string;
 }
 
 export type SortableTableGenerator<
   T extends Record<string, string | number | boolean>
 > = (props: SortableTableProps<T>) => JSX.Element;
 
+export type RenderCellProps<T> = {
+    field: keyof T,
+    row: T,
+    index: number,
+};
+export interface CreateSortableTableProps<T extends Record<string, string | number | boolean>> {
+    headings: [keyof T, string][];
+    primaryKey: keyof T;
+    initialSortField: keyof T;
+    renderCell: (props: RenderCellProps<T>) => JSX.Element;
+}
+
 export function createSortableTable<
   T extends Record<string, string | number | boolean>
->(
-  headings: [keyof T, string][],
-  primaryKey: keyof T,
-  initialSortField: keyof T
-): SortableTableGenerator<T> {
+>({ headings, primaryKey, initialSortField, renderCell: Cell} : CreateSortableTableProps<T>): SortableTableGenerator<T> {
   const SortableHeading = ({
     name,
     setSort,
@@ -48,7 +57,7 @@ export function createSortableTable<
     );
   };
 
-  const RenderTable = ({ data }: SortableTableProps<T>) => {
+  const RenderTable = ({ data, caption: captionText }: SortableTableProps<T>) => {
     const { sortedData, sortField, sortOrder, setSort } = useSortAndFilter<T>(
       data,
       initialSortField
@@ -58,6 +67,7 @@ export function createSortableTable<
     );
     return (
       <table className="table table-striped table-bordered" style="width: auto">
+        {captionText ? <caption>{captionText}</caption> : ''}
         <thead>
           <tr className={sortNameClass}>
             {headings.map(([name, title]) => (
@@ -79,9 +89,9 @@ export function createSortableTable<
             const id = `opt_${pk}`;
             return (
               <tr key={pk} id={id}>
-                {headings.map(([name]) => (
+                {headings.map(([name], index) => (
                   <td key={name} className={String(name)}>
-                    {item[name]}
+                    <Cell field={name} row={item} index={index} />
                   </td>
                 ))}
               </tr>

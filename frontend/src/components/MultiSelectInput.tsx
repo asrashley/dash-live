@@ -31,7 +31,7 @@ function MultiSelectCheckbox({ name: optName, fieldName, data, title, onClick }:
       </div>;
 }
 export interface MultiSelectInputProps {
-  className: string;
+  className: string | ReadonlySignal<string>;
   name: string;
   options: SelectOptionType[];
   data: ReadonlySignal<InputFormData>;

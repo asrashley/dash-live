@@ -1,10 +1,13 @@
 import { SelectOptionType } from "./SelectOptionType";
 
-export interface FormInputItem {
+/* StaticInputProps represents all the properties of an <input> or <select>
+element that don't change during the life of the element */
+
+export interface StaticInputProps {
+    allowReveal?: boolean;
     columns?: string[];
     className?: string;
     datalist_type?: 'text' | 'number';
-    error?: string;
     featured?: boolean;
     fullName: string;
     href?: string;
@@ -26,5 +29,5 @@ export interface FormInputItem {
     step?: number;
     title: string;
     text?: string;
-    type: 'checkbox' | 'datalist' | 'hidden' | 'multiselect' | 'number' | 'password' | 'select' | 'radio' | 'link' | 'text';
+    type: 'checkbox' | 'datalist' | 'email' | 'hidden' | 'multiselect' | 'number' | 'password' | 'select' | 'radio' | 'link' | 'text';
 }

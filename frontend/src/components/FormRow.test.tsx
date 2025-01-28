@@ -1,25 +1,33 @@
-import { describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test } from "vitest";
+import { signal } from "@preact/signals";
 
 import { renderWithProviders } from "../test/renderWithProviders";
 import { FormRow } from "./FormRow";
 
 describe("FormRow", () => {
+  const error = signal<string|undefined>();
+
+  beforeEach(() => {
+    error.value = undefined;
+  });
+
   test("form row with text", () => {
     const label = "form label";
     const text = "input description";
-    const { asFragment, queryBySelector, getByText } = renderWithProviders(
-      <FormRow name="test" label={label} text={text}><input type="text" /></FormRow>
+    const { asFragment, getBySelector, getByText } = renderWithProviders(
+      <FormRow name="test" label={label} error={error} text={text}><input type="text" /></FormRow>
     );
     getByText(`${label}:`);
     getByText(text);
-    expect(queryBySelector(".invalid-feedback")).toBeNull();
+    const elt = getBySelector(".invalid-feedback") as HTMLElement;
+    expect(elt.style.display).toEqual("none");
     expect(asFragment()).toMatchSnapshot();
   });
 
   test("shows an error", () => {
     const label = "form label";
     const text = "input description";
-    const error = "inout validation error";
+    error.value = "input validation error";
     const { asFragment, getBySelector, getByText } = renderWithProviders(
       <FormRow label={label} text={text} name="test" error={error}><input name="test" type="text" /></FormRow>
     );
@@ -35,7 +43,7 @@ describe("FormRow", () => {
     const text = "input description";
     const layout = [3, 4, 5];
     const { asFragment, getBySelector } = renderWithProviders(
-      <FormRow name="test" label={label} text={text} layout={layout}><input type="text" /></FormRow>
+      <FormRow name="test" label={label} text={text} error={error} layout={layout}><input type="text" /></FormRow>
     );
     getBySelector(".col-3");
     getBySelector("div.col-4");
@@ -47,7 +55,7 @@ describe("FormRow", () => {
     const label = "form label";
     const layout = [3, 4, 5];
     const { asFragment, getBySelector } = renderWithProviders(
-      <FormRow name="test" label={label} layout={layout}><input type="text" /></FormRow>
+      <FormRow name="test" error={error} label={label} layout={layout}><input type="text" /></FormRow>
     );
     getBySelector(".col-3");
     getBySelector("div.col-9");

@@ -16,6 +16,8 @@ import { vi } from "vitest";
 import { UseWhoAmIHook, WhoAmIContext } from "../hooks/useWhoAmI";
 
 const initialUserState: InitialUserState = {
+  mustChange: false,
+  lastLogin: null,
   groups: [],
 };
 

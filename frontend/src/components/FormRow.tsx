@@ -1,4 +1,5 @@
 import { type ComponentChildren } from "preact";
+import { useComputed, type ReadonlySignal } from "@preact/signals";
 
 interface FormTextProps {
   id?: string;
@@ -13,13 +14,13 @@ function FormText({id, text, className}: FormTextProps) {
 }
 
 interface ErrorFeedbackProps {
-  error?: string;
+  error?: ReadonlySignal<string|undefined>;
 }
 function ErrorFeedback({error}: ErrorFeedbackProps) {
-  if (!error) {
-    return null;
-  }
-  return <div className="invalid-feedback" style="display:block">{error}</div>;
+  const style = useComputed(() => ({
+    display: error?.value ? "block": "none",
+  }));
+  return <div className="invalid-feedback" style={style}>{error}</div>;
 }
 
 export interface FormRowProps {
@@ -28,7 +29,7 @@ export interface FormRowProps {
   children: ComponentChildren;
   className?: string;
   text?: string;
-  error?: string;
+  error?: ReadonlySignal<string|undefined>;
   layout?: number[];
 }
 export function FormRow({ className = "", name, layout, label, text, children, error }: FormRowProps) {

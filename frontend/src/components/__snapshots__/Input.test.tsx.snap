@@ -3,7 +3,7 @@
 exports[`Input component > renders a MultiSelectInput 1`] = `
 <DocumentFragment>
   <div
-    class="form-control "
+    class="form-control is-valid "
     data-testid="msi-drms"
   >
     <div
@@ -119,7 +119,7 @@ exports[`Input component > renders a Radio button 1`] = `
 exports[`Input component > renders a Select input 1`] = `
 <DocumentFragment>
   <select
-    class="form-select "
+    class="form-select is-valid "
     id="model-manifest"
     name="manifest"
     title="Manifest"
