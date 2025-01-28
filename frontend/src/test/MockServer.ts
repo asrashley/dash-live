@@ -1,8 +1,8 @@
 import { Temporal } from "temporal-polyfill";
 import log from 'loglevel';
-import crypto from "crypto";
 
-import { routeMap } from './fixtures/routemap.js';
+import { routeMap } from '@dashlive/routemap';
+
 import { dataResponse, FakeEndpoint, HttpRequestHandler, jsonResponse, notFound, ServerRouteProps } from './FakeEndpoint'
 import { ContentRolesMap } from '../types/ContentRolesMap';
 import { CsrfTokenCollection } from '../types/CsrfTokenCollection';
@@ -13,6 +13,10 @@ import { MultiPeriodStream, MultiPeriodStreamJson } from '../types/MultiPeriodSt
 import { LoginRequest } from "../types/LoginRequest";
 import { LoginResponse } from "../types/LoginResponse";
 import { MultiPeriodStreamValidationRequest, MultiPeriodStreamValidationResponse } from "../types/MpsValidation";
+import { randomToken } from "../utils/randomToken";
+import { InitialUserState } from "../types/UserState";
+import { ModifyUserResponse } from "../types/ModifyUserResponse";
+import { EditUserState } from "../hooks/useAllUsers";
 
 enum UserGroups {
     USER = "USER",
@@ -73,14 +77,6 @@ export const adminUser: UserModel = {
     password: 'sup3r$ecret!',
     groups: [UserGroups.USER, UserGroups.MEDIA, UserGroups.ADMIN],
 };
-
-function randomToken(length: number): string {
-    const chars = 'abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ_=+#.&!-';
-    const array = new Uint8Array(length);
-    crypto.getRandomValues(array);
-    const token: string[] = [...array].map((value: number) => chars.charAt(value % chars.length));
-    return token.join('');
-}
 
 type RequestContext = {
     currentUser?: UserModel;
@@ -156,7 +152,11 @@ export class MockDashServer {
             .put(routeMap.addMps.url(), protectedRoute(this.addMultiPeriodStream))
             .post(routeMap.editMps.re, protectedRoute(this.editMultiPeriodStream))
             .delete(routeMap.editMps.re, protectedRoute(this.deleteMultiPeriodStream))
-            .post(routeMap.validateMps.url(), protectedRoute(this.validateMultiPeriodStream));
+            .post(routeMap.validateMps.url(), protectedRoute(this.validateMultiPeriodStream))
+            .get(routeMap.listUsers.url(), protectedRoute(this.getUserList))
+            .put(routeMap.listUsers.url(), protectedRoute(this.addNewUser))
+            .post(routeMap.editUser.re, protectedRoute(this.editUser))
+            .delete(routeMap.editUser.re, protectedRoute(this.deleteUser));
     }
 
     addUser(user: UserModel) {
@@ -165,7 +165,7 @@ export class MockDashServer {
 
     login(username: string, password: string): UserModel | null {
         log.trace(`login ${username}`);
-        const dbEntry = this.getUser({email: username, username});
+        const dbEntry = this.getUser({ email: username, username });
         if (!dbEntry) {
             log.debug(`Failed to find user "${username}"`);
             return null;
@@ -198,7 +198,7 @@ export class MockDashServer {
         if (!user) {
             throw new Error('Guest user not found');
         }
-        if (!user.accessToken){
+        if (!user.accessToken) {
             user.accessToken = this.generateAccessToken(user.username);
         }
         return user.accessToken;
@@ -234,8 +234,8 @@ export class MockDashServer {
             kids: media ? `${user.username}.${randomToken(12)}` : null,
             streams: `${user.username}.${randomToken(12)}`,
             upload: null,
-         };
-         return csrfTokens;
+        };
+        return csrfTokens;
     }
 
     //
@@ -249,7 +249,6 @@ export class MockDashServer {
         }
         const result: LoginResponse = {
             success: true,
-            mustChange: user.mustChange,
             csrf_token: `${user.username}.${randomToken(12)}`,
             accessToken: this.generateAccessToken(user.username),
             user: {
@@ -257,13 +256,14 @@ export class MockDashServer {
                 email: user.email,
                 username: user.username,
                 groups: user.groups,
-                last_login: user.lastLogin,
-            }
+                lastLogin: user.lastLogin,
+                mustChange: user.mustChange,
+            },
         };
         return jsonResponse(result);
     };
 
-    private loginUser = async ({jsonParam}: ServerRouteProps) => {
+    private loginUser = async ({ jsonParam }: ServerRouteProps) => {
         if (!jsonParam) {
             return jsonResponse('', 400);
         }
@@ -280,7 +280,6 @@ export class MockDashServer {
         }
         const result: LoginResponse = {
             success: true,
-            mustChange: user.mustChange,
             csrf_token: `${user.username}.${randomToken(12)}`,
             accessToken: this.generateAccessToken(user.username),
             refreshToken: this.generateRefreshToken(user.username),
@@ -289,14 +288,15 @@ export class MockDashServer {
                 email: user.email,
                 username: user.username,
                 groups: user.groups,
-                last_login: user.lastLogin,
-            }
+                lastLogin: user.lastLogin,
+                mustChange: user.mustChange,
+            },
         };
         user.lastLogin = new Date().toISOString();
         return jsonResponse(result);
     };
 
-    private logoutUser = async ({context}: ServerRouteProps) => {
+    private logoutUser = async ({ context }: ServerRouteProps) => {
         const { currentUser } = context as RequestContext;
         this.userDatabase = this.userDatabase.map(user => {
             if (user.pk !== currentUser.pk) {
@@ -313,10 +313,10 @@ export class MockDashServer {
 
     private refreshCsrfTokens = async ({ context }: ServerRouteProps) => {
         const { currentUser } = context as RequestContext;
-        return jsonResponse({csrfTokens: this.generateCsrfTokens(currentUser)});
+        return jsonResponse({ csrfTokens: this.generateCsrfTokens(currentUser) });
     };
 
-    private refreshAccessToken = async ({ options}: ServerRouteProps) => {
+    private refreshAccessToken = async ({ options }: ServerRouteProps) => {
         const { headers } = options;
         let user: UserModel | undefined;
         if (headers['authorization']) {
@@ -324,7 +324,7 @@ export class MockDashServer {
             user = this.userDatabase.find(usr => usr.refreshToken?.jwt === token);
         } else {
             log.trace('Request does not contain an Authorization header, using guest user');
-            user = this.findUser({ pk: guestUser.pk})
+            user = this.findUser({ pk: guestUser.pk })
         }
         if (!user) {
             return jsonResponse('Refresh token mismatch', 401);
@@ -343,7 +343,7 @@ export class MockDashServer {
         return jsonResponse(await this.endpoint.fetchFixtureJson<object>(`${filename}.json`));
     };
 
-    private returnManifestFixture = async ({url}: ServerRouteProps) => {
+    private returnManifestFixture = async ({ url }: ServerRouteProps) => {
         const fullUrl = new URL(url, document.location.href);
         log.trace(`Loading fixture for URL ${url}`);
         return dataResponse(await this.endpoint.fetchFixtureText(fullUrl.pathname), "application/dash+xml");
@@ -358,14 +358,14 @@ export class MockDashServer {
         return jsonResponse(mpStreams.map(createMpsSummary));
     };
 
-    private addMultiPeriodStream = async ({context, jsonParam}: ServerRouteProps) => {
+    private addMultiPeriodStream = async ({ context, jsonParam }: ServerRouteProps) => {
         if (!jsonParam) {
             return jsonResponse('', 400);
         }
         if (this.mpsStreams === undefined) {
             await this.getMpsStreams();
         }
-        const {csrf_token, ...mps} = jsonParam as MultiPeriodStreamRequest;
+        const { csrf_token, ...mps } = jsonParam as MultiPeriodStreamRequest;
         if (!csrf_token) {
             return jsonResponse('CSRF token missing', 401);
         }
@@ -381,7 +381,7 @@ export class MockDashServer {
         return jsonResponse(result);
     };
 
-    private editMultiPeriodStream = async ({ routeParams={}, context, jsonParam }: ServerRouteProps) => {
+    private editMultiPeriodStream = async ({ routeParams = {}, context, jsonParam }: ServerRouteProps) => {
         const { mps_name } = routeParams;
         if (!mps_name) {
             return notFound();
@@ -415,7 +415,7 @@ export class MockDashServer {
         return jsonResponse(result);
     };
 
-    private deleteMultiPeriodStream = async ({ routeParams={} }: ServerRouteProps) => {
+    private deleteMultiPeriodStream = async ({ routeParams = {} }: ServerRouteProps) => {
         const { mps_name } = routeParams;
         if (!mps_name) {
             return notFound();
@@ -429,7 +429,7 @@ export class MockDashServer {
         return jsonResponse('', 204);
     };
 
-    private validateMultiPeriodStream = async ({jsonParam}: ServerRouteProps) => {
+    private validateMultiPeriodStream = async ({ jsonParam }: ServerRouteProps) => {
         const req = jsonParam as MultiPeriodStreamValidationRequest;
         if (!req) {
             return jsonResponse('', 400);
@@ -449,6 +449,127 @@ export class MockDashServer {
         return jsonResponse(resp);
     };
 
+    private getUserList = async ({ context }: ServerRouteProps) => {
+        const { currentUser } = context as RequestContext;
+        if (!currentUser.groups.includes(UserGroups.ADMIN)) {
+            return jsonResponse('', 401);
+        }
+        const userList: InitialUserState[] = this.userDatabase.filter(({ pk }) => pk !== guestUser.pk).map(userToInitialState);
+        userList.sort((a,b) => a.pk - b.pk);
+        return jsonResponse(userList);
+    };
+
+    private addNewUser = async ({ context, jsonParam }: ServerRouteProps) => {
+        const { currentUser } = context as RequestContext;
+        if (!currentUser.groups.includes(UserGroups.ADMIN)) {
+            return jsonResponse('', 401);
+        }
+        const resp: ModifyUserResponse = {
+            errors: [],
+            success: false,
+        }
+        const user = jsonParam as EditUserState;
+        if (!user.username) {
+            resp.errors.push("username is required");
+        }
+        else if (this.userDatabase.some(usr => usr.username == user.username)) {
+            resp.errors.push(`username ${user.username} already exists`);
+        }
+        if (!user.email) {
+            resp.errors.push("email is required");
+        } else if (this.userDatabase.some(usr => usr.email == user.email)) {
+            resp.errors.push(`email ${user.email} already exists`);
+        }
+        if (user.password !== user.confirmPassword) {
+            resp.errors.push('passwords do not match');
+        }
+        if (resp.errors.length) {
+            return jsonResponse(resp);
+        }
+        resp.success = true;
+        const maxPk = Math.max(...this.userDatabase.map(usr => usr.pk));
+        const {adminGroup, mediaGroup, userGroup, ...props} = user;
+        const groups: UserGroups[] = [];
+        if (userGroup) {
+            groups.push(UserGroups.USER);
+        }
+        if (mediaGroup) {
+            groups.push(UserGroups.MEDIA);
+        }
+        if (adminGroup) {
+            groups.push(UserGroups.ADMIN);
+        }
+        const newUser: UserModel = {
+            ...guestUser, // just here to keep TypeScript happy
+            ...props,
+            pk: maxPk + 1,
+            refreshToken: null,
+            accessToken: null,
+            lastLogin: null,
+            groups,
+        };
+        this.userDatabase.push(newUser);
+        resp.user = userToInitialState(newUser);
+        return jsonResponse(resp);
+    };
+
+    private editUser = async ({ context, jsonParam, routeParams }: ServerRouteProps) => {
+        const { currentUser } = context as RequestContext;
+        const user = jsonParam as EditUserState;
+        const { upk } = routeParams;
+        if (!currentUser.groups.includes(UserGroups.ADMIN) && currentUser.pk !== user.pk) {
+            return jsonResponse('', 401);
+        }
+        const target = this.userDatabase.find(usr => usr.pk === user.pk);
+        if (!target) {
+            return jsonResponse('', 404);
+        }
+        if (String(target.pk) !== upk) {
+            log.trace(`upk=${upk} does not match pk${user.pk} in body`);
+            return jsonResponse('', 400);
+        }
+        const resp: ModifyUserResponse = {
+            errors: [],
+            success: false,
+        }
+        if (user.password && user.password !== user.confirmPassword) {
+            resp.errors.push('passwords do not match');
+        }
+        if (resp.errors.length) {
+            return jsonResponse(resp);
+        }
+        resp.success = true;
+        const newUser: UserModel = {
+            ...target,
+            username: user.username ?? target.username,
+            email: user.email ?? target.email,
+        };
+        this.userDatabase = this.userDatabase.map(usr => usr.pk === user.pk ? newUser : usr);
+        resp.user = userToInitialState(newUser);
+        return jsonResponse(resp);
+    };
+
+    private deleteUser = async ({ context, routeParams }: ServerRouteProps) => {
+        const { currentUser } = context as RequestContext;
+        const { upk } = routeParams;
+        if (!currentUser.groups.includes(UserGroups.ADMIN)) {
+            log.trace('delete user request from non-admin user');
+            return jsonResponse('', 401);
+        }
+        const userPk = parseInt(upk, 10);
+        if (isNaN(userPk)) {
+            log.trace(`invalid upk "${upk}`);
+            return jsonResponse('', 400);
+        }
+        const target = this.userDatabase.find(usr => usr.pk === userPk);
+        if (!target) {
+            log.trace(`user ${upk} not found`);
+            return jsonResponse('', 404);
+        }
+        this.userDatabase = this.userDatabase.filter(user => user.pk !== userPk);
+        return jsonResponse('', 204);
+    };
+
     //
     // helper functions
     //
@@ -459,7 +580,7 @@ export class MockDashServer {
                 'multi-period-streams/index.json');
             const mpsStreams = [];
             for (const item of streams) {
-                const {model} = await this.endpoint.fetchFixtureJson<MultiPeriodStreamJson>(
+                const { model } = await this.endpoint.fetchFixtureJson<MultiPeriodStreamJson>(
                     `multi-period-streams/${item.name}.json`
                 );
                 mpsStreams.push(model);
@@ -469,7 +590,7 @@ export class MockDashServer {
         return this.mpsStreams;
     }
 
-    private getUserFromAccessToken({options}: ServerRouteProps): UserModel | undefined {
+    private getUserFromAccessToken({ options }: ServerRouteProps): UserModel | undefined {
         const { headers } = options;
         if (!headers['authorization']) {
             log.trace('Request does not contain an Authorization header');
@@ -480,7 +601,7 @@ export class MockDashServer {
         return user;
     }
 
-    private getUserFromRefreshToken({options}: ServerRouteProps): UserModel | undefined {
+    private getUserFromRefreshToken({ options }: ServerRouteProps): UserModel | undefined {
         const { headers } = options;
         if (!headers['authorization']) {
             log.trace('Request does not contain an Authorization header');
@@ -532,9 +653,9 @@ function createMpsSummary(mps: MultiPeriodStream): MultiPeriodStreamSummary {
         return 100 + idx;
     });
     let duration: Temporal.Duration = new Temporal.Duration();
-    for (const prd of mps.periods){
-      const dur = Temporal.Duration.from(prd.duration);
-      duration = duration.add(dur);
+    for (const prd of mps.periods) {
+        const dur = Temporal.Duration.from(prd.duration);
+        duration = duration.add(dur);
     }
     duration = duration.round({
         largestUnit: 'hour',
@@ -551,3 +672,20 @@ function createMpsSummary(mps: MultiPeriodStream): MultiPeriodStreamSummary {
     return summary;
 }
 
+export function userToInitialState({
+    pk,
+    email,
+    username,
+    lastLogin,
+    mustChange = false,
+    groups }: UserModel): InitialUserState {
+    const usr: InitialUserState = {
+        pk,
+        email,
+        username,
+        lastLogin,
+        mustChange,
+        groups: groups.map(grp => grp.toUpperCase()),
+    };
+    return usr;
+}

@@ -12,6 +12,7 @@ export type ServerRouteProps = CallLog & {
     jsonParam?: object;
     routeParams?: RegExpExecArray["groups"];
     context: object;
+    upk?: string;
 };
 
 export type HttpRequestHandlerResponse = ResponseInit & {
