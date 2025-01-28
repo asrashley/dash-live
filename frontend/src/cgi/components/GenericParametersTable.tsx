@@ -1,7 +1,7 @@
 /* eslint-disable react/no-danger */
 import { useCgiOptions } from "../../hooks/useCgiOptions";
 import { CgiOptionDescription } from "../../types/CgiOptionDescription";
-import { BooleanCell } from "./BooleanCell";
+import { BooleanCell } from "../../components/BooleanCell";
 
 function GenericParametersRow({
   name,
