@@ -4,7 +4,7 @@ Database model for a user of the app
 from datetime import datetime
 import logging
 import secrets
-from typing import AbstractSet, ClassVar, Optional, cast, TYPE_CHECKING
+from typing import AbstractSet, ClassVar, NotRequired, Optional, TypedDict, cast, TYPE_CHECKING
 
 from passlib.context import CryptContext  # type: ignore
 from sqlalchemy import DateTime, String, Integer
@@ -25,6 +25,14 @@ password_context = CryptContext(
 
 if TYPE_CHECKING:
     from .token import Token
+
+class UserSummaryJson(TypedDict):
+    pk: int
+    email: str
+    username: str
+    lastLogin: str | None
+    mustChange: NotRequired[bool]
+    groups: list[str]
 
 class User(ModelMixin["User"], Base):
     """
@@ -167,6 +175,17 @@ class User(ModelMixin["User"], Base):
         self.groups_mask = value
 
     groups = property(get_groups, set_groups)
+
+    def summary(self) -> UserSummaryJson:
+        user_json: UserSummaryJson = {
+            "pk": self.pk,
+            "email": self.email,
+            "username": self.username,
+            "mustChange": self.must_change,
+            "lastLogin": self.last_login.isoformat() if self.last_login else None,
+            "groups": self.get_groups(),
+        }
+        return user_json
 
     @classmethod
     def populate_if_empty(cls, default_username: str, default_password: str, session: DatabaseSession) -> None:

@@ -253,26 +253,10 @@ routes: dict[str, Route] = {
         r'/logout',
         handler='user_management.LogoutPage',
         title='Log out of site'),
-    "list-users": Route(
-        r'/users',
-        handler='user_management.ListUsers',
-        title='Users'),
-    "add-user": Route(
-        r'/users/',
-        handler='user_management.AddUser',
-        title='Add User'),
-    "edit-user": Route(
-        r'/users/<int:upk>',
-        handler='user_management.EditUser',
-        title='Edit User'),
     "change-password": Route(
         r'/users/me',
         handler='user_management.EditSelf',
         title='Account Settings'),
-    "delete-user": Route(
-        r'/users/<int:upk>/delete',
-        handler='user_management.DeleteUser',
-        title='Delete User'),
     "list-manifests": Route(
         r'/api/manifests',
         handler='manifest_requests.ListManifests',
@@ -316,10 +300,30 @@ routes: dict[str, Route] = {
         r'/libs/<filename>',
         handler='esm.ModuleWrapper',
         title='ESM JavaScript wrapper'),
+    'api-add-mps': Route(
+        r'/api/multi-period-streams/.add',
+        handler='multi_period_streams.AddStream',
+        title='Add new multi-period stream'),
     "api-cgi-options": Route(
         r'/api/cgiOptions',
         handler='esm.CgiOptionsPage',
         title='Manifest and Media CGI options'),
+    'api-edit-mps': Route(
+        r'/api/multi-period-streams/<mps_name>',
+        handler='multi_period_streams.EditStream',
+        title='Edit multi-period stream'),
+    "api-edit-user": Route(
+        r'/api/users/<int:upk>',
+        handler='user_management.EditUser',
+        title='Edit User'),
+    'api-list-mps': Route(
+        r'/api/multi-period-streams',
+        handler='multi_period_streams.ListStreams',
+        title='Available DASH multi-period streams'),
+    "api-list-users": Route(
+        r'/api/users',
+        handler='user_management.ListUsers',
+        title='List All Users'),
     "api-login": Route(
         r'/api/login',
         handler='user_management.LoginPage',
@@ -332,18 +336,6 @@ routes: dict[str, Route] = {
         r'/api/refresh/csrf',
         handler='user_management.RefreshCsrfTokens',
         title='Refresh access token'),
-    'api-list-mps': Route(
-        r'/api/multi-period-streams',
-        handler='multi_period_streams.ListStreams',
-        title='Available DASH multi-period streams'),
-    'api-add-mps': Route(
-        r'/api/multi-period-streams/.add',
-        handler='multi_period_streams.AddStream',
-        title='Add new multi-period stream'),
-    'api-edit-mps': Route(
-        r'/api/multi-period-streams/<mps_name>',
-        handler='multi_period_streams.EditStream',
-        title='Edit multi-period stream'),
     "api-validate-mps": Route(
         r'/api/multi-period-streams.validate',
         handler='multi_period_streams.ValidateStream',
@@ -366,8 +358,10 @@ ui_routes: dict[str, UiRoute] = {
     "add-mps": UiRoute(r'/multi-period-streams/.add'),
     "cgi-options": UiRoute(r'/options'),
     "edit-mps": UiRoute(r'/multi-period-streams/<mps_name>'),
+    "edit-user": UiRoute(r'/users/<username>'),
     "home": UiRoute(r'/'),
     "list-mps": UiRoute(r'/multi-period-streams'),
+    "list-users": UiRoute(r'/users'),
     "login": UiRoute(r'/login'),
 }
 
