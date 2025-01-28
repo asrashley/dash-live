@@ -1,10 +1,11 @@
-import { useEffect } from "preact/hooks";
+import { useCallback, useEffect } from "preact/hooks";
 import { batch, type ReadonlySignal, useSignal } from "@preact/signals";
 
 export interface UseJsonRequestHook<T> {
   data: ReadonlySignal<T>;
   loaded: ReadonlySignal<boolean>;
   error: ReadonlySignal<string | null>;
+  setData: (data: Readonly<T>) => void;
 }
 
 export interface UseJsonRequestProps<T> {
@@ -17,6 +18,14 @@ export function useJsonRequest<T>({ request, initialData, name }: UseJsonRequest
   const data = useSignal<T>(initialData);
   const error = useSignal<string | null>(null);
   const loaded = useSignal<boolean>(false);
+  const setData = useCallback((newData: Readonly<T>) => {
+    // TODO: how to cancel an in-progress fetch?
+    batch(() => {
+      data.value = structuredClone(newData);
+      loaded.value = true;
+      error.value = null;
+    });
+  }, [data, error, loaded]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -47,7 +56,7 @@ export function useJsonRequest<T>({ request, initialData, name }: UseJsonRequest
         controller.abort();
       }
     };
-  }, [data, error, loaded, request]);
+  }, [data, error, loaded, name, request]);
 
-  return { data, error, loaded };
+  return { data, error, loaded, setData };
 }
