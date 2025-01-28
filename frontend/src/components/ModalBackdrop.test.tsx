@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { computed, signal } from "@preact/signals";
 import { act, render } from "@testing-library/preact";
 
@@ -8,9 +8,11 @@ import { ModalBackdrop } from "./ModalBackdrop";
 
 describe("ModalBackdrop component", () => {
   const dialog = signal<DialogState>({ backdrop: false });
+  const closeDialog = vi.fn();
   const appState: AppStateType = {
     backdrop: computed<boolean>(() => dialog.value?.backdrop ?? false),
     dialog,
+    closeDialog,
   };
 
   test("shows and hides backdrop", () => {

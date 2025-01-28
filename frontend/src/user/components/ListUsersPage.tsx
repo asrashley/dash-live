@@ -1,45 +1,127 @@
-{% extends 'layout.html' %}
+import { ReadonlySignal } from "@preact/signals-core";
+import {
+  createSortableTable,
+  RenderCellProps,
+} from "../../components/SortableTable";
+import { uiRouteMap } from "@dashlive/routemap";
+import {
+  EditUserState,
+  FlattenedUserState,
+  useAllUsers,
+} from "../../hooks/useAllUsers";
+import { BooleanCell } from "../../components/BooleanCell";
+import { Link } from "wouter-preact";
+import { useCallback, useContext } from "preact/hooks";
+import { AppStateContext } from "../../appState";
+import { EndpointContext } from "../../endpoints";
+import { AddUserDialog } from "./AddUserDialog";
 
+const headings: [keyof FlattenedUserState, string][] = [
+  ["pk", "#"],
+  ["username", "Username"],
+  ["email", "Email"],
+  ["lastLogin", "Last Login"],
+  ["mustChange", "Must Change"],
+  ["adminGroup", "Admin"],
+  ["mediaGroup", "Media"],
+  ["userGroup", "User"],
+];
 
-{% block content %}
-<div id="user-management" class="container">
-  <h1>User Accounts</h1>
-  <div class="users-list-wrap">
-  <table class="table table-striped table-bordered users-list" data-csrf="{{csrf_token}}">
-    <caption>Users</caption>
-    <thead>
-      <tr>
-	<th class="pk" scope="col">#</th>
-	<th class="username" scope="col">Username</th>
-	<th class="email" scope="col">Email</th>
-	<th class="last-login" scope="col">Last Login</th>
-	<th class="must-change bool-col" scope="col">Must Change Password</th>
-	{% for name in group_names %}
-	<th class="{name}-group bool-col" scope="col">{{ name | title }}</th>
-	{% endfor %}
-      </tr>
-    </thead>
-    <tbody>
-    {% for user in users %}
-    <tr>
-      <th class="pk" scope="row">{{ user.pk }}</th>
-      <td class="username">
-	<a href="{{ url_for('edit-user', upk=user.pk) }}">{{ user.username }}</a>
-      </td>
-      <td class="email">
-	<a href="{{ url_for('edit-user', upk=user.pk) }}">{{ user.email }}</a>
-      </td>
-      <td class="last-login">{{ user.last_login | dateTimeFormat("%H:%M:%S %d/%m/%Y") }}</td>
-      <td class="must-change bool-col">{{ user.must_change | toHtmlString }}</td>
-      {% for name in group_names %}
-      <td class="{name}-group bool-col">{{ user['groups'][name] | toHtmlString }}</td>
-      {% endfor %}
-    </tr>
-    {% endfor %}
-  </tbody>
-  </table>
-  <a href="{{ url_for('add-user') }}" class="btn btn-success add-user">Add</a>
-</div>
-</div>
-{% endblock %}
+function renderCell({ field, row }: RenderCellProps<FlattenedUserState>) {
+  const { username } = row;
+  switch (field) {
+    case "username":
+      return (
+        <Link href={uiRouteMap.editUser.url({ username })}>{username}</Link>
+      );
+    case "email":
+      return (
+        <Link href={uiRouteMap.editUser.url({ username })}>{row.email}</Link>
+      );
+    case "lastLogin":
+      return <span>{row.lastLogin ?? "---"}</span>;
+    case "mustChange":
+    case "adminGroup":
+    case "mediaGroup":
+    case "userGroup":
+      return <BooleanCell value={row[field]} />;
+    default:
+      return <span>{row[field]}</span>;
+  }
+}
 
+const UsersTable = createSortableTable<FlattenedUserState>({
+  headings,
+  primaryKey: "pk",
+  initialSortField: "username",
+  renderCell,
+});
+
+interface ListUsersTableProps {
+  users: ReadonlySignal<FlattenedUserState[]>;
+}
+
+function ListUsersTable({ users }: ListUsersTableProps) {
+  return <UsersTable data={users} caption="Users" />;
+}
+
+export default function ListUsersPage() {
+  const { dialog } = useContext(AppStateContext);
+  const apiRequests = useContext(EndpointContext);
+  const { flattenedUsers, validateUser, addUser } = useAllUsers();
+  const openAddUserDialog = useCallback(() => {
+    dialog.value = {
+      backdrop: true,
+      addUser: {
+        active: true,
+      },
+    };
+  }, [dialog]);
+  const closeDialog = useCallback(() => {
+    dialog.value = null;
+  }, [dialog]);
+  const saveNewUser = useCallback(
+    async (user: EditUserState) => {
+      const errs = validateUser(user);
+      if (errs.username) {
+        return errs.username;
+      }
+      if (errs.password) {
+        return errs.password;
+      }
+      try {
+        const result = await apiRequests.addUser(user);
+        if (result.success) {
+          addUser(result.user);
+          return "";
+        }
+        return result.errors.join("\n");
+      } catch (err) {
+        return `failed to add new user - ${err}`;
+      }
+    },
+    [addUser, apiRequests, validateUser]
+  );
+
+  return (
+    <div id="user-management" className="container">
+      <div className="d-flex flex-row">
+        <h1 className="flex-grow-1">User Accounts</h1>
+        <button
+          onClick={openAddUserDialog}
+          className="btn btn-success add-user"
+        >
+          Add
+        </button>
+      </div>
+      <div className="users-list-wrap">
+        <ListUsersTable users={flattenedUsers} />
+      </div>
+      <AddUserDialog
+        onClose={closeDialog}
+        saveChanges={saveNewUser}
+        validateUser={validateUser}
+      />
+    </div>
+  );
+}

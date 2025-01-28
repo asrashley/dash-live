@@ -4,17 +4,22 @@ import { DialogState } from './types/DialogState';
 
 export interface AppStateType {
   backdrop: ReadonlySignal<boolean>;
-  dialog: Signal<DialogState>;
+  dialog: Signal<DialogState | null>;
+  closeDialog: () => void;
 }
 
 export const AppStateContext = createContext<AppStateType>(null);
 
 export function createAppState(): AppStateType {
-  const dialog = signal(null);
+  const dialog = signal<DialogState | null>(null);
 
   const backdrop = computed(() => {
     return dialog.value?.backdrop === true;
   });
 
-  return { dialog, backdrop };
+  const closeDialog = () => {
+    dialog.value = null;
+  };
+
+  return { dialog, backdrop, closeDialog };
 }
