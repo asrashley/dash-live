@@ -35,6 +35,8 @@ describe("LoginPage component", () => {
             pk: 42,
             username: 'my.username',
             email: 'unit.test@local',
+            lastLogin: '2024-01-09T22:33:44Z',
+            mustChange: false,
             groups: ['USERS'],
         },
         csrf_token: "csrf.7654"

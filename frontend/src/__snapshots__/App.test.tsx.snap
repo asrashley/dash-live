@@ -81,6 +81,16 @@ exports[`main entry-point app > matches snapshot for CGI options 1`] = `
             </a>
           </li>
           <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link spa"
+              href="/users"
+            >
+              Users
+            </a>
+          </li>
+          <li
             class="nav-item user-login"
           >
             <a
@@ -2636,6 +2646,16 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
             </a>
           </li>
           <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link spa"
+              href="/users"
+            >
+              Users
+            </a>
+          </li>
+          <li
             class="nav-item user-login"
           >
             <a
@@ -2718,6 +2738,7 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
             <label
               class="col-2 col-form-label"
               for="model-name"
+              id="label-name"
             >
               Name:
             </label>
@@ -2733,9 +2754,14 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
             </div>
             <div
               class="col-3 form-text"
+              id="text-name"
             >
               Unique name for this stream
             </div>
+            <div
+              class="invalid-feedback"
+              style=""
+            />
           </div>
           <div
             class="row mb-2 form-group "
@@ -2743,6 +2769,7 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
             <label
               class="col-2 col-form-label"
               for="model-title"
+              id="label-title"
             >
               Title:
             </label>
@@ -2758,9 +2785,14 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
             </div>
             <div
               class="col-3 form-text"
+              id="text-title"
             >
               Title for this stream
             </div>
+            <div
+              class="invalid-feedback"
+              style=""
+            />
           </div>
           <div
             class="row mb-2 form-group "
@@ -2768,6 +2800,7 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
             <label
               class="col-2 col-form-label"
               for="model-options"
+              id="label-options"
             >
               Stream Options:
             </label>
@@ -2811,6 +2844,10 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
                 </button>
               </div>
             </div>
+            <div
+              class="invalid-feedback"
+              style="display: none;"
+            />
           </div>
           <div
             class="row mb-2 form-group has-validation"
@@ -2818,6 +2855,7 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
             <label
               class="col-2 col-form-label"
               for="model-periods"
+              id="label-periods"
             >
               Periods:
             </label>
@@ -3114,6 +3152,10 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
                 </div>
               </div>
             </div>
+            <div
+              class="invalid-feedback"
+              style="display: none;"
+            />
           </div>
           <div
             class="btn-toolbar"
@@ -3253,6 +3295,16 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
               href="/media/inspect"
             >
               Inspect
+            </a>
+          </li>
+          <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link spa"
+              href="/users"
+            >
+              Users
             </a>
           </li>
           <li
@@ -3416,6 +3468,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-mode"
+                    id="label-mode"
                   >
                     Playback Mode:
                   </label>
@@ -3476,6 +3529,10 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                       </div>
                     </div>
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -3483,6 +3540,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-manifest"
+                    id="label-manifest"
                   >
                     Manifest:
                   </label>
@@ -3490,8 +3548,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-manifest"
-                      class="form-select "
+                      aria-describedby="text-manifest"
+                      class="form-select is-valid "
                       id="model-manifest"
                       name="manifest"
                       title="Manifest"
@@ -3546,9 +3604,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-manifest"
                   >
                     Manifest template to use
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -3556,6 +3619,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-stream"
+                    id="label-stream"
                   >
                     Stream:
                   </label>
@@ -3563,8 +3627,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-stream"
-                      class="form-select "
+                      aria-describedby="text-stream"
+                      class="form-select is-valid "
                       id="model-stream"
                       name="stream"
                       title="Stream"
@@ -3594,9 +3658,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-stream"
                   >
                     Stream to play
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -3604,6 +3673,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-drms"
+                    id="label-drms"
                   >
                     DRM systems:
                   </label>
@@ -3611,7 +3681,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <div
-                      class="form-control "
+                      class="form-control is-valid "
                       data-testid="msi-drms"
                     >
                       <div
@@ -3666,9 +3736,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-drms"
                   >
                     DRM systems to enable for encrypted AdaptationSets
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -3676,6 +3751,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-abr"
+                    id="label-abr"
                   >
                     Adaptive bitrate:
                   </label>
@@ -3683,8 +3759,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-abr"
-                      class="form-check-input "
+                      aria-describedby="text-abr"
+                      class="form-check-input is-valid "
                       id="model-abr"
                       name="abr"
                       title="Adaptive bitrate"
@@ -3693,9 +3769,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-abr"
                   >
                     Enable or disable adaptive bitrate
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -3703,6 +3784,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-acodec"
+                    id="label-acodec"
                   >
                     Audio Codec:
                   </label>
@@ -3710,8 +3792,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-acodec"
-                      class="form-select "
+                      aria-describedby="text-acodec"
+                      class="form-select is-valid "
                       id="model-acodec"
                       name="acodec"
                       title="Audio Codec"
@@ -3736,9 +3818,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-acodec"
                   >
                     Filter audio adaptation sets by audio codec (AAC or E-AC3)
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -3746,6 +3833,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-events"
+                    id="label-events"
                   >
                     DASH events:
                   </label>
@@ -3753,8 +3841,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-events"
-                      class="form-select "
+                      aria-describedby="text-events"
+                      class="form-select is-valid "
                       id="model-events"
                       name="events"
                       title="DASH events"
@@ -3779,9 +3867,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-events"
                   >
                     A comma separated list of event formats
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -3789,6 +3882,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-timeline"
+                    id="label-timeline"
                   >
                     Segment timeline:
                   </label>
@@ -3796,8 +3890,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-timeline"
-                      class="form-check-input "
+                      aria-describedby="text-timeline"
+                      class="form-check-input is-valid "
                       id="model-timeline"
                       name="timeline"
                       title="Segment timeline"
@@ -3806,9 +3900,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-timeline"
                   >
                     Enable or disable segment timeline
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -3816,6 +3915,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-time"
+                    id="label-time"
                   >
                     UTC timing method:
                   </label>
@@ -3823,8 +3923,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-time"
-                      class="form-select "
+                      aria-describedby="text-time"
+                      class="form-select is-valid "
                       id="model-time"
                       name="time"
                       title="UTC timing method"
@@ -3874,9 +3974,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-time"
                   >
                     Select UTCTiming element method.
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -3884,6 +3989,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-player"
+                    id="label-player"
                   >
                     Video Player:
                   </label>
@@ -3891,8 +3997,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-player"
-                      class="form-select "
+                      aria-describedby="text-player"
+                      class="form-select is-valid "
                       id="model-player"
                       name="player"
                       title="Video Player"
@@ -3917,9 +4023,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-player"
                   >
                     Native or MSE playback control
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
               </div>
             </div>
@@ -3950,6 +4061,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-ad_audio"
+                    id="label-ad_audio"
                   >
                     Audio Description:
                   </label>
@@ -3957,8 +4069,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-ad_audio"
-                      class="form-control "
+                      aria-describedby="text-ad_audio"
+                      class="form-control is-valid "
                       id="model-ad_audio"
                       name="ad_audio"
                       title="Audio Description"
@@ -3967,9 +4079,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-ad_audio"
                   >
                     Select audio AdaptationSet that will be marked as a broadcast-mix audio description track
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -3977,6 +4094,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-start"
+                    id="label-start"
                   >
                     Availability start time:
                   </label>
@@ -3984,8 +4102,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-start"
-                      class="form-control "
+                      aria-describedby="text-start"
+                      class="form-control is-valid "
                       id="model-start"
                       list="list-start"
                       name="start"
@@ -4024,9 +4142,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-start"
                   >
                     Sets availabilityStartTime for live streams
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -4034,6 +4157,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-bugs"
+                    id="label-bugs"
                   >
                     Bug compatibility:
                   </label>
@@ -4041,8 +4165,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-bugs"
-                      class="form-select "
+                      aria-describedby="text-bugs"
+                      class="form-select is-valid "
                       id="model-bugs"
                       name="bugs"
                       title="Bug compatibility"
@@ -4062,9 +4186,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-bugs"
                   >
                     Produce a stream with known bugs
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -4072,6 +4201,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-drift"
+                    id="label-drift"
                   >
                     Clock drift:
                   </label>
@@ -4079,8 +4209,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-drift"
-                      class="form-control "
+                      aria-describedby="text-drift"
+                      class="form-control is-valid "
                       id="model-drift"
                       name="drift"
                       title="Clock drift"
@@ -4089,9 +4219,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-drift"
                   >
                     Number of seconds of delay to add to wall clock time
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -4099,6 +4234,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-leeway"
+                    id="label-leeway"
                   >
                     Fragment expiration leeway:
                   </label>
@@ -4106,8 +4242,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-leeway"
-                      class="form-control "
+                      aria-describedby="text-leeway"
+                      class="form-control is-valid "
                       id="model-leeway"
                       list="list-leeway"
                       name="leeway"
@@ -4136,9 +4272,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-leeway"
                   >
                     Number of seconds after a fragment has expired before it becomes unavailable
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -4146,6 +4287,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-main_audio"
+                    id="label-main_audio"
                   >
                     Main audio track:
                   </label>
@@ -4153,8 +4295,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-main_audio"
-                      class="form-control "
+                      aria-describedby="text-main_audio"
+                      class="form-control is-valid "
                       id="model-main_audio"
                       name="main_audio"
                       title="Main audio track"
@@ -4163,9 +4305,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-main_audio"
                   >
                     Select audio AdaptationSet that will be given the "main" role
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -4173,6 +4320,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-main_text"
+                    id="label-main_text"
                   >
                     Main text track:
                   </label>
@@ -4180,8 +4328,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-main_text"
-                      class="form-control "
+                      aria-describedby="text-main_text"
+                      class="form-control is-valid "
                       id="model-main_text"
                       name="main_text"
                       title="Main text track"
@@ -4190,9 +4338,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-main_text"
                   >
                     Select text AdaptationSet that will be given the "main" role
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -4200,6 +4353,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-mup"
+                    id="label-mup"
                   >
                     Minimum update period:
                   </label>
@@ -4207,8 +4361,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-mup"
-                      class="form-control "
+                      aria-describedby="text-mup"
+                      class="form-control is-valid "
                       id="model-mup"
                       list="list-mup"
                       name="mup"
@@ -4242,9 +4396,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-mup"
                   >
                     Specify minimumUpdatePeriod (in seconds) or -1 to disable updates
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -4252,6 +4411,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-ntp_servers"
+                    id="label-ntp_servers"
                   >
                     NTP time servers:
                   </label>
@@ -4259,8 +4419,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-ntp_servers"
-                      class="form-select "
+                      aria-describedby="text-ntp_servers"
+                      class="form-select is-valid "
                       id="model-ntp_servers"
                       name="ntp_servers"
                       title="NTP time servers"
@@ -4285,9 +4445,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-ntp_servers"
                   >
                     List of servers to use for NTP requests
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -4295,6 +4460,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-tcodec"
+                    id="label-tcodec"
                   >
                     Text Codec:
                   </label>
@@ -4302,8 +4468,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-tcodec"
-                      class="form-select "
+                      aria-describedby="text-tcodec"
+                      class="form-select is-valid "
                       id="model-tcodec"
                       name="tcodec"
                       title="Text Codec"
@@ -4323,9 +4489,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-tcodec"
                   >
                     Filter text adaptation sets by text codec
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -4333,6 +4504,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-tlang"
+                    id="label-tlang"
                   >
                     Text Language:
                   </label>
@@ -4340,8 +4512,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-tlang"
-                      class="form-control "
+                      aria-describedby="text-tlang"
+                      class="form-control is-valid "
                       id="model-tlang"
                       name="tlang"
                       title="Text Language"
@@ -4350,9 +4522,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-tlang"
                   >
                     Filter text adaptation sets by language
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -4360,6 +4537,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-base"
+                    id="label-base"
                   >
                     Use BaseURLs:
                   </label>
@@ -4367,8 +4545,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-base"
-                      class="form-check-input "
+                      aria-describedby="text-base"
+                      class="form-check-input is-valid "
                       id="model-base"
                       name="base"
                       title="Use BaseURLs"
@@ -4377,9 +4555,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-base"
                   >
                     Include a BaseURL element?
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -4387,6 +4570,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-patch"
+                    id="label-patch"
                   >
                     Use MPD patches:
                   </label>
@@ -4394,8 +4578,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-patch"
-                      class="form-check-input "
+                      aria-describedby="text-patch"
+                      class="form-check-input is-valid "
                       id="model-patch"
                       name="patch"
                       title="Use MPD patches"
@@ -4404,9 +4588,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-patch"
                   >
                     Use MPD patches for live streams
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -4414,6 +4603,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-depth"
+                    id="label-depth"
                   >
                     timeShiftBufferDepth size:
                   </label>
@@ -4421,8 +4611,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-depth"
-                      class="form-control "
+                      aria-describedby="text-depth"
+                      class="form-control is-valid "
                       id="model-depth"
                       list="list-depth"
                       name="depth"
@@ -4446,9 +4636,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-depth"
                   >
                     Number of seconds for timeShiftBufferDepth
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
               </div>
             </div>
@@ -4479,6 +4674,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-clearkey__la_url"
+                    id="label-clearkey__la_url"
                   >
                     Clearkey LA_URL:
                   </label>
@@ -4486,8 +4682,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-clearkey__la_url"
-                      class="form-control "
+                      aria-describedby="text-clearkey__la_url"
+                      class="form-control is-valid "
                       id="model-clearkey__la_url"
                       name="clearkey__la_url"
                       title="Clearkey LA_URL"
@@ -4496,9 +4692,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-clearkey__la_url"
                   >
                     Override the Clearkey license URL field
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -4506,6 +4707,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-clearkey__drmloc"
+                    id="label-clearkey__drmloc"
                   >
                     Clearkey location:
                   </label>
@@ -4513,8 +4715,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-clearkey__drmloc"
-                      class="form-select "
+                      aria-describedby="text-clearkey__drmloc"
+                      class="form-select is-valid "
                       id="model-clearkey__drmloc"
                       name="clearkey__drmloc"
                       title="Clearkey location"
@@ -4559,9 +4761,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-clearkey__drmloc"
                   >
                     Location to place DRM data
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
               </div>
             </div>
@@ -4592,6 +4799,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-marlin__la_url"
+                    id="label-marlin__la_url"
                   >
                     Marlin LA_URL:
                   </label>
@@ -4599,8 +4807,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-marlin__la_url"
-                      class="form-control "
+                      aria-describedby="text-marlin__la_url"
+                      class="form-control is-valid "
                       id="model-marlin__la_url"
                       name="marlin__la_url"
                       title="Marlin LA_URL"
@@ -4609,9 +4817,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-marlin__la_url"
                   >
                     Override the Marlin S-URL field
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -4619,6 +4832,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-marlin__drmloc"
+                    id="label-marlin__drmloc"
                   >
                     Marlin location:
                   </label>
@@ -4626,8 +4840,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-marlin__drmloc"
-                      class="form-select "
+                      aria-describedby="text-marlin__drmloc"
+                      class="form-select is-valid "
                       id="model-marlin__drmloc"
                       name="marlin__drmloc"
                       title="Marlin location"
@@ -4672,9 +4886,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-marlin__drmloc"
                   >
                     Location to place DRM data
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
               </div>
             </div>
@@ -4705,6 +4924,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-ping__count"
+                    id="label-ping__count"
                   >
                     Ping count:
                   </label>
@@ -4712,14 +4932,18 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-ping__count"
-                      class="form-control "
+                      aria-describedby="label-ping__count"
+                      class="form-control is-valid "
                       id="model-ping__count"
                       name="ping__count"
                       title="Ping count"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -4727,6 +4951,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-ping__duration"
+                    id="label-ping__duration"
                   >
                     Ping duration:
                   </label>
@@ -4734,14 +4959,18 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-ping__duration"
-                      class="form-control "
+                      aria-describedby="label-ping__duration"
+                      class="form-control is-valid "
                       id="model-ping__duration"
                       name="ping__duration"
                       title="Ping duration"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -4749,6 +4978,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-ping__inband"
+                    id="label-ping__inband"
                   >
                     Ping inband:
                   </label>
@@ -4756,14 +4986,18 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-ping__inband"
-                      class="form-check-input "
+                      aria-describedby="label-ping__inband"
+                      class="form-check-input is-valid "
                       id="model-ping__inband"
                       name="ping__inband"
                       title="Ping inband"
                       type="checkbox"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -4771,6 +5005,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-ping__interval"
+                    id="label-ping__interval"
                   >
                     Ping interval:
                   </label>
@@ -4778,14 +5013,18 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-ping__interval"
-                      class="form-control "
+                      aria-describedby="label-ping__interval"
+                      class="form-control is-valid "
                       id="model-ping__interval"
                       name="ping__interval"
                       title="Ping interval"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -4793,6 +5032,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-ping__start"
+                    id="label-ping__start"
                   >
                     Ping start:
                   </label>
@@ -4800,14 +5040,18 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-ping__start"
-                      class="form-control "
+                      aria-describedby="label-ping__start"
+                      class="form-control is-valid "
                       id="model-ping__start"
                       name="ping__start"
                       title="Ping start"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -4815,6 +5059,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-ping__timescale"
+                    id="label-ping__timescale"
                   >
                     Ping timescale:
                   </label>
@@ -4822,14 +5067,18 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-ping__timescale"
-                      class="form-control "
+                      aria-describedby="label-ping__timescale"
+                      class="form-control is-valid "
                       id="model-ping__timescale"
                       name="ping__timescale"
                       title="Ping timescale"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -4837,6 +5086,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-ping__value"
+                    id="label-ping__value"
                   >
                     Ping value:
                   </label>
@@ -4844,14 +5094,18 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-ping__value"
-                      class="form-control "
+                      aria-describedby="label-ping__value"
+                      class="form-control is-valid "
                       id="model-ping__value"
                       name="ping__value"
                       title="Ping value"
                       type="text"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -4859,6 +5113,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-ping__version"
+                    id="label-ping__version"
                   >
                     Ping version:
                   </label>
@@ -4866,14 +5121,18 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-ping__version"
-                      class="form-control "
+                      aria-describedby="label-ping__version"
+                      class="form-control is-valid "
                       id="model-ping__version"
                       name="ping__version"
                       title="Ping version"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
               </div>
             </div>
@@ -4904,6 +5163,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-playready__la_url"
+                    id="label-playready__la_url"
                   >
                     Playready LA_URL:
                   </label>
@@ -4911,8 +5171,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-playready__la_url"
-                      class="form-control "
+                      aria-describedby="text-playready__la_url"
+                      class="form-control is-valid "
                       id="model-playready__la_url"
                       name="playready__la_url"
                       title="Playready LA_URL"
@@ -4921,9 +5181,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-playready__la_url"
                   >
                     Override the Playready LA_URL field
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -4931,6 +5196,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-playready__piff"
+                    id="label-playready__piff"
                   >
                     Playready PIFF:
                   </label>
@@ -4938,8 +5204,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-playready__piff"
-                      class="form-check-input "
+                      aria-describedby="text-playready__piff"
+                      class="form-check-input is-valid "
                       id="model-playready__piff"
                       name="playready__piff"
                       title="Playready PIFF"
@@ -4948,9 +5214,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-playready__piff"
                   >
                     Include PIFF sample encryption data
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -4958,6 +5229,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-playready__version"
+                    id="label-playready__version"
                   >
                     Playready Version:
                   </label>
@@ -4965,8 +5237,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-playready__version"
-                      class="form-select "
+                      aria-describedby="text-playready__version"
+                      class="form-select is-valid "
                       id="model-playready__version"
                       name="playready__version"
                       title="Playready Version"
@@ -5001,9 +5273,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-playready__version"
                   >
                     Set the PlayReady version compatibility for this stream
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -5011,6 +5288,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-playready__drmloc"
+                    id="label-playready__drmloc"
                   >
                     Playready location:
                   </label>
@@ -5018,8 +5296,8 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-playready__drmloc"
-                      class="form-select "
+                      aria-describedby="text-playready__drmloc"
+                      class="form-select is-valid "
                       id="model-playready__drmloc"
                       name="playready__drmloc"
                       title="Playready location"
@@ -5064,9 +5342,14 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-playready__drmloc"
                   >
                     Location to place DRM data
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
               </div>
             </div>
@@ -5097,6 +5380,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-scte35__count"
+                    id="label-scte35__count"
                   >
                     Scte35 count:
                   </label>
@@ -5104,14 +5388,18 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-scte35__count"
-                      class="form-control "
+                      aria-describedby="label-scte35__count"
+                      class="form-control is-valid "
                       id="model-scte35__count"
                       name="scte35__count"
                       title="Scte35 count"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -5119,6 +5407,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-scte35__duration"
+                    id="label-scte35__duration"
                   >
                     Scte35 duration:
                   </label>
@@ -5126,14 +5415,18 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-scte35__duration"
-                      class="form-control "
+                      aria-describedby="label-scte35__duration"
+                      class="form-control is-valid "
                       id="model-scte35__duration"
                       name="scte35__duration"
                       title="Scte35 duration"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -5141,6 +5434,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-scte35__inband"
+                    id="label-scte35__inband"
                   >
                     Scte35 inband:
                   </label>
@@ -5148,14 +5442,18 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-scte35__inband"
-                      class="form-check-input "
+                      aria-describedby="label-scte35__inband"
+                      class="form-check-input is-valid "
                       id="model-scte35__inband"
                       name="scte35__inband"
                       title="Scte35 inband"
                       type="checkbox"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -5163,6 +5461,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-scte35__interval"
+                    id="label-scte35__interval"
                   >
                     Scte35 interval:
                   </label>
@@ -5170,14 +5469,18 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-scte35__interval"
-                      class="form-control "
+                      aria-describedby="label-scte35__interval"
+                      class="form-control is-valid "
                       id="model-scte35__interval"
                       name="scte35__interval"
                       title="Scte35 interval"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -5185,6 +5488,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-scte35__program_id"
+                    id="label-scte35__program_id"
                   >
                     Scte35 program_id:
                   </label>
@@ -5192,14 +5496,18 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-scte35__program_id"
-                      class="form-control "
+                      aria-describedby="label-scte35__program_id"
+                      class="form-control is-valid "
                       id="model-scte35__program_id"
                       name="scte35__program_id"
                       title="Scte35 program_id"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -5207,6 +5515,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-scte35__start"
+                    id="label-scte35__start"
                   >
                     Scte35 start:
                   </label>
@@ -5214,14 +5523,18 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-scte35__start"
-                      class="form-control "
+                      aria-describedby="label-scte35__start"
+                      class="form-control is-valid "
                       id="model-scte35__start"
                       name="scte35__start"
                       title="Scte35 start"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -5229,6 +5542,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-scte35__timescale"
+                    id="label-scte35__timescale"
                   >
                     Scte35 timescale:
                   </label>
@@ -5236,14 +5550,18 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-scte35__timescale"
-                      class="form-control "
+                      aria-describedby="label-scte35__timescale"
+                      class="form-control is-valid "
                       id="model-scte35__timescale"
                       name="scte35__timescale"
                       title="Scte35 timescale"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -5251,6 +5569,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-scte35__value"
+                    id="label-scte35__value"
                   >
                     Scte35 value:
                   </label>
@@ -5258,14 +5577,18 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-scte35__value"
-                      class="form-control "
+                      aria-describedby="label-scte35__value"
+                      class="form-control is-valid "
                       id="model-scte35__value"
                       name="scte35__value"
                       title="Scte35 value"
                       type="text"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -5273,6 +5596,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                   <label
                     class="col-2 col-form-label"
                     for="model-scte35__version"
+                    id="label-scte35__version"
                   >
                     Scte35 version:
                   </label>
@@ -5280,14 +5604,18 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-scte35__version"
-                      class="form-control "
+                      aria-describedby="label-scte35__version"
+                      class="form-control is-valid "
                       id="model-scte35__version"
                       name="scte35__version"
                       title="Scte35 version"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
               </div>
             </div>
@@ -5421,6 +5749,16 @@ exports[`main entry-point app > matches snapshot for home page when user not log
               href="/media/inspect"
             >
               Inspect
+            </a>
+          </li>
+          <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link spa"
+              href="/users"
+            >
+              Users
             </a>
           </li>
           <li
@@ -5584,6 +5922,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-mode"
+                    id="label-mode"
                   >
                     Playback Mode:
                   </label>
@@ -5644,6 +5983,10 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                       </div>
                     </div>
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -5651,6 +5994,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-manifest"
+                    id="label-manifest"
                   >
                     Manifest:
                   </label>
@@ -5658,8 +6002,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-manifest"
-                      class="form-select "
+                      aria-describedby="text-manifest"
+                      class="form-select is-valid "
                       id="model-manifest"
                       name="manifest"
                       title="Manifest"
@@ -5714,9 +6058,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-manifest"
                   >
                     Manifest template to use
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -5724,6 +6073,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-stream"
+                    id="label-stream"
                   >
                     Stream:
                   </label>
@@ -5731,8 +6081,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-stream"
-                      class="form-select "
+                      aria-describedby="text-stream"
+                      class="form-select is-valid "
                       id="model-stream"
                       name="stream"
                       title="Stream"
@@ -5762,9 +6112,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-stream"
                   >
                     Stream to play
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -5772,6 +6127,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-drms"
+                    id="label-drms"
                   >
                     DRM systems:
                   </label>
@@ -5779,7 +6135,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <div
-                      class="form-control "
+                      class="form-control is-valid "
                       data-testid="msi-drms"
                     >
                       <div
@@ -5834,9 +6190,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-drms"
                   >
                     DRM systems to enable for encrypted AdaptationSets
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -5844,6 +6205,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-abr"
+                    id="label-abr"
                   >
                     Adaptive bitrate:
                   </label>
@@ -5851,8 +6213,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-abr"
-                      class="form-check-input "
+                      aria-describedby="text-abr"
+                      class="form-check-input is-valid "
                       id="model-abr"
                       name="abr"
                       title="Adaptive bitrate"
@@ -5861,9 +6223,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-abr"
                   >
                     Enable or disable adaptive bitrate
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -5871,6 +6238,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-acodec"
+                    id="label-acodec"
                   >
                     Audio Codec:
                   </label>
@@ -5878,8 +6246,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-acodec"
-                      class="form-select "
+                      aria-describedby="text-acodec"
+                      class="form-select is-valid "
                       id="model-acodec"
                       name="acodec"
                       title="Audio Codec"
@@ -5904,9 +6272,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-acodec"
                   >
                     Filter audio adaptation sets by audio codec (AAC or E-AC3)
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -5914,6 +6287,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-events"
+                    id="label-events"
                   >
                     DASH events:
                   </label>
@@ -5921,8 +6295,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-events"
-                      class="form-select "
+                      aria-describedby="text-events"
+                      class="form-select is-valid "
                       id="model-events"
                       name="events"
                       title="DASH events"
@@ -5947,9 +6321,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-events"
                   >
                     A comma separated list of event formats
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -5957,6 +6336,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-timeline"
+                    id="label-timeline"
                   >
                     Segment timeline:
                   </label>
@@ -5964,8 +6344,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-timeline"
-                      class="form-check-input "
+                      aria-describedby="text-timeline"
+                      class="form-check-input is-valid "
                       id="model-timeline"
                       name="timeline"
                       title="Segment timeline"
@@ -5974,9 +6354,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-timeline"
                   >
                     Enable or disable segment timeline
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -5984,6 +6369,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-time"
+                    id="label-time"
                   >
                     UTC timing method:
                   </label>
@@ -5991,8 +6377,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-time"
-                      class="form-select "
+                      aria-describedby="text-time"
+                      class="form-select is-valid "
                       id="model-time"
                       name="time"
                       title="UTC timing method"
@@ -6042,9 +6428,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-time"
                   >
                     Select UTCTiming element method.
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -6052,6 +6443,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-player"
+                    id="label-player"
                   >
                     Video Player:
                   </label>
@@ -6059,8 +6451,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-player"
-                      class="form-select "
+                      aria-describedby="text-player"
+                      class="form-select is-valid "
                       id="model-player"
                       name="player"
                       title="Video Player"
@@ -6085,9 +6477,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-player"
                   >
                     Native or MSE playback control
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
               </div>
             </div>
@@ -6118,6 +6515,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-ad_audio"
+                    id="label-ad_audio"
                   >
                     Audio Description:
                   </label>
@@ -6125,8 +6523,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-ad_audio"
-                      class="form-control "
+                      aria-describedby="text-ad_audio"
+                      class="form-control is-valid "
                       id="model-ad_audio"
                       name="ad_audio"
                       title="Audio Description"
@@ -6135,9 +6533,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-ad_audio"
                   >
                     Select audio AdaptationSet that will be marked as a broadcast-mix audio description track
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -6145,6 +6548,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-start"
+                    id="label-start"
                   >
                     Availability start time:
                   </label>
@@ -6152,8 +6556,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-start"
-                      class="form-control "
+                      aria-describedby="text-start"
+                      class="form-control is-valid "
                       id="model-start"
                       list="list-start"
                       name="start"
@@ -6192,9 +6596,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-start"
                   >
                     Sets availabilityStartTime for live streams
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -6202,6 +6611,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-bugs"
+                    id="label-bugs"
                   >
                     Bug compatibility:
                   </label>
@@ -6209,8 +6619,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-bugs"
-                      class="form-select "
+                      aria-describedby="text-bugs"
+                      class="form-select is-valid "
                       id="model-bugs"
                       name="bugs"
                       title="Bug compatibility"
@@ -6230,9 +6640,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-bugs"
                   >
                     Produce a stream with known bugs
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -6240,6 +6655,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-drift"
+                    id="label-drift"
                   >
                     Clock drift:
                   </label>
@@ -6247,8 +6663,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-drift"
-                      class="form-control "
+                      aria-describedby="text-drift"
+                      class="form-control is-valid "
                       id="model-drift"
                       name="drift"
                       title="Clock drift"
@@ -6257,9 +6673,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-drift"
                   >
                     Number of seconds of delay to add to wall clock time
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -6267,6 +6688,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-leeway"
+                    id="label-leeway"
                   >
                     Fragment expiration leeway:
                   </label>
@@ -6274,8 +6696,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-leeway"
-                      class="form-control "
+                      aria-describedby="text-leeway"
+                      class="form-control is-valid "
                       id="model-leeway"
                       list="list-leeway"
                       name="leeway"
@@ -6304,9 +6726,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-leeway"
                   >
                     Number of seconds after a fragment has expired before it becomes unavailable
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -6314,6 +6741,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-main_audio"
+                    id="label-main_audio"
                   >
                     Main audio track:
                   </label>
@@ -6321,8 +6749,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-main_audio"
-                      class="form-control "
+                      aria-describedby="text-main_audio"
+                      class="form-control is-valid "
                       id="model-main_audio"
                       name="main_audio"
                       title="Main audio track"
@@ -6331,9 +6759,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-main_audio"
                   >
                     Select audio AdaptationSet that will be given the "main" role
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -6341,6 +6774,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-main_text"
+                    id="label-main_text"
                   >
                     Main text track:
                   </label>
@@ -6348,8 +6782,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-main_text"
-                      class="form-control "
+                      aria-describedby="text-main_text"
+                      class="form-control is-valid "
                       id="model-main_text"
                       name="main_text"
                       title="Main text track"
@@ -6358,9 +6792,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-main_text"
                   >
                     Select text AdaptationSet that will be given the "main" role
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -6368,6 +6807,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-mup"
+                    id="label-mup"
                   >
                     Minimum update period:
                   </label>
@@ -6375,8 +6815,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-mup"
-                      class="form-control "
+                      aria-describedby="text-mup"
+                      class="form-control is-valid "
                       id="model-mup"
                       list="list-mup"
                       name="mup"
@@ -6410,9 +6850,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-mup"
                   >
                     Specify minimumUpdatePeriod (in seconds) or -1 to disable updates
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -6420,6 +6865,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-ntp_servers"
+                    id="label-ntp_servers"
                   >
                     NTP time servers:
                   </label>
@@ -6427,8 +6873,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-ntp_servers"
-                      class="form-select "
+                      aria-describedby="text-ntp_servers"
+                      class="form-select is-valid "
                       id="model-ntp_servers"
                       name="ntp_servers"
                       title="NTP time servers"
@@ -6453,9 +6899,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-ntp_servers"
                   >
                     List of servers to use for NTP requests
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -6463,6 +6914,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-tcodec"
+                    id="label-tcodec"
                   >
                     Text Codec:
                   </label>
@@ -6470,8 +6922,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-tcodec"
-                      class="form-select "
+                      aria-describedby="text-tcodec"
+                      class="form-select is-valid "
                       id="model-tcodec"
                       name="tcodec"
                       title="Text Codec"
@@ -6491,9 +6943,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-tcodec"
                   >
                     Filter text adaptation sets by text codec
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -6501,6 +6958,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-tlang"
+                    id="label-tlang"
                   >
                     Text Language:
                   </label>
@@ -6508,8 +6966,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-tlang"
-                      class="form-control "
+                      aria-describedby="text-tlang"
+                      class="form-control is-valid "
                       id="model-tlang"
                       name="tlang"
                       title="Text Language"
@@ -6518,9 +6976,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-tlang"
                   >
                     Filter text adaptation sets by language
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -6528,6 +6991,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-base"
+                    id="label-base"
                   >
                     Use BaseURLs:
                   </label>
@@ -6535,8 +6999,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-base"
-                      class="form-check-input "
+                      aria-describedby="text-base"
+                      class="form-check-input is-valid "
                       id="model-base"
                       name="base"
                       title="Use BaseURLs"
@@ -6545,9 +7009,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-base"
                   >
                     Include a BaseURL element?
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -6555,6 +7024,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-patch"
+                    id="label-patch"
                   >
                     Use MPD patches:
                   </label>
@@ -6562,8 +7032,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-patch"
-                      class="form-check-input "
+                      aria-describedby="text-patch"
+                      class="form-check-input is-valid "
                       id="model-patch"
                       name="patch"
                       title="Use MPD patches"
@@ -6572,9 +7042,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-patch"
                   >
                     Use MPD patches for live streams
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -6582,6 +7057,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-depth"
+                    id="label-depth"
                   >
                     timeShiftBufferDepth size:
                   </label>
@@ -6589,8 +7065,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-depth"
-                      class="form-control "
+                      aria-describedby="text-depth"
+                      class="form-control is-valid "
                       id="model-depth"
                       list="list-depth"
                       name="depth"
@@ -6614,9 +7090,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-depth"
                   >
                     Number of seconds for timeShiftBufferDepth
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
               </div>
             </div>
@@ -6647,6 +7128,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-clearkey__la_url"
+                    id="label-clearkey__la_url"
                   >
                     Clearkey LA_URL:
                   </label>
@@ -6654,8 +7136,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-clearkey__la_url"
-                      class="form-control "
+                      aria-describedby="text-clearkey__la_url"
+                      class="form-control is-valid "
                       id="model-clearkey__la_url"
                       name="clearkey__la_url"
                       title="Clearkey LA_URL"
@@ -6664,9 +7146,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-clearkey__la_url"
                   >
                     Override the Clearkey license URL field
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -6674,6 +7161,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-clearkey__drmloc"
+                    id="label-clearkey__drmloc"
                   >
                     Clearkey location:
                   </label>
@@ -6681,8 +7169,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-clearkey__drmloc"
-                      class="form-select "
+                      aria-describedby="text-clearkey__drmloc"
+                      class="form-select is-valid "
                       id="model-clearkey__drmloc"
                       name="clearkey__drmloc"
                       title="Clearkey location"
@@ -6727,9 +7215,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-clearkey__drmloc"
                   >
                     Location to place DRM data
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
               </div>
             </div>
@@ -6760,6 +7253,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-marlin__la_url"
+                    id="label-marlin__la_url"
                   >
                     Marlin LA_URL:
                   </label>
@@ -6767,8 +7261,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-marlin__la_url"
-                      class="form-control "
+                      aria-describedby="text-marlin__la_url"
+                      class="form-control is-valid "
                       id="model-marlin__la_url"
                       name="marlin__la_url"
                       title="Marlin LA_URL"
@@ -6777,9 +7271,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-marlin__la_url"
                   >
                     Override the Marlin S-URL field
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -6787,6 +7286,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-marlin__drmloc"
+                    id="label-marlin__drmloc"
                   >
                     Marlin location:
                   </label>
@@ -6794,8 +7294,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-marlin__drmloc"
-                      class="form-select "
+                      aria-describedby="text-marlin__drmloc"
+                      class="form-select is-valid "
                       id="model-marlin__drmloc"
                       name="marlin__drmloc"
                       title="Marlin location"
@@ -6840,9 +7340,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-marlin__drmloc"
                   >
                     Location to place DRM data
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
               </div>
             </div>
@@ -6873,6 +7378,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-ping__count"
+                    id="label-ping__count"
                   >
                     Ping count:
                   </label>
@@ -6880,14 +7386,18 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-ping__count"
-                      class="form-control "
+                      aria-describedby="label-ping__count"
+                      class="form-control is-valid "
                       id="model-ping__count"
                       name="ping__count"
                       title="Ping count"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -6895,6 +7405,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-ping__duration"
+                    id="label-ping__duration"
                   >
                     Ping duration:
                   </label>
@@ -6902,14 +7413,18 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-ping__duration"
-                      class="form-control "
+                      aria-describedby="label-ping__duration"
+                      class="form-control is-valid "
                       id="model-ping__duration"
                       name="ping__duration"
                       title="Ping duration"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -6917,6 +7432,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-ping__inband"
+                    id="label-ping__inband"
                   >
                     Ping inband:
                   </label>
@@ -6924,14 +7440,18 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-ping__inband"
-                      class="form-check-input "
+                      aria-describedby="label-ping__inband"
+                      class="form-check-input is-valid "
                       id="model-ping__inband"
                       name="ping__inband"
                       title="Ping inband"
                       type="checkbox"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -6939,6 +7459,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-ping__interval"
+                    id="label-ping__interval"
                   >
                     Ping interval:
                   </label>
@@ -6946,14 +7467,18 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-ping__interval"
-                      class="form-control "
+                      aria-describedby="label-ping__interval"
+                      class="form-control is-valid "
                       id="model-ping__interval"
                       name="ping__interval"
                       title="Ping interval"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -6961,6 +7486,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-ping__start"
+                    id="label-ping__start"
                   >
                     Ping start:
                   </label>
@@ -6968,14 +7494,18 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-ping__start"
-                      class="form-control "
+                      aria-describedby="label-ping__start"
+                      class="form-control is-valid "
                       id="model-ping__start"
                       name="ping__start"
                       title="Ping start"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -6983,6 +7513,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-ping__timescale"
+                    id="label-ping__timescale"
                   >
                     Ping timescale:
                   </label>
@@ -6990,14 +7521,18 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-ping__timescale"
-                      class="form-control "
+                      aria-describedby="label-ping__timescale"
+                      class="form-control is-valid "
                       id="model-ping__timescale"
                       name="ping__timescale"
                       title="Ping timescale"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -7005,6 +7540,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-ping__value"
+                    id="label-ping__value"
                   >
                     Ping value:
                   </label>
@@ -7012,14 +7548,18 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-ping__value"
-                      class="form-control "
+                      aria-describedby="label-ping__value"
+                      class="form-control is-valid "
                       id="model-ping__value"
                       name="ping__value"
                       title="Ping value"
                       type="text"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -7027,6 +7567,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-ping__version"
+                    id="label-ping__version"
                   >
                     Ping version:
                   </label>
@@ -7034,14 +7575,18 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-ping__version"
-                      class="form-control "
+                      aria-describedby="label-ping__version"
+                      class="form-control is-valid "
                       id="model-ping__version"
                       name="ping__version"
                       title="Ping version"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
               </div>
             </div>
@@ -7072,6 +7617,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-playready__la_url"
+                    id="label-playready__la_url"
                   >
                     Playready LA_URL:
                   </label>
@@ -7079,8 +7625,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-playready__la_url"
-                      class="form-control "
+                      aria-describedby="text-playready__la_url"
+                      class="form-control is-valid "
                       id="model-playready__la_url"
                       name="playready__la_url"
                       title="Playready LA_URL"
@@ -7089,9 +7635,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-playready__la_url"
                   >
                     Override the Playready LA_URL field
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -7099,6 +7650,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-playready__piff"
+                    id="label-playready__piff"
                   >
                     Playready PIFF:
                   </label>
@@ -7106,8 +7658,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <input
-                      aria-describedby="field-playready__piff"
-                      class="form-check-input "
+                      aria-describedby="text-playready__piff"
+                      class="form-check-input is-valid "
                       id="model-playready__piff"
                       name="playready__piff"
                       title="Playready PIFF"
@@ -7116,9 +7668,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-playready__piff"
                   >
                     Include PIFF sample encryption data
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -7126,6 +7683,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-playready__version"
+                    id="label-playready__version"
                   >
                     Playready Version:
                   </label>
@@ -7133,8 +7691,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-playready__version"
-                      class="form-select "
+                      aria-describedby="text-playready__version"
+                      class="form-select is-valid "
                       id="model-playready__version"
                       name="playready__version"
                       title="Playready Version"
@@ -7169,9 +7727,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-playready__version"
                   >
                     Set the PlayReady version compatibility for this stream
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -7179,6 +7742,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-playready__drmloc"
+                    id="label-playready__drmloc"
                   >
                     Playready location:
                   </label>
@@ -7186,8 +7750,8 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-5"
                   >
                     <select
-                      aria-describedby="field-playready__drmloc"
-                      class="form-select "
+                      aria-describedby="text-playready__drmloc"
+                      class="form-select is-valid "
                       id="model-playready__drmloc"
                       name="playready__drmloc"
                       title="Playready location"
@@ -7232,9 +7796,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   </div>
                   <div
                     class="col-5 form-text"
+                    id="text-playready__drmloc"
                   >
                     Location to place DRM data
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
               </div>
             </div>
@@ -7265,6 +7834,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-scte35__count"
+                    id="label-scte35__count"
                   >
                     Scte35 count:
                   </label>
@@ -7272,14 +7842,18 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-scte35__count"
-                      class="form-control "
+                      aria-describedby="label-scte35__count"
+                      class="form-control is-valid "
                       id="model-scte35__count"
                       name="scte35__count"
                       title="Scte35 count"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -7287,6 +7861,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-scte35__duration"
+                    id="label-scte35__duration"
                   >
                     Scte35 duration:
                   </label>
@@ -7294,14 +7869,18 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-scte35__duration"
-                      class="form-control "
+                      aria-describedby="label-scte35__duration"
+                      class="form-control is-valid "
                       id="model-scte35__duration"
                       name="scte35__duration"
                       title="Scte35 duration"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -7309,6 +7888,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-scte35__inband"
+                    id="label-scte35__inband"
                   >
                     Scte35 inband:
                   </label>
@@ -7316,14 +7896,18 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-scte35__inband"
-                      class="form-check-input "
+                      aria-describedby="label-scte35__inband"
+                      class="form-check-input is-valid "
                       id="model-scte35__inband"
                       name="scte35__inband"
                       title="Scte35 inband"
                       type="checkbox"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -7331,6 +7915,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-scte35__interval"
+                    id="label-scte35__interval"
                   >
                     Scte35 interval:
                   </label>
@@ -7338,14 +7923,18 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-scte35__interval"
-                      class="form-control "
+                      aria-describedby="label-scte35__interval"
+                      class="form-control is-valid "
                       id="model-scte35__interval"
                       name="scte35__interval"
                       title="Scte35 interval"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -7353,6 +7942,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-scte35__program_id"
+                    id="label-scte35__program_id"
                   >
                     Scte35 program_id:
                   </label>
@@ -7360,14 +7950,18 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-scte35__program_id"
-                      class="form-control "
+                      aria-describedby="label-scte35__program_id"
+                      class="form-control is-valid "
                       id="model-scte35__program_id"
                       name="scte35__program_id"
                       title="Scte35 program_id"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -7375,6 +7969,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-scte35__start"
+                    id="label-scte35__start"
                   >
                     Scte35 start:
                   </label>
@@ -7382,14 +7977,18 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-scte35__start"
-                      class="form-control "
+                      aria-describedby="label-scte35__start"
+                      class="form-control is-valid "
                       id="model-scte35__start"
                       name="scte35__start"
                       title="Scte35 start"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -7397,6 +7996,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-scte35__timescale"
+                    id="label-scte35__timescale"
                   >
                     Scte35 timescale:
                   </label>
@@ -7404,14 +8004,18 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-scte35__timescale"
-                      class="form-control "
+                      aria-describedby="label-scte35__timescale"
+                      class="form-control is-valid "
                       id="model-scte35__timescale"
                       name="scte35__timescale"
                       title="Scte35 timescale"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -7419,6 +8023,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-scte35__value"
+                    id="label-scte35__value"
                   >
                     Scte35 value:
                   </label>
@@ -7426,14 +8031,18 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-scte35__value"
-                      class="form-control "
+                      aria-describedby="label-scte35__value"
+                      class="form-control is-valid "
                       id="model-scte35__value"
                       name="scte35__value"
                       title="Scte35 value"
                       type="text"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
                 <div
                   class="row mb-2 form-group "
@@ -7441,6 +8050,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                   <label
                     class="col-2 col-form-label"
                     for="model-scte35__version"
+                    id="label-scte35__version"
                   >
                     Scte35 version:
                   </label>
@@ -7448,14 +8058,18 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     class="col-10"
                   >
                     <input
-                      aria-describedby="field-scte35__version"
-                      class="form-control "
+                      aria-describedby="label-scte35__version"
+                      class="form-control is-valid "
                       id="model-scte35__version"
                       name="scte35__version"
                       title="Scte35 version"
                       type="number"
                     />
                   </div>
+                  <div
+                    class="invalid-feedback"
+                    style="display: none;"
+                  />
                 </div>
               </div>
             </div>
@@ -7589,6 +8203,16 @@ exports[`main entry-point app > matches snapshot for list MPS 1`] = `
               href="/media/inspect"
             >
               Inspect
+            </a>
+          </li>
+          <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link spa"
+              href="/users"
+            >
+              Users
             </a>
           </li>
           <li

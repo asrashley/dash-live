@@ -38,13 +38,17 @@ exports[`LoginCard component > matches snapshot 1`] = `
           >
             <input
               aria-describedby="label-username"
-              class="form-control "
+              class="form-control is-valid "
               id="model-username"
               name="username"
               title="Username"
               type="text"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -59,15 +63,29 @@ exports[`LoginCard component > matches snapshot 1`] = `
           <div
             class="col-10"
           >
-            <input
-              aria-describedby="label-password"
-              class="form-control "
-              id="model-password"
-              name="password"
-              title="Password"
-              type="password"
-            />
+            <div
+              class="input-group"
+            >
+              <input
+                aria-describedby="label-password"
+                class="form-control is-valid "
+                id="model-password"
+                name="password"
+                title="Password"
+                type="password"
+              />
+              <button
+                class="d-none"
+                type="button"
+              >
+                Reveal
+              </button>
+            </div>
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div
           class="row mb-2 form-group "
@@ -84,13 +102,17 @@ exports[`LoginCard component > matches snapshot 1`] = `
           >
             <input
               aria-describedby="label-rememberme"
-              class="form-check-input "
+              class="form-check-input is-valid "
               id="model-rememberme"
               name="rememberme"
               title="Remember Me"
               type="checkbox"
             />
           </div>
+          <div
+            class="invalid-feedback"
+            style="display: none;"
+          />
         </div>
         <div>
           <button
