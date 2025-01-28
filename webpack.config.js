@@ -33,7 +33,6 @@ export default {
           '/media/inspect',
           '/play',
           '/streams',
-          '/users',
           '/validate',
         ],
         target: `http://localhost:${serverPort}/`,
