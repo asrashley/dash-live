@@ -44,7 +44,7 @@ def create_navbar_context(with_login: bool = True) -> list[NavBarItem]:
     if current_user.is_authenticated:
         if current_user.is_admin:
             navbar.append(
-                NavBarItem(title='Users', href=flask.url_for('list-users')))
+                NavBarItem(title='Users', className="spa", href=flask.url_for('ui-list-users')))
         else:
             navbar.append(
                 NavBarItem(title='My Account', href=flask.url_for('change-password')))

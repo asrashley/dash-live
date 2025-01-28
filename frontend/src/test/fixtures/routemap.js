@@ -215,35 +215,11 @@ export const routeMap = {
     route: "/logout",
     url: () => `/logout`,
   },
-  listUsers: {
-    title: "Users",
-    re: /\/users/,
-    route: "/users",
-    url: () => `/users`,
-  },
-  addUser: {
-    title: "Add User",
-    re: /\/users\//,
-    route: "/users/",
-    url: () => `/users/`,
-  },
-  editUser: {
-    title: "Edit User",
-    re: /\/users\/(?<upk>\d+)/,
-    route: "/users/:upk",
-    url: ({upk}) => `/users/${upk}`,
-  },
   changePassword: {
     title: "Account Settings",
     re: /\/users\/me/,
     route: "/users/me",
     url: () => `/users/me`,
-  },
-  deleteUser: {
-    title: "Delete User",
-    re: /\/users\/(?<upk>\d+)\/delete/,
-    route: "/users/:upk/delete",
-    url: ({upk}) => `/users/${upk}/delete`,
   },
   listManifests: {
     title: "DASH fragment",
@@ -305,17 +281,41 @@ export const routeMap = {
     route: "/libs/:filename",
     url: ({filename}) => `/libs/${filename}`,
   },
-  initialAppState: {
-    title: "initial app state",
-    re: /\/libs\/initialAppState.js/,
-    route: "/libs/initialAppState.js",
-    url: () => `/libs/initialAppState.js`,
+  addMps: {
+    title: "Add new multi-period stream",
+    re: /\/api\/multi-period-streams\/.add/,
+    route: "/api/multi-period-streams/.add",
+    url: () => `/api/multi-period-streams/.add`,
   },
   cgiOptions: {
     title: "Manifest and Media CGI options",
     re: /\/api\/cgiOptions/,
     route: "/api/cgiOptions",
     url: () => `/api/cgiOptions`,
+  },
+  editMps: {
+    title: "Edit multi-period stream",
+    re: /\/api\/multi-period-streams\/(?<mps_name>\w+)/,
+    route: "/api/multi-period-streams/:mps_name",
+    url: ({mps_name}) => `/api/multi-period-streams/${mps_name}`,
+  },
+  editUser: {
+    title: "Edit User",
+    re: /\/api\/users\/(?<upk>\d+)/,
+    route: "/api/users/:upk",
+    url: ({upk}) => `/api/users/${upk}`,
+  },
+  listMps: {
+    title: "Available DASH multi-period streams",
+    re: /\/api\/multi-period-streams/,
+    route: "/api/multi-period-streams",
+    url: () => `/api/multi-period-streams`,
+  },
+  listUsers: {
+    title: "List All Users",
+    re: /\/api\/users/,
+    route: "/api/users",
+    url: () => `/api/users`,
   },
   login: {
     title: "Log into site",
@@ -334,24 +334,6 @@ export const routeMap = {
     re: /\/api\/refresh\/csrf/,
     route: "/api/refresh/csrf",
     url: () => `/api/refresh/csrf`,
-  },
-  listMps: {
-    title: "Available DASH multi-period streams",
-    re: /\/api\/multi-period-streams/,
-    route: "/api/multi-period-streams",
-    url: () => `/api/multi-period-streams`,
-  },
-  addMps: {
-    title: "Add new multi-period stream",
-    re: /\/api\/multi-period-streams\/.add/,
-    route: "/api/multi-period-streams/.add",
-    url: () => `/api/multi-period-streams/.add`,
-  },
-  editMps: {
-    title: "Edit multi-period stream",
-    re: /\/api\/multi-period-streams\/(?<mps_name>\w+)/,
-    route: "/api/multi-period-streams/:mps_name",
-    url: ({mps_name}) => `/api/multi-period-streams/${mps_name}`,
   },
   validateMps: {
     title: "Check MPS settings are valid",
@@ -398,6 +380,12 @@ export const uiRouteMap = {
     route: "/multi-period-streams/:mps_name",
     url: ({mps_name}) => `/multi-period-streams/${mps_name}`,
   },
+  editUser: {
+    title: "edit-user",
+    re: /\/users\/(?<username>\w+)/,
+    route: "/users/:username",
+    url: ({username}) => `/users/${username}`,
+  },
   home: {
     title: "home",
     re: /\//,
@@ -410,6 +398,12 @@ export const uiRouteMap = {
     route: "/multi-period-streams",
     url: () => `/multi-period-streams`,
   },
+  listUsers: {
+    title: "list-users",
+    re: /\/users/,
+    route: "/users",
+    url: () => `/users`,
+  },
   login: {
     title: "login",
     re: /\/login/,
@@ -418,35 +412,4 @@ export const uiRouteMap = {
   },
 };
 
-export const navbar = [
-  {
-    active: true,
-    className: "spa",
-    href: "/",
-    title: "Home",
-  },
-  {
-    active: false,
-    className: "",
-    href: "/streams",
-    title: "Streams",
-  },
-  {
-    active: false,
-    className: "spa",
-    href: "/multi-period-streams",
-    title: "Multi-Period",
-  },
-  {
-    active: false,
-    className: "",
-    href: "/validate/",
-    title: "Validate",
-  },
-  {
-    active: false,
-    className: "",
-    href: "/media/inspect",
-    title: "Inspect",
-  }
-];
+export const navbar = [{"active": true, "className": "spa", "href": "/", "title": "Home"}, {"active": false, "className": "", "href": "/streams", "title": "Streams"}, {"active": false, "className": "spa", "href": "/multi-period-streams", "title": "Multi-Period"}, {"active": false, "className": "", "href": "/validate/", "title": "Validate"}, {"active": false, "className": "", "href": "/media/inspect", "title": "Inspect"}, {"active": false, "className": "spa", "href": "/users", "title": "Users"}];

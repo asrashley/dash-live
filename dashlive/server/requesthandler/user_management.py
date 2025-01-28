@@ -18,34 +18,19 @@ from flask.views import MethodView
 from dashlive.server.models.db import db
 from dashlive.server.models.group import Group
 from dashlive.server.models.token import EncodedJWTokenJson, TokenType, Token
-from dashlive.server.models.user import User
+from dashlive.server.models.user import User, UserSummaryJson
 from dashlive.utils.json_object import JsonObject
 
 from .base import HTMLHandlerBase, DeleteModelBase
 from .csrf import CsrfProtection, CsrfTokenCollection
-from .decorators import login_required, modifies_user_model, modifying_user
+from .decorators import login_required, jwt_login_required, modifies_user_model, modifying_user
 from .exceptions import CsrfFailureException
 from .utils import is_ajax, jsonify, jsonify_no_content
 
-def decorate_user(user: User) -> JsonObject:
-    js = user.to_dict()
-    js['groups'] = {}
-    for grp in Group:
-        if user.is_member_of(grp):
-            js['groups'][grp.name] = True
-    return js
-
-class UserSummaryJson(TypedDict):
-    email: str
-    username: str
-    pk: int
-    last_login: str
-    groups: list[str]
 
 class LoginResponseJson(TypedDict):
     success: bool
-    mustChange: NotRequired[bool]
-    csrf_token: str
+    csrfToken: str
     accessToken: NotRequired[str]
     refreshToken: NotRequired[str]
     user: UserSummaryJson
@@ -60,14 +45,14 @@ class LoginPage(HTMLHandlerBase):
         user: User = cast(User, jwt_current_user)
         csrf_key: str = CsrfProtection.generate_cookie()
         access_token: EncodedJWTokenJson = Token.generate_api_token(user, TokenType.ACCESS).toJSON()
+        user_json: UserSummaryJson = user.summary()
         result: LoginResponseJson = {
             'success': True,
-            'mustChange': user.must_change,
-            'csrf_token': self.generate_csrf_token('login', csrf_key),
+            'csrfToken': self.generate_csrf_token('login', csrf_key),
             'accessToken': access_token,
-            'user': user.to_dict(only={'email', 'username', 'pk', 'last_login'})
+            'user': user_json,
         }
-        result['user']['groups'] = user.get_groups()
+
         return jsonify(result)
 
     def post(self) -> flask.Response:
@@ -134,117 +119,132 @@ class ListUsers(HTMLHandlerBase):
     """
     List all user accounts
     """
-    decorators = [login_required(admin=True)]
+    decorators = [
+        jwt_login_required(admin=True),
+        jwt_required(),
+    ]
 
     def get(self) -> flask.Response:
-        context = self.create_context()
-        context.update({
-            'users': [
-                decorate_user(u) for u in User.all()],
-            'field_names': User.get_column_names(
-                exclude={'password', 'groups_mask', 'tokens',
-                         'reset_token', 'reset_expires'}),
-            'group_names': Group.names(),
-        })
-        return flask.render_template('users/index.html', **context)
+        users: list[UserSummaryJson] = []
+        guest: User = User.get_guest_user()
+        for user in User.all():
+            if user.pk == guest.pk:
+                continue
+            users.append(user.summary())
+        return jsonify(users)
+
+class AddEditUserResponse(TypedDict):
+    success: bool
+    errors: list[str]
+    user: NotRequired[UserSummaryJson]
 
 
-class EditUser(HTMLHandlerBase):
+class EditUser(MethodView):
     """
     Edit an existing user
     """
-    decorators = [modifies_user_model, login_required(admin=True)]
+    decorators = [
+        jwt_required(),
+    ]
 
-    def get(self, upk: int | None = None, error: str | None = None, **kwargs) -> flask.Response:
-        """
-        Returns an HTML form for editing a user
-        """
-        context = self.create_context()
-        csrf_key = self.generate_csrf_cookie()
-        user = self.get_model()
-        new_item = not user.pk
-        if current_user.is_admin:
-            cancel_url = flask.url_for('list-users')
-        else:
-            cancel_url = flask.url_for('home')
-        context.update({
-            'error': error,
-            'form_id': 'add-user' if new_item else 'edit-user',
-            'cancel_url': cancel_url,
-            'csrf_token': self.generate_csrf_token('users', csrf_key),
-            'fields': user.get_fields(
-                with_confirm_password=True, with_must_change=current_user.is_admin,
-                **kwargs),
-            'group_names': Group.names(),
-            'model': decorate_user(user),
-        })
-        if not current_user.is_admin:
-            # a user is not allowed to modify their username
-            context['fields'][0]['disabled'] = True
-        context['fields'].append({
-            'name': 'new_item',
-            'type': 'hidden',
-            'value': '1' if new_item else '0',
-        })
-        return flask.render_template('users/edit_user.html', **context)
-
-    def post(self, upk: int | None = None) -> flask.Response:
+    @jwt_login_required()
+    def post(self, upk: int) -> flask.Response:
         """
         Modifies a user
         """
-        try:
-            self.check_csrf('users', flask.request.form)
-        except (ValueError, CsrfFailureException) as err:
-            logging.error('CSRF failure: %s', err)
-            return flask.make_response({'error': 'CSRF failure occurred'}, 400)
-        user = self.get_model()
-        if not current_user.is_admin and user.pk != current_user.pk:
-            flask.flash('Only an admin user can modify other users', 'error')
-            return flask.redirect(flask.url_for('home'))
-        user.username = flask.request.form['username']
-        user.email = flask.request.form['email']
-        user.must_change = self.get_bool_param('must_change', False)
-        if flask.request.form['new_item'] == '1':
-            if not flask.request.form['password']:
-                return self.get(upk, error='A password must be provided', **flask.request.form)
-            if User.count(username=user.username) > 0:
-                return self.get(upk, error=f'User {user.username} already exists', **flask.request.form)
-            if User.count(email=user.email) > 0:
-                return self.get(
-                    upk, error=f'User with email address {user.email} already exists',
-                    **flask.request.form)
-        if flask.request.form['password']:
-            if flask.request.form['password'] != flask.request.form['confirm_password']:
-                return self.get(upk, error='Passwords do not match', **flask.request.form)
-            user.set_password(flask.request.form['password'])
+        user: User | None = User.get(pk=upk)
+        if user is None:
+            return jsonify_no_content(404)
+        result: AddEditUserResponse = {
+            'errors': [],
+            'success': False,
+        }
+        if not jwt_current_user.is_admin and user.pk != jwt_current_user.pk:
+            result["errors"].append('Only an admin user can modify other users')
+            return jsonify(result)
+        js = flask.request.json
+        user.username = js['username']
+        user.email = js['email']
+        user.must_change = js['mustChange']
+        if js.get('password') is not None:
+            if js['password'] != js['confirmPassword']:
+                result['errors'].append('Passwords do not match')
+            else:
+                user.set_password(js['password'])
         groups: list[Group] = []
         for group in Group.names():
-            field_name = f'{group.lower()}_group'
-            if flask.request.form.get(field_name, '').lower() in {'on', '1', 'checked'}:
-                groups.append(Group[group.upper()])
+            field_name = f'{group.lower()}Group'
+            if js.get(field_name, False):
+                groups.append(group)
         user.set_groups(groups)
-        if flask.request.form['new_item'] == '1':
-            user.add(commit=True)
-            flask.flash(f'Added new user "{user.username}"', 'success')
-        else:
+        if not result['errors']:
+            result['success'] = True
+            result['user'] = user.summary()
             db.session.commit()
-            flask.flash(f'Saved changes to "{user.username}"', 'success')
-        if not current_user.is_admin:
-            return flask.redirect(flask.url_for('home'))
-        return flask.redirect(flask.url_for('list-users'))
+        return jsonify(result)
+#
+    @jwt_login_required(admin=True)
+    def delete(self, upk: int) -> flask.Response:
+        """
+        Deletes a user
+        """
+        if jwt_current_user.pk == upk:
+            return jsonify({
+                'error': 'You cannot delete your own account'
+            }, 400)
+        user: User | None = User.get(pk=upk)
+        if user is None:
+            return jsonify_no_content(404)
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify_no_content(204)
 
-    def get_model(self) -> User:
-        return modifying_user
 
-
-class AddUser(EditUser):
+class AddUser(MethodView):
     """
     Add a new user
     """
-    decorators = [login_required(admin=True)]
+    decorators = [
+        jwt_login_required(admin=True),
+        jwt_required(),
+    ]
 
-    def get_model(self) -> User:
-        return User(groups_mask=Group.USER.value)
+    def put(self) -> flask.Response:
+        js = flask.request.json
+        result: AddEditUserResponse = {
+            "errors": [],
+            "success": False,
+        }
+        username: str | None = js.get("username")
+        email: str | None = js.get("email")
+        password: str | None = js.get("password")
+        confirm: str | None = js.get("confirmPassword")
+        if username is None:
+            result["errors"].append('Username is required')
+        elif User.count(username=username) > 0:
+            result["errors"].append(f'User {username} already exists')
+        if email is None:
+            result["errors"].append('email is required')
+        elif User.count(email=email) > 0:
+            result["errors"].append(f'Email address {email} already exists')
+        if password is None or confirm is None:
+            result["errors"].append('password is required')
+        elif password != confirm:
+            result["errors"].append('passwords do not match')
+        groups: list[Group] = []
+        for group in Group.names():
+            field_name: str = f'{group.lower()}Group'
+            if js.get(field_name, False):
+                groups.append(group)
+        if not result['errors']:
+            result['success'] = True
+            user = User(username=username, email=email, must_change=js.get('mustChange', False))
+            user.set_password(password)
+            user.set_groups(groups)
+            db.session.add(user)
+            db.session.commit()
+            result["user"] = user.summary()
+        return jsonify(result)
 
 
 class EditSelf(EditUser):
