@@ -69,7 +69,7 @@ export function EditStreamCard({
     } finally {
       dialog.value = null;
     }
-  }, []);
+  }, [appendMessage, dialog, modelContext, setLocation]);
 
   return (
     <AllStreamsContext.Provider value={streamsContext}>
