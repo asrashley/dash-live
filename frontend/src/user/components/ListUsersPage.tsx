@@ -1,17 +1,18 @@
 import { ReadonlySignal } from "@preact/signals-core";
+import { Link } from "wouter-preact";
+import { useCallback, useContext } from "preact/hooks";
+
+import { uiRouteMap } from "@dashlive/routemap";
 import {
   createSortableTable,
   RenderCellProps,
 } from "../../components/SortableTable";
-import { uiRouteMap } from "@dashlive/routemap";
 import {
   EditUserState,
   FlattenedUserState,
   useAllUsers,
 } from "../../hooks/useAllUsers";
 import { BooleanCell } from "../../components/BooleanCell";
-import { Link } from "wouter-preact";
-import { useCallback, useContext } from "preact/hooks";
 import { AppStateContext } from "../../appState";
 import { EndpointContext } from "../../endpoints";
 import { AddUserDialog } from "./AddUserDialog";
@@ -111,7 +112,7 @@ export default function ListUsersPage() {
           onClick={openAddUserDialog}
           className="btn btn-success add-user"
         >
-          Add
+          Add New User
         </button>
       </div>
       <div className="users-list-wrap">
