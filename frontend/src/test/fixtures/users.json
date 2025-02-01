@@ -1,0 +1,35 @@
+[
+  {
+    "email": "admin@example.local",
+    "groups": [
+      "USER",
+      "MEDIA",
+      "ADMIN"
+    ],
+    "lastLogin": "2025-01-28T09:42:35.144513",
+    "mustChange": true,
+    "pk": 1,
+    "username": "admin"
+  },
+  {
+    "email": "a.user@example.local",
+    "groups": [
+      "USER"
+    ],
+    "lastLogin": "2023-09-27T19:52:04.223445",
+    "mustChange": false,
+    "pk": 2,
+    "username": "user"
+  },
+  {
+    "email": "media.manager@example.local",
+    "groups": [
+      "USER",
+      "MEDIA"
+    ],
+    "lastLogin": null,
+    "mustChange": false,
+    "pk": 4,
+    "username": "mediamgr"
+  }
+]

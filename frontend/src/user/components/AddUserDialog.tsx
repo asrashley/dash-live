@@ -18,10 +18,10 @@ interface FooterProps {
 function Footer({ onClose, onSave }: FooterProps) {
   return (
     <div role="group">
-      <button type="button" className="btn btn-success me-3" onClick={onSave}>
+      <button type="button" data-testid="add-new-user-btn" className="btn btn-success me-3" onClick={onSave}>
         Add New User
       </button>
-      <button type="button" className="btn btn-warning" onClick={onClose}>
+      <button type="button" data-testid="cancel-new-user-btn" className="btn btn-warning" onClick={onClose}>
         Cancel
       </button>
     </div>
