@@ -25,8 +25,7 @@ export type HttpRequestModifier = (props: ServerRouteProps, response: HttpReques
 
 type PendingPromiseType = {
     resolve: (value: HttpRequestHandlerResponse) => void;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    reject: (reason?: any) => void;
+    reject: (reason?: unknown) => void;
 };
 
 type ParamHandler = {
@@ -82,6 +81,7 @@ export class FakeEndpoint {
     addResponsePromise(method: string, url: string): Promise<HttpRequestHandlerResponse> {
         const key = `${method.toLowerCase()}.${url}`;
         return new Promise<HttpRequestHandlerResponse>((resolve, reject) => {
+            log.trace(`responsePromise set "${key}"`);
             this.pendingPromises.set(key, { resolve, reject });
         });
     }
@@ -159,6 +159,7 @@ export class FakeEndpoint {
         }
         const pending = this.pendingPromises.get(key);
         if (pending) {
+            log.trace(`resolve pending promise "${key}"`);
             this.pendingPromises.delete(key);
             pending.resolve(result);
         }
