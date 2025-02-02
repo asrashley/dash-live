@@ -80,6 +80,16 @@ exports[`NavBar component > matches snapshot when logged in 1`] = `
           </a>
         </li>
         <li
+          class="nav-item spa"
+        >
+          <a
+            class="nav-link spa"
+            href="/users"
+          >
+            Users
+          </a>
+        </li>
+        <li
           class="nav-item user-login"
         >
           <a
@@ -172,6 +182,16 @@ exports[`NavBar component > matches snapshot when not logged in 1`] = `
             href="/media/inspect"
           >
             Inspect
+          </a>
+        </li>
+        <li
+          class="nav-item spa"
+        >
+          <a
+            class="nav-link spa"
+            href="/users"
+          >
+            Users
           </a>
         </li>
         <li
