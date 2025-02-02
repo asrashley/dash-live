@@ -2,13 +2,14 @@ import { useCallback, useContext } from "preact/hooks";
 import { useComputed, useSignal } from "@preact/signals";
 import { useLocation, useParams } from "wouter-preact";
 
-import { FlattenedUserState, useAllUsers } from "../../hooks/useAllUsers";
+import { uiRouteMap } from "@dashlive/routemap";
+
+import { FlattenedUserState, useAllUsers, UserValidationErrors } from "../../hooks/useAllUsers";
 import { RouteParamsType } from "../../types/RouteParamsType";
 import { EditUserCard } from "./EditUserCard";
 import { AppStateContext } from "../../appState";
 import { DeleteUserDialog } from "./DeleteUserDialog";
 import { EndpointContext } from "../../endpoints";
-import { uiRouteMap } from "@dashlive/routemap";
 import { useMessages } from "../../hooks/useMessages";
 
 export default function EditUserPage() {
@@ -34,6 +35,7 @@ export default function EditUserPage() {
     };
     return usr;
   });
+  const errors = useComputed<UserValidationErrors>(() => validateUser(user.value));
 
   const setValue = useCallback(
     (field: string, value: string | number | boolean) => {
@@ -85,17 +87,15 @@ export default function EditUserPage() {
     closeDialog();
   }, [apiRequests, appendMessage, closeDialog, setLocation, user, username]);
 
-  console.log(user.value);
-
   return (
     <div className="content mb-4" style="max-width: 65rem">
       <EditUserCard
         user={user}
-        error={error}
+        allUsersError={error}
+        errors={errors}
         onDelete={requestDelete}
         onSave={saveChanges}
         setValue={setValue}
-        validateUser={validateUser}
       />
       <DeleteUserDialog
         username={username}
