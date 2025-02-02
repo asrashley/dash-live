@@ -7,9 +7,6 @@ import { AllStreamsContext } from "../../hooks/useAllStreams";
 import { PeriodRowProps } from "../types/PeriodRowProps";
 import { TrackSelectionButton } from "./TrackSelectionButton";
 
-function doNothing() {
-}
-
 export function GuestPeriodRow({ period }: PeriodRowProps) {
   const { ordering, pid, pk, start, duration } = period;
   const { streamsMap } = useContext(AllStreamsContext);
@@ -35,14 +32,12 @@ export function GuestPeriodRow({ period }: PeriodRowProps) {
       <TimeDeltaInput
         value={start}
         name={`start_${pk}`}
-        onChange={doNothing}
         disabled />
     </div>
     <div class="col period-duration">
       <TimeDeltaInput
         value={duration}
         name={`duration_${pk}`}
-        onChange={doNothing}
         disabled />
     </div>
     <TrackSelectionButton period={period} stream={stream} selectTracks={selectTracks} />
