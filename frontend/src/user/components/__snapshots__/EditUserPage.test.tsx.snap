@@ -1,0 +1,282 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`EditUserPage component > matches snapshot 1`] = `
+<DocumentFragment>
+  <div
+    class="content mb-4"
+    style="max-width: 65rem;"
+  >
+    <div
+      class="card "
+      id="edit-user"
+    >
+      <div
+        class="card-header"
+      >
+        Editing user mediamgr
+      </div>
+      <div
+        class="card-body"
+      >
+        <form>
+          <div
+            class="row mb-2 form-group "
+          >
+            <label
+              class="col-2 col-form-label"
+              for="model-username"
+              id="label-username"
+            >
+              Username:
+            </label>
+            <div
+              class="col-10"
+            >
+              <input
+                aria-describedby="label-username"
+                class="form-control is-valid "
+                id="model-username"
+                name="username"
+                title="Username"
+                type="text"
+              />
+            </div>
+            <div
+              class="invalid-feedback"
+              style=""
+            />
+          </div>
+          <div
+            class="row mb-2 form-group "
+          >
+            <label
+              class="col-2 col-form-label"
+              for="model-email"
+              id="label-email"
+            >
+              Email:
+            </label>
+            <div
+              class="col-10"
+            >
+              <input
+                aria-describedby="label-email"
+                class="form-control is-valid "
+                id="model-email"
+                name="email"
+                title="Email"
+                type="email"
+              />
+            </div>
+            <div
+              class="invalid-feedback"
+              style=""
+            />
+          </div>
+          <div
+            class="row mb-2 form-group "
+          >
+            <label
+              class="col-2 col-form-label"
+              for="model-password"
+              id="label-password"
+            >
+              Password:
+            </label>
+            <div
+              class="col-10"
+            >
+              <div
+                class="input-group"
+              >
+                <input
+                  aria-describedby="label-password"
+                  class="form-control is-valid "
+                  id="model-password"
+                  name="password"
+                  placeholder="***"
+                  title="Password"
+                  type="password"
+                />
+                <button
+                  class="d-none"
+                  type="button"
+                >
+                  Reveal
+                </button>
+              </div>
+            </div>
+            <div
+              class="invalid-feedback"
+              style=""
+            />
+          </div>
+          <div
+            class="row mb-2 form-group "
+          >
+            <label
+              class="col-2 col-form-label"
+              for="model-confirmPassword"
+              id="label-confirmPassword"
+            >
+              Confirm Password:
+            </label>
+            <div
+              class="col-10"
+            >
+              <div
+                class="input-group"
+              >
+                <input
+                  aria-describedby="label-confirmPassword"
+                  class="form-control is-valid "
+                  id="model-confirmPassword"
+                  name="confirmPassword"
+                  placeholder="***"
+                  title="Confirm Password"
+                  type="password"
+                />
+                <button
+                  class="d-none"
+                  type="button"
+                >
+                  Reveal
+                </button>
+              </div>
+            </div>
+            <div
+              class="invalid-feedback"
+              style="display: none;"
+            />
+          </div>
+          <div
+            class="row mb-2 form-group "
+          >
+            <label
+              class="col-2 col-form-label"
+              for="model-mustChange"
+              id="label-mustChange"
+            >
+              Must Change:
+            </label>
+            <div
+              class="col-7"
+            >
+              <input
+                aria-describedby="text-mustChange"
+                class="form-check-input is-valid "
+                id="model-mustChange"
+                name="mustChange"
+                title="Must Change"
+                type="checkbox"
+              />
+            </div>
+            <div
+              class="col-3 form-text"
+              id="text-mustChange"
+            >
+              User must change password at next login?
+            </div>
+            <div
+              class="invalid-feedback"
+              style="display: none;"
+            />
+          </div>
+          <div
+            class="row mb-2 form-group "
+          >
+            <label
+              class="col-2 col-form-label"
+              for="model-groups"
+              id="label-groups"
+            >
+              Groups:
+            </label>
+            <div
+              class="col-10"
+            >
+              <div
+                class="form-control is-valid "
+                data-testid="msi-groups"
+              >
+                <div
+                  class="form-check form-check-inline"
+                >
+                  <input
+                    class="form-check-input"
+                    id="msiadminGroup"
+                    name="adminGroup"
+                    type="checkbox"
+                  />
+                  <label
+                    class="form-check-label me-3"
+                    for="msiadminGroup"
+                  >
+                    ADMIN
+                  </label>
+                </div>
+                <div
+                  class="form-check form-check-inline"
+                >
+                  <input
+                    class="form-check-input"
+                    id="msimediaGroup"
+                    name="mediaGroup"
+                    type="checkbox"
+                  />
+                  <label
+                    class="form-check-label me-3"
+                    for="msimediaGroup"
+                  >
+                    MEDIA
+                  </label>
+                </div>
+                <div
+                  class="form-check form-check-inline"
+                >
+                  <input
+                    class="form-check-input"
+                    id="msiuserGroup"
+                    name="userGroup"
+                    type="checkbox"
+                  />
+                  <label
+                    class="form-check-label me-3"
+                    for="msiuserGroup"
+                  >
+                    USER
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div
+              class="invalid-feedback"
+              style="display: none;"
+            />
+          </div>
+        </form>
+        <div
+          class="form-actions mt-2"
+        >
+          <button
+            class="btn btn-primary me-3"
+          >
+            Save Changes
+          </button>
+          <button
+            class="btn btn-danger me-3"
+          >
+            Delete User
+          </button>
+          <a
+            class="btn btn-warning"
+            href="/users"
+          >
+            Cancel
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
