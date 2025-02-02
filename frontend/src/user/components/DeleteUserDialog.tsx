@@ -20,10 +20,10 @@ export function DeleteUserDialog({
   }
   const footer = (
     <div className="form-actions">
-      <button className="btn btn-danger me-4" onClick={onConfirm}>
+      <button className="btn btn-danger me-4" data-testid="confirm-delete" onClick={onConfirm}>
         Delete {username}
       </button>
-      <button className="btn btn-primary me-2" onClick={onCancel}>
+      <button className="btn btn-primary me-2" data-testid="cancel-delete" onClick={onCancel}>
         Cancel
       </button>
     </div>
