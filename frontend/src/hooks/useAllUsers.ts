@@ -55,7 +55,7 @@ export interface UseAllUsersHook {
   flattenedUsers: ReadonlySignal<FlattenedUserState[]>;
   loaded: ReadonlySignal<boolean>;
   error: ReadonlySignal<string | null>;
-  addUser: (user: InitialUserState) => boolean;
+  addUser: (user: Omit<InitialUserState, 'lastLogin'>) => boolean;
   updateUser: (user: InitialUserState) => boolean;
   validateUser: (user: EditUserState) => UserValidationErrors;
 }
@@ -81,7 +81,7 @@ export function useAllUsers(): UseAllUsersHook {
   }));
   const validateUser = useCallback((user: EditUserState) => validateUserState(user, allUsers), [allUsers]);
 
-  const addUser = useCallback((user: InitialUserState) => {
+  const addUser = useCallback((user: Omit<InitialUserState, 'lastLogin'>) => {
     if (!user.username) {
       return false;
     }
@@ -89,7 +89,10 @@ export function useAllUsers(): UseAllUsersHook {
       return false;
     }
     const newUsers = [...allUsers.value];
-    newUsers.push(user);
+    newUsers.push({
+      lastLogin: null,
+      ...user
+    });
     setData(newUsers);
     return true;
   }, [allUsers, setData]);
