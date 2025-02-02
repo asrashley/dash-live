@@ -1,11 +1,11 @@
-import { type ReadonlySignal, useComputed, useSignal } from "@preact/signals";
+import { type ReadonlySignal, useSignal } from "@preact/signals";
+import { useMemo } from "preact/hooks";
 
 import { groupNames } from "@dashlive/options";
-import { EditUserState, UseAllUsersHook, UserValidationErrors } from "../../hooks/useAllUsers";
+import { EditUserState, UserValidationErrors } from "../../hooks/useAllUsers";
 import { StaticInputProps } from "../../types/StaticInputProps";
 import { SetValueFunc } from "../../types/SetValueFunc";
 import { InputFieldRow } from "../../components/InputFieldRow";
-import { useMemo } from "preact/hooks";
 
 type CgiFormInputItem = Omit<
   StaticInputProps,
@@ -55,15 +55,15 @@ const fields: CgiFormInputItem[] = [
 
 export interface EditUserFormProps {
   user: ReadonlySignal<EditUserState>;
+  errors: ReadonlySignal<UserValidationErrors>;
   setValue: SetValueFunc;
-  validateUser: UseAllUsersHook["validateUser"];
   newUser?: boolean;
 }
 
 export function EditUserForm({
   user,
   setValue,
-  validateUser,
+  errors,
   newUser = false,
 }: EditUserFormProps) {
   const disabledFields = useSignal<Record<string, boolean>>({});
@@ -81,7 +81,6 @@ export function EditUserForm({
       return rv;
     });
   }, [newUser]);
-  const errors = useComputed<UserValidationErrors>(() => validateUser(user.value));
 
   return (
     <form>
