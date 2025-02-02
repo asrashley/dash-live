@@ -2,9 +2,12 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import fetchMock from "@fetch-mock/vitest";
 import { fireEvent } from "@testing-library/preact";
 import userEvent from "@testing-library/user-event";
+import { useContext } from "preact/hooks";
 import { useLocation } from "wouter-preact";
 import log from "loglevel";
 import { setImmediate } from "timers";
+
+import { routeMap, uiRouteMap } from "@dashlive/routemap";
 
 import { ApiRequests, EndpointContext } from "../../endpoints";
 import { FakeEndpoint } from "../../test/FakeEndpoint";
@@ -17,8 +20,6 @@ import {
   useMultiPeriodStream,
 } from "../../hooks/useMultiPeriodStream";
 import { InitialUserState } from "../../types/UserState";
-import { routeMap } from "@dashlive/routemap";
-import { useContext } from "preact/hooks";
 import { AppStateContext } from "../../appState";
 
 vi.mock("wouter-preact", async (importOriginal) => {
