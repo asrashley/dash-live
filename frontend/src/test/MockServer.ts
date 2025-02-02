@@ -47,6 +47,7 @@ export const guestUser: UserModel = {
     accessToken: null,
     refreshToken: null,
 };
+Object.freeze(guestUser);
 
 export const normalUser: UserModel = {
     pk: 100,
@@ -59,24 +60,27 @@ export const normalUser: UserModel = {
     accessToken: null,
     refreshToken: null,
 };
+Object.freeze(normalUser);
 
 export const mediaUser: UserModel = {
-    ...normalUser,
+    ...structuredClone(normalUser),
     pk: 101,
     username: 'mediamgr',
     email: 'media.manager@example.local',
     password: 'qwerty123',
     groups: [UserGroups.USER, UserGroups.MEDIA],
 };
+Object.freeze(mediaUser);
 
 export const adminUser: UserModel = {
-    ...normalUser,
+    ...structuredClone(normalUser),
     pk: 1,
     username: 'admin',
     email: 'admin@example.local',
     password: 'sup3r$ecret!',
     groups: [UserGroups.USER, UserGroups.MEDIA, UserGroups.ADMIN],
 };
+Object.freeze(adminUser);
 
 type RequestContext = {
     currentUser?: UserModel;
@@ -532,6 +536,18 @@ export class MockDashServer {
             errors: [],
             success: false,
         }
+        if (user.username) {
+            const existing = this.findUser({username: user.username });
+            if (existing && existing.pk !== user.pk) {
+                resp.errors.push(`${user.username} already exists`);
+            }
+        }
+        if (user.email) {
+            const existing = this.findUser({email: user.email });
+            if (existing && existing.pk !== user.pk) {
+                resp.errors.push(`${user.email} email address already exists`);
+            }
+        }
         if (user.password && user.password !== user.confirmPassword) {
             resp.errors.push('passwords do not match');
         }
@@ -544,6 +560,9 @@ export class MockDashServer {
             username: user.username ?? target.username,
             email: user.email ?? target.email,
         };
+        if (user.password) {
+            newUser.password = user.password;
+        }
         this.userDatabase = this.userDatabase.map(usr => usr.pk === user.pk ? newUser : usr);
         resp.user = userToInitialState(newUser);
         return jsonResponse(resp);
