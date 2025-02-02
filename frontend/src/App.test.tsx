@@ -75,10 +75,10 @@ describe("main entry-point app", () => {
     );
     await userPromise;
     await findByText("Log Out");
-    await findByText("Hand-made manifest");
     await findByText("Stream to play");
     await findByText("Video Player:");
     await findByText("Play Big Buck Bunny");
+    await findByText("Hand-made manifest");
     await findByText("/dash/vod/bbb/hand_made.mpd", { exact: false });
     expect(asFragment()).toMatchSnapshot();
   });
