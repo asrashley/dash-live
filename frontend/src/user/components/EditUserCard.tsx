@@ -3,29 +3,28 @@ import { Link } from "wouter-preact";
 
 import { uiRouteMap } from "@dashlive/routemap";
 
-import { FlattenedUserState, UseAllUsersHook } from "../../hooks/useAllUsers";
 import { SetValueFunc } from "../../types/SetValueFunc";
 import { LoadingSpinner } from "../../components/LoadingSpinner";
 import { Card } from "../../components/Card";
 import { Alert } from "../../components/Alert";
-import { EditUserForm } from "./EditUserForm";
+import { EditUserForm, EditUserFormProps } from "./EditUserForm";
 
 export interface EditUserCardProps {
-  user: ReadonlySignal<FlattenedUserState | undefined>;
-  error: ReadonlySignal<string | null>;
+  user: EditUserFormProps["user"];
+  allUsersError: ReadonlySignal<string | null>;
+  errors: EditUserFormProps["errors"];
   setValue: SetValueFunc;
-  validateUser: UseAllUsersHook["validateUser"];
   onSave: () => void;
   onDelete: () => void;
 }
 
 export function EditUserCard({
-  error,
+  allUsersError,
   user,
   onDelete,
   onSave,
   setValue,
-  validateUser,
+  errors,
 }: EditUserCardProps) {
   const backUrl = uiRouteMap.listUsers.url();
 
@@ -34,11 +33,11 @@ export function EditUserCard({
   }
   return (
     <Card id="edit-user" header={`Editing user ${user.value.username}`}>
-      {error.value ? <Alert id={0} level="warning" text={error} /> : ""}
+      {allUsersError.value ? <Alert id={0} level="warning" text={allUsersError} /> : ""}
       <EditUserForm
         user={user}
         setValue={setValue}
-        validateUser={validateUser}
+        errors={errors}
         newUser={false}
       />
       <div className="form-actions mt-2">
