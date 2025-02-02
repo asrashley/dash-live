@@ -32,7 +32,7 @@ export interface TimeDeltaInputProps {
   error?: string;
   min?: string;
   required?: boolean;
-  onChange: (name: string, value: string) => void;
+  onChange?: (name: string, value: string) => void;
 }
 
 export function TimeDeltaInput({
