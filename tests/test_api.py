@@ -11,7 +11,6 @@ import binascii
 import copy
 import io
 import logging
-import os
 from typing import cast
 import unittest
 from unittest.mock import patch
@@ -22,6 +21,7 @@ import flask
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.mpeg.dash.segment import Segment
 from dashlive.server import models
+from dashlive.server.models.user import UserSummaryJson
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.options.types import CgiOption
 from dashlive.server.requesthandler.streams import ViewStreamAjaxResponse
@@ -958,15 +958,233 @@ class TestRestApi(FlaskTestBase):
             del expected["html"]
             self.assertDictEqual(expected, cgi_opt)
 
+    def test_get_users(self) -> None:
+        url: str = flask.url_for('api-list-users')
+        response = self.client.get(url)
+        self.assert401(response)
+        self.login_user(is_admin=False)
+        response = self.client.get(url)
+        self.assert401(response)
+        self.logout_user()
+        login: LoginResponseJson = self.login_user(is_admin=True)
+        response = self.client.get(url, headers={
+            'Authorization': f"Bearer {login['accessToken']['jwt']}",
+        })
+        self.assert200(response)
+        all_users: dict[int, UserSummaryJson] = {}
+        for usr in response.json:
+            all_users[usr['pk']] = usr
+        with self.app.app_context():
+            # the response should have excluded the guest user
+            self.assertEqual(len(all_users), models.User.count() - 1)
+            for user in models.User.all():
+                try:
+                    self.assertEqual(all_users[user.pk], user.summary())
+                except KeyError:
+                    self.assertEqual(user.pk, models.User.get_guest_user().pk)
 
-if os.environ.get("TESTS"):
-    def load_tests(loader, tests, pattern):
-        logging.basicConfig()
-        # logging.getLogger().setLevel(logging.DEBUG)
-        # logging.getLogger('mp4').setLevel(logging.INFO)
-        return unittest.loader.TestLoader().loadTestsFromNames(
-            os.environ["TESTS"].split(','),
-            TestRestApi)
+    def test_add_user(self) -> None:
+        self.check_add_user(True, False, False)
+
+    def test_add_media_user(self) -> None:
+        self.check_add_user(True, True, False)
+
+    def test_add_admin_user(self) -> None:
+        self.check_add_user(True, True, True)
+
+    def check_add_user(self, userGroup: bool, mediaGroup: bool, adminGroup: bool) -> None:
+        url: str = flask.url_for('api-list-users')
+        request = {
+            "username": "new.user",
+            "email": "fred@test.local",
+            "password": "wilma",
+            "confirmPassword": "wilma",
+            "userGroup": userGroup,
+            "mediaGroup": mediaGroup,
+            "adminGroup": adminGroup,
+        }
+        response = self.client.put(url, json=request)
+        self.assert401(response)
+        self.login_user(is_admin=False)
+        response = self.client.put(url, json=request)
+        self.assert401(response)
+        self.logout_user()
+        login: LoginResponseJson = self.login_user(is_admin=True)
+        response = self.client.put(url, json=request, headers={
+            'Authorization': f"Bearer {login['accessToken']['jwt']}",
+        })
+        self.assert200(response)
+        user = models.User.get(username=request['username'])
+        self.assertIsNotNone(user)
+        groups: list[str] = []
+        if userGroup:
+            groups.append('USER')
+        if mediaGroup:
+            groups.append('MEDIA')
+        if adminGroup:
+            groups.append('ADMIN')
+        expected = {
+            'errors': [],
+            'success': True,
+            'user': {
+                'email': 'fred@test.local',
+                'groups': groups,
+                'lastLogin': None,
+                'mustChange': False,
+                'pk': user.pk,
+                'username': 'new.user'
+            }
+        }
+        self.assertDictEqual(response.json, expected)
+
+    def test_add_user_failures(self) -> None:
+        url: str = flask.url_for('api-list-users')
+        request = {
+            "username": FlaskTestBase.MEDIA_USER,
+            "email": "fred@test.local",
+            "password": "wilma",
+            "confirmPassword": "betty",
+            "userGroup": True,
+            "mediaGroup": False,
+            "adminGroup": False,
+        }
+        login: LoginResponseJson = self.login_user(is_admin=True)
+        response = self.client.put(url, json=request, headers={
+            'Authorization': f"Bearer {login['accessToken']['jwt']}",
+        })
+        self.assert200(response)
+        self.assertDictEqual(response.json, {
+            'success': False,
+            'errors': ['User media already exists', 'passwords do not match'],
+        })
+        request['username'] = ""
+        request['confirmPassword'] = request['password']
+        response = self.client.put(url, json=request, headers={
+            'Authorization': f"Bearer {login['accessToken']['jwt']}",
+        })
+        self.assert200(response)
+        self.assertDictEqual(response.json, {
+            'success': False,
+            'errors': ['Username is required'],
+        })
+        request['username'] = "new.user"
+        request['email'] = FlaskTestBase.MEDIA_EMAIL
+        response = self.client.put(url, json=request, headers={
+            'Authorization': f"Bearer {login['accessToken']['jwt']}",
+        })
+        self.assert200(response)
+        self.assertDictEqual(response.json, {
+            'success': False,
+            'errors': [f'Email address {FlaskTestBase.MEDIA_EMAIL} already exists'],
+        })
+        del request['password']
+        request['email'] = 'fred@test.local'
+        response = self.client.put(url, json=request, headers={
+            'Authorization': f"Bearer {login['accessToken']['jwt']}",
+        })
+        self.assert200(response)
+        self.assertDictEqual(response.json, {
+            'success': False,
+            'errors': ['password is required'],
+        })
+
+    def test_edit_user_as_self(self) -> None:
+        self.check_edit_user(False)
+
+    def test_edit_user_as_admin(self) -> None:
+        self.check_edit_user(True)
+
+    def check_edit_user(self, is_admin: bool) -> None:
+        if is_admin:
+            login: LoginResponseJson = self.login_user(is_admin=True)
+        else:
+            login = self.login_user(username=FlaskTestBase.MEDIA_USER, password=FlaskTestBase.MEDIA_PASSWORD)
+        url: str = flask.url_for('api-edit-user', upk=12345)
+        request = {
+            "username": FlaskTestBase.MEDIA_USER,
+            "email": "fred@test.local",
+            "password": "wilma",
+            "confirmPassword": "betty",
+            "mustChange": True,
+            "userGroup": True,
+            "mediaGroup": False,
+            "adminGroup": False,
+        }
+        response = self.client.post(url, json=request)
+        self.assert401(response)
+        response = self.client.post(url, json=request, headers={
+            'Authorization': f"Bearer {login['accessToken']['jwt']}",
+        })
+        self.assert404(response)
+        with self.app.app_context():
+            media: models.User | None = models.User.get(username=FlaskTestBase.MEDIA_USER)
+            self.assertIsNotNone(media)
+            url = flask.url_for('api-edit-user', upk=media.pk)
+        response = self.client.post(url, json=request, headers={
+            'Authorization': f"Bearer {login['accessToken']['jwt']}",
+        })
+        self.assert200(response)
+        self.assertDictEqual(response.json, {
+            'success': False,
+            'errors': ['Passwords do not match'],
+        })
+        with self.app.app_context():
+            media = models.User.get(username=FlaskTestBase.MEDIA_USER)
+            self.assertIsNotNone(media)
+            self.assertEqual(media.email, FlaskTestBase.MEDIA_EMAIL)
+            self.assertTrue(media.check_password(FlaskTestBase.MEDIA_PASSWORD))
+        request['confirmPassword'] = request['password']
+        response = self.client.post(url, json=request, headers={
+            'Authorization': f"Bearer {login['accessToken']['jwt']}",
+        })
+        self.assert200(response)
+        with self.app.app_context():
+            media = models.User.get(username=FlaskTestBase.MEDIA_USER)
+            self.assertIsNotNone(media)
+            self.assertDictEqual(response.json, {
+                'success': True,
+                'errors': [],
+                'user': media.summary(),
+            })
+            self.assertEqual(media.email, request['email'])
+            self.assertTrue(media.check_password(request['password']))
+            if is_admin:
+                self.assertListEqual(media.groups, ['USER'])
+                self.assertTrue(media.must_change)
+            else:
+                self.assertListEqual(media.groups, ['USER', 'MEDIA'])
+                self.assertFalse(media.must_change)
+
+    def test_delete_user(self) -> None:
+        login: LoginResponseJson = self.login_user(is_admin=False)
+        with self.app.app_context():
+            media: models.User | None = models.User.get(username=FlaskTestBase.MEDIA_USER)
+            self.assertIsNotNone(media)
+            url: str = flask.url_for('api-edit-user', upk=media.pk)
+        response = self.client.delete(url, headers={
+            'Authorization': f"Bearer {login['accessToken']['jwt']}",
+        })
+        self.assert401(response)
+        self.logout_user()
+        login: LoginResponseJson = self.login_user(is_admin=True)
+        response = self.client.delete(url, headers={
+            'Authorization': f"Bearer {login['accessToken']['jwt']}",
+        })
+        self.assertEqual(response.status_code, 204)
+        with self.app.app_context():
+            media = models.User.get(username=FlaskTestBase.MEDIA_USER)
+            self.assertIsNone(media)
+            admin: models.User | None = models.User.get(username=FlaskTestBase.ADMIN_USER)
+            self.assertIsNotNone(admin)
+            url: str = flask.url_for('api-edit-user', upk=admin.pk)
+        response = self.client.delete(url, headers={
+            'Authorization': f"Bearer {login['accessToken']['jwt']}",
+        })
+        self.assertEqual(response.status_code, 400)
+        with self.app.app_context():
+            admin = models.User.get(username=FlaskTestBase.ADMIN_USER)
+            self.assertIsNotNone(admin)
+
 
 if __name__ == '__main__':
     unittest.main()

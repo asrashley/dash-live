@@ -65,11 +65,11 @@ def jwt_login_required(admin=False, permission: Group | None = None):
         @wraps(func)
         def decorated_function(*args, **kwargs) -> flask.Response:
             if not jwt_current_user.is_authenticated:
-                return jsonify_no_content('Not Authorized', 401)
+                return jsonify_no_content(401)
             if admin and not jwt_current_user.is_admin:
-                return jsonify_no_content('Not Authorized', 401)
+                return jsonify_no_content(401)
             if permission and not jwt_current_user.has_permission(permission):
-                return jsonify_no_content('Not Authorized', 401)
+                return jsonify_no_content(401)
             return func(*args, **kwargs)
         return decorated_function
     return decorator

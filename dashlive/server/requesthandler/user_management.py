@@ -7,7 +7,6 @@
 #############################################################################
 
 import datetime
-import logging
 from typing import NotRequired, TypedDict, cast
 
 import flask
@@ -21,11 +20,10 @@ from dashlive.server.models.token import EncodedJWTokenJson, TokenType, Token
 from dashlive.server.models.user import User, UserSummaryJson
 from dashlive.utils.json_object import JsonObject
 
-from .base import HTMLHandlerBase, DeleteModelBase
+from .base import HTMLHandlerBase
 from .csrf import CsrfProtection, CsrfTokenCollection
-from .decorators import login_required, jwt_login_required, modifies_user_model, modifying_user
-from .exceptions import CsrfFailureException
-from .utils import is_ajax, jsonify, jsonify_no_content
+from .decorators import login_required, jwt_login_required
+from .utils import jsonify, jsonify_no_content
 
 
 class LoginResponseJson(TypedDict):
@@ -115,16 +113,22 @@ class LogoutPage(HTMLHandlerBase):
         db.session.commit()
         return flask.redirect(flask.url_for('ui-home'))
 
+class AddEditUserResponse(TypedDict):
+    success: bool
+    errors: list[str]
+    user: NotRequired[UserSummaryJson]
+
+
 class ListUsers(HTMLHandlerBase):
-    """
-    List all user accounts
-    """
     decorators = [
         jwt_login_required(admin=True),
         jwt_required(),
     ]
 
     def get(self) -> flask.Response:
+        """
+        List all user accounts
+        """
         users: list[UserSummaryJson] = []
         guest: User = User.get_guest_user()
         for user in User.all():
@@ -133,83 +137,10 @@ class ListUsers(HTMLHandlerBase):
             users.append(user.summary())
         return jsonify(users)
 
-class AddEditUserResponse(TypedDict):
-    success: bool
-    errors: list[str]
-    user: NotRequired[UserSummaryJson]
-
-
-class EditUser(MethodView):
-    """
-    Edit an existing user
-    """
-    decorators = [
-        jwt_required(),
-    ]
-
-    @jwt_login_required()
-    def post(self, upk: int) -> flask.Response:
-        """
-        Modifies a user
-        """
-        user: User | None = User.get(pk=upk)
-        if user is None:
-            return jsonify_no_content(404)
-        result: AddEditUserResponse = {
-            'errors': [],
-            'success': False,
-        }
-        if not jwt_current_user.is_admin and user.pk != jwt_current_user.pk:
-            result["errors"].append('Only an admin user can modify other users')
-            return jsonify(result)
-        js = flask.request.json
-        user.username = js['username']
-        user.email = js['email']
-        user.must_change = js['mustChange']
-        if js.get('password') is not None:
-            if js['password'] != js['confirmPassword']:
-                result['errors'].append('Passwords do not match')
-            else:
-                user.set_password(js['password'])
-        groups: list[Group] = []
-        for group in Group.names():
-            field_name = f'{group.lower()}Group'
-            if js.get(field_name, False):
-                groups.append(group)
-        user.set_groups(groups)
-        if not result['errors']:
-            result['success'] = True
-            result['user'] = user.summary()
-            db.session.commit()
-        return jsonify(result)
-#
-    @jwt_login_required(admin=True)
-    def delete(self, upk: int) -> flask.Response:
-        """
-        Deletes a user
-        """
-        if jwt_current_user.pk == upk:
-            return jsonify({
-                'error': 'You cannot delete your own account'
-            }, 400)
-        user: User | None = User.get(pk=upk)
-        if user is None:
-            return jsonify_no_content(404)
-        db.session.delete(user)
-        db.session.commit()
-        return jsonify_no_content(204)
-
-
-class AddUser(MethodView):
-    """
-    Add a new user
-    """
-    decorators = [
-        jwt_login_required(admin=True),
-        jwt_required(),
-    ]
-
     def put(self) -> flask.Response:
+        """
+        Add a new user
+        """
         js = flask.request.json
         result: AddEditUserResponse = {
             "errors": [],
@@ -219,11 +150,11 @@ class AddUser(MethodView):
         email: str | None = js.get("email")
         password: str | None = js.get("password")
         confirm: str | None = js.get("confirmPassword")
-        if username is None:
+        if username is None or username == "":
             result["errors"].append('Username is required')
         elif User.count(username=username) > 0:
             result["errors"].append(f'User {username} already exists')
-        if email is None:
+        if email is None or email == "":
             result["errors"].append('email is required')
         elif User.count(email=email) > 0:
             result["errors"].append(f'Email address {email} already exists')
@@ -247,48 +178,75 @@ class AddUser(MethodView):
         return jsonify(result)
 
 
+class EditUser(MethodView):
+    """
+    Edit or delete an existing user
+    """
+
+    decorators = [
+        jwt_required(),
+    ]
+
+    @jwt_login_required()
+    def post(self, upk: int) -> flask.Response:
+        """
+        Modifies a user
+        """
+        user: User | None = User.get(pk=upk)
+        if user is None:
+            return jsonify_no_content(404)
+        result: AddEditUserResponse = {
+            'errors': [],
+            'success': False,
+        }
+        if not jwt_current_user.is_admin and user.pk != jwt_current_user.pk:
+            result["errors"].append('Only an admin user can modify other users')
+            return jsonify(result)
+        js = flask.request.json
+        if jwt_current_user.is_admin:
+            user.username = js['username']
+            user.must_change = js['mustChange']
+        user.email = js['email']
+        if js.get('password') is not None and js.get('password') != "":
+            if js['password'] != js['confirmPassword']:
+                result['errors'].append('Passwords do not match')
+            else:
+                user.set_password(js['password'])
+        if jwt_current_user.is_admin:
+            groups: list[Group] = []
+            for group in Group.names():
+                field_name = f'{group.lower()}Group'
+                if js.get(field_name, False):
+                    groups.append(group)
+            user.set_groups(groups)
+        if not result['errors']:
+            result['success'] = True
+            result['user'] = user.summary()
+            db.session.commit()
+        return jsonify(result)
+
+    @jwt_login_required(admin=True)
+    def delete(self, upk: int) -> flask.Response:
+        """
+        Deletes a user
+        """
+        if jwt_current_user.pk == upk:
+            return jsonify({
+                'error': 'You cannot delete your own account'
+            }, 400)
+        user: User | None = User.get(pk=upk)
+        if user is None:
+            return jsonify_no_content(404)
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify_no_content(204)
+
+
 class EditSelf(EditUser):
     decorators = [login_required(admin=False)]
 
     def get_model(self) -> User:
         return current_user
-
-
-class DeleteUser(DeleteModelBase):
-    """
-    Confirms and deletes a User
-    """
-
-    MODEL_NAME = 'user'
-    CSRF_TOKEN_NAME = 'users'
-    decorators = [modifies_user_model, login_required(html=True, admin=True)]
-
-    def get_model_dict(self) -> JsonObject:
-        js = modifying_user.to_dict()
-        js['title'] = js['username']
-        return js
-
-    def get_cancel_url(self) -> str:
-        return flask.url_for('list-users')
-
-    def delete_model(self) -> JsonObject:
-        if current_user.pk == modifying_user.pk:
-            if not is_ajax():
-                flask.flash('You cannot delete your own account', 'error')
-            return {
-                'error': 'You cannot delete your own account'
-            }
-        result = {
-            "deleted": modifying_user.pk,
-            "username": modifying_user.username,
-            "email": modifying_user.email
-        }
-        db.session.delete(modifying_user)
-        db.session.commit()
-        return result
-
-    def get_next_url(self) -> str:
-        return flask.url_for('list-users')
 
 
 def generate_csrf_tokens() -> CsrfTokenCollection:

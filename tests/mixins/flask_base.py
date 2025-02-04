@@ -13,7 +13,7 @@ import json
 import logging
 import os
 from pathlib import Path
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar, Optional, cast
 
 from bs4 import element
 import flask
@@ -25,6 +25,7 @@ from dashlive.mpeg import mp4
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.server import models
 from dashlive.server.app import create_app
+from dashlive.server.requesthandler.user_management import LoginResponseJson
 from dashlive.utils.date_time import from_isodatetime
 
 from .async_flask_testing import AsyncFlaskTestCase
@@ -139,6 +140,7 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
                 must_change=False,
             )
             models.db.session.add(media_user)
+            models.User.get_guest_user()
             models.db.session.commit()
         self.setup_fake_fs(app)
         return app
@@ -377,7 +379,7 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
     def login_user(self, username: str | None = None,
                    password: str | None = None,
                    is_admin: bool = False,
-                   rememberme: bool = False) -> TestResponse:
+                   rememberme: bool = False) -> LoginResponseJson:
         if is_admin:
             if username is None:
                 username = self.ADMIN_USER
@@ -387,7 +389,7 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
                 username = self.STD_USER
                 password = self.STD_PASSWORD
         login_url: str = flask.url_for('api-login')
-        return self.client.post(
+        response = self.client.post(
             login_url,
             json={
                 'username': username,
@@ -395,6 +397,7 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
                 'rememberme': rememberme,
             },
             content_type='application/json')
+        return cast(LoginResponseJson, response.json)
 
     def logout_user(self) -> TestResponse:
         logout_url: str = flask.url_for('logout')
