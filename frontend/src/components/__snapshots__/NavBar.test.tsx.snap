@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`NavBar component > matches snapshot when logged in 1`] = `
+exports[`NavBar component > matches snapshot when logged in when admin=false 1`] = `
 <DocumentFragment>
   <nav
     class="navbar navbar-expand-lg navbar-light bg-body-tertiary"
@@ -32,9 +32,9 @@ exports[`NavBar component > matches snapshot when logged in 1`] = `
           class="nav-item spa"
         >
           <a
-            aria-current="page"
             class="nav-link active spa"
             href="/"
+            role="menuitem"
           >
             Home
           </a>
@@ -45,6 +45,7 @@ exports[`NavBar component > matches snapshot when logged in 1`] = `
           <a
             class="nav-link "
             href="/streams"
+            role="menuitem"
           >
             Streams
           </a>
@@ -55,6 +56,7 @@ exports[`NavBar component > matches snapshot when logged in 1`] = `
           <a
             class="nav-link spa"
             href="/multi-period-streams"
+            role="menuitem"
           >
             Multi-Period
           </a>
@@ -65,6 +67,7 @@ exports[`NavBar component > matches snapshot when logged in 1`] = `
           <a
             class="nav-link "
             href="/validate/"
+            role="menuitem"
           >
             Validate
           </a>
@@ -75,8 +78,75 @@ exports[`NavBar component > matches snapshot when logged in 1`] = `
           <a
             class="nav-link "
             href="/media/inspect"
+            role="menuitem"
           >
             Inspect
+          </a>
+        </li>
+        <li
+          class="nav-item user-login"
+        >
+          <a
+            class="nav-link"
+            href="#"
+          >
+            Log Out
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+</DocumentFragment>
+`;
+
+exports[`NavBar component > matches snapshot when logged in when admin=true 1`] = `
+<DocumentFragment>
+  <nav
+    class="navbar navbar-expand-lg navbar-light bg-body-tertiary"
+  >
+    <span
+      class="navbar-brand"
+    >
+      DASH server
+    </span>
+    <button
+      aria-controls="navbarSupportedContent"
+      aria-expanded="false"
+      aria-label="Toggle navigation"
+      class="navbar-toggler collapsed"
+      type="button"
+    >
+      <span
+        class="navbar-toggler-icon"
+      />
+    </button>
+    <div
+      class="collapse navbar-collapse"
+      id="navbarSupportedContent"
+    >
+      <ul
+        class="navbar-nav mr-auto"
+      >
+        <li
+          class="nav-item spa"
+        >
+          <a
+            class="nav-link active spa"
+            href="/"
+            role="menuitem"
+          >
+            Home
+          </a>
+        </li>
+        <li
+          class="nav-item "
+        >
+          <a
+            class="nav-link "
+            href="/streams"
+            role="menuitem"
+          >
+            Streams
           </a>
         </li>
         <li
@@ -84,9 +154,32 @@ exports[`NavBar component > matches snapshot when logged in 1`] = `
         >
           <a
             class="nav-link spa"
-            href="/users"
+            href="/multi-period-streams"
+            role="menuitem"
           >
-            Users
+            Multi-Period
+          </a>
+        </li>
+        <li
+          class="nav-item "
+        >
+          <a
+            class="nav-link "
+            href="/validate/"
+            role="menuitem"
+          >
+            Validate
+          </a>
+        </li>
+        <li
+          class="nav-item "
+        >
+          <a
+            class="nav-link "
+            href="/media/inspect"
+            role="menuitem"
+          >
+            Inspect
           </a>
         </li>
         <li
@@ -137,9 +230,9 @@ exports[`NavBar component > matches snapshot when not logged in 1`] = `
           class="nav-item spa"
         >
           <a
-            aria-current="page"
             class="nav-link active spa"
             href="/"
+            role="menuitem"
           >
             Home
           </a>
@@ -150,6 +243,7 @@ exports[`NavBar component > matches snapshot when not logged in 1`] = `
           <a
             class="nav-link "
             href="/streams"
+            role="menuitem"
           >
             Streams
           </a>
@@ -160,6 +254,7 @@ exports[`NavBar component > matches snapshot when not logged in 1`] = `
           <a
             class="nav-link spa"
             href="/multi-period-streams"
+            role="menuitem"
           >
             Multi-Period
           </a>
@@ -170,6 +265,7 @@ exports[`NavBar component > matches snapshot when not logged in 1`] = `
           <a
             class="nav-link "
             href="/validate/"
+            role="menuitem"
           >
             Validate
           </a>
@@ -180,18 +276,9 @@ exports[`NavBar component > matches snapshot when not logged in 1`] = `
           <a
             class="nav-link "
             href="/media/inspect"
+            role="menuitem"
           >
             Inspect
-          </a>
-        </li>
-        <li
-          class="nav-item spa"
-        >
-          <a
-            class="nav-link spa"
-            href="/users"
-          >
-            Users
           </a>
         </li>
         <li

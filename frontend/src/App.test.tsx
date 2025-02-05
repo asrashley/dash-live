@@ -1,15 +1,15 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
-import { act, fireEvent, render } from "@testing-library/preact";
+import { act, render } from "@testing-library/preact";
 import fetchMock from '@fetch-mock/vitest';
 import { useContext } from "preact/hooks";
 import { useLocation } from 'wouter-preact';
 import log from "loglevel";
 
-import { navbar, routeMap, uiRouteMap } from "@dashlive/routemap";
+import { routeMap, uiRouteMap } from "@dashlive/routemap";
 
 import { App } from "./App";
 import { AppStateContext, AppStateType } from "./appState";
-import { mediaUser, MockDashServer, UserModel } from "./test/MockServer";
+import { adminUser, mediaUser, MockDashServer, UserModel } from "./test/MockServer";
 import { FakeEndpoint, HttpRequestHandlerResponse } from "./test/FakeEndpoint";
 import { JWToken } from "./types/JWToken";
 import { LocalStorageKeys } from "./hooks/useLocalStorage";
@@ -70,7 +70,7 @@ describe("main entry-point app", () => {
   test("matches snapshot for home page", async () => {
     mockLocation.pathname = "/";
     const { asFragment, findByText } = render(
-      <App navbar={navbar} />,
+      <App />,
       { baseElement }
     );
     await userPromise;
@@ -87,7 +87,7 @@ describe("main entry-point app", () => {
     mockLocation.pathname = "/";
     localStorage.clear();
     const { asFragment, findByText } = render(
-      <App navbar={navbar} />,
+      <App />,
       { baseElement }
     );
     await findByText("Log In");
@@ -103,7 +103,7 @@ describe("main entry-point app", () => {
     mockLocation.pathname = uiRouteMap.cgiOptions.url();
     const listMpsProm = endpoint.addResponsePromise('get', routeMap.cgiOptions.url());
     const { asFragment, findByText } = render(
-      <App navbar={navbar} />,
+      <App />,
       { baseElement }
     );
     await userPromise;
@@ -117,7 +117,7 @@ describe("main entry-point app", () => {
     mockLocation.pathname = uiRouteMap.listMps.url();
     const listMpsProm = endpoint.addResponsePromise('get', routeMap.listMps.url());
     const { asFragment, findByText } = render(
-      <App navbar={navbar} />,
+      <App />,
       { baseElement }
     );
     await userPromise;
@@ -131,7 +131,7 @@ describe("main entry-point app", () => {
   test("matches snapshot for edit MPS", async () => {
     mockLocation.pathname = uiRouteMap.editMps.url({ mps_name: 'demo' });
     const { asFragment, findByText, findAllByText } = render(
-      <App navbar={navbar} />,
+      <App />,
       { baseElement }
     );
     await userPromise;
@@ -142,10 +142,25 @@ describe("main entry-point app", () => {
     expect(asFragment()).toMatchSnapshot();
   });
 
+  test('matches snapshot for list users', async () => {
+    user = server.login(adminUser.email, adminUser.password);
+    expect(user).not.toBeNull();
+    localStorage.setItem(LocalStorageKeys.REFRESH_TOKEN, JSON.stringify(user.refreshToken));
+    mockLocation.pathname = uiRouteMap.listUsers.url();
+    const { asFragment, findByText } = render(
+      <App />,
+      { baseElement }
+    );
+    await userPromise;
+    await findByText("Log Out");
+    await findByText(mediaUser.email);
+    expect(asFragment()).toMatchSnapshot();
+  });
+
   test("unknown page", async () => {
     mockLocation.pathname = '/unknown';
     const { findByText } = render(
-      <App navbar={navbar} />,
+      <App />,
       { baseElement }
     );
     await findByText("Sorry I don't know about this page");
@@ -159,7 +174,7 @@ describe("main entry-point app", () => {
     };
     mockLocation.pathname = "/";
     const { findByText } = render(
-      <App navbar={navbar}><StateSpy /></App>,
+      <App><StateSpy /></App>,
       { baseElement }
     );
     await findByText("Stream to play");
@@ -183,15 +198,13 @@ describe("main entry-point app", () => {
   test("doesn't reload page when navigating to another SPA page", async () => {
     mockLocation.pathname = "/";
     const { findByText } = render(
-      <App navbar={navbar} />,
+      <App />,
       { baseElement }
     );
     await findByText("Stream to play");
     const elt = document.querySelector('a[href="/multi-period-streams"]');
     expect(elt).not.toBeNull();
-    fireEvent.click(elt);
-    expect(setLocation).toHaveBeenCalled();
-    expect(setLocation).toHaveBeenCalledWith('/multi-period-streams');
+    expect(elt.classList.contains('spa')).toEqual(true);
   });
 
   test("redirects to login page if refresh token has expired", async () => {
@@ -209,7 +222,7 @@ describe("main entry-point app", () => {
     };
     localStorage.setItem(LocalStorageKeys.REFRESH_TOKEN, JSON.stringify(expired));
     const { findByText } = render(
-      <App navbar={navbar} />,
+      <App />,
       { baseElement }
     );
     await refreshProm;
