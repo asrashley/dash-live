@@ -1,16 +1,16 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`LoginLogoutLink component > shows  log out link 1`] = `
+exports[`LoginLogoutLink component > shows log out link 1`] = `
 <DocumentFragment>
   <li
-    class="nav-item user-login"
+    class="nav-item dropdown ms-auto me-4"
   >
-    <a
+    <button
       class="nav-link"
-      href="/login"
+      role="menuitem"
     >
       Log In
-    </a>
+    </button>
   </li>
 </DocumentFragment>
 `;
@@ -18,14 +18,14 @@ exports[`LoginLogoutLink component > shows  log out link 1`] = `
 exports[`LoginLogoutLink component > shows login link 1`] = `
 <DocumentFragment>
   <li
-    class="nav-item user-login"
+    class="nav-item dropdown ms-auto me-4"
   >
-    <a
+    <button
       class="nav-link"
-      href="/login"
+      role="menuitem"
     >
       Log In
-    </a>
+    </button>
   </li>
 </DocumentFragment>
 `;

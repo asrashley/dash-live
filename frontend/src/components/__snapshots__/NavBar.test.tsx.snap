@@ -26,7 +26,7 @@ exports[`NavBar component > matches snapshot when logged in when admin=false 1`]
       id="navbarSupportedContent"
     >
       <ul
-        class="navbar-nav mr-auto"
+        class="navbar-nav flex-fill"
       >
         <li
           class="nav-item spa"
@@ -84,14 +84,45 @@ exports[`NavBar component > matches snapshot when logged in when admin=false 1`]
           </a>
         </li>
         <li
-          class="nav-item user-login"
+          class="nav-item dropdown ms-auto me-4"
         >
-          <a
-            class="nav-link"
-            href="#"
+          <span
+            class="username me-1"
           >
-            Log Out
-          </a>
+            mediamgr
+          </span>
+          <button
+            aria-expanded="false"
+            class="btn btn-light dropdown-toggle"
+            data-testid="toggle-user-menu"
+            role="menubar"
+          >
+            <span
+              aria-label="gear-fill icon"
+              class="bi icon bi-gear-fill "
+              role="img"
+            />
+          </button>
+          <ul
+            class="dropdown-menu"
+          >
+            <li>
+              <button
+                class="dropdown-item"
+                role="menuitem"
+              >
+                Change Password
+              </button>
+            </li>
+            <li>
+              <button
+                class="dropdown-item"
+                role="menuitem"
+              >
+                Log Out
+              </button>
+            </li>
+          </ul>
         </li>
       </ul>
     </div>
@@ -125,7 +156,7 @@ exports[`NavBar component > matches snapshot when logged in when admin=true 1`] 
       id="navbarSupportedContent"
     >
       <ul
-        class="navbar-nav mr-auto"
+        class="navbar-nav flex-fill"
       >
         <li
           class="nav-item spa"
@@ -183,14 +214,45 @@ exports[`NavBar component > matches snapshot when logged in when admin=true 1`] 
           </a>
         </li>
         <li
-          class="nav-item user-login"
+          class="nav-item dropdown ms-auto me-4"
         >
-          <a
-            class="nav-link"
-            href="#"
+          <span
+            class="username me-1"
           >
-            Log Out
-          </a>
+            mediamgr
+          </span>
+          <button
+            aria-expanded="false"
+            class="btn btn-light dropdown-toggle"
+            data-testid="toggle-user-menu"
+            role="menubar"
+          >
+            <span
+              aria-label="gear-fill icon"
+              class="bi icon bi-gear-fill "
+              role="img"
+            />
+          </button>
+          <ul
+            class="dropdown-menu"
+          >
+            <li>
+              <button
+                class="dropdown-item"
+                role="menuitem"
+              >
+                Change Password
+              </button>
+            </li>
+            <li>
+              <button
+                class="dropdown-item"
+                role="menuitem"
+              >
+                Log Out
+              </button>
+            </li>
+          </ul>
         </li>
       </ul>
     </div>
@@ -224,7 +286,7 @@ exports[`NavBar component > matches snapshot when not logged in 1`] = `
       id="navbarSupportedContent"
     >
       <ul
-        class="navbar-nav mr-auto"
+        class="navbar-nav flex-fill"
       >
         <li
           class="nav-item spa"
@@ -282,14 +344,14 @@ exports[`NavBar component > matches snapshot when not logged in 1`] = `
           </a>
         </li>
         <li
-          class="nav-item user-login"
+          class="nav-item dropdown ms-auto me-4"
         >
-          <a
+          <button
             class="nav-link"
-            href="/login"
+            role="menuitem"
           >
             Log In
-          </a>
+          </button>
         </li>
       </ul>
     </div>

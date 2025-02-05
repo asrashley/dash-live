@@ -253,10 +253,6 @@ routes: dict[str, Route] = {
         r'/logout',
         handler='user_management.LogoutPage',
         title='Log out of site'),
-    "change-password": Route(
-        r'/users/me',
-        handler='user_management.EditSelf',
-        title='Account Settings'),
     "list-manifests": Route(
         r'/api/manifests',
         handler='manifest_requests.ListManifests',
@@ -356,6 +352,7 @@ routes: dict[str, Route] = {
 
 ui_routes: dict[str, UiRoute] = {
     "add-mps": UiRoute(r'/multi-period-streams/.add'),
+    "change-password": UiRoute(r'/change-password'),
     "cgi-options": UiRoute(r'/options'),
     "edit-mps": UiRoute(r'/multi-period-streams/<mps_name>'),
     "edit-user": UiRoute(r'/users/<username>'),

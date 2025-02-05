@@ -215,12 +215,6 @@ export const routeMap = {
     route: "/logout",
     url: () => `/logout`,
   },
-  changePassword: {
-    title: "Account Settings",
-    re: /\/users\/me/,
-    route: "/users/me",
-    url: () => `/users/me`,
-  },
   listManifests: {
     title: "DASH fragment",
     re: /\/api\/manifests/,
@@ -367,6 +361,12 @@ export const uiRouteMap = {
     re: /\/multi-period-streams\/.add/,
     route: "/multi-period-streams/.add",
     url: () => `/multi-period-streams/.add`,
+  },
+  changePassword: {
+    title: "change-password",
+    re: /\/change-password/,
+    route: "/change-password",
+    url: () => `/change-password`,
   },
   cgiOptions: {
     title: "cgi-options",
