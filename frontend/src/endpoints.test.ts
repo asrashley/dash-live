@@ -19,7 +19,7 @@ import allStdStreams from './test/fixtures/streams.json';
 import { model as demoMps } from './test/fixtures/multi-period-streams/demo.json';
 import cgiOptions from './test/fixtures/cgiOptions.json';
 import { InitialUserState } from "./types/UserState";
-import { EditUserState } from "./hooks/useAllUsers";
+import { EditUserState } from "./types/EditUserState";
 
 describe('endpoints', () => {
     const needsRefreshToken = vi.fn();

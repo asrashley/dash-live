@@ -4,6 +4,7 @@ import { act, renderHook } from "@testing-library/preact";
 import { useWhoAmI } from "./useWhoAmI";
 import { UserState } from "../types/UserState";
 import { mediaUser } from "../test/MockServer";
+import { flattenUserState } from "../user/utils/flattenUserState";
 
 describe('useWhoAmI hook', () => {
     const blankUser: Readonly<UserState> = {
@@ -34,6 +35,7 @@ describe('useWhoAmI hook', () => {
     test('initial user state', () => {
         const { result } = renderHook(() => useWhoAmI());
         expect(result.current.user.value).toEqual(blankUser);
+        expect(result.current.flattened.value).toEqual(flattenUserState(blankUser));
     });
 
     test('setState for a logged in user', () => {
@@ -42,6 +44,7 @@ describe('useWhoAmI hook', () => {
             result.current.setUser(mediaUser);
         });
         expect(result.current.user.value).toEqual(loggedInUser);
+        expect(result.current.flattened.value).toEqual(flattenUserState(loggedInUser));
     });
 
     test('reset user', () => {

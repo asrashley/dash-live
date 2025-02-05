@@ -1,8 +1,9 @@
-import { type ReadonlySignal, useSignal } from "@preact/signals";
+import { type ReadonlySignal } from "@preact/signals";
 import { useMemo } from "preact/hooks";
 
 import { groupNames } from "@dashlive/options";
-import { EditUserState, UserValidationErrors } from "../../hooks/useAllUsers";
+import { UserValidationErrors } from "../../hooks/useAllUsers";
+import { EditUserState } from "../../types/EditUserState";
 import { StaticInputProps } from "../../types/StaticInputProps";
 import { SetValueFunc } from "../../types/SetValueFunc";
 import { InputFieldRow } from "../../components/InputFieldRow";
@@ -56,6 +57,8 @@ const fields: CgiFormInputItem[] = [
 export interface EditUserFormProps {
   user: ReadonlySignal<EditUserState>;
   errors: ReadonlySignal<UserValidationErrors>;
+  disabledFields: ReadonlySignal<Record<string, boolean>>;
+  only?: string[];
   setValue: SetValueFunc;
   newUser?: boolean;
 }
@@ -64,11 +67,12 @@ export function EditUserForm({
   user,
   setValue,
   errors,
+  disabledFields,
+  only,
   newUser = false,
 }: EditUserFormProps) {
-  const disabledFields = useSignal<Record<string, boolean>>({});
   const formFields: StaticInputProps[] = useMemo(() => {
-    return fields.map((field) => {
+    const result = fields.map((field) => {
       const rv: StaticInputProps = {
         ...field,
         shortName: field.name,
@@ -80,7 +84,11 @@ export function EditUserForm({
       }
       return rv;
     });
-  }, [newUser]);
+    if (only) {
+      return result.filter(({name}) => only.includes(name));
+    }
+    return result;
+  }, [newUser, only]);
 
   return (
     <form>

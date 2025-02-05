@@ -6,10 +6,11 @@ import { renderWithProviders } from "../../test/renderWithProviders";
 import { AddUserDialog } from "./AddUserDialog";
 import { AppStateType } from "../../appState";
 import { DialogState } from "../../types/DialogState";
-import { UserValidationErrors, validateUserState } from "../../hooks/useAllUsers";
+import { UserValidationErrors } from "../../hooks/useAllUsers";
 import { InitialUserState } from "../../types/UserState";
 import { useMessages, UseMessagesHook } from "../../hooks/useMessages";
 import { mock } from "vitest-mock-extended";
+import { validateUserState } from "../utils/validateUserState";
 
 
 vi.mock("../../hooks/useMessages");
@@ -34,7 +35,7 @@ describe("AddUserDialog component", () => {
 
   beforeEach(() => {
     validateUser.mockImplementation((user) =>
-      validateUserState(user, allUsers)
+      validateUserState(user, allUsers.value)
     );
     saveChanges.mockResolvedValue("");
     useMessagesSpy.mockReturnValue(useMessagesHook);

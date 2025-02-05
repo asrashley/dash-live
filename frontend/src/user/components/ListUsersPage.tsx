@@ -8,14 +8,14 @@ import {
   RenderCellProps,
 } from "../../components/SortableTable";
 import {
-  EditUserState,
-  FlattenedUserState,
   useAllUsers,
 } from "../../hooks/useAllUsers";
 import { BooleanCell } from "../../components/BooleanCell";
 import { AppStateContext } from "../../appState";
 import { EndpointContext } from "../../endpoints";
 import { AddUserDialog } from "./AddUserDialog";
+import { FlattenedUserState } from "../../types/FlattenedUserState";
+import { EditUserState } from "../../types/EditUserState";
 
 const headings: [keyof FlattenedUserState, string][] = [
   ["pk", "#"],

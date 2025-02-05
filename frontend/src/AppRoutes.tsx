@@ -38,6 +38,10 @@ const EditUserPage = lazy(
   () => import("./user/components/EditUserPage"),
   LoadingSpinner
 );
+const ChangePasswordPage = lazy(
+  () => import("./user/components/ChangePasswordPage"),
+  LoadingSpinner
+);
 
 export function AppRoutes() {
   return (
@@ -50,6 +54,7 @@ export function AppRoutes() {
       <Route component={HomePage} path={uiRouteMap.home.route} />
       <Route component={ListUsersPage} path={uiRouteMap.listUsers.route} />
       <Route component={EditUserPage} path={uiRouteMap.editUser.route} />
+      <Route component={ChangePasswordPage} path={uiRouteMap.changePassword.route} />
       <Route path="*" component={PageNotFound} />
     </Switch>
   );

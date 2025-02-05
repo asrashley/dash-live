@@ -14,6 +14,8 @@ import { InitialUserState, UserState } from "../types/UserState";
 import { computed, signal } from "@preact/signals";
 import { vi } from "vitest";
 import { UseWhoAmIHook, WhoAmIContext } from "../hooks/useWhoAmI";
+import { FlattenedUserState } from "../types/FlattenedUserState";
+import { flattenUserState } from "../user/utils/flattenUserState";
 
 const initialUserState: InitialUserState = {
   mustChange: false,
@@ -73,8 +75,10 @@ export function renderWithProviders(
         },
       };
     });
+    const flattened = computed<FlattenedUserState>(() => flattenUserState(user.value));
     whoAmI = {
       user,
+      flattened,
       setUser,
     };
   }

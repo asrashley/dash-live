@@ -16,7 +16,7 @@ import { MultiPeriodStreamValidationRequest, MultiPeriodStreamValidationResponse
 import { randomToken } from "../utils/randomToken";
 import { InitialUserState } from "../types/UserState";
 import { ModifyUserResponse } from "../types/ModifyUserResponse";
-import { EditUserState } from "../hooks/useAllUsers";
+import { EditUserState } from "../types/EditUserState";
 
 enum UserGroups {
     USER = "USER",
