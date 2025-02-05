@@ -53,7 +53,7 @@ export function NavBar() {
       </button>
 
       <div className={navbarClassName} id="navbarSupportedContent">
-        <ul className="navbar-nav mr-auto">
+        <ul className="navbar-nav flex-fill">
           {items.value.map((item) => (
             <NavItem key={item.title} {...item} />
           ))}

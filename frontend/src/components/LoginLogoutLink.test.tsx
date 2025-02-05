@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { fireEvent } from "@testing-library/preact";
 import { mock } from "vitest-mock-extended";
 import { useLocation } from "wouter-preact";
 
@@ -10,6 +9,7 @@ import { useMessages, UseMessagesHook } from "../hooks/useMessages";
 import { normalUser } from "../test/MockServer";
 
 import { LoginLogoutLink } from "./LoginLogoutLink";
+import userEvent from "@testing-library/user-event";
 
 vi.mock("wouter-preact", async (importOriginal) => {
   return {
@@ -41,21 +41,22 @@ describe("LoginLogoutLink component", () => {
     vi.clearAllMocks();
   });
 
-  test("shows login link", () => {
-    const { asFragment, getByText, getBySelector } = renderWithProviders(
+  test("shows login link", async () => {
+    const user = userEvent.setup();
+    const { asFragment, getByText } = renderWithProviders(
       <EndpointContext.Provider value={apiRequests}>
         <LoginLogoutLink />
       </EndpointContext.Provider>
     );
-    getByText("Log In");
-    const link = getBySelector(".nav-link") as HTMLAnchorElement;
-    fireEvent.click(link);
+    const btn = getByText("Log In") as HTMLButtonElement;
+    await user.click(btn);
     expect(setLocation).toHaveBeenCalledTimes(1);
     expect(setLocation).toHaveBeenCalledWith(uiRouteMap.login.url());
     expect(asFragment()).toMatchSnapshot();
   });
 
-  test("shows  log out link", async () => {
+  test("shows log out link", async () => {
+    const user = userEvent.setup();
     const prom = new Promise<void>((resolve) => {
       apiRequests.logoutUser.mockImplementationOnce(() => {
         resolve();
@@ -67,17 +68,18 @@ describe("LoginLogoutLink component", () => {
       });
     });
 
-    const { asFragment, findByText, getBySelector, whoAmI } =
+    const { asFragment, getByTestId, findByText, whoAmI } =
       renderWithProviders(
         <EndpointContext.Provider value={apiRequests}>
           <LoginLogoutLink />
         </EndpointContext.Provider>,
         { userInfo: normalUser }
-      );
-    await findByText("Log Out");
+    );
+    const toggle = getByTestId("toggle-user-menu") as HTMLButtonElement;
+    await user.click(toggle);
+    const btn = await findByText("Log Out") as HTMLButtonElement;
     expect(whoAmI.user.value.isAuthenticated).toEqual(true);
-    const link = getBySelector(".nav-link") as HTMLAnchorElement;
-    fireEvent.click(link);
+    await user.click(btn);
     await prom;
     expect(whoAmI.user.value.isAuthenticated).toEqual(false);
     expect(setLocation).toHaveBeenCalledTimes(1);
@@ -92,6 +94,7 @@ describe("LoginLogoutLink component", () => {
   });
 
   test("shows error if log out fails", async () => {
+    const user = userEvent.setup();
     const prom = new Promise<void>((resolve) => {
       apiRequests.logoutUser.mockImplementationOnce(() => {
         resolve();
@@ -99,14 +102,16 @@ describe("LoginLogoutLink component", () => {
       });
     });
 
-    const { findByText, getBySelector, whoAmI } = renderWithProviders(
+    const { findByText, getByTestId, whoAmI } = renderWithProviders(
       <EndpointContext.Provider value={apiRequests}>
         <LoginLogoutLink />
       </EndpointContext.Provider>,
       { userInfo: normalUser }
     );
-    const link = getBySelector(".nav-link") as HTMLAnchorElement;
-    fireEvent.click(link);
+    const toggle = getByTestId("toggle-user-menu") as HTMLButtonElement;
+    await user.click(toggle);
+    const btn = await findByText('Log Out') as HTMLButtonElement;
+    await user.click(btn);
     await prom;
     expect(whoAmI.user.value.isAuthenticated).toEqual(false);
     expect(setLocation).toHaveBeenCalledTimes(1);

@@ -27,7 +27,7 @@ exports[`main entry-point app > matches snapshot for CGI options 1`] = `
         id="navbarSupportedContent"
       >
         <ul
-          class="navbar-nav mr-auto"
+          class="navbar-nav flex-fill"
         >
           <li
             class="nav-item spa"
@@ -85,14 +85,45 @@ exports[`main entry-point app > matches snapshot for CGI options 1`] = `
             </a>
           </li>
           <li
-            class="nav-item user-login"
+            class="nav-item dropdown ms-auto me-4"
           >
-            <a
-              class="nav-link"
-              href="#"
+            <span
+              class="username me-1"
             >
-              Log Out
-            </a>
+              mediamgr
+            </span>
+            <button
+              aria-expanded="false"
+              class="btn btn-light dropdown-toggle"
+              data-testid="toggle-user-menu"
+              role="menubar"
+            >
+              <span
+                aria-label="gear-fill icon"
+                class="bi icon bi-gear-fill "
+                role="img"
+              />
+            </button>
+            <ul
+              class="dropdown-menu"
+            >
+              <li>
+                <button
+                  class="dropdown-item"
+                  role="menuitem"
+                >
+                  Change Password
+                </button>
+              </li>
+              <li>
+                <button
+                  class="dropdown-item"
+                  role="menuitem"
+                >
+                  Log Out
+                </button>
+              </li>
+            </ul>
           </li>
         </ul>
       </div>
@@ -2586,7 +2617,7 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
         id="navbarSupportedContent"
       >
         <ul
-          class="navbar-nav mr-auto"
+          class="navbar-nav flex-fill"
         >
           <li
             class="nav-item spa"
@@ -2644,14 +2675,45 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
             </a>
           </li>
           <li
-            class="nav-item user-login"
+            class="nav-item dropdown ms-auto me-4"
           >
-            <a
-              class="nav-link"
-              href="#"
+            <span
+              class="username me-1"
             >
-              Log Out
-            </a>
+              mediamgr
+            </span>
+            <button
+              aria-expanded="false"
+              class="btn btn-light dropdown-toggle"
+              data-testid="toggle-user-menu"
+              role="menubar"
+            >
+              <span
+                aria-label="gear-fill icon"
+                class="bi icon bi-gear-fill "
+                role="img"
+              />
+            </button>
+            <ul
+              class="dropdown-menu"
+            >
+              <li>
+                <button
+                  class="dropdown-item"
+                  role="menuitem"
+                >
+                  Change Password
+                </button>
+              </li>
+              <li>
+                <button
+                  class="dropdown-item"
+                  role="menuitem"
+                >
+                  Log Out
+                </button>
+              </li>
+            </ul>
           </li>
         </ul>
       </div>
@@ -3232,7 +3294,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
         id="navbarSupportedContent"
       >
         <ul
-          class="navbar-nav mr-auto"
+          class="navbar-nav flex-fill"
         >
           <li
             class="nav-item spa"
@@ -3290,14 +3352,45 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
             </a>
           </li>
           <li
-            class="nav-item user-login"
+            class="nav-item dropdown ms-auto me-4"
           >
-            <a
-              class="nav-link"
-              href="#"
+            <span
+              class="username me-1"
             >
-              Log Out
-            </a>
+              mediamgr
+            </span>
+            <button
+              aria-expanded="false"
+              class="btn btn-light dropdown-toggle"
+              data-testid="toggle-user-menu"
+              role="menubar"
+            >
+              <span
+                aria-label="gear-fill icon"
+                class="bi icon bi-gear-fill "
+                role="img"
+              />
+            </button>
+            <ul
+              class="dropdown-menu"
+            >
+              <li>
+                <button
+                  class="dropdown-item"
+                  role="menuitem"
+                >
+                  Change Password
+                </button>
+              </li>
+              <li>
+                <button
+                  class="dropdown-item"
+                  role="menuitem"
+                >
+                  Log Out
+                </button>
+              </li>
+            </ul>
           </li>
         </ul>
       </div>
@@ -5680,7 +5773,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
         id="navbarSupportedContent"
       >
         <ul
-          class="navbar-nav mr-auto"
+          class="navbar-nav flex-fill"
         >
           <li
             class="nav-item spa"
@@ -5738,14 +5831,14 @@ exports[`main entry-point app > matches snapshot for home page when user not log
             </a>
           </li>
           <li
-            class="nav-item user-login"
+            class="nav-item dropdown ms-auto me-4"
           >
-            <a
+            <button
               class="nav-link"
-              href="/login"
+              role="menuitem"
             >
               Log In
-            </a>
+            </button>
           </li>
         </ul>
       </div>
@@ -8128,7 +8221,7 @@ exports[`main entry-point app > matches snapshot for list MPS 1`] = `
         id="navbarSupportedContent"
       >
         <ul
-          class="navbar-nav mr-auto"
+          class="navbar-nav flex-fill"
         >
           <li
             class="nav-item spa"
@@ -8186,14 +8279,45 @@ exports[`main entry-point app > matches snapshot for list MPS 1`] = `
             </a>
           </li>
           <li
-            class="nav-item user-login"
+            class="nav-item dropdown ms-auto me-4"
           >
-            <a
-              class="nav-link"
-              href="#"
+            <span
+              class="username me-1"
             >
-              Log Out
-            </a>
+              mediamgr
+            </span>
+            <button
+              aria-expanded="false"
+              class="btn btn-light dropdown-toggle"
+              data-testid="toggle-user-menu"
+              role="menubar"
+            >
+              <span
+                aria-label="gear-fill icon"
+                class="bi icon bi-gear-fill "
+                role="img"
+              />
+            </button>
+            <ul
+              class="dropdown-menu"
+            >
+              <li>
+                <button
+                  class="dropdown-item"
+                  role="menuitem"
+                >
+                  Change Password
+                </button>
+              </li>
+              <li>
+                <button
+                  class="dropdown-item"
+                  role="menuitem"
+                >
+                  Log Out
+                </button>
+              </li>
+            </ul>
           </li>
         </ul>
       </div>
@@ -8422,7 +8546,7 @@ exports[`main entry-point app > matches snapshot for list users 1`] = `
         id="navbarSupportedContent"
       >
         <ul
-          class="navbar-nav mr-auto"
+          class="navbar-nav flex-fill"
         >
           <li
             class="nav-item spa"
@@ -8491,14 +8615,45 @@ exports[`main entry-point app > matches snapshot for list users 1`] = `
             </a>
           </li>
           <li
-            class="nav-item user-login"
+            class="nav-item dropdown ms-auto me-4"
           >
-            <a
-              class="nav-link"
-              href="#"
+            <span
+              class="username me-1"
             >
-              Log Out
-            </a>
+              admin
+            </span>
+            <button
+              aria-expanded="false"
+              class="btn btn-light dropdown-toggle"
+              data-testid="toggle-user-menu"
+              role="menubar"
+            >
+              <span
+                aria-label="gear-fill icon"
+                class="bi icon bi-gear-fill "
+                role="img"
+              />
+            </button>
+            <ul
+              class="dropdown-menu"
+            >
+              <li>
+                <button
+                  class="dropdown-item"
+                  role="menuitem"
+                >
+                  Change Password
+                </button>
+              </li>
+              <li>
+                <button
+                  class="dropdown-item"
+                  role="menuitem"
+                >
+                  Log Out
+                </button>
+              </li>
+            </ul>
           </li>
         </ul>
       </div>
