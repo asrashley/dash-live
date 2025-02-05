@@ -1,4 +1,5 @@
 import { type ComponentChildren } from "preact";
+import { type ReadonlySignal } from "@preact/signals";
 
 export interface CardImageProps {
   src: string;
@@ -11,7 +12,7 @@ function CardImage({ src, alt }: CardImageProps) {
 
 export interface CardProps {
   id: string;
-  header?: string | ComponentChildren;
+  header?: string | ReadonlySignal<string> | ComponentChildren;
   children?: ComponentChildren;
   className?: string;
   image?: CardImageProps;

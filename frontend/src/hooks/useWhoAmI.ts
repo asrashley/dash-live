@@ -3,9 +3,12 @@ import { useCallback } from "preact/hooks";
 import { type ReadonlySignal, useComputed, useSignal } from "@preact/signals";
 
 import { InitialUserState, UserState } from "../types/UserState";
+import { FlattenedUserState } from "../types/FlattenedUserState";
+import { flattenUserState } from "../user/utils/flattenUserState";
 
 export interface UseWhoAmIHook {
   user: ReadonlySignal<UserState>;
+  flattened: ReadonlySignal<FlattenedUserState>;
   setUser: (ius: InitialUserState | null) => void;
 }
 
@@ -28,6 +31,7 @@ export function useWhoAmI(): UseWhoAmIHook {
       user: userInfo.value.groups.includes('USER'),
     },
   }));
+  const flattened = useComputed<FlattenedUserState>(() => flattenUserState(user.value));
 
   const setUser = useCallback((ius: InitialUserState | null) => {
     if (ius) {
@@ -37,5 +41,5 @@ export function useWhoAmI(): UseWhoAmIHook {
     }
   }, [userInfo]);
 
-  return { user, setUser };
+  return { user, flattened, setUser };
 }

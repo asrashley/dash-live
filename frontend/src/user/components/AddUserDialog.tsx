@@ -6,9 +6,10 @@ import { EditUserForm } from "./EditUserForm";
 
 import { AppStateContext } from "../../appState";
 import { useMessages } from "../../hooks/useMessages";
-import { EditUserState, UseAllUsersHook, UserValidationErrors } from "../../hooks/useAllUsers";
+import { UseAllUsersHook, UserValidationErrors } from "../../hooks/useAllUsers";
 import { randomToken } from "../../utils/randomToken";
 import { Alert, AlertProps } from "../../components/Alert";
+import { EditUserState } from "../../types/EditUserState";
 
 interface FooterProps {
   onClose: (ev: Event) => void;
@@ -68,8 +69,9 @@ export function AddUserDialog({ onClose, saveChanges, validateUser }: AddUserDia
   const { appendMessage } = useMessages();
   const user = useSignal<EditUserState>(generateNewUser());
   const error = useSignal<string>("");
-  const errors = useComputed<UserValidationErrors>(() => validateUser(user.value));
   const submitting = useSignal<boolean>(false);
+  const disabledFields = useSignal<Record<string, boolean>>({});
+  const errors = useComputed<UserValidationErrors>(() => validateUser(user.value));
 
   const setValue = useCallback(
     (field: string, value: string | number | boolean) => {
@@ -110,7 +112,7 @@ export function AddUserDialog({ onClose, saveChanges, validateUser }: AddUserDia
       footer={footer}
     >
       <SaveError error={error} onDismiss={dismissError} />
-      <EditUserForm user={user} setValue={setValue} errors={errors} newUser={true} />
+      <EditUserForm user={user} setValue={setValue} errors={errors} disabledFields={disabledFields} newUser={true} />
     </ModalDialog>
   );
 }

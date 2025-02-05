@@ -4,13 +4,16 @@ import { useLocation, useParams } from "wouter-preact";
 
 import { uiRouteMap } from "@dashlive/routemap";
 
-import { FlattenedUserState, useAllUsers, UserValidationErrors } from "../../hooks/useAllUsers";
+import { useAllUsers, UserValidationErrors } from "../../hooks/useAllUsers";
 import { RouteParamsType } from "../../types/RouteParamsType";
 import { EditUserCard } from "./EditUserCard";
 import { AppStateContext } from "../../appState";
 import { DeleteUserDialog } from "./DeleteUserDialog";
 import { EndpointContext } from "../../endpoints";
 import { useMessages } from "../../hooks/useMessages";
+import { FlattenedUserState } from "../../types/FlattenedUserState";
+
+const backUrl = uiRouteMap.listUsers.url();
 
 export default function EditUserPage() {
   const [, setLocation] = useLocation();
@@ -20,6 +23,7 @@ export default function EditUserPage() {
   const { flattenedUsers, error, validateUser, updateUser } = useAllUsers();
   const { username } = useParams<RouteParamsType>();
   const changes = useSignal<Partial<FlattenedUserState>>({});
+  const disabledFields = useSignal<Record<string, boolean>>({});
   const userEntry = useComputed<FlattenedUserState | undefined>(() =>
     flattenedUsers.value.find((user) => user.username === username)
   );
@@ -35,7 +39,8 @@ export default function EditUserPage() {
     };
     return usr;
   });
-  const errors = useComputed<UserValidationErrors>(() => validateUser(user.value));
+  const validationErrors = useComputed<UserValidationErrors>(() => validateUser(user.value));
+  const header = useComputed<string>(() => `Editing user ${user.value.username}`);
 
   const setValue = useCallback(
     (field: string, value: string | number | boolean) => {
@@ -90,9 +95,12 @@ export default function EditUserPage() {
   return (
     <div className="content mb-4" style="max-width: 65rem">
       <EditUserCard
+        backUrl={backUrl}
+        header={header}
         user={user}
-        allUsersError={error}
-        errors={errors}
+        networkError={error}
+        validationErrors={validationErrors}
+        disabledFields={disabledFields}
         onDelete={requestDelete}
         onSave={saveChanges}
         setValue={setValue}

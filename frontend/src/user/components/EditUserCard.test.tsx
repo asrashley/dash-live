@@ -1,18 +1,24 @@
-import { signal } from "@preact/signals";
+import { computed, signal } from "@preact/signals";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import userEvent from "@testing-library/user-event";
+
+import { uiRouteMap } from "@dashlive/routemap";
+
 import {
-  FlattenedUserState,
   UserValidationErrors,
 } from "../../hooks/useAllUsers";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import { EditUserCard } from "./EditUserCard";
 import { mediaUser } from "../../test/MockServer";
-import userEvent from "@testing-library/user-event";
+import { FlattenedUserState } from "../../types/FlattenedUserState";
 
 describe("EditUserCard component", () => {
+  const backUrl = uiRouteMap.listUsers.url();
   const user = signal<FlattenedUserState | undefined>();
   const errors = signal<UserValidationErrors>({});
   const allUsersError = signal<string | null>(null);
+  const disabledFields = signal<Record<string, boolean>>({});
+  const header = computed<string>(() => `Editing user ${user.value?.username ?? ""}`);
   const setValue = vi.fn();
   const onSave = vi.fn();
   const onDelete = vi.fn();
@@ -40,9 +46,12 @@ describe("EditUserCard component", () => {
   test("matches snapshot", async () => {
     const { getByText, findBySelector } = renderWithProviders(
       <EditUserCard
+        backUrl={backUrl}
+        header={header}
         user={user}
-        allUsersError={allUsersError}
-        errors={errors}
+        networkError={allUsersError}
+        validationErrors={errors}
+        disabledFields={disabledFields}
         setValue={setValue}
         onSave={onSave}
         onDelete={onDelete}
@@ -70,9 +79,12 @@ describe("EditUserCard component", () => {
     user.value = undefined;
     const { getBySelector } = renderWithProviders(
         <EditUserCard
+          backUrl={backUrl}
+          header={header}
           user={user}
-          allUsersError={allUsersError}
-          errors={errors}
+          networkError={allUsersError}
+          validationErrors={errors}
+          disabledFields={disabledFields}
           setValue={setValue}
           onSave={onSave}
           onDelete={onDelete}
@@ -85,9 +97,12 @@ describe("EditUserCard component", () => {
     allUsersError.value = "server error";
     const { findByText } = renderWithProviders(
       <EditUserCard
+        backUrl={backUrl}
+        header={header}
         user={user}
-        allUsersError={allUsersError}
-        errors={errors}
+        networkError={allUsersError}
+        validationErrors={errors}
+        disabledFields={disabledFields}
         setValue={setValue}
         onSave={onSave}
         onDelete={onDelete}
@@ -100,9 +115,12 @@ describe("EditUserCard component", () => {
     const evUser = userEvent.setup();
     const { getByText } = renderWithProviders(
       <EditUserCard
+        backUrl={backUrl}
+        header={header}
         user={user}
-        allUsersError={allUsersError}
-        errors={errors}
+        networkError={allUsersError}
+        validationErrors={errors}
+        disabledFields={disabledFields}
         setValue={setValue}
         onSave={onSave}
         onDelete={onDelete}
@@ -119,9 +137,12 @@ describe("EditUserCard component", () => {
     const evUser = userEvent.setup();
     const { getByText } = renderWithProviders(
       <EditUserCard
+        backUrl={backUrl}
+        header={header}
         user={user}
-        allUsersError={allUsersError}
-        errors={errors}
+        networkError={allUsersError}
+        validationErrors={errors}
+        disabledFields={disabledFields}
         setValue={setValue}
         onSave={onSave}
         onDelete={onDelete}
@@ -138,9 +159,12 @@ describe("EditUserCard component", () => {
     const evUser = userEvent.setup();
     const { findBySelector } = renderWithProviders(
       <EditUserCard
+        backUrl={backUrl}
+        header={header}
         user={user}
-        allUsersError={allUsersError}
-        errors={errors}
+        networkError={allUsersError}
+        validationErrors={errors}
+        disabledFields={disabledFields}
         setValue={setValue}
         onSave={onSave}
         onDelete={onDelete}

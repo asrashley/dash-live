@@ -18,7 +18,7 @@ import { MultiPeriodStreamValidationRequest, MultiPeriodStreamValidationResponse
 import { CgiOptionDescription } from './types/CgiOptionDescription';
 import { InitialUserState } from './types/UserState';
 import { ModifyUserResponse } from './types/ModifyUserResponse';
-import { EditUserState } from './hooks/useAllUsers';
+import { EditUserState } from "./types/EditUserState";
 
 type TokenStoreCollection = {
   files: CsrfTokenStore;
