@@ -12,17 +12,15 @@ import { NavHeader } from "./components/NavHeader";
 import { ApiRequests, EndpointContext } from "./endpoints";
 import { AppStateContext, AppStateType, createAppState } from "./appState";
 import { useLocalStorage } from "./hooks/useLocalStorage";
-import { NavBarItem } from "./types/NavBarItem";
 import { useWhoAmI, WhoAmIContext } from "./hooks/useWhoAmI";
 import { Footer } from "./components/Footer";
 import { AppRoutes } from "./AppRoutes";
 
 export interface AppProps {
-  navbar: NavBarItem[];
   children?: ComponentChildren;
 }
 
-export function App({ children, navbar }: AppProps) {
+export function App({ children }: AppProps) {
   const setLocation = useLocation()[1];
   const { refreshToken } = useLocalStorage();
   const whoAmI = useWhoAmI();
@@ -49,7 +47,7 @@ export function App({ children, navbar }: AppProps) {
     <AppStateContext.Provider value={state}>
       <WhoAmIContext.Provider value={whoAmI}>
         <EndpointContext.Provider value={apiRequests.current}>
-          <NavHeader navbar={navbar} />
+          <NavHeader />
           <MessagesPanel />
           <div className="content container-fluid">
             <AppRoutes />

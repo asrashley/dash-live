@@ -1,21 +1,39 @@
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { fireEvent } from "@testing-library/preact";
+import { signal } from "@preact/signals";
 
-import { navbar } from "@dashlive/routemap";
 import { renderWithProviders } from "../test/renderWithProviders";
 
-import { NavBar } from "./NavBar";
-import { mediaUser } from "../test/MockServer";
+import { createNavItems, NavBar } from "./NavBar";
+import { adminUser, mediaUser, normalUser } from "../test/MockServer";
+import { UserState } from "../types/UserState";
 
 describe("NavBar component", () => {
+  const user = signal<UserState>();
+
+  beforeEach(() => {
+    user.value = {
+      isAuthenticated: false,
+      lastLogin: null,
+      mustChange: false,
+      groups: [],
+      permissions: {
+        admin: false,
+        media: false,
+        user: false
+      },
+    };
+  });
+
   afterEach(() => {
     vi.clearAllMocks();
   });
 
   test("matches snapshot when not logged in", () => {
     const { asFragment, findByText } = renderWithProviders(
-      <NavBar items={navbar} />
+      <NavBar />
     );
+    const navbar = createNavItems(user);
     navbar.forEach((bar) => {
       findByText(bar.title);
     });
@@ -23,11 +41,23 @@ describe("NavBar component", () => {
     expect(asFragment()).toMatchSnapshot();
   });
 
-  test("matches snapshot when logged in", () => {
+  test.each<boolean>([true, false])("matches snapshot when logged in when admin=%s", (isAdmin: boolean) => {
+    const usr = isAdmin ? adminUser: normalUser;
+    user.value = {
+      ...usr,
+      isAuthenticated: true,
+      permissions: {
+        admin: isAdmin,
+        media: isAdmin,
+        user: true,
+      },
+    };
     const { asFragment, findByText } = renderWithProviders(
-      <NavBar items={navbar} />,
+      <NavBar />,
       { userInfo: mediaUser }
     );
+    const navbar = createNavItems(user);
+    expect(navbar.some(item => item.title === "Users"));
     navbar.forEach((bar) => {
       findByText(bar.title);
     });
@@ -36,7 +66,7 @@ describe("NavBar component", () => {
   });
 
   test("can toggle expanded menu", () => {
-    const { getBySelector } = renderWithProviders(<NavBar items={navbar} />);
+    const { getBySelector } = renderWithProviders(<NavBar />);
     const btn = getBySelector(".navbar-toggler") as HTMLButtonElement;
     const list = getBySelector("#navbarSupportedContent") as HTMLElement;
     expect(btn.className.trim()).toEqual("navbar-toggler collapsed");

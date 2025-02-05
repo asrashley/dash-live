@@ -78,10 +78,8 @@ class RouteMap(MethodView):
         ui_route_map: dict[str, RouteJavaScript] = {}
         for name, route in ui_routes.items():
             ui_route_map[self.to_camel_case(name)] = route.to_javascript()
-        navbar: list[NavBarItem] = create_navbar_context(with_login=False)
         body: str = flask.render_template(
-            'esm/routemap.tjs', routes=route_map, ui_routes=ui_route_map,
-            navbar=navbar)
+            'esm/routemap.tjs', routes=route_map, ui_routes=ui_route_map)
         headers: dict[str, str] = {
             'Content-Type': 'application/javascript',
             'Content-Length': len(body),

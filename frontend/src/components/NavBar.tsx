@@ -1,14 +1,40 @@
-import { useCallback, useState } from "preact/hooks";
+import { useCallback, useContext, useState } from "preact/hooks";
+import { type ReadonlySignal, useComputed } from "@preact/signals";
+
 import { NavBarItem } from "../types/NavBarItem";
 import { LoginLogoutLink } from "./LoginLogoutLink";
 import { NavItem } from "./NavItem";
+import { WhoAmIContext } from "../hooks/useWhoAmI";
+import { UserState } from "../types/UserState";
 
-export interface NavBarProps {
-  items: NavBarItem[];
+export function createNavItems(user: ReadonlySignal<UserState>): NavBarItem[] {
+  const navbar: NavBarItem[] = [
+    {
+      className: "spa", href: "/", title: "Home"
+    }, {
+      className: "", href: "/streams", title: "Streams"
+    }, {
+      className: "spa", href: "/multi-period-streams", title: "Multi-Period"
+    }, {
+      className: "", href: "/validate/", title: "Validate"
+    }, {
+      className: "", href: "/media/inspect", title: "Inspect"
+    },
+  ];
+  if (user.value.permissions.admin) {
+    navbar.push({
+      className: "spa", href: "/users", title: "Users"
+    });
+  }
+  return navbar;
 }
-export function NavBar({ items }: NavBarProps) {
+
+export function NavBar() {
+  const { user } = useContext(WhoAmIContext);
   const [expanded, setExpanded] = useState<boolean>(false);
   const toggleExpand = useCallback(() => setExpanded(!expanded), [expanded]);
+  const items = useComputed(() => createNavItems(user));
+
   const togglerClassName = `navbar-toggler${expanded ? '' : ' collapsed'}`;
   const navbarClassName = `collapse navbar-collapse${ expanded ? ' show' : ''}`;
 
@@ -28,7 +54,7 @@ export function NavBar({ items }: NavBarProps) {
 
       <div className={navbarClassName} id="navbarSupportedContent">
         <ul className="navbar-nav mr-auto">
-          {items.map((item) => (
+          {items.value.map((item) => (
             <NavItem key={item.title} {...item} />
           ))}
           <LoginLogoutLink />

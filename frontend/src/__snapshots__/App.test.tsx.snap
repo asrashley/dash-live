@@ -33,9 +33,9 @@ exports[`main entry-point app > matches snapshot for CGI options 1`] = `
             class="nav-item spa"
           >
             <a
-              aria-current="page"
-              class="nav-link active spa"
+              class="nav-link spa"
               href="/"
+              role="menuitem"
             >
               Home
             </a>
@@ -46,6 +46,7 @@ exports[`main entry-point app > matches snapshot for CGI options 1`] = `
             <a
               class="nav-link "
               href="/streams"
+              role="menuitem"
             >
               Streams
             </a>
@@ -56,6 +57,7 @@ exports[`main entry-point app > matches snapshot for CGI options 1`] = `
             <a
               class="nav-link spa"
               href="/multi-period-streams"
+              role="menuitem"
             >
               Multi-Period
             </a>
@@ -66,6 +68,7 @@ exports[`main entry-point app > matches snapshot for CGI options 1`] = `
             <a
               class="nav-link "
               href="/validate/"
+              role="menuitem"
             >
               Validate
             </a>
@@ -76,18 +79,9 @@ exports[`main entry-point app > matches snapshot for CGI options 1`] = `
             <a
               class="nav-link "
               href="/media/inspect"
+              role="menuitem"
             >
               Inspect
-            </a>
-          </li>
-          <li
-            class="nav-item spa"
-          >
-            <a
-              class="nav-link spa"
-              href="/users"
-            >
-              Users
             </a>
           </li>
           <li
@@ -2598,9 +2592,9 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
             class="nav-item spa"
           >
             <a
-              aria-current="page"
-              class="nav-link active spa"
+              class="nav-link spa"
               href="/"
+              role="menuitem"
             >
               Home
             </a>
@@ -2611,6 +2605,7 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
             <a
               class="nav-link "
               href="/streams"
+              role="menuitem"
             >
               Streams
             </a>
@@ -2621,6 +2616,7 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
             <a
               class="nav-link spa"
               href="/multi-period-streams"
+              role="menuitem"
             >
               Multi-Period
             </a>
@@ -2631,6 +2627,7 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
             <a
               class="nav-link "
               href="/validate/"
+              role="menuitem"
             >
               Validate
             </a>
@@ -2641,18 +2638,9 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
             <a
               class="nav-link "
               href="/media/inspect"
+              role="menuitem"
             >
               Inspect
-            </a>
-          </li>
-          <li
-            class="nav-item spa"
-          >
-            <a
-              class="nav-link spa"
-              href="/users"
-            >
-              Users
             </a>
           </li>
           <li
@@ -3250,9 +3238,9 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
             class="nav-item spa"
           >
             <a
-              aria-current="page"
               class="nav-link active spa"
               href="/"
+              role="menuitem"
             >
               Home
             </a>
@@ -3263,6 +3251,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
             <a
               class="nav-link "
               href="/streams"
+              role="menuitem"
             >
               Streams
             </a>
@@ -3273,6 +3262,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
             <a
               class="nav-link spa"
               href="/multi-period-streams"
+              role="menuitem"
             >
               Multi-Period
             </a>
@@ -3283,6 +3273,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
             <a
               class="nav-link "
               href="/validate/"
+              role="menuitem"
             >
               Validate
             </a>
@@ -3293,18 +3284,9 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
             <a
               class="nav-link "
               href="/media/inspect"
+              role="menuitem"
             >
               Inspect
-            </a>
-          </li>
-          <li
-            class="nav-item spa"
-          >
-            <a
-              class="nav-link spa"
-              href="/users"
-            >
-              Users
             </a>
           </li>
           <li
@@ -5704,9 +5686,9 @@ exports[`main entry-point app > matches snapshot for home page when user not log
             class="nav-item spa"
           >
             <a
-              aria-current="page"
               class="nav-link active spa"
               href="/"
+              role="menuitem"
             >
               Home
             </a>
@@ -5717,6 +5699,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
             <a
               class="nav-link "
               href="/streams"
+              role="menuitem"
             >
               Streams
             </a>
@@ -5727,6 +5710,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
             <a
               class="nav-link spa"
               href="/multi-period-streams"
+              role="menuitem"
             >
               Multi-Period
             </a>
@@ -5737,6 +5721,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
             <a
               class="nav-link "
               href="/validate/"
+              role="menuitem"
             >
               Validate
             </a>
@@ -5747,18 +5732,9 @@ exports[`main entry-point app > matches snapshot for home page when user not log
             <a
               class="nav-link "
               href="/media/inspect"
+              role="menuitem"
             >
               Inspect
-            </a>
-          </li>
-          <li
-            class="nav-item spa"
-          >
-            <a
-              class="nav-link spa"
-              href="/users"
-            >
-              Users
             </a>
           </li>
           <li
@@ -8158,9 +8134,9 @@ exports[`main entry-point app > matches snapshot for list MPS 1`] = `
             class="nav-item spa"
           >
             <a
-              aria-current="page"
-              class="nav-link active spa"
+              class="nav-link spa"
               href="/"
+              role="menuitem"
             >
               Home
             </a>
@@ -8171,6 +8147,7 @@ exports[`main entry-point app > matches snapshot for list MPS 1`] = `
             <a
               class="nav-link "
               href="/streams"
+              role="menuitem"
             >
               Streams
             </a>
@@ -8179,8 +8156,9 @@ exports[`main entry-point app > matches snapshot for list MPS 1`] = `
             class="nav-item spa"
           >
             <a
-              class="nav-link spa"
+              class="nav-link active spa"
               href="/multi-period-streams"
+              role="menuitem"
             >
               Multi-Period
             </a>
@@ -8191,6 +8169,7 @@ exports[`main entry-point app > matches snapshot for list MPS 1`] = `
             <a
               class="nav-link "
               href="/validate/"
+              role="menuitem"
             >
               Validate
             </a>
@@ -8201,18 +8180,9 @@ exports[`main entry-point app > matches snapshot for list MPS 1`] = `
             <a
               class="nav-link "
               href="/media/inspect"
+              role="menuitem"
             >
               Inspect
-            </a>
-          </li>
-          <li
-            class="nav-item spa"
-          >
-            <a
-              class="nav-link spa"
-              href="/users"
-            >
-              Users
             </a>
           </li>
           <li
@@ -8388,6 +8358,558 @@ exports[`main entry-point app > matches snapshot for list MPS 1`] = `
       >
         Add a Stream
       </a>
+    </div>
+  </div>
+  <footer
+    class="bg-body-tertiary footer row border-top border-secondary-subtle"
+  >
+    <div
+      class="col-3 github-link"
+    >
+      <div>
+        <a
+          href="https://github.com/asrashley/dash-live"
+        >
+          github.com/asrashley/dash-live
+        </a>
+      </div>
+      <div>
+        12345abcde
+      </div>
+    </div>
+    <div
+      class="col-6 text-center service-name"
+    >
+      Simulated MPEG DASH service
+    </div>
+    <div
+      class="col-3 text-end copyright"
+    >
+      ©2025 Alexis Ashley
+    </div>
+  </footer>
+  <div
+    class="modal-backdrop d-none"
+    data-testid="modal-backdrop"
+  />
+</DocumentFragment>
+`;
+
+exports[`main entry-point app > matches snapshot for list users 1`] = `
+<DocumentFragment>
+  <header>
+    <nav
+      class="navbar navbar-expand-lg navbar-light bg-body-tertiary"
+    >
+      <span
+        class="navbar-brand"
+      >
+        DASH server
+      </span>
+      <button
+        aria-controls="navbarSupportedContent"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
+        class="navbar-toggler collapsed"
+        type="button"
+      >
+        <span
+          class="navbar-toggler-icon"
+        />
+      </button>
+      <div
+        class="collapse navbar-collapse"
+        id="navbarSupportedContent"
+      >
+        <ul
+          class="navbar-nav mr-auto"
+        >
+          <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link spa"
+              href="/"
+              role="menuitem"
+            >
+              Home
+            </a>
+          </li>
+          <li
+            class="nav-item "
+          >
+            <a
+              class="nav-link "
+              href="/streams"
+              role="menuitem"
+            >
+              Streams
+            </a>
+          </li>
+          <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link spa"
+              href="/multi-period-streams"
+              role="menuitem"
+            >
+              Multi-Period
+            </a>
+          </li>
+          <li
+            class="nav-item "
+          >
+            <a
+              class="nav-link "
+              href="/validate/"
+              role="menuitem"
+            >
+              Validate
+            </a>
+          </li>
+          <li
+            class="nav-item "
+          >
+            <a
+              class="nav-link "
+              href="/media/inspect"
+              role="menuitem"
+            >
+              Inspect
+            </a>
+          </li>
+          <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link active spa"
+              href="/users"
+              role="menuitem"
+            >
+              Users
+            </a>
+          </li>
+          <li
+            class="nav-item user-login"
+          >
+            <a
+              class="nav-link"
+              href="#"
+            >
+              Log Out
+            </a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+    <nav
+      aria-label="breadcrumb"
+      class="breadcrumbs"
+      data-location="/users"
+    >
+      <ol
+        class="breadcrumb"
+      >
+        <li
+          class="breadcrumb-item "
+          id="crumb_0"
+        >
+          <a
+            href="/"
+            title="Home"
+          >
+            Home
+          </a>
+        </li>
+        <li
+          class="breadcrumb-item active"
+          id="crumb_1"
+        >
+          <span>
+            users
+          </span>
+        </li>
+      </ol>
+    </nav>
+  </header>
+  <div
+    class="messages-panel"
+  />
+  <div
+    class="content container-fluid"
+  >
+    <div
+      class="container"
+      id="user-management"
+    >
+      <div
+        class="d-flex flex-row"
+      >
+        <h1
+          class="flex-grow-1"
+        >
+          User Accounts
+        </h1>
+        <button
+          class="btn btn-success add-user"
+        >
+          Add New User
+        </button>
+      </div>
+      <div
+        class="users-list-wrap"
+      >
+        <table
+          class="table table-striped table-bordered"
+          style="width: auto;"
+        >
+          <caption>
+            Users
+          </caption>
+          <thead>
+            <tr
+              class="sort_username"
+            >
+              <th
+                class="pk"
+              >
+                <a
+                  class=""
+                  href="#"
+                >
+                  <span
+                    class="me-1 text-dark"
+                  >
+                    #
+                  </span>
+                </a>
+              </th>
+              <th
+                class="username"
+              >
+                <a
+                  class=" fs-6"
+                  href="#"
+                >
+                  <span
+                    class="me-1 text-dark"
+                  >
+                    Username
+                  </span>
+                  <span
+                    aria-label="sort-alpha-down icon"
+                    class="bi icon bi-sort-alpha-down "
+                    role="img"
+                  />
+                </a>
+              </th>
+              <th
+                class="email"
+              >
+                <a
+                  class=""
+                  href="#"
+                >
+                  <span
+                    class="me-1 text-dark"
+                  >
+                    Email
+                  </span>
+                </a>
+              </th>
+              <th
+                class="lastLogin"
+              >
+                <a
+                  class=""
+                  href="#"
+                >
+                  <span
+                    class="me-1 text-dark"
+                  >
+                    Last Login
+                  </span>
+                </a>
+              </th>
+              <th
+                class="mustChange"
+              >
+                <a
+                  class=""
+                  href="#"
+                >
+                  <span
+                    class="me-1 text-dark"
+                  >
+                    Must Change
+                  </span>
+                </a>
+              </th>
+              <th
+                class="adminGroup"
+              >
+                <a
+                  class=""
+                  href="#"
+                >
+                  <span
+                    class="me-1 text-dark"
+                  >
+                    Admin
+                  </span>
+                </a>
+              </th>
+              <th
+                class="mediaGroup"
+              >
+                <a
+                  class=""
+                  href="#"
+                >
+                  <span
+                    class="me-1 text-dark"
+                  >
+                    Media
+                  </span>
+                </a>
+              </th>
+              <th
+                class="userGroup"
+              >
+                <a
+                  class=""
+                  href="#"
+                >
+                  <span
+                    class="me-1 text-dark"
+                  >
+                    User
+                  </span>
+                </a>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              id="opt_1"
+            >
+              <td
+                class="pk"
+              >
+                <span>
+                  1
+                </span>
+              </td>
+              <td
+                class="username"
+              >
+                <a
+                  href="/users/admin"
+                >
+                  admin
+                </a>
+              </td>
+              <td
+                class="email"
+              >
+                <a
+                  href="/users/admin"
+                >
+                  admin@example.local
+                </a>
+              </td>
+              <td
+                class="lastLogin"
+              >
+                <span>
+                  ---
+                </span>
+              </td>
+              <td
+                class="mustChange"
+              >
+                <span
+                  class="bool-no"
+                >
+                  ✗
+                </span>
+              </td>
+              <td
+                class="adminGroup"
+              >
+                <span
+                  class="bool-yes"
+                >
+                  ✓
+                </span>
+              </td>
+              <td
+                class="mediaGroup"
+              >
+                <span
+                  class="bool-yes"
+                >
+                  ✓
+                </span>
+              </td>
+              <td
+                class="userGroup"
+              >
+                <span
+                  class="bool-yes"
+                >
+                  ✓
+                </span>
+              </td>
+            </tr>
+            <tr
+              id="opt_101"
+            >
+              <td
+                class="pk"
+              >
+                <span>
+                  101
+                </span>
+              </td>
+              <td
+                class="username"
+              >
+                <a
+                  href="/users/mediamgr"
+                >
+                  mediamgr
+                </a>
+              </td>
+              <td
+                class="email"
+              >
+                <a
+                  href="/users/mediamgr"
+                >
+                  media.manager@example.local
+                </a>
+              </td>
+              <td
+                class="lastLogin"
+              >
+                <span>
+                  ---
+                </span>
+              </td>
+              <td
+                class="mustChange"
+              >
+                <span
+                  class="bool-no"
+                >
+                  ✗
+                </span>
+              </td>
+              <td
+                class="adminGroup"
+              >
+                <span
+                  class="bool-no"
+                >
+                  ✗
+                </span>
+              </td>
+              <td
+                class="mediaGroup"
+              >
+                <span
+                  class="bool-yes"
+                >
+                  ✓
+                </span>
+              </td>
+              <td
+                class="userGroup"
+              >
+                <span
+                  class="bool-yes"
+                >
+                  ✓
+                </span>
+              </td>
+            </tr>
+            <tr
+              id="opt_100"
+            >
+              <td
+                class="pk"
+              >
+                <span>
+                  100
+                </span>
+              </td>
+              <td
+                class="username"
+              >
+                <a
+                  href="/users/user"
+                >
+                  user
+                </a>
+              </td>
+              <td
+                class="email"
+              >
+                <a
+                  href="/users/user"
+                >
+                  a.user@example.local
+                </a>
+              </td>
+              <td
+                class="lastLogin"
+              >
+                <span>
+                  ---
+                </span>
+              </td>
+              <td
+                class="mustChange"
+              >
+                <span
+                  class="bool-no"
+                >
+                  ✗
+                </span>
+              </td>
+              <td
+                class="adminGroup"
+              >
+                <span
+                  class="bool-no"
+                >
+                  ✗
+                </span>
+              </td>
+              <td
+                class="mediaGroup"
+              >
+                <span
+                  class="bool-no"
+                >
+                  ✗
+                </span>
+              </td>
+              <td
+                class="userGroup"
+              >
+                <span
+                  class="bool-yes"
+                >
+                  ✓
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
   <footer

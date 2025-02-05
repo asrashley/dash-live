@@ -1,7 +1,6 @@
 import { render } from 'preact';
 import { App } from './App'
 
-import { navbar } from '@dashlive/routemap';
 import './styles/main.less';
 
 let root = document.getElementById('app');
@@ -12,4 +11,4 @@ if (root === null) {
     document.body.appendChild(root);
 }
 
-render(<App navbar={navbar} />, root);
+render(<App />, root);
