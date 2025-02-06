@@ -8,6 +8,9 @@ export function validateUserState(user: EditUserState, allUsers: InitialUserStat
       if (allUsers.some(({ pk, username }) => pk !== user.pk && username === user.username)) {
         errs.username = `${user.username} already exists`;
       }
+      if (user.password && user.password !== user.confirmPassword) {
+        errs.password = 'passwords do not match';
+      }
     } else {
       if (allUsers.some(({ username }) => username === user.username)) {
         errs.username = `${user.username} username already exists`;

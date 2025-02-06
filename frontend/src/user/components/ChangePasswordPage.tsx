@@ -56,24 +56,23 @@ export function ChangePassword() {
     try {
       const result = await apiRequests.editUser(user.value);
       if (result.success) {
-        appendMessage("success", `User ${user.value.username} successfully modified`);
+        appendMessage("success", "Password successfully modified");
         setUser(result.user);
         setLocation(uiRouteMap.listUsers.url());
       } else {
-        appendMessage("warning", `Failed to modify user ${user.value.username}`);
+        appendMessage("warning", "Failed to change password");
       }
     } catch(err) {
-      appendMessage("warning", `Failed to modify user ${user.value.username} - ${err}`);
+      appendMessage("warning", `Failed to change password - ${err}`);
     }
   }, [apiRequests, appendMessage, setLocation, setUser, user.value]);
-
-  console.dir(user.value);
 
   return (
     <div className="content mb-4" style="max-width: 65rem">
       <EditUserCard
         backUrl={backUrl}
         header="Change my password"
+        saveTitle="Change Password"
         user={user}
         validationErrors={errors}
         disabledFields={disabledFields}

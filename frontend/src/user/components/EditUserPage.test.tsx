@@ -84,12 +84,12 @@ describe("EditUserPage component", () => {
     "can edit a user, success=%s",
     async (success: boolean) => {
       const user = userEvent.setup();
-      const { findByText, findBySelector } = renderWithProviders(
+      const { findByText, findBySelector, getByText } = renderWithProviders(
         <EndpointContext.Provider value={apiReq}>
           <EditUserPage />
         </EndpointContext.Provider>
       );
-      const username = success ? "new.username" : normalUser.username;
+      const username = "new.username";
       const email = "new.username@test.local";
       const password = "s3cret!";
       const userInp = (await findBySelector(
@@ -97,8 +97,8 @@ describe("EditUserPage component", () => {
       )) as HTMLInputElement;
       await user.click(userInp);
       await user.clear(userInp);
-      await user.type(userInp, username);
-      expect(userInp.value).toEqual(username);
+      await user.type(userInp, success ? username : normalUser.username);
+      expect(userInp.value).toEqual(success ? username : normalUser.username);
       const emailInp = (await findBySelector(
         'input[name="email"]'
       )) as HTMLInputElement;
@@ -120,6 +120,18 @@ describe("EditUserPage component", () => {
         routeMap.editUser.url({ upk: mediaUser.pk })
       );
       const btn = (await findByText("Save Changes")) as HTMLButtonElement;
+      expect(btn.disabled).toEqual(!success);
+      if (!success) {
+        getByText("user already exists");
+        await user.click(userInp);
+        await user.clear(userInp);
+        await user.type(userInp, username);
+        expect(btn.disabled).toEqual(false);
+        server.addUser({
+          username,
+          email,
+        });
+      }
       await user.click(btn);
       const result = await editProm;
       expect(result).toEqual(
@@ -147,7 +159,10 @@ describe("EditUserPage component", () => {
         });
       } else {
         expect(body).toEqual({
-          errors: ["user already exists"],
+          errors: [
+            `${username} already exists`,
+            `${email} email address already exists`,
+          ],
           success,
         });
       }

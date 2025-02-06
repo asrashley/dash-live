@@ -1,4 +1,4 @@
-import { type ReadonlySignal } from "@preact/signals";
+import { useComputed, type ReadonlySignal } from "@preact/signals";
 import { Link } from "wouter-preact";
 
 import { SetValueFunc } from "../../types/SetValueFunc";
@@ -15,6 +15,7 @@ export interface EditUserCardProps {
   only?: EditUserFormProps["only"];
   header: string | ReadonlySignal<string>;
   backUrl: string;
+  saveTitle?: string;
   setValue: SetValueFunc;
   onSave: () => void;
   onDelete?: () => void;
@@ -28,10 +29,12 @@ export function EditUserCard({
   only,
   user,
   validationErrors,
+  saveTitle="Save Changes",
   onDelete,
   onSave,
   setValue,
 }: EditUserCardProps) {
+  const disableSave = useComputed<boolean>(() => Object.keys(validationErrors.value).length > 0);
 
   if (!user.value) {
     return <LoadingSpinner />;
@@ -48,8 +51,8 @@ export function EditUserCard({
         only={only}
       />
       <div className="form-actions mt-2">
-        <button onClick={onSave} className="btn btn-primary me-3">
-          Save Changes
+        <button onClick={onSave} className="btn btn-primary me-3" disabled={disableSave}>
+          {saveTitle}
         </button>
         {onDelete ? <button onClick={onDelete} className="btn btn-danger me-3">
           Delete User
