@@ -163,8 +163,22 @@ export class MockDashServer {
             .delete(routeMap.editUser.re, protectedRoute(this.deleteUser));
     }
 
-    addUser(user: UserModel) {
-        this.userDatabase.push(user);
+    addUser(user: Partial<UserModel>): UserModel {
+        const maxPk = Math.max(...this.userDatabase.map(usr => usr.pk));
+        const newUser: UserModel = {
+            pk: maxPk + 1,
+            accessToken: null,
+            refreshToken: null,
+            mustChange: true,
+            lastLogin: null,
+            username: randomToken(8),
+            password: randomToken(8),
+            email: '',
+            groups: [],
+            ...user,
+        };
+        this.userDatabase.push(newUser);
+        return newUser;
     }
 
     login(username: string, password: string): UserModel | null {
