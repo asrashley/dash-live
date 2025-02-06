@@ -126,7 +126,7 @@ describe("ChangePassword component", () => {
     );
   });
 
-  test("fails to change password", async () => {
+  test.each(['server error', 'exception'])("fails to change password due to %s", async (reason: string) => {
     const user = userEvent.setup();
     const { getByLabelText, getByText } = renderWithProviders(
       <EndpointContext.Provider value={apiRequests}>
@@ -138,9 +138,12 @@ describe("ChangePassword component", () => {
       apiRequests.editUser.mockImplementation(async (user: EditUserState) => {
         const resp: ModifyUserResponse = {
           success: false,
-          errors: ["server error"],
+          errors: [reason],
         };
         resolve(user);
+        if (reason === 'exception') {
+            throw new Error(reason);
+        }
         return resp;
       });
     });
@@ -166,7 +169,7 @@ describe("ChangePassword component", () => {
     );
     expect(messagesMock.appendMessage).toHaveBeenCalledWith(
       "warning",
-      "Failed to change password"
+      reason === 'exception' ? "Failed to change password - Error: exception" : "Failed to change password"
     );
   });
 
