@@ -38,7 +38,7 @@ exports[`LoginPage component > matches snapshot 1`] = `
           >
             <input
               aria-describedby="label-username"
-              class="form-control is-valid "
+              class="form-control "
               id="model-username"
               name="username"
               title="Username"
@@ -68,7 +68,7 @@ exports[`LoginPage component > matches snapshot 1`] = `
             >
               <input
                 aria-describedby="label-password"
-                class="form-control is-valid "
+                class="form-control "
                 id="model-password"
                 name="password"
                 title="Password"
@@ -102,7 +102,7 @@ exports[`LoginPage component > matches snapshot 1`] = `
           >
             <input
               aria-describedby="label-rememberme"
-              class="form-check-input is-valid "
+              class="form-check-input "
               id="model-rememberme"
               name="rememberme"
               title="Remember Me"

@@ -29,7 +29,9 @@ export function InputFieldRow({
       ? cgiName
       : `${prefix}${prefix ? "__" : ""}${fullName}`;
   const describedBy = text ? `text-${name}`: `label-${name}`;
-  const error = useComputed(() => errors?.value[name]);
+  const errorSig = useComputed(() => errors?.value[name]);
+  const error = errors ? errorSig : undefined;
+
   return (
     <FormRow name={name} label={title} text={text} layout={layout} error={error} {...props}>
       <Input

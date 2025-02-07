@@ -68,7 +68,7 @@ export function Input({
   const disabled = useComputed<boolean>(() => !!disabledFields[name]);
   const inputClass = useComputed<string>(() => {
     const formCls = type === "checkbox" ? "form-check-input" : type === "select" ? "form-select" : "form-control";
-    const err = error.value ? " is-invalid" : " is-valid";
+    const err = error ? (error.value ? " is-invalid" : " is-valid") : "";
     return `${formCls}${err} ${className}`;
   });
 
