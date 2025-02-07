@@ -206,7 +206,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <select
                     aria-describedby="text-manifest"
-                    class="form-select is-valid "
+                    class="form-select "
                     id="model-manifest"
                     name="manifest"
                     title="Manifest"
@@ -285,7 +285,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <select
                     aria-describedby="text-stream"
-                    class="form-select is-valid "
+                    class="form-select "
                     id="model-stream"
                     name="stream"
                     title="Stream"
@@ -338,7 +338,7 @@ exports[`HomePage > matches snapshot 1`] = `
                   class="col-5"
                 >
                   <div
-                    class="form-control is-valid "
+                    class="form-control "
                     data-testid="msi-drms"
                   >
                     <div
@@ -417,7 +417,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="text-abr"
-                    class="form-check-input is-valid "
+                    class="form-check-input "
                     id="model-abr"
                     name="abr"
                     title="Adaptive bitrate"
@@ -450,7 +450,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <select
                     aria-describedby="text-acodec"
-                    class="form-select is-valid "
+                    class="form-select "
                     id="model-acodec"
                     name="acodec"
                     title="Audio Codec"
@@ -499,7 +499,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <select
                     aria-describedby="text-events"
-                    class="form-select is-valid "
+                    class="form-select "
                     id="model-events"
                     name="events"
                     title="DASH events"
@@ -548,7 +548,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="text-timeline"
-                    class="form-check-input is-valid "
+                    class="form-check-input "
                     id="model-timeline"
                     name="timeline"
                     title="Segment timeline"
@@ -581,7 +581,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <select
                     aria-describedby="text-time"
-                    class="form-select is-valid "
+                    class="form-select "
                     id="model-time"
                     name="time"
                     title="UTC timing method"
@@ -655,7 +655,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <select
                     aria-describedby="text-player"
-                    class="form-select is-valid "
+                    class="form-select "
                     id="model-player"
                     name="player"
                     title="Video Player"
@@ -727,7 +727,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="text-ad_audio"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-ad_audio"
                     name="ad_audio"
                     title="Audio Description"
@@ -760,7 +760,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="text-start"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-start"
                     list="list-start"
                     name="start"
@@ -823,7 +823,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <select
                     aria-describedby="text-bugs"
-                    class="form-select is-valid "
+                    class="form-select "
                     id="model-bugs"
                     name="bugs"
                     title="Bug compatibility"
@@ -867,7 +867,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="text-drift"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-drift"
                     name="drift"
                     title="Clock drift"
@@ -900,7 +900,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="text-leeway"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-leeway"
                     list="list-leeway"
                     name="leeway"
@@ -953,7 +953,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="text-main_audio"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-main_audio"
                     name="main_audio"
                     title="Main audio track"
@@ -986,7 +986,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="text-main_text"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-main_text"
                     name="main_text"
                     title="Main text track"
@@ -1019,7 +1019,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="text-mup"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-mup"
                     list="list-mup"
                     name="mup"
@@ -1077,7 +1077,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <select
                     aria-describedby="text-ntp_servers"
-                    class="form-select is-valid "
+                    class="form-select "
                     id="model-ntp_servers"
                     name="ntp_servers"
                     title="NTP time servers"
@@ -1126,7 +1126,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <select
                     aria-describedby="text-tcodec"
-                    class="form-select is-valid "
+                    class="form-select "
                     id="model-tcodec"
                     name="tcodec"
                     title="Text Codec"
@@ -1170,7 +1170,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="text-tlang"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-tlang"
                     name="tlang"
                     title="Text Language"
@@ -1203,7 +1203,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="text-base"
-                    class="form-check-input is-valid "
+                    class="form-check-input "
                     id="model-base"
                     name="base"
                     title="Use BaseURLs"
@@ -1236,7 +1236,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="text-patch"
-                    class="form-check-input is-valid "
+                    class="form-check-input "
                     id="model-patch"
                     name="patch"
                     title="Use MPD patches"
@@ -1269,7 +1269,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="text-depth"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-depth"
                     list="list-depth"
                     name="depth"
@@ -1340,7 +1340,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="text-clearkey__la_url"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-clearkey__la_url"
                     name="clearkey__la_url"
                     title="Clearkey LA_URL"
@@ -1373,7 +1373,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <select
                     aria-describedby="text-clearkey__drmloc"
-                    class="form-select is-valid "
+                    class="form-select "
                     id="model-clearkey__drmloc"
                     name="clearkey__drmloc"
                     title="Clearkey location"
@@ -1465,7 +1465,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="text-marlin__la_url"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-marlin__la_url"
                     name="marlin__la_url"
                     title="Marlin LA_URL"
@@ -1498,7 +1498,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <select
                     aria-describedby="text-marlin__drmloc"
-                    class="form-select is-valid "
+                    class="form-select "
                     id="model-marlin__drmloc"
                     name="marlin__drmloc"
                     title="Marlin location"
@@ -1590,7 +1590,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="label-ping__count"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-ping__count"
                     name="ping__count"
                     title="Ping count"
@@ -1617,7 +1617,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="label-ping__duration"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-ping__duration"
                     name="ping__duration"
                     title="Ping duration"
@@ -1644,7 +1644,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="label-ping__inband"
-                    class="form-check-input is-valid "
+                    class="form-check-input "
                     id="model-ping__inband"
                     name="ping__inband"
                     title="Ping inband"
@@ -1671,7 +1671,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="label-ping__interval"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-ping__interval"
                     name="ping__interval"
                     title="Ping interval"
@@ -1698,7 +1698,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="label-ping__start"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-ping__start"
                     name="ping__start"
                     title="Ping start"
@@ -1725,7 +1725,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="label-ping__timescale"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-ping__timescale"
                     name="ping__timescale"
                     title="Ping timescale"
@@ -1752,7 +1752,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="label-ping__value"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-ping__value"
                     name="ping__value"
                     title="Ping value"
@@ -1779,7 +1779,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="label-ping__version"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-ping__version"
                     name="ping__version"
                     title="Ping version"
@@ -1829,7 +1829,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="text-playready__la_url"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-playready__la_url"
                     name="playready__la_url"
                     title="Playready LA_URL"
@@ -1862,7 +1862,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="text-playready__piff"
-                    class="form-check-input is-valid "
+                    class="form-check-input "
                     id="model-playready__piff"
                     name="playready__piff"
                     title="Playready PIFF"
@@ -1895,7 +1895,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <select
                     aria-describedby="text-playready__version"
-                    class="form-select is-valid "
+                    class="form-select "
                     id="model-playready__version"
                     name="playready__version"
                     title="Playready Version"
@@ -1954,7 +1954,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <select
                     aria-describedby="text-playready__drmloc"
-                    class="form-select is-valid "
+                    class="form-select "
                     id="model-playready__drmloc"
                     name="playready__drmloc"
                     title="Playready location"
@@ -2046,7 +2046,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="label-scte35__count"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-scte35__count"
                     name="scte35__count"
                     title="Scte35 count"
@@ -2073,7 +2073,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="label-scte35__duration"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-scte35__duration"
                     name="scte35__duration"
                     title="Scte35 duration"
@@ -2100,7 +2100,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="label-scte35__inband"
-                    class="form-check-input is-valid "
+                    class="form-check-input "
                     id="model-scte35__inband"
                     name="scte35__inband"
                     title="Scte35 inband"
@@ -2127,7 +2127,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="label-scte35__interval"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-scte35__interval"
                     name="scte35__interval"
                     title="Scte35 interval"
@@ -2154,7 +2154,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="label-scte35__program_id"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-scte35__program_id"
                     name="scte35__program_id"
                     title="Scte35 program_id"
@@ -2181,7 +2181,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="label-scte35__start"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-scte35__start"
                     name="scte35__start"
                     title="Scte35 start"
@@ -2208,7 +2208,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="label-scte35__timescale"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-scte35__timescale"
                     name="scte35__timescale"
                     title="Scte35 timescale"
@@ -2235,7 +2235,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="label-scte35__value"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-scte35__value"
                     name="scte35__value"
                     title="Scte35 value"
@@ -2262,7 +2262,7 @@ exports[`HomePage > matches snapshot 1`] = `
                 >
                   <input
                     aria-describedby="label-scte35__version"
-                    class="form-control is-valid "
+                    class="form-control "
                     id="model-scte35__version"
                     name="scte35__version"
                     title="Scte35 version"
