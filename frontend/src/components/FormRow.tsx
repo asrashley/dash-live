@@ -25,21 +25,27 @@ function ErrorFeedback({error}: ErrorFeedbackProps) {
 
 export interface FormRowProps {
   name: string;
-  label: string;
+  label?: string;
   children: ComponentChildren;
   className?: string;
+  inline?: boolean;
   text?: string;
   error?: ReadonlySignal<string|undefined>;
   layout?: number[];
 }
-export function FormRow({ className = "", name, layout, label, text, children, error }: FormRowProps) {
+export function FormRow({ className = "", name, layout, label, inline, text, children, error }: FormRowProps) {
   // eslint-disable-next-line prefer-const
   let [left, middle, right] = layout ?? [2, 7, 3];
+  const rowClassName = `row mb-2 form-group ${className}${inline ? " form-check-inline": ""}`;
+
+  if (!label) {
+    middle += left;
+  }
   if (!text) {
     middle += right;
   }
-  return <div className={`row mb-2 form-group ${className}`}>
-      <label id={`label-${name}`} className={`col-${left} col-form-label`} htmlFor={`model-${name}`}>{label}:</label>
+  return <div className={rowClassName}>
+      {label ? <label id={`label-${name}`} className={`col-${left} col-form-label`} htmlFor={`model-${name}`}>{label}:</label> : ""}
       <div className={`col-${middle}`}>{children}</div>
       <FormText id={`text-${name}`} text={text} className={`col-${right}`} />
       <ErrorFeedback error={error} />
