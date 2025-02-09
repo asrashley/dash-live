@@ -21,7 +21,7 @@ const blankState: InitialUserState = {
 };
 
 export function useWhoAmI(): UseWhoAmIHook {
-  const userInfo = useSignal<InitialUserState>(blankState);
+  const userInfo = useSignal<InitialUserState>(structuredClone(blankState));
   const user = useComputed<UserState>(() => ({
     ...userInfo.value,
     isAuthenticated: userInfo.value.pk !== undefined,

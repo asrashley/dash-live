@@ -3,7 +3,7 @@
 exports[`Input component > renders a MultiSelectInput 1`] = `
 <DocumentFragment>
   <div
-    class="form-control is-valid "
+    class="form-check form-switch is-valid "
     data-testid="msi-drms"
   >
     <div
@@ -100,6 +100,7 @@ exports[`Input component > renders a Radio button 1`] = `
     >
       <input
         class="form-check-input"
+        disabled=""
         id="radio-mode-odvod"
         name="mode"
         type="radio"
@@ -116,10 +117,69 @@ exports[`Input component > renders a Radio button 1`] = `
 </DocumentFragment>
 `;
 
-exports[`Input component > renders a Select input 1`] = `
+exports[`Input component > renders a Select input disabled=false 1`] = `
 <DocumentFragment>
   <select
     class="form-select is-valid "
+    id="model-manifest"
+    name="manifest"
+    title="Manifest"
+    type="select"
+  >
+    <option
+      value="hand_made.mpd"
+    >
+      Hand-made manifest
+    </option>
+    <option
+      value="manifest_a.mpd"
+    >
+      Vendor A live profile
+    </option>
+    <option
+      value="manifest_b.mpd"
+    >
+      Vendor B VOD using live profile
+    </option>
+    <option
+      value="manifest_e.mpd"
+    >
+      Vendor E live profile
+    </option>
+    <option
+      value="manifest_ef.mpd"
+    >
+      Vendor EF live profile
+    </option>
+    <option
+      value="manifest_h.mpd"
+    >
+      Vendor H live profile
+    </option>
+    <option
+      value="manifest_i.mpd"
+    >
+      Vendor I live profile
+    </option>
+    <option
+      value="manifest_n.mpd"
+    >
+      Provider N live profile
+    </option>
+    <option
+      value="manifest_vod_aiv.mpd"
+    >
+      AIV on demand profile
+    </option>
+  </select>
+</DocumentFragment>
+`;
+
+exports[`Input component > renders a Select input disabled=true 1`] = `
+<DocumentFragment>
+  <select
+    class="form-select is-valid "
+    disabled=""
     id="model-manifest"
     name="manifest"
     title="Manifest"
