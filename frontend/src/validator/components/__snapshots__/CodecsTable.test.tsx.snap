@@ -1,0 +1,92 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`CodecsTable component > matches snapshot 1`] = `
+<DocumentFragment>
+  <table
+    class="table table-striped manifest-codecs"
+  >
+    <thead>
+      <tr>
+        <th
+          class="codec-string"
+        >
+          Codec
+        </th>
+        <th
+          class="codec-detail"
+        >
+          Details
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td
+          class="codec-string"
+        >
+          avc3.640028
+        </td>
+        <td
+          class="codec-detail"
+        >
+          <div>
+            <p
+              class="codec-item fw-bold"
+            >
+              AVC/H.264
+            </p>
+            <p
+              class="codec-item"
+            >
+              profile_idc=100 constraint_set=0 level_idc=40
+            </p>
+            <p
+              class="codec-item"
+            >
+              profile=High (64)
+            </p>
+            <p
+              class="codec-item"
+            >
+              constraints=------
+            </p>
+            <p
+              class="codec-item"
+            >
+              level=4 (28)
+            </p>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td
+          class="codec-string"
+        >
+          mp4a.40.2
+        </td>
+        <td
+          class="codec-detail"
+        >
+          <div>
+            <p
+              class="codec-item fw-bold"
+            >
+              AAC
+            </p>
+            <p
+              class="codec-item"
+            >
+              MPEG-4 AAC (40)
+            </p>
+            <p
+              class="codec-item"
+            >
+              Low-Complexity AAC (2)
+            </p>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</DocumentFragment>
+`;

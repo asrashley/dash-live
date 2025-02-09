@@ -42,6 +42,10 @@ const ChangePasswordPage = lazy(
   () => import("./user/components/ChangePasswordPage"),
   LoadingSpinner
 );
+const ValidatorPage = lazy(
+  () => import("./validator/components/ValidatorPage"),
+  LoadingSpinner
+);
 
 export function AppRoutes() {
   return (
@@ -51,10 +55,11 @@ export function AppRoutes() {
       <Route component={EditStreamPage} path={uiRouteMap.editMps.route} />
       <Route component={LoginPage} path={uiRouteMap.login.route} />
       <Route component={CgiOptionsPage} path={uiRouteMap.cgiOptions.route} />
-      <Route component={HomePage} path={uiRouteMap.home.route} />
       <Route component={ListUsersPage} path={uiRouteMap.listUsers.route} />
       <Route component={EditUserPage} path={uiRouteMap.editUser.route} />
       <Route component={ChangePasswordPage} path={uiRouteMap.changePassword.route} />
+      <Route component={ValidatorPage} path={uiRouteMap.validator.route} />
+      <Route component={HomePage} path={uiRouteMap.home.route} />
       <Route path="*" component={PageNotFound} />
     </Switch>
   );

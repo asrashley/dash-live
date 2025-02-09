@@ -1,0 +1,30 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`LogEntriesCard component > matches snapshot 1`] = `
+<DocumentFragment>
+  <div
+    class="card results"
+  >
+    <p
+      class="info"
+    >
+      Prefetching media files required before validation can start
+    </p>
+    <p
+      class="info"
+    >
+      Starting stream validation...
+    </p>
+    <p
+      class="info"
+    >
+      Prefetching media files required before validation can start
+    </p>
+    <p
+      class="info"
+    >
+      Validation complete after 11.0 seconds
+    </p>
+  </div>
+</DocumentFragment>
+`;
