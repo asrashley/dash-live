@@ -58,8 +58,10 @@ describe("Input component", () => {
     data.value = {
         mode: "vod",
     };
-    disabledFields['mode__odvod'] = true;
-    const { getAllBySelector, getBySelector, asFragment } = renderWithProviders(
+    disabledFields.value = {
+      mode__odvod: true,
+    };
+    const { getAllBySelector, getBySelector, getByLabelText, asFragment } = renderWithProviders(
       <Input {...props} />
     );
     const elts = getAllBySelector('input[type="radio"]');
@@ -72,10 +74,13 @@ describe("Input component", () => {
       const label = getBySelector(`label[for="radio-mode-${opt.value}"]`);
       expect(label.innerHTML).toEqual(opt.title);
     });
+    const opt = getByLabelText(playbackMode.options[2].title) as HTMLInputElement;
+    expect(opt.value).toEqual('odvod');
+    expect(opt.disabled).toEqual(true);
     expect(asFragment()).toMatchSnapshot();
   });
 
-  test('renders a Select input', async () => {
+  test.each([true, false])('renders a Select input disabled=%s', async (disabled: boolean) => {
     const user = userEvent.setup();
     const names = [...Object.keys(allManifests)];
     names.sort();
@@ -105,6 +110,9 @@ describe("Input component", () => {
       data.value = {
         manifest: names[0],
       };
+      disabledFields.value = {
+        manifest: disabled,
+      };
       const { getAllBySelector, getBySelector, asFragment } = renderWithProviders(
         <Input {...props} />
       );
@@ -115,10 +123,15 @@ describe("Input component", () => {
         expect(elt.value).toEqual(opt.value);
         expect(elt.innerHTML).toEqual(opt.title);
       });
-      const input = getBySelector('#model-manifest');
+      const input = getBySelector('#model-manifest') as HTMLSelectElement;
+      expect(input.disabled).toEqual(disabled);
       await user.selectOptions(input, [names[2]]);
-      expect(setValue).toHaveBeenCalledTimes(1);
-      expect(setValue).toHaveBeenCalledWith('manifest', names[2]);
+      if (disabled) {
+        expect(setValue).not.toHaveBeenCalled();
+      } else {
+        expect(setValue).toHaveBeenCalledTimes(1);
+        expect(setValue).toHaveBeenCalledWith('manifest', names[2]);
+      }
       expect(asFragment()).toMatchSnapshot();
     });
 
