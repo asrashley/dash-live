@@ -1,0 +1,134 @@
+#validator {
+
+  #manifest-form {
+    margin: 2em 1em;
+    padding: 1em;
+
+    .form-check-inline {
+        margin: 0;
+        padding-left: 0.75em;
+        width: 32%;
+
+        .form-check-input {
+            margin-left: 0;
+            margin-right: 1em;
+        }
+    }
+    .btn {
+        margin-right: 1em;
+    }
+  }
+
+  .progress {
+    height: 4.5em;
+
+    .progress-bar {
+      height: 2.5em;
+    }
+    .progress-text {
+        padding: 0 1em;
+    }
+  }
+
+  #manifest-text {
+      @manifestFontSize: 0.9rem;
+
+      font-family: SFMono-Regular, Consolas, "Liberation Mono", monospace;
+      font-size: @manifestFontSize;
+      margin: 1em 0;
+      overflow-x: scroll;
+
+      .manifest-line {
+          background-color: #eee;
+          line-height: 1rem;
+          width: 150em;
+          &:nth-child(2n) {
+              background-color: #ddd;
+          }
+          .text {
+              overflow: inherit;
+          }
+      }
+
+      .line-num {
+          border-right: 1px solid #555;
+          display: inline-block;
+          font-size: @manifestFontSize;
+          padding-right: 0.5em;
+          text-align: right;
+          width: 3em;
+          vertical-align: middle;
+      }
+      .text {
+          display: inline-block;
+          font-size: @manifestFontSize;
+          line-height: @manifestFontSize;
+          padding-left: 0.5em;
+          margin: 0;
+          vertical-align: bottom;
+      }
+      .error-text {
+          font-weight: normal;
+          margin-bottom: 0;
+          padding-left: 4em;
+          &:last-child {
+              margin-bottom: 1em;
+          }
+      }
+  }
+
+  .results {
+      background-color: rgba(210, 220, 230, 0.4);
+      font-size: 0.9rem;
+      height: 40em;
+      margin: 2em 0;
+      overflow-y: scroll;
+      padding: 0.5em 1em;
+      width: 70rem;
+       & > .info {
+        margin-bottom: 0;
+        padding: 0.1em 1em;
+       }
+  }
+
+  .manifest-errors {
+      max-width: 70em;
+      table-layout: fixed;
+
+      .lineno {
+          text-align: right;
+          width: 4em;
+      }
+      .clause {
+          text-align: center;
+          width: 6em;
+      }
+      .message {
+          width: 40em;
+      }
+      .source-location {
+          font-size: 95%;
+          width: 11em;
+      }
+  }
+
+  .manifest-codecs {
+      table-layout: fixed;
+      width: 45em;
+
+      .codec-string {
+          text-align: center;
+          vertical-align: middle;
+          width: 10em;
+      }
+      td.codec-string {
+          font-weight: bold;
+      }
+      .codec-detail {
+          width: 35em;
+          .codec-item {
+            margin: 0;
+          }
+      }
+  }
+}

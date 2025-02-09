@@ -12,9 +12,10 @@ import logging
 from logging.handlers import QueueHandler, QueueListener
 import tempfile
 import time
-from typing import Optional
+from typing import Optional, TypedDict
 
 import flask
+from flask_socketio import SocketIO
 
 from dashlive.utils.json_object import JsonObject
 from dashlive.management.populate import PopulateDatabase
@@ -31,6 +32,18 @@ from dashlive.server.asyncio_loop import asyncio_loop
 from dashlive.server.thread_pool import pool_executor
 
 from .ws_log_handler import WebsocketLogHandler
+
+class ValidatorSettings(TypedDict):
+    duration: int
+    encrypted: bool
+    manifest: str
+    media: bool
+    prefix: str
+    pretty: bool
+    save: bool
+    title: str
+    verbose: bool
+
 
 class ClientConnection(Progress):
     def __init__(self, sockio, session_id) -> None:
@@ -93,15 +106,8 @@ class ClientConnection(Progress):
     def aborted(self) -> bool:
         return self._aborted
 
-    def validate_cmd(self, data) -> None:
+    def validate_cmd(self, data: ValidatorSettings) -> None:
         self._aborted = False
-        for field in ['pretty', 'encrypted', 'media', 'save']:
-            data[field] = data.get(field, '').lower() == 'on'
-        if data.get('verbose', '').lower() == 'on':
-            data['verbose'] = 1
-        else:
-            data['verbose'] = 0
-        data['duration'] = int(data['duration'])
         self._aborted = False
         errs = {}
         if data['save']:
@@ -224,7 +230,9 @@ class ClientConnection(Progress):
 
 
 class WebsocketHandler:
-    def __init__(self, sockio) -> None:
+    sockio: SocketIO
+
+    def __init__(self, sockio: SocketIO) -> None:
         self.sockio = sockio
 
     def connect(self) -> None:

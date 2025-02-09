@@ -14,7 +14,6 @@ import urllib.error
 import urllib.parse
 
 import flask
-from flask_login import current_user
 
 from dashlive.server import manifests, models
 from dashlive.server.options.container import OptionsContainer
@@ -299,92 +298,6 @@ class VideoPlayer(HTMLHandlerBase):
             if licenseUrl:
                 context["source"] = f'{licenseUrl}#{context["source"]}'
         return flask.render_template("video.html", **context)
-
-
-class DashValidator(HTMLHandlerBase):
-    """
-    Responds with an HTML page that allows a manifest to be validated
-    """
-
-    def get(self):
-        context = self.create_context()
-        context["form"] = [
-            {
-                "name": "manifest",
-                "title": "Manifest to check",
-                "type": "url",
-                "required": True,
-                "placeholder": "... manifest URL ...",
-            },
-            {
-                "name": "duration",
-                "title": "Maximum duration",
-                "type": "number",
-                "text": "seconds",
-                "value": 30,
-                "min": 1,
-                "max": 3600,
-            },
-        ]
-        if current_user.has_permission(models.Group.MEDIA):
-            context["form"] += [
-                {
-                    "name": "prefix",
-                    "title": "Destination directory",
-                    "type": "text",
-                    "disabled": True,
-                    "pattern": r"[A-Za-z0-9]{3,31}",
-                    "text": "3 to 31 characters without any special characters",
-                    "minlength": 3,
-                    "maxlength": 31,
-                },
-                {
-                    "name": "title",
-                    "title": "Stream title",
-                    "type": "text",
-                    "disabled": True,
-                    "minlength": 3,
-                    "maxlength": 119,
-                },
-            ]
-        context["form"] += [
-            {
-                "name": "encrypted",
-                "title": "Stream is encrypted?",
-                "type": "checkbox",
-                "inline": True,
-            },
-            {
-                "name": "media",
-                "title": "Check media segments",
-                "type": "checkbox",
-                "inline": True,
-                "value": True,
-            },
-            {
-                "name": "verbose",
-                "title": "Verbose output",
-                "type": "checkbox",
-                "inline": True,
-            },
-            {
-                "name": "pretty",
-                "title": "Pretty print XML before validation",
-                "type": "checkbox",
-                "inline": True,
-                "newRow": True,
-            },
-        ]
-        if current_user.has_permission(models.Group.MEDIA):
-            context["form"].append(
-                {
-                    "name": "save",
-                    "title": "Add stream to this server?",
-                    "type": "checkbox",
-                    "inline": True,
-                }
-            )
-        return flask.render_template("validator.html", **context)
 
 
 def favicon() -> flask.Response:

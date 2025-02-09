@@ -338,7 +338,7 @@ exports[`HomePage > matches snapshot 1`] = `
                   class="col-5"
                 >
                   <div
-                    class="form-control "
+                    class="form-check form-switch "
                     data-testid="msi-drms"
                   >
                     <div
