@@ -14,8 +14,8 @@ import { InputProps } from '../types/InputProps';
 interface GetNameProps {
   cgiName: string;
   mode: FormRowMode;
-  shortName: string;
-  fullName: string;
+  shortName?: string;
+  fullName?: string;
   prefix?: string;
 }
 
@@ -24,12 +24,12 @@ function getName({ cgiName, mode, shortName, fullName, prefix }: GetNameProps): 
     case 'cgi':
       return cgiName;
     case 'shortName':
-      return shortName;
+      return shortName ?? cgiName;
     case 'fullName':
       if (prefix) {
-        return `${prefix}__${fullName}`;
+        return `${prefix}__${fullName ?? cgiName}`;
       }
-      return fullName;
+      return fullName ?? cgiName;
   }
 }
 
@@ -42,7 +42,7 @@ export function Input({
   shortName,
   fullName,
   prefix,
-  mode,
+  mode = "cgi",
   describedBy,
   data,
   disabledFields,
