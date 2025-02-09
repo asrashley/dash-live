@@ -1,29 +1,12 @@
-import { routeMap, uiRouteMap } from "@dashlive/routemap";
-import { Card } from "./Card";
+import { uiRouteMap } from "@dashlive/routemap";
+import { ErrorCard } from "./ErrorCard";
 
 export function PageNotFound() {
-  const imageSrc = routeMap.images.url({ filename: "sad-puppy-dog.svg" });
   return (
-    <Card
+    <ErrorCard
       id="page-not-found"
-      className="m-3"
       header="Sorry I don't know about this page"
     >
-      <div className="d-flex flex-row mb-3">
-        <div>
-          <img
-            src={imageSrc}
-            alt="Vector image of a dog looking sad"
-            className="not-found-img"
-          />
-          <a
-            className="fs-6 link-opacity-50"
-            href="https://www.wannapik.com/vectors/88"
-          >
-            Image designed by Wannapik
-          </a>
-        </div>
-        <div>
           <p className="fs-3">
             This page might have moved, or it might be a bug in this site.
           </p>
@@ -34,8 +17,6 @@ export function PageNotFound() {
             </a>
             .
           </p>
-        </div>
-      </div>
-    </Card>
+    </ErrorCard>
   );
 }
