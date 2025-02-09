@@ -29,7 +29,7 @@ const dateNow = new Date();
 
 const gitHash = getGitHash();
 
-export const commonConfig = ({ publicPath, tsConfigFile, devMode }) => ({
+export const commonConfig = ({ publicPath, tsConfigFile, devMode, serverPort = null }) => ({
   devtool: "source-map",
   entry: {
     main: "./frontend/src/main",
@@ -97,6 +97,7 @@ export const commonConfig = ({ publicPath, tsConfigFile, devMode }) => ({
     ...(devMode ? [] : [new MiniCssExtractPlugin()]),
     new webpack.DefinePlugin({
       _GIT_HASH_: JSON.stringify(gitHash),
+      _SERVER_PORT_: JSON.stringify(serverPort),
     }),
     new HtmlWebpackPlugin({
       filename: "index.html",

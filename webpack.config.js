@@ -7,6 +7,7 @@ const common = commonConfig({
   publicPath: "",
   tsConfigFile: "tsconfig.json",
   devMode: true,
+  serverPort,
 });
 
 export default {
@@ -33,7 +34,6 @@ export default {
           '/media/inspect',
           '/play',
           '/streams',
-          '/validate',
         ],
         target: `http://localhost:${serverPort}/`,
       },
