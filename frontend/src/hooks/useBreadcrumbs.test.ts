@@ -53,5 +53,25 @@ describe("useBreadCrumbs hook", () => {
         id: "crumb_2",
       },
     ]);
+
+    act(() => {
+      useLocationSpy.mockReturnValue(["/validate", setLocation]);
+      rerender();
+    });
+
+    expect(result.current.breadcrumbs).toEqual([
+      {
+        title: "Home",
+        active: false,
+        href: "/",
+        id: "crumb_0",
+      },
+      {
+        title: "validate",
+        active: true,
+        href: "/validate",
+        id: "crumb_1",
+      },
+    ]);
   });
 });

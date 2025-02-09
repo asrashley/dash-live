@@ -1,0 +1,80 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ManifestErrorsTable component > matches snapshot 1`] = `
+<DocumentFragment>
+  <table
+    class="table table-striped manifest-errors"
+  >
+    <thead>
+      <tr>
+        <th
+          class="lineno"
+        >
+          MPD line
+        </th>
+        <th
+          class="clause"
+        >
+          DASH clause
+        </th>
+        <th
+          class="message"
+        >
+          Error Details
+        </th>
+        <th
+          class="source-location"
+        >
+          Source code
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td
+          class="lineno"
+        >
+          20
+        </td>
+        <td
+          class="clause"
+        >
+          1.2.3
+        </td>
+        <td
+          class="message"
+        >
+          validator assertion message
+        </td>
+        <td
+          class="source-location"
+        >
+          period.py:345
+        </td>
+      </tr>
+      <tr>
+        <td
+          class="lineno"
+        >
+          120
+        </td>
+        <td
+          class="clause"
+        >
+          3.4.5
+        </td>
+        <td
+          class="message"
+        >
+          representation has an error
+        </td>
+        <td
+          class="source-location"
+        >
+          representation.py:123
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</DocumentFragment>
+`;

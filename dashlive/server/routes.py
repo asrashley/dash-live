@@ -222,10 +222,6 @@ routes: dict[str, Route] = {
         r'/streams/add',
         handler='streams.AddStream',
         title='Add stream'),
-    "validate-stream": Route(
-        r'/validate/',
-        handler='htmlpage.DashValidator',
-        title='DASH Validator'),
     "view-stream": Route(
         r'/stream/<int:spk>',
         handler='streams.EditStream',
@@ -360,6 +356,7 @@ ui_routes: dict[str, UiRoute] = {
     "list-mps": UiRoute(r'/multi-period-streams'),
     "list-users": UiRoute(r'/users'),
     "login": UiRoute(r'/login'),
+    "validator": UiRoute(r'/validate'),
 }
 
 for name in routes.keys():

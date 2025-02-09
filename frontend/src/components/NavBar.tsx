@@ -6,24 +6,25 @@ import { LoginLogoutLink } from "./LoginLogoutLink";
 import { NavItem } from "./NavItem";
 import { WhoAmIContext } from "../hooks/useWhoAmI";
 import { UserState } from "../types/UserState";
+import { uiRouteMap } from "@dashlive/routemap";
 
 export function createNavItems(user: ReadonlySignal<UserState>): NavBarItem[] {
   const navbar: NavBarItem[] = [
     {
-      className: "spa", href: "/", title: "Home"
+      className: "spa", href: uiRouteMap.home.url(), title: "Home"
     }, {
       className: "", href: "/streams", title: "Streams"
     }, {
-      className: "spa", href: "/multi-period-streams", title: "Multi-Period"
+      className: "spa", href: uiRouteMap.listMps.url(), title: "Multi-Period"
     }, {
-      className: "", href: "/validate/", title: "Validate"
+      className: "spa", href: uiRouteMap.validator.url(), title: "New Validate"
     }, {
       className: "", href: "/media/inspect", title: "Inspect"
     },
   ];
   if (user.value.permissions.admin) {
     navbar.push({
-      className: "spa", href: "/users", title: "Users"
+      className: "spa", href: uiRouteMap.listUsers.url(), title: "Users"
     });
   }
   return navbar;
@@ -54,11 +55,11 @@ export function NavBar() {
 
       <div className={navbarClassName} id="navbarSupportedContent">
         <ul className="navbar-nav flex-fill">
-          {items.value.map((item) => (
+        {items.value.map((item) => (
             <NavItem key={item.title} {...item} />
           ))}
           <LoginLogoutLink />
-        </ul>
+          </ul>
       </div>
     </nav>
   );
