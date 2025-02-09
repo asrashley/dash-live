@@ -8,12 +8,7 @@ import { StaticInputProps } from "../../types/StaticInputProps";
 import { SetValueFunc } from "../../types/SetValueFunc";
 import { InputFieldRow } from "../../components/InputFieldRow";
 
-type CgiFormInputItem = Omit<
-  StaticInputProps,
-  "fullName" | "shortName" | "prefix"
->;
-
-const fields: CgiFormInputItem[] = [
+const fields: StaticInputProps[] = [
   {
     name: "username",
     title: "Username",
@@ -75,9 +70,6 @@ export function EditUserForm({
     const result = fields.map((field) => {
       const rv: StaticInputProps = {
         ...field,
-        shortName: field.name,
-        fullName: field.name,
-        prefix: "",
       };
       if (newUser && field.type === "password") {
         rv.allowReveal = true;

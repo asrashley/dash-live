@@ -17,9 +17,10 @@ export function InputFieldRow({
   title,
   data,
   layout,
-  mode,
+  mode = "cgi",
   text,
   errors,
+  inline,
   ...props
 }: InputFieldRowProps) {
   const name: string =
@@ -33,7 +34,7 @@ export function InputFieldRow({
   const error = errors ? errorSig : undefined;
 
   return (
-    <FormRow name={name} label={title} text={text} layout={layout} error={error} {...props}>
+    <FormRow name={name} label={title} text={text} layout={layout} error={error} inline={inline} {...props}>
       <Input
         {...props}
         name={name}
