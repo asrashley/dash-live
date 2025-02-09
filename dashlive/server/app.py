@@ -195,7 +195,17 @@ def create_app(config: JsonObject | None = None,
             x_host=proxy_depth, x_prefix=proxy_depth
         )
     if wss:
-        socketio = SocketIO(app, async_mode='threading')
+        port: str = environ.get('SERVER_PORT', '5000')
+        cors_allowed_origins: list[str] = [
+            f'http://127.0.0.1:{port}',
+            f'http://localhost:{port}'
+        ]
+        if app.debug:
+            cors_allowed_origins.append('http://127.0.0.1:8765')
+            cors_allowed_origins.append('http://localhost:8765')
+        print('cors_allowed_origins', cors_allowed_origins)
+        socketio = SocketIO(
+            app, async_mode='threading', cors_allowed_origins=cors_allowed_origins)
         wss = WebsocketHandler(socketio)
         socketio.on_event('connect', wss.connect)
         socketio.on_event('disconnect', wss.disconnect)
