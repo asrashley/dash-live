@@ -20,7 +20,8 @@ describe("FormRow", () => {
     getByText(`${label}:`);
     getByText(text);
     const elt = getBySelector(".invalid-feedback") as HTMLElement;
-    expect(elt.style.display).toEqual("none");
+    expect(elt.classList.contains("d-none")).toEqual(true);
+    expect(elt.classList.contains("d-block")).toEqual(false);
     expect(asFragment()).toMatchSnapshot();
   });
 
@@ -33,7 +34,9 @@ describe("FormRow", () => {
     );
     getByText(`${label}:`);
     getByText(text);
-    getBySelector(".invalid-feedback");
+    const elt = getBySelector(".invalid-feedback");
+    expect(elt.classList.contains("d-none")).toEqual(false);
+    expect(elt.classList.contains("d-block")).toEqual(true);
     getByText(error)
     expect(asFragment()).toMatchSnapshot();
   });
