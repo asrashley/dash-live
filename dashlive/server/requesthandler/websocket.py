@@ -46,15 +46,24 @@ class ValidatorSettings(TypedDict):
 
 
 class ClientConnection(Progress):
-    def __init__(self, sockio, session_id) -> None:
+    _aborted: bool
+    dash_log: logging.Logger
+    last_pct: int = 0
+    listener: QueueListener
+    pool: ConcurrentWorkerPool
+    queue_handler: QueueHandler
+    session_id: str
+    tasks: set[Future]
+    tmpdir: Optional[tempfile.TemporaryDirectory] = None
+
+    def __init__(self, sockio, session_id: str) -> None:
         super().__init__()
         self.sockio = sockio
         self.session_id = session_id
         self.dash_log = logging.getLogger('DashValidator')
         self.dash_log.propagate = False
         self._aborted = False
-        self.tasks: set[Future] = set()
-        self.tmpdir: Optional[tempfile.TemporaryDirectory] = None
+        self.tasks = set()
         self.pool = ConcurrentWorkerPool(pool_executor)
         log_queue = queue.Queue(-1)
         self.queue_handler = QueueHandler(log_queue)
@@ -81,7 +90,7 @@ class ClientConnection(Progress):
         if not isinstance(data, dict):
             return
         try:
-            cmd = data['method']
+            cmd: str = data['method']
         except KeyError as err:
             self.sockio.emit('log', {
                 "level": "error",
@@ -101,14 +110,19 @@ class ClientConnection(Progress):
         self.sockio.emit(cmd, data, to=self.session_id)
 
     def send_progress(self, pct: float, text: str) -> None:
-        self.emit('progress', {'pct': round(pct), 'text': text})
+        self.last_pct = pct
+        self.emit('progress', {
+            'pct': round(pct),
+            'text': text,
+            'aborted': self._aborted,
+        })
 
     def aborted(self) -> bool:
         return self._aborted
 
     def validate_cmd(self, data: ValidatorSettings) -> None:
         self._aborted = False
-        self._aborted = False
+        self.last_pct = 0
         errs = {}
         if data['save']:
             if data['prefix'] == '':
@@ -135,18 +149,18 @@ class ClientConnection(Progress):
     def cancel_cmd(self, data) -> None:
         self.emit('log', {
             'level': 'info',
-            'text': 'Cancelled validation'
+            'text': 'Cancelling validation'
         })
         self._aborted = True
 
     def save_cmd(self, data) -> None:
-        self._aborted = False
         self.emit('log', {
             'level': 'info',
             'text': 'Creating stream'
         })
         del data['method']
-        self.save_stream_task(**data)
+        if not self._aborted:
+            self.save_stream_task(**data)
 
     async def dash_validator_task(
             self, method: str, manifest: str, upload_dir: str, pool: WorkerPool,
@@ -157,7 +171,7 @@ class ClientConnection(Progress):
                 'text': 'Saving stream already in progress'
             })
             return
-        start_time = time.time()
+        start_time: float = time.time()
         opts = ValidatorOptions(log=self.dash_log, progress=self, pool=pool, **kwargs)
         if opts.save:
             self.tmpdir = tempfile.TemporaryDirectory(dir=upload_dir)
@@ -183,12 +197,16 @@ class ClientConnection(Progress):
                 errs = [e.to_dict() for e in dv.get_errors()]
                 self.dash_log.info('Found %d errors', len(errs))
                 self.emit('manifest-errors', errs)
-            duration = round(time.time() - start_time)
-            txt = f'DASH validation complete after {duration:#5.1f} seconds'
+            duration: int = round(time.time() - start_time)
+            if self._aborted:
+                txt: str = f'Validation aborted after {duration:#5.1f} seconds'
+            else:
+                txt = f'Validation complete after {duration:#5.1f} seconds'
             self.dash_log.info(txt)
             self.emit('progress', {
-                'pct': 100,
+                'pct': self.last_pct if self._aborted else 100,
                 'text': txt,
+                'aborted': self._aborted,
                 'finished': True
             })
             if opts.save:
@@ -199,8 +217,17 @@ class ClientConnection(Progress):
                 })
         except Exception as err:
             self.dash_log.error('%s', err)
+            self.emit('log', {
+                'level': 'error',
+                'text': f'Exception during validation: {err}'
+            })
+        self.emit('finished', {
+            'startTime': int(start_time * 1000),
+            'endTime': int(time.time() * 1000),
+            'aborted': self._aborted,
+        })
 
-    def save_stream_task(self, filename: str, prefix: str, title: str):
+    def save_stream_task(self, filename: str, prefix: str, title: str) -> None:
         bda = BackendDatabaseAccess()
         pd = PopulateDatabase(bda)
         bda.log = self.dash_log
@@ -212,38 +239,47 @@ class ClientConnection(Progress):
         self.emit('progress', {
             'pct': 100,
             'text': f'Added stream "{title}" ({prefix}) to this server',
+            'aborted': self._aborted,
             'finished': True
         })
 
     def join_finished_tasks(self) -> None:
         done: set[Future] = set()
         for tsk in self.tasks:
-            if not tsk.done():
+            if tsk.done():
                 done.add(tsk)
         for tsk in done:
             self.tasks.remove(tsk)
         for tsk in done:
             try:
-                tsk.result()
+                tsk.result(0.1)
             except Exception as err:
                 self.dash_log.error('Validation error: %s', err)
 
 
 class WebsocketHandler:
     sockio: SocketIO
+    clients: dict[str, ClientConnection]
 
     def __init__(self, sockio: SocketIO) -> None:
         self.sockio = sockio
+        self.clients = {}
 
     def connect(self) -> None:
         logging.debug('WebSocket connection %s', flask.request.sid)
+        con = ClientConnection(self.sockio, flask.request.sid)
+        self.clients[flask.request.sid] = con
 
     def disconnect(self) -> None:
+        try:
+            con: ClientConnection = self.clients[flask.request.sid]
+            con.shutdown()
+            del self.clients[flask.request.sid]
+        except KeyError:
+            pass
         if 'websock_connection' in flask.g:
             if flask.g.websock_connection.session_id == flask.request.sid:
-                con = flask.g.pop('websock_connection', None)
-                if con:
-                    con.shutdown()
+                flask.g.pop('websock_connection', None)
 
     def event_handler(self, data: JsonObject) -> None:
         if 'method' not in data:
@@ -253,6 +289,9 @@ class WebsocketHandler:
             }, to=flask.request.sid)
             return
         if 'websock_connection' not in flask.g:
-            flask.g.websock_connection = ClientConnection(
-                self.sockio, flask.request.sid)
+            try:
+                con: ClientConnection = self.clients[flask.request.sid]
+                flask.g.websock_connection = con
+            except KeyError:
+                return
         flask.g.websock_connection.event_handler(data)
