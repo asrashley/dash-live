@@ -74,7 +74,8 @@ class InitSegment(DashElement):
     async def load(self) -> bool:
         if self.atoms is not None and self.dash_rep is not None:
             return True
-
+        if self.progress.aborted():
+            return False
         if not self.elt.check_not_none(self.url, msg='URL of init segment is missing'):
             return False
         if self.seg_range is not None:
@@ -88,6 +89,8 @@ class InitSegment(DashElement):
         if not self.elt.check_equal(
                 response.status_code, expected_status,
                 msg=f'Failed to load init segment: {response.status_code}: {self.url}'):
+            return False
+        if self.progress.aborted():
             return False
         try:
             async with self.pool.group(self.progress) as tg:
