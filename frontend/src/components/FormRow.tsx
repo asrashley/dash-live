@@ -17,10 +17,8 @@ interface ErrorFeedbackProps {
   error?: ReadonlySignal<string|undefined>;
 }
 function ErrorFeedback({error}: ErrorFeedbackProps) {
-  const style = useComputed(() => ({
-    display: error?.value ? "block": "none",
-  }));
-  return <div className="invalid-feedback" style={style}>{error}</div>;
+  const className = useComputed<string>(() => `invalid-feedback ${error?.value ? "d-block": "d-none"}`);
+  return <div className={className}>{error}</div>;
 }
 
 export interface FormRowProps {

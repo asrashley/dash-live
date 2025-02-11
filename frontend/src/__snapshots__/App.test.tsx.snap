@@ -2809,8 +2809,7 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
               Unique name for this stream
             </div>
             <div
-              class="invalid-feedback"
-              style=""
+              class="invalid-feedback d-none"
             />
           </div>
           <div
@@ -2840,8 +2839,7 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
               Title for this stream
             </div>
             <div
-              class="invalid-feedback"
-              style=""
+              class="invalid-feedback d-none"
             />
           </div>
           <div
@@ -2895,8 +2893,7 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
               </div>
             </div>
             <div
-              class="invalid-feedback"
-              style="display: none;"
+              class="invalid-feedback d-none"
             />
           </div>
           <div
@@ -3203,8 +3200,7 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
               </div>
             </div>
             <div
-              class="invalid-feedback"
-              style="display: none;"
+              class="invalid-feedback d-none"
             />
           </div>
           <div
@@ -3605,8 +3601,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     </div>
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -3684,8 +3679,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Manifest template to use
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -3738,8 +3732,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Stream to play
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -3816,8 +3809,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     DRM systems to enable for encrypted AdaptationSets
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -3849,8 +3841,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Enable or disable adaptive bitrate
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -3898,8 +3889,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Filter audio adaptation sets by audio codec (AAC or E-AC3)
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -3947,8 +3937,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     A comma separated list of event formats
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -3980,8 +3969,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Enable or disable segment timeline
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -4054,8 +4042,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Select UTCTiming element method.
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -4103,8 +4090,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Native or MSE playback control
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
               </div>
@@ -4159,8 +4145,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Select audio AdaptationSet that will be marked as a broadcast-mix audio description track
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -4222,8 +4207,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Sets availabilityStartTime for live streams
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -4266,8 +4250,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Produce a stream with known bugs
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -4299,8 +4282,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Number of seconds of delay to add to wall clock time
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -4352,8 +4334,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Number of seconds after a fragment has expired before it becomes unavailable
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -4385,8 +4366,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Select audio AdaptationSet that will be given the "main" role
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -4418,8 +4398,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Select text AdaptationSet that will be given the "main" role
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -4476,8 +4455,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Specify minimumUpdatePeriod (in seconds) or -1 to disable updates
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -4525,8 +4503,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     List of servers to use for NTP requests
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -4569,8 +4546,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Filter text adaptation sets by text codec
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -4602,8 +4578,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Filter text adaptation sets by language
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -4635,8 +4610,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Include a BaseURL element?
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -4668,8 +4642,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Use MPD patches for live streams
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -4716,8 +4689,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Number of seconds for timeShiftBufferDepth
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
               </div>
@@ -4772,8 +4744,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Override the Clearkey license URL field
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -4841,8 +4812,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Location to place DRM data
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
               </div>
@@ -4897,8 +4867,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Override the Marlin S-URL field
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -4966,8 +4935,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Location to place DRM data
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
               </div>
@@ -5016,8 +4984,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -5043,8 +5010,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -5070,8 +5036,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -5097,8 +5062,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -5124,8 +5088,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -5151,8 +5114,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -5178,8 +5140,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -5205,8 +5166,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
               </div>
@@ -5261,8 +5221,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Override the Playready LA_URL field
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -5294,8 +5253,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Include PIFF sample encryption data
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -5353,8 +5311,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Set the PlayReady version compatibility for this stream
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -5422,8 +5379,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     Location to place DRM data
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
               </div>
@@ -5472,8 +5428,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -5499,8 +5454,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -5526,8 +5480,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -5553,8 +5506,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -5580,8 +5532,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -5607,8 +5558,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -5634,8 +5584,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -5661,8 +5610,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -5688,8 +5636,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
               </div>
@@ -6053,8 +6000,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     </div>
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -6132,8 +6078,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Manifest template to use
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -6186,8 +6131,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Stream to play
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -6264,8 +6208,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     DRM systems to enable for encrypted AdaptationSets
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -6297,8 +6240,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Enable or disable adaptive bitrate
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -6346,8 +6288,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Filter audio adaptation sets by audio codec (AAC or E-AC3)
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -6395,8 +6336,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     A comma separated list of event formats
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -6428,8 +6368,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Enable or disable segment timeline
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -6502,8 +6441,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Select UTCTiming element method.
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -6551,8 +6489,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Native or MSE playback control
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
               </div>
@@ -6607,8 +6544,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Select audio AdaptationSet that will be marked as a broadcast-mix audio description track
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -6670,8 +6606,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Sets availabilityStartTime for live streams
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -6714,8 +6649,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Produce a stream with known bugs
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -6747,8 +6681,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Number of seconds of delay to add to wall clock time
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -6800,8 +6733,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Number of seconds after a fragment has expired before it becomes unavailable
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -6833,8 +6765,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Select audio AdaptationSet that will be given the "main" role
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -6866,8 +6797,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Select text AdaptationSet that will be given the "main" role
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -6924,8 +6854,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Specify minimumUpdatePeriod (in seconds) or -1 to disable updates
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -6973,8 +6902,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     List of servers to use for NTP requests
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -7017,8 +6945,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Filter text adaptation sets by text codec
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -7050,8 +6977,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Filter text adaptation sets by language
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -7083,8 +7009,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Include a BaseURL element?
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -7116,8 +7041,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Use MPD patches for live streams
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -7164,8 +7088,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Number of seconds for timeShiftBufferDepth
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
               </div>
@@ -7220,8 +7143,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Override the Clearkey license URL field
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -7289,8 +7211,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Location to place DRM data
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
               </div>
@@ -7345,8 +7266,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Override the Marlin S-URL field
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -7414,8 +7334,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Location to place DRM data
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
               </div>
@@ -7464,8 +7383,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -7491,8 +7409,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -7518,8 +7435,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -7545,8 +7461,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -7572,8 +7487,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -7599,8 +7513,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -7626,8 +7539,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -7653,8 +7565,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
               </div>
@@ -7709,8 +7620,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Override the Playready LA_URL field
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -7742,8 +7652,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Include PIFF sample encryption data
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -7801,8 +7710,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Set the PlayReady version compatibility for this stream
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -7870,8 +7778,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     Location to place DRM data
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
               </div>
@@ -7920,8 +7827,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -7947,8 +7853,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -7974,8 +7879,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -8001,8 +7905,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -8028,8 +7931,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -8055,8 +7957,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -8082,8 +7983,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -8109,8 +8009,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
                 <div
@@ -8136,8 +8035,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                     />
                   </div>
                   <div
-                    class="invalid-feedback"
-                    style="display: none;"
+                    class="invalid-feedback d-none"
                   />
                 </div>
               </div>
