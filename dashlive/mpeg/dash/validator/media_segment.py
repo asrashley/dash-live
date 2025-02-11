@@ -92,7 +92,7 @@ class MediaSegment(DashElement):
         self.progress.inc()
 
     async def validate_segment(self) -> None:
-        now = self.mpd.now()
+        now: datetime.datetime = self.mpd.now()
         if self.availability_start_time and self.availability_start_time > now:
             log = ''
             if self.expected_seg_num:
@@ -104,7 +104,7 @@ class MediaSegment(DashElement):
                 self.name, log, self.availability_start_time)
             return
         self.validated = True
-        discard_before = now + datetime.timedelta(seconds=2)
+        discard_before: datetime.datetime = now + datetime.timedelta(seconds=2)
         if self.availability_end_time and self.availability_end_time < discard_before:
             self.log.debug(
                 '%s: Segment is no longer available. Expired at %s',
@@ -117,6 +117,8 @@ class MediaSegment(DashElement):
         response = await self.http.get(self.url, headers=headers)
         # self.log.debug('Status: %d  Length: %s', response.status_code,
         #               response.headers['Content-Length'])
+        if self.progress.aborted():
+            return
         if self.seg_range is None:
             if not self.elt.check_equal(
                     response.status_code, 200,
