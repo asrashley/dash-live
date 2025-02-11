@@ -123,8 +123,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Enable or disable adaptive bitrate
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -172,8 +171,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Filter audio adaptation sets by audio codec (AAC or E-AC3)
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -221,8 +219,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             A comma separated list of event formats
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -254,8 +251,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Enable or disable segment timeline
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -328,8 +324,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Select UTCTiming element method.
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -377,8 +372,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Native or MSE playback control
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
       </div>
@@ -417,8 +411,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Select audio AdaptationSet that will be marked as a broadcast-mix audio description track
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -480,8 +473,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Sets availabilityStartTime for live streams
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -524,8 +516,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Produce a stream with known bugs
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -557,8 +548,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Number of seconds of delay to add to wall clock time
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -610,8 +600,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Number of seconds after a fragment has expired before it becomes unavailable
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -643,8 +632,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Select audio AdaptationSet that will be given the "main" role
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -676,8 +664,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Select text AdaptationSet that will be given the "main" role
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -734,8 +721,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Specify minimumUpdatePeriod (in seconds) or -1 to disable updates
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -783,8 +769,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             List of servers to use for NTP requests
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -827,8 +812,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Filter text adaptation sets by text codec
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -860,8 +844,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Filter text adaptation sets by language
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -893,8 +876,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Include a BaseURL element?
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -926,8 +908,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Use MPD patches for live streams
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -974,8 +955,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Number of seconds for timeShiftBufferDepth
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
       </div>
@@ -1014,8 +994,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Enable Clearkey DRM support?
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -1047,8 +1026,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Override the Clearkey license URL field
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -1116,8 +1094,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Location to place DRM data
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
       </div>
@@ -1156,8 +1133,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Enable Marlin DRM support?
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -1189,8 +1165,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Override the Marlin S-URL field
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -1258,8 +1233,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Location to place DRM data
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
       </div>
@@ -1292,8 +1266,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -1319,8 +1292,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -1346,8 +1318,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -1373,8 +1344,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -1400,8 +1370,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -1427,8 +1396,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -1454,8 +1422,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -1481,8 +1448,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
       </div>
@@ -1521,8 +1487,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Enable Playready DRM support?
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -1554,8 +1519,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Override the Playready LA_URL field
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -1587,8 +1551,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Include PIFF sample encryption data
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -1646,8 +1609,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Set the PlayReady version compatibility for this stream
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -1715,8 +1677,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             Location to place DRM data
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
       </div>
@@ -1749,8 +1710,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -1776,8 +1736,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -1803,8 +1762,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -1830,8 +1788,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -1857,8 +1814,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -1884,8 +1840,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -1911,8 +1866,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -1938,8 +1892,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -1965,8 +1918,7 @@ exports[`TabFormGroup > matches snapshot when using mode cgi 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
       </div>
@@ -2098,8 +2050,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Enable or disable adaptive bitrate
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -2147,8 +2098,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Filter audio adaptation sets by audio codec (AAC or E-AC3)
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -2196,8 +2146,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             A comma separated list of event formats
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -2229,8 +2178,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Enable or disable segment timeline
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -2303,8 +2251,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Select UTCTiming element method.
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -2352,8 +2299,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Native or MSE playback control
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
       </div>
@@ -2392,8 +2338,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Select audio AdaptationSet that will be marked as a broadcast-mix audio description track
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -2455,8 +2400,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Sets availabilityStartTime for live streams
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -2499,8 +2443,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Produce a stream with known bugs
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -2532,8 +2475,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Number of seconds of delay to add to wall clock time
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -2585,8 +2527,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Number of seconds after a fragment has expired before it becomes unavailable
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -2618,8 +2559,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Select audio AdaptationSet that will be given the "main" role
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -2651,8 +2591,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Select text AdaptationSet that will be given the "main" role
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -2709,8 +2648,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Specify minimumUpdatePeriod (in seconds) or -1 to disable updates
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -2758,8 +2696,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             List of servers to use for NTP requests
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -2802,8 +2739,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Filter text adaptation sets by text codec
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -2835,8 +2771,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Filter text adaptation sets by language
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -2868,8 +2803,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Include a BaseURL element?
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -2901,8 +2835,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Use MPD patches for live streams
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -2949,8 +2882,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Number of seconds for timeShiftBufferDepth
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
       </div>
@@ -2989,8 +2921,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Enable Clearkey DRM support?
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -3022,8 +2953,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Override the Clearkey license URL field
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -3091,8 +3021,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Location to place DRM data
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
       </div>
@@ -3131,8 +3060,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Enable Marlin DRM support?
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -3164,8 +3092,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Override the Marlin S-URL field
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -3233,8 +3160,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Location to place DRM data
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
       </div>
@@ -3267,8 +3193,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -3294,8 +3219,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -3321,8 +3245,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -3348,8 +3271,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -3375,8 +3297,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -3402,8 +3323,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -3429,8 +3349,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -3456,8 +3375,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
       </div>
@@ -3496,8 +3414,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Enable Playready DRM support?
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -3529,8 +3446,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Override the Playready LA_URL field
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -3562,8 +3478,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Include PIFF sample encryption data
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -3621,8 +3536,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Set the PlayReady version compatibility for this stream
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -3690,8 +3604,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             Location to place DRM data
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
       </div>
@@ -3724,8 +3637,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -3751,8 +3663,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -3778,8 +3689,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -3805,8 +3715,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -3832,8 +3741,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -3859,8 +3767,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -3886,8 +3793,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -3913,8 +3819,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -3940,8 +3845,7 @@ exports[`TabFormGroup > matches snapshot when using mode fullName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
       </div>
@@ -4073,8 +3977,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Enable or disable adaptive bitrate
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -4122,8 +4025,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Filter audio adaptation sets by audio codec (AAC or E-AC3)
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -4171,8 +4073,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             A comma separated list of event formats
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -4204,8 +4105,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Enable or disable segment timeline
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -4278,8 +4178,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Select UTCTiming element method.
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -4327,8 +4226,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Native or MSE playback control
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
       </div>
@@ -4367,8 +4265,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Select audio AdaptationSet that will be marked as a broadcast-mix audio description track
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -4430,8 +4327,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Sets availabilityStartTime for live streams
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -4474,8 +4370,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Produce a stream with known bugs
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -4507,8 +4402,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Number of seconds of delay to add to wall clock time
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -4560,8 +4454,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Number of seconds after a fragment has expired before it becomes unavailable
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -4593,8 +4486,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Select audio AdaptationSet that will be given the "main" role
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -4626,8 +4518,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Select text AdaptationSet that will be given the "main" role
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -4684,8 +4575,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Specify minimumUpdatePeriod (in seconds) or -1 to disable updates
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -4733,8 +4623,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             List of servers to use for NTP requests
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -4777,8 +4666,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Filter text adaptation sets by text codec
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -4810,8 +4698,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Filter text adaptation sets by language
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -4843,8 +4730,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Include a BaseURL element?
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -4876,8 +4762,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Use MPD patches for live streams
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -4924,8 +4809,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Number of seconds for timeShiftBufferDepth
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
       </div>
@@ -4964,8 +4848,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Enable Clearkey DRM support?
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -4997,8 +4880,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Override the Clearkey license URL field
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -5066,8 +4948,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Location to place DRM data
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
       </div>
@@ -5106,8 +4987,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Enable Marlin DRM support?
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -5139,8 +5019,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Override the Marlin S-URL field
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -5208,8 +5087,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Location to place DRM data
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
       </div>
@@ -5242,8 +5120,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -5269,8 +5146,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -5296,8 +5172,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -5323,8 +5198,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -5350,8 +5224,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -5377,8 +5250,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -5404,8 +5276,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -5431,8 +5302,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
       </div>
@@ -5471,8 +5341,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Enable Playready DRM support?
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -5504,8 +5373,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Override the Playready LA_URL field
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -5537,8 +5405,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Include PIFF sample encryption data
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -5596,8 +5463,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Set the PlayReady version compatibility for this stream
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -5665,8 +5531,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             Location to place DRM data
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
       </div>
@@ -5699,8 +5564,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -5726,8 +5590,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -5753,8 +5616,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -5780,8 +5642,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -5807,8 +5668,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -5834,8 +5694,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -5861,8 +5720,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -5888,8 +5746,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -5915,8 +5772,7 @@ exports[`TabFormGroup > matches snapshot when using mode shortName 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
       </div>

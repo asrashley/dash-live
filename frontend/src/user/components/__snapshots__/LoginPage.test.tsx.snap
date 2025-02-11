@@ -46,8 +46,7 @@ exports[`LoginPage component > matches snapshot 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -83,8 +82,7 @@ exports[`LoginPage component > matches snapshot 1`] = `
             </div>
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -110,8 +108,7 @@ exports[`LoginPage component > matches snapshot 1`] = `
             />
           </div>
           <div
-            class="invalid-feedback"
-            style="display: none;"
+            class="invalid-feedback d-none"
           />
         </div>
         <div>
