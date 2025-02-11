@@ -34,6 +34,7 @@ describe("main entry-point app", () => {
   let baseElement: HTMLDivElement;
   let user: UserModel;
   let userPromise: Promise<HttpRequestHandlerResponse>;
+  let manifestPromise: Promise<HttpRequestHandlerResponse>;
 
   beforeAll(() => {
     vi.stubGlobal('location', mockLocation);
@@ -58,6 +59,7 @@ describe("main entry-point app", () => {
     expect(app).not.toBeNull();
     baseElement = app as HTMLDivElement;
     userPromise = endpoint.addResponsePromise('get', routeMap.login.url());
+    manifestPromise = endpoint.addResponsePromise('get', routeMap.listManifests.url());
   });
 
   afterEach(() => {
@@ -74,10 +76,10 @@ describe("main entry-point app", () => {
       { baseElement }
     );
     await userPromise;
+    await manifestPromise;
     await findByText("Log Out");
     await findByText("Stream to play");
     await findByText("Video Player:");
-    await findByText("Play Big Buck Bunny");
     await findByText("Hand-made manifest");
     await findByText("/dash/vod/bbb/hand_made.mpd", { exact: false });
     expect(asFragment()).toMatchSnapshot();
@@ -90,8 +92,9 @@ describe("main entry-point app", () => {
       <App />,
       { baseElement }
     );
+    await manifestPromise;
     await findByText("Log In");
-    await findByText("Hand-made manifest");
+    await findByText("/dash/vod/bbb/hand_made.mpd");
     await findByText("Stream to play");
     await findByText("Video Player:");
     await findByText("Play Big Buck Bunny");
