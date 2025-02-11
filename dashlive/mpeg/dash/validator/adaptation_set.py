@@ -105,6 +105,8 @@ class AdaptationSet(RepresentationBaseType):
         return False not in results
 
     def finished(self) -> bool:
+        if self.progress.aborted():
+            return True
         if (
                 self.target_duration is not None and
                 self.target_duration.total_seconds() == 0):
