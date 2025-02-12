@@ -73,6 +73,7 @@ export default tseslint.config({
         ignore: [
           "^@dashlive/",
           "socket.io",
+          "codec-string",
           "^wouter-preact/memory-location",
           "^wouter-preact/use-browser-location",
         ],
