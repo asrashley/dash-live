@@ -2,54 +2,14 @@ import { signal } from "@preact/signals";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 
-import {
-  renderWithProviders,
-  RenderWithProvidersProps,
-  RenderWithProvidersResult,
-} from "../../test/renderWithProviders";
-import { ValidatorForm, ValidatorFormProps } from "./ValidatorForm";
+import { ValidatorForm } from "./ValidatorForm";
 import { ValidatorSettings } from "../types/ValidatorSettings";
 import { blankSettings } from "./ValidatorPage";
 import { act } from "@testing-library/preact";
 import { ValidatorState } from "../hooks/useValidatorWebsocket";
 import { mediaUser, normalUser } from "../../test/MockServer";
 import { InitialUserState } from "../../types/UserState";
-
-type ValidatorFormRenderResult = RenderWithProvidersResult & {
-  manifestElt: HTMLInputElement;
-  destinationElt: HTMLInputElement;
-  durationElt: HTMLInputElement;
-  encryptedElt: HTMLInputElement;
-  saveElt: HTMLInputElement;
-  titleElt: HTMLInputElement;
-  startBtn: HTMLButtonElement;
-  cancelBtn: HTMLButtonElement;
-};
-
-function renderForm(
-  uiProps: ValidatorFormProps,
-  renderProps: Partial<RenderWithProvidersProps> = {}
-): ValidatorFormRenderResult {
-  const renderRes = renderWithProviders(
-    <ValidatorForm {...uiProps} />,
-    renderProps
-  );
-  const { getByText, getByLabelText } = renderRes;
-
-  return {
-    ...renderRes,
-    manifestElt: getByLabelText("Manifest to check:") as HTMLInputElement,
-    durationElt: getByLabelText("Maximum duration:") as HTMLInputElement,
-    encryptedElt: getByLabelText("Stream is encrypted?") as HTMLInputElement,
-    destinationElt: getByLabelText(
-      "Destination directory:"
-    ) as HTMLInputElement,
-    titleElt: getByLabelText("Stream title:") as HTMLInputElement,
-    saveElt: getByLabelText("Add stream to this server?") as HTMLInputElement,
-    startBtn: getByText("Validate DASH stream") as HTMLButtonElement,
-    cancelBtn: getByText("Cancel") as HTMLButtonElement,
-  } as unknown as ValidatorFormRenderResult;
-}
+import { renderWithFormAccess } from "../test/renderWithFormAccess";
 
 describe("ValidatorForm component", () => {
   const data = signal<ValidatorSettings>(blankSettings);
@@ -77,13 +37,15 @@ describe("ValidatorForm component", () => {
   });
 
   test("renders initial form", () => {
-    const { getByText, startBtn, cancelBtn } = renderForm({
-      data,
-      state,
-      setValue,
-      start,
-      cancel,
-    });
+    const { getByText, startBtn, cancelBtn } = renderWithFormAccess(
+      <ValidatorForm
+        data={data}
+        state={state}
+        setValue={setValue}
+        start={start}
+        cancel={cancel}
+      />
+    );
     getByText("Manifest to check", { exact: false });
     getByText("manifest URL is required");
     expect(startBtn.disabled).toEqual(true);
@@ -92,13 +54,15 @@ describe("ValidatorForm component", () => {
 
   test("can cancel", async () => {
     const userEv = userEvent.setup();
-    const { manifestElt, startBtn, cancelBtn } = renderForm({
-      data,
-      state,
-      setValue,
-      start,
-      cancel,
-    });
+    const { manifestElt, startBtn, cancelBtn } = renderWithFormAccess(
+      <ValidatorForm
+        data={data}
+        state={state}
+        setValue={setValue}
+        start={start}
+        cancel={cancel}
+      />
+    );
     await userEv.click(manifestElt);
     await userEv.clear(manifestElt);
     await userEv.type(manifestElt, manifest);
@@ -127,8 +91,14 @@ describe("ValidatorForm component", () => {
         titleElt,
         cancelBtn,
         getByText,
-      } = renderForm(
-        { data, state, setValue, start, cancel },
+      } = renderWithFormAccess(
+        <ValidatorForm
+          data={data}
+          state={state}
+          setValue={setValue}
+          start={start}
+          cancel={cancel}
+        />,
         { userInfo: user }
       );
       await userEv.click(manifestElt);
@@ -179,13 +149,15 @@ describe("ValidatorForm component", () => {
 
   test.each(["0", "4200"])("duration limit %s", async (limit: string) => {
     const userEv = userEvent.setup();
-    const { durationElt, getByText } = renderForm({
-      data,
-      state,
-      setValue,
-      start,
-      cancel,
-    });
+    const { durationElt, getByText } = renderWithFormAccess(
+      <ValidatorForm
+        data={data}
+        state={state}
+        setValue={setValue}
+        start={start}
+        cancel={cancel}
+      />
+    );
     await userEv.click(durationElt);
     await userEv.clear(durationElt);
     await userEv.type(durationElt, limit);

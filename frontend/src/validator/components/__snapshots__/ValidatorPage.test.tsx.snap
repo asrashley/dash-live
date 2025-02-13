@@ -1,0 +1,1047 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ProtectedValidatorPage component > initial state, logged in user 1`] = `
+<DocumentFragment>
+  <div
+    class="container"
+    id="validator"
+  >
+    <form
+      class="card"
+      id="manifest-form"
+      name="manifest"
+    >
+      <div
+        class="row mb-2 form-group "
+      >
+        <label
+          class="col-2 col-form-label"
+          for="model-manifest"
+          id="label-manifest"
+        >
+          Manifest to check:
+        </label>
+        <div
+          class="col-10"
+        >
+          <input
+            aria-describedby="label-manifest"
+            class="form-control is-invalid "
+            id="model-manifest"
+            name="manifest"
+            placeholder="... manifest URL ..."
+            title="Manifest to check"
+            type="url"
+          />
+        </div>
+        <div
+          class="invalid-feedback d-block"
+        >
+          manifest URL is required
+        </div>
+      </div>
+      <div
+        class="row mb-2 form-group "
+      >
+        <label
+          class="col-2 col-form-label"
+          for="model-duration"
+          id="label-duration"
+        >
+          Maximum duration:
+        </label>
+        <div
+          class="col-7"
+        >
+          <input
+            aria-describedby="text-duration"
+            class="form-control is-valid "
+            id="model-duration"
+            name="duration"
+            title="Maximum duration"
+            type="number"
+          />
+        </div>
+        <div
+          class="col-3 form-text"
+          id="text-duration"
+        >
+          seconds
+        </div>
+        <div
+          class="invalid-feedback d-none"
+        />
+      </div>
+      <div
+        class="row mb-2 form-group "
+      >
+        <label
+          class="col-2 col-form-label"
+          for="model-prefix"
+          id="label-prefix"
+        >
+          Destination directory:
+        </label>
+        <div
+          class="col-7"
+        >
+          <input
+            aria-describedby="text-prefix"
+            class="form-control is-valid "
+            disabled=""
+            id="model-prefix"
+            name="prefix"
+            title="Destination directory"
+            type="text"
+          />
+        </div>
+        <div
+          class="col-3 form-text"
+          id="text-prefix"
+        >
+          3 to 31 characters without any special characters
+        </div>
+        <div
+          class="invalid-feedback d-none"
+        />
+      </div>
+      <div
+        class="row mb-2 form-group "
+      >
+        <label
+          class="col-2 col-form-label"
+          for="model-title"
+          id="label-title"
+        >
+          Stream title:
+        </label>
+        <div
+          class="col-10"
+        >
+          <input
+            aria-describedby="label-title"
+            class="form-control is-valid "
+            disabled=""
+            id="model-title"
+            name="title"
+            title="Stream title"
+            type="text"
+          />
+        </div>
+        <div
+          class="invalid-feedback d-none"
+        />
+      </div>
+      <div
+        class="row mb-2 form-group "
+      >
+        <div
+          class="col-12"
+        >
+          <div
+            class="form-check form-switch is-valid "
+            data-testid="msi-row1"
+          >
+            <div
+              class="form-check form-check-inline"
+            >
+              <input
+                class="form-check-input"
+                id="msiencrypted"
+                name="encrypted"
+                type="checkbox"
+              />
+              <label
+                class="form-check-label me-3"
+                for="msiencrypted"
+              >
+                Stream is encrypted?
+              </label>
+            </div>
+            <div
+              class="form-check form-check-inline"
+            >
+              <input
+                class="form-check-input"
+                id="msimedia"
+                name="media"
+                type="checkbox"
+              />
+              <label
+                class="form-check-label me-3"
+                for="msimedia"
+              >
+                Check media segments
+              </label>
+            </div>
+            <div
+              class="form-check form-check-inline"
+            >
+              <input
+                class="form-check-input"
+                id="msiverbose"
+                name="verbose"
+                type="checkbox"
+              />
+              <label
+                class="form-check-label me-3"
+                for="msiverbose"
+              >
+                Verbose output
+              </label>
+            </div>
+          </div>
+        </div>
+        <div
+          class="invalid-feedback d-none"
+        />
+      </div>
+      <div
+        class="row mb-2 form-group "
+      >
+        <div
+          class="col-12"
+        >
+          <div
+            class="form-check form-switch is-valid "
+            data-testid="msi-row2"
+          >
+            <div
+              class="form-check form-check-inline"
+            >
+              <input
+                class="form-check-input"
+                id="msipretty"
+                name="pretty"
+                type="checkbox"
+              />
+              <label
+                class="form-check-label me-3"
+                for="msipretty"
+              >
+                Pretty print XML before validation
+              </label>
+            </div>
+            <div
+              class="form-check form-check-inline"
+            >
+              <input
+                class="form-check-input"
+                id="msisave"
+                name="save"
+                type="checkbox"
+              />
+              <label
+                class="form-check-label me-3"
+                for="msisave"
+              >
+                Add stream to this server?
+              </label>
+            </div>
+          </div>
+        </div>
+        <div
+          class="invalid-feedback d-none"
+        />
+      </div>
+      <div
+        class="form-actions mt-2"
+      >
+        <button
+          class="btn btn-primary"
+          disabled=""
+        >
+          Validate DASH stream
+        </button>
+        <button
+          class="btn btn-secondary"
+          disabled=""
+          id="btn-cancel"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+    <div
+      class="position-relative"
+    >
+      <div
+        class="card progress"
+      >
+        <div>
+          <div
+            aria-valuemax="100"
+            aria-valuemin="0"
+            class="progress-bar progress-bar-striped visually-hidden"
+            role="progressbar"
+          >
+            NaN%
+          </div>
+          <div
+            class="progress-text"
+          />
+        </div>
+      </div>
+      <div
+        class="position-absolute top-0 start-50 translate-middle badge rounded-pill text-bg-secondary"
+        data-testid="validator-state-badge"
+      >
+        idle
+      </div>
+    </div>
+    <div
+      class="card"
+      id="manifest-text"
+    />
+    <table
+      class="d-none"
+    >
+      <thead>
+        <tr>
+          <th
+            class="lineno"
+          >
+            MPD line
+          </th>
+          <th
+            class="clause"
+          >
+            DASH clause
+          </th>
+          <th
+            class="message"
+          >
+            Error Details
+          </th>
+          <th
+            class="source-location"
+          >
+            Source code
+          </th>
+        </tr>
+      </thead>
+      <tbody />
+    </table>
+    <table
+      class="d-none"
+    >
+      <thead>
+        <tr>
+          <th
+            class="codec-string"
+          >
+            Codec
+          </th>
+          <th
+            class="codec-detail"
+          >
+            Details
+          </th>
+        </tr>
+      </thead>
+      <tbody />
+    </table>
+    <div
+      class="card results"
+    />
+  </div>
+</DocumentFragment>
+`;
+
+exports[`ProtectedValidatorPage component > initial state, not logged in 1`] = `
+<DocumentFragment>
+  <div
+    class="container"
+    id="validator"
+  >
+    <form
+      class="card"
+      id="manifest-form"
+      name="manifest"
+    >
+      <div
+        class="row mb-2 form-group "
+      >
+        <label
+          class="col-2 col-form-label"
+          for="model-manifest"
+          id="label-manifest"
+        >
+          Manifest to check:
+        </label>
+        <div
+          class="col-10"
+        >
+          <input
+            aria-describedby="label-manifest"
+            class="form-control is-invalid "
+            id="model-manifest"
+            name="manifest"
+            placeholder="... manifest URL ..."
+            title="Manifest to check"
+            type="url"
+          />
+        </div>
+        <div
+          class="invalid-feedback d-block"
+        >
+          manifest URL is required
+        </div>
+      </div>
+      <div
+        class="row mb-2 form-group "
+      >
+        <label
+          class="col-2 col-form-label"
+          for="model-duration"
+          id="label-duration"
+        >
+          Maximum duration:
+        </label>
+        <div
+          class="col-7"
+        >
+          <input
+            aria-describedby="text-duration"
+            class="form-control is-valid "
+            id="model-duration"
+            name="duration"
+            title="Maximum duration"
+            type="number"
+          />
+        </div>
+        <div
+          class="col-3 form-text"
+          id="text-duration"
+        >
+          seconds
+        </div>
+        <div
+          class="invalid-feedback d-none"
+        />
+      </div>
+      <div
+        class="row mb-2 form-group "
+      >
+        <label
+          class="col-2 col-form-label"
+          for="model-prefix"
+          id="label-prefix"
+        >
+          Destination directory:
+        </label>
+        <div
+          class="col-7"
+        >
+          <input
+            aria-describedby="text-prefix"
+            class="form-control is-valid "
+            disabled=""
+            id="model-prefix"
+            name="prefix"
+            title="Destination directory"
+            type="text"
+          />
+        </div>
+        <div
+          class="col-3 form-text"
+          id="text-prefix"
+        >
+          3 to 31 characters without any special characters
+        </div>
+        <div
+          class="invalid-feedback d-none"
+        />
+      </div>
+      <div
+        class="row mb-2 form-group "
+      >
+        <label
+          class="col-2 col-form-label"
+          for="model-title"
+          id="label-title"
+        >
+          Stream title:
+        </label>
+        <div
+          class="col-10"
+        >
+          <input
+            aria-describedby="label-title"
+            class="form-control is-valid "
+            disabled=""
+            id="model-title"
+            name="title"
+            title="Stream title"
+            type="text"
+          />
+        </div>
+        <div
+          class="invalid-feedback d-none"
+        />
+      </div>
+      <div
+        class="row mb-2 form-group "
+      >
+        <div
+          class="col-12"
+        >
+          <div
+            class="form-check form-switch is-valid "
+            data-testid="msi-row1"
+          >
+            <div
+              class="form-check form-check-inline"
+            >
+              <input
+                class="form-check-input"
+                id="msiencrypted"
+                name="encrypted"
+                type="checkbox"
+              />
+              <label
+                class="form-check-label me-3"
+                for="msiencrypted"
+              >
+                Stream is encrypted?
+              </label>
+            </div>
+            <div
+              class="form-check form-check-inline"
+            >
+              <input
+                class="form-check-input"
+                id="msimedia"
+                name="media"
+                type="checkbox"
+              />
+              <label
+                class="form-check-label me-3"
+                for="msimedia"
+              >
+                Check media segments
+              </label>
+            </div>
+            <div
+              class="form-check form-check-inline"
+            >
+              <input
+                class="form-check-input"
+                id="msiverbose"
+                name="verbose"
+                type="checkbox"
+              />
+              <label
+                class="form-check-label me-3"
+                for="msiverbose"
+              >
+                Verbose output
+              </label>
+            </div>
+          </div>
+        </div>
+        <div
+          class="invalid-feedback d-none"
+        />
+      </div>
+      <div
+        class="row mb-2 form-group "
+      >
+        <div
+          class="col-12"
+        >
+          <div
+            class="form-check form-switch is-valid "
+            data-testid="msi-row2"
+          >
+            <div
+              class="form-check form-check-inline"
+            >
+              <input
+                class="form-check-input"
+                id="msipretty"
+                name="pretty"
+                type="checkbox"
+              />
+              <label
+                class="form-check-label me-3"
+                for="msipretty"
+              >
+                Pretty print XML before validation
+              </label>
+            </div>
+            <div
+              class="form-check form-check-inline"
+            >
+              <input
+                class="form-check-input"
+                disabled=""
+                id="msisave"
+                name="save"
+                type="checkbox"
+              />
+              <label
+                class="form-check-label me-3"
+                for="msisave"
+              >
+                Add stream to this server?
+              </label>
+            </div>
+          </div>
+        </div>
+        <div
+          class="invalid-feedback d-none"
+        />
+      </div>
+      <div
+        class="form-actions mt-2"
+      >
+        <button
+          class="btn btn-primary"
+          disabled=""
+        >
+          Validate DASH stream
+        </button>
+        <button
+          class="btn btn-secondary"
+          disabled=""
+          id="btn-cancel"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+    <div
+      class="position-relative"
+    >
+      <div
+        class="card progress"
+      >
+        <div>
+          <div
+            aria-valuemax="100"
+            aria-valuemin="0"
+            class="progress-bar progress-bar-striped visually-hidden"
+            role="progressbar"
+          >
+            NaN%
+          </div>
+          <div
+            class="progress-text"
+          />
+        </div>
+      </div>
+      <div
+        class="position-absolute top-0 start-50 translate-middle badge rounded-pill text-bg-secondary"
+        data-testid="validator-state-badge"
+      >
+        idle
+      </div>
+    </div>
+    <div
+      class="card"
+      id="manifest-text"
+    />
+    <table
+      class="d-none"
+    >
+      <thead>
+        <tr>
+          <th
+            class="lineno"
+          >
+            MPD line
+          </th>
+          <th
+            class="clause"
+          >
+            DASH clause
+          </th>
+          <th
+            class="message"
+          >
+            Error Details
+          </th>
+          <th
+            class="source-location"
+          >
+            Source code
+          </th>
+        </tr>
+      </thead>
+      <tbody />
+    </table>
+    <table
+      class="d-none"
+    >
+      <thead>
+        <tr>
+          <th
+            class="codec-string"
+          >
+            Codec
+          </th>
+          <th
+            class="codec-detail"
+          >
+            Details
+          </th>
+        </tr>
+      </thead>
+      <tbody />
+    </table>
+    <div
+      class="card results"
+    />
+  </div>
+</DocumentFragment>
+`;
+
+exports[`ValidatorPage component > initial state 1`] = `
+<DocumentFragment>
+  <div
+    class="container"
+    id="validator"
+  >
+    <form
+      class="card"
+      id="manifest-form"
+      name="manifest"
+    >
+      <div
+        class="row mb-2 form-group "
+      >
+        <label
+          class="col-2 col-form-label"
+          for="model-manifest"
+          id="label-manifest"
+        >
+          Manifest to check:
+        </label>
+        <div
+          class="col-10"
+        >
+          <input
+            aria-describedby="label-manifest"
+            class="form-control is-invalid "
+            id="model-manifest"
+            name="manifest"
+            placeholder="... manifest URL ..."
+            title="Manifest to check"
+            type="url"
+          />
+        </div>
+        <div
+          class="invalid-feedback d-block"
+        >
+          manifest URL is required
+        </div>
+      </div>
+      <div
+        class="row mb-2 form-group "
+      >
+        <label
+          class="col-2 col-form-label"
+          for="model-duration"
+          id="label-duration"
+        >
+          Maximum duration:
+        </label>
+        <div
+          class="col-7"
+        >
+          <input
+            aria-describedby="text-duration"
+            class="form-control is-valid "
+            id="model-duration"
+            name="duration"
+            title="Maximum duration"
+            type="number"
+          />
+        </div>
+        <div
+          class="col-3 form-text"
+          id="text-duration"
+        >
+          seconds
+        </div>
+        <div
+          class="invalid-feedback d-none"
+        />
+      </div>
+      <div
+        class="row mb-2 form-group "
+      >
+        <label
+          class="col-2 col-form-label"
+          for="model-prefix"
+          id="label-prefix"
+        >
+          Destination directory:
+        </label>
+        <div
+          class="col-7"
+        >
+          <input
+            aria-describedby="text-prefix"
+            class="form-control is-valid "
+            disabled=""
+            id="model-prefix"
+            name="prefix"
+            title="Destination directory"
+            type="text"
+          />
+        </div>
+        <div
+          class="col-3 form-text"
+          id="text-prefix"
+        >
+          3 to 31 characters without any special characters
+        </div>
+        <div
+          class="invalid-feedback d-none"
+        />
+      </div>
+      <div
+        class="row mb-2 form-group "
+      >
+        <label
+          class="col-2 col-form-label"
+          for="model-title"
+          id="label-title"
+        >
+          Stream title:
+        </label>
+        <div
+          class="col-10"
+        >
+          <input
+            aria-describedby="label-title"
+            class="form-control is-valid "
+            disabled=""
+            id="model-title"
+            name="title"
+            title="Stream title"
+            type="text"
+          />
+        </div>
+        <div
+          class="invalid-feedback d-none"
+        />
+      </div>
+      <div
+        class="row mb-2 form-group "
+      >
+        <div
+          class="col-12"
+        >
+          <div
+            class="form-check form-switch is-valid "
+            data-testid="msi-row1"
+          >
+            <div
+              class="form-check form-check-inline"
+            >
+              <input
+                class="form-check-input"
+                id="msiencrypted"
+                name="encrypted"
+                type="checkbox"
+              />
+              <label
+                class="form-check-label me-3"
+                for="msiencrypted"
+              >
+                Stream is encrypted?
+              </label>
+            </div>
+            <div
+              class="form-check form-check-inline"
+            >
+              <input
+                class="form-check-input"
+                id="msimedia"
+                name="media"
+                type="checkbox"
+              />
+              <label
+                class="form-check-label me-3"
+                for="msimedia"
+              >
+                Check media segments
+              </label>
+            </div>
+            <div
+              class="form-check form-check-inline"
+            >
+              <input
+                class="form-check-input"
+                id="msiverbose"
+                name="verbose"
+                type="checkbox"
+              />
+              <label
+                class="form-check-label me-3"
+                for="msiverbose"
+              >
+                Verbose output
+              </label>
+            </div>
+          </div>
+        </div>
+        <div
+          class="invalid-feedback d-none"
+        />
+      </div>
+      <div
+        class="row mb-2 form-group "
+      >
+        <div
+          class="col-12"
+        >
+          <div
+            class="form-check form-switch is-valid "
+            data-testid="msi-row2"
+          >
+            <div
+              class="form-check form-check-inline"
+            >
+              <input
+                class="form-check-input"
+                id="msipretty"
+                name="pretty"
+                type="checkbox"
+              />
+              <label
+                class="form-check-label me-3"
+                for="msipretty"
+              >
+                Pretty print XML before validation
+              </label>
+            </div>
+            <div
+              class="form-check form-check-inline"
+            >
+              <input
+                class="form-check-input"
+                disabled=""
+                id="msisave"
+                name="save"
+                type="checkbox"
+              />
+              <label
+                class="form-check-label me-3"
+                for="msisave"
+              >
+                Add stream to this server?
+              </label>
+            </div>
+          </div>
+        </div>
+        <div
+          class="invalid-feedback d-none"
+        />
+      </div>
+      <div
+        class="form-actions mt-2"
+      >
+        <button
+          class="btn btn-primary"
+          disabled=""
+        >
+          Validate DASH stream
+        </button>
+        <button
+          class="btn btn-secondary"
+          disabled=""
+          id="btn-cancel"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+    <div
+      class="position-relative"
+    >
+      <div
+        class="card progress"
+      >
+        <div>
+          <div
+            aria-valuemax="100"
+            aria-valuemin="0"
+            class="progress-bar progress-bar-striped visually-hidden"
+            role="progressbar"
+          >
+            NaN%
+          </div>
+          <div
+            class="progress-text"
+          />
+        </div>
+      </div>
+      <div
+        class="position-absolute top-0 start-50 translate-middle badge rounded-pill text-bg-secondary"
+        data-testid="validator-state-badge"
+      >
+        idle
+      </div>
+    </div>
+    <div
+      class="card"
+      id="manifest-text"
+    />
+    <table
+      class="d-none"
+    >
+      <thead>
+        <tr>
+          <th
+            class="lineno"
+          >
+            MPD line
+          </th>
+          <th
+            class="clause"
+          >
+            DASH clause
+          </th>
+          <th
+            class="message"
+          >
+            Error Details
+          </th>
+          <th
+            class="source-location"
+          >
+            Source code
+          </th>
+        </tr>
+      </thead>
+      <tbody />
+    </table>
+    <table
+      class="d-none"
+    >
+      <thead>
+        <tr>
+          <th
+            class="codec-string"
+          >
+            Codec
+          </th>
+          <th
+            class="codec-detail"
+          >
+            Details
+          </th>
+        </tr>
+      </thead>
+      <tbody />
+    </table>
+    <div
+      class="card results"
+    />
+  </div>
+</DocumentFragment>
+`;

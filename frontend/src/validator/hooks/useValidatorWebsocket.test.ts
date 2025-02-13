@@ -72,7 +72,7 @@ describe('useValidatorWebsocket hook', () => {
         start(settings);
         while (!progress.value.finished || valResult.value === undefined) {
             await act(async () => {
-                await server.nextTick();
+                await server.nextTick(0.1);
             });
         }
         expect(log.value).toEqual([
@@ -135,7 +135,7 @@ describe('useValidatorWebsocket hook', () => {
         start(settings);
         while (!progress.value.finished) {
             await act(async () => {
-                await server.nextTick();
+                await server.nextTick(0.1);
             });
         }
         expect(errors.value).toEqual(server.getErrorMessages());
@@ -156,7 +156,7 @@ describe('useValidatorWebsocket hook', () => {
         start(settings);
         while (!progress.value.finished || valResult.value === undefined) {
             await act(async () => {
-                await server.nextTick();
+                await server.nextTick(0.1);
             });
             if (progress.value.currentValue > 5 && !aborted) {
                 aborted = true;
