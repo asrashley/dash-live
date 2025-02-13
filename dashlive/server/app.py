@@ -12,6 +12,7 @@ from logging.config import dictConfig
 from os import environ
 import mimetypes
 import secrets
+import socket
 
 from dotenv import load_dotenv
 from flask import Flask, request, Response  # type: ignore
@@ -20,6 +21,7 @@ from flask_socketio import SocketIO
 from werkzeug.routing import BaseConverter, Map  # type: ignore
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_jwt_extended import JWTManager
+from netifaces import interfaces, ifaddresses, AF_INET
 
 from dashlive.server.models.all import create_all_tables
 from dashlive.server.models.connection import make_db_connection_string
@@ -201,9 +203,23 @@ def create_app(config: JsonObject | None = None,
             f'http://localhost:{port}'
         ]
         if app.debug:
-            cors_allowed_origins.append('http://127.0.0.1:8765')
-            cors_allowed_origins.append('http://localhost:8765')
-        print('cors_allowed_origins', cors_allowed_origins)
+            frontend_port: str = environ.get('FRONTEND_PORT', '8765')
+            cors_allowed_origins.append(f"http://127.0.0.1:{frontend_port}")
+            cors_allowed_origins.append(f"http://localhost:{frontend_port}")
+            for ifaceName in interfaces():
+                for i in ifaddresses(ifaceName).setdefault(AF_INET, [{'addr': ''}]):
+                    addr = i['addr']
+                    if not addr or addr.startswith('127'):
+                        continue
+                    cors_allowed_origins.append(f"http://{addr}:{port}")
+                    cors_allowed_origins.append(f"http://{addr}:{frontend_port}")
+                    try:
+                        hostname: str = socket.gethostbyaddr(addr)[0]
+                        cors_allowed_origins.append(f"http://{hostname}:{port}")
+                        cors_allowed_origins.append(f"http://{hostname}:{frontend_port}")
+                    except socket.herror as err:
+                        logging.warning('Failed to find hostname for IP address %s: %s', addr, err)
+        logging.debug('cors_allowed_origins=%s', cors_allowed_origins)
         socketio = SocketIO(
             app, async_mode='threading', cors_allowed_origins=cors_allowed_origins)
         wss = WebsocketHandler(socketio)
