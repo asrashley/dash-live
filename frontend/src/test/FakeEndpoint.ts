@@ -98,7 +98,8 @@ export class FakeEndpoint {
     async fetchFixtureText(filename: string): Promise<string> {
         const fullName = path.join(__dirname, 'fixtures', filename);
         log.trace(`readFile "${fullName}"`);
-        return await readFile(fullName, { encoding: 'utf-8' });
+        const txt = await readFile(fullName, { encoding: 'utf-8' });
+        return txt.replace(/\r/g, "");
     }
 
     private setHandler(method: string, path: RegExp | string, handler: HttpRequestHandler) {
