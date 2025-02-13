@@ -1,13 +1,13 @@
 import { type ComponentChildren, Fragment } from "preact";
-import { useSignalEffect } from "@preact/signals";
-import { useContext, useEffect, useRef } from "preact/hooks";
+import { useSignal, useSignalEffect } from "@preact/signals";
+import { useContext, useEffect } from "preact/hooks";
+import { useLocation } from "wouter-preact";
+
+import { uiRouteMap } from "@dashlive/routemap";
 
 import { WhoAmIContext } from "../hooks/useWhoAmI";
 import { EndpointContext } from "../endpoints";
-
 import { LoadingSpinner } from "./LoadingSpinner";
-import { useLocation } from "wouter-preact";
-import { uiRouteMap } from "@dashlive/routemap";
 import { ErrorCard } from "./ErrorCard";
 
 function PermissionDenied() {
@@ -52,20 +52,21 @@ export function ProtectedPage({
 }: ProtectedPageProps) {
   const { user } = useContext(WhoAmIContext);
   const apiRequests = useContext(EndpointContext);
-  const hasChecked = useRef<boolean>(false);
+  const hasChecked = useSignal<boolean>(false);
 
   useSignalEffect(() => {
-    if (!user.value.isAuthenticated && !hasChecked.current) {
-      hasChecked.current = true;
-      apiRequests.getUserInfo();
+    if (!user.value.isAuthenticated && !hasChecked.value) {
+      apiRequests.getUserInfo().finally(() => {
+        hasChecked.value = true;
+      });
     }
   });
 
-  if (!user.value.isAuthenticated && !optional && hasChecked.current) {
+  if (!user.value.isAuthenticated && !optional && hasChecked.value) {
     return <PermissionDenied />;
   }
 
-  if (user.value.isAuthenticated || (optional && hasChecked.current)) {
+  if (user.value.isAuthenticated || (optional && hasChecked.value)) {
     return <Fragment>{children}</Fragment>;
   }
   return <LoadingSpinner />;
