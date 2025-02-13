@@ -52,7 +52,7 @@ class TestAppConfig(TestCaseMixin, unittest.TestCase):
 
     @patch.dict('dashlive.server.app.environ', config, clear=True)
     def test_set_config_from_environment(self) -> None:
-        flask_app = create_app(create_default_user=False)
+        flask_app = create_app(create_default_user=False, wss=True)
         with flask_app.app_context():
             self.assertEqual(flask.current_app.config['SECRET_KEY'], 'flask.secret')
             cfg = flask.current_app.config['DASH']
@@ -63,7 +63,7 @@ class TestAppConfig(TestCaseMixin, unittest.TestCase):
 
     @patch.dict('dashlive.server.app.environ', config, clear=True)
     def test_creates_default_admin_account(self) -> None:
-        flask_app = create_app(create_default_user=True)
+        flask_app = create_app(create_default_user=True, wss=False)
         with flask_app.app_context():
             user = models.User.get(username='default.admin')
             self.assertIsNotNone(user)
@@ -83,7 +83,7 @@ class TestAppConfig(TestCaseMixin, unittest.TestCase):
             dest.write("FLASK_TESTING='True'\n")
         self.assertTrue(env_filename.exists())
         os.environ['DASHLIVE_SETTINGS'] = str(env_filename)
-        flask_app = create_app(create_default_user=False)
+        flask_app = create_app(create_default_user=False, wss=False)
         with flask_app.app_context():
             self.assertEqual(flask.current_app.config['SECRET_KEY'], 'cookie.secret')
             cfg = flask.current_app.config['DASH']
