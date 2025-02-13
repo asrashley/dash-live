@@ -209,8 +209,8 @@ class ClientConnection(Progress):
                 'aborted': self._aborted,
                 'finished': True
             })
-            if opts.save:
-                self.emit('script', {
+            if opts.save and not self._aborted:
+                self.emit('install', {
                     'filename': dv.get_json_script_filename(),
                     'prefix': opts.prefix,
                     'title': opts.title,
