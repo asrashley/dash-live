@@ -69,7 +69,7 @@ exports[`NavBar component > matches snapshot when logged in when admin=false 1`]
             href="/validate"
             role="menuitem"
           >
-            New Validate
+            Validate
           </a>
         </li>
         <li
@@ -199,7 +199,7 @@ exports[`NavBar component > matches snapshot when logged in when admin=true 1`] 
             href="/validate"
             role="menuitem"
           >
-            New Validate
+            Validate
           </a>
         </li>
         <li
@@ -329,7 +329,7 @@ exports[`NavBar component > matches snapshot when not logged in 1`] = `
             href="/validate"
             role="menuitem"
           >
-            New Validate
+            Validate
           </a>
         </li>
         <li
