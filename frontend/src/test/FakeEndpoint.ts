@@ -46,6 +46,10 @@ export class FakeEndpoint {
         fetchMock.route(`begin:${origin}/`, this.routeHandler);
     }
 
+    getOrigin(): string {
+        return this.origin;
+    }
+
     get(path: RegExp | string, handler: HttpRequestHandler): FakeEndpoint {
         this.setHandler('get', path, handler);
         return this;
