@@ -25,17 +25,11 @@ from dashlive.server.routes import routes, ui_routes, RouteJavaScript
 from dashlive.utils.json_object import JsonObject
 
 from .csrf import CsrfTokenCollectionJson
-from .navbar import create_navbar_context, NavBarItem
 from .utils import jsonify
 
 class InitialTokensType(TypedDict):
     csrfTokens: CsrfTokenCollectionJson
     accessToken: EncodedJWTokenJson | None
-
-
-class SpaTemplateContext(TypedDict):
-    navbar: list[NavBarItem]
-    initialTokens: InitialTokensType
 
 
 class ModuleWrapper(MethodView):
