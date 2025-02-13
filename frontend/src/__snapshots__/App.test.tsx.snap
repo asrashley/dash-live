@@ -70,7 +70,7 @@ exports[`main entry-point app > matches snapshot for CGI options 1`] = `
               href="/validate"
               role="menuitem"
             >
-              New Validate
+              Validate
             </a>
           </li>
           <li
@@ -2660,7 +2660,7 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
               href="/validate"
               role="menuitem"
             >
-              New Validate
+              Validate
             </a>
           </li>
           <li
@@ -3333,7 +3333,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
               href="/validate"
               role="menuitem"
             >
-              New Validate
+              Validate
             </a>
           </li>
           <li
@@ -5763,7 +5763,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
               href="/validate"
               role="menuitem"
             >
-              New Validate
+              Validate
             </a>
           </li>
           <li
@@ -8162,7 +8162,7 @@ exports[`main entry-point app > matches snapshot for list MPS 1`] = `
               href="/validate"
               role="menuitem"
             >
-              New Validate
+              Validate
             </a>
           </li>
           <li
@@ -8487,7 +8487,7 @@ exports[`main entry-point app > matches snapshot for list users 1`] = `
               href="/validate"
               role="menuitem"
             >
-              New Validate
+              Validate
             </a>
           </li>
           <li

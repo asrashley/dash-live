@@ -17,7 +17,7 @@ export function createNavItems(user: ReadonlySignal<UserState>): NavBarItem[] {
     }, {
       className: "spa", href: uiRouteMap.listMps.url(), title: "Multi-Period"
     }, {
-      className: "spa", href: uiRouteMap.validator.url(), title: "New Validate"
+      className: "spa", href: uiRouteMap.validator.url(), title: "Validate"
     }, {
       className: "", href: "/media/inspect", title: "Inspect"
     },
