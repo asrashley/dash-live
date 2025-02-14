@@ -48,8 +48,8 @@ describe('useValidatorWebsocket hook', () => {
         mockSocket.emit.mockImplementation(server.emit);
     });
 
-    afterEach(() => {
-        server.destroy();
+    afterEach(async () => {
+        await server.destroy();
         vi.clearAllMocks();
         mockReset(mockSocket);
     });
@@ -73,7 +73,7 @@ describe('useValidatorWebsocket hook', () => {
         start(settings);
         while (!progress.value.finished || valResult.value === undefined) {
             await act(async () => {
-                await server.nextTick(0.1);
+                await server.nextTick(0.5);
             });
         }
         expect(log.value).toEqual([
@@ -125,7 +125,6 @@ describe('useValidatorWebsocket hook', () => {
                     line: 123,
                 },
                 location: [120, 130],
-                clause: "3.4.5",
                 msg: "representation has an error",
             },
         ]);
@@ -136,7 +135,7 @@ describe('useValidatorWebsocket hook', () => {
         start(settings);
         while (!progress.value.finished) {
             await act(async () => {
-                await server.nextTick(0.1);
+                await server.nextTick(0.5);
             });
         }
         expect(errors.value).toEqual(server.getErrorMessages());
@@ -157,7 +156,7 @@ describe('useValidatorWebsocket hook', () => {
         start(settings);
         while (!progress.value.finished || valResult.value === undefined) {
             await act(async () => {
-                await server.nextTick(0.1);
+                await server.nextTick(0.5);
             });
             if (progress.value.currentValue > 5 && !aborted) {
                 aborted = true;
@@ -193,7 +192,7 @@ describe('useValidatorWebsocket hook', () => {
         start(saveSettings);
         while (!progress.value.finished || valResult.value === undefined) {
             await act(async () => {
-                await server.nextTick(0.1);
+                await server.nextTick(0.5);
             });
         }
         expect(log.value).toEqual([
@@ -231,4 +230,25 @@ describe('useValidatorWebsocket hook', () => {
         expect(state.value).toEqual(ValidatorState.DONE);
     });
 
+    test('save a stream with invalid settings', async () => {
+        const { result } = renderHook((url: string) => useValidatorWebsocket(url), {
+            initialProps: wssUrl
+        });
+        const { start, progress, state, result: valResult, log } = result.current;
+        const saveSettings: ValidatorSettings = {
+            ...settings,
+            save: true,
+        };
+        start(saveSettings);
+        while (!progress.value.finished || valResult.value === undefined) {
+            await act(async () => {
+                await server.nextTick(0.5);
+            });
+        }
+        expect(log.value).toEqual([
+            { level: 'error', text: 'a directory name is required', id: 1 },
+            { level: 'error', text: 'a title is required', id: 2 }
+        ]);
+        expect(state.value).toEqual(ValidatorState.DONE);
+    });
 });

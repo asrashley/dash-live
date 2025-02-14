@@ -178,8 +178,14 @@ export function useValidatorWebsocket(wssUrl: string): UseValidatorWebsocketHook
                 ...progress.value,
                 finished: true,
             };
+            result.value = {
+                startTime: Date.now(),
+                endTime: Date.now(),
+                aborted: true,
+            };
+            state.value = ValidatorState.DONE;
         });
-    }, [addLogMessage, progress]);
+    }, [addLogMessage, progress, result, state]);
 
     const start = useCallback((settings: ValidatorSettings) => {
         batch(() => {

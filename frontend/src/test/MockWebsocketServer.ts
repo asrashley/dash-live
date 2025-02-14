@@ -8,6 +8,7 @@ import { ManifestEvent } from '../validator/types/ManifestEvent';
 import { FakeEndpoint } from './FakeEndpoint';
 import { ErrorEntry } from '../validator/types/ErrorEntry';
 import { exampleCodecs } from './fixtures/exampleCodecs';
+import { checkValidatorSettings } from '../validator/utils/checkValidatorSettings';
 
 export type WebsocketEventListener = (...args: unknown[]) => void;
 
@@ -47,13 +48,15 @@ export class MockWebsocketServer {
         log.debug(`MockWebsocketServer(${endpoint.getOrigin()})`)
     }
 
-    destroy() {
+    async destroy() {
         this.listeners = new Map();
         this.settings = undefined;
         this.donePromise?.reject(new Error('destroy'));
         this.donePromise = undefined;
-        this.pending = [];
+        const { pendingCommands } = this;
         this.pendingCommands = [];
+        await Promise.all(pendingCommands);
+        this.pending = [];
         this.manifestErrors = [];
     }
 
@@ -152,6 +155,17 @@ export class MockWebsocketServer {
     }
 
     private async startValidation(settings: ValidatorSettings) {
+        const errs = checkValidatorSettings(settings, []);
+        if (Object.keys(errs).length > 0) {
+            this.dispatchEvent('validate-errors', errs);
+            this.progress = {
+                pct: 0,
+                text: 'invalid settings',
+                aborted: false,
+                finished: true,
+            };
+            return;
+        }
         this.settings = settings;
         this.progress = {
             pct: 0,

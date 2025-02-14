@@ -1691,7 +1691,7 @@ exports[`useValidatorWebsocket hook > validate a stream that has errors 1`] = `
   },
   {
     "errors": [
-      "3.4.5: representation has an error",
+      "representation has an error",
     ],
     "hasError": true,
     "line": 120,

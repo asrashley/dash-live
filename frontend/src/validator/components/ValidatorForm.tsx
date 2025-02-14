@@ -8,7 +8,8 @@ import { ValidatorSettings } from "../types/ValidatorSettings";
 import { SetValueFunc } from "../../types/SetValueFunc";
 import { ValidatorState, UseValidatorWebsocketHook } from "../hooks/useValidatorWebsocket";
 import { useAllStreams } from "../../hooks/useAllStreams";
-import { DecoratedStream } from "../../types/DecoratedStream";
+import { checkValidatorSettings } from "../utils/checkValidatorSettings";
+import { ValidatorSettingsErrors } from "../types/ValidatorSettingsErrors";
 
 const validatorForm: StaticInputProps[] = [
   {
@@ -83,29 +84,6 @@ const validatorForm: StaticInputProps[] = [
   },
 ];
 
-type FormValidationErrors = Partial<Record<keyof ValidatorSettings, string>>;
-
-export function checkValidatorSettings(settings: ValidatorSettings, allStreams: DecoratedStream[]): FormValidationErrors {
-  const errs: FormValidationErrors = {};
-  if (!settings.manifest) {
-    errs.manifest = 'manifest URL is required';
-  }
-  if (settings.duration < 1 || settings.duration > 3600) {
-    errs.duration = "duration must be >= 1 second and <= 3600 seconds";
-  }
-  if (settings.save) {
-    if (!settings.prefix) {
-      errs.prefix = 'a directory name is required';
-    } else if (allStreams.some(({directory}) => directory === settings.prefix)) {
-      errs.prefix = `a stream already exists with name ${settings.prefix}`;
-    }
-    if (!settings.title) {
-      errs.title = 'a title is required';
-    }
-  }
-  return errs;
-}
-
 export interface ValidatorFormProps {
   data: ReadonlySignal<ValidatorSettings>;
   setValue: SetValueFunc;
@@ -129,7 +107,7 @@ export function ValidatorForm({ state, data, setValue, start, cancel }: Validato
     }
     return rv;
   });
-  const errors = useComputed<FormValidationErrors>(() => checkValidatorSettings(data.value, allStreams.value));
+  const errors = useComputed<ValidatorSettingsErrors>(() => checkValidatorSettings(data.value, allStreams.value));
   const disableSubmit = useComputed<boolean>(() => state.value === ValidatorState.ACTIVE || Object.keys(errors.value).length > 0);
   const disableCancel = useComputed<boolean>(() => state.value !== ValidatorState.ACTIVE);
   const cancelClassName = useComputed<string>(() => state.value === ValidatorState.ACTIVE ? "btn btn-danger": "btn btn-secondary");
