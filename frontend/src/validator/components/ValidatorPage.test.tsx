@@ -38,8 +38,8 @@ describe("ValidatorPage component", () => {
     mockSocket.emit.mockImplementation(server.emit);
   });
 
-  afterEach(() => {
-    server.destroy();
+  afterEach(async () => {
+    await server.destroy();
     vi.clearAllMocks();
     mockReset(mockSocket);
     log.setLevel("error");
@@ -72,13 +72,13 @@ describe("ValidatorPage component", () => {
     let finished = false;
     while (!finished) {
       await act(async () => {
-        finished = await server.nextTick(0.1);
+        finished = await server.nextTick(0.5);
       });
     }
     await expect(done).resolves.toBeUndefined();
     const stateElt = getByTestId("validator-state-badge") as HTMLElement;
     expect(stateElt.innerHTML).toEqual("done");
-  }, 10_000);
+  });
 });
 
 describe("ProtectedValidatorPage component", () => {

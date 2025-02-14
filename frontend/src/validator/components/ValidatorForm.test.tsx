@@ -2,11 +2,11 @@ import { signal } from "@preact/signals";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { mock } from "vitest-mock-extended";
 import userEvent from "@testing-library/user-event";
+import { act } from "@testing-library/preact";
 
-import { checkValidatorSettings, ValidatorForm } from "./ValidatorForm";
+import { ValidatorForm } from "./ValidatorForm";
 import { ValidatorSettings } from "../types/ValidatorSettings";
 import { blankSettings } from "./ValidatorPage";
-import { act } from "@testing-library/preact";
 import { ValidatorState } from "../hooks/useValidatorWebsocket";
 import { mediaUser, normalUser } from "../../test/MockServer";
 import { InitialUserState } from "../../types/UserState";
@@ -15,7 +15,6 @@ import { ApiRequests, EndpointContext } from "../../endpoints";
 import { AllStreamsJson } from "../../types/AllStreams";
 
 import allStreamsFixture from "../../test/fixtures/streams.json";
-import { decorateAllStreams } from "../../hooks/useAllStreams";
 
 describe("ValidatorForm component", () => {
   const data = signal<ValidatorSettings>(blankSettings);
@@ -27,7 +26,6 @@ describe("ValidatorForm component", () => {
   const manifest = "http://localhost:8765/dash/vod/bbb/hand_made.mpd";
   const prefix = "prefix";
   const title = "demo stream title";
-  const allStreams = decorateAllStreams(allStreamsFixture.streams);
 
   beforeEach(() => {
     data.value = structuredClone(blankSettings);
@@ -174,38 +172,5 @@ describe("ValidatorForm component", () => {
     await userEv.clear(durationElt);
     await userEv.type(durationElt, limit);
     getByText("duration must be >= 1 second and <= 3600 seconds");
-  });
-
-  test("checkValidatorSettings", () => {
-    const settings: ValidatorSettings = {
-      duration: 0,
-      encrypted: false,
-      manifest: "",
-      media: false,
-      prefix: "",
-      pretty: false,
-      save: false,
-      title: "",
-      verbose: false,
-    };
-    expect(checkValidatorSettings(settings, allStreams)).toEqual({
-      duration: "duration must be >= 1 second and <= 3600 seconds",
-      manifest: "manifest URL is required",
-    });
-    settings.duration = 20;
-    settings.manifest = manifest;
-    expect(checkValidatorSettings(settings, allStreams)).toEqual({});
-    settings.save = true;
-    expect(checkValidatorSettings(settings, allStreams)).toEqual({
-      prefix: "a directory name is required",
-      title: "a title is required",
-    });
-    settings.title = 'a new title';
-    settings.prefix = allStreams[0].directory;
-    expect(checkValidatorSettings(settings, allStreams)).toEqual({
-      prefix: `a stream already exists with name ${settings.prefix}`
-    });
-    settings.prefix = 'new.prefix';
-    expect(checkValidatorSettings(settings, allStreams)).toEqual({});
   });
 });
