@@ -129,7 +129,7 @@ describe("useAllStreams hook", () => {
       await prom;
     });
     expect(result.current.error.value).toEqual(
-      expect.stringContaining("Fetching streams list failed")
+      expect.stringContaining("Failed to fetch streams")
     );
     expect(result.current.allStreams.value).toEqual([]);
     expect(result.current.streamsMap.value.size).toEqual(0);
