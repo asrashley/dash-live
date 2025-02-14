@@ -12,7 +12,7 @@ export function ErrorBoundary({children}: ErrorBoundaryProps) {
   if (error) {
     return (
       <ErrorCard id="error-boundary" header="Something went wrong">
-        <p>Oh no! Something went badly wrong and useErrorBoundary was used</p>
+        <p>Oh no! Something went badly wrong...</p>
         <pre>{error.message}</pre>
 
         <button onClick={resetError}>Try again</button>
