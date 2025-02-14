@@ -18,6 +18,13 @@ export interface ValidatorProgressEvent {
     finished?: boolean;
 }
 
+export interface ValidatorErrorEvent {
+    manifest?: string;
+    duration?: string;
+    prefix?: string;
+    title?: string;
+}
+
 export interface ValidatorFinishedEvent {
     startTime: number;
     endTime: number;
@@ -159,6 +166,21 @@ export function useValidatorWebsocket(wssUrl: string): UseValidatorWebsocketHook
         });
     }, [addLogMessage, socket]);
 
+    const onValidateErrors = useCallback((data: ValidatorErrorEvent) => {
+        batch(() => {
+            for (const text of Object.values(data)) {
+                addLogMessage({
+                    level: 'error',
+                    text,
+                });
+            }
+            progress.value = {
+                ...progress.value,
+                finished: true,
+            };
+        });
+    }, [addLogMessage, progress]);
+
     const start = useCallback((settings: ValidatorSettings) => {
         batch(() => {
             state.value = ValidatorState.ACTIVE;
@@ -197,6 +219,7 @@ export function useValidatorWebsocket(wssUrl: string): UseValidatorWebsocketHook
         socket.on('manifest', onManifest);
         socket.on('manifest-errors', onManifestErrors);
         socket.on('progress', onProgress);
+        socket.on('validate-errors', onValidateErrors);
 
         return () => {
             socket.off('codecs', onCodecs);
@@ -206,8 +229,9 @@ export function useValidatorWebsocket(wssUrl: string): UseValidatorWebsocketHook
             socket.off('manifest', onManifest);
             socket.off('manifest-errors', onManifestErrors);
             socket.off('progress', onProgress);
+            socket.off('validate-errors', onValidateErrors);
         };
-    }, [addLogMessage, onCodecs, onFinished, onManifest, onManifestErrors, onProgress, onInstallStream, socket]);
+    }, [addLogMessage, onCodecs, onFinished, onManifest, onManifestErrors, onProgress, onInstallStream, onValidateErrors, socket]);
 
     return { codecs, errors, log, manifest, progress, result, state, start, cancel };
 }

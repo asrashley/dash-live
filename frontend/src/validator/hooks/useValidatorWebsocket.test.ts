@@ -34,6 +34,7 @@ describe('useValidatorWebsocket hook', () => {
         'manifest',
         'manifest-errors',
         'progress',
+        'validate-errors',
     ];
     let endpoint: FakeEndpoint;
     let server: MockWebsocketServer;
