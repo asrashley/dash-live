@@ -1,11 +1,12 @@
 import { createContext } from "preact";
-import { useContext, useEffect } from "preact/hooks";
-import { useSignal, useComputed, type ReadonlySignal } from "@preact/signals";
+import { useCallback, useContext } from "preact/hooks";
+import { useComputed, type ReadonlySignal } from "@preact/signals";
 
 import { EndpointContext } from "../endpoints";
 import { Stream } from "../types/Stream";
 import { StreamTrack } from "../types/StreamTrack";
 import { DecoratedStream } from "../types/DecoratedStream";
+import { useJsonRequest } from "./useJsonRequest";
 
 function findStreamTracks(stream: Stream): StreamTrack[] {
   const tracks = new Map<number, StreamTrack>();
@@ -54,10 +55,18 @@ export const AllStreamsContext = createContext<UseAllStreamsHook>(null);
 
 export function useAllStreams(): UseAllStreamsHook {
   const apiRequests = useContext(EndpointContext);
-  const streams = useSignal<DecoratedStream[] | undefined>();
-  const loaded = useSignal<boolean>(false);
-  const error = useSignal<string | null>(null);
-  const allStreams = useComputed<DecoratedStream[]>(() => streams.value ?? []);
+  const request = useCallback(async (signal: AbortSignal) => {
+    const { streams } = await apiRequests.getAllStreams({
+      signal,
+      withDetails: true,
+    });
+    return decorateAllStreams(streams);
+  }, [apiRequests]);
+  const { data: allStreams, loaded, error } = useJsonRequest<DecoratedStream[]>({
+    request,
+    initialData: [],
+    name: 'streams',
+  });
   const streamsMap = useComputed<Map<string, DecoratedStream>>(() => {
     const rv = new Map();
     if (allStreams.value) {
@@ -67,39 +76,6 @@ export function useAllStreams(): UseAllStreamsHook {
     }
     return rv;
   });
-
-  useEffect(() => {
-    const controller = new AbortController();
-    const { signal } = controller;
-
-    const fetchAllStreamsIfRequired = async () => {
-      if (!streams.value) {
-        try {
-          const data = await apiRequests.getAllStreams({
-            signal,
-            withDetails: true,
-          });
-          if (!signal.aborted) {
-            streams.value = decorateAllStreams(data.streams);
-            error.value = null;
-            loaded.value = true;
-          }
-        } catch (err) {
-          if (!signal.aborted) {
-            error.value = `Fetching streams list failed - ${err}`;
-          }
-        }
-      }
-    };
-
-    fetchAllStreamsIfRequired();
-
-    return () => {
-      if (!loaded.value) {
-        controller.abort();
-      }
-    };
-  }, [apiRequests, error, loaded, streams]);
 
   return { allStreams, loaded, streamsMap, error };
 }
