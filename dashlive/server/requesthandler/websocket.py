@@ -27,7 +27,7 @@ from dashlive.mpeg.dash.validator.pool import WorkerPool
 from dashlive.mpeg.dash.validator.progress import Progress
 from dashlive.mpeg.dash.validator.requests_http_client import RequestsHttpClient
 from dashlive.mpeg.dash.validator.validation_flag import ValidationFlag
-from dashlive.server import models
+from dashlive.server.models import Stream
 from dashlive.server.asyncio_loop import asyncio_loop
 from dashlive.server.thread_pool import pool_executor
 
@@ -53,10 +53,11 @@ class ClientConnection(Progress):
     pool: ConcurrentWorkerPool
     queue_handler: QueueHandler
     session_id: str
+    sockio: SocketIO
     tasks: set[Future]
     tmpdir: Optional[tempfile.TemporaryDirectory] = None
 
-    def __init__(self, sockio, session_id: str) -> None:
+    def __init__(self, sockio: SocketIO, session_id: str) -> None:
         super().__init__()
         self.sockio = sockio
         self.session_id = session_id
@@ -68,8 +69,7 @@ class ClientConnection(Progress):
         log_queue = queue.Queue(-1)
         self.queue_handler = QueueHandler(log_queue)
         self.dash_log.addHandler(self.queue_handler)
-        self.listener = QueueListener(
-            log_queue, WebsocketLogHandler(sockio, session_id))
+        self.listener = QueueListener(log_queue, WebsocketLogHandler(sockio, session_id))
         self.listener.start()
 
     def shutdown(self) -> None:
@@ -128,15 +128,19 @@ class ClientConnection(Progress):
             if data['prefix'] == '':
                 errs['prefix'] = 'Directory name is required'
             else:
-                stream = models.Stream.get(directory=data['prefix'])
+                stream: Stream | None = Stream.get(directory=data['prefix'])
                 if stream is not None:
                     errs['prefix'] = f'"{data["directory"]}" directory already exists'
             if data['title'] == '':
                 errs['title'] = 'Title is required'
+        if not data['manifest']:
+            errs['manifest'] = "A manifest URL is required"
+        if data['duration'] < 1:
+            errs['duration'] = f"Invalid duration {data['duration']}"
         if errs:
-            self.emit('manifest-validation', errs)
+            self.emit('validate-errors', errs)
             return
-        upload_dir = flask.current_app.config['UPLOAD_FOLDER']
+        upload_dir: str = flask.current_app.config['UPLOAD_FOLDER']
         if self.tmpdir is not None:
             self.emit('log', {
                 'level': 'error',
