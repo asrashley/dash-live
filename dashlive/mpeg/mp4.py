@@ -2868,7 +2868,7 @@ class ContentProtectionSpecificBox(FullBox):
             if re.match(r'^(0x)?[0-9a-f-]+$', value, re.IGNORECASE):
                 if value.startswith('0x'):
                     value = value[2:]
-                value = value.replace('-', '').decode('hex')
+                value = binascii.unhexlify(value.replace('-', ''))
         if len(value) != 16:
             raise ValueError(fr"Invalid length: {len(value)}")
         return HexBinary(value, encoding=Binary.HEX)

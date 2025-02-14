@@ -14,8 +14,8 @@ import { InputProps } from '../types/InputProps';
 interface GetNameProps {
   cgiName: string;
   mode: FormRowMode;
-  shortName: string;
-  fullName: string;
+  shortName?: string;
+  fullName?: string;
   prefix?: string;
 }
 
@@ -24,12 +24,12 @@ function getName({ cgiName, mode, shortName, fullName, prefix }: GetNameProps): 
     case 'cgi':
       return cgiName;
     case 'shortName':
-      return shortName;
+      return shortName ?? cgiName;
     case 'fullName':
       if (prefix) {
-        return `${prefix}__${fullName}`;
+        return `${prefix}__${fullName ?? cgiName}`;
       }
-      return fullName;
+      return fullName ?? cgiName;
   }
 }
 
@@ -42,7 +42,7 @@ export function Input({
   shortName,
   fullName,
   prefix,
-  mode,
+  mode = "cgi",
   describedBy,
   data,
   disabledFields,
@@ -65,9 +65,18 @@ export function Input({
   });
   const prefixData = useComputed<InputFormData>(() => (mode === 'fullName' && prefix) ? (data.value[prefix] as InputFormData): data.value);
   const stringValue = useComputed<string>(() => value.value === undefined ? "" : typeof value.value === "string" ? value.value : `${value.value}`);
-  const disabled = useComputed<boolean>(() => !!disabledFields[name]);
+  const disabled = useComputed<boolean>(() => !!disabledFields?.value[name]);
   const inputClass = useComputed<string>(() => {
-    const formCls = type === "checkbox" ? "form-check-input" : type === "select" ? "form-select" : "form-control";
+    let formCls = '';
+    if (type === "multiselect") {
+      formCls = "form-check form-switch";
+    } else if (type === "checkbox") {
+      formCls = "form-check-input";
+    } else if(type === "select") {
+      formCls = "form-select";
+    } else if (title) {
+      formCls = "form-control";
+    }
     const err = error ? (error.value ? " is-invalid" : " is-valid") : "";
     return `${formCls}${err} ${className}`;
   });
@@ -83,7 +92,13 @@ export function Input({
     "aria-describedby": describedBy,
     onInput: (ev: Event) => {
       const target = ev.target as HTMLInputElement;
-      setValue(name, target.type === "checkbox" ? target.checked : target.value);
+      if (type === 'number') {
+        setValue(name, parseInt(target.value, 10));
+      } else if (type == 'checkbox') {
+        setValue(name, target.checked);
+      } else{
+        setValue(name, target.value);
+      }
     },
   };
   switch (type) {
@@ -92,7 +107,7 @@ export function Input({
     case "select":
       return <SelectInput setValue={setValue} value={stringValue} options={options} {...inpProps} />;
     case "multiselect":
-      return <MultiSelectInput setValue={setValue} data={prefixData} options={options} {...inpProps} />;
+      return <MultiSelectInput setValue={setValue} data={prefixData} options={options} disabledFields={disabledFields} {...inpProps} />;
     case "datalist":
       inpProps.type = datalist_type ?? 'text';
       return <DataListInput options={options} value={stringValue} {...inpProps} />;

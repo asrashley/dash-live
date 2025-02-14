@@ -7,10 +7,8 @@ import { InputFormData } from "./InputFormData";
 export interface InputProps extends StaticInputProps {
   data: ReadonlySignal<InputFormData>;
   disabledFields?: ReadonlySignal<Record<string, boolean>>;
-  //errors?: ReadonlySignal<Record<string, string>>;
   error: ReadonlySignal<string|undefined>;
-  mode: FormRowMode;
-  //validation?: "was-validated" | "has-validation" | "needs-validation";
+  mode?: FormRowMode;
   describedBy?: string;
   setValue: SetValueFunc;
 }

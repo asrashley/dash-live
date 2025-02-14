@@ -1,5 +1,7 @@
 import { SelectOptionType } from "./SelectOptionType";
 
+export type SupportedInputTypes = 'checkbox' | 'datalist' | 'email' | 'hidden' | 'multiselect' | 'number' | 'password' | 'select' | 'radio' | 'link' | 'text' | 'url';
+
 /* StaticInputProps represents all the properties of an <input> or <select>
 element that don't change during the life of the element */
 
@@ -9,8 +11,9 @@ export interface StaticInputProps {
     className?: string;
     datalist_type?: 'text' | 'number';
     featured?: boolean;
-    fullName: string;
+    fullName?: string;
     href?: string;
+    inline?: boolean;
     link_title?: string;
     max?: number;
     min?: number;
@@ -24,10 +27,10 @@ export interface StaticInputProps {
     prefix?: string;
     required?: boolean;
     rowClass?: string;
-    shortName: string;
+    shortName?: string;
     spellcheck?: boolean;
     step?: number;
     title: string;
     text?: string;
-    type: 'checkbox' | 'datalist' | 'email' | 'hidden' | 'multiselect' | 'number' | 'password' | 'select' | 'radio' | 'link' | 'text';
+    type: SupportedInputTypes;
 }

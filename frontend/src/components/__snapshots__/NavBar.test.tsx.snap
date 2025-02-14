@@ -62,11 +62,11 @@ exports[`NavBar component > matches snapshot when logged in when admin=false 1`]
           </a>
         </li>
         <li
-          class="nav-item "
+          class="nav-item spa"
         >
           <a
-            class="nav-link "
-            href="/validate/"
+            class="nav-link spa"
+            href="/validate"
             role="menuitem"
           >
             Validate
@@ -192,11 +192,11 @@ exports[`NavBar component > matches snapshot when logged in when admin=true 1`] 
           </a>
         </li>
         <li
-          class="nav-item "
+          class="nav-item spa"
         >
           <a
-            class="nav-link "
-            href="/validate/"
+            class="nav-link spa"
+            href="/validate"
             role="menuitem"
           >
             Validate
@@ -322,11 +322,11 @@ exports[`NavBar component > matches snapshot when not logged in 1`] = `
           </a>
         </li>
         <li
-          class="nav-item "
+          class="nav-item spa"
         >
           <a
-            class="nav-link "
-            href="/validate/"
+            class="nav-link spa"
+            href="/validate"
             role="menuitem"
           >
             Validate

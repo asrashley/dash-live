@@ -93,6 +93,8 @@ class Period(DashElement):
         return self.adaptation_sets + self.event_streams
 
     def finished(self) -> bool:
+        if self.progress.aborted():
+            return True
         for child in self.children():
             if not child.finished():
                 self.log.debug('AdaptationSet %d in period %s not finished',

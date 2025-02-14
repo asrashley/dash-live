@@ -38,7 +38,7 @@ def create_navbar_context(with_login: bool = True) -> list[NavBarItem]:
         NavBarItem(title='Streams', href=flask.url_for('list-streams')),
         NavBarItem(title='Multi-Period', href=flask.url_for('ui-list-mps'),
                    className='spa'),
-        NavBarItem(title='Validate', href=flask.url_for('validate-stream')),
+        NavBarItem(title='Validate', href=flask.url_for('ui-validator')),
         NavBarItem(title='Inspect', href=flask.url_for('inspect-media')),
     ]
     if current_user.is_authenticated:

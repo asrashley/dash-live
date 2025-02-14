@@ -173,12 +173,6 @@ export const routeMap = {
     route: "/streams/add",
     url: () => `/streams/add`,
   },
-  validateStream: {
-    title: "DASH Validator",
-    re: /\/validate\//,
-    route: "/validate/",
-    url: () => `/validate/`,
-  },
   viewStream: {
     title: "Edit Stream",
     re: /\/stream\/(?<spk>\d+)/,
@@ -409,5 +403,11 @@ export const uiRouteMap = {
     re: /\/login/,
     route: "/login",
     url: () => `/login`,
+  },
+  validator: {
+    title: "validator",
+    re: /\/validate/,
+    route: "/validate",
+    url: () => `/validate`,
   },
 };

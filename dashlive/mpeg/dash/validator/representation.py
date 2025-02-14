@@ -442,6 +442,8 @@ class Representation(RepresentationBaseType):
         return rv
 
     def finished(self) -> bool:
+        if self.progress.aborted():
+            return True
         if ValidationFlag.MEDIA not in self.options.verify:
             return self._validated
         total_dur = self.get_validated_duration()
@@ -479,6 +481,8 @@ class Representation(RepresentationBaseType):
         return None
 
     async def validate(self) -> None:
+        if self.progress.aborted():
+            return
         futures: set[Awaitable] = set()
         if ValidationFlag.REPRESENTATION in self.options.verify:
             futures.add(super().validate())

@@ -1,3 +1,4 @@
+import { type ComponentChild } from "preact";
 import {
   render,
   queries,
@@ -40,7 +41,7 @@ export type RenderWithProvidersResult = RenderResult<AllQueryFunctions> & {
 };
 
 export function renderWithProviders(
-  ui,
+  ui: ComponentChild,
   {
     userInfo,
     appState,
