@@ -168,7 +168,7 @@ class ClientConnection(Progress):
 
     async def dash_validator_task(
             self, method: str, manifest: str, upload_dir: str, pool: WorkerPool,
-            media: bool, **kwargs) -> None:
+            media: bool, verbose: bool, **kwargs) -> None:
         if self.tmpdir is not None:
             self.emit('log', {
                 'level': 'error',
@@ -181,6 +181,7 @@ class ClientConnection(Progress):
             self.tmpdir = tempfile.TemporaryDirectory(dir=upload_dir)
             opts.dest = self.tmpdir.name
         if opts.verbose:
+            opts.verbose = 1
             self.dash_log.setLevel(logging.DEBUG)
         else:
             self.dash_log.setLevel(logging.INFO)
