@@ -10,9 +10,7 @@ from datetime import datetime
 from enum import IntEnum
 from pathlib import Path
 import traceback
-from typing import AbstractSet, Any, NamedTuple
-
-from dashlive.utils.json_object import JsonObject
+from typing import AbstractSet, Any, NamedTuple, TypedDict
 
 class ErrorSource(IntEnum):
     ATTRIBUTE = 1
@@ -27,6 +25,12 @@ class LineRange(NamedTuple):
     def __str__(self) -> str:
         return f'{self.start}->{self.end}'
 
+class StackFrameJson(TypedDict):
+    filename: str
+    line: int
+    module: str
+
+
 class StackFrame:
     __slots__ = ('filename', 'lineno', 'qualname')
 
@@ -39,12 +43,22 @@ class StackFrame:
     def __repr__(self):
         return f'StackFrame({self.qualname}, {self.lineno}, {self.filename})'
 
-    def to_dict(self) -> dict:
-        return {
+    def to_dict(self) -> StackFrameJson:
+        rv: StackFrameJson = {
             'filename': self.filename,
             'line': self.lineno,
             'module': self.qualname,
         }
+        return rv
+
+
+class ValidationErrorJson(TypedDict):
+    assertion: StackFrameJson
+    clause: str | None
+    location: list[int]
+    msg: str
+    source: str
+
 
 @dataclass(slots=True, kw_only=True)
 class ValidationError:
@@ -57,7 +71,7 @@ class ValidationError:
     msg: str
     clause: str | None = None
 
-    def to_dict(self) -> JsonObject:
+    def to_dict(self) -> ValidationErrorJson:
         return {
             'assertion': self.assertion.to_dict(),
             'clause': self.clause,
@@ -68,7 +82,7 @@ class ValidationError:
 
     def __str__(self) -> str:
         if self.clause:
-            msg = f'{self.clause}: {self.msg}'
+            msg: str = f'{self.clause}: {self.msg}'
         else:
             msg = self.msg
         return f'{self.location}: {msg} [{self.assertion.filename}:{self.assertion.lineno}]'

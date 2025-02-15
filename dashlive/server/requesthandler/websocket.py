@@ -104,7 +104,7 @@ class ClientConnection(Progress):
         if cmd == 'validate':
             self.validate_cmd(data)
         elif cmd == 'cancel':
-            self.cancel_cmd(data)
+            self.cancel_cmd()
         elif cmd == 'done':
             self.join_finished_tasks()
         elif cmd == 'save':
@@ -158,7 +158,7 @@ class ClientConnection(Progress):
         self.tasks.add(self.loop.run_coroutine(
             self.dash_validator_task, pool=self.pool, **data))
 
-    def cancel_cmd(self, *args) -> None:
+    def cancel_cmd(self) -> None:
         self.emit('log', {
             'level': 'info',
             'text': 'Cancelling validation'
@@ -207,7 +207,7 @@ class ClientConnection(Progress):
             await dv.run()
             self.emit('codecs', sorted(list(dv.get_codecs())))
             if dv.has_errors():
-                errs = [e.to_dict() for e in dv.get_errors()]
+                errs: list[JsonObject] = [e.to_dict() for e in dv.get_errors()]
                 self.dash_log.info('Found %d errors', len(errs))
                 self.emit('manifest-errors', errs)
             duration: int = round(time.time() - start_time)
