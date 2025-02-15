@@ -33,13 +33,14 @@ from dashlive.server.requesthandler.websocket import WebsocketHandler
 from dashlive.utils.json_object import JsonObject
 
 from .anonymous_user import AnonymousUser
-from .asyncio_loop import asyncio_loop
+from .asyncio_loop import AsyncioLoop
 from .folders import AppFolders
 from .routes import Route, routes, ui_routes
 from .template_tags import custom_tags
 # from .thread_pool import pool_executor
 
 login_manager = LoginManager()
+asyncio_loop = AsyncioLoop()
 
 class RegexConverter(BaseConverter):
     """
@@ -222,7 +223,7 @@ def create_app(config: JsonObject | None = None,
         logging.debug('cors_allowed_origins=%s', cors_allowed_origins)
         socketio = SocketIO(
             app, async_mode='threading', cors_allowed_origins=cors_allowed_origins)
-        wss = WebsocketHandler(socketio)
+        wss = WebsocketHandler(asyncio_loop, socketio)
         socketio.on_event('connect', wss.connect)
         socketio.on_event('disconnect', wss.disconnect)
         socketio.on_event('cmd', wss.event_handler)

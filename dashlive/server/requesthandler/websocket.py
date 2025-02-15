@@ -28,7 +28,7 @@ from dashlive.mpeg.dash.validator.progress import Progress
 from dashlive.mpeg.dash.validator.requests_http_client import RequestsHttpClient
 from dashlive.mpeg.dash.validator.validation_flag import ValidationFlag
 from dashlive.server.models import Stream
-from dashlive.server.asyncio_loop import asyncio_loop
+from dashlive.server.asyncio_loop import AsyncioLoop
 from dashlive.server.thread_pool import pool_executor
 
 from .ws_log_handler import WebsocketLogHandler
@@ -50,17 +50,21 @@ class ClientConnection(Progress):
     dash_log: logging.Logger
     last_pct: int = 0
     listener: QueueListener
+    loop: AsyncioLoop
     pool: ConcurrentWorkerPool
     queue_handler: QueueHandler
     session_id: str
     sockio: SocketIO
     tasks: set[Future]
     tmpdir: Optional[tempfile.TemporaryDirectory] = None
+    upload_dir: str
 
-    def __init__(self, sockio: SocketIO, session_id: str) -> None:
+    def __init__(self, loop: AsyncioLoop, sockio: SocketIO, session_id: str, upload_dir: str) -> None:
         super().__init__()
+        self.loop = loop
         self.sockio = sockio
         self.session_id = session_id
+        self.upload_dir = upload_dir
         self.dash_log = logging.getLogger('DashValidator')
         self.dash_log.propagate = False
         self._aborted = False
@@ -91,11 +95,11 @@ class ClientConnection(Progress):
             return
         try:
             cmd: str = data['method']
-        except KeyError as err:
+        except KeyError:
             self.sockio.emit('log', {
                 "level": "error",
-                "test": f'Invalid command: {err}'
-            }, to=flask.request.sid)
+                "test": 'method parameter missing'
+            }, to=self.session_id)
             return
         if cmd == 'validate':
             self.validate_cmd(data)
@@ -105,8 +109,13 @@ class ClientConnection(Progress):
             self.join_finished_tasks()
         elif cmd == 'save':
             self.save_cmd(data)
+        else:
+            self.sockio.emit('log', {
+                "level": "error",
+                "test": f'Invalid command: "{cmd}"'
+            }, to=self.session_id)
 
-    def emit(self, cmd, data) -> None:
+    def emit(self, cmd: str, data: JsonObject) -> None:
         self.sockio.emit(cmd, data, to=self.session_id)
 
     def send_progress(self, pct: float, text: str) -> None:
@@ -140,24 +149,23 @@ class ClientConnection(Progress):
         if errs:
             self.emit('validate-errors', errs)
             return
-        upload_dir: str = flask.current_app.config['UPLOAD_FOLDER']
         if self.tmpdir is not None:
             self.emit('log', {
                 'level': 'error',
                 'text': 'Saving stream already in progress'
             })
             return
-        self.tasks.add(asyncio_loop.run_coroutine(
-            self.dash_validator_task, pool=self.pool, upload_dir=upload_dir, **data))
+        self.tasks.add(self.loop.run_coroutine(
+            self.dash_validator_task, pool=self.pool, **data))
 
-    def cancel_cmd(self, data) -> None:
+    def cancel_cmd(self, *args) -> None:
         self.emit('log', {
             'level': 'info',
             'text': 'Cancelling validation'
         })
         self._aborted = True
 
-    def save_cmd(self, data) -> None:
+    def save_cmd(self, data: JsonObject) -> None:
         self.emit('log', {
             'level': 'info',
             'text': 'Creating stream'
@@ -167,7 +175,7 @@ class ClientConnection(Progress):
             self.save_stream_task(**data)
 
     async def dash_validator_task(
-            self, method: str, manifest: str, upload_dir: str, pool: WorkerPool,
+            self, method: str, manifest: str, pool: WorkerPool,
             media: bool, verbose: bool, **kwargs) -> None:
         if self.tmpdir is not None:
             self.emit('log', {
@@ -178,7 +186,7 @@ class ClientConnection(Progress):
         start_time: float = time.time()
         opts = ValidatorOptions(log=self.dash_log, progress=self, pool=pool, **kwargs)
         if opts.save:
-            self.tmpdir = tempfile.TemporaryDirectory(dir=upload_dir)
+            self.tmpdir = tempfile.TemporaryDirectory(dir=self.upload_dir)
             opts.dest = self.tmpdir.name
         if opts.verbose:
             opts.verbose = 1
@@ -248,6 +256,11 @@ class ClientConnection(Progress):
             'finished': True
         })
 
+    def wait_for_all_tasks(self, timeout: float | None = None) -> None:
+        for tsk in self.tasks:
+            tsk.result(timeout)
+        self.tasks.clear()
+
     def join_finished_tasks(self) -> None:
         done: set[Future] = set()
         for tsk in self.tasks:
@@ -263,16 +276,19 @@ class ClientConnection(Progress):
 
 
 class WebsocketHandler:
+    loop: AsyncioLoop
     sockio: SocketIO
     clients: dict[str, ClientConnection]
 
-    def __init__(self, sockio: SocketIO) -> None:
+    def __init__(self, loop: AsyncioLoop, sockio: SocketIO) -> None:
+        self.loop = loop
         self.sockio = sockio
         self.clients = {}
 
     def connect(self) -> None:
         logging.debug('WebSocket connection %s', flask.request.sid)
-        con = ClientConnection(self.sockio, flask.request.sid)
+        upload_dir: str = flask.current_app.config['UPLOAD_FOLDER']
+        con = ClientConnection(self.loop, self.sockio, flask.request.sid, upload_dir)
         self.clients[flask.request.sid] = con
 
     def disconnect(self) -> None:
