@@ -7,8 +7,20 @@
 #############################################################################
 import asyncio
 from threading import Thread
+from typing import Protocol
 
-class AsyncioLoop:
+class AsyncLoopOwner(Protocol):
+    def start(self) -> None:
+        ...
+
+    def stop(self) -> None:
+        ...
+
+    def run_coroutine(self, fn, *args, **kwargs) -> asyncio.Future:
+        ...
+
+
+class AsyncioLoop(AsyncLoopOwner):
     """
     This class provides a single background thread that runs the asyncio
     main loop. It allows running async functions in a application doesn't
@@ -43,7 +55,7 @@ class AsyncioLoop:
         loop.stop()
         thread.join(0.5)
 
-    def run_coroutine(self, fn, *args, **kwargs):
+    def run_coroutine(self, fn, *args, **kwargs) -> asyncio.Future:
         if self.loop is None:
             raise RuntimeError('asyncio loop has been stopped')
         return asyncio.run_coroutine_threadsafe(fn(*args, **kwargs), self.loop)
