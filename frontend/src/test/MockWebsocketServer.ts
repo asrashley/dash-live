@@ -29,6 +29,8 @@ type PendingServerEvent = {
 export class MockWebsocketServer {
     private listeners = new Map<string, WebsocketEventListener>();
     private settings?: ValidatorSettings;
+    private clientIsConnected = false;
+    private connectingTimeout?: number;
     private progress: ValidatorProgressEvent = {
         pct: 0,
         text: '',
@@ -39,8 +41,8 @@ export class MockWebsocketServer {
     private pendingCommands: Promise<void>[] = [];
     private manifestErrors: ErrorEntry[] = [];
     private donePromise?: PromiseWithResolvers<void>;
+    private connectedPromise?: PromiseWithResolvers<void>;
 
-    // eslint-disable-next-line no-useless-constructor
     constructor(
         private sock: Socket,
         private endpoint: FakeEndpoint
@@ -53,6 +55,8 @@ export class MockWebsocketServer {
         this.settings = undefined;
         this.donePromise?.reject(new Error('destroy'));
         this.donePromise = undefined;
+        this.connectedPromise?.reject(new Error('destroy'));
+        this.connectedPromise = undefined;
         const { pendingCommands } = this;
         this.pendingCommands = [];
         await Promise.all(pendingCommands);
@@ -68,11 +72,22 @@ export class MockWebsocketServer {
         this.manifestErrors = errors;
     }
 
+    getConnectedPromise(): Promise<void> {
+        if (!this.connectedPromise) {
+            this.connectedPromise = Promise.withResolvers<void>();
+        }
+        return this.connectedPromise.promise;
+    }
+
     getDonePromise(): Promise<void> {
         if (!this.donePromise) {
             this.donePromise = Promise.withResolvers<void>();
         }
         return this.donePromise.promise;
+    }
+
+    getIsConnected() {
+        return this.clientIsConnected;
     }
 
     async nextTick(increment: number): Promise<boolean> {
@@ -106,6 +121,35 @@ export class MockWebsocketServer {
         return this.progress.finished
     }
 
+    connect = () => {
+        log.debug('connecting...');
+        if (!this.connectedPromise) {
+            this.connectedPromise = Promise.withResolvers<void>();
+        }
+        this.connectingTimeout = window.setTimeout(() => {
+            this.clientIsConnected = true;
+            this.dispatchEvent('connect');
+            this.connectedPromise?.resolve();
+            log.debug('connected');
+        }, 25);
+        return this.sock;
+    };
+
+    disconnect = () => {
+        if (this.clientIsConnected) {
+            log.debug('disconnecting');
+            this.dispatchEvent('disconnect');
+        }
+        this.clientIsConnected = false;
+        this.settings = undefined;
+        window.clearTimeout(this.connectingTimeout);
+        this.connectingTimeout = undefined;
+        this.connectedPromise?.reject(new Error('disconnect'));
+        this.connectedPromise = undefined;
+        log.debug('disconnected');
+        return this.sock;
+    };
+
     on = (event: string, cb: WebsocketEventListener) => {
         this.listeners.set(event, cb);
         return this.sock;
@@ -117,6 +161,9 @@ export class MockWebsocketServer {
     };
 
     emit = (event: string, data: object) => {
+        if (!this.clientIsConnected) {
+            return;
+        }
         if (event !== 'cmd') {
             throw new Error(`unknown event "${event}"`);
         }
@@ -253,9 +300,9 @@ export class MockWebsocketServer {
         }
     }
 
-    private dispatchEvent(ev: string, data: unknown) {
-        log.trace(`dispatchEvent(${ev})`, data);
+    private dispatchEvent(ev: string, data?: unknown) {
         const cb = this.listeners.get(ev);
+        log.trace(`dispatchEvent(${ev})`, data, typeof cb);
         cb?.(data);
     }
 

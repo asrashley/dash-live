@@ -33,6 +33,8 @@ describe("ValidatorPage component", () => {
     ioMock.mockImplementation(() => mockSocket);
     endpoint = new FakeEndpoint(websocketUrl);
     server = new MockWebsocketServer(mockSocket, endpoint);
+    mockSocket.connect.mockImplementation(server.connect);
+    mockSocket.disconnect.mockImplementation(server.disconnect);
     mockSocket.on.mockImplementation(server.on);
     mockSocket.off.mockImplementation(server.off);
     mockSocket.emit.mockImplementation(server.emit);
@@ -48,12 +50,15 @@ describe("ValidatorPage component", () => {
   test("initial state", async () => {
     const { asFragment, getByTestId, startBtn, cancelBtn } =
       renderWithFormAccess(<ValidatorPage />);
+    await expect(server.getConnectedPromise()).resolves.toBeUndefined();
     expect(startBtn.disabled).toEqual(true);
     expect(cancelBtn.disabled).toEqual(true);
     const stateElt = getByTestId("validator-state-badge") as HTMLElement;
     expect(stateElt.innerHTML).toEqual("idle");
     expect(ioMock).toHaveBeenCalledTimes(1);
-    expect(ioMock).toHaveBeenCalledWith(websocketUrl);
+    expect(ioMock).toHaveBeenCalledWith(websocketUrl, {
+      autoConnect: false,
+    });
     expect(asFragment()).toMatchSnapshot();
   });
 
@@ -79,49 +84,51 @@ describe("ValidatorPage component", () => {
     const stateElt = getByTestId("validator-state-badge") as HTMLElement;
     expect(stateElt.innerHTML).toEqual("done");
   });
-});
 
-describe("ProtectedValidatorPage component", () => {
-  const apiRequests = mock<ApiRequests>();
+  describe("ProtectedValidatorPage component", () => {
+    const apiRequests = mock<ApiRequests>();
 
-  afterEach(() => {
-    vi.clearAllMocks();
-    mockReset(apiRequests);
-  });
+    afterEach(() => {
+      vi.clearAllMocks();
+      mockReset(apiRequests);
+    });
 
-  test("initial state, not logged in", async () => {
-    apiRequests.getUserInfo.mockImplementation(
-      async () => new Response(null, { status: 401 })
-    );
-    const { asFragment, findByLabelText } = renderWithProviders(
-      <EndpointContext.Provider value={apiRequests}>
-        <ProtectedValidatorPage />
-      </EndpointContext.Provider>
-    );
-    const saveElt = (await findByLabelText(
-      "Add stream to this server?"
-    )) as HTMLInputElement;
-    expect(saveElt.disabled).toEqual(true);
-    expect(asFragment()).toMatchSnapshot();
-  });
+    test("initial state, not logged in", async () => {
+      apiRequests.getUserInfo.mockImplementation(
+        async () => new Response(null, { status: 401 })
+      );
+      const { asFragment, findByLabelText } = renderWithProviders(
+        <EndpointContext.Provider value={apiRequests}>
+          <ProtectedValidatorPage />
+        </EndpointContext.Provider>
+      );
+      await expect(server.getConnectedPromise()).resolves.toBeUndefined();
+      const saveElt = (await findByLabelText(
+        "Add stream to this server?"
+      )) as HTMLInputElement;
+      expect(saveElt.disabled).toEqual(true);
+      expect(asFragment()).toMatchSnapshot();
+    });
 
-  test("initial state, logged in user", async () => {
-    const login: LoginResponse = {
-      success: true,
-      csrf_token: "123",
-      user: mediaUser,
-    };
-    apiRequests.getUserInfo.mockImplementation(async () => login);
-    const { asFragment, findByLabelText } = renderWithProviders(
-      <EndpointContext.Provider value={apiRequests}>
-        <ProtectedValidatorPage />
-      </EndpointContext.Provider>,
-      { userInfo: mediaUser }
-    );
-    const saveElt = (await findByLabelText(
-      "Add stream to this server?"
-    )) as HTMLInputElement;
-    expect(saveElt.disabled).toEqual(false);
-    expect(asFragment()).toMatchSnapshot();
+    test("initial state, logged in user", async () => {
+      const login: LoginResponse = {
+        success: true,
+        csrf_token: "123",
+        user: mediaUser,
+      };
+      apiRequests.getUserInfo.mockImplementation(async () => login);
+      const { asFragment, findByLabelText } = renderWithProviders(
+        <EndpointContext.Provider value={apiRequests}>
+          <ProtectedValidatorPage />
+        </EndpointContext.Provider>,
+        { userInfo: mediaUser }
+      );
+      await expect(server.getConnectedPromise()).resolves.toBeUndefined();
+      const saveElt = (await findByLabelText(
+        "Add stream to this server?"
+      )) as HTMLInputElement;
+      expect(saveElt.disabled).toEqual(false);
+      expect(asFragment()).toMatchSnapshot();
+    });
   });
 });

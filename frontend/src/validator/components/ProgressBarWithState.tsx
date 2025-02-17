@@ -7,6 +7,7 @@ import {
 } from "../hooks/useValidatorWebsocket";
 
 const stateClassMap = {
+  [ValidatorState.DISCONNECTED]: "text-bg-dark",
   [ValidatorState.IDLE]: "text-bg-secondary",
   [ValidatorState.ACTIVE]: "bg-success-subtle text-dark",
   [ValidatorState.CANCELLING]: "bg-danger",
@@ -18,6 +19,7 @@ export interface ProgressBarWithStateProps {
   progress: UseValidatorWebsocketHook["progress"];
   state: UseValidatorWebsocketHook["state"];
 }
+
 export function ProgressBarWithState({
   progress,
   state,

@@ -2,6 +2,7 @@ import { act, renderHook } from "@testing-library/preact";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { mock, mockReset } from "vitest-mock-extended";
 import { io, Socket } from 'socket.io-client';
+import log from 'loglevel';
 
 import { useValidatorWebsocket, ValidatorState } from "./useValidatorWebsocket";
 import { MockWebsocketServer } from "../../test/MockWebsocketServer";
@@ -28,6 +29,8 @@ describe('useValidatorWebsocket hook', () => {
     };
     const expectedEvents: string[] = [
         'codecs',
+        'connect',
+        'disconnect',
         'finished',
         'install',
         'log',
@@ -43,6 +46,8 @@ describe('useValidatorWebsocket hook', () => {
         ioMock.mockImplementation(() => mockSocket);
         endpoint = new FakeEndpoint(wssUrl);
         server = new MockWebsocketServer(mockSocket, endpoint);
+        mockSocket.connect.mockImplementation(server.connect);
+        mockSocket.disconnect.mockImplementation(server.disconnect);
         mockSocket.on.mockImplementation(server.on);
         mockSocket.off.mockImplementation(server.off);
         mockSocket.emit.mockImplementation(server.emit);
@@ -52,26 +57,70 @@ describe('useValidatorWebsocket hook', () => {
         await server.destroy();
         vi.clearAllMocks();
         mockReset(mockSocket);
+        vi.useRealTimers();
+        log.setLevel('error');
     });
 
-    test('can open Websocket', () => {
+    test('can open Websocket', async () => {
+        vi.useFakeTimers();
+        const connected = server.getConnectedPromise();
         const { result } = renderHook((url: string) => useValidatorWebsocket(url), {
             initialProps: wssUrl
         });
         expect(ioMock).toHaveBeenCalledTimes(1);
-        expect(ioMock).toHaveBeenCalledWith(wssUrl);
+        expect(ioMock).toHaveBeenCalledWith(wssUrl, {
+            autoConnect: false,
+        });
         expect(mockSocket.on).toHaveBeenCalledTimes(expectedEvents.length);
         expectedEvents.forEach(ev => expect(mockSocket.on).toHaveBeenCalledWith(ev, expect.any(Function)));
         expect(result.current.log.value).toEqual([]);
+        expect(result.current.state.value).toEqual(ValidatorState.DISCONNECTED);
+        await vi.advanceTimersByTimeAsync(1000);
+        await expect(connected).resolves.toBeUndefined();
+        expect(result.current.state.value).toEqual(ValidatorState.IDLE);
     });
 
-    test('validate a stream', async () => {
+    test('closes connection when unmounted', async () => {
+        const connected = server.getConnectedPromise();
+        const { result, unmount } = renderHook((url: string) => useValidatorWebsocket(url), {
+            initialProps: wssUrl
+        });
+        await expect(connected).resolves.toBeUndefined();
+        expect(server.getIsConnected()).toEqual(true);
+        expect(result.current.state.value).toEqual(ValidatorState.IDLE);
+        await act(async () => {
+            unmount();
+        });
+        expect(server.getIsConnected()).toEqual(false);
+        expectedEvents.forEach(ev => expect(mockSocket.off).toHaveBeenCalledWith(ev, expect.any(Function)));
+    });
+
+    test('detects if server disconnects', async () => {
+        const connected = server.getConnectedPromise();
         const { result } = renderHook((url: string) => useValidatorWebsocket(url), {
             initialProps: wssUrl
         });
+        await expect(connected).resolves.toBeUndefined();
+        await act(async () => {
+            server.disconnect();
+            await server.nextTick(0);
+        });
+        expect(result.current.state.value).toEqual(ValidatorState.DISCONNECTED);
+    });
+
+    test('validate a stream', async () => {
+        const connected = server.getConnectedPromise();
+        const { result } = renderHook((url: string) => useValidatorWebsocket(url), {
+            initialProps: wssUrl
+        });
+        await expect(connected).resolves.toBeUndefined();
         const { start, codecs, progress, state, result: valResult, log, manifest } = result.current;
         start(settings);
+        const timeout = Date.now() + 20_000;
         while (!progress.value.finished || valResult.value === undefined) {
+            if (Date.now() > timeout) {
+                throw new Error('test timeout');
+            }
             await act(async () => {
                 await server.nextTick(0.5);
             });
@@ -131,9 +180,14 @@ describe('useValidatorWebsocket hook', () => {
         const { result } = renderHook((url: string) => useValidatorWebsocket(url), {
             initialProps: wssUrl
         });
+        await expect(server.getConnectedPromise()).resolves.toBeUndefined();
         const { start, errors, progress, result: valResult, manifest } = result.current;
         start(settings);
+        const timeout = Date.now() + 20_000;
         while (!progress.value.finished) {
+            if (Date.now() > timeout) {
+                throw new Error('test timeout');
+            }
             await act(async () => {
                 await server.nextTick(0.5);
             });
@@ -151,10 +205,15 @@ describe('useValidatorWebsocket hook', () => {
         const { result } = renderHook((url: string) => useValidatorWebsocket(url), {
             initialProps: wssUrl
         });
+        await expect(server.getConnectedPromise()).resolves.toBeUndefined();
         const { start, cancel, progress, state, result: valResult, log, manifest } = result.current;
         let aborted = false;
         start(settings);
+        const timeout = Date.now() + 20_000;
         while (!progress.value.finished || valResult.value === undefined) {
+            if (Date.now() > timeout) {
+                throw new Error('test timeout');
+            }
             await act(async () => {
                 await server.nextTick(0.5);
             });
@@ -182,6 +241,7 @@ describe('useValidatorWebsocket hook', () => {
         const { result } = renderHook((url: string) => useValidatorWebsocket(url), {
             initialProps: wssUrl
         });
+        await expect(server.getConnectedPromise()).resolves.toBeUndefined();
         const { start, progress, state, result: valResult, log } = result.current;
         const saveSettings: ValidatorSettings = {
             ...settings,
@@ -190,7 +250,11 @@ describe('useValidatorWebsocket hook', () => {
             title: 'testing saving a stream',
         };
         start(saveSettings);
+        const timeout = Date.now() + 20_000;
         while (!progress.value.finished || valResult.value === undefined) {
+            if (Date.now() > timeout) {
+                throw new Error('test timeout');
+            }
             await act(async () => {
                 await server.nextTick(0.5);
             });
@@ -234,13 +298,18 @@ describe('useValidatorWebsocket hook', () => {
         const { result } = renderHook((url: string) => useValidatorWebsocket(url), {
             initialProps: wssUrl
         });
+        await expect(server.getConnectedPromise()).resolves.toBeUndefined();
         const { start, progress, state, result: valResult, log } = result.current;
         const saveSettings: ValidatorSettings = {
             ...settings,
             save: true,
         };
         start(saveSettings);
+        const timeout = Date.now() + 20_000;
         while (!progress.value.finished || valResult.value === undefined) {
+            if (Date.now() > timeout) {
+                throw new Error('test timeout');
+            }
             await act(async () => {
                 await server.nextTick(0.5);
             });
