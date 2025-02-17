@@ -11,7 +11,8 @@ of different combinations.
 
 ## Installation
 
-Python v3.11 or greater and Node.js v20 or greater is required by this application.
+Python v3.11 or greater and Node.js v20 or greater is required by this
+application. It has been tested on both Linux and Windows operating systems.
 
 A `.env` needs to be created that contains
 
@@ -45,11 +46,21 @@ to use for the admin user account when creating a new blank database.
 
 ## Running the development server directly on the host machine
 
-Create a Python virtual environment and install the dependencies:
+Create a Python virtual environment and install the dependencies.
+
+If using Linux:
 
 ```sh
 python3 -m venv virtenv
 . ./virtenv/bin/activate
+pip install -r requirements.txt
+```
+
+or Windows:
+
+```powershell
+python3 -m venv virtenv
+.\virtenv\Scripts\activate
 pip install -r requirements.txt
 ```
 
@@ -75,7 +86,13 @@ npm run build
 To start the server:
 
 ```sh
-python -m flask --app dashlive.server.app run --host=0.0.0.0 --debug
+./runserver.sh
+```
+
+or if using Windows:
+
+```powershell
+runserver.ps1
 ```
 
 It will start an HTTP server on port 5000
@@ -158,8 +175,8 @@ python3 -m dashlive.upload --username=admin --password=mysecret \
     --host http://localhost:5000/ tmp/downloaded.json
 ```
 
-The `Timing reference` property of each uploaded stream needs to be set before
-the streams are playable. After the media has been installed onto the server,
+**The `Timing reference` property of each uploaded stream needs to be set before
+the streams are playable**. After the media has been installed onto the server,
 each stream needs to be modified to set the stream's timing reference.
 
 From the streams list page (e.g. http://localhost:5000/streams) click on each
@@ -176,18 +193,18 @@ adaptation sets within the stream.
 ## Testing
 
 See [docs/testing](./docs/testing.md) for information about running the
-unit tests and coverage reports. At the time of writing, there is just
-under 80% code test coverage of the Python code.
+unit tests and coverage reports. At the time of writing, there is almost 80%
+test coverage of the Python code.
 
 | statements | missing | excluded | branches | partial | coverage |
 | --- | --- | --- | --- | --- | --- |
 | 12484 | 2342 | 94 | 5216 | 741 | 79% |
 
-The TypeScript front-end code has just over 90% test coverage:
+The TypeScript front-end code has over 90% test coverage:
 
 |           | % Stmts | % Branch | % Funcs | % Lines |
 | --------- | ------- | -------- | ------- | ------- |
-| All files |   94.92 |    91.08 |   98.97 |   94.92 |
+| All files |   96.56 |    93.94 |   99.58 |   96.56 |
 
 ## License
 
