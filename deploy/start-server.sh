@@ -33,6 +33,8 @@ fi
 
 GUNICORN_OPTIONS="-w 1 --threads 100 --user www-data --group www-data --worker-class gthread"
 
+echo Starting server with Origin ${SERVER_NAME}:${SERVER_PORT}
+
 if [ -f /etc/nginx/sites-available/dashlive.conf ]; then
     gunicorn ${GUNICORN_OPTIONS} -b 127.0.0.1:5000 --daemon application:app
     nginx -g "daemon off;"

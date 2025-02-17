@@ -2,6 +2,8 @@
 export LC_ALL=C.UTF-8
 export LANG=C.UTF-8
 export FLASK_APP="dashlive.server.app"
+export SERVER_NAME=$(hostname -f)
+export SERVER_PORT="5000"
 
 if [ ! -z "${VIRTUAL_ENV}" ]; then
     source ${VIRTUAL_ENV}/bin/activate

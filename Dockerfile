@@ -64,6 +64,7 @@ ENTRYPOINT ["/home/dash/dash-live/runserver.sh"]
 FROM dashlive as dashlive-nginx
 EXPOSE 80
 ENV SERVER_NAME="_"
+ENV SERVER_PORT="80"
 ENV USER_GID=""
 RUN apt-get -y -q --force-yes install nginx
 RUN rm /etc/nginx/sites-enabled/default
