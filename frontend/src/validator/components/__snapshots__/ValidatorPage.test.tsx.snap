@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`ProtectedValidatorPage component > initial state, logged in user 1`] = `
+exports[`ValidatorPage component > ProtectedValidatorPage component > initial state, logged in user 1`] = `
 <DocumentFragment>
   <div
     class="container"
@@ -348,7 +348,7 @@ exports[`ProtectedValidatorPage component > initial state, logged in user 1`] = 
 </DocumentFragment>
 `;
 
-exports[`ProtectedValidatorPage component > initial state, not logged in 1`] = `
+exports[`ValidatorPage component > ProtectedValidatorPage component > initial state, not logged in 1`] = `
 <DocumentFragment>
   <div
     class="container"

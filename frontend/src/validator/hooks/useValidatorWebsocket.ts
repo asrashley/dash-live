@@ -38,6 +38,7 @@ export interface InstallStreamCommand {
 }
 
 export enum ValidatorState {
+    DISCONNECTED = 'disconnected',
     IDLE = 'idle',
     ACTIVE = 'active',
     CANCELLING = 'cancelling',
@@ -58,13 +59,13 @@ export interface UseValidatorWebsocketHook {
 }
 
 export function useValidatorWebsocket(wssUrl: string): UseValidatorWebsocketHook {
-    const socket = useMemo(() => io(wssUrl), [wssUrl]);
+    const socket = useMemo(() => io(wssUrl, { autoConnect: false }), [wssUrl]);
     const log = useSignal<LogEntry[]>([]);
     const progress = useSignal<ProgressState>({ minValue: 0, maxValue: 100, finished: false, error: false, text: ''});
     const manifestText = useSignal<string[]>([]);
     const codecs = useSignal<CodecInformation[]>([]);
     const errors = useSignal<ErrorEntry[]>([]);
-    const state = useSignal<ValidatorState>(ValidatorState.IDLE);
+    const state = useSignal<ValidatorState>(ValidatorState.DISCONNECTED);
     const result = useSignal<ValidatorFinishedEvent|undefined>();
     const manifest = useComputed<ManifestLine[]>(() => {
         const lines: ManifestLine[] = manifestText.value.map((text: string, idx: number) => ({
@@ -85,6 +86,14 @@ export function useValidatorWebsocket(wssUrl: string): UseValidatorWebsocketHook
         return lines;
     });
     const nextMsgId = useRef<number>(1);
+
+    const onConnected = useCallback(() => {
+        state.value = ValidatorState.IDLE;
+    }, [state]);
+
+    const onDisconnected = useCallback(() => {
+        state.value = ValidatorState.DISCONNECTED;
+    }, [state]);
 
     const addLogMessage = useCallback((msg: Omit<LogEntry, 'id'>) => {
         log.value = [
@@ -218,7 +227,9 @@ export function useValidatorWebsocket(wssUrl: string): UseValidatorWebsocketHook
     }, [progress, socket, state]);
 
     useEffect(() => {
+        socket.on('connect', onConnected);
         socket.on('codecs', onCodecs);
+        socket.on('disconnect', onDisconnected);
         socket.on('finished', onFinished);
         socket.on('install', onInstallStream);
         socket.on('log', addLogMessage);
@@ -226,9 +237,12 @@ export function useValidatorWebsocket(wssUrl: string): UseValidatorWebsocketHook
         socket.on('manifest-errors', onManifestErrors);
         socket.on('progress', onProgress);
         socket.on('validate-errors', onValidateErrors);
+        socket.connect();
 
         return () => {
+            socket.off('connect', onConnected);
             socket.off('codecs', onCodecs);
+            socket.off('disconnect', onDisconnected);
             socket.off('finished', onFinished);
             socket.off('install', onInstallStream);
             socket.off('log', addLogMessage);
@@ -236,8 +250,12 @@ export function useValidatorWebsocket(wssUrl: string): UseValidatorWebsocketHook
             socket.off('manifest-errors', onManifestErrors);
             socket.off('progress', onProgress);
             socket.off('validate-errors', onValidateErrors);
+            socket.disconnect();
         };
-    }, [addLogMessage, onCodecs, onFinished, onManifest, onManifestErrors, onProgress, onInstallStream, onValidateErrors, socket]);
+    }, [
+        addLogMessage, onCodecs, onFinished, onManifest, onManifestErrors, onProgress,
+        onInstallStream, onValidateErrors, onConnected, onDisconnected, socket,
+    ]);
 
     return { codecs, errors, log, manifest, progress, result, state, start, cancel };
 }
