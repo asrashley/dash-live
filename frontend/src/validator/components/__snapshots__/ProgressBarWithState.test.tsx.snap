@@ -1,0 +1,205 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ProgressBarWithState component > renders when state=active 1`] = `
+<DocumentFragment>
+  <div
+    class="position-relative"
+  >
+    <div
+      class="card progress"
+    >
+      <div>
+        <div
+          aria-valuemax="100"
+          aria-valuemin="0"
+          class="progress-bar progress-bar-striped visually-hidden"
+          role="progressbar"
+        >
+          NaN%
+        </div>
+        <div
+          class="progress-text"
+        >
+          renders when state=active
+        </div>
+      </div>
+    </div>
+    <div
+      class="position-absolute top-0 start-50 translate-middle badge rounded-pill bg-success-subtle text-dark"
+      data-testid="validator-state-badge"
+    >
+      active
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`ProgressBarWithState component > renders when state=cancelled 1`] = `
+<DocumentFragment>
+  <div
+    class="position-relative"
+  >
+    <div
+      class="card progress"
+    >
+      <div>
+        <div
+          aria-valuemax="100"
+          aria-valuemin="0"
+          class="progress-bar progress-bar-striped visually-hidden"
+          role="progressbar"
+        >
+          NaN%
+        </div>
+        <div
+          class="progress-text"
+        >
+          renders when state=cancelled
+        </div>
+      </div>
+    </div>
+    <div
+      class="position-absolute top-0 start-50 translate-middle badge rounded-pill bg-warning-subtle text-dark"
+      data-testid="validator-state-badge"
+    >
+      cancelled
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`ProgressBarWithState component > renders when state=cancelling 1`] = `
+<DocumentFragment>
+  <div
+    class="position-relative"
+  >
+    <div
+      class="card progress"
+    >
+      <div>
+        <div
+          aria-valuemax="100"
+          aria-valuemin="0"
+          class="progress-bar progress-bar-striped visually-hidden"
+          role="progressbar"
+        >
+          NaN%
+        </div>
+        <div
+          class="progress-text"
+        >
+          renders when state=cancelling
+        </div>
+      </div>
+    </div>
+    <div
+      class="position-absolute top-0 start-50 translate-middle badge rounded-pill bg-danger"
+      data-testid="validator-state-badge"
+    >
+      cancelling
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`ProgressBarWithState component > renders when state=disconnected 1`] = `
+<DocumentFragment>
+  <div
+    class="position-relative"
+  >
+    <div
+      class="card progress"
+    >
+      <div>
+        <div
+          aria-valuemax="100"
+          aria-valuemin="0"
+          class="progress-bar progress-bar-striped visually-hidden"
+          role="progressbar"
+        >
+          NaN%
+        </div>
+        <div
+          class="progress-text"
+        >
+          renders when state=disconnected
+        </div>
+      </div>
+    </div>
+    <div
+      class="position-absolute top-0 start-50 translate-middle badge rounded-pill text-bg-dark"
+      data-testid="validator-state-badge"
+    >
+      disconnected
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`ProgressBarWithState component > renders when state=done 1`] = `
+<DocumentFragment>
+  <div
+    class="position-relative"
+  >
+    <div
+      class="card progress"
+    >
+      <div>
+        <div
+          aria-valuemax="100"
+          aria-valuemin="0"
+          class="progress-bar progress-bar-striped visually-hidden"
+          role="progressbar"
+        >
+          NaN%
+        </div>
+        <div
+          class="progress-text"
+        >
+          renders when state=done
+        </div>
+      </div>
+    </div>
+    <div
+      class="position-absolute top-0 start-50 translate-middle badge rounded-pill bg-success"
+      data-testid="validator-state-badge"
+    >
+      done
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`ProgressBarWithState component > renders when state=idle 1`] = `
+<DocumentFragment>
+  <div
+    class="position-relative"
+  >
+    <div
+      class="card progress"
+    >
+      <div>
+        <div
+          aria-valuemax="100"
+          aria-valuemin="0"
+          class="progress-bar progress-bar-striped visually-hidden"
+          role="progressbar"
+        >
+          NaN%
+        </div>
+        <div
+          class="progress-text"
+        >
+          renders when state=idle
+        </div>
+      </div>
+    </div>
+    <div
+      class="position-absolute top-0 start-50 translate-middle badge rounded-pill text-bg-secondary"
+      data-testid="validator-state-badge"
+    >
+      idle
+    </div>
+  </div>
+</DocumentFragment>
+`;
