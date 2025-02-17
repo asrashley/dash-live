@@ -198,11 +198,19 @@ def create_app(config: JsonObject | None = None,
             x_host=proxy_depth, x_prefix=proxy_depth
         )
     if wss:
-        port: str = environ.get('SERVER_PORT', '5000')
+        server_name: str = environ.get('SERVER_NAME', '')
+        port: str = environ.get('SERVER_PORT', '80')
+        if port == '80':
+            port = ''
+        else:
+            port = f':{port}'
         cors_allowed_origins: list[str] = [
-            f'http://127.0.0.1:{port}',
-            f'http://localhost:{port}'
+            f'http://127.0.0.1{port}',
+            f'http://localhost{port}'
         ]
+        if server_name:
+            cors_allowed_origins.append(f'http://{server_name}{port}')
+            cors_allowed_origins.append(f'https://{server_name}{port}')
         if app.debug:
             frontend_port: str = environ.get('FRONTEND_PORT', '8765')
             cors_allowed_origins.append(f"http://127.0.0.1:{frontend_port}")
@@ -212,11 +220,11 @@ def create_app(config: JsonObject | None = None,
                     addr = i['addr']
                     if not addr or addr.startswith('127'):
                         continue
-                    cors_allowed_origins.append(f"http://{addr}:{port}")
+                    cors_allowed_origins.append(f"http://{addr}{port}")
                     cors_allowed_origins.append(f"http://{addr}:{frontend_port}")
                     try:
                         hostname: str = socket.gethostbyaddr(addr)[0]
-                        cors_allowed_origins.append(f"http://{hostname}:{port}")
+                        cors_allowed_origins.append(f"http://{hostname}{port}")
                         cors_allowed_origins.append(f"http://{hostname}:{frontend_port}")
                     except socket.herror as err:
                         logging.warning('Failed to find hostname for IP address %s: %s', addr, err)
