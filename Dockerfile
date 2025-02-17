@@ -11,7 +11,7 @@ COPY *.js ${HOME}/
 COPY *.json ${HOME}/
 COPY frontend ${HOME}/frontend
 COPY static/css ${HOME}/static/css
-COPY patches/eslint*.patch ${HOME}/patches/
+COPY patches ${HOME}/patches
 RUN npm ci
 RUN GIT_SHA=${GIT_SHA} npm run build
 RUN npm run legacy-css
