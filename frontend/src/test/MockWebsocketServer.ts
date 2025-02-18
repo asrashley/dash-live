@@ -50,6 +50,17 @@ export class MockWebsocketServer {
         log.debug(`MockWebsocketServer(${endpoint.getOrigin()})`)
     }
 
+    static create(websocketUrl: string, mockSocket) {
+        const endpoint = new FakeEndpoint(websocketUrl);
+        const server = new MockWebsocketServer(mockSocket, endpoint);
+        mockSocket.connect.mockImplementation(server.connect);
+        mockSocket.disconnect.mockImplementation(server.disconnect);
+        mockSocket.on.mockImplementation(server.on);
+        mockSocket.off.mockImplementation(server.off);
+        mockSocket.emit.mockImplementation(server.emit);
+        return { endpoint, server };
+    }
+
     async destroy() {
         this.listeners = new Map();
         this.settings = undefined;

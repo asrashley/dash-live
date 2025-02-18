@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { io, Socket } from "socket.io-client";
 import { mock, mockReset } from "vitest-mock-extended";
+import { act } from "@testing-library/preact";
 import userEvent from "@testing-library/user-event";
 import log from "loglevel";
 
 import { wssUrl } from "../utils/wssUrl";
-import { FakeEndpoint } from "../../test/FakeEndpoint";
 import { MockWebsocketServer } from "../../test/MockWebsocketServer";
 import ProtectedValidatorPage, { ValidatorPage } from "./ValidatorPage";
 import { renderWithFormAccess } from "../test/renderWithFormAccess";
@@ -13,7 +13,6 @@ import { ApiRequests, EndpointContext } from "../../endpoints";
 import { LoginResponse } from "../../types/LoginResponse";
 import { mediaUser } from "../../test/MockServer";
 import { renderWithProviders } from "../../test/renderWithProviders";
-import { act } from "@testing-library/preact";
 
 vi.mock("socket.io-client");
 
@@ -22,22 +21,15 @@ vi.mock("../utils/wssUrl");
 describe("ValidatorPage component", () => {
   const manifest = "http://localhost:8765/dash/vod/bbb/hand_made.mpd";
   const websocketUrl = "wss://localhost:3456";
-  const wssUrlMock = vi.mocked(wssUrl);
   const ioMock = vi.mocked(io);
+  const wssUrlMock = vi.mocked(wssUrl);
   const mockSocket = mock<Socket>();
-  let endpoint: FakeEndpoint;
   let server: MockWebsocketServer;
 
   beforeEach(() => {
     wssUrlMock.mockReturnValue(websocketUrl);
+    server = MockWebsocketServer.create(websocketUrl, mockSocket).server;
     ioMock.mockImplementation(() => mockSocket);
-    endpoint = new FakeEndpoint(websocketUrl);
-    server = new MockWebsocketServer(mockSocket, endpoint);
-    mockSocket.connect.mockImplementation(server.connect);
-    mockSocket.disconnect.mockImplementation(server.disconnect);
-    mockSocket.on.mockImplementation(server.on);
-    mockSocket.off.mockImplementation(server.off);
-    mockSocket.emit.mockImplementation(server.emit);
   });
 
   afterEach(async () => {

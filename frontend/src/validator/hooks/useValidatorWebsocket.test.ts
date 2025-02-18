@@ -7,7 +7,6 @@ import log from 'loglevel';
 import { useValidatorWebsocket, ValidatorState } from "./useValidatorWebsocket";
 import { MockWebsocketServer } from "../../test/MockWebsocketServer";
 import { ValidatorSettings } from "../types/ValidatorSettings";
-import { FakeEndpoint } from "../../test/FakeEndpoint";
 import { exampleCodecs } from "../../test/fixtures/exampleCodecs";
 
 vi.mock('socket.io-client');
@@ -39,18 +38,11 @@ describe('useValidatorWebsocket hook', () => {
         'progress',
         'validate-errors',
     ];
-    let endpoint: FakeEndpoint;
     let server: MockWebsocketServer;
 
     beforeEach(() => {
         ioMock.mockImplementation(() => mockSocket);
-        endpoint = new FakeEndpoint(wssUrl);
-        server = new MockWebsocketServer(mockSocket, endpoint);
-        mockSocket.connect.mockImplementation(server.connect);
-        mockSocket.disconnect.mockImplementation(server.disconnect);
-        mockSocket.on.mockImplementation(server.on);
-        mockSocket.off.mockImplementation(server.off);
-        mockSocket.emit.mockImplementation(server.emit);
+        server = MockWebsocketServer.create(wssUrl, mockSocket).server;
     });
 
     afterEach(async () => {
