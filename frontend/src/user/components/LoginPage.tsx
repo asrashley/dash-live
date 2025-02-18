@@ -3,12 +3,14 @@ import { useSignal } from "@preact/signals";
 import { useLocation } from "wouter-preact";
 
 import { uiRouteMap } from "@dashlive/routemap";
-import { LoginCard } from "./LoginCard";
+
 import { EndpointContext } from "../../endpoints";
-import { LoginRequest } from "../../types/LoginRequest";
-import { LoginResponse } from "../../types/LoginResponse";
-import { WhoAmIContext } from "../../hooks/useWhoAmI";
+import { LoginRequest } from "../types/LoginRequest";
+import { LoginResponse } from "../types/LoginResponse";
+import { WhoAmIContext } from "../hooks/useWhoAmI";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
+
+import { LoginCard } from "./LoginCard";
 
 export default function LoginPage() {
   const apiRequests = useContext(EndpointContext);

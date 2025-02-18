@@ -3,8 +3,8 @@ import { act, renderHook } from "@testing-library/preact";
 
 import { useWhoAmI } from "./useWhoAmI";
 import { UserState } from "../types/UserState";
-import { mediaUser } from "../test/MockServer";
-import { flattenUserState } from "../user/utils/flattenUserState";
+import { mediaUser } from "../../test/MockServer";
+import { flattenUserState } from "../utils/flattenUserState";
 
 describe('useWhoAmI hook', () => {
     const blankUser: Readonly<UserState> = {

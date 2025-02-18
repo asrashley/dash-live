@@ -6,10 +6,10 @@ import { EditUserForm } from "./EditUserForm";
 
 import { AppStateContext } from "../../appState";
 import { useMessages } from "../../hooks/useMessages";
-import { UseAllUsersHook, UserValidationErrors } from "../../hooks/useAllUsers";
+import { UseAllUsersHook, UserValidationErrors } from "../hooks/useAllUsers";
 import { randomToken } from "../../utils/randomToken";
 import { Alert, AlertProps } from "../../components/Alert";
-import { EditUserState } from "../../types/EditUserState";
+import { EditUserState } from "../types/EditUserState";
 
 interface FooterProps {
   onClose: (ev: Event) => void;

@@ -5,9 +5,9 @@ import { mock } from "vitest-mock-extended";
 import { renderWithProviders } from "../test/renderWithProviders";
 import { ProtectedPage } from "./ProtectedPage";
 import { ApiRequests, EndpointContext } from "../endpoints";
-import { LoginResponse } from "../types/LoginResponse";
+import { LoginResponse } from "../user/types/LoginResponse";
+import { InitialUserState } from "../user/types/InitialUserState";
 import { normalUser } from "../test/MockServer";
-import { InitialUserState } from "../types/UserState";
 
 type TestCase = {
   title: string;

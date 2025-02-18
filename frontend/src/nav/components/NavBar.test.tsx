@@ -2,11 +2,11 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { fireEvent } from "@testing-library/preact";
 import { signal } from "@preact/signals";
 
-import { renderWithProviders } from "../test/renderWithProviders";
+import { renderWithProviders } from "../../test/renderWithProviders";
 
 import { createNavItems, NavBar } from "./NavBar";
-import { adminUser, mediaUser, normalUser } from "../test/MockServer";
-import { UserState } from "../types/UserState";
+import { adminUser, mediaUser, normalUser } from "../../test/MockServer";
+import { UserState } from "../../user/types/UserState";
 
 describe("NavBar component", () => {
   const user = signal<UserState>();

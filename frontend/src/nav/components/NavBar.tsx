@@ -1,12 +1,13 @@
 import { useCallback, useContext, useState } from "preact/hooks";
 import { type ReadonlySignal, useComputed } from "@preact/signals";
 
-import { NavBarItem } from "../types/NavBarItem";
-import { LoginLogoutLink } from "./LoginLogoutLink";
-import { NavItem } from "./NavItem";
-import { WhoAmIContext } from "../hooks/useWhoAmI";
-import { UserState } from "../types/UserState";
 import { uiRouteMap } from "@dashlive/routemap";
+
+import { NavBarItem } from "../types/NavBarItem";
+import { LoginLogoutLink } from "../../user/components/LoginLogoutLink";
+import { NavItem } from "./NavItem";
+import { WhoAmIContext } from "../../user/hooks/useWhoAmI";
+import { UserState } from "../../user/types/UserState";
 
 export function createNavItems(user: ReadonlySignal<UserState>): NavBarItem[] {
   const navbar: NavBarItem[] = [

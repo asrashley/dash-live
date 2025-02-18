@@ -8,7 +8,7 @@ import { MultiPeriodModelContext } from '../../hooks/useMultiPeriodStream';
 import { MpsPeriod } from "../../types/MpsPeriod";
 import { GuestPeriodRow } from "./GuestPeriodRow";
 import { PeriodRow } from "./PeriodRow";
-import { WhoAmIContext } from "../../hooks/useWhoAmI";
+import { WhoAmIContext } from "../../user/hooks/useWhoAmI";
 import { rowColours } from "./rowColours";
 
 interface ButtonToolbarProps {

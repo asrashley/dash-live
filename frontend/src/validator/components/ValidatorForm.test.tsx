@@ -9,7 +9,7 @@ import { ValidatorSettings } from "../types/ValidatorSettings";
 import { blankSettings } from "./ValidatorPage";
 import { ValidatorState } from "../hooks/useValidatorWebsocket";
 import { mediaUser, normalUser } from "../../test/MockServer";
-import { InitialUserState } from "../../types/UserState";
+import { InitialUserState } from "../../user/types/InitialUserState";
 import { renderWithFormAccess } from "../test/renderWithFormAccess";
 import { ApiRequests, EndpointContext } from "../../endpoints";
 import { AllStreamsJson } from "../../types/AllStreams";

@@ -5,6 +5,8 @@ import { useLocation } from "wouter-preact";
 import log from "loglevel";
 import { setImmediate } from "timers";
 
+import { routeMap, uiRouteMap } from "@dashlive/routemap";
+
 import { ApiRequests, EndpointContext } from "../../endpoints";
 import { FakeEndpoint } from "../../test/FakeEndpoint";
 import { MockDashServer, mediaUser } from "../../test/MockServer";
@@ -15,8 +17,7 @@ import {
   MultiPeriodModelContext,
   useMultiPeriodStream,
 } from "../../hooks/useMultiPeriodStream";
-import { InitialUserState } from "../../types/UserState";
-import { routeMap, uiRouteMap } from "@dashlive/routemap";
+import { InitialUserState } from "../../user/types/InitialUserState";
 import { EditStreamCard } from "./EditStreamCard";
 
 vi.mock("wouter-preact", async (importOriginal) => {

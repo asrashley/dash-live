@@ -1,6 +1,6 @@
-import { EditUserState } from "../../types/EditUserState";
-import { InitialUserState } from "../../types/UserState";
-import { UserValidationErrors } from "../../hooks/useAllUsers";
+import { EditUserState } from "../types/EditUserState";
+import { InitialUserState } from "../types/InitialUserState";
+import { UserValidationErrors } from "../hooks/useAllUsers";
 
 export function validateUserState(user: EditUserState, allUsers: InitialUserState[] = []): UserValidationErrors {
     const errs: UserValidationErrors = {};

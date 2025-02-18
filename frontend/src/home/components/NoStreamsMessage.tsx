@@ -1,9 +1,11 @@
 import { Fragment } from "preact";
 import { useContext } from "preact/hooks";
+
 import { routeMap, uiRouteMap } from "@dashlive/routemap";
+
 import { Card } from "../../components/Card";
 import { Icon } from "../../components/Icon";
-import { WhoAmIContext } from "../../hooks/useWhoAmI";
+import { WhoAmIContext } from "../../user/hooks/useWhoAmI";
 
 function PleaseLogin() {
   const { user } = useContext(WhoAmIContext);

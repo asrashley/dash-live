@@ -11,7 +11,7 @@ import { MultiPeriodModelContext } from "../../hooks/useMultiPeriodStream";
 import { ButtonToolbar } from "./ButtonToolbar";
 import { OptionsRow } from "./OptionsRow";
 import { PeriodsTable } from "./PeriodsTable";
-import { WhoAmIContext } from "../../hooks/useWhoAmI";
+import { WhoAmIContext } from "../../user/hooks/useWhoAmI";
 import { AppStateContext } from "../../appState";
 
 export interface EditStreamFormProps {

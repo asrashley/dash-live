@@ -3,7 +3,8 @@ import { useComputed } from "@preact/signals";
 import { Link } from "wouter-preact";
 
 import { uiRouteMap } from "@dashlive/routemap";
-import { WhoAmIContext } from "../../hooks/useWhoAmI";
+
+import { WhoAmIContext } from "../../user/hooks/useWhoAmI";
 
 export interface ButtonToolbarProps {
   errors,

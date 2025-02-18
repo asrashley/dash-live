@@ -1,15 +1,15 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { mock } from "vitest-mock-extended";
+import userEvent from "@testing-library/user-event";
 import { useLocation } from "wouter-preact";
 
 import { uiRouteMap } from "@dashlive/routemap";
-import { renderWithProviders } from "../test/renderWithProviders";
-import { ApiRequests, EndpointContext } from "../endpoints";
-import { useMessages, UseMessagesHook } from "../hooks/useMessages";
-import { normalUser } from "../test/MockServer";
+import { renderWithProviders } from "../../test/renderWithProviders";
+import { ApiRequests, EndpointContext } from "../../endpoints";
+import { useMessages, UseMessagesHook } from "../../hooks/useMessages";
+import { normalUser } from "../../test/MockServer";
 
 import { LoginLogoutLink } from "./LoginLogoutLink";
-import userEvent from "@testing-library/user-event";
 
 vi.mock("wouter-preact", async (importOriginal) => {
   return {
@@ -18,7 +18,7 @@ vi.mock("wouter-preact", async (importOriginal) => {
   };
 });
 
-vi.mock("../hooks/useMessages", async (importOriginal) => {
+vi.mock("../../hooks/useMessages", async (importOriginal) => {
   return {
     ...(await importOriginal()),
     useMessages: vi.fn(),

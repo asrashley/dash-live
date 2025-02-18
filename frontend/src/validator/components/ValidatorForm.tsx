@@ -2,7 +2,7 @@ import { type ReadonlySignal, useComputed } from "@preact/signals";
 import { useCallback, useContext } from "preact/hooks";
 
 import { StaticInputProps } from "../../types/StaticInputProps";
-import { WhoAmIContext } from "../../hooks/useWhoAmI";
+import { WhoAmIContext } from "../../user/hooks/useWhoAmI";
 import { InputFieldRow } from "../../components/InputFieldRow";
 import { ValidatorSettings } from "../types/ValidatorSettings";
 import { SetValueFunc } from "../../types/SetValueFunc";

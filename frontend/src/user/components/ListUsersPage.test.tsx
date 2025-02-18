@@ -3,11 +3,12 @@ import log from "loglevel";
 import fetchMock from "@fetch-mock/vitest";
 import userEvent from "@testing-library/user-event";
 
+import { routeMap } from "@dashlive/routemap";
+
 import { renderWithProviders } from "../../test/renderWithProviders";
 import { ApiRequests, EndpointContext } from "../../endpoints";
 import ListUsersPage from "./ListUsersPage";
 
-import { routeMap } from "@dashlive/routemap";
 import { FakeEndpoint } from "../../test/FakeEndpoint";
 import {
   adminUser,

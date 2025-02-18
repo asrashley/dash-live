@@ -6,19 +6,19 @@ import { CsrfTokenStore } from './CsrfTokenStore';
 import { CsrfTokenCollection } from './types/CsrfTokenCollection';
 import { AllManifests } from './types/AllManifests';
 import { AllStreamsJson, AllStreamsResponse } from './types/AllStreams';
-import { JWToken } from './types/JWToken';
 import { MultiPeriodStream, MultiPeriodStreamJson } from './types/MultiPeriodStream';
 import { DecoratedMultiPeriodStream } from "./types/DecoratedMultiPeriodStream";
 import { MultiPeriodStreamSummary } from './types/MultiPeriodStreamSummary';
 import { ContentRolesMap } from './types/ContentRolesMap';
 import { ModifyMultiPeriodStreamJson, ModifyMultiPeriodStreamResponse } from './types/ModifyMultiPeriodStreamResponse';
-import { LoginRequest } from './types/LoginRequest';
-import { LoginResponse } from './types/LoginResponse';
+import { JWToken } from './user/types/JWToken';
+import { LoginRequest } from './user/types/LoginRequest';
+import { LoginResponse } from './user/types/LoginResponse';
+import { InitialUserState } from './user/types/InitialUserState';
+import { ModifyUserResponse } from './user/types/ModifyUserResponse';
+import { EditUserState } from "./user/types/EditUserState";
 import { MultiPeriodStreamValidationRequest, MultiPeriodStreamValidationResponse } from './types/MpsValidation';
 import { CgiOptionDescription } from './types/CgiOptionDescription';
-import { InitialUserState } from './types/UserState';
-import { ModifyUserResponse } from './types/ModifyUserResponse';
-import { EditUserState } from "./types/EditUserState";
 
 type TokenStoreCollection = {
   files: CsrfTokenStore;

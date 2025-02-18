@@ -3,10 +3,10 @@ import { useLocation } from "wouter-preact";
 
 import { uiRouteMap } from "@dashlive/routemap";
 
-import { EndpointContext } from "../endpoints";
-import { useMessages } from "../hooks/useMessages";
+import { EndpointContext } from "../../endpoints";
+import { useMessages } from "../../hooks/useMessages";
 import { WhoAmIContext } from "../hooks/useWhoAmI";
-import { Icon } from "./Icon";
+import { Icon } from "../../components/Icon";
 
 export function LoginLogoutLink() {
   const { user, setUser } = useContext(WhoAmIContext);

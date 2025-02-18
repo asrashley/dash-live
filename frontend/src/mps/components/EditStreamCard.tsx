@@ -15,7 +15,7 @@ import {
   useMultiPeriodStream,
   MultiPeriodModelContext,
 } from "../../hooks/useMultiPeriodStream";
-import { WhoAmIContext } from "../../hooks/useWhoAmI";
+import { WhoAmIContext } from "../../user/hooks/useWhoAmI";
 import { useMessages } from "../../hooks/useMessages";
 
 interface HeaderProps {

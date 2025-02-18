@@ -4,7 +4,7 @@ import { type ReadonlySignal, useSignal } from "@preact/signals";
 import { defaultCgiOptions } from "@dashlive/options";
 
 import { InputFormData } from "../types/InputFormData";
-import { JWToken } from "../types/JWToken";
+import { JWToken } from "../user/types/JWToken";
 
 export enum LocalStorageKeys {
   DASH_OPTIONS = "dashlive.homepage.options",

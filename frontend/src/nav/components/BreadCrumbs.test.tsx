@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { Route, Switch, useLocation } from "wouter-preact";
 
-import { renderWithProviders } from "../test/renderWithProviders";
+import { renderWithProviders } from "../../test/renderWithProviders";
 import { BreadCrumbs } from "./BreadCrumbs";
 import { fireEvent } from "@testing-library/preact";
 

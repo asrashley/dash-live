@@ -5,8 +5,8 @@ import { mock } from "vitest-mock-extended";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import { ApiRequests, EndpointContext } from "../../endpoints";
 import LoginPage from "./LoginPage";
-import { LoginResponse } from "../../types/LoginResponse";
-import { LoginRequest } from "../../types/LoginRequest";
+import { LoginResponse } from "../types/LoginResponse";
+import { LoginRequest } from "../types/LoginRequest";
 
 describe("LoginPage component", () => {
   const apiRequests = mock<ApiRequests>();

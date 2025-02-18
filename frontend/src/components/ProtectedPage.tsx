@@ -5,7 +5,7 @@ import { useLocation } from "wouter-preact";
 
 import { uiRouteMap } from "@dashlive/routemap";
 
-import { WhoAmIContext } from "../hooks/useWhoAmI";
+import { WhoAmIContext } from "../user/hooks/useWhoAmI";
 import { EndpointContext } from "../endpoints";
 import { LoadingSpinner } from "./LoadingSpinner";
 import { ErrorCard } from "./ErrorCard";

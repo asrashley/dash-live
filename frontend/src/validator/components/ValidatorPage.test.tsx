@@ -10,7 +10,7 @@ import { MockWebsocketServer } from "../../test/MockWebsocketServer";
 import ProtectedValidatorPage, { ValidatorPage } from "./ValidatorPage";
 import { renderWithFormAccess } from "../test/renderWithFormAccess";
 import { ApiRequests, EndpointContext } from "../../endpoints";
-import { LoginResponse } from "../../types/LoginResponse";
+import { LoginResponse } from "../../user/types/LoginResponse";
 import { mediaUser } from "../../test/MockServer";
 import { renderWithProviders } from "../../test/renderWithProviders";
 

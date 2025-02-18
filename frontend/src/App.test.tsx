@@ -13,7 +13,7 @@ import { App } from "./App";
 import { AppStateContext, AppStateType } from "./appState";
 import { adminUser, mediaUser, MockDashServer, UserModel } from "./test/MockServer";
 import { FakeEndpoint, HttpRequestHandlerResponse } from "./test/FakeEndpoint";
-import { JWToken } from "./types/JWToken";
+import { JWToken } from "./user/types/JWToken";
 import { LocalStorageKeys } from "./hooks/useLocalStorage";
 import { wssUrl } from "./validator/utils/wssUrl";
 import { MockWebsocketServer } from "./test/MockWebsocketServer";

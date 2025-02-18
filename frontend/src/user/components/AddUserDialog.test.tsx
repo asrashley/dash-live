@@ -1,17 +1,16 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { computed, signal } from "@preact/signals";
 import userEvent from "@testing-library/user-event";
+import { mock } from "vitest-mock-extended";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import { AddUserDialog } from "./AddUserDialog";
 import { AppStateType } from "../../appState";
 import { DialogState } from "../../types/DialogState";
-import { UserValidationErrors } from "../../hooks/useAllUsers";
-import { InitialUserState } from "../../types/UserState";
+import { UserValidationErrors } from "../hooks/useAllUsers";
+import { InitialUserState } from "../types/InitialUserState";
 import { useMessages, UseMessagesHook } from "../../hooks/useMessages";
-import { mock } from "vitest-mock-extended";
 import { validateUserState } from "../utils/validateUserState";
-
 
 vi.mock("../../hooks/useMessages");
 

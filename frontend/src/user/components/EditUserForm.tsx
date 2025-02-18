@@ -2,8 +2,9 @@ import { type ReadonlySignal } from "@preact/signals";
 import { useMemo } from "preact/hooks";
 
 import { groupNames } from "@dashlive/options";
-import { UserValidationErrors } from "../../hooks/useAllUsers";
-import { EditUserState } from "../../types/EditUserState";
+
+import { UserValidationErrors } from "../hooks/useAllUsers";
+import { EditUserState } from "../types/EditUserState";
 import { StaticInputProps } from "../../types/StaticInputProps";
 import { SetValueFunc } from "../../types/SetValueFunc";
 import { InputFieldRow } from "../../components/InputFieldRow";

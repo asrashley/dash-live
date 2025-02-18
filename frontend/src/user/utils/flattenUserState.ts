@@ -1,5 +1,5 @@
-import { FlattenedUserState } from "../../types/FlattenedUserState";
-import { UserState } from "../../types/UserState";
+import { FlattenedUserState } from "../types/FlattenedUserState";
+import { UserState } from "../types/UserState";
 
 export function flattenUserState({ groups, ...user }: UserState): FlattenedUserState {
     const flat: FlattenedUserState = {
