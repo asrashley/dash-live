@@ -4,14 +4,14 @@ import { useLocation, useParams } from "wouter-preact";
 
 import { uiRouteMap } from "@dashlive/routemap";
 
-import { useAllUsers, UserValidationErrors } from "../../hooks/useAllUsers";
+import { useAllUsers, UserValidationErrors } from "../hooks/useAllUsers";
 import { RouteParamsType } from "../../types/RouteParamsType";
 import { EditUserCard } from "./EditUserCard";
 import { AppStateContext } from "../../appState";
 import { DeleteUserDialog } from "./DeleteUserDialog";
 import { EndpointContext } from "../../endpoints";
 import { useMessages } from "../../hooks/useMessages";
-import { FlattenedUserState } from "../../types/FlattenedUserState";
+import { FlattenedUserState } from "../types/FlattenedUserState";
 
 const backUrl = uiRouteMap.listUsers.url();
 

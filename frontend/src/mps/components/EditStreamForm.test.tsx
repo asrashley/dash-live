@@ -19,7 +19,7 @@ import {
   MultiPeriodModelContext,
   useMultiPeriodStream,
 } from "../../hooks/useMultiPeriodStream";
-import { InitialUserState } from "../../types/UserState";
+import { InitialUserState } from "../../user/types/InitialUserState";
 import { AppStateContext } from "../../appState";
 
 vi.mock("wouter-preact", async (importOriginal) => {

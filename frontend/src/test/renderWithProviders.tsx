@@ -1,4 +1,6 @@
+import { vi } from "vitest";
 import { type ComponentChild } from "preact";
+import { computed, signal } from "@preact/signals";
 import {
   render,
   queries,
@@ -11,11 +13,10 @@ import { Router } from "wouter-preact";
 
 import { AppStateContext, AppStateType, createAppState } from "../appState";
 import { bySelectorQueries, BySelectorQueryFunctions } from "./queries";
-import { InitialUserState, UserState } from "../types/UserState";
-import { computed, signal } from "@preact/signals";
-import { vi } from "vitest";
-import { UseWhoAmIHook, WhoAmIContext } from "../hooks/useWhoAmI";
-import { FlattenedUserState } from "../types/FlattenedUserState";
+import { InitialUserState } from "../user/types/InitialUserState";
+import { UserState } from "../user/types/UserState";
+import { UseWhoAmIHook, WhoAmIContext } from "../user/hooks/useWhoAmI";
+import { FlattenedUserState } from "../user/types/FlattenedUserState";
 import { flattenUserState } from "../user/utils/flattenUserState";
 
 const initialUserState: InitialUserState = {

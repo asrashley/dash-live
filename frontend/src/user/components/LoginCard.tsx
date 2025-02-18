@@ -5,8 +5,8 @@ import { Card } from "../../components/Card";
 import { InputFieldRow } from "../../components/InputFieldRow";
 
 import { SetValueFunc } from "../../types/SetValueFunc";
-import { LoginRequest } from "../../types/LoginRequest";
 import { InputFormData } from "../../types/InputFormData";
+import { LoginRequest } from "../types/LoginRequest";
 
 function LoginError({error}: { error: ReadonlySignal<string | undefined>}) {
 	const className = useComputed<string>(() => error.value ? "alert alert-danger": "d-none");
@@ -19,6 +19,7 @@ export interface LoginCardProps {
   submitting: ReadonlySignal<boolean>;
   onLogin: (request: LoginRequest) => void;
 }
+
 export function LoginCard({ error, submitting, onLogin }: LoginCardProps) {
   const data = useSignal<InputFormData>({
     username: "",

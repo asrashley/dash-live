@@ -1,5 +1,5 @@
 import { JWToken } from "./JWToken";
-import { InitialUserState } from "./UserState";
+import { InitialUserState } from "./InitialUserState";
 
 export interface LoginResponse {
     success: boolean;

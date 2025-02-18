@@ -4,13 +4,11 @@ import userEvent from "@testing-library/user-event";
 
 import { uiRouteMap } from "@dashlive/routemap";
 
-import {
-  UserValidationErrors,
-} from "../../hooks/useAllUsers";
+import { UserValidationErrors } from "../hooks/useAllUsers";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import { EditUserCard } from "./EditUserCard";
 import { mediaUser } from "../../test/MockServer";
-import { FlattenedUserState } from "../../types/FlattenedUserState";
+import { FlattenedUserState } from "../types/FlattenedUserState";
 
 describe("EditUserCard component", () => {
   const backUrl = uiRouteMap.listUsers.url();

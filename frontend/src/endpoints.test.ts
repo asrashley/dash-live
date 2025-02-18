@@ -10,7 +10,9 @@ import { FakeEndpoint, HttpRequestHandlerResponse, ServerRouteProps } from "./te
 import { ApiRequests } from "./endpoints";
 import { DecoratedMultiPeriodStream } from "./types/DecoratedMultiPeriodStream";
 import { MpsPeriod } from "./types/MpsPeriod";
-import { LoginRequest } from "./types/LoginRequest";
+import { LoginRequest } from "./user/types/LoginRequest";
+import { InitialUserState } from "./user/types/InitialUserState";
+import { EditUserState } from "./user/types/EditUserState";
 import { MultiPeriodStreamValidationRequest } from "./types/MpsValidation";
 
 import allManifests from './test/fixtures/manifests.json';
@@ -18,8 +20,6 @@ import contentRoles from './test/fixtures/content_roles.json';
 import allStdStreams from './test/fixtures/streams.json';
 import { model as demoMps } from './test/fixtures/multi-period-streams/demo.json';
 import cgiOptions from './test/fixtures/cgiOptions.json';
-import { InitialUserState } from "./types/UserState";
-import { EditUserState } from "./types/EditUserState";
 
 describe('endpoints', () => {
     const needsRefreshToken = vi.fn();

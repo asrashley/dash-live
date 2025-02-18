@@ -1,14 +1,14 @@
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { type ComponentChildren } from "preact";
 import { mock } from "vitest-mock-extended";
 import { renderHook } from "@testing-library/preact";
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { useAllUsers } from "./useAllUsers";
-import { ApiRequests, EndpointContext } from "../endpoints";
+import { ApiRequests, EndpointContext } from "../../endpoints";
 
-import users from "../test/fixtures/users.json";
-import { mediaUser } from "../test/MockServer";
-import { InitialUserState } from "../types/UserState";
+import users from "../../test/fixtures/users.json";
+import { mediaUser } from "../../test/MockServer";
+import { InitialUserState } from "../types/InitialUserState";
 import { FlattenedUserState } from "../types/FlattenedUserState";
 
 describe("useAllUsers hook", () => {

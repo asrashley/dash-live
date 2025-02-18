@@ -7,12 +7,12 @@ import { uiRouteMap } from "@dashlive/routemap";
 
 import { MessagesPanel } from "./components/MessagesPanel";
 import { ModalBackdrop } from "./components/ModalBackdrop";
-import { NavHeader } from "./components/NavHeader";
+import { NavHeader } from "./nav/components/NavHeader";
 
 import { ApiRequests, EndpointContext } from "./endpoints";
 import { AppStateContext, AppStateType, createAppState } from "./appState";
 import { useLocalStorage } from "./hooks/useLocalStorage";
-import { useWhoAmI, WhoAmIContext } from "./hooks/useWhoAmI";
+import { useWhoAmI, WhoAmIContext } from "./user/hooks/useWhoAmI";
 import { Footer } from "./components/Footer";
 import { AppRoutes } from "./AppRoutes";
 

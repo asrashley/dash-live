@@ -2,9 +2,10 @@ import { createContext } from "preact";
 import { useCallback } from "preact/hooks";
 import { type ReadonlySignal, useComputed, useSignal } from "@preact/signals";
 
-import { InitialUserState, UserState } from "../types/UserState";
+import { UserState } from "../types/UserState";
+import { InitialUserState } from "../types/InitialUserState";
 import { FlattenedUserState } from "../types/FlattenedUserState";
-import { flattenUserState } from "../user/utils/flattenUserState";
+import { flattenUserState } from "../utils/flattenUserState";
 
 export interface UseWhoAmIHook {
   user: ReadonlySignal<UserState>;

@@ -6,17 +6,17 @@ import { routeMap } from '@dashlive/routemap';
 import { dataResponse, FakeEndpoint, HttpRequestHandler, jsonResponse, notFound, ServerRouteProps } from './FakeEndpoint'
 import { ContentRolesMap } from '../types/ContentRolesMap';
 import { CsrfTokenCollection } from '../types/CsrfTokenCollection';
-import { JWToken } from '../types/JWToken';
 import { MultiPeriodStreamSummary } from '../types/MultiPeriodStreamSummary';
 import { ModifyMultiPeriodStreamJson } from '../types/ModifyMultiPeriodStreamResponse';
 import { MultiPeriodStream, MultiPeriodStreamJson } from '../types/MultiPeriodStream';
-import { LoginRequest } from "../types/LoginRequest";
-import { LoginResponse } from "../types/LoginResponse";
+import { LoginRequest } from "../user/types/LoginRequest";
+import { LoginResponse } from "../user/types/LoginResponse";
 import { MultiPeriodStreamValidationRequest, MultiPeriodStreamValidationResponse } from "../types/MpsValidation";
+import { JWToken } from '../user/types/JWToken';
 import { randomToken } from "../utils/randomToken";
-import { InitialUserState } from "../types/UserState";
-import { ModifyUserResponse } from "../types/ModifyUserResponse";
-import { EditUserState } from "../types/EditUserState";
+import { InitialUserState } from "../user/types/InitialUserState";
+import { ModifyUserResponse } from "../user/types/ModifyUserResponse";
+import { EditUserState } from "../user/types/EditUserState";
 
 enum UserGroups {
     USER = "USER",

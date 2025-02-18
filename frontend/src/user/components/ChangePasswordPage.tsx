@@ -4,13 +4,13 @@ import { useLocation } from "wouter-preact";
 
 import { uiRouteMap } from "@dashlive/routemap";
 
-import { UserValidationErrors } from "../../hooks/useAllUsers";
+import { UserValidationErrors } from "../hooks/useAllUsers";
 import { EditUserCard } from "./EditUserCard";
 import { EndpointContext } from "../../endpoints";
 import { useMessages } from "../../hooks/useMessages";
-import { WhoAmIContext } from "../../hooks/useWhoAmI";
+import { WhoAmIContext } from "../hooks/useWhoAmI";
 import { validateUserState } from "../utils/validateUserState";
-import { FlattenedUserState } from "../../types/FlattenedUserState";
+import { FlattenedUserState } from "../types/FlattenedUserState";
 import { ProtectedPage } from "../../components/ProtectedPage";
 
 const only = ['email', 'password', 'confirmPassword'];

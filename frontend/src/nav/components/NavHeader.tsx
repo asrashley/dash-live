@@ -1,5 +1,5 @@
 import { BreadCrumbs } from "./BreadCrumbs";
-import { ErrorBoundary } from "./ErrorBoundary";
+import { ErrorBoundary } from "../../components/ErrorBoundary";
 import { NavBar } from "./NavBar";
 
 export function NavHeader() {

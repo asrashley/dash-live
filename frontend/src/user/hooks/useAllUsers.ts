@@ -1,13 +1,13 @@
 import { useCallback, useContext } from "preact/hooks";
 import { useComputed, type ReadonlySignal } from "@preact/signals";
 
-import { EndpointContext } from "../endpoints";
-import { useJsonRequest } from "./useJsonRequest";
-import { InitialUserState } from "../types/UserState";
+import { EndpointContext } from "../../endpoints";
+import { useJsonRequest } from "../../hooks/useJsonRequest";
+import { InitialUserState } from "../types/InitialUserState";
 import { FlattenedUserState } from "../types/FlattenedUserState";
 import { EditUserState } from "../types/EditUserState";
-import { flattenUserState } from "../user/utils/flattenUserState";
-import { validateUserState } from "../user/utils/validateUserState";
+import { flattenUserState } from "../utils/flattenUserState";
+import { validateUserState } from "../utils/validateUserState";
 
 export type UserValidationErrors = {
   username?: string;

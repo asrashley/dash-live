@@ -5,7 +5,7 @@ import { useCallback, useContext } from 'preact/hooks'
 import { useAllMultiPeriodStreams, AllMultiPeriodStreamsContext } from '../../hooks/useAllMultiPeriodStreams';
 import { uiRouteMap } from '@dashlive/routemap';
 import { SortIcon } from './SortIcon';
-import { WhoAmIContext } from '../../hooks/useWhoAmI';
+import { WhoAmIContext } from '../../user/hooks/useWhoAmI';
 
 interface TableRowProps {
   name: string;

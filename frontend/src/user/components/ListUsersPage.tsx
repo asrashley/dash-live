@@ -3,19 +3,18 @@ import { Link } from "wouter-preact";
 import { useCallback, useContext } from "preact/hooks";
 
 import { uiRouteMap } from "@dashlive/routemap";
+
 import {
   createSortableTable,
   RenderCellProps,
 } from "../../components/SortableTable";
-import {
-  useAllUsers,
-} from "../../hooks/useAllUsers";
+import { useAllUsers } from "../hooks/useAllUsers";
 import { BooleanCell } from "../../components/BooleanCell";
 import { AppStateContext } from "../../appState";
 import { EndpointContext } from "../../endpoints";
 import { AddUserDialog } from "./AddUserDialog";
-import { FlattenedUserState } from "../../types/FlattenedUserState";
-import { EditUserState } from "../../types/EditUserState";
+import { FlattenedUserState } from "../types/FlattenedUserState";
+import { EditUserState } from "../types/EditUserState";
 
 const headings: [keyof FlattenedUserState, string][] = [
   ["pk", "#"],

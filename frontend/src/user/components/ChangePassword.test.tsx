@@ -7,8 +7,8 @@ import { renderWithProviders } from "../../test/renderWithProviders";
 import { ApiRequests, EndpointContext } from "../../endpoints";
 import { useMessages, UseMessagesHook } from "../../hooks/useMessages";
 import { normalUser, UserModel } from "../../test/MockServer";
-import { ModifyUserResponse } from "../../types/ModifyUserResponse";
-import { EditUserState } from "../../types/EditUserState";
+import { ModifyUserResponse } from "../types/ModifyUserResponse";
+import { EditUserState } from "../types/EditUserState";
 
 import ChangePasswordPage, { ChangePassword } from "./ChangePasswordPage";
 
