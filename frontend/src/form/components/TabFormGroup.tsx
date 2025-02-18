@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'preact/hooks';
 import { type ReadonlySignal } from '@preact/signals';
 
-import { InputFieldRow } from "./InputFieldRow";
+import { InputFieldRow } from "../../form/components/InputFieldRow";
 import { FormGroupsProps } from "../types/FormGroupsProps";
 import { InputFormGroup } from '../types/InputFormGroup';
 import { SetValueFunc } from '../types/SetValueFunc';

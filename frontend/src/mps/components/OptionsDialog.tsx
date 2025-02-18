@@ -1,13 +1,13 @@
 import { useCallback, useContext, useRef } from "preact/hooks";
 import { useComputed, useSignal, useSignalEffect } from "@preact/signals";
 
-import { TabFormGroup } from "../../components/TabFormGroup";
+import { TabFormGroup } from "../../form/components/TabFormGroup";
 import { ModalDialog } from "../../components/ModalDialog";
 import { MultiPeriodModelContext } from "../../hooks/useMultiPeriodStream";
 import { fieldGroups, defaultShortOptions } from '@dashlive/options';
 
 import { AppStateContext } from "../../appState";
-import { InputFormData } from "../../types/InputFormData";
+import { InputFormData } from "../../form/types/InputFormData";
 
 const excludeFields = new Set([
   'acodec', 'ad_audio', 'main_audio', 'main_text',

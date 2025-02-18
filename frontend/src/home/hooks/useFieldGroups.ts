@@ -2,10 +2,11 @@ import { useContext } from "preact/hooks";
 import { type ReadonlySignal, useComputed } from "@preact/signals";
 
 import { fieldGroups, drmSystems } from '@dashlive/options';
+
 import { useAllManifests  } from '../../hooks/useAllManifests';
 import { UseCombinedStreams  } from '../../hooks/useCombinedStreams';
-import { StaticInputProps } from "../../types/StaticInputProps";
-import { InputFormGroup } from "../../types/InputFormGroup";
+import { StaticInputProps } from "../../form/types/StaticInputProps";
+import { InputFormGroup } from "../../form/types/InputFormGroup";
 
 const drmSkipNames = new RegExp(`^${drmSystems.map(name => `${name}__enabled`).join('|')}$`);
 

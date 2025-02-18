@@ -2,7 +2,7 @@ import { signal } from "@preact/signals";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { fireEvent } from "@testing-library/preact";
 
-import { renderWithProviders } from "../test/renderWithProviders";
+import { renderWithProviders } from "../../test/renderWithProviders";
 import { RadioInput } from "./RadioInput";
 import { SelectOptionType } from "../types/SelectOptionType";
 

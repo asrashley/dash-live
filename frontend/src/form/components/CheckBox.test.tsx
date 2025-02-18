@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { renderWithProviders } from "../test/renderWithProviders";
+import { renderWithProviders } from "../../test/renderWithProviders";
 import { CheckBox } from "./CheckBox";
 
 describe("CheckBox", () => {

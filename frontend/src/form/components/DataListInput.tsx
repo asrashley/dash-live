@@ -1,5 +1,6 @@
 import { Fragment, type JSX } from "preact";
 import { useComputed, type ReadonlySignal } from "@preact/signals";
+
 import { SelectOptionType } from "../types/SelectOptionType";
 
 interface DataListOptionProps {
@@ -12,6 +13,7 @@ function DataListOption({value, title, currentValue}: DataListOptionProps) {
 
   return <option value={value} selected={selected}>{title}</option>;
 }
+
 export interface DataListInputProps extends Omit<JSX.InputHTMLAttributes<HTMLInputElement>, 'value'> {
   name: string;
   options: SelectOptionType[];

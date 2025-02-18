@@ -2,11 +2,11 @@ import { useComputed } from '@preact/signals';
 
 import { DataListInput } from './DataListInput';
 import { MultiSelectInput } from './MultiSelectInput';
+import { PasswordInput } from './PasswordInput';
 import { RadioInput } from './RadioInput';
 import { SelectInput } from './SelectInput';
 import type { InputFormData } from '../types/InputFormData';
 import type { FormRowMode } from '../types/FormRowMode';
-import { PasswordInput } from './PasswordInput';
 import { BaseInputProps } from '../types/BaseInputProps';
 import { InputProps } from '../types/InputProps';
 

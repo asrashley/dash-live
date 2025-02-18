@@ -1,13 +1,13 @@
 import { signal } from "@preact/signals";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
-import { renderWithProviders } from "../test/renderWithProviders";
+import { renderWithProviders } from "../../test/renderWithProviders";
 import {
   defaultCgiOptions,
   defaultFullOptions,
   defaultShortOptions,
   fieldGroups,
-} from "../test/fixtures/options.js";
+} from "../../test/fixtures/options.js";
 
 import { TabFormGroup } from "./TabFormGroup";
 import { FormRowMode } from "../types/FormRowMode";

@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
 import { signal } from "@preact/signals";
 
-import { renderWithProviders } from "../test/renderWithProviders";
+import { renderWithProviders } from "../../test/renderWithProviders";
 import { TextInput } from "./TextInput";
 
 describe("TextInput", () => {

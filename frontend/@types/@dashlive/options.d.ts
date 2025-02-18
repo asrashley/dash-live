@@ -1,4 +1,4 @@
-import { InputFormGroup } from "../../src/types/InputFormGroup";
+import { InputFormGroup } from "../../src/form/types/InputFormGroup";
 
 type OptionMap = {
   [field: string]: boolean | string | number | null;

@@ -5,9 +5,9 @@ import { groupNames } from "@dashlive/options";
 
 import { UserValidationErrors } from "../hooks/useAllUsers";
 import { EditUserState } from "../types/EditUserState";
-import { StaticInputProps } from "../../types/StaticInputProps";
-import { SetValueFunc } from "../../types/SetValueFunc";
-import { InputFieldRow } from "../../components/InputFieldRow";
+import { StaticInputProps } from "../../form/types/StaticInputProps";
+import { SetValueFunc } from "../../form/types/SetValueFunc";
+import { InputFieldRow } from "../../form/components/InputFieldRow";
 
 const fields: StaticInputProps[] = [
   {

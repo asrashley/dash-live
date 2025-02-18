@@ -3,7 +3,7 @@ import { useComputed, useSignal, type ReadonlySignal } from "@preact/signals";
 
 import { MultiPeriodModelContext } from "../../hooks/useMultiPeriodStream";
 import { AppStateContext } from "../../appState";
-import { FormRow } from "../../components/FormRow";
+import { FormRow } from "../../form/components/FormRow";
 import { PrettyJson } from "../../components/PrettyJson";
 
 export interface OptionsRowProps {
