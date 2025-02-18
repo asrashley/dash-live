@@ -1,8 +1,10 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
 import { act, render } from "@testing-library/preact";
+import { mock } from "vitest-mock-extended";
 import fetchMock from '@fetch-mock/vitest';
 import { useContext } from "preact/hooks";
 import { useLocation } from 'wouter-preact';
+import { io, Socket } from "socket.io-client";
 import log from "loglevel";
 
 import { routeMap, uiRouteMap } from "@dashlive/routemap";
@@ -13,6 +15,8 @@ import { adminUser, mediaUser, MockDashServer, UserModel } from "./test/MockServ
 import { FakeEndpoint, HttpRequestHandlerResponse } from "./test/FakeEndpoint";
 import { JWToken } from "./types/JWToken";
 import { LocalStorageKeys } from "./hooks/useLocalStorage";
+import { wssUrl } from "./validator/utils/wssUrl";
+import { MockWebsocketServer } from "./test/MockWebsocketServer";
 
 vi.mock('wouter-preact', async (importOriginal) => {
   return {
@@ -20,6 +24,10 @@ vi.mock('wouter-preact', async (importOriginal) => {
     useLocation: vi.fn(),
   };
 });
+
+vi.mock("socket.io-client");
+
+vi.mock("./validator/utils/wssUrl");
 
 describe("main entry-point app", () => {
   const useLocationSpy = vi.mocked(useLocation);
@@ -29,8 +37,14 @@ describe("main entry-point app", () => {
     pathname: '/',
     replace: vi.fn(),
   };
+  const websocketUrl = "wss://localhost:3456";
+  const wssUrlMock = vi.mocked(wssUrl);
+  const ioMock = vi.mocked(io);
+  const mockSocket = mock<Socket>();
+
   let endpoint: FakeEndpoint;
-  let server: MockDashServer;
+  let dashServer: MockDashServer;
+  let wssServer: MockWebsocketServer;
   let baseElement: HTMLDivElement;
   let user: UserModel;
   let userPromise: Promise<HttpRequestHandlerResponse>;
@@ -48,10 +62,15 @@ describe("main entry-point app", () => {
     log.setLevel('error');
     useLocationSpy.mockImplementation(() => [mockLocation.pathname, setLocation]);
     endpoint = new FakeEndpoint(document.location.origin);
-    server = new MockDashServer({
+    dashServer = new MockDashServer({
       endpoint,
     });
-    user = server.login(mediaUser.email, mediaUser.password);
+    wssUrlMock.mockReturnValue(websocketUrl);
+    const { server } = MockWebsocketServer.create(websocketUrl, mockSocket);
+    expect(server).toBeDefined();
+    wssServer = server;
+    ioMock.mockImplementation(() => mockSocket);
+    user = dashServer.login(mediaUser.email, mediaUser.password);
     expect(user).not.toBeNull();
     localStorage.setItem(LocalStorageKeys.REFRESH_TOKEN, JSON.stringify(user.refreshToken));
     document.body.innerHTML = '<div id="app" />';
@@ -62,7 +81,8 @@ describe("main entry-point app", () => {
     manifestPromise = endpoint.addResponsePromise('get', routeMap.listManifests.url());
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await wssServer.destroy();
     vi.clearAllMocks();
     localStorage.clear();
     endpoint.shutdown();
@@ -146,7 +166,7 @@ describe("main entry-point app", () => {
   });
 
   test('matches snapshot for list users', async () => {
-    user = server.login(adminUser.email, adminUser.password);
+    user = dashServer.login(adminUser.email, adminUser.password);
     expect(user).not.toBeNull();
     localStorage.setItem(LocalStorageKeys.REFRESH_TOKEN, JSON.stringify(user.refreshToken));
     mockLocation.pathname = uiRouteMap.listUsers.url();
@@ -157,6 +177,17 @@ describe("main entry-point app", () => {
     await userPromise;
     await findByText("Log Out");
     await findByText(mediaUser.email);
+    expect(asFragment()).toMatchSnapshot();
+  });
+
+  test('matches snapshot for DASH validator', async () => {
+    mockLocation.pathname = uiRouteMap.validator.url();
+    const { asFragment, findByText } = render(
+      <App />,
+      { baseElement }
+    );
+    await userPromise;
+    await findByText("Manifest to check:");
     expect(asFragment()).toMatchSnapshot();
   });
 
