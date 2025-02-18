@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 
-import { renderWithProviders } from "../test/renderWithProviders";
+import { renderWithProviders } from "../../test/renderWithProviders";
 import { TimeDeltaInput } from "./TimeDeltaInput";
 
 describe("TimeDeltaInput", () => {

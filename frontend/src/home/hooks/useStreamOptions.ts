@@ -3,8 +3,8 @@ import { type ReadonlySignal, useComputed } from "@preact/signals";
 
 import { defaultCgiOptions, drmSystems } from "@dashlive/options";
 import { CombinedStream } from "../../hooks/useCombinedStreams";
-import { InputFormData } from "../../types/InputFormData";
-import { FormGroupsProps } from "../../types/FormGroupsProps";
+import { InputFormData } from "../../form/types/InputFormData";
+import { FormGroupsProps } from "../../form/types/FormGroupsProps";
 import { useLocalStorage } from "../../hooks/useLocalStorage";
 
 const skipKeys = new RegExp(`^(${[

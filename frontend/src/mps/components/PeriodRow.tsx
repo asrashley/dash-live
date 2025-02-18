@@ -3,8 +3,8 @@ import { useComputed } from "@preact/signals";
 import { useContext, useCallback } from "preact/hooks";
 
 import { AppStateContext } from "../../appState";
-import { TextInput } from "../../components/TextInput";
-import { TimeDeltaInput } from "../../components/TimeDeltaInput";
+import { TextInput } from "../../form/components/TextInput";
+import { TimeDeltaInput } from "../../form/components/TimeDeltaInput";
 import { AllStreamsContext } from "../../hooks/useAllStreams";
 import { MultiPeriodModelContext, MpsPeriodValidationErrors, UseMultiPeriodStreamHook } from "../../hooks/useMultiPeriodStream";
 import { PeriodRowProps } from "../types/PeriodRowProps";

@@ -1,7 +1,7 @@
 import { useContext } from "preact/hooks";
 import { StreamOptionsContext } from "../types/StreamOptionsHook";
 import { useFieldGroups } from "../hooks/useFieldGroups";
-import { AccordionFormGroup } from "../../components/AccordionFormGroup";
+import { AccordionFormGroup } from "../../form/components/AccordionFormGroup";
 
 const formLayout = [2, 5, 5];
 

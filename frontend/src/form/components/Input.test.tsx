@@ -2,14 +2,14 @@ import { signal } from "@preact/signals";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 
-import { renderWithProviders } from "../test/renderWithProviders";
+import { renderWithProviders } from "../../test/renderWithProviders";
 import { Input } from "./Input";
 import { StaticInputProps } from "../types/StaticInputProps";
 import { SelectOptionType } from "../types/SelectOptionType";
-
-import allManifests from '../test/fixtures/manifests.json';
 import { InputFormData } from "../types/InputFormData";
 import { InputProps } from "../types/InputProps";
+
+import allManifests from '../../test/fixtures/manifests.json';
 
 describe("Input component", () => {
   const data = signal<InputFormData>({});

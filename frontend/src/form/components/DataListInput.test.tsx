@@ -1,7 +1,7 @@
 import { signal } from "@preact/signals";
 import { describe, expect, test } from "vitest";
 
-import { renderWithProviders } from "../test/renderWithProviders";
+import { renderWithProviders } from "../../test/renderWithProviders";
 import { DataListInput } from "./DataListInput";
 import { SelectOptionType } from "../types/SelectOptionType";
 

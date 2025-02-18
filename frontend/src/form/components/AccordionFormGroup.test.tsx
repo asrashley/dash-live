@@ -3,14 +3,15 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { AccordionFormGroup } from "./AccordionFormGroup";
 import { FormRowMode } from "../types/FormRowMode";
-import { renderWithProviders } from "../test/renderWithProviders";
+import { renderWithProviders } from "../../test/renderWithProviders";
+import { InputFormData } from "../types/InputFormData";
+
 import {
   defaultCgiOptions,
   defaultFullOptions,
   defaultShortOptions,
   fieldGroups,
-} from "../test/fixtures/options.js";
-import { InputFormData } from "../types/InputFormData";
+} from "../../test/fixtures/options.js";
 
 describe("AccordionFormGroup", () => {
   const data = signal<InputFormData>({});

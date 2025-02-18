@@ -3,7 +3,7 @@ import { type ReadonlySignal, useSignal } from "@preact/signals";
 
 import { defaultCgiOptions } from "@dashlive/options";
 
-import { InputFormData } from "../types/InputFormData";
+import { InputFormData } from "../form/types/InputFormData";
 import { JWToken } from "../user/types/JWToken";
 
 export enum LocalStorageKeys {

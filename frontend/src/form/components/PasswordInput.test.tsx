@@ -1,7 +1,7 @@
 import { signal } from "@preact/signals";
 import { describe, expect, test, vi } from "vitest";
 
-import { renderWithProviders } from "../test/renderWithProviders";
+import { renderWithProviders } from "../../test/renderWithProviders";
 import { PasswordInput } from "./PasswordInput";
 import { fireEvent } from "@testing-library/preact";
 

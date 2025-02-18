@@ -2,10 +2,10 @@ import { useCallback } from "preact/hooks";
 import { type ReadonlySignal, useComputed, useSignal } from "@preact/signals";
 
 import { Card } from "../../components/Card";
-import { InputFieldRow } from "../../components/InputFieldRow";
+import { InputFieldRow } from "../../form/components/InputFieldRow";
 
-import { SetValueFunc } from "../../types/SetValueFunc";
-import { InputFormData } from "../../types/InputFormData";
+import { SetValueFunc } from "../../form/types/SetValueFunc";
+import { InputFormData } from "../../form/types/InputFormData";
 import { LoginRequest } from "../types/LoginRequest";
 
 function LoginError({error}: { error: ReadonlySignal<string | undefined>}) {

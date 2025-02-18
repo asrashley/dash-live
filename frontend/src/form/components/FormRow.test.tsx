@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import { signal } from "@preact/signals";
 
-import { renderWithProviders } from "../test/renderWithProviders";
+import { renderWithProviders } from "../../test/renderWithProviders";
 import { FormRow } from "./FormRow";
 
 describe("FormRow", () => {

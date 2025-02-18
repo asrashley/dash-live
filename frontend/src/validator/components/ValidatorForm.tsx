@@ -1,11 +1,11 @@
 import { type ReadonlySignal, useComputed } from "@preact/signals";
 import { useCallback, useContext } from "preact/hooks";
 
-import { StaticInputProps } from "../../types/StaticInputProps";
+import { StaticInputProps } from "../../form/types/StaticInputProps";
+import { SetValueFunc } from "../../form/types/SetValueFunc";
 import { WhoAmIContext } from "../../user/hooks/useWhoAmI";
-import { InputFieldRow } from "../../components/InputFieldRow";
+import { InputFieldRow } from "../../form/components/InputFieldRow";
 import { ValidatorSettings } from "../types/ValidatorSettings";
-import { SetValueFunc } from "../../types/SetValueFunc";
 import { ValidatorState, UseValidatorWebsocketHook } from "../hooks/useValidatorWebsocket";
 import { useAllStreams } from "../../hooks/useAllStreams";
 import { checkValidatorSettings } from "../utils/checkValidatorSettings";

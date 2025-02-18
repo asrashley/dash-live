@@ -4,8 +4,8 @@ import { useLocation } from "wouter-preact";
 
 import { uiRouteMap } from "@dashlive/routemap";
 
-import { FormRow } from "../../components/FormRow";
-import { TextInputRow } from "../../components/TextInputRow";
+import { FormRow } from "../../form/components/FormRow";
+import { TextInputRow } from "../../form/components/TextInputRow";
 import { useMessages } from "../../hooks/useMessages";
 import { MultiPeriodModelContext } from "../../hooks/useMultiPeriodStream";
 import { ButtonToolbar } from "./ButtonToolbar";

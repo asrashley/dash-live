@@ -1,7 +1,7 @@
 import { useComputed, type ReadonlySignal } from "@preact/signals";
 import { Link } from "wouter-preact";
 
-import { SetValueFunc } from "../../types/SetValueFunc";
+import { SetValueFunc } from "../../form/types/SetValueFunc";
 import { LoadingSpinner } from "../../components/LoadingSpinner";
 import { Card } from "../../components/Card";
 import { Alert } from "../../components/Alert";

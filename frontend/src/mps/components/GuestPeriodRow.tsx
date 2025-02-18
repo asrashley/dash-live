@@ -2,7 +2,7 @@ import { Fragment } from "preact";
 import { useCallback, useContext } from "preact/hooks";
 
 import { AppStateContext } from "../../appState";
-import { TimeDeltaInput } from "../../components/TimeDeltaInput";
+import { TimeDeltaInput } from "../../form/components/TimeDeltaInput";
 import { AllStreamsContext } from "../../hooks/useAllStreams";
 import { PeriodRowProps } from "../types/PeriodRowProps";
 import { TrackSelectionButton } from "./TrackSelectionButton";
