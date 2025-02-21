@@ -1,4 +1,4 @@
-import { InitialUserState } from "../types/UserState";
+import type { InitialUserState } from "../types/InitialUserState";
 
 
 export type FlattenedUserState = Omit<InitialUserState, 'groups'> & {
