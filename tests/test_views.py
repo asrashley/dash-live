@@ -100,7 +100,7 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
         ref_now = '2019-01-01T04:05:06Z'
         ref_today = '2019-01-01T00:00:00Z'
         ref_yesterday = '2018-12-31T00:00:00Z'
-        testcases = [
+        testcases: list[tuple[str, str, str]] = [
             ('year', ref_now, ref_today),
             ('month', ref_now, ref_today),
             ('today', ref_now, ref_today),
@@ -113,42 +113,52 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
             # availabilityStartTime
             ('', ref_today, ref_yesterday),
         ]
-        msg = r'When start="{}" is used, expected MPD@availabilityStartTime to be {} but was {}'
-        for option, now, start in testcases:
-            def mocked_warning(*args):
-                self.assertEqual(option, '2019-09-invalid-iso-datetime')
 
-            def mocked_info(*args):
-                if 'Invalid CGI parameters' in args[0]:
-                    self.assertIn('invalid-iso', option)
-                    self.assertIn(option, ' '.join([str(a) for a in args]))
-                elif 'availabilityStartTime' in args[0]:
-                    self.assertIn('moving availabilityStartTime back one day', args[0])
-                    self.assertEqual(now, ref_today)
+        for test_case in testcases:
+            option, now, _start = test_case
+            with self.subTest(now=now):
+                with MockTime(now):
+                    if mps:
+                        baseurl: str = flask.url_for(
+                            'mps-manifest',
+                            manifest=filename,
+                            mps_name=MPS_FIXTURE.name,
+                            mode='live')
+                        duration: int = int(MPS_FIXTURE.media_duration // 3)
+                    else:
+                        baseurl = flask.url_for(
+                            'dash-mpd-v3',
+                            manifest=filename,
+                            stream=BBB_FIXTURE.name,
+                            mode='live')
+                        duration = int(BBB_FIXTURE.media_duration // 3)
+                    if option:
+                        baseurl += '?start=' + option
+                    await self.check_an_availability_start_time(baseurl, duration, ref_today, test_case)
 
-            with MockTime(now):
-                if mps:
-                    baseurl: str = flask.url_for(
-                        'mps-manifest',
-                        manifest=filename,
-                        mps_name=MPS_FIXTURE.name,
-                        mode='live')
-                    duration: int = int(MPS_FIXTURE.media_duration // 3)
-                else:
-                    baseurl = flask.url_for(
-                        'dash-mpd-v3',
-                        manifest=filename,
-                        stream=BBB_FIXTURE.name,
-                        mode='live')
-                    duration = int(BBB_FIXTURE.media_duration // 3)
-                if option:
-                    baseurl += '?start=' + option
-                with unittest.mock.patch.object(logging, 'warning', mocked_warning):
-                    with unittest.mock.patch.object(logging, 'info', mocked_info):
-                        response = self.client.get(baseurl)
+    async def check_an_availability_start_time(
+            self, baseurl: str, duration: int, ref_today: str, test_case: tuple[str, str, str]) -> None:
+        option, now, start = test_case
+
+        def mocked_warning(*args) -> None:
+            nonlocal option
+            self.assertEqual(option, '2019-09-invalid-iso-datetime')
+
+        def mocked_info(*args) -> None:
+            nonlocal option, now, ref_today
+            if 'Invalid CGI parameters' in args[0]:
+                self.assertIn('invalid-iso', option)
+                self.assertIn(option, ' '.join([str(a) for a in args]))
+            elif 'availabilityStartTime' in args[0]:
+                self.assertIn('moving availabilityStartTime back one day', args[0])
+                self.assertEqual(now, ref_today)
+
+        with unittest.mock.patch.object(logging, 'warning', mocked_warning):
+            with unittest.mock.patch.object(logging, 'info', mocked_info):
+                response = self.client.get(baseurl)
                 if 'invalid-iso' in option:
                     self.assertEqual(response.status_code, 400)
-                    continue
+                    return
                 self.assertEqual(response.status_code, 200,
                                  msg=f'Failed to fetch manifest {baseurl}')
                 with ThreadPoolExecutor(max_workers=4) as tpe:
@@ -161,14 +171,17 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                     await dv.validate()
                 if dv.has_errors():
                     dv.print_manifest_text()
+                    for err in dv.get_errors():
+                        print(err)
                 self.assertFalse(dv.has_errors(), 'Validation failed')
-                today = from_isodatetime(now).replace(
+                today: datetime = from_isodatetime(now).replace(
                     hour=0, minute=0, second=0, microsecond=0)
-                start_time = from_isodatetime(start)
+                start_time: datetime = from_isodatetime(start)
                 if option != 'today' and today == start_time:
                     start_time -= datetime.timedelta(days=1)
                 elif option == 'now':
                     start_time = from_isodatetime(now) - dv.manifest.timeShiftBufferDepth
+                msg = r'When start="{}" is used, expected MPD@availabilityStartTime to be {} but was {}'
                 self.assertEqual(
                     dv.manifest.availabilityStartTime,
                     start_time,
