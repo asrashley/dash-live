@@ -1,22 +1,35 @@
-import type { MediaPlayer } from "dashjs";
-import { DashPlayer } from "../types/DashPlayer";
+import type dashjs from "dashjs";
+import { AbstractDashPlayer } from "../types/AbstractDashPlayer";
 
-export class DashJsPlayer extends DashPlayer {
-    private player?: MediaPlayer;
-    private videoElement?: HTMLVideoElement;
+import { routeMap } from "@dashlive/routemap";
+export class DashJsPlayer extends AbstractDashPlayer {
+    static LOCAL_VERSIONS: Readonly<string[]> = ['4.7.4', '4.7.1'] as const;
 
-    async initialize(videoElement: HTMLVideoElement, source: string): Promise<boolean> {
-        this.player = dashjs.MediaPlayer().create();
-        player.initialize(videoElement, source, true);
-        videoElement.addEventListener('canplay', this.canPlay);
-        return true;
+    private player?: dashjs.MediaPlayerClass;
+
+    static cdnTemplate(version: string): string {
+        if (DashJsPlayer.LOCAL_VERSIONS.includes(version)) {
+            return routeMap.js.url({ filename: `dashjs-${version}.js` });
+        }
+        return `https://cdn.dashjs.org/${version}/dash.all.min.js`;
     }
 
-    private canPlay = () => {
-        if (!this.videoElement) {
-            return;
+    async initialize(source: string): Promise<void> {
+        const { autoplay = false, version = DashJsPlayer.LOCAL_VERSIONS[0], videoElement } = this.props;
+        const jsUrl = DashJsPlayer.cdnTemplate(version);
+        await import(/* webpackIgnore: true */ jsUrl);
+        const { MediaPlayer } = window["dashjs"];
+        this.player = MediaPlayer().create();
+        this.player.initialize(videoElement, source, autoplay);
+        if (autoplay) {
+            videoElement.addEventListener('canplay', this.canPlay);
         }
-        console.log('start playback');
-        this.videoElement.play();
-    };
+    }
+
+    destroy(): void {
+        const { videoElement } = this.props;
+        videoElement.removeEventListener('canplay', this.canPlay);
+        this.player?.destroy();
+        this.player = undefined;
+    }
 }

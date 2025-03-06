@@ -1,1 +1,1 @@
-export type DashPlayerTypes = 'native' | 'shaka' | 'dash.js';
+export type DashPlayerTypes = 'native' | 'shaka' | 'dashjs';
