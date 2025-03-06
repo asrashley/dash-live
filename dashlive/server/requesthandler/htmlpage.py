@@ -16,15 +16,19 @@ import flask
 from dashlive.server import manifests, models
 from dashlive.server.options.container import OptionsContainer
 from dashlive.server.routes import Route
-from dashlive.server.options.drm_options import DrmLocationOption, DrmSelection
+from dashlive.server.options.drm_options import DrmLocationOption
 from dashlive.server.options.repository import OptionsRepository
-from dashlive.server.options.player_options import ShakaVersion, DashjsVersion
 from dashlive.server.options.types import OptionUsage
+from dashlive.utils.json_object import JsonObject
 
-from .base import HTMLHandlerBase
+from .base import HTMLHandlerBase, RequestHandlerBase
+from .decorators import (
+    current_manifest,
+    uses_manifest,
+)
 from .manifest_context import ManifestContext
 from .navbar import NavBarItem
-from .utils import add_allowed_origins, is_https_request
+from .utils import add_allowed_origins, is_https_request, jsonify
 
 class MainPage(HTMLHandlerBase):
     """
@@ -165,14 +169,97 @@ class ES5MainPage(HTMLHandlerBase):
         ]
         return breadcrumbs
 
-class VideoPlayer(HTMLHandlerBase):
+class VideoPlayer(RequestHandlerBase):
     """
     Responds with an HTML page that contains a video element to play
     the specified stream
     """
+    decorators = [uses_manifest]
 
-    SHAKA_CDN_TEMPLATE = r"https://ajax.googleapis.com/ajax/libs/shaka-player/{shakaVersion}/shaka-player.compiled.js"
-    DASHJS_CDN_TEMPLATE = r"https://cdn.dashjs.org/{dashjsVersion}/dash.all.min.js"
+    def get(self,
+        manifest: str,
+        mode: str,
+        stream: str) -> flask.Response:
+        logging.debug('VideoPlayer.get(%s, %s, %s)', manifest, mode, stream)
+        stream_model: models.Stream | None = None
+        mps_model: models.MultiPeriodStream | None = None
+        if mode.startswith("mps-"):
+            mode = mode[4:]
+            mps_model = models.MultiPeriodStream.get(name=stream)
+        else:
+            stream_model = models.Stream.get(directory=stream)
+        if stream_model is None and mps_model is None:
+            return flask.make_response("Not Found", 404)
+        try:
+            options: OptionsContainer = self.calculate_options(
+                mode=mode,
+                args=flask.request.args,
+                stream=stream_model,
+                restrictions=current_manifest.restrictions,
+                features=current_manifest.features)
+        except ValueError as e:
+            logging.info('Invalid CGI parameters: %s', e)
+            return flask.make_response('Invalid CGI parameters', 400)
+        mc = ManifestContext(
+            manifest=current_manifest, options=options, stream=stream_model,
+            multi_period=mps_model)
+        dash: JsonObject = mc.to_dict(exclude={
+            'ref_representation', 'cgi_params', 'options', 'periods', 'period',
+            'timing_ref',
+        })
+        dash['periods'] = []
+        for period in mc.periods:
+            dash_period: JsonObject = period.toJSON(exclude={'adaptationSets', '_type'})
+            dash_period['adaptationSets'] = []
+            for adaptation_set in period.adaptationSets:
+                asj: JsonObject = adaptation_set.toJSON(
+                    exclude={'drm', 'event_streams', 'representations', 'segment_timeline', '_type'})
+                keyIds: list[str] = [k.hex for k in adaptation_set.key_ids()]
+                asj['keys'] = {}
+                for kid in keyIds:
+                    key_model: models.Key | None = models.Key.get(hkid=kid)
+                    if key_model is not None:
+                        asj['keys'][kid] = key_model.toJSON()
+                        asj['keys'][kid]['guidKid'] = key_model.KID.hex_to_le_guid(raw=False)
+                        asj['keys'][kid]['b64Key'] = key_model.KEY.b64
+                if adaptation_set.drm is not None:
+                    asj['drm'] = {}
+                    for name, drm_context in adaptation_set.drm.items():
+                        asj['drm'][name] = {
+                            'laurl': drm_context.laurl,
+                            'scheme_id': drm_context.scheme_id,
+                            'version': drm_context.version
+                        }
+                dash_period['adaptationSets'].append(asj)
+            dash['periods'].append(dash_period)
+        if stream_model:
+            mpd_url: str = flask.url_for(
+                "dash-mpd-v3", stream=stream, manifest=manifest, mode=mode
+            )
+        else:
+            mpd_url = flask.url_for(
+                "mps-manifest", mps_name=stream, manifest=manifest, mode=mode
+            )
+        drm_selections: set[str] = {d[0] for d in options.drmSelection}
+        if options.clearkey.licenseUrl	is None:
+            options.clearkey.licenseUrl = flask.url_for('clearkey')
+        js_opts = options.toJSON(exclude={'drmSelection', 'videoPlayer'})
+        js_opts['drmSelection'] = drm_selections
+        options.remove_unused_parameters(mode)
+        mpd_url += options.generate_cgi_parameters_string(use=~OptionUsage.HTML)
+        return jsonify({
+            'dash': dash,
+            'options': js_opts,
+            'url': mpd_url,
+        })
+
+
+class LegacyVideoPlayer(RequestHandlerBase):
+    """
+    Responds with an HTML page that contains a video element to play
+    the specified stream on ES5 browsers
+    """
+    decorators = [uses_manifest]
 
     def get(
         self,
@@ -218,19 +305,6 @@ class VideoPlayer(HTMLHandlerBase):
             logging.error("Invalid CGI parameters: %s", err)
             return flask.make_response("Invalid CGI parameters", 400)
         options.remove_unused_parameters(mode)
-        dash_parms = ManifestContext(
-            manifest=manifests.manifest_map[manifest],
-            options=options,
-            stream=stream_model,
-            multi_period=multi_period,
-        )
-        if stream_model:
-            dash_parms.stream = stream_model.to_dict(
-                only={"pk", "title", "directory", "playready_la_url", "marlin_la_url"}
-            )
-        context["dash"] = dash_parms.to_dict(
-            exclude={"periods", "period", "ref_representation", "audio", "video"}
-        )
         if stream:
             mpd_url: str = flask.url_for(
                 "dash-mpd-v3", stream=stream, manifest=manifest, mode=mode
@@ -242,55 +316,24 @@ class VideoPlayer(HTMLHandlerBase):
         mpd_url += options.generate_cgi_parameters_string(use=~OptionUsage.HTML)
         context.update(
             {
-                "dashjsUrl": None,
-                "drm": None,
+                "drm": "",
                 "mimeType": "application/dash+xml",
                 "source": urllib.parse.urljoin(flask.request.host_url, mpd_url),
-                "shakaUrl": None,
                 "title": manifests.manifest_map[manifest].title,
-                "videoPlayer": options.videoPlayer,
             }
         )
-        if options.drmSelection:
-            context["drm"] = DrmSelection.to_string(options.drmSelection)
-        if options.videoPlayer == "dashjs":
-            if options.dashjsVersion is None:
-                options.dashjsVersion = DashjsVersion.cgi_choices[1]
-            if options.dashjsVersion in set(DashjsVersion.cgi_choices):
-                context["dashjsUrl"] = flask.url_for(
-                    "static", filename=f"js/prod/dashjs-{options.dashjsVersion}.js"
-                )
-            else:
-                cdn_template = app_cfg.get(
-                    "DASHJS_CDN_TEMPLATE", VideoPlayer.DASHJS_CDN_TEMPLATE
-                )
-                context["dashjsUrl"] = cdn_template.format(
-                    dashjsVersion=options.dashjsVersion
-                )
-        else:
-            if options.shakaVersion is None:
-                options.shakaVersion = ShakaVersion.cgi_choices[1]
-            if options.shakaVersion in set(ShakaVersion.cgi_choices):
-                context["shakaUrl"] = flask.url_for(
-                    "static", filename=f"js/prod/shaka-player.{options.shakaVersion}.js"
-                )
-            else:
-                cdn_template = app_cfg.get(
-                    "SHAKA_CDN_TEMPLATE", VideoPlayer.SHAKA_CDN_TEMPLATE
-                )
-                context["shakaUrl"] = cdn_template.format(
-                    shakaVersion=options.shakaVersion
-                )
         if is_https_request():
             context["source"] = context["source"].replace("http://", "https://")
-        if options.drmSelection and context["drm"] and "marlin" in context["drm"]:
-            licenseUrl: str | None = None
-            if options.marlin and options.marlin.licenseUrl:
-                licenseUrl = options.marlin.licenseUrl
-            elif stream_model.marlin_la_url:
-                licenseUrl = stream_model.marlin_la_url
-            if licenseUrl:
-                context["source"] = f'{licenseUrl}#{context["source"]}'
+        if options.drmSelection:
+            drms: set[str] = {d[0] for d in options.drmSelection}
+            if "marlin" in drms:
+                licenseUrl: str | None = None
+                if options.marlin and options.marlin.licenseUrl:
+                    licenseUrl = options.marlin.licenseUrl
+                elif stream_model.marlin_la_url:
+                    licenseUrl = stream_model.marlin_la_url
+                if licenseUrl:
+                    context["source"] = f'{licenseUrl}#{context["source"]}'
         return flask.render_template("video.html", **context)
 
 
