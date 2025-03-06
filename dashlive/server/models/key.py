@@ -1,4 +1,4 @@
-from typing import cast, AbstractSet, ClassVar, Optional, TYPE_CHECKING
+from typing import NotRequired, TypedDict, cast, AbstractSet, ClassVar, Optional, TYPE_CHECKING
 
 import sqlalchemy as sa
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -13,6 +13,15 @@ from .mediafile_keys import mediafile_keys
 
 if TYPE_CHECKING:
     from .mediafile import MediaFile
+
+class KeyJson(TypedDict):
+    kid: str
+    key: str
+    alg: str
+    computed: bool
+    b64Key: NotRequired[str]
+    guidKid: NotRequired[str]
+
 
 class Key(ModelMixin["Key"], Base):
     __plural__: ClassVar[str] = 'Keys'
@@ -73,8 +82,8 @@ class Key(ModelMixin["Key"], Base):
         return rv
 
     def toJSON(self, pure: bool = False,
-               exclude: AbstractSet[str] | None = None) -> JsonObject:
-        js = {
+               exclude: AbstractSet[str] | None = None) -> KeyJson:
+        js: KeyJson = {
             'kid': self.KID.hex,
             'key': self.KEY.hex,
             'alg': self.ALG,
