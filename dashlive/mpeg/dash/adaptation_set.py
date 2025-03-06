@@ -27,7 +27,7 @@ from typing import Any, ClassVar, Set
 from dashlive.utils.objects import dict_to_cgi_params
 from dashlive.utils.list_of import ListOf
 from dashlive.utils.object_with_fields import ObjectWithFields
-from dashlive.drm.base import DrmBase
+from dashlive.drm.base import DrmManifestContext
 from dashlive.drm.keymaterial import KeyMaterial
 
 from .event_stream import EventStream
@@ -46,7 +46,7 @@ class AdaptationSet(ObjectWithFields):
     OBJECT_FIELDS: ClassVar[dict[str, Any]] = {
         'event_streams': ListOf(EventStream),
         'representations': ListOf(Representation),
-        'drm': DrmBase | None,
+        'drm': dict[str, DrmManifestContext] | None,
     }
     DEFAULT_VALUES: ClassVar[dict[str, Any]] = {
         'timescale': 1,
@@ -56,6 +56,14 @@ class AdaptationSet(ObjectWithFields):
         'default_kid': None,
         'lang': None,
     }
+    default_kid: str | None
+    drm: dict[str, DrmManifestContext] | None
+    event_streams: list[EventStream]
+    lang: str | None
+    representations: list[Representation]
+    segmentAlignment: bool
+    segment_timeline: bool
+    timescale: int
 
     def __init__(self, **kwargs) -> None:
         """
