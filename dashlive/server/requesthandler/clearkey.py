@@ -23,25 +23,23 @@
 import binascii
 import base64
 
-import flask
+from flask import Response, request
 
 from dashlive.server import models
 from .base import RequestHandlerBase
 from .utils import jsonify
 
 class ClearkeyHandler(RequestHandlerBase):
-    def post(self):
-        def to_hex(data: bytes) -> str:
-            return str(binascii.b2a_hex(data), 'ascii')
+    def post(self) -> Response:
         result = {"error": None}
-        req = flask.request.json
+        req = request.get_json(force=True, cache=False)
         try:
             kids = req["kids"]
         except KeyError:
             return jsonify('kids property missing', 400)
         try:
             kids = list(map(self.base64url_decode, kids))
-            kids = [to_hex(k) for k in kids]
+            kids = [self.to_hex(k) for k in kids]
             keys = []
             for kid, key in models.Key.get_kids(kids).items():
                 item = {
@@ -58,16 +56,22 @@ class ClearkeyHandler(RequestHandlerBase):
             result["error"] = f'Error: {err}'
         return jsonify(result)
 
-    def base64url_encode(self, b: bytes) -> str:
+    @staticmethod
+    def to_hex(data: bytes) -> str:
+        return str(binascii.b2a_hex(data), 'ascii')
+
+    @staticmethod
+    def base64url_encode(b: bytes) -> str:
         b = str(base64.b64encode(b), 'ascii')
         b = b.replace('+', '-')
         b = b.replace('/', '_')
         return b.replace('=', '')
 
-    def base64url_decode(self, txt: str) -> bytes:
+    @staticmethod
+    def base64url_decode(txt: str) -> bytes:
         txt = txt.replace('-', '+')
         txt = txt.replace('_', '/')
-        padding = len(txt) % 4
+        padding: int = len(txt) % 4
         if padding == 2:
             txt += '=='
         elif padding == 3:
