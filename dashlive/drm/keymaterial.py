@@ -81,6 +81,22 @@ class KeyMaterial:
 
     b64 = property(to_base64, from_base64)
 
+    def hex_to_le_guid(self, raw: bool) -> bytes | str:
+        guid: str = self.hex
+        if len(guid) != 32:
+            raise ValueError("GUID should be 32 hex characters")
+        dword: str = ''.join([guid[6:8], guid[4:6], guid[2:4], guid[0:2]])
+        word1: str = ''.join([guid[10:12], guid[8:10]])
+        word2: str = ''.join([guid[14:16], guid[12:14]])
+        # looking at example streams, word 3 appears to be in big endian
+        # format!
+        word3: str = ''.join([guid[16:18], guid[18:20]])
+        result: str = '-'.join([dword, word1, word2, word3, guid[20:]])
+        assert len(result) == 36
+        if raw is True:
+            return binascii.a2b_hex(result.replace('-', ''))
+        return result
+
     def toJSON(self, pure=True, exclude: Set[str] | None = None) -> KeyMaterialJson | str:
         if pure:
             return self.to_hex()
