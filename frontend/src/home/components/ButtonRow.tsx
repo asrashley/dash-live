@@ -1,5 +1,6 @@
 import { type ReadonlySignal, useComputed } from "@preact/signals";
 import { useCallback, useContext } from "preact/hooks";
+import { Link } from "wouter-preact";
 
 import { Icon } from '../../components/Icon';
 import { StreamOptionsContext } from '../types/StreamOptionsHook';
@@ -23,10 +24,10 @@ export function ButtonRow({ videoUrl, viewing, stream, setViewing }: ButtonRowPr
 
   return <div className="d-flex flex-row align-self-stretch pb-3">
     <div className="play-button flex-fill text-center">
-      <a className="btn btn-lg btn-primary" href={videoUrl.value.href}>
+      <Link className="btn btn-lg btn-primary" href={videoUrl.value.href}>
         <Icon name="play-fill" />
         <span className="title ps-2">Play {stream.value.title}</span>
-      </a>
+      </Link>
     </div>
     <div className="view-manifest-button flex-fill text-center">
       <button className="btn btn-lg btn-primary" onClick={onClickView}>
