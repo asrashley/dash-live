@@ -64,6 +64,7 @@ class RouteMap(MethodView):
             "css": RouteMap.static_route('css', 'style sheets'),
             "fonts": RouteMap.static_route('fonts', 'fonts'),
             "icons": RouteMap.static_route('icons', 'icons'),
+            "js": RouteMap.static_route('js/prod', 'javascript'),
             "images": RouteMap.static_route('img', 'images'),
         }
         for name, route in routes.items():
