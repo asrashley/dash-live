@@ -237,14 +237,6 @@ routes: dict[str, Route] = {
         handler='media_management.UploadHandler',
         title='Upload blob',
         parent='list-streams'),
-    "video": Route(
-        r'/play/<regex("(live|vod|odvod)"):mode>/<stream>/<manifest>/index.html',
-        handler='htmlpage.VideoPlayer',
-        title='DASH test stream player'),
-    "video-mps": Route(
-        r'/play/mps/<regex("(live|vod)"):mode>/<mps_name>/<manifest>/index.html',
-        handler='htmlpage.VideoPlayer',
-        title='DASH test stream player'),
     "logout": Route(
         r'/logout',
         handler='user_management.LogoutPage',
@@ -332,6 +324,10 @@ routes: dict[str, Route] = {
         r'/api/multi-period-streams.validate',
         handler='multi_period_streams.ValidateStream',
         title='Check MPS settings are valid'),
+    "api-video-parameters": Route(
+        r'/api/play/<regex("(live|vod|odvod|mps-live|mps-vod)"):mode>/<stream>/<manifest>',
+        handler='htmlpage.VideoPlayer',
+        title='video player API'),
     "favicon": Route(
         r'/favicon.ico',
         handler='htmlpage.favicon',
@@ -357,6 +353,8 @@ ui_routes: dict[str, UiRoute] = {
     "list-users": UiRoute(r'/users'),
     "login": UiRoute(r'/login'),
     "validator": UiRoute(r'/validate'),
+    "video": UiRoute(
+        r'/play/<regex("(live|vod|odvod|mps-live|mps-vod)"):mode>/<stream>/<manifest>'),
 }
 
 for name in routes.keys():
