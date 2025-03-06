@@ -22,8 +22,7 @@
 
 import base64
 from binascii import a2b_hex
-import logging
-import os
+import binascii
 import unittest
 
 from dashlive.drm.keymaterial import KeyMaterial
@@ -81,14 +80,36 @@ class KeyMaterialTests(TestCaseMixin, unittest.TestCase):
         self.assertEqual(km.to_base64(), b64_value)
         self.assertEqual(km.b64, b64_value)
 
+    def test_guid_generation(self) -> None:
+        default_kid = '1AB45440-532C-4399-94DC-5C5AD9584BAC'.lower()
+        expected_uuid = '4054b41a-2c53-9943-94dc-5c5ad9584bac'
+        km = KeyMaterial(hex=default_kid)
+        guid = km.hex_to_le_guid(raw=False)
+        self.assertEqual(expected_uuid, guid)
+        raw_kid = binascii.a2b_hex(guid.replace('-', ''))
+        self.assertEqual(len(raw_kid), 16)
+        hex_uuid = expected_uuid.replace('-', '')
+        raw_uuid = binascii.a2b_hex(hex_uuid)
+        self.assertEqual(len(raw_uuid), 16)
+        for i in range(len(raw_kid)):
+            self.assertEqual(
+                raw_kid[i], raw_uuid[i],
+                f'Expected 0x{raw_kid[i]:02x} got 0x{raw_uuid[i]:02x} at {i}')
+        self.assertEqual(
+            expected_uuid.replace('-', ''),
+            self.to_hex(raw_kid))
+        self.assertEqual(
+            binascii.a2b_hex(expected_uuid.replace('-', '')),
+            raw_kid)
+        base64_kid = self.to_base64(raw_kid)
+        self.assertEqual(r'QFS0GixTmUOU3Fxa2VhLrA==', base64_kid)
+        with self.assertRaises(ValueError):
+            km = KeyMaterial(raw=b'invalid')
+            KeyMaterial.hex_to_le_guid(raw=True)
+        with self.assertRaises(ValueError):
+            km = KeyMaterial(hex='ab012345')
+            KeyMaterial.hex_to_le_guid(raw=False)
 
-if os.environ.get("TESTS"):
-    def load_tests(loader, tests, pattern):
-        FORMAT = r"%(asctime)-15s:%(levelname)s:%(filename)s@%(lineno)d: %(message)s"
-        logging.basicConfig(format=FORMAT, level=logging.DEBUG)
-        return unittest.loader.TestLoader().loadTestsFromNames(
-            os.environ["TESTS"].split(','),
-            KeyMaterialTests)
 
 if __name__ == "__main__":
     unittest.main()
