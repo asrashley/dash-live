@@ -53,7 +53,7 @@ from .mixins.stream_fixtures import BBB_FIXTURE
 class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
     custom_attributes = [dict(tag='IIS_DRM_VERSION', value='8.0.1907.32')]
 
-    expected_pro = ''.join([
+    expected_pro: str = ''.join([
         r'VAMAAAEAAQBKAzwAVwBSAE0ASABFAEEARABFAFIAIAB4AG0AbABuAHMAPQAi',
         r'AGgAdAB0AHAAOgAvAC8AcwBjAGgAZQBtAGEAcwAuAG0AaQBjAHIAbwBzAG8A',
         r'ZgB0AC4AYwBvAG0ALwBEAFIATQAvADIAMAAwADcALwAwADMALwBQAGwAYQB5',
@@ -74,11 +74,11 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         r'AFMASQBPAE4APgA8AC8AQwBVAFMAVABPAE0AQQBUAFQAUgBJAEIAVQBUAEUA',
         r'UwA+ADwALwBEAEEAVABBAD4APAAvAFcAUgBNAEgARQBBAEQARQBSAD4A'])
 
-    la_url = 'https://amssamples.keydelivery.mediaservices.windows.net/PlayReady/'
-
-    namespaces = {
+    la_url: str = 'https://amssamples.keydelivery.mediaservices.windows.net/PlayReady/'
+    namespaces: dict[str, str] = {
         'prh': 'http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader',
     }
+    keys: dict[str, KeyStub]
 
     def setUp(self):
         super().setUp()
@@ -87,34 +87,6 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
                 ("1AB45440532C439994DC5C5AD9584BAC", "ccc0f2b3b279926496a7f5d25da692f6")]:
             self.keys[kid.lower()] = KeyStub(kid, key)
         self.default_kid: str = list(self.keys.keys())[0]
-
-    def test_guid_generation(self):
-        default_kid = '1AB45440-532C-4399-94DC-5C5AD9584BAC'.lower()
-        expected_uuid = '4054b41a-2c53-9943-94dc-5c5ad9584bac'
-        mspr = PlayReady(la_url=self.la_url)
-        guid = mspr.hex_to_le_guid(default_kid, raw=False)
-        self.assertEqual(expected_uuid, guid)
-        raw_kid = binascii.a2b_hex(guid.replace('-', ''))
-        self.assertEqual(len(raw_kid), 16)
-        hex_uuid = expected_uuid.replace('-', '')
-        raw_uuid = binascii.a2b_hex(hex_uuid)
-        self.assertEqual(len(raw_uuid), 16)
-        for i in range(len(raw_kid)):
-            self.assertEqual(
-                raw_kid[i], raw_uuid[i],
-                f'Expected 0x{raw_kid[i]:02x} got 0x{raw_uuid[i]:02x} at {i}')
-        self.assertEqual(
-            expected_uuid.replace('-', ''),
-            self.to_hex(raw_kid))
-        self.assertEqual(
-            binascii.a2b_hex(expected_uuid.replace('-', '')),
-            raw_kid)
-        base64_kid = self.to_base64(raw_kid)
-        self.assertEqual(r'QFS0GixTmUOU3Fxa2VhLrA==', base64_kid)
-        with self.assertRaises(ValueError):
-            PlayReady.hex_to_le_guid(guid=b'invalid', raw=True)
-        with self.assertRaises(ValueError):
-            PlayReady.hex_to_le_guid(guid='ab012345', raw=False)
 
     def test_content_key_generation(self):
         # https://brokenpipe.wordpress.com/2016/10/06/generating-a-playready-content-key-using-a-key-seed-and-key-id/
@@ -266,12 +238,13 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         self.assertEqual(keylen[0].text, "16")
         kid = xml.findall('./prh:DATA/prh:KID', self.namespaces)
         self.assertEqual(len(kid), 1)
-        guid = PlayReady.hex_to_le_guid(list(self.keys.keys())[0], raw=False)
+        km = KeyMaterial(list(self.keys.keys())[0])
+        guid = km.hex_to_le_guid(raw=False)
         self.assertEqual(
             self.to_hex(base64.b64decode(kid[0].text)),
             guid.replace('-', ''))
 
-    def test_pssh_generation_v4_0(self):
+    def test_pssh_generation_v4_0(self) -> None:
         """Generate and parse PlayReady Header v4.0.0.0"""
         self.assertEqual(len(self.keys), 1)
         mspr = PlayReady(
@@ -321,12 +294,13 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         kid = actual_pro[0].xml.findall(
             './prh:DATA/prh:KID', self.namespaces)
         self.assertEqual(len(kid), 1)
-        guid = PlayReady.hex_to_le_guid(list(keys.keys())[0], raw=False)
+        km = KeyMaterial(list(keys.keys())[0])
+        guid = km.hex_to_le_guid(raw=False)
         self.assertEqual(
             self.to_hex(base64.b64decode(kid[0].text)),
             guid.replace('-', ''))
 
-    def test_pssh_generation_v4_1(self):
+    def test_pssh_generation_v4_1(self) -> None:
         """Generate and parse PlayReady Header v4.1.0.0"""
         self.assertEqual(len(self.keys), 1)
         mspr = PlayReady(
@@ -337,7 +311,8 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         pssh = mspr.generate_pssh(self.la_url, self.default_kid, self.keys).encode()
         self.check_generated_pssh_v4_1(self.keys, mspr, pssh)
 
-    def check_generated_pssh_v4_1(self, keys, mspr, pssh):
+    def check_generated_pssh_v4_1(self, keys: dict[str, KeyStub], mspr: PlayReady,
+                                  pssh: mp4.ContentProtectionSpecificBox) -> None:
         """
         Check the PSSH matches the v4.1.0.0 Schema
         """
@@ -361,7 +336,8 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         self.assertEqual(len(kid), 1)
         self.assertEqual(kid[0].get("ALGID"), "AESCTR")
         self.assertEqual(kid[0].get("CHECKSUM"), 'Xy6jKG4PJSY=')
-        guid = PlayReady.hex_to_le_guid(list(keys.keys())[0], raw=False)
+        km = KeyMaterial(list(keys.keys())[0])
+        guid = km.hex_to_le_guid(raw=False)
         self.assertEqual(
             self.to_hex(base64.b64decode(kid[0].get("VALUE"))),
             guid.replace('-', ''))
@@ -405,7 +381,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         self.assertGreaterThan(len(keys), 0)
         guid_map = {}
         for keypair in list(keys.values()):
-            guid = PlayReady.hex_to_le_guid(keypair.KID.raw, raw=True)
+            guid = keypair.KID.hex_to_le_guid(raw=True)
             guid = self.to_base64(guid)
             guid_map[guid] = keypair
         self.assertEqual(len(kids), len(keys))
@@ -460,7 +436,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             './prh:DATA/prh:PROTECTINFO/prh:KIDS/prh:KID', self.namespaces)
         guid_map = {}
         for keypair in list(keys.values()):
-            guid = PlayReady.hex_to_le_guid(keypair.KID.raw, raw=True)
+            guid = keypair.KID.hex_to_le_guid(raw=True)
             guid = self.to_base64(guid)
             guid_map[guid] = keypair
         self.assertEqual(len(kids), len(keys))

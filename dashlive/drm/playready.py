@@ -88,30 +88,8 @@ class PlayReady(DrmBase):
         self.la_url = la_url
         self.security_level = security_level
 
-    @classmethod
-    def hex_to_le_guid(clz, guid, raw):
-        if raw is True:
-            if len(guid) != 16:
-                raise ValueError("GUID should be 16 bytes")
-            guid = str(binascii.b2a_hex(guid), 'ascii')
-        else:
-            guid = guid.replace('-', '')
-        if len(guid) != 32:
-            raise ValueError("GUID should be 32 hex characters")
-        dword = ''.join([guid[6:8], guid[4:6], guid[2:4], guid[0:2]])
-        word1 = ''.join([guid[10:12], guid[8:10]])
-        word2 = ''.join([guid[14:16], guid[12:14]])
-        # looking at example streams, word 3 appears to be in big endian
-        # format!
-        word3 = ''.join([guid[16:18], guid[18:20]])
-        result = '-'.join([dword, word1, word2, word3, guid[20:]])
-        assert len(result) == 36
-        if raw is True:
-            return binascii.a2b_hex(result.replace('-', ''))
-        return result
-
-    def generate_checksum(self, keypair):
-        guid_kid = PlayReady.hex_to_le_guid(keypair.KID.raw, raw=True)
+    def generate_checksum(self, keypair: KeyTuple) -> bytes:
+        guid_kid = keypair.KID.hex_to_le_guid(raw=True)
         if len(guid_kid) != 16:
             raise ValueError("KID should be a raw 16 byte key")
         # checksum = first 8 bytes of AES ECB of kid using key
@@ -121,13 +99,13 @@ class PlayReady(DrmBase):
 
     # https://docs.microsoft.com/en-us/playready/specifications/playready-key-seed
     @classmethod
-    def generate_content_key(clz, keyId, keySeed=None):
+    def generate_content_key(clz, keyId: bytes, keySeed: bytes | None = None) -> bytearray:
         """Generate a content key from the key ID"""
         if keySeed is None:
             keySeed = PlayReady.TEST_KEY_SEED
         if len(keyId) != 16:
             raise ValueError("KID should be a raw 16 byte value")
-        keyId = PlayReady.hex_to_le_guid(keyId, raw=True)
+        keyId = KeyMaterial(raw=keyId).hex_to_le_guid(raw=True)
         if len(keySeed) < 30:
             raise ValueError("Key seed must be at least 30 bytes")
         # Truncate the key seed to 30 bytes, key seed must be at least 30 bytes
@@ -172,31 +150,29 @@ class PlayReady(DrmBase):
                            keys: dict[str, KeyTuple],
                            custom_attributes: list | None) -> bytes:
         """Generate WRMHEADER XML document"""
-        cfgs = []
-        kids = []
+        cfgs: list[str] = []
+        kids: list[dict] = []
         for keypair in list(keys.values()):
-            guid_kid = PlayReady.hex_to_le_guid(keypair.KID.raw, raw=True)
-            rkey = keypair.KEY.raw
+            guid_kid: bytes = keypair.KID.hex_to_le_guid(raw=True)
             kids.append({
                 'kid': guid_kid,
                 'alg': keypair.ALG,
                 'checksum': self.generate_checksum(keypair),
             })
-            cfg = [
+            cfg: list[str] = [
                 'kid:' + str(base64.b64encode(guid_kid), 'ascii'),
                 'persist:false',
                 f'sl:{self.security_level}'
             ]
             if not keypair.computed:
-                cfg.append('contentkey:' + str(base64.b64encode(rkey), 'ascii'))
+                cfg.append('contentkey:' + str(base64.b64encode(keypair.KEY.raw), 'ascii'))
             cfgs.append('(' + ','.join(cfg) + ')')
         cfgs = ','.join(cfgs)
         if la_url is None:
             la_url = self.TEST_LA_URL
         default_keypair = keys[default_kid.lower()]
         default_key = default_keypair.KEY.raw
-        default_kid = PlayReady.hex_to_le_guid(
-            default_keypair.KID.raw, raw=True)
+        default_kid = default_keypair.KID.hex_to_le_guid(raw=True)
         if custom_attributes is None:
             custom_attributes = []
         context = {
