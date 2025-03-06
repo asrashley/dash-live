@@ -49,7 +49,7 @@ exports[`HomePage > matches snapshot 1`] = `
         >
           <a
             class="btn btn-lg btn-primary"
-            href="http://localhost:3000/play/vod/bbb/hand_made/index.html"
+            href="http://localhost:3000/play/vod/bbb/hand_made"
           >
             <span
               aria-label="play-fill icon"

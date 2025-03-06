@@ -1,7 +1,7 @@
 import { useCallback } from "preact/hooks";
 import { type ReadonlySignal, useComputed, useSignal } from "@preact/signals";
 
-import { routeMap } from "@dashlive/routemap";
+import { routeMap, uiRouteMap } from "@dashlive/routemap";
 import {
   CombinedStream,
   useCombinedStreams,
@@ -60,7 +60,9 @@ export default function HomePage() {
   const manifestUrl = useComputed<URL>(() => viewing.value ? editUrl.value : genManifest.value);
   const manifestBaseName = useComputed<string>(() => manifest.value.slice(0, -4));
   const videoUrl = useComputed<URL>(() =>
-    generateUrl(routeMap.video.url, routeMap.videoMps.url, mode, manifestBaseName, stream, nonDefaultOptions));
+    generateUrl(uiRouteMap.video.url,
+      ({mode, manifest, mps_name: stream}) => uiRouteMap.video.url({mode: `mps-${mode}`, manifest, stream}),
+      mode, manifestBaseName, stream, nonDefaultOptions));
   const setViewing = useCallback((flag: boolean) => {
     viewing.value = flag;
     editUrl.value = new URL(genManifest.value.href);

@@ -29,10 +29,10 @@ export default {
       {
         context: [
           '/api',
+          '/clearkey',
           '/dash',
           '/libs',
           '/media/inspect',
-          '/play',
           '/streams',
         ],
         target: `http://localhost:${serverPort}/`,
