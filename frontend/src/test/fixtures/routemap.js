@@ -17,6 +17,12 @@ export const routeMap = {
     route: "/static/icons/:filename",
     url: ({filename}) => `/static/icons/${filename}`,
   },
+  js: {
+    title: "static javascript",
+    re: /\/static\/js\/prod\/(?<filename>[\w_.-]+)/,
+    route: "/static/js/prod/:filename",
+    url: ({filename}) => `/static/js/prod/${filename}`,
+  },
   images: {
     title: "static images",
     re: /\/static\/img\/(?<filename>[\w_.-]+)/,
@@ -190,18 +196,6 @@ export const routeMap = {
     re: /\/media\/(?<spk>\d+)\/blob/,
     route: "/media/:spk/blob",
     url: ({spk}) => `/media/${spk}/blob`,
-  },
-  video: {
-    title: "DASH test stream player",
-    re: /\/play\/(?<mode>(live|vod|odvod))\/(?<stream>\w+)\/(?<manifest>\w+)\/index.html/,
-    route: "/play/:mode/:stream/:manifest/index.html",
-    url: ({mode, stream, manifest}) => `/play/${mode}/${stream}/${manifest}/index.html`,
-  },
-  videoMps: {
-    title: "DASH test stream player",
-    re: /\/play\/mps\/(?<mode>(live|vod))\/(?<mps_name>\w+)\/(?<manifest>\w+)\/index.html/,
-    route: "/play/mps/:mode/:mps_name/:manifest/index.html",
-    url: ({mode, mps_name, manifest}) => `/play/mps/${mode}/${mps_name}/${manifest}/index.html`,
   },
   logout: {
     title: "Log out of site",
@@ -409,5 +403,11 @@ export const uiRouteMap = {
     re: /\/validate/,
     route: "/validate",
     url: () => `/validate`,
+  },
+  video: {
+    title: "video",
+    re: /\/play\/(?<mode>(live|vod|odvod|mps-live|mps-vod))\/(?<stream>\w+)\/(?<manifest>\w+)/,
+    route: "/play/:mode/:stream/:manifest",
+    url: ({mode, stream, manifest}) => `/play/${mode}/${stream}/${manifest}`,
   },
 };
