@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import fetchMock from "@fetch-mock/vitest";
 import log from "loglevel";
 
-import { routeMap } from "@dashlive/routemap";
+import { routeMap, uiRouteMap } from "@dashlive/routemap";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import { ApiRequests, EndpointContext } from "../../endpoints";
@@ -52,6 +52,38 @@ describe("HomePage", () => {
     expect(asFragment()).toMatchSnapshot();
   });
 
+  test("can select a conventional stream", async () => {
+    const user = userEvent.setup();
+    const { findBySelector, findByText } = renderWithProviders(
+      <EndpointContext.Provider value={apiRequests}>
+        <HomePage />
+      </EndpointContext.Provider>
+    );
+    const streamSelect = await findBySelector("#model-stream") as HTMLSelectElement;
+    await user.selectOptions(streamSelect, ["Big Buck Bunny"]);
+    await findByText("Play Big Buck Bunny");
+    const playBtn = await findBySelector(".play-button > .btn") as HTMLAnchorElement;
+    const playUrl = new URL(
+      uiRouteMap.video.url({
+        mode: "vod",
+        stream: "bbb",
+        manifest: "hand_made",
+      }),
+      document.location.href
+    );
+    expect(playBtn.getAttribute("href")).toEqual(playUrl.href);
+    const anchor = await findBySelector("#dashurl") as HTMLAnchorElement;
+    const mpdUrl = new URL(
+      routeMap.dashMpdV3.url({
+        mode: "vod",
+        stream: "bbb",
+        manifest: "hand_made.mpd",
+      }),
+      document.location.href
+    );
+    expect(anchor.getAttribute("href")).toEqual(mpdUrl.href);
+  });
+
   test("can select a multi-period stream", async () => {
     const user = userEvent.setup();
     const { findBySelector, findByText } = renderWithProviders(
@@ -64,9 +96,9 @@ describe("HomePage", () => {
     await findByText("Play first title");
     const playBtn = await findBySelector(".play-button > .btn") as HTMLAnchorElement;
     const playUrl = new URL(
-      routeMap.videoMps.url({
-        mode: "vod",
-        mps_name: "demo",
+      uiRouteMap.video.url({
+        mode: "mps-vod",
+        stream: "demo",
         manifest: "hand_made",
       }),
       document.location.href
