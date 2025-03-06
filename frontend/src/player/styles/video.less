@@ -1,125 +1,131 @@
-body, html {
+body.video-player {
   background: black;
   width: 100%;
   height: 100%;
-}
 
-header {
+  header {
     z-index: 4;
     transition: height 0.5s;
     transition: opacity 0.5s;
 
     .breadcrumbs {
-        background-color: rgb(240, 241, 242);
-        border: none;
-        opacity: 0.7;
-        .breadcrumb-item {
-            visibility: hidden;
-        }
-        .breadcrumb-item::before {
-            content: none;
-        }
-        .breadcrumb-item.active {
-            visibility: visible;
-        }
-    }
-}
+      background-color: rgb(240, 241, 242);
+      border: none;
+      opacity: 0.7;
 
-header.rollup {
+      .breadcrumb-item {
+        visibility: hidden;
+      }
+
+      .breadcrumb-item::before {
+        content: none;
+      }
+
+      .breadcrumb-item.active {
+        visibility: visible;
+      }
+    }
+  }
+
+  header.rollup {
     height: 2em;
     opacity: 0.3;
     overflow-y: hidden;
+  }
 }
-
 
 #vid-window {
-    height: 266px;
-    margin: 0;
-    width: 640px;
-    z-index: 0;
+  height: 266px;
+  margin: 0;
+  width: 640px;
+  z-index: 0;
 }
 
-#vid-window > video {
+#vid-window>video {
   width: 100%;
   height: 100%;
 }
 
 #vid-window .icon {
-    position: absolute;
-    z-index: 2;
-    right: 4em;
-    top: 2em;
-    color: #eee;
-    display: none;
+  position: absolute;
+  z-index: 2;
+  right: 4em;
+  top: 2em;
+  color: #eee;
+  display: none;
 }
 
 #vid-window.paused .fa-pause,
 #vid-window.skip-forward .fa-step-forward,
 #vid-window.skip-backward .fa-step-backward,
-#vid-window.stopped .fa-stop
-{
-    display: block;
+#vid-window.stopped .fa-stop {
+  display: block;
 }
 
-#status, .textbox, .source, .timecode {
-    position: absolute;
-    height: 1em;
-    height: 2vh;
-    left: 2em;
-    font-size: 1.5em;
-    line-height: 1em;
-    line-height: 2.3vh;
-    padding: 0 0.2em;
-    color: white;
-    text-align: center;
-    background-color: rgba(63,63,63,0.4);
-    z-index: 2;
+#status,
+.textbox,
+.source,
+.timecode {
+  position: absolute;
+  height: 1em;
+  height: 2vh;
+  left: 2em;
+  font-size: 1.5em;
+  line-height: 1em;
+  line-height: 2.3vh;
+  padding: 0 0.2em;
+  color: white;
+  text-align: center;
+  background-color: rgba(63, 63, 63, 0.4);
+  z-index: 2;
 }
 
 .source {
-    top: 3em;
-    width: 90%;
-    overflow: hidden;
-    height: 1em;
-    line-height: 1em;
-    text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-stretch: extra-condensed;
-    font-size: 1.5rem;
+  top: 3em;
+  width: 90%;
+  overflow: hidden;
+  height: 1em;
+  line-height: 1em;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-stretch: extra-condensed;
+  font-size: 1.5rem;
 }
 
 #status {
-    bottom: 4em;
-    font-size: 1rem;
-    height: 5em;
-    line-height: 1.25rem;
-    overflow: hidden;
-    text-align: left;
-    text-overflow: ellipsis;
-    width: 35em;
+  bottom: 4em;
+  font-size: 1rem;
+  height: 5em;
+  line-height: 1.25rem;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  width: 35em;
 
-    > p {
-        margin: 0;
-    }
+  >p {
+    margin: 0;
+  }
 
-    .target, .actual {
-      margin-right: 1em;
-    }
+  .target,
+  .actual {
+    margin-right: 1em;
+  }
 
-    .timecode {
-        left: auto;
-        right: 1em;
-        top: 0.5em;
-        width: 6em;
-    }
+  .timecode {
+    left: auto;
+    right: 1em;
+    top: 0.5em;
+    width: 6em;
+  }
 }
 
 .textbox {
   left: 0;
   width: 100%;
-  > span {
+
+  >span {
     margin-left: 1em;
   }
 }
@@ -127,12 +133,15 @@ header.rollup {
 .metadata {
   bottom: 8em;
 }
+
 .canplay {
   bottom: 6em;
 }
+
 .play {
   bottom: 4em;
 }
+
 .resize {
   bottom: 2em;
 }
@@ -142,7 +151,7 @@ header.rollup {
 }
 
 .prefetch {
-    display: none;
+  display: none;
 }
 
 .finished {
@@ -152,10 +161,12 @@ header.rollup {
   position: absolute;
   top: 50%;
   height: @height;
-  margin-top: -0.5em; /* ((-@height)/2); */
+  margin-top: -0.5em;
+  /* ((-@height)/2); */
   width: @width;
   left: 50%;
-  margin-left: -6em; /* (-@width/2); */
+  margin-left: -6em;
+  /* (-@width/2); */
   color: #ff6666;
   text-align: center;
   font-family: cursive;
@@ -169,33 +180,34 @@ header.rollup {
 
 @media only screen and (min-height: 576px) {
   #vid-window {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 1024px;
-      height: 576px;
-      height: 85vh;
-      width: 100vw;
-      background: black;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1024px;
+    height: 576px;
+    height: 85vh;
+    width: 100vw;
+    background: black;
   }
+
   #status {
-      bottom: 0vh;
-      height: 14vh;
-      left: 5vw;
-      width: 90vw;
+    bottom: 0vh;
+    height: 14vh;
+    left: 5vw;
+    width: 90vw;
   }
 }
 
 @media screen and (width: 1280px) and (height: 720px) {
   #vid-window {
-      width: 1280px;
-      height: 720px;
-    }
+    width: 1280px;
+    height: 720px;
+  }
 }
 
 @media screen and (width: 1920px) and (height: 1080px) {
   #vid-window {
-      width: 1920px;
-      height: 1080px;
-    }
+    width: 1920px;
+    height: 1080px;
+  }
 }
