@@ -111,6 +111,23 @@ class Representation(ObjectWithFields):
         'ac_3', 'avc1', 'avc3', 'mp4a', 'ec_3', 'encv', 'enca',
         'hev1', 'hvc1', 'stpp', 'wvtt',
     }
+    segments: list[Segment]
+    kids: list[KeyMaterial]
+    codes: str | None
+    sar: str | None
+    scanType: str | None
+    startWithSAP: int
+    start_number: int
+    start_time: int
+    timescale: int
+    track_id: int
+    version: int
+    iv_size: int | None
+    frameRate: int | None
+    height: int | None
+    weight: int | None
+    sampleRate: int
+    numChannels: int
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
