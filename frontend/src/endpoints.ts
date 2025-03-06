@@ -19,6 +19,7 @@ import { ModifyUserResponse } from './user/types/ModifyUserResponse';
 import { EditUserState } from "./user/types/EditUserState";
 import { MultiPeriodStreamValidationRequest, MultiPeriodStreamValidationResponse } from './types/MpsValidation';
 import { CgiOptionDescription } from './types/CgiOptionDescription';
+import { DashParameters } from './player/types/DashParameters';
 
 type TokenStoreCollection = {
   files: CsrfTokenStore;
@@ -96,12 +97,23 @@ export class ApiRequests {
 
   async getContentRoles(options: Partial<ApiRequestOptions> = {}): Promise<ContentRolesMap> {
     await this.isRefreshTokenValid();
-    return await this.sendApiRequest(routeMap.contentRoles.url(), options);
+    return await this.sendApiRequest<ContentRolesMap>(routeMap.contentRoles.url(), options);
   }
 
   async getCgiOptions(options: Partial<ApiRequestOptions> = {}) : Promise<CgiOptionDescription[]> {
     await this.isRefreshTokenValid();
-    return await this.sendApiRequest(routeMap.cgiOptions.url(), options);
+    return await this.sendApiRequest<CgiOptionDescription[]>(routeMap.cgiOptions.url(), options);
+  }
+
+  async getDashParameters(mode: string, stream: string, manifest: string, params: Readonly<URLSearchParams>,
+                          options: Partial<ApiRequestOptions> = {}): Promise<DashParameters> {
+    await this.isRefreshTokenValid();
+    const url = routeMap.videoParameters.url({
+      mode,
+      stream,
+      manifest
+    });
+    return await this.sendApiRequest<DashParameters>(`${url}?${params.toString()}`, options);
   }
 
   async getUserInfo(signal?: AbortSignal): Promise<LoginResponse | Response> {
