@@ -1,0 +1,170 @@
+{
+  "dash": {
+    "locationURL": "http://localhost:8765/api/play/vod/bbb/hand_made?depth=0&drm=clearkey&player=dashjs&start=&timeline=1",
+    "mediaDuration": "PT9M51.458S",
+    "minBufferTime": "PT1.5S",
+    "mpd_id": "bbb",
+    "now": "2025-03-13T07:53:13.814093Z",
+    "periods": [
+      {
+        "adaptationSets": [
+          {
+            "content_type": "video",
+            "default_kid": "1ab45440532c439994dc5c5ad9584bac",
+            "drm": {
+              "clearkey": {
+                "laurl": "http://localhost:8765/clearkey",
+                "scheme_id": "urn:uuid:e2719d58-a985-b3c9-781a-b030af78d30e",
+                "version": 0
+              }
+            },
+            "fileSuffix": "m4v",
+            "id": 1,
+            "initURL": "$RepresentationID$/init.m4v?depth=0&drm=clearkey&start=",
+            "keys": {
+              "1ab45440532c439994dc5c5ad9584bac": {
+                "alg": "AESCTR",
+                "b64Key": "1tOc7e6QJMiLZOsb3WF6Rw==",
+                "computed": true,
+                "guidKid": "4054b41a-2c53-9943-94dc-5c5ad9584bac",
+                "key": "d6d39cedee9024c88b64eb1bdd617a47",
+                "kid": "1ab45440532c439994dc5c5ad9584bac"
+              }
+            },
+            "lang": null,
+            "mediaURL": "$RepresentationID$/time/$Time$.m4v?depth=0&drm=clearkey&start=",
+            "mimeType": "video/mp4",
+            "mode": "vod",
+            "par": "16:9",
+            "segmentAlignment": true,
+            "startWithSAP": 1,
+            "timescale": 240
+          },
+          {
+            "content_type": "audio",
+            "default_kid": "1ab45440532c439994dc5c5ad9584bac",
+            "drm": {
+              "clearkey": {
+                "laurl": "http://localhost:8765/clearkey",
+                "scheme_id": "urn:uuid:e2719d58-a985-b3c9-781a-b030af78d30e",
+                "version": 0
+              }
+            },
+            "fileSuffix": "m4a",
+            "id": 2,
+            "initURL": "$RepresentationID$/init.m4a?depth=0&drm=clearkey&start=",
+            "keys": {
+              "1ab45440532c439994dc5c5ad9584bac": {
+                "alg": "AESCTR",
+                "b64Key": "1tOc7e6QJMiLZOsb3WF6Rw==",
+                "computed": true,
+                "guidKid": "4054b41a-2c53-9943-94dc-5c5ad9584bac",
+                "key": "d6d39cedee9024c88b64eb1bdd617a47",
+                "kid": "1ab45440532c439994dc5c5ad9584bac"
+              }
+            },
+            "lang": "und",
+            "mediaURL": "$RepresentationID$/time/$Time$.m4a?depth=0&drm=clearkey&start=",
+            "mimeType": "audio/mp4",
+            "mode": "vod",
+            "numChannels": 2,
+            "role": "main",
+            "segmentAlignment": true,
+            "timescale": 44100
+          }
+        ],
+        "event_streams": [],
+        "id": "p0",
+        "start": "PT0S"
+      }
+    ],
+    "profiles": [
+      "urn:mpeg:dash:profile:isoff-live:2011",
+      "urn:dvb:dash:profile:dvbdash:2014"
+    ],
+    "publishTime": "2025-03-13T07:53:13Z",
+    "startNumber": 1,
+    "suggestedPresentationDelay": 30,
+    "timeSource": null,
+    "title": "Big Buck Bunny"
+  },
+  "options": {
+    "_type": "dashlive.server.options.container.OptionsContainer",
+    "abr": true,
+    "audioCodec": "mp4a",
+    "audioDescription": null,
+    "audioErrors": [],
+    "availabilityStartTime": null,
+    "bugCompatibility": [],
+    "clearkey": {
+      "_type": "dashlive.server.options.container.OptionsContainer",
+      "licenseUrl": "/clearkey"
+    },
+    "clockDrift": null,
+    "dashjsVersion": null,
+    "drmSelection": [
+      "clearkey"
+    ],
+    "eventTypes": [
+      "ping"
+    ],
+    "failureCount": null,
+    "leeway": 16,
+    "mainAudio": null,
+    "mainText": null,
+    "manifestErrors": [],
+    "marlin": {
+      "_type": "dashlive.server.options.container.OptionsContainer",
+      "licenseUrl": null
+    },
+    "minimumUpdatePeriod": null,
+    "mode": "vod",
+    "ntpSources": [
+      "europe-ntp"
+    ],
+    "patch": false,
+    "ping": {
+      "_type": "dashlive.server.options.container.OptionsContainer",
+      "count": 5,
+      "duration": 200,
+      "inband": true,
+      "interval": 1000,
+      "start": 0,
+      "timescale": 100,
+      "value": "0",
+      "version": 0
+    },
+    "playready": {
+      "_type": "dashlive.server.options.container.OptionsContainer",
+      "licenseUrl": null,
+      "piff": true,
+      "version": null
+    },
+    "scte35": {
+      "_type": "dashlive.server.options.container.OptionsContainer",
+      "count": 0,
+      "duration": 200,
+      "inband": true,
+      "interval": 1000,
+      "program_id": 1620,
+      "start": 0,
+      "timescale": 100,
+      "value": "",
+      "version": 0
+    },
+    "segmentTimeline": true,
+    "shakaVersion": null,
+    "textCodec": null,
+    "textErrors": [],
+    "textLanguage": null,
+    "timeShiftBufferDepth": 0,
+    "updateCount": null,
+    "useBaseUrls": true,
+    "utcMethod": "iso",
+    "utcValue": null,
+    "videoCorruption": [],
+    "videoCorruptionFrameCount": null,
+    "videoErrors": []
+  },
+  "url": "/dash/vod/bbb/hand_made?clearkey__la_url=%2Fclearkey&drm=clearkey&timeline=1"
+}
