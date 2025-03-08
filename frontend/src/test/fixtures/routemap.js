@@ -323,6 +323,12 @@ export const routeMap = {
     route: "/api/multi-period-streams.validate",
     url: () => `/api/multi-period-streams.validate`,
   },
+  videoParameters: {
+    title: "video player API",
+    re: /\/api\/play\/(?<mode>(live|vod|odvod|mps-live|mps-vod))\/(?<stream>\w+)\/(?<manifest>\w+)/,
+    route: "/api/play/:mode/:stream/:manifest",
+    url: ({mode, stream, manifest}) => `/api/play/${mode}/${stream}/${manifest}`,
+  },
   favicon: {
     title: "favicon",
     re: /\/favicon.ico/,
@@ -334,6 +340,12 @@ export const routeMap = {
     re: /\/es5\//,
     route: "/es5/",
     url: () => `/es5/`,
+  },
+  es5Video: {
+    title: "Play video",
+    re: /\/es5\/play\/(?<mode>(live|vod|odvod|mps-live|mps-vod))\/(?<stream>\w+)\/(?<manifest>\w+)\/index.html/,
+    route: "/es5/play/:mode/:stream/:manifest/index.html",
+    url: ({mode, stream, manifest}) => `/es5/play/${mode}/${stream}/${manifest}/index.html`,
   },
   home: {
     title: "DASH test streams",

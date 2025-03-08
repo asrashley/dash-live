@@ -336,6 +336,10 @@ routes: dict[str, Route] = {
         r'/es5/',
         handler='htmlpage.ES5MainPage',
         title='DASH test streams'),
+    "es5-video": Route(
+        r'/es5/play/<regex("(live|vod|odvod|mps-live|mps-vod)"):mode>/<stream>/<manifest>/index.html',
+        handler='htmlpage.ES5VideoPlayer',
+        title='Play video'),
     "home": Route(
         r'/',
         handler='htmlpage.MainPage',

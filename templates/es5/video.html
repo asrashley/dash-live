@@ -42,27 +42,11 @@
 {% endblock %}
 
 {% block extrascripts %}
-  <script type="text/javascript">
-    window.dashParameters = {{dash|toJson(indent=2)|safe}};
-  </script>
   <script src="{{url_for('static', filename='js/prod/jquery-3.7.1.min.js')}}" type="text/javascript"></script>
-  <script src="{{url_for('static', filename='js/compat/video_utils.js')}}" type="text/javascript"></script>
-  {% if shakaUrl %}
-  <script src="{{ shakaUrl }}" type="text/javascript"></script>
-  {% endif %}
-  {% if dashjsUrl %}
-  <script src="{{ dashjsUrl }}" type="text/javascript"></script>
-  {% endif %}
-  {% if videoPlayer == 'native' %}
-  <script src="{{url_for('static', filename='js/compat/native_video.js')}}" type="text/javascript"></script>
-  {% endif %}
-  {% if videoPlayer == 'dashjs' %}
-  <script src="{{url_for('static', filename='js/compat/dashjs_video.js')}}" type="text/javascript"></script>
-  {% else %}
-  <script src="{{url_for('static', filename='js/compat/shaka_video.js')}}" type="text/javascript"></script>
-  {% endif %}
-  <script src="{{url_for('static', filename='js/compat/video.js')}}" type="text/javascript"></script>
+  <script src="{{url_for('static', filename='js/legacy/video_utils.js')}}" type="text/javascript"></script>
+  <script src="{{url_for('static', filename='js/legacy/native_video.js')}}" type="text/javascript"></script>
+  <script src="{{url_for('static', filename='js/legacy/video.js')}}" type="text/javascript"></script>
 {% endblock %}
-  
+
 {% block footer %}
 {% endblock %}
