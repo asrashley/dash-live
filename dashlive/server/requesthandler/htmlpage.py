@@ -5,7 +5,6 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-import html
 import logging
 from pathlib import Path
 import urllib.parse
@@ -28,6 +27,7 @@ from .decorators import (
 )
 from .manifest_context import ManifestContext
 from .navbar import NavBarItem
+from .template_context import TemplateContext, create_template_context
 from .utils import add_allowed_origins, is_https_request, jsonify
 
 class MainPage(HTMLHandlerBase):
@@ -124,15 +124,21 @@ class ES5MainPage(HTMLHandlerBase):
         filenames.sort(key=lambda name: manifests.manifest_map[name].title)
 
         for name in filenames:
-            url: str = flask.url_for(
+            url_template: str = flask.url_for(
                 "dash-mpd-v3", manifest=name, stream="placeholder", mode="live"
             )
-            url = url.replace("/placeholder/", "/{directory}/")
-            url = url.replace("/live/", "/{mode}/")
+            url_template = url_template.replace("/placeholder/", "/{stream}/")
+            url_template = url_template.replace("/live/", "/{mode}/")
+            mps_url_template: str = flask.url_for(
+                "mps-manifest", manifest=name, mps_name="placeholder", mode="live"
+            )
+            mps_url_template = mps_url_template.replace("/placeholder/", "/{stream}/")
+            mps_url_template = mps_url_template.replace("/live/", "/{mode}/")
             context["rows"].append(
                 {
                     "filename": name,
-                    "url": url,
+                    "url": url_template,
+                    "mps_url": mps_url_template,
                     "manifest": manifests.manifest_map[name],
                     "option": [],
                 }
@@ -177,9 +183,9 @@ class VideoPlayer(RequestHandlerBase):
     decorators = [uses_manifest]
 
     def get(self,
-        manifest: str,
-        mode: str,
-        stream: str) -> flask.Response:
+            manifest: str,
+            mode: str,
+            stream: str) -> flask.Response:
         logging.debug('VideoPlayer.get(%s, %s, %s)', manifest, mode, stream)
         stream_model: models.Stream | None = None
         mps_model: models.MultiPeriodStream | None = None
@@ -241,7 +247,7 @@ class VideoPlayer(RequestHandlerBase):
                 "mps-manifest", mps_name=stream, manifest=manifest, mode=mode
             )
         drm_selections: set[str] = {d[0] for d in options.drmSelection}
-        if options.clearkey.licenseUrl	is None:
+        if options.clearkey.licenseUrl is None:
             options.clearkey.licenseUrl = flask.url_for('clearkey')
         js_opts = options.toJSON(exclude={'drmSelection', 'videoPlayer'})
         js_opts['drmSelection'] = drm_selections
@@ -254,64 +260,55 @@ class VideoPlayer(RequestHandlerBase):
         })
 
 
-class LegacyVideoPlayer(RequestHandlerBase):
+class ES5VideoPlayer(RequestHandlerBase):
     """
     Responds with an HTML page that contains a video element to play
     the specified stream on ES5 browsers
     """
-    decorators = [uses_manifest]
+    decorators = []
 
     def get(
         self,
         manifest: str,
         mode: str,
-        stream: str | None = None,
-        mps_name: str | None = None,
+        stream: str | None = None
     ) -> flask.Response:
         stream_model: models.Stream | None = None
         multi_period: models.MultiPeriodStream | None = None
         title: str = manifest
 
-        if stream is None and mps_name is None:
-            return flask.make_response("Not Found", 404)
-
-        if stream is not None:
+        if mode.startswith("mps-"):
+            mode = mode[4:]
+            multi_period = models.MultiPeriodStream.get(name=stream)
+            if multi_period is None:
+                return flask.make_response("Stream not Found", 404)
+            title = multi_period.title
+        else:
             stream_model = models.Stream.get(directory=stream)
             if stream_model is None:
-                logging.error("Unknown stream: %s", stream)
-                return flask.make_response(
-                    f"Unknown stream: {html.escape(stream)}", 404
-                )
+                return flask.make_response("MPS stream not Found", 404)
             title = stream_model.title
             if stream_model.timing_reference is None:
                 return flask.make_response(
-                    f'The timing reference needs to be set for stream "{stream.title}"',
+                    f'The timing reference needs to be set for stream "{stream_model.title}"',
                     409
                 )
-        else:
-            multi_period = models.MultiPeriodStream.get(name=mps_name)
-            if multi_period is None:
-                logging.error("Unknown multi-period stream: %s", mps_name)
-                return flask.make_response(
-                    f"Unknown stream: {html.escape(mps_name)}", 404
-                )
-            title = multi_period.title
-        app_cfg = flask.current_app.config["DASH"]
+        assert stream is not None or multi_period is not None
         manifest += ".mpd"
-        context = self.create_context(title=title)
+        context: TemplateContext = create_template_context(title=title)
         try:
-            options = self.calculate_options(mode, flask.request.args)
+            options: OptionsContainer = self.calculate_options(mode, flask.request.args)
         except ValueError as err:
             logging.error("Invalid CGI parameters: %s", err)
             return flask.make_response("Invalid CGI parameters", 400)
         options.remove_unused_parameters(mode)
-        if stream:
+        if stream_model:
             mpd_url: str = flask.url_for(
                 "dash-mpd-v3", stream=stream, manifest=manifest, mode=mode
             )
         else:
             mpd_url = flask.url_for(
-                "mps-manifest", mps_name=mps_name, manifest=manifest, mode=mode
+                "mps-manifest", mps_name=stream, manifest=manifest, mode=mode
             )
         mpd_url += options.generate_cgi_parameters_string(use=~OptionUsage.HTML)
         context.update(
@@ -319,7 +316,7 @@ class LegacyVideoPlayer(RequestHandlerBase):
                 "drm": "",
                 "mimeType": "application/dash+xml",
                 "source": urllib.parse.urljoin(flask.request.host_url, mpd_url),
-                "title": manifests.manifest_map[manifest].title,
+                "title": title,
             }
         )
         if is_https_request():
@@ -334,7 +331,7 @@ class LegacyVideoPlayer(RequestHandlerBase):
                     licenseUrl = stream_model.marlin_la_url
                 if licenseUrl:
                     context["source"] = f'{licenseUrl}#{context["source"]}'
-        return flask.render_template("video.html", **context)
+        return flask.render_template("es5/video.html", **context)
 
 
 def favicon() -> flask.Response:
