@@ -31,6 +31,7 @@ export default {
           '/api',
           '/clearkey',
           '/dash',
+          '/es5',
           '/libs',
           '/media/inspect',
           '/streams',
