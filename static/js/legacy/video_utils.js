@@ -1,5 +1,5 @@
 /* jshint esversion: 5, varstmt: false */
-/* globals $, console */
+/* globals $ */
 (function(){
     'use strict';
     var dashlive = window.dashlive;
@@ -9,17 +9,17 @@
     }
     dashlive.genStatusFn = function(evName){
         return function(ev){
-            var msg = new Date().toISOString()+': '+evName;
+            var error, target, msg = new Date().toISOString()+': '+evName;
             if (evName=="error"){
-                console.dir(ev);
-                if(ev.detail) {
+                target = ev.target;
+                if (target && target.nodeName === "SOURCE") {
+                    target = target.parentElement;
+                }
+                if (target && target.error) {
+                    error = target.error;
+                    msg += " "+error.code+":"+error.message;
+                } else if(ev.detail) {
                     ev = ev.detail;
-                }
-                if(ev.code) {
-                    msg += " " + ev.code + ":";
-                }
-                if(ev.message) {
-                    msg += ' '+ev.message;
                 }
             }
             $('#status').prepend('<p>'+msg+'</p>');
