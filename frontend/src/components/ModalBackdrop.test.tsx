@@ -8,9 +8,11 @@ import { ModalBackdrop } from "./ModalBackdrop";
 
 describe("ModalBackdrop component", () => {
   const dialog = signal<DialogState>({ backdrop: false });
+  const cinemaMode = signal<boolean>(false);
   const closeDialog = vi.fn();
   const appState: AppStateType = {
     backdrop: computed<boolean>(() => dialog.value?.backdrop ?? false),
+    cinemaMode,
     dialog,
     closeDialog,
   };
