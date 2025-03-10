@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "preact/hooks";
+import { useContext, useEffect, useMemo } from "preact/hooks";
 import { useSignal } from "@preact/signals";
 import { useParams } from "wouter-preact";
 
@@ -16,6 +16,7 @@ import { LoadingSpinner } from "../../components/LoadingSpinner";
 
 import "../styles/video.less";
 import { useSearchParams } from "../../hooks/useSearchParams";
+import { AppStateContext } from "../../appState";
 
 function manifestUrl(
   mode: string,
@@ -37,6 +38,7 @@ function manifestUrl(
 export default function VideoPlayerPage() {
   const { mode, stream, manifest } = useParams<RouteParamsType>();
   const { searchParams } = useSearchParams();
+  const { cinemaMode } = useContext(AppStateContext);
   const currentTime = useSignal<number>(0);
   const player = useSignal<PlayerControls | undefined>();
   const events = useSignal<StatusEvent[]>([]);
@@ -55,9 +57,9 @@ export default function VideoPlayerPage() {
   }, [searchParams]);
 
   useEffect(() => {
-    document.body.classList.add("video-player");
+    cinemaMode.value = true;
     return () => {
-      document.body.classList.remove("video-player");
+      cinemaMode.value = false;
     };
   });
 

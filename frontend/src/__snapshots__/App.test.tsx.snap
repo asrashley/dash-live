@@ -2,7 +2,9 @@
 
 exports[`main entry-point app > matches snapshot for CGI options 1`] = `
 <DocumentFragment>
-  <header>
+  <header
+    class=""
+  >
     <nav
       class="navbar navbar-expand-lg navbar-light bg-body-tertiary"
     >
@@ -2592,7 +2594,9 @@ exports[`main entry-point app > matches snapshot for CGI options 1`] = `
 
 exports[`main entry-point app > matches snapshot for DASH validator 1`] = `
 <DocumentFragment>
-  <header>
+  <header
+    class=""
+  >
     <nav
       class="navbar navbar-expand-lg navbar-light bg-body-tertiary"
     >
@@ -3135,7 +3139,9 @@ exports[`main entry-point app > matches snapshot for DASH validator 1`] = `
 
 exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
 <DocumentFragment>
-  <header>
+  <header
+    class=""
+  >
     <nav
       class="navbar navbar-expand-lg navbar-light bg-body-tertiary"
     >
@@ -3808,7 +3814,9 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
 
 exports[`main entry-point app > matches snapshot for home page 1`] = `
 <DocumentFragment>
-  <header>
+  <header
+    class=""
+  >
     <nav
       class="navbar navbar-expand-lg navbar-light bg-body-tertiary"
     >
@@ -6238,7 +6246,9 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
 
 exports[`main entry-point app > matches snapshot for home page when user not logged in 1`] = `
 <DocumentFragment>
-  <header>
+  <header
+    class=""
+  >
     <nav
       class="navbar navbar-expand-lg navbar-light bg-body-tertiary"
     >
@@ -8637,7 +8647,9 @@ exports[`main entry-point app > matches snapshot for home page when user not log
 
 exports[`main entry-point app > matches snapshot for list MPS 1`] = `
 <DocumentFragment>
-  <header>
+  <header
+    class=""
+  >
     <nav
       class="navbar navbar-expand-lg navbar-light bg-body-tertiary"
     >
@@ -8962,7 +8974,9 @@ exports[`main entry-point app > matches snapshot for list MPS 1`] = `
 
 exports[`main entry-point app > matches snapshot for list users 1`] = `
 <DocumentFragment>
-  <header>
+  <header
+    class=""
+  >
     <nav
       class="navbar navbar-expand-lg navbar-light bg-body-tertiary"
     >

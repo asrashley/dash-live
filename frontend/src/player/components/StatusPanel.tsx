@@ -4,8 +4,8 @@ import { createTimeObject, timeObjectToString } from "../utils/formatTimecode";
 
 function StatusRow({ event, timecode, text }: StatusEvent) {
   return (
-    <p>
-      <span className="timecode">{timecode}</span>: {event} {text}
+    <p class="status-row">
+      <span className="timecode">{timecode}</span>{event} {text}
     </p>
   );
 }
@@ -24,7 +24,7 @@ export function StatusPanel({ events, currentTime }: StatusPanelProps) {
       {events.value.map((evt) => (
         <StatusRow key={evt.id} {...evt} />
       ))}
-      <span className="timecode">{timecode}</span>
+      <div className="play-position">{timecode}</div>
     </div>
   );
 }
