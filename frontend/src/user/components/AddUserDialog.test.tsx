@@ -20,8 +20,10 @@ describe("AddUserDialog component", () => {
   const validateUser = vi.fn();
   const closeDialog = vi.fn();
   const dialog = signal<DialogState | null>(null);
+  const cinemaMode = signal<boolean>(false);
   const allUsers = signal<InitialUserState[]>([]);
   const appState: AppStateType = {
+    cinemaMode,
     dialog,
     backdrop: computed(() => !!dialog.value?.backdrop),
     closeDialog,

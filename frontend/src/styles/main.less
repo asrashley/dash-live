@@ -24,6 +24,43 @@ body {
     padding: 0;
 }
 
+body.cinema-mode {
+  background: black;
+  height: 100%;
+  width: 100%;
+
+  header {
+    transition: height 0.5s;
+    transition: opacity 0.5s;
+    z-index: 4;
+
+    .breadcrumbs {
+      background-color: rgb(240, 241, 242);
+      border: none;
+      opacity: 0.7;
+
+      .breadcrumb-item {
+        visibility: hidden;
+      }
+
+      .breadcrumb-item::before {
+        content: none;
+      }
+
+      .breadcrumb-item.active {
+        visibility: visible;
+      }
+    }
+  }
+
+  header.rollup {
+    height: 2em;
+    opacity: 0.3;
+    overflow-y: hidden;
+  }
+}
+
+
 .content {
     padding-left: 1em;
     padding-right: 1em;

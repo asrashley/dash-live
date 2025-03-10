@@ -13,7 +13,9 @@ describe("DeleteUserDialog component", () => {
   const onConfirm = vi.fn();
   const closeDialog = vi.fn();
   const dialog = signal<DialogState | null>(null);
+  const cinemaMode = signal<boolean>(false);
   const appState: AppStateType = {
+    cinemaMode,
     dialog,
     backdrop: computed(() => !!dialog.value?.backdrop),
     closeDialog,
