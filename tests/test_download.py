@@ -84,7 +84,7 @@ class TestDownloadDatabase(FlaskTestBase):
             self.check_json_file(Path(tmpdir), dirname)
 
     def check_json_file(self, tmpdir: Path, dirname: str) -> None:
-        jsonfile = tmpdir / dirname / f'{dirname}.json'
+        jsonfile: Path = tmpdir / dirname / f'{dirname}.json'
         self.assertTrue(jsonfile.exists(), msg=f'{jsonfile} does not exist')
         with jsonfile.open('rt', encoding='utf-8') as src:
             js = json.load(src)
