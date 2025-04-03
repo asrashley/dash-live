@@ -3,8 +3,9 @@ import type shaka from 'shaka-player';
 import { routeMap } from "@dashlive/routemap";
 import { AbstractDashPlayer } from "../types/AbstractDashPlayer";
 import { OptionMapWithChildren } from '@dashlive/options';
+import { importLibrary } from './importLibrary';
 
-interface ShakaConfig {
+export interface ShakaConfig {
     drm: {
         servers: {
             [drm: string]: string;
@@ -29,7 +30,7 @@ interface DrmSettings {
     licenseUrl: string | null;
 }
 
-interface AllDrmOptions {
+export interface AllDrmOptions {
     drmSelection: string[];
     clearkey: DrmSettings;
     marlin: DrmSettings;
@@ -44,13 +45,13 @@ export class ShakaPlayer extends AbstractDashPlayer {
         if (ShakaPlayer.LOCAL_VERSIONS.includes(version)) {
             return routeMap.js.url({ filename: `shaka-player.${version}.js` });
         }
-        return `https://ajax.googleapis.com/ajax/libs/shaka-player/{version}/shaka-player.compiled.js`
+        return `https://ajax.googleapis.com/ajax/libs/shaka-player/${version}/shaka-player.compiled.js`
     }
 
     async initialize(mpd: string, options: OptionMapWithChildren) {
         const { videoElement, version = ShakaPlayer.LOCAL_VERSIONS[0] } = this.props;
         const jsUrl = ShakaPlayer.cdnTemplate(version);
-        await import(/* webpackIgnore: true */ jsUrl);
+        await importLibrary(jsUrl);
 
         const { drmSelection = [], clearkey, playready } = options as unknown as AllDrmOptions;
         const shakaConfig: ShakaConfig = {
