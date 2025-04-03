@@ -2,6 +2,7 @@ import type dashjs from "dashjs";
 import { AbstractDashPlayer } from "../types/AbstractDashPlayer";
 
 import { routeMap } from "@dashlive/routemap";
+import { importLibrary } from "./importLibrary";
 export class DashJsPlayer extends AbstractDashPlayer {
     static LOCAL_VERSIONS: Readonly<string[]> = ['4.7.4', '4.7.1'] as const;
 
@@ -17,7 +18,7 @@ export class DashJsPlayer extends AbstractDashPlayer {
     async initialize(source: string): Promise<void> {
         const { autoplay = false, version = DashJsPlayer.LOCAL_VERSIONS[0], videoElement } = this.props;
         const jsUrl = DashJsPlayer.cdnTemplate(version);
-        await import(/* webpackIgnore: true */ jsUrl);
+        await importLibrary(jsUrl);
         const { MediaPlayer } = window["dashjs"];
         this.player = MediaPlayer().create();
         this.player.initialize(videoElement, source, autoplay);
