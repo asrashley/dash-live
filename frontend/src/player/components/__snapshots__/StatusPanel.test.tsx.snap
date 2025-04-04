@@ -1,0 +1,45 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`StatusPanel > matches snapshot 1`] = `
+<DocumentFragment>
+  <div
+    id="status"
+  >
+    <p
+      class="status-row"
+    >
+      <span
+        class="timecode"
+      >
+        00:00:00.250
+      </span>
+      loadedmetadata 
+    </p>
+    <p
+      class="status-row"
+    >
+      <span
+        class="timecode"
+      >
+        00:00:01.000
+      </span>
+      canplay 
+    </p>
+    <p
+      class="status-row"
+    >
+      <span
+        class="timecode"
+      >
+        00:00:01.500
+      </span>
+      playing 
+    </p>
+    <div
+      class="play-position"
+    >
+      00:01:23
+    </div>
+  </div>
+</DocumentFragment>
+`;
