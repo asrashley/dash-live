@@ -141,11 +141,9 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
         option, now, start = test_case
 
         def mocked_warning(*args) -> None:
-            nonlocal option
             self.assertEqual(option, '2019-09-invalid-iso-datetime')
 
         def mocked_info(*args) -> None:
-            nonlocal option, now, ref_today
             if 'Invalid CGI parameters' in args[0]:
                 self.assertIn('invalid-iso', option)
                 self.assertIn(option, ' '.join([str(a) for a in args]))
