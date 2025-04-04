@@ -73,14 +73,13 @@ class CsrfProtection:
             return flask.request.cookies[cls.CSRF_COOKIE_NAME]
         except KeyError:
             pass
-        csrf_key = secrets.token_urlsafe(Token.CSRF_KEY_LENGTH)
+        csrf_key: str = secrets.token_urlsafe(Token.CSRF_KEY_LENGTH)
         secure = None
         if is_https_request():
             secure = True
 
         @flask.after_this_request
-        def set_csrf_cookie(response):
-            nonlocal secure, csrf_key
+        def set_csrf_cookie(response: flask.Response) -> flask.Response:
             max_age: int = int(KEY_LIFETIMES[TokenType.CSRF].total_seconds())
             response.set_cookie(
                 CsrfProtection.CSRF_COOKIE_NAME, csrf_key, httponly=True,
