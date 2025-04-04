@@ -1,0 +1,34 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`VideoPlayer component > matches snapshot 1`] = `
+<DocumentFragment>
+  <div
+    id="vid-window"
+  >
+    <span
+      aria-label="pause icon"
+      class="bi icon bi-pause fs-2"
+      role="img"
+    />
+    <span
+      aria-label="step-forward icon"
+      class="bi icon bi-step-forward fs-2"
+      role="img"
+    />
+    <span
+      aria-label="step-backward icon"
+      class="bi icon bi-step-backward fs-2"
+      role="img"
+    />
+    <span
+      aria-label="stop icon"
+      class="bi icon bi-stop fs-2"
+      role="img"
+    />
+    <video
+      controls=""
+      src="https://unit.test.local/test.mpd"
+    />
+  </div>
+</DocumentFragment>
+`;
