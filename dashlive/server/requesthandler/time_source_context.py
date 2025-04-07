@@ -6,7 +6,7 @@
 #
 #############################################################################
 import datetime
-from typing import ClassVar
+from typing import ClassVar, TypedDict
 import urllib.parse
 
 import flask  # type: ignore
@@ -17,6 +17,11 @@ from dashlive.utils.date_time import to_iso_datetime
 from dashlive.utils.objects import dict_to_cgi_params
 
 from .cgi_parameter_collection import CgiParameterCollection
+
+class TimeSourceContextJson(TypedDict):
+    method: str
+    schemeIdUri: str
+    value: str | None
 
 class TimeSourceContext:
     DEFAULT_NTP_POOL: ClassVar[str] = 'google'
@@ -58,3 +63,11 @@ class TimeSourceContext:
                 flask.request.host_url,
                 flask.url_for('time', method=self.method))
             self.value += dict_to_cgi_params(cgi_params.time)
+
+    def toJSON(self, pure: bool = False, exclude: set[str] | None = None) -> TimeSourceContextJson:
+        tsc: TimeSourceContextJson = {
+            'method': self.method,
+            'schemeIdUri': self.schemeIdUri,
+            'value': self.value,
+        }
+        return tsc
