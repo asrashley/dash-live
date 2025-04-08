@@ -158,7 +158,7 @@ class MediaRequestBase(RequestHandlerBase):
         adp_set.representations.append(media_file.representation)
         adp_set.compute_av_values()
 
-        now = datetime.datetime.now(tz=UTC())
+        now: datetime.datetime = datetime.datetime.now(tz=UTC())
         timing = DashTiming(now, stream.timing_reference, options)
         adp_set.set_dash_timing(timing)
         try:
@@ -570,4 +570,6 @@ class ServeMpsMedia(MediaRequestBase):
                 # origin_time += representation.mediaDuration
                 # mod_seg -= representation.num_media_segments
                 # assert mod_seg > 0
+        else:
+            seg_num = mod_seg + 1
         return SegmentPosition(mod_seg, origin_time, seg_num)
