@@ -7,6 +7,7 @@
 #############################################################################
 import io
 from pathlib import Path
+from typing import cast
 import urllib.parse
 
 from dashlive.drm.playready import PlayReady
@@ -150,7 +151,7 @@ class InitSegment(DashElement):
                 msg='Expected more than one MP4 atom in init segment'):
             return
         self.elt.check_equal(self.atoms[0].atom_type, 'ftyp')
-        moov = None
+        moov: mp4.Mp4Atom | None = None
         for atom in self.atoms:
             if atom.atom_type == 'moov':
                 moov = atom
@@ -160,12 +161,12 @@ class InitSegment(DashElement):
             self.logging.error(msg)
             return None
         self.validate_moov(moov)
-        pssh = moov.find_child('pssh')
+        pssh: mp4.Mp4Atom | None = moov.find_child('pssh')
         if pssh is not None:
             self.elt.check_true(
                 self.options.encrypted,
                 msg='PSSH should not be present in an unencrypted stream')
-            self.validate_pssh(pssh)
+            self.validate_pssh(cast(mp4.ContentProtectionSpecificBox, pssh))
         else:
             if self.parent.parent.contentType != 'video':
                 return
@@ -221,7 +222,7 @@ class InitSegment(DashElement):
                        f'but found {dash_rep.sampleRate}')
                 self.elt.check_equal(audioSamplingRate, dash_rep.sampleRate, msg=msg)
 
-    def validate_pssh(self, pssh) -> None:
+    def validate_pssh(self, pssh: mp4.ContentProtectionSpecificBox) -> None:
         self.elt.check_equal(len(pssh.system_id), 16)
         if pssh.system_id != PlayReady.RAW_SYSTEM_ID:
             return
