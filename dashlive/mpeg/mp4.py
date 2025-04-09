@@ -2859,7 +2859,7 @@ class ContentProtectionSpecificBox(FullBox):
             self.data = Binary(self.data, encoding=Binary.BASE64)
 
     @staticmethod
-    def _fixup_binary_field(value):
+    def _fixup_binary_field(value: Binary | str | bytes) -> Binary:
         if value is None:
             return None
         if isinstance(value, Binary):
