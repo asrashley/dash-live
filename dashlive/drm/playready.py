@@ -228,12 +228,16 @@ class PlayReady(DrmBase):
         data: bytes = src.read(6)
         if len(data) != 6:
             raise OSError("PlayReady Object too small")
+        length: int
+        object_count: int
         length, object_count = struct.unpack("<IH", data)
         objects: list[PlayReadyRecord] = []
         for idx in range(object_count):
             data = src.read(4)
             if len(data) != 4:
                 raise OSError("PlayReady Object too small")
+            record_type: int
+            record_length: int
             record_type, record_length = struct.unpack("<HH", data)
             header: str | None = None
             xml: ElementTree.ElementTree | None = None
