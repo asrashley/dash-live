@@ -226,15 +226,19 @@ class PlayReady(DrmBase):
     @classmethod
     def parse_pro(clz, src: BinaryIO) -> list[PlayReadyRecord]:
         """Parse a PlayReady Object (PRO)"""
-        data = src.read(6)
+        data: bytes = src.read(6)
         if len(data) != 6:
             raise OSError("PlayReady Object too small")
+        length: int
+        object_count: int
         length, object_count = struct.unpack("<IH", data)
         objects: list[PlayReadyRecord] = []
         for idx in range(object_count):
             data = src.read(4)
             if len(data) != 4:
                 raise OSError("PlayReady Object too small")
+            record_type: int
+            record_length: int
             record_type, record_length = struct.unpack("<HH", data)
             header: str | None = None
             xml: ElementTree.Element | None = None
@@ -383,7 +387,7 @@ class PlayReady(DrmBase):
 
 if __name__ == "__main__":
     for arg in sys.argv[1:]:
-        data = base64.b64decode(arg)
+        data: bytes = base64.b64decode(arg)
         src = BufferedReader(None, data=data)
         if data[4:8] == 'pssh':
             atoms = mp4.Mp4Atom.load(src)
