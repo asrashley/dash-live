@@ -1,0 +1,64 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PlayVideoButton component > matches snapshot for dashjs 1`] = `
+<DocumentFragment>
+  <a
+    class="btn btn-lg btn-primary"
+    data-testid="play-video-button"
+    href="http://example.local/?player=dashjs&dashjs=1.0.0"
+  >
+    <span
+      aria-label="play-fill icon"
+      class="bi icon bi-play-fill "
+      role="img"
+    />
+    <span
+      class="title ps-2"
+    >
+      Play Stream Title
+    </span>
+  </a>
+</DocumentFragment>
+`;
+
+exports[`PlayVideoButton component > matches snapshot for native 1`] = `
+<DocumentFragment>
+  <a
+    class="btn btn-lg btn-primary"
+    data-testid="play-video-button"
+    href="http://example.local/?player=native&native=1.0.0"
+  >
+    <span
+      aria-label="play-fill icon"
+      class="bi icon bi-play-fill "
+      role="img"
+    />
+    <span
+      class="title ps-2"
+    >
+      Play Stream Title
+    </span>
+  </a>
+</DocumentFragment>
+`;
+
+exports[`PlayVideoButton component > matches snapshot for shaka 1`] = `
+<DocumentFragment>
+  <a
+    class="btn btn-lg btn-primary"
+    data-testid="play-video-button"
+    href="http://example.local/?player=shaka&shaka=1.0.0"
+  >
+    <span
+      aria-label="play-fill icon"
+      class="bi icon bi-play-fill "
+      role="img"
+    />
+    <span
+      class="title ps-2"
+    >
+      Play Stream Title
+    </span>
+  </a>
+</DocumentFragment>
+`;

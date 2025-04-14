@@ -49,6 +49,7 @@ exports[`HomePage > matches snapshot 1`] = `
         >
           <a
             class="btn btn-lg btn-primary"
+            data-testid="play-video-button"
             href="http://localhost:3000/play/vod/bbb/hand_made"
           >
             <span
