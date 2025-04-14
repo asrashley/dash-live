@@ -4014,6 +4014,7 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
           >
             <a
               class="btn btn-lg btn-primary"
+              data-testid="play-video-button"
               href="http://localhost:3000/play/vod/bbb/hand_made"
             >
               <span
@@ -6415,6 +6416,7 @@ exports[`main entry-point app > matches snapshot for home page when user not log
           >
             <a
               class="btn btn-lg btn-primary"
+              data-testid="play-video-button"
               href="http://localhost:3000/play/vod/bbb/hand_made"
             >
               <span

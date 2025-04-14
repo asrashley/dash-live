@@ -9,6 +9,7 @@ import { AppStateType } from "../../appState";
 import { DialogState } from "../../types/DialogState";
 import { UserValidationErrors } from "../hooks/useAllUsers";
 import { InitialUserState } from "../types/InitialUserState";
+import { PlayerLibraryState } from "../../types/PlayerLibraryState";
 import { useMessages, UseMessagesHook } from "../../hooks/useMessages";
 import { validateUserState } from "../utils/validateUserState";
 
@@ -21,10 +22,12 @@ describe("AddUserDialog component", () => {
   const closeDialog = vi.fn();
   const dialog = signal<DialogState | null>(null);
   const cinemaMode = signal<boolean>(false);
+  const playerLibrary = signal<PlayerLibraryState | null>(null);
   const allUsers = signal<InitialUserState[]>([]);
   const appState: AppStateType = {
     cinemaMode,
     dialog,
+    playerLibrary,
     backdrop: computed(() => !!dialog.value?.backdrop),
     closeDialog,
   };

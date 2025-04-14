@@ -4,16 +4,19 @@ import { act, render } from "@testing-library/preact";
 
 import { AppStateContext, AppStateType } from "../appState";
 import { DialogState } from "../types/DialogState";
+import { PlayerLibraryState } from "../types/PlayerLibraryState";
 import { ModalBackdrop } from "./ModalBackdrop";
 
 describe("ModalBackdrop component", () => {
   const dialog = signal<DialogState>({ backdrop: false });
   const cinemaMode = signal<boolean>(false);
+  const playerLibrary = signal<PlayerLibraryState | null>(null);
   const closeDialog = vi.fn();
   const appState: AppStateType = {
     backdrop: computed<boolean>(() => dialog.value?.backdrop ?? false),
     cinemaMode,
     dialog,
+    playerLibrary,
     closeDialog,
   };
 
