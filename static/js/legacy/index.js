@@ -121,10 +121,10 @@ $(document).ready(function () {
     if (manifest.length == 0) {
       return null;
     }
-    mode = params.mode.slice(5);
-    stream = pageState.streams[cursor.stream].directory;
-    if (stream.startsWith("mps/")) {
-      stream = stream.slice(4);
+    mode = encodeURIComponent(params.mode.slice(5));
+    stream = encodeURIComponent(pageState.streams[cursor.stream].directory);
+    if (stream.startsWith("mps%2F")) { // 'mps/' encoded as 'mps%2F'
+      stream = stream.slice(6); // Adjust slice to account for encoded length
       mode = "mps-" + mode;
       url = manifest.data("mps-uri");
     } else {
