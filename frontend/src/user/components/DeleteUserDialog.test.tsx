@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import { AppStateType } from "../../appState";
 import { DialogState } from "../../types/DialogState";
+import { PlayerLibraryState } from "../../types/PlayerLibraryState";
 
 import { DeleteUserDialog } from "./DeleteUserDialog";
 
@@ -13,8 +14,12 @@ describe("DeleteUserDialog component", () => {
   const onConfirm = vi.fn();
   const closeDialog = vi.fn();
   const dialog = signal<DialogState | null>(null);
+  const cinemaMode = signal<boolean>(false);
+  const playerLibrary = signal<PlayerLibraryState | null>(null);
   const appState: AppStateType = {
+    cinemaMode,
     dialog,
+    playerLibrary,
     backdrop: computed(() => !!dialog.value?.backdrop),
     closeDialog,
   };

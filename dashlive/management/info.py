@@ -101,6 +101,7 @@ class StreamTimingRef:
 class KeyInfo:
     kid: str
     computed: bool
+    alg: str = 'AESCTR'
     key: str | None = None
 
 

@@ -28,15 +28,16 @@ from typing import ClassVar
 
 from dashlive.utils.json_object import JsonObject
 
+from .db_access import DatabaseAccess
 from .frontend_db import FrontendDatabaseAccess
 from .info import StreamInfo
 
 class DownloadDatabase:
     OUTPUT_NAME: ClassVar[str] = 'downloaded.json'
-    db: FrontendDatabaseAccess
+    db: DatabaseAccess
     log: logging.Logger
 
-    def __init__(self, db: FrontendDatabaseAccess) -> None:
+    def __init__(self, db: DatabaseAccess) -> None:
         self.db = db
         self.log = logging.getLogger('management')
 

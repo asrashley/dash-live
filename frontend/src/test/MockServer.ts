@@ -148,6 +148,7 @@ export class MockDashServer {
             .get(routeMap.dashMpdV3.re, this.returnManifestFixture)
             .get(routeMap.mpsManifest.re, this.returnManifestFixture)
             .get(routeMap.listManifests.url(), this.returnJsonFixture)
+            .get(routeMap.videoParameters.re, this.returnJsonFixture)
             .get(routeMap.cgiOptions.url(), this.returnJsonFixture)
             .get(routeMap.contentRoles.url(), this.getContentRoles)
             .get(routeMap.listStreams.url(), this.returnJsonFixture)

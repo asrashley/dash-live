@@ -5,6 +5,7 @@
 <link rel="stylesheet" href="{{url_for('static', filename='css/legacy.css')}}" />
 <script src="{{ url_for('static', filename='js/prod/modernizr-3.5.0-custom.js') }}"></script>
 <script src="{{ url_for('static', filename='js/prod/jquery-3.7.1.min.js') }}" type="text/javascript"></script>
+<script src="{{ url_for('static', filename='js/prod/purify.min.js') }}" type="text/javascript"></script>
 {% endblock %}
 
 {% block importmap %}
@@ -42,6 +43,7 @@ Please <a href="https://browsehappy.com/" class="link">upgrade your browser</a> 
         {% if row.manifest %}
         <td class="manifest active"
             data-uri="{{ row.url }}"
+            data-mps-uri="{{ row.mps_url }}"
             data-filename="{{ row.filename }}"
             data-params="{{ row.manifest.restrictions|toJson | escape }}">
           <span class="key manifest-key active">{{ loop.index0 }}</span>
@@ -76,6 +78,9 @@ Please <a href="https://browsehappy.com/" class="link">upgrade your browser</a> 
             <select name="stream" class="play-select">
               {% for stream in streams %}
               <option value="{{stream.directory}}">Play {{stream.title}}</option>
+              {% endfor %}
+              {% for stream in mp_streams %}
+              <option value="mps/{{stream.name}}">Play {{stream.title}}</option>
               {% endfor %}
             </select>
           </div>
