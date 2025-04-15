@@ -1,5 +1,5 @@
 /* jshint esversion: 5, varstmt: false */
-/* globals $, console */
+/* globals $, console, DOMPurify */
 $(document).ready(function () {
   "use strict";
   var pageState = {
@@ -151,6 +151,7 @@ $(document).ready(function () {
     if (params_str) {
       url += "?" + params_str;
     }
+    url = DOMPurify.sanitize(url);
     dest.text(url);
     dest.attr("href", document.location.origin + url);
     dest = $("#view-manifest");
