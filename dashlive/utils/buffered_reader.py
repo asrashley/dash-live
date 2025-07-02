@@ -22,11 +22,17 @@
 
 import io
 import time
+from typing import BinaryIO
 
 class Buffer:
     __slots__ = ['pos', 'buf', 'data', 'size', 'timestamp']
+    pos: int
+    size: int
+    buf: bytes
+    data: memoryview
+    timestamp: float
 
-    def __init__(self, pos, data):
+    def __init__(self, pos: int, data: bytes) -> None:
         self.pos = pos
         self.buf = data
         self.data = memoryview(self.buf)
@@ -41,9 +47,15 @@ class Buffer:
 class BufferedReader(io.RawIOBase):
     __slots__ = ['reader', 'buffers', 'buffersize', 'pos', 'offset', 'size',
                  'max_buffers', 'num_buffers']
+    buffersize: int
+    offset: int
+    max_buffers: int
+    pos: int
+    reader: BinaryIO
+    size: int | None
 
-    def __init__(self, reader, buffersize=16384, data=None, offset=0,
-                 size=None, max_buffers=30):
+    def __init__(self, reader: BinaryIO, buffersize: int = 16384, data: bytes | None = None,
+                 offset: int = 0, size: int | None = None, max_buffers: int = 30) -> None:
         super().__init__()
         # print('BufferedReader', reader, buffersize, offset, size)
         self.reader = reader
@@ -61,10 +73,10 @@ class BufferedReader(io.RawIOBase):
             self.num_buffers = 1
             self.max_buffers = self.num_buffers + 1
 
-    def readable(self):
+    def readable(self) -> bool:
         return not self.closed
 
-    def seek(self, offset, whence=io.SEEK_SET):
+    def seek(self, offset, whence=io.SEEK_SET) -> int:
         # print('seek', offset, whence)
         if whence == io.SEEK_SET:
             self.pos = offset
@@ -80,38 +92,38 @@ class BufferedReader(io.RawIOBase):
             self.pos = min(self.pos, self.size)
         return self.pos
 
-    def tell(self):
+    def tell(self) -> int:
         return self.pos
 
-    def seekable(self):
+    def seekable(self) -> bool:
         return not self.closed
 
-    def peek(self, size):
+    def peek(self, size: int) -> bytes:
         # print('peek', self.pos, size)
         assert size > 0
         if self.size is not None:
             size = min(size, self.size - self.pos)
             if size <= 0:
-                return r''
-        bucket = self.pos // self.buffersize
-        end = (self.pos + size) // self.buffersize
+                return b''
+        bucket: int = self.pos // self.buffersize
+        end: int = (self.pos + size) // self.buffersize
         bucket *= self.buffersize
         end *= self.buffersize
-        offset = self.pos - bucket
+        offset: int = self.pos - bucket
         buf = io.BytesIO()
-        todo = size
+        todo: int = size
         while todo:
             self.cache(bucket)
-            sz = min(todo, self.buffersize - offset)
+            sz: int = min(todo, self.buffersize - offset)
             buf.write(self.buffers[bucket].data[offset:].tobytes())
             bucket += self.buffersize
             offset = 0
             todo -= sz
-        data = buf.getvalue()
+        data: bytes = buf.getvalue()
         buf.close()
         return data
 
-    def cache(self, bucket):
+    def cache(self, bucket) -> None:
         # print('cache', bucket)
         if bucket in self.buffers:
             return
@@ -134,20 +146,20 @@ class BufferedReader(io.RawIOBase):
         self.num_buffers += 1
         assert self.num_buffers <= self.max_buffers
 
-    def read(self, n=-1):
+    def read(self, n: int = -1) -> bytes:
         # print('read', self.pos, n)
         if n == -1:
             return self.readall()
         if self.size is not None:
             n = min(n, self.size - self.pos)
             if n <= 0:
-                return r''
-        b = self.peek(n)
+                return b''
+        b: bytes = self.peek(n)
         self.pos += n
         return b[:n]
 
-    def readall(self):
+    def readall(self) -> bytes:
         self.reader.seek(self.pos)
-        rv = self.reader.read()
+        rv: bytes = self.reader.read()
         self.pos += len(rv)
         return rv

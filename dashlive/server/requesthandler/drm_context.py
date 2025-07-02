@@ -67,7 +67,7 @@ class DrmContext:
           * DRM implementation, and
           * DRM data locations
         """
-        rv = []
+        rv: list[DrmLocationTuple] = []
         for drm_name, locations in options.drmSelection:
             assert drm_name in DrmSystem.values()
             if drm_name == 'playready':

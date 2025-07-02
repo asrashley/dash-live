@@ -29,13 +29,18 @@ export function App({ children }: AppProps) {
   }, [setLocation]);
   const apiRequests = useRef(new ApiRequests({ hasUserInfo: whoAmI.setUser, needsRefreshToken }));
   const state: AppStateType = useMemo(() => createAppState(), []);
-  const { backdrop } = state;
+  const { backdrop, cinemaMode } = state;
 
   useSignalEffect(() => {
     if (backdrop.value) {
       document.body.classList.add("modal-open");
     } else {
       document.body.classList.remove("modal-open");
+    }
+    if (cinemaMode.value) {
+      document.body.classList.add("cinema-mode");
+    } else {
+      document.body.classList.remove("cinema-mode");
     }
   });
 

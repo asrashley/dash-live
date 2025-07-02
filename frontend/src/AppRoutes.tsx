@@ -46,6 +46,10 @@ const ValidatorPage = lazy(
   () => import("./validator/components/ValidatorPage"),
   LoadingSpinner
 );
+const VideoPlayer = lazy(
+  () => import("./player/components/VideoPlayerPage"),
+  LoadingSpinner
+);
 
 export function AppRoutes() {
   return (
@@ -59,6 +63,7 @@ export function AppRoutes() {
       <Route component={EditUserPage} path={uiRouteMap.editUser.route} />
       <Route component={ChangePasswordPage} path={uiRouteMap.changePassword.route} />
       <Route component={ValidatorPage} path={uiRouteMap.validator.route} />
+      <Route component={VideoPlayer} path={uiRouteMap.video.route} />
       <Route component={HomePage} path={uiRouteMap.home.route} />
       <Route path="*" component={PageNotFound} />
     </Switch>

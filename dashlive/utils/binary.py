@@ -21,25 +21,29 @@
 #############################################################################
 import base64
 from binascii import unhexlify, b2a_hex
-from typing import AbstractSet, Union
+from typing import AbstractSet, ClassVar, cast
 
 from dashlive.utils.json_object import JsonObject
 
 class Binary:
-    BASE64 = 1
-    HEX = 2
+    BASE64: ClassVar[int] = 1
+    HEX: ClassVar[int] = 2
 
     __slots__ = ['data', 'encoding']
+    data: bytes | None
+    encoding: int
 
-    def __init__(self, data: str | bytes, encoding: int = BASE64,
-                 decode: bool = False, _type: str | None = None):
-        if data is not None and (decode or _type is not None):
-            if encoding == self.BASE64:
-                data = base64.b64decode(data)
-            elif encoding == self.HEX:
-                data = unhexlify(data)
-        self.data = data
+    def __init__(self, data: str | bytes | None, encoding: int = BASE64,
+                 decode: bool = False, _type: str | None = None) -> None:
+        self.data = None
         self.encoding = encoding
+        if data is not None:
+            if decode or _type is not None:
+                if encoding == self.BASE64:
+                    data = base64.b64decode(cast(bytes, data))
+                elif encoding == self.HEX:
+                    data = unhexlify(data)
+            self.data = cast(bytes, data)
 
     @classmethod
     def from_kwargs(clz, data=None, encoding=None, _type=None, b64=None, hx=None):
@@ -73,10 +77,10 @@ class Binary:
         return clz.__module__ + '.' + clz.__name__
 
     def toJSON(self, pure: bool = False,
-               exclude: AbstractSet | None = None) -> JsonObject:
+               exclude: AbstractSet | None = None) -> JsonObject | None:
         if self.data is None:
             return None
-        rv = {
+        rv: JsonObject = {
             '_type': self.classname(),
         }
         if self.encoding == self.BASE64:
@@ -90,19 +94,21 @@ class Binary:
                 del rv[k]
         return rv
 
-    def encode(self, encoding) -> str:
+    def encode(self, encoding: int | str) -> str:
+        if self.data is None:
+            return ''
         if encoding == self.HEX or encoding == 'hex':
             return str(b2a_hex(self.data), 'ascii')
         if encoding == self.BASE64 or encoding == 'base64':
             return str(base64.b64encode(self.data), 'ascii')
         raise ValueError(fr'Unknown encoding format: "{encoding}"')
 
-    def __len__(self):
+    def __len__(self) -> int:
         if self.data is None:
             return 0
         return len(self.data)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         encoding = ''
         if self.data is None:
             encoded_data = 'None'
@@ -114,9 +120,11 @@ class Binary:
             encoding = 'hx='
         return f'{self.classname()}({encoding}{encoded_data})'
 
-    def __eq__(self, other: Union["Binary", bytes]) -> bool:
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, bytes):
             return self.data == other
+        if not isinstance(other, Binary):
+            return False
         return (
             self.encoding == other.encoding and
             self.data == other.data)

@@ -18,6 +18,7 @@ export default defineConfig({
             ],
             exclude: [
                 "frontend/src/main.tsx",
+                "frontend/src/player/players/importLibrary.ts",
                 "frontend/src/test/*.ts",
                 "frontend/src/test/*.tsx",
                 "frontend/src/types/*.ts",

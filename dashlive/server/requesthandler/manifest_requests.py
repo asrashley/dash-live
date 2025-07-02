@@ -30,7 +30,7 @@ import flask
 
 from dashlive.mpeg.dash.profiles import primary_profiles
 from dashlive.server.models import Stream
-from dashlive.server.manifests import manifest_map
+from dashlive.server.manifests import DashManifest, manifest_map
 from dashlive.server.options.container import OptionsContainer
 from dashlive.utils.objects import dict_to_cgi_params
 from dashlive.utils.json_object import JsonObject
@@ -70,9 +70,9 @@ class ServeManifest(RequestHandlerBase):
 
     def get(self, mode: str, stream: str, manifest: str) -> flask.Response:
         logging.debug('ServeManifest: mode=%s stream=%s manifest=%s', mode, stream, manifest)
-        mft = current_manifest
+        mft: DashManifest = current_manifest
         try:
-            options = self.calculate_options(
+            options: OptionsContainer = self.calculate_options(
                 mode=mode,
                 args=flask.request.args,
                 stream=current_stream,
@@ -86,7 +86,7 @@ class ServeManifest(RequestHandlerBase):
             options.update(patch=False)
         if options.patch and 'segmentTimeline' not in mft.features:
             return flask.make_response(
-                f'manifest {html.escape(manifest)} does not SegmentTimeline',
+                f'manifest {html.escape(manifest)} does not support SegmentTimeline',
                 400)
         if 'segmentTimeline' not in mft.features:
             options.update(segmentTimeline=False)
@@ -96,7 +96,7 @@ class ServeManifest(RequestHandlerBase):
         dash = ManifestContext(
             manifest=mft, options=options, stream=current_stream,
             multi_period=None)
-        context = cast(ManifestTemplateContext, self.create_context(
+        context: ManifestTemplateContext = cast(ManifestTemplateContext, self.create_context(
             title=current_stream.title, mpd=dash, options=options,
             mode=mode, stream=current_stream))
         response = self.check_for_synthetic_manifest_error(options, context)
@@ -149,7 +149,7 @@ class ServeMultiPeriodManifest(RequestHandlerBase):
             'ServeMultiPeriodManifest: mode=%s mps=%s manifest=%s',
             mode, mps_name, manifest)
         try:
-            options = self.calculate_options(
+            options: OptionsContainer = self.calculate_options(
                 mode=mode,
                 args=flask.request.args,
                 stream=None,
@@ -161,7 +161,7 @@ class ServeMultiPeriodManifest(RequestHandlerBase):
         dash = ManifestContext(
             manifest=current_manifest, options=options, stream=None,
             multi_period=current_mps)
-        context = cast(ManifestTemplateContext, self.create_context(
+        context: ManifestTemplateContext = cast(ManifestTemplateContext, self.create_context(
             title=current_mps.title, mpd=dash, options=options,
             mode=mode))
         body = flask.render_template(f'manifests/{manifest}', **context)

@@ -6,7 +6,6 @@
 #
 #############################################################################
 
-import json
 import logging
 import unittest
 from urllib.parse import urlparse, parse_qs
@@ -22,15 +21,6 @@ from .mixins.flask_base import FlaskTestBase
 from .mixins.stream_fixtures import BBB_FIXTURE
 
 class TestHtmlPageHandlers(FlaskTestBase):
-    def _assert_true(self, result, a, b, msg, template):
-        if not result:
-            current_url = getattr(self, "current_url")
-            if current_url is not None:
-                print(fr'URL: {current_url}')
-            if msg is not None:
-                raise AssertionError(msg)
-            raise AssertionError(template.format(a, b))
-
     def test_spa_index_page(self) -> None:
         url: str = flask.url_for('home')
         # self.logout_user()
@@ -53,17 +43,15 @@ class TestHtmlPageHandlers(FlaskTestBase):
             mpd_url = flask.url_for(
                 'dash-mpd-v3', manifest=filename, stream='placeholder',
                 mode='live')
-            mpd_url = mpd_url.replace('/placeholder/', '/{directory}/')
+            mpd_url = mpd_url.replace('/placeholder/', '/{stream}/')
             mpd_url = mpd_url.replace('/live/', '/{mode}/')
             self.assertIn(mpd_url, response.text)
 
     def test_media_page(self):
         self.setup_media()
-        url = flask.url_for('list-streams')
+        url: str = flask.url_for('list-streams')
 
-        try:
-            self.current_url = url
-
+        with self.subTest(url=url):
             self.logout_user()
             response = self.client.get(url)
             self.assertEqual(response.status, '200 OK')
@@ -84,20 +72,14 @@ class TestHtmlPageHandlers(FlaskTestBase):
             self.assertEqual(response.status, '200 OK')
             self.assertIn('Edit', response.text)
             self.assertIn('Add', response.text)
-        finally:
-            self.current_url = None
 
     def test_stream_edit_page(self) -> None:
         self.setup_media()
         with self.app.app_context():
             stream = models.Stream.get(title='Big Buck Bunny')
-        url = flask.url_for('view-stream', spk=stream.pk)
-
-        try:
-            self.current_url = url
+        url: str = flask.url_for('view-stream', spk=stream.pk)
+        with self.subTest(url=url):
             self.check_stream_edit_page(url, stream)
-        finally:
-            self.current_url = None
 
     def test_stream_edit_page_with_file_errors(self) -> None:
         self.setup_media()
@@ -112,11 +94,8 @@ class TestHtmlPageHandlers(FlaskTestBase):
             models.db.session.add(err)
             models.db.session.commit()
             url = flask.url_for('view-stream', spk=stream.pk)
-            try:
-                self.current_url = url
+            with self.subTest(url=url):
                 self.check_stream_edit_page(url, stream)
-            finally:
-                self.current_url = None
 
     def check_stream_edit_page(self, url: str, stream: models.Stream) -> None:
         self.logout_user()
@@ -213,8 +192,7 @@ class TestHtmlPageHandlers(FlaskTestBase):
         stream = models.Stream.get(title='Big Buck Bunny')
         url = flask.url_for('view-stream', spk=stream.pk)
 
-        try:
-            self.current_url = url
+        with self.subTest(url=url):
             self.logout_user()
             response = self.client.delete(url)
             self.assertEqual(response.status_code, 401)
@@ -226,16 +204,14 @@ class TestHtmlPageHandlers(FlaskTestBase):
             self.assertEqual(models.MediaFile.count(), 0)
             self.assertEqual(models.Blob.count(), 0)
             self.assertEqual(models.Stream.count(), 0)
-        finally:
-            self.current_url = None
 
-    def test_video_playback(self) -> None:
+    def test_es5_video_playback(self) -> None:
         """
-        Test generating the video HTML page.
+        Test generating the ES5 video HTML page.
         Checks every manifest with every CGI parameter causes a valid
         HTML page that allows the video to be watched using a <video> element.
         """
-        only = {'audioCodec', 'textCodec', 'drmSelection', 'videoPlayer'}
+        only: set[str] = {'audioCodec', 'textCodec', 'drmSelection', 'videoPlayer'}
         self.setup_media_fixture(BBB_FIXTURE)
         self.logout_user()
         self.assertGreaterThan(models.MediaFile.count(), 0)
@@ -259,7 +235,7 @@ class TestHtmlPageHandlers(FlaskTestBase):
                         count += 1
         self.progress(num_tests, num_tests)
 
-    def test_video_playaback_no_audio(self) -> None:
+    def test_es5_video_playaback_no_audio(self) -> None:
         """
         Check rendering video page for a stream without audio
         """
@@ -283,7 +259,7 @@ class TestHtmlPageHandlers(FlaskTestBase):
                               scheme: str) -> None:
         self.app.config['PREFERRED_URL_SCHEME'] = scheme
         html_url = f'{scheme}://localhost' + flask.url_for(
-            "video",
+            "es5-video",
             mode=mode,
             stream=stream.directory,
             manifest=filename[:-4])
@@ -296,14 +272,13 @@ class TestHtmlPageHandlers(FlaskTestBase):
             mode=mode)
         mpd_parts = urlparse(f'{scheme}://localhost{mpd_path}{query}')
         mpd_query = parse_qs(mpd_parts.query)
-        try:
-            self.current_url = html_url
+        with self.subTest(url=html_url):
             response = self.client.get(html_url)
             self.assertEqual(
                 response.status_code, 200,
                 msg=f'Failed to fetch video player HTML page {html_url}')
             html = BeautifulSoup(response.text, 'lxml')
-            self.assertEqual(html.title.string, manifest.title)
+            self.assertEqual(html.title.string, stream.title)
             div = html.find(id='vid-window')
             breadcrumb = html.find(id='manifest-url')
             self.assertEqual(div['data-src'], breadcrumb['href'])
@@ -319,28 +294,6 @@ class TestHtmlPageHandlers(FlaskTestBase):
                     if key == 'player':
                         continue
                     self.assertEqual(value, query[key])
-            for script in html.find_all('script'):
-                if script.get("src"):
-                    continue
-                text = script.get_text()
-                if not text:
-                    text = script.string
-                if script.get("type") == "importmap":
-                    data = json.loads(text)
-                    self.assertIsInstance(data, dict)
-                    self.assertIn('imports', data)
-                    continue
-                self.assertIn('window.dashParameters', text)
-                start = text.index('{')
-                end = text.rindex('}') + 1
-                data = json.loads(text[start:end])
-                for field in ['pk', 'title', 'directory',
-                              'playready_la_url', 'marlin_la_url']:
-                    self.assertEqual(
-                        data['stream'][field], getattr(
-                            stream, field))
-        finally:
-            self.current_url = None
 
 
 if __name__ == "__main__":

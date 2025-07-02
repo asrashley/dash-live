@@ -246,6 +246,8 @@ def uses_manifest(func):
         mode: str | None = kwargs.get('mode')
         modes: Iterable[str] = primary_profiles.keys()
         if mode is not None:
+            if mode.startswith('mps-'):
+                mode = mode[4:]
             try:
                 modes = manifest.restrictions['mode']
             except KeyError:
