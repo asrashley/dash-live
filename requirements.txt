@@ -34,6 +34,4 @@ SQLAlchemy==2.0.36
 SQLAlchemy-JSONField==1.0.1.post0
 typing_extensions==4.6.3
 waitress==3.0.1
-WebOb==1.8.8
-WebTest==2.0.33
 Werkzeug==3.0.6
