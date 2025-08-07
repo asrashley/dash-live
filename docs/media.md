@@ -29,7 +29,7 @@ and which ones are in the clear. For example:
 * bbb_v3.mp4
 * bbb_v3_enc.mp4
 
-There is a [create_media.py](./dashlive/media/create_media.py)
+There is a [create_media.py](../dashlive/media/create.py)
 Python script which gives an example of how to encode and package the media files.
 
 For example:
