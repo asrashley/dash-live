@@ -89,7 +89,7 @@ duration.
 
 ## Automating Upload
 
-The [dashlive.upload](./dashlive/upload.py) script can be used to automate the
+The [dashlive.upload](../dashlive/upload.py) script can be used to automate the
 installation of streams, files and keys:
 
 ```sh
@@ -126,7 +126,7 @@ Where bbb.json is a JSON file that looks like this:
 }
 ```
 
-The [dashlive.upload](./dashlive/upload.py) script will upload all of the
+The [dashlive.upload](../dashlive/upload.py) script will upload all of the
 keys, streams and files listed in the JSON file that don't already exist
 on the server.
 
