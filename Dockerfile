@@ -1,7 +1,7 @@
 #
 # Build client app
 #
-FROM node:22 as clientbuild
+FROM node:22 AS clientbuild
 ENV HOME=/home/dash
 ENV CI=1
 RUN mkdir -p ${HOME}/static/html
@@ -10,12 +10,12 @@ COPY *.js ${HOME}/
 COPY *.json ${HOME}/
 COPY frontend ${HOME}/frontend
 COPY patches/eslint*.patch ${HOME}/patches/
-COPY static $HOME/static
+COPY static/css $HOME/static/css
 RUN npm ci
 RUN npm run build
 RUN npm run legacy-css
 RUN npm run main-css
-RUN tar czf ${HOME}/front-end.tar.gz static/html static/css/legacy.css static/css/main.css
+RUN tar czf ${HOME}/front-end.tar.gz static/html static/css
 #
 # Build Python server container
 #
@@ -37,9 +37,10 @@ RUN apt-get update && \
 COPY requirements.txt $HOME/dash-live/
 COPY dev-requirements.txt $HOME/dash-live/
 COPY deploy/create_virtenv.sh $HOME/dash-live/
-RUN chmod +x $HOME/dash-live/create_virtenv.sh
-RUN $HOME/dash-live/create_virtenv.sh
+RUN chmod +x $HOME/dash-live/create_virtenv.sh \
+    && $HOME/dash-live/create_virtenv.sh
 COPY static $HOME/dash-live/static
+RUN rm -rf $HOME/dash-live/static/html $HOME/dash-live/static/css
 COPY templates $HOME/dash-live/templates
 COPY runserver.sh $HOME/dash-live/
 COPY alembic.ini $HOME/dash-live/
@@ -52,8 +53,10 @@ WORKDIR /home/dash/dash-live
 RUN python ./gen-settings.py --password=${DEFAULT_PASSWORD} --proxy-depth=${PROXY_DEPTH}
 COPY deploy/runtests.sh $HOME/dash-live/
 RUN chmod +x $HOME/dash-live/*.sh
-COPY --from=clientbuild ${HOME}/front-end.tar.gz /tmp/
-RUN mkdir -p ${HOME}/static/html && tar -C ${HOME} -xzf /tmp/front-end.tar.gz && rm /tmp/front-end.tar.gz
+COPY --from=clientbuild ${HOME}/front-end.tar.gz ${HOME}
+RUN cd ${HOME}/dash-live \
+    && tar -xzf ${HOME}/front-end.tar.gz \
+    && rm ${HOME}/front-end.tar.gz
 RUN python -m compileall -f -j 0 /home/dash/dash-live/dashlive
 ENTRYPOINT ["/home/dash/dash-live/runserver.sh"]
 #
