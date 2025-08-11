@@ -51,7 +51,7 @@ class PlayReadyRecord(NamedTuple):
     record_type: int
     length: int
     header: str | None
-    xml: ElementTree.Element | None
+    xml: ElementTree.ElementTree | None
 
     def __repr__(self) -> str:
         rv = f'PlayReadyRecord(type={self.record_type}, length={self.length}'
@@ -250,7 +250,7 @@ class PlayReady(DrmBase):
     @classmethod
     def parse_pro(clz, src: BinaryIO) -> list[PlayReadyRecord]:
         """Parse a PlayReady Object (PRO)"""
-        data = src.read(6)
+        data: bytes = src.read(6)
         if len(data) != 6:
             raise OSError("PlayReady Object too small")
         length, object_count = struct.unpack("<IH", data)
@@ -261,7 +261,7 @@ class PlayReady(DrmBase):
                 raise OSError("PlayReady Object too small")
             record_type, record_length = struct.unpack("<HH", data)
             header: str | None = None
-            xml: ElementTree.Element | None = None
+            xml: ElementTree.ElementTree | None = None
             if record_type == 1:
                 prh = src.read(record_length)
                 if len(prh) != record_length:
