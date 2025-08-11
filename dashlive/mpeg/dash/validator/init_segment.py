@@ -5,6 +5,7 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+import io
 from pathlib import Path
 import urllib.parse
 
@@ -225,15 +226,14 @@ class InitSegment(DashElement):
         self.elt.check_equal(len(pssh.system_id), 16)
         if pssh.system_id != PlayReady.RAW_SYSTEM_ID:
             return
-        for pro in PlayReady.parse_pro(
-                BufferedReader(None, data=pssh.data.data)):
+        for pro in PlayReady.parse_pro(io.BytesIO(pssh.data.data)):
             if not self.elt.check_not_none(
                     pro.xml, msg='Failed to parse PlayReady header XML'):
                 continue
             root = pro.xml.getroot()
             version = root.get("version")
             self.elt.check_includes(
-                ["4.0.0.0", "4.1.0.0", "4.2.0.0", "4.3.0.0"], version)
+                {"4.0.0.0", "4.1.0.0", "4.2.0.0", "4.3.0.0"}, version)
             if 'playready_version' not in self.mpd.params:
                 continue
             version = float(self.mpd.params['playready_version'])
