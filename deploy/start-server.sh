@@ -42,7 +42,7 @@ fi
 
 chown www-data:www-data ${DB_FILE} || die "failed to set owner of ${DB_FILE} to ${USER_UID}:${USER_GID}"
 
-GUNICORN_OPTIONS="-w 1 --threads 100 --user www-data --group www-data --worker-class gthread"
+GUNICORN_OPTIONS="-w 1 --threads 100 --user www-data --group www-data --worker-class gthread --preload"
 
 if [ -f /etc/nginx/sites-available/dashlive.conf ]; then
     gunicorn ${GUNICORN_OPTIONS} -b 127.0.0.1:5000 --daemon application:app
