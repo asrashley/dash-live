@@ -10,6 +10,7 @@ COPY *.js ${HOME}/
 COPY *.json ${HOME}/
 COPY frontend ${HOME}/frontend
 COPY patches/eslint*.patch ${HOME}/patches/
+COPY static $HOME/static
 RUN npm ci
 RUN npm run build
 RUN npm run legacy-css
