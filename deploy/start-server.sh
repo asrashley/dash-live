@@ -1,5 +1,10 @@
 #!/bin/bash
 
+function die() {
+  echo $*
+  exit 1
+}
+
 source /home/dash/.venv/bin/activate
 source /home/dash/dash-live/.env
 
@@ -19,17 +24,23 @@ echo "server_name ${SERVER_NAME};" > /etc/nginx/snippets/server_name.conf
 
 cd /home/dash/dash-live
 
-if [ -f /home/dash/instance/models.db3 ]; then
-    if [ -f /home/dash/instance/.NEWDB ]; then
-        # if the DB was created last time the server was started,
-        # tell Alembic that the DB is upto date
-        python -m alembic stamp head && rm /home/dash/instance/.NEWDB
-    else
-        python -m alembic upgrade head
-    fi
+DB_FILE="/home/dash/instance/models.db3"
+
+if [ ! -f ${DB_FILE} ]; then
+    echo "No sqlite database found, creating a new one"
+    python -m dashlive.management.create_db || die "Failed to create database"
+    # tell Alembic that the DB is up to date
+    python -m alembic stamp head
 else
-    touch /home/dash/instance/.NEWDB
+    python -m alembic upgrade head
 fi
+
+if [ ! -f ${DB_FILE} ]; then
+    echo "Failed to create database ${DB_FILE}"
+    exit 2
+fi
+
+chown www-data:www-data ${DB_FILE} || die "failed to set owner of ${DB_FILE} to ${USER_UID}:${USER_GID}"
 
 GUNICORN_OPTIONS="-w 1 --threads 100 --user www-data --group www-data --worker-class gthread"
 

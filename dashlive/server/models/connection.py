@@ -13,6 +13,8 @@ import re
 
 from sqlalchemy import URL
 
+DEFAULT_SQLITE_DATABASE_NAME: str = "models.db3"
+
 def make_db_connection_string(instance_path: Path, url_template: str) -> str:
     """
     Create a connection URL containing all the database settings
@@ -28,7 +30,7 @@ def make_db_connection_string(instance_path: Path, url_template: str) -> str:
     password = environ.get("DB_PASS", None)
     port = environ.get("DB_PORT", None)
     host = environ.get("DB_HOST", None)
-    db_name = environ.get("DB_NAME", "models.db3")
+    db_name = environ.get("DB_NAME", DEFAULT_SQLITE_DATABASE_NAME)
     connect_timeout = environ.get("DB_CONNECT_TIMEOUT", "")
 
     if engine == 'sqlite':
