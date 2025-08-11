@@ -63,7 +63,7 @@ ENTRYPOINT ["/home/dash/dash-live/runserver.sh"]
 #
 # build container to serve HTTP requests
 #
-FROM dashlive as dashlive-nginx
+FROM dashlive AS dashlive-nginx
 EXPOSE 80
 ENV SERVER_NAME="_"
 ENV SERVER_PORT="80"
