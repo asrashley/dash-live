@@ -42,15 +42,13 @@ fi
 
 chown www-data:www-data ${DB_FILE} || die "failed to set owner of ${DB_FILE} to ${USER_UID}:${USER_GID}"
 
-GUNICORN_OPTIONS="-w 1 --threads 100 --user www-data --group www-data --worker-class gthread --preload"
-
 echo Starting server with Origin ${SERVER_NAME}:${SERVER_PORT}
 
-if [ -f /etc/nginx/sites-available/dashlive.conf ]; then
-    gunicorn ${GUNICORN_OPTIONS} -b 127.0.0.1:5000 --daemon application:app
+if [ -f /etc/nginx/sites-available/dashlive.conf -a -z "${DISABLE_NGINX}" ]; then
+    gunicorn -c gunicorn.conf.py -b 127.0.0.1:5000 --daemon application:app
     nginx -g "daemon off;"
 else
-    gunicorn ${GUNICORN_OPTIONS} -b 127.0.0.1:80 application:app
+    gunicorn -c gunicorn.conf.py -b 0.0.0.0:80 application:app
 fi
 
 

@@ -70,7 +70,7 @@ ENV SERVER_PORT="80"
 ENV USER_GID=""
 RUN apt-get -y -q --force-yes install nginx
 RUN rm /etc/nginx/sites-enabled/default
-COPY deploy/application.py $HOME/dash-live/
+COPY deploy/*.py $HOME/dash-live/
 COPY deploy/start-server.sh $HOME/dash-live/
 COPY deploy/dashlive.conf /etc/nginx/sites-available/
 COPY deploy/x_forwarded_proto.conf /etc/nginx/conf.d/
@@ -81,6 +81,7 @@ RUN ln -s /etc/nginx/sites-available/dashlive.conf /etc/nginx/sites-enabled/dash
 RUN chmod +x $HOME/dash-live/*.sh
 RUN chown www-data:www-data $HOME/instance
 RUN echo "server_name _;" > /etc/nginx/snippets/server_name.conf
+VOLUME [ "/home/dash/instance" ]
 STOPSIGNAL SIGQUIT
 ENTRYPOINT ["/home/dash/dash-live/start-server.sh"]
 
