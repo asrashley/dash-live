@@ -202,11 +202,10 @@ class VideoPlayer(HTMLHandlerBase):
                 )
             title = stream_model.title
             if stream_model.timing_reference is None:
-                flask.flash(
-                    f'The timing reference needs to be set for stream "{current_stream.title}"',
-                    "error",
+                return flask.make_response(
+                    f'The timing reference needs to be set for stream "{stream.title}"',
+                    409
                 )
-                return flask.redirect(flask.url_for("home"))
         else:
             multi_period = models.MultiPeriodStream.get(name=mps_name)
             if multi_period is None:
