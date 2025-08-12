@@ -600,9 +600,9 @@ class Representation(ObjectWithFields):
 
 if __name__ == '__main__':
     from dashlive.mpeg import mp4
-    from dashlive.utils.buffered_reader import BufferedReader
+    import io
 
     with open(sys.argv[1], 'rb') as src:
-        wrap = mp4.Wrapper(children=mp4.Mp4Atom.load(BufferedReader(src)))
-    rep = Representation.load(filename=sys.argv[1], atoms=wrap.children)
+        wrap = mp4.Wrapper(children=mp4.Mp4Atom.load(io.BufferedReader(src)))
+    rep: Representation = Representation.load(filename=sys.argv[1], atoms=wrap.children)
     print(repr(rep))

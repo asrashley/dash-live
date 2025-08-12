@@ -12,7 +12,6 @@ import urllib.parse
 from dashlive.drm.playready import PlayReady
 from dashlive.mpeg import mp4
 from dashlive.mpeg.dash.representation import Representation as DashRepresentation
-from dashlive.utils.buffered_reader import BufferedReader
 
 from .dash_element import DashElement
 
@@ -108,7 +107,7 @@ class InitSegment(DashElement):
         return True
 
     def parse_body(self, body: bytes) -> bool:
-        src = BufferedReader(None, data=body)
+        src = io.BufferedReader(io.BytesIO(body))
         atoms = mp4.Mp4Atom.load(src, options={'lazy_load': False})
         moov: mp4.Mp4Atom | None = None
         for atm in atoms:

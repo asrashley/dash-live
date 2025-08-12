@@ -7,11 +7,11 @@
 #############################################################################
 
 import base64
+import io
 
 from dashlive.drm.playready import PlayReady
 from dashlive.mpeg import mp4
 from dashlive.utils.binary import Binary
-from dashlive.utils.buffered_reader import BufferedReader
 
 from .descriptor import Descriptor
 from .descriptor_element import DescriptorElement
@@ -44,7 +44,7 @@ class ContentProtection(Descriptor):
 
     def validate_cenc_element(self, child: DescriptorElement) -> None:
         data = base64.b64decode(child.text)
-        src = BufferedReader(None, data=data)
+        src = io.BufferedReader(io.BytesIO(data))
         atoms = mp4.Mp4Atom.load(src)
         self.elt.check_equal(len(atoms), 1, msg='Expected one child element')
         self.elt.check_equal(
@@ -76,7 +76,7 @@ class ContentProtection(Descriptor):
         self.validate_playready_pro(pro)
 
     def parse_playready_pro(self, data: bytes) -> None:
-        return PlayReady.parse_pro(BufferedReader(None, data=data))
+        return PlayReady.parse_pro(io.BufferedReader(io.BytesIO(data)))
 
     def validate_playready_pro(self, pro) -> None:
         self.elt.check_equal(len(pro), 1)

@@ -39,7 +39,6 @@ from flask import render_template
 from dashlive.mpeg import mp4
 from dashlive.server.models.stream import Stream
 from dashlive.server.options.container import OptionsContainer
-from dashlive.utils.buffered_reader import BufferedReader
 
 from .base import DrmBase, CreateDrmData, CreatePsshBox, DrmManifestContext
 from .key_tuple import KeyTuple
@@ -407,12 +406,13 @@ class PlayReady(DrmBase):
 
 if __name__ == "__main__":
     for arg in sys.argv[1:]:
-        data = base64.b64decode(arg)
-        src = BufferedReader(None, data=data)
+        data: bytes = base64.b64decode(arg)
+        src = io.BufferedReader(io.BytesIO(data))
         if data[4:8] == 'pssh':
             atoms = mp4.Mp4Atom.load(src)
+            assert isinstance(atoms, list)
             assert atoms[0].atom_type == 'pssh'
-            src = BufferedReader(None, data=atoms[0].data.data)
+            src = io.BufferedReader(io.BytesIO(atoms[0].data.data))
         objects = PlayReady.parse_pro(src)
         for pro in objects:
             print(pro)
