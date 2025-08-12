@@ -134,7 +134,7 @@ class DataMigrationTests(FlaskTestBase):
                 media.track_id = track_mapping[name]
                 media.set_representation(mrep)
             models.db.session.commit()
-        blob_folder = self.FIXTURES_PATH
+        blob_folder = self.fixtures_folder
         with self.app.app_context():
             session = models.db.session
             with patch('dashlive.server.models.MediaFile.modify_media_file') as mock_modify:
@@ -150,7 +150,7 @@ class DataMigrationTests(FlaskTestBase):
                     self.assertListEqual(errors, [])
                 calls: list[call] = [
                     call(session=session, blob_folder=blob_folder,
-                         new_filename=(self.FIXTURES_PATH / BBB_FIXTURE.name / name),
+                         new_filename=(self.fixtures_folder / BBB_FIXTURE.name / name),
                          modify_atoms=ANY) for name in new_files]
                 if not calls:
                     mock_modify.assert_not_called()

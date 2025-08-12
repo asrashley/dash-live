@@ -25,6 +25,7 @@ from dashlive.mpeg import mp4
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.server import models
 from dashlive.server.app import create_app
+from dashlive.server.folders import AppFolders
 from dashlive.server.requesthandler.user_management import LoginResponseJson
 from dashlive.utils.date_time import from_isodatetime
 
@@ -36,7 +37,7 @@ from .stream_fixtures import MultiPeriodStreamFixture, StreamFixture, BBB_FIXTUR
 class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin):
     SRC_DIR: ClassVar[Path] = Path(__file__).parent.parent.parent.absolute()
     REAL_FIXTURES_PATH: ClassVar[Path] = Path(__file__).parent.parent / "fixtures"
-    TEMPLATES_PATH: ClassVar[Path] = SRC_DIR / "templates"
+    REAL_TEMPLATES_PATH: ClassVar[Path] = SRC_DIR / "templates"
     REAL_STATIC_PATH: ClassVar[Path] = SRC_DIR / "static"
     INDEX_PAGE: ClassVar[str] = """
 <!doctype html>
@@ -60,9 +61,9 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
     log_context: ClassVar[Optional[ContextFilter]] = None
     checked_urls: ClassVar[set[str]]
 
-    FIXTURES_PATH: Path
-    STATIC_PATH: Path
-    TEMPLATES_PATH: Path
+    fixtures_folder: Path
+    site_packages: Path
+    app_folders: AppFolders
 
     current_url: str | None = None
 
@@ -93,28 +94,35 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
         super().tearDownClass()
 
     def setUp(self) -> None:
+        self.site_packages = self.find_site_packages()
+        drive: str = self.REAL_FIXTURES_PATH.drive
+        self.setUpPyfakefs()
+        self.fixtures_folder = Path(f"{drive}/fixtures")
+        self.app_folders = AppFolders(f"{drive}/instance")
+        self.app_folders.template_folder = Path(f"{drive}/templates")
+        self.app_folders.static_folder = Path(f"{drive}/static")
+        self.setup_fake_files()
         super().setUp()
-        self.FIXTURES_PATH = self.REAL_FIXTURES_PATH
-        self.STATIC_PATH = self.REAL_STATIC_PATH
 
     def create_app(self) -> flask.Flask:
         config = {
-            'BLOB_FOLDER': str(self.FIXTURES_PATH),
+            'BLOB_FOLDER': str(self.app_folders.blob_folder),
             'DASH': {
                 'ALLOWED_DOMAINS': '*',
                 'CSRF_SECRET': 'test.csrf.secret',
                 'DEFAULT_ADMIN_USERNAME': self.ADMIN_USER,
                 'DEFAULT_ADMIN_PASSWORD': self.ADMIN_PASSWORD,
             },
-            'UPLOAD_FOLDER': '/uploads',
+            'UPLOAD_FOLDER': str(self.app_folders.upload_folder),
             'SECRET_KEY': 'cookie.secret',
+            'STATIC_FOLDER': str(self.app_folders.static_folder),
             'SQLALCHEMY_DATABASE_URI': "sqlite:///:memory:",
             'TESTING': True,
             'LOG_LEVEL': 'critical',
             'PREFERRED_URL_SCHEME': 'http',
         }
         app: flask.Flask = create_app(
-            config=config, create_default_user=False, wss=self.ENABLE_WSS)
+            config=config, create_default_user=False, folders=self.app_folders, wss=self.ENABLE_WSS)
         with app.app_context():
             admin = models.User(
                 username=self.ADMIN_USER,
@@ -142,7 +150,6 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
             models.db.session.add(media_user)
             models.User.get_guest_user()
             models.db.session.commit()
-        self.setup_fake_fs(app)
         return app
 
     @staticmethod
@@ -162,28 +169,21 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
                     pkg_dir = pkg_dir.parent
         raise FileNotFoundError("Cannot find site-packages directory")
 
-    def setup_fake_fs(self, app: flask.Flask) -> None:
-        site_packages = self.find_site_packages()
-        drive: str = self.REAL_FIXTURES_PATH.drive
-        self.setUpPyfakefs()
-        self.FIXTURES_PATH = Path(f"{drive}/fixtures")
-        self.STATIC_PATH = Path(f"{drive}/static")
-        blob_folder = Path(f"{drive}/media/blobs")
+    def setup_fake_files(self) -> None:
         # Flask needs to be able to read metadata files from werkzeug at runtime
-        self.fs.add_real_directory(site_packages, read_only=True, lazy_read=True)
+        self.fs.add_real_directory(self.site_packages, read_only=True, lazy_read=True)
         self.fs.add_real_directory(
-            self.REAL_FIXTURES_PATH, read_only=True, lazy_read=True, target_path=self.FIXTURES_PATH)
-        self.fs.add_real_directory(self.TEMPLATES_PATH, read_only=True, lazy_read=False)
-        self.fs.create_dir(f"{self.STATIC_PATH}")
-        self.fs.create_dir(f"{self.STATIC_PATH / 'html'}")
+            self.REAL_FIXTURES_PATH, read_only=True, lazy_read=True, target_path=self.fixtures_folder)
+        self.fs.add_real_directory(
+            self.REAL_TEMPLATES_PATH, target_path=self.app_folders.template_folder, read_only=True,
+            lazy_read=True)
+        self.fs.create_dir(self.app_folders.instance_path)
+        self.fs.create_dir(self.app_folders.static_folder)
+        self.fs.create_dir(self.app_folders.static_folder / 'html')
         self.fs.create_file(
-            f"{self.STATIC_PATH / 'html' / 'index.html'}", encoding="utf-8", contents=self.INDEX_PAGE)
-        uploads_dir: str = f"{drive}/uploads"
-        self.fs.create_dir(uploads_dir)
-        app.config.update(
-            BLOB_FOLDER=str(blob_folder),
-            STATIC_FOLDER=str(self.STATIC_PATH),
-            UPLOAD_FOLDER=uploads_dir)
+            self.app_folders.static_folder / 'html' / 'index.html', encoding="utf-8",
+            contents=self.INDEX_PAGE)
+        self.fs.create_dir(self.app_folders.upload_folder)
 
     def setup_media(self, with_subs=False) -> None:
         self.setup_media_fixture(BBB_FIXTURE)
@@ -209,7 +209,6 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
         self.fs.add_real_directory(
             self.REAL_FIXTURES_PATH / fixture.name, read_only=True, lazy_read=False,
             target_path=(blob_folder / fixture.name))
-        # print('add real directory', self.REAL_FIXTURES_PATH / fixture.name, blob_folder / fixture.name)
         stream = models.Stream(
             title=fixture.title,
             directory=fixture.name,
@@ -220,7 +219,7 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
         patten: str = f"{fixture.name}_[av]*.mp4"
         if with_subs:
             patten = f"{fixture.name}_[avt]*.mp4"
-        fixtures_dir: Path = self.FIXTURES_PATH / fixture.name
+        fixtures_dir: Path = self.fixtures_folder / fixture.name
         for item in fixtures_dir.glob(patten):
             fixture_files.append(item.stem)
         fixture_files.sort()
@@ -263,7 +262,7 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
                                 stream: models.Stream,
                                 name: str) -> models.MediaFile:
         filename = f"{name}.mp4"
-        src_file = self.FIXTURES_PATH / fixture.name / filename
+        src_file = self.fixtures_folder / fixture.name / filename
         if '_v' in name:
             content_type = 'video'
         elif '_a' in name:
@@ -279,7 +278,7 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
             content_type=content_type,
             auto_delete=False)
 
-        js_filename = self.FIXTURES_PATH / fixture.name / f'rep-{name}.json'
+        js_filename = self.fixtures_folder / fixture.name / f'rep-{name}.json'
         rep: Representation | None = None
         if js_filename.exists():
             with js_filename.open('rt', encoding='utf-8') as src:
@@ -361,7 +360,7 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
                 print(f'Failed to find MediaFile(name={name})')
                 return
             if mf.representation.track_id != track_id:
-                new_filename = self.FIXTURES_PATH / f'{name}_{track_id}.mp4'
+                new_filename = self.fixtures_folder / f'{name}_{track_id}.mp4'
                 print('Creating new track', new_filename)
                 mf.modify_media_file(
                     new_filename=new_filename,

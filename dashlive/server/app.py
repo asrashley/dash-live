@@ -89,11 +89,13 @@ def add_routes(app: Flask) -> None:
 def create_app(config: JsonObject | None = None,
                instance_path: str | None = None,
                create_default_user: bool = True,
+               folders: AppFolders | None = None,
                wss: bool = True) -> Flask:
     if config is None:
         load_dotenv(environ.get('DASHLIVE_SETTINGS', '.env'))
     logging.basicConfig()
-    folders = AppFolders(instance_path)
+    if folders is None:
+        folders = AppFolders(instance_path)
     folders.check(check_media=False)
     folders.create_media_folders()
     folders.check(check_media=True)
@@ -104,7 +106,7 @@ def create_app(config: JsonObject | None = None,
     asyncio_loop.start()
     app = Flask(
         __name__,
-        instance_path=folders.instance_path,
+        instance_path=str(folders.instance_path),
         template_folder=str(folders.template_folder),
         static_folder=str(folders.static_folder))
     add_routes(app)
