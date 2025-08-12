@@ -36,7 +36,7 @@ class RepresentationTests(FlaskTestBase, unittest.TestCase):
         self.setup_media_fixture(BBB_FIXTURE, with_subs=True)
         self.assertGreaterThan(models.MediaFile.count(), 0)
         for mfile in models.MediaFile.all():
-            filename = self.FIXTURES_PATH / BBB_FIXTURE.name / f'{mfile.name}.mp4'
+            filename = self.fixtures_folder / BBB_FIXTURE.name / f'{mfile.name}.mp4'
             with filename.open('rb') as src:
                 atoms = Mp4Atom.load(BufferedReader(src))
             rep = Representation.load(filename, atoms)
@@ -45,7 +45,7 @@ class RepresentationTests(FlaskTestBase, unittest.TestCase):
             self.assertObjectEqual(expected, actual)
 
     def test_load_ebu_tt_d(self):
-        filename = self.FIXTURES_PATH / "ebuttd.mp4"
+        filename = self.fixtures_folder / "ebuttd.mp4"
         with filename.open('rb') as src:
             atoms = Mp4Atom.load(BufferedReader(src))
         rep = Representation.load(filename, atoms)
@@ -55,7 +55,7 @@ class RepresentationTests(FlaskTestBase, unittest.TestCase):
         self.assertEqual(rep.codecs, 'im1t|etd1')
 
     def test_load_bbb_t1(self):
-        filename = self.FIXTURES_PATH / "bbb" / "bbb_t1.mp4"
+        filename = self.fixtures_folder / "bbb" / "bbb_t1.mp4"
         with filename.open('rb') as src:
             atoms = Mp4Atom.load(BufferedReader(src))
         rep = Representation.load(filename, atoms)
@@ -65,7 +65,7 @@ class RepresentationTests(FlaskTestBase, unittest.TestCase):
         self.assertEqual(rep.codecs, 'stpp')
 
     def test_load_web_vtt(self):
-        filename = self.FIXTURES_PATH / "webvtt.mp4"
+        filename = self.fixtures_folder / "webvtt.mp4"
         with filename.open('rb') as src:
             atoms = Mp4Atom.load(BufferedReader(src))
         rep = Representation.load(filename, atoms)
@@ -79,7 +79,7 @@ class RepresentationTests(FlaskTestBase, unittest.TestCase):
         self.assertEqual(len(rep.segments), 4)
 
     def test_load_hevc(self):
-        filename = self.FIXTURES_PATH / "hevc-rep.mp4"
+        filename = self.fixtures_folder / "hevc-rep.mp4"
         with filename.open('rb') as src:
             atoms = Mp4Atom.load(BufferedReader(src))
         rep = Representation.load(filename, atoms)
@@ -97,7 +97,7 @@ class RepresentationTests(FlaskTestBase, unittest.TestCase):
         self.assertEqual(rep.lang, "eng")
 
     def test_load_ac3(self):
-        filename = self.FIXTURES_PATH / "ac3-rep.mp4"
+        filename = self.fixtures_folder / "ac3-rep.mp4"
         with filename.open('rb') as src:
             atoms = Mp4Atom.load(BufferedReader(src))
         rep = Representation.load(filename, atoms)
@@ -113,7 +113,7 @@ class RepresentationTests(FlaskTestBase, unittest.TestCase):
         self.assertEqual(rep.sampleRate, 48000)
 
     def test_load_eac3(self):
-        filename = self.FIXTURES_PATH / "bbb" / "bbb_a2.mp4"
+        filename = self.fixtures_folder / "bbb" / "bbb_a2.mp4"
         with filename.open('rb') as src:
             atoms = Mp4Atom.load(BufferedReader(src))
         rep = Representation.load(filename, atoms)
@@ -129,7 +129,7 @@ class RepresentationTests(FlaskTestBase, unittest.TestCase):
         self.assertEqual(rep.sampleRate, 44100)
 
     def test_load_encrypted_eac3(self):
-        filename = self.FIXTURES_PATH / "bbb" / "bbb_a2_enc.mp4"
+        filename = self.fixtures_folder / "bbb" / "bbb_a2_enc.mp4"
         with filename.open('rb') as src:
             atoms = Mp4Atom.load(BufferedReader(src))
         rep = Representation.load(filename, atoms)

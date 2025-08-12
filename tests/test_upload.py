@@ -62,7 +62,7 @@ class TestPopulateDatabase(FlaskTestBase):
             session=ClientHttpSession(self.client))
         self.assertFalse(fda.login())
         pd = PopulateDatabase(fda)
-        jsonfile = self.FIXTURES_PATH / 'bbb' / 'upload_v2.json'
+        jsonfile = self.fixtures_folder / 'bbb' / 'upload_v2.json'
         self.assertFalse(pd.populate_database(str(jsonfile)))
 
     def test_file_not_found(self) -> None:
@@ -90,7 +90,7 @@ class TestPopulateDatabase(FlaskTestBase):
             password=self.MEDIA_PASSWORD,
             session=ClientHttpSession(self.client))
         pd = PopulateDatabase(da)
-        jsonfile: Path = self.FIXTURES_PATH / BBB_FIXTURE.name / fixture_name
+        jsonfile: Path = self.fixtures_folder / BBB_FIXTURE.name / fixture_name
         self.assertTrue(jsonfile.exists())
         result: bool = pd.populate_database(str(jsonfile))
         self.assertTrue(result, msg='populate_database() failed')
@@ -136,7 +136,7 @@ class TestPopulateDatabase(FlaskTestBase):
                 act_stream.timing_reference.media_name)
 
     def test_populate_database_using_command_line(self) -> None:
-        jsonfile = self.FIXTURES_PATH / BBB_FIXTURE.name / 'upload_v2.json'
+        jsonfile = self.fixtures_folder / BBB_FIXTURE.name / 'upload_v2.json'
         self.assertTrue(jsonfile.exists())
         args: list[str] = [
             '--username', self.MEDIA_USER,
@@ -318,7 +318,7 @@ class TestPopulateDatabase(FlaskTestBase):
             result = pd.populate_database(str(jsonfile))
             self.assertTrue(result, msg='populate_database() failed')
             return flask.make_response('done')
-        jsonfile = self.FIXTURES_PATH / BBB_FIXTURE.name / 'upload_v2.json'
+        jsonfile = self.fixtures_folder / BBB_FIXTURE.name / 'upload_v2.json'
         upload = Path(self.app.config['UPLOAD_FOLDER'])
         subdir: Path = upload / 'verifier-dest'
         subdir.mkdir()
@@ -329,7 +329,7 @@ class TestPopulateDatabase(FlaskTestBase):
         for stream in config['streams']:
             for fname in stream['files']:
                 shutil.copyfile(
-                    self.FIXTURES_PATH / BBB_FIXTURE.name / fname,
+                    self.fixtures_folder / BBB_FIXTURE.name / fname,
                     subdir / fname)
         jsonfile = js_dest
         self.login_user(username=self.MEDIA_USER, password=self.MEDIA_PASSWORD)

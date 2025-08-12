@@ -446,7 +446,7 @@ class DashManifestCheckMixin:
         enc: str = '_enc' if encrypted else ''
         mps: str = 'mps_' if multi_period else ''
         filename = f'{name}_{mps}{mode}{enc}{ext}'
-        return [self.FIXTURES_PATH / filename, self.REAL_FIXTURES_PATH / filename]
+        return [self.fixtures_folder / filename, self.REAL_FIXTURES_PATH / filename]
 
     xmlNamespaces = {
         'cenc': 'urn:mpeg:cenc:2013',
