@@ -7,10 +7,10 @@
 #############################################################################
 import asyncio
 import binascii
+import io
 
 from dashlive import scte35
 from dashlive.mpeg import MPEG_TIMEBASE
-from dashlive.utils.buffered_reader import BufferedReader
 from dashlive.utils.binary import Binary
 
 from .dash_element import DashElement
@@ -23,7 +23,7 @@ class Scte35Binary(DashElement):
         self.schemeIdUri = schemeIdUri
         try:
             data = Binary(elt.text, encoding=Binary.BASE64, decode=True)
-            src = BufferedReader(None, data=data.data)
+            src = io.BufferedReader(io.BytesIO(data.data))
             self.signal = scte35.BinarySignal.parse(src, size=len(data))
         except (ValueError, binascii.Error) as err:
             self.elt.add_error(str(err))

@@ -6,10 +6,10 @@
 #
 #############################################################################
 import asyncio
+import io
 from typing import Any, ClassVar
 
 from dashlive.mpeg import mp4
-from dashlive.utils.buffered_reader import BufferedReader
 
 from .dash_element import DashElement
 from .http_range import HttpRange
@@ -89,7 +89,7 @@ class SegmentBaseType(DashElement):
             dest.write(body)
 
     def parse_data(self, body: bytes):
-        src = BufferedReader(None, data=body)
+        src = io.BufferedReader(io.BytesIO(body))
         opts = mp4.Options(strict=True, lazy_load=False)
         atoms = mp4.Mp4Atom.load(src, options=opts, use_wrapper=True)
         self.elt.check_equal(

@@ -19,11 +19,11 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+import io
 import sys
-from utils.buffered_reader import BufferedReader
 
 from drm.playready import PlayReady
-from mp4 import IsoParser
+from dashlive.mpeg.mp4 import IsoParser
 
 if __name__ == "__main__":
     def show_pssh(atom):
@@ -31,8 +31,7 @@ if __name__ == "__main__":
             print(atom)
             if atom.system_id == PlayReady.RAW_SYSTEM_ID:
                 pro = PlayReady.parse_pro(
-                    BufferedReader(
-                        None, data=atom.data))
+                    io.BufferedReader(io.BytesIO(atom.data)))
                 print(pro)
         else:
             for child in atom.children:
