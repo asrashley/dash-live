@@ -114,7 +114,7 @@ class InitSegment(DashElement):
             if atm.atom_type == 'moov':
                 moov = atm
         if moov is None:
-            self.elt.add_error('Failed to find moov box')
+            self.elt.add_error(f'Failed to find moov box in {self.url}')
             return False
         key_ids = set()
         self.dash_rep = DashRepresentation()
