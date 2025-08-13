@@ -8,9 +8,7 @@
 import html
 import logging
 from pathlib import Path
-import urllib.request
 import urllib.parse
-import urllib.error
 import urllib.parse
 
 import flask
@@ -24,9 +22,6 @@ from dashlive.server.options.player_options import ShakaVersion, DashjsVersion
 from dashlive.server.options.types import OptionUsage
 
 from .base import HTMLHandlerBase
-from .decorators import (
-    current_stream,
-)
 from .manifest_context import ManifestContext
 from .navbar import NavBarItem
 from .utils import add_allowed_origins, is_https_request
