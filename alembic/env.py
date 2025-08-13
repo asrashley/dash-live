@@ -73,13 +73,13 @@ def run_migrations_online() -> None:
         url_template: str | None = config.get_main_option("sqlalchemy.url")
         assert url_template is not None
         url: str = make_db_connection_string(instance_path, url_template)
-        connectable: Engine = create_engine(url)
-        with connectable.connect() as connection:
+        engine: Engine = create_engine(url)
+        with engine.connect() as connection:
             context.configure(
                 connection=connection, target_metadata=target_metadata
             )
-        with context.begin_transaction():
-            context.run_migrations()
+            with context.begin_transaction():
+                context.run_migrations()
     else:
         context.configure(
             connection=connection,
