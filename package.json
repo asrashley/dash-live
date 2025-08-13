@@ -13,7 +13,7 @@
     "build": "webpack --mode production --config frontend/config/webpack.prod.js",
     "coverage": "vitest run --coverage",
     "legacy-css": "lessc -x static/css/legacy.less static/css/legacy.css",
-    "video-css": "lessc -x static/css/legacy.less static/css/legacy.css",
+    "video-css": "lessc -x static/css/video.less static/css/video.css",
     "lint": "eslint frontend/src/**/*.{ts,tsx}",
     "lint:compat": "jshint static/js/legacy static/js/compat",
     "main-css": "lessc -x frontend/src/styles/main.less static/css/main.css",
