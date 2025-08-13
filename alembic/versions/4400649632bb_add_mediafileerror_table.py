@@ -30,7 +30,8 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['media_pk'], ['media_file.pk'], ),
         sa.PrimaryKeyConstraint('pk'),
         sa.UniqueConstraint(
-            "reason", "media_pk", name="single_reason_per_file")
+            "reason", "media_pk", name="single_reason_per_file"),
+        if_not_exists=True
     )
 
 
