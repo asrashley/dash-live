@@ -14,8 +14,7 @@ COPY static/css ${HOME}/static/css
 COPY patches ${HOME}/patches
 RUN npm ci
 RUN GIT_SHA=${GIT_SHA} npm run build
-RUN npm run legacy-css
-RUN npm run main-css
+RUN npm run all-css
 RUN tar czf ${HOME}/front-end.tar.gz static/html static/css
 #
 # Build Python server container

@@ -1,6 +1,6 @@
 {
   "name": "dash-live",
-  "version": "2.10.0",
+  "version": "3.6.0",
   "description": "A simulated MPEG DASH service",
   "license": "Apache-2.0",
   "repository": "github:asrashley/dash-live",
@@ -13,9 +13,11 @@
     "build": "webpack --mode production --config frontend/config/webpack.prod.js",
     "coverage": "vitest run --coverage",
     "legacy-css": "lessc -x static/css/legacy.less static/css/legacy.css",
+    "video-css": "lessc -x static/css/legacy.less static/css/legacy.css",
     "lint": "eslint frontend/src/**/*.{ts,tsx}",
     "lint:compat": "jshint static/js/legacy static/js/compat",
     "main-css": "lessc -x frontend/src/styles/main.less static/css/main.css",
+    "all-css": "npm run legacy-css && npm run video-css && npm run main-css",
     "postinstall": "patch-package",
     "start": "webpack server --host 0.0.0.0 --port 8765 --watch-files src --color",
     "test": "vitest"
