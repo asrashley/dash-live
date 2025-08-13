@@ -1,12 +1,9 @@
-import json
 import os
 from pathlib import Path
-import re
 
 from logging.config import fileConfig
 
-from sqlalchemy import engine_from_config, URL
-from sqlalchemy import pool
+from sqlalchemy import Engine
 
 from alembic import context
 
@@ -67,21 +64,29 @@ def run_migrations_online() -> None:
     from sqlalchemy import create_engine
     from dotenv import load_dotenv
     from dashlive.server.models.connection import make_db_connection_string
- 
+
     load_dotenv(os.getenv('DASHLIVE_SETTINGS', '.env'))
     instance_path = Path(os.getenv('FLASK_INSTANCE_PATH', '.'))
-    url_template = config.get_main_option("sqlalchemy.url")
-    url = make_db_connection_string(instance_path, url_template)
-    connectable = create_engine(url)
 
-    with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
-
+    connection = config.attributes.get('connection', None)
+    if connection is None:
+        url_template: str | None = config.get_main_option("sqlalchemy.url")
+        assert url_template is not None
+        url: str = make_db_connection_string(instance_path, url_template)
+        connectable: Engine = create_engine(url)
+        with connectable.connect() as connection:
+            context.configure(
+                connection=connection, target_metadata=target_metadata
+            )
         with context.begin_transaction():
             context.run_migrations()
-
+    else:
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata
+        )
+        with context.begin_transaction():
+            context.run_migrations()
 
 if context.is_offline_mode():
     run_migrations_offline()

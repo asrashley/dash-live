@@ -20,9 +20,15 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        'media_file',
-        sa.Column('track_id', sa.Integer, index=True, nullable=True))
+    try:
+        op.add_column(
+            'media_file',
+            sa.Column('track_id', sa.Integer, index=True, nullable=True))
+    except OperationalError as err:
+        logging.warning('Failed to create track ID column: %s', err)
+        logging.warning('Assuming migration has already been applied')
+        return
+
     op.add_column(
         'media_file',
         sa.Column('codec_fourcc', sa.String(16), nullable=True, index=False))

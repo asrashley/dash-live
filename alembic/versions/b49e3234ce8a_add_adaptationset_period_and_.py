@@ -5,10 +5,12 @@ Revises: 4afbed324b31
 Create Date: 2024-09-30 14:34:32.287749
 
 """
+import logging
 from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
+from sqlalchemy.exc import OperationalError
 from sqlalchemy_jsonfield.jsonfield import JSONField
 
 from dashlive.mpeg.dash.content_role import ContentRole
@@ -22,12 +24,18 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    content_types = op.create_table(
-        'content_type',
-        sa.Column('pk', sa.Integer(), nullable=False),
-        sa.Column('name', sa.String(length=62), nullable=False, unique=True),
-        sa.PrimaryKeyConstraint('pk')
-    )
+    try:
+        content_types = op.create_table(
+            'content_type',
+            sa.Column('pk', sa.Integer(), nullable=False),
+            sa.Column('name', sa.String(length=62), nullable=False, unique=True),
+            sa.PrimaryKeyConstraint('pk')
+        )
+    except OperationalError as err:
+        logging.warning('Failed to content_type table: %s', err)
+        logging.warning('Assuming migration has already been applied')
+        return
+
     op.bulk_insert(
         content_types,
         [

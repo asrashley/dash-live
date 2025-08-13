@@ -1,19 +1,5 @@
 #############################################################################
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
-#############################################################################
-#
 #  Project Name        :    Simulated MPEG DASH service
 #
 #  Author              :    Alex Ashley
@@ -21,8 +7,14 @@
 #############################################################################
 
 import logging
+from pathlib import Path
 import unittest
 from unittest.mock import ANY, call, patch
+
+from alembic.config import Config
+from alembic import command
+from sqlalchemy import create_engine, text
+from sqlalchemy.engine import Engine, Connection
 
 from dashlive.server import models
 from dashlive.server.models.migrations.unique_track_ids import EnsureTrackIdsAreUnique
@@ -156,6 +148,89 @@ class DataMigrationTests(FlaskTestBase):
                     mock_modify.assert_not_called()
                 else:
                     mock_modify.assert_has_calls(calls, any_order=True)
+
+class AlembicMigrationTests(unittest.TestCase):
+    @staticmethod
+    def fixture_filename(name: str | Path) -> Path:
+        """returns absolute file path of the given fixture"""
+        return Path(__file__).parent / "fixtures" / name
+
+    @classmethod
+    def load_fixture(cls, connection: Connection, filename: str) -> None:
+        """
+        Load the specified SQL file into the database
+        """
+        sql_filename: Path = cls.fixture_filename(filename)
+        with sql_filename.open('rt', encoding="utf-8") as src:
+            sql: str = src.read()
+        for line in sql.split(';\n'):
+            while line and line[0] in [' ', '\r', '\n']:
+                line = line[1:]
+            if not line:
+                continue
+            if line in ['BEGIN TRANSACTION', 'COMMIT', 'PRAGMA foreign_keys=OFF']:
+                continue
+            # print(f'"{line}"')
+            connection.execute(text(line))
+
+    def test_migrate_from_v1_5(self) -> None:
+        connect_str = "sqlite:///:memory:"
+        engine: Engine = create_engine(connect_str, echo=False)
+        basedir: Path = Path(__file__).parent.parent
+        alembic_cfg = Config(basedir / "alembic.ini")
+        with engine.begin() as connection:
+            alembic_cfg.attributes['connection'] = connection
+            self.load_fixture(connection, "db-v1.5.sql")
+            command.stamp(alembic_cfg, "base")
+            command.upgrade(alembic_cfg, "head")
+
+    def test_migrate_from_v2_5(self) -> None:
+        connect_str = "sqlite:///:memory:"
+        engine: Engine = create_engine(connect_str, echo=False)
+        basedir: Path = Path(__file__).parent.parent
+        alembic_cfg = Config(basedir / "alembic.ini")
+        with engine.begin() as connection:
+            alembic_cfg.attributes['connection'] = connection
+            self.load_fixture(connection, "db-v2.5.sql")
+            command.stamp(alembic_cfg, "e3cdc4f4779b")
+            command.upgrade(alembic_cfg, "head")
+
+    def test_migrate_from_v2_5_with_missing_stamp(self) -> None:
+        """
+        Test what happens with a migration from v2.5 where the database
+        was missing its stamp
+        """
+        connect_str = "sqlite:///:memory:"
+        engine: Engine = create_engine(connect_str, echo=False)
+        basedir: Path = Path(__file__).parent.parent
+        alembic_cfg = Config(basedir / "alembic.ini")
+        with engine.begin() as connection:
+            alembic_cfg.attributes['connection'] = connection
+            self.load_fixture(connection, "db-v2.5.sql")
+            command.stamp(alembic_cfg, "base")
+            command.upgrade(alembic_cfg, "head")
+
+    def test_migrate_from_v2_6(self) -> None:
+        connect_str = "sqlite:///:memory:"
+        engine: Engine = create_engine(connect_str, echo=False)
+        basedir: Path = Path(__file__).parent.parent
+        alembic_cfg = Config(basedir / "alembic.ini")
+        with engine.begin() as connection:
+            alembic_cfg.attributes['connection'] = connection
+            self.load_fixture(connection, "db-v2.5.sql")
+            command.stamp(alembic_cfg, "d5bd6b74a282")
+            command.upgrade(alembic_cfg, "head")
+
+    def test_migrate_from_v2_6_with_missing_stamp(self) -> None:
+        connect_str = "sqlite:///:memory:"
+        engine: Engine = create_engine(connect_str, echo=False)
+        basedir: Path = Path(__file__).parent.parent
+        alembic_cfg = Config(basedir / "alembic.ini")
+        with engine.begin() as connection:
+            alembic_cfg.attributes['connection'] = connection
+            self.load_fixture(connection, "db-v2.6.sql")
+            command.stamp(alembic_cfg, "base")
+            command.upgrade(alembic_cfg, "head")
 
 
 if __name__ == "__main__":
