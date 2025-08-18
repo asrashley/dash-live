@@ -13,8 +13,7 @@ if [ "${UID}" != "0" ]; then
     # no need to run CSS building when running inside a Docker
     # container because that was done during the build
     # process
-    npm run legacy-css
-    npm run main-css
+    npm run all-css
 fi
 
 PYTHONPATH=${PWD} flask run --host=0.0.0.0 --debug
