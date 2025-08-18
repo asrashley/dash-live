@@ -103,7 +103,7 @@ def csrf_token_required(
                 if is_ajax():
                     return jsonify({'error': 'CSRF failure'}, 401)
                 flask.flash(f'CSRF error: {err}', 'error')
-                url: str | None = next_url(*args, **kwargs)
+                url: str | None = next_url(**kwargs)
                 if url is None:
                     return flask.make_response('Not Authorized', 401)
                 return flask.redirect(url)
@@ -150,7 +150,7 @@ def uses_media_file(func):
     return decorated_function
 
 
-current_media_file = cast(MediaFile, LocalProxy(lambda: flask.g.mediafile))
+current_media_file: MediaFile = cast(MediaFile, LocalProxy(lambda: flask.g.mediafile))
 
 def uses_stream(func):
     """

@@ -45,7 +45,6 @@ from .template_context import TemplateContext, create_template_context
 from .utils import jsonify
 
 class RequestHandlerBase(MethodView):
-    CLIENT_COOKIE_NAME = 'dash'
     INJECTED_ERROR_CODES = [404, 410, 503, 504]
 
     def create_context(self, **kwargs) -> TemplateContext:

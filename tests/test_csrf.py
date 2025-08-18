@@ -40,8 +40,9 @@ class TestCsrfProtection(FlaskTestBase):
 
     @patch.object(flask, 'request')
     def test_invalid_csrf_cookie(self, req) -> None:
+        name: str = CsrfProtection.cookie_name()
         req.cookies = {
-            CsrfProtection.CSRF_COOKIE_NAME: None,
+            name: None,
         }
         with self.assertRaises(CsrfFailureException) as cm:
             CsrfProtection.check('files', '')
@@ -49,8 +50,9 @@ class TestCsrfProtection(FlaskTestBase):
 
     @patch.object(flask, 'request')
     def test_csrf_signature_mismatch(self, req) -> None:
+        name: str = CsrfProtection.cookie_name()
         req.cookies = {
-            CsrfProtection.CSRF_COOKIE_NAME: 'Bj2sVUJfupva1WK-KamSk7BrI4_MFyWYpqYJjt7d-ts',
+            name: 'Bj2sVUJfupva1WK-KamSk7BrI4_MFyWYpqYJjt7d-ts',
         }
         req.headers = {
             'Origin': 'a.unit.test',
