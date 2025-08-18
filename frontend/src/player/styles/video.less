@@ -5,25 +5,20 @@
   z-index: 0;
 }
 
-#vid-window>video {
+#vid-window > video,
+#vid-window .subtitles {
   width: 100%;
   height: 100%;
 }
 
 #vid-window .icon {
-  position: absolute;
-  z-index: 2;
-  right: 4em;
-  top: 2em;
   color: #eee;
-  display: none;
-}
-
-#vid-window.paused .fa-pause,
-#vid-window.skip-forward .fa-step-forward,
-#vid-window.skip-backward .fa-step-backward,
-#vid-window.stopped .fa-stop {
-  display: block;
+  font-size: 4rem;
+  position: absolute;
+  right: 4vw;
+  text-shadow: 0px 0px 12px #160906;
+  top: 3vh;
+  z-index: 2;
 }
 
 #status,

@@ -7,6 +7,7 @@ import { DashParameters } from "../types/DashParameters";
 import { KeyParameters } from "../types/KeyParameters";
 import { PlayerControls } from "../types/PlayerControls";
 import { StatusEvent } from "../types/StatusEvent";
+import { PlaybackIconType } from "../types/PlaybackIconType";
 
 describe("VideoPlayer component", () => {
   const params: DashParameters = {
@@ -31,6 +32,7 @@ describe("VideoPlayer component", () => {
   const keys = signal<Map<string, KeyParameters>>(new Map());
   const currentTime = signal<number>(0);
   const controls = signal<PlayerControls | undefined>();
+  const activeIcon = signal<PlaybackIconType | null>(null);
   const events = signal<StatusEvent[]>([]);
 
   test("matches snapshot", () => {
@@ -41,6 +43,7 @@ describe("VideoPlayer component", () => {
         keys={keys}
         currentTime={currentTime}
         controls={controls}
+        activeIcon={activeIcon}
         events={events}
     />);
     expect(asFragment()).toMatchSnapshot();

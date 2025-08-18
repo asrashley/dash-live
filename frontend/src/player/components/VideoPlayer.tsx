@@ -1,15 +1,16 @@
-import { Icon } from "../../components/Icon";
+import { useRef } from "preact/hooks";
+import { PlaybackIcon } from "./PlaybackIcon";
 import { VideoElement, VideoElementProps } from "./VideoElement";
 
-export type VideoPlayerProps = VideoElementProps;
+export type VideoPlayerProps = Omit<VideoElementProps, 'subtitlesElement'>;
+
 export function VideoPlayer(props: VideoPlayerProps) {
+  const subtitlesElement = useRef<HTMLDivElement>();
+
   return (
     <div id="vid-window">
-      <Icon name="pause" className="fs-2" />
-      <Icon name="step-forward" className="fs-2" />
-      <Icon name="step-backward" className="fs-2" />
-      <Icon name="stop" className="fs-2" />
-      <VideoElement {...props} />
+      <PlaybackIcon active={props.activeIcon} />
+      <VideoElement {...props}  />
     </div>
   );
 }

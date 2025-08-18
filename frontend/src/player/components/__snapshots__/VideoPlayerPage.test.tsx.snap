@@ -8,28 +8,7 @@ exports[`VideoPlayerPage > matches snapshot 1`] = `
     <div
       id="vid-window"
     >
-      <span
-        aria-label="pause icon"
-        class="bi icon bi-pause fs-2"
-        role="img"
-      />
-      <span
-        aria-label="step-forward icon"
-        class="bi icon bi-step-forward fs-2"
-        role="img"
-      />
-      <span
-        aria-label="step-backward icon"
-        class="bi icon bi-step-backward fs-2"
-        role="img"
-      />
-      <span
-        aria-label="stop icon"
-        class="bi icon bi-stop fs-2"
-        role="img"
-      />
       <video
-        controls=""
         src="/dash/dash/bbb/hand-made.mpd?player=native"
       />
     </div>

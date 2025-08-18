@@ -8,6 +8,7 @@ import { PlayerControls } from "../types/PlayerControls";
 import { StatusEvent } from "../types/StatusEvent";
 import { DashParameters } from "../types/DashParameters";
 import { KeyParameters } from "../types/KeyParameters";
+import { PlaybackIconType } from "../types/PlaybackIconType";
 
 export const STATUS_EVENTS = [
   'stalled','loadedmetadata', 'error', 'canplay', 'canplaythrough',
@@ -23,6 +24,7 @@ export interface VideoElementProps {
   keys: ReadonlySignal<Map<string, KeyParameters>>;
   currentTime: Signal<number>;
   controls: Signal<PlayerControls | undefined>;
+  activeIcon: Signal<PlaybackIconType | null>;
   events: Signal<StatusEvent[]>;
   maxEvents?: number;
 }
@@ -59,11 +61,15 @@ export class VideoElement extends Component<VideoElementProps, undefined> implem
   }
 
   render() {
-    return <video controls ref={this.videoElt} />;
+    return <video ref={this.videoElt} />;
   }
 
   pause() {
     this.videoElt.current.pause();
+  }
+
+  isPaused() {
+    return this.videoElt.current.paused;
   }
 
   play() {
