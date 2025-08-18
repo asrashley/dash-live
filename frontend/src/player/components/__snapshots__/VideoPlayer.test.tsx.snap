@@ -8,6 +8,9 @@ exports[`VideoPlayer component > matches snapshot 1`] = `
     <video
       src="https://unit.test.local/test.mpd"
     />
+    <div
+      class="subtitles"
+    />
   </div>
 </DocumentFragment>
 `;

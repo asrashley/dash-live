@@ -27,6 +27,7 @@ export interface VideoElementProps {
   activeIcon: Signal<PlaybackIconType | null>;
   events: Signal<StatusEvent[]>;
   maxEvents?: number;
+  subtitlesElement?: HTMLDivElement;
 }
 
 export class VideoElement extends Component<VideoElementProps, undefined> implements PlayerControls {
@@ -90,7 +91,7 @@ export class VideoElement extends Component<VideoElementProps, undefined> implem
   }
 
   private tryInitializePlayer(props: VideoElementProps) {
-    const { dashParams, keys, mpd, playerName, playerVersion: version } = props;
+    const { dashParams, keys, mpd, playerName, playerVersion: version, subtitlesElement } = props;
     if (!this.videoElt.current || !dashParams.value) {
       return;
     }
@@ -100,6 +101,7 @@ export class VideoElement extends Component<VideoElementProps, undefined> implem
       logEvent: this.logEvent,
       autoplay: true,
       videoElement: this.videoElt.current,
+      subtitlesElement,
     };
     this.player = playerFactory(playerName, playerProps);
     this.player.initialize(mpd, dashParams.value.options, keys.value);

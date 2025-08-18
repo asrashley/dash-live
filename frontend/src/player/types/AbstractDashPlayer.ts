@@ -5,6 +5,7 @@ export interface DashPlayerProps {
     version?: string;
     autoplay?: boolean;
     videoElement: HTMLVideoElement;
+    subtitlesElement?: HTMLDivElement;
     logEvent(eventName: string, text: string): void;
 }
 export abstract class AbstractDashPlayer {
