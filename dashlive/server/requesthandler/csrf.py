@@ -27,7 +27,7 @@ import hashlib
 import hmac
 import logging
 import secrets
-from typing import ClassVar, TypedDict
+from typing import TypedDict
 import urllib.parse
 
 import flask  # type: ignore
@@ -62,19 +62,24 @@ class CsrfTokenCollection:
 
 
 class CsrfProtection:
-    CSRF_COOKIE_NAME: ClassVar[str] = 'csrf'
+
+    @classmethod
+    def cookie_name(cls) -> str:
+        cfg: dict = flask.current_app.config['DASH']
+        return cfg.get('CSRF_COOKIE', 'csrf')
 
     @classmethod
     def generate_cookie(cls) -> str:
         """
         generate a secure cookie if not already present
         """
+        cname: str = cls.cookie_name()
         try:
-            return flask.request.cookies[cls.CSRF_COOKIE_NAME]
+            return flask.request.cookies[cname]
         except KeyError:
             pass
         csrf_key: str = secrets.token_urlsafe(Token.CSRF_KEY_LENGTH)
-        secure = None
+        secure: bool = False
         if is_https_request():
             secure = True
 
@@ -82,7 +87,7 @@ class CsrfProtection:
         def set_csrf_cookie(response: flask.Response) -> flask.Response:
             max_age: int = int(KEY_LIFETIMES[TokenType.CSRF].total_seconds())
             response.set_cookie(
-                CsrfProtection.CSRF_COOKIE_NAME, csrf_key, httponly=True,
+                cname, csrf_key, httponly=True,
                 samesite='Strict', max_age=max_age, secure=secure)
             return response
 
@@ -98,7 +103,7 @@ class CsrfProtection:
         # logging.debug(f'generate_csrf URL: {url}')
         # logging.debug(
         # 'generate_csrf User-Agent: "{}"'.format(flask.request.headers['User-Agent']))
-        cfg = flask.current_app.config['DASH']
+        cfg: dict = flask.current_app.config['DASH']
         strict_origin = cfg.get('STRICT_CSRF_ORIGIN', 'False').lower() == 'true'
 
         sig = hmac.new(
@@ -126,19 +131,19 @@ class CsrfProtection:
         check that the CSRF token from the cookie and the submitted form match
         """
         logging.debug(f'check_csrf service: "{service}"')
+        cname: str = cls.cookie_name()
         try:
-            csrf_key = flask.request.cookies[cls.CSRF_COOKIE_NAME]
+            csrf_key = flask.request.cookies[cname]
         except KeyError:
             logging.debug("csrf cookie not present")
             logging.debug('%s', flask.request.cookies)
-            raise CsrfFailureException(
-                f"{cls.CSRF_COOKIE_NAME} cookie not present")
+            raise CsrfFailureException(f"{cname} cookie not present")
         if not csrf_key:
             logging.debug("csrf deserialize failed")
 
             @flask.after_this_request
             def clear_csrf_cookie(response):
-                response.delete_cookie(CsrfProtection.CSRF_COOKIE_NAME)
+                response.delete_cookie(cname)
                 return response
 
             raise CsrfFailureException("csrf cookie not valid")
