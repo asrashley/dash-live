@@ -109,7 +109,7 @@ class Representation(ObjectWithFields):
     VERSION: ClassVar[int] = 4
     KNOWN_CODEC_BOXES: ClassVar[set[str]] = {
         'ac_3', 'avc1', 'avc3', 'mp4a', 'ec_3', 'encv', 'enca',
-        'hev1', 'hvc1', 'stpp', 'wvtt',
+        'hev1', 'hvc1', 'stpp', 'wvtt', 'tx3g',
     }
     segments: list[Segment]
     kids: list[KeyMaterial]

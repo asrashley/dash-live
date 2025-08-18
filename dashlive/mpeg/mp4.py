@@ -31,7 +31,7 @@ import logging
 import os
 import re
 import struct
-from typing import AbstractSet, Any, BinaryIO, ClassVar, Optional, Union
+from typing import AbstractSet, Any, BinaryIO, ClassVar, Optional, Union, cast
 
 import bitstring
 
@@ -559,7 +559,7 @@ class Mp4Atom(ObjectWithFields):
         return rv
 
     @classmethod
-    def parse(cls, src, parent, options=None, **kwargs):
+    def parse(cls, src, parent, options=None, **kwargs) -> dict[str, Any] | None:
         try:
             return kwargs['initial_data']
         except KeyError:
@@ -1402,8 +1402,8 @@ class MovieHeaderBox(FullBox):
 
 class SampleEntry(Mp4Atom):
     @classmethod
-    def parse(clz, src, parent, options, **kwargs):
-        rv = Mp4Atom.parse(src, parent, **kwargs)
+    def parse(clz, src, parent, options, **kwargs) -> dict[str, Any]:
+        rv: dict[str, Any] = Mp4Atom.parse(src, parent, **kwargs)
         r = FieldReader(clz.classname(), src, rv, debug=options.debug)
         r.skip(6)  # reserved
         r.read('H', 'data_reference_index')
@@ -1479,6 +1479,140 @@ class HVC1SampleEntry(VisualSampleEntry):
 @fourcc('encv')
 class EncryptedSampleEntry(VisualSampleEntry):
     pass
+
+# See 3GPP TS 26.245 v8.0.0 section 5.16
+
+class FontRecord(ObjectWithFields):
+    font_id: int
+    font: str
+
+    @classmethod
+    def parse(cls, src: BinaryIO, parent: dict[str, Any]) -> dict[str, Any]:
+        offset: int = src.tell() - parent['position']
+        rv: dict[str, Any] = {
+            "offset": offset,
+        }
+        r: FieldReader = FieldReader(cls.classname(), src, rv)
+        r.read('H', 'font_id')
+        name_len: int = cast(int, r.get('B', 'font-name-length'))
+        r.read(f'S{name_len}', 'font')
+        rv['size'] = 3 + name_len
+        return rv
+
+    def encode(self, dest: BinaryIO) -> BinaryIO:
+        w = FieldWriter(self, dest)
+        w.write('H', 'font_id')
+        w.write('B', 'font-name-length', value=len(self.font))
+        w.write('S', 'font')
+        return dest
+
+
+@fourcc('ftab')
+class FontTableBox(Mp4Atom):
+    OBJECT_FIELDS: dict[str, Any] = {
+        "font_table": ListOf(FontRecord),
+    }
+    font_table: list[FontRecord]
+
+    @classmethod
+    def parse(cls, src: BinaryIO, parent: dict[str, Any], options, **kwargs) -> dict[str, Any]:
+        rv: dict[str, Any] | None = Mp4Atom.parse(src, parent, options=options, **kwargs)
+        assert rv is not None
+        r: FieldReader = FieldReader(cls.classname(), src, rv, debug=options.debug)
+        entry_count: int = cast(int, r.get('H', 'entry-count'))
+        rv['font_table'] = []
+        for _idx in range(entry_count):
+            rv['font_table'].append(FontRecord.parse(src, rv))
+        return rv
+
+    def encode_fields(self, dest: BinaryIO) -> None:
+        d: FieldWriter = FieldWriter(self, dest)
+        d.write('H', 'entry-count', value=len(self.font_table))
+        for font in self.font_table:
+            font.encode(dest)
+
+
+class BoxRecord(ObjectWithFields):
+    @classmethod
+    def parse(cls, src: BinaryIO, parent: dict[str, Any]) -> dict[str, Any]:
+        rv: dict[str, Any] = {
+            "offset": src.tell() - parent['position'],
+            "size": 8,
+        }
+        r: FieldReader = FieldReader(cls.classname(), src, rv)
+        r.read('H', 'top')
+        r.read('H', 'left')
+        r.read('H', 'bottom')
+        r.read('H', 'right')
+        return rv
+
+    def encode(self, dest: BinaryIO) -> BinaryIO:
+        w: FieldWriter = FieldWriter(self, dest)
+        w.write('H', 'top')
+        w.write('H', 'left')
+        w.write('H', 'bottom')
+        w.write('H', 'right')
+        return dest
+
+class StyleRecord(ObjectWithFields):
+    @classmethod
+    def parse(cls, src: BinaryIO, parent: dict[str, Any]) -> dict[str, Any]:
+        rv: dict[str, Any] = {
+            "offset": src.tell() - parent['position'],
+            "size": 8,
+        }
+        r: FieldReader = FieldReader(cls.classname(), src, rv)
+        r.read('H', 'start_char')
+        r.read('H', 'end_char')
+        r.read('H', 'font_id')
+        r.read('B', 'face_style_flags')
+        r.read('B', 'font_size')
+        r.read(4, 'text_colour')
+        return rv
+
+    def encode(self, dest: BinaryIO) -> BinaryIO:
+        w: FieldWriter = FieldWriter(self, dest)
+        w.write('H', 'start_char')
+        w.write('H', 'end_char')
+        w.write('H', 'font_id')
+        w.write('B', 'face_style_flags')
+        w.write('B', 'font_size')
+        w.write(4, 'text_colour')
+        return dest
+
+@fourcc('tx3g')
+class TextSampleEntry(SampleEntry):
+    parse_children = True
+    OBJECT_FIELDS: dict[str, Any] = {
+        "default_text_box": BoxRecord,
+        "default_style": StyleRecord,
+        "background_colour": HexBinary,
+    }
+    default_text_box: BoxRecord
+    default_style: StyleRecord
+    background_colour: HexBinary
+
+    @classmethod
+    def parse(cls, src, parent, options, **kwargs) -> dict[str, Any]:
+        rv: dict[str, Any] = SampleEntry.parse(src, parent, options, **kwargs)
+        r: FieldReader = FieldReader(cls.classname(), src, rv, debug=options.debug)
+        r.read('I', 'display_flags')
+        r.read('B', 'horizontal_justification') # should be signed 8 bit
+        r.read('B', 'vertical_justification') # should be signed 8 bit
+        r.read(4, 'background_colour')
+        rv['default_text_box'] = BoxRecord.parse(r.src, rv)
+        rv['default_style'] = StyleRecord.parse(r.src, rv)
+        return rv
+
+    def encode_fields(self, dest: BinaryIO) -> None:
+        super().encode_fields(dest)
+        w: FieldWriter = FieldWriter(self, dest)
+        w.write('I', 'display_flags')
+        w.write('B', 'horizontal_justification')  # should be signed 8 bit
+        w.write('B', 'vertical_justification')  # should be signed 8 bit
+        w.write(4, 'background_colour')
+        self.default_text_box.encode(dest)
+        self.default_style.encode(dest)
 
 
 @fourcc('vttC')
@@ -1641,7 +1775,7 @@ class HevcNalArray(ObjectWithFields):
     }
 
     @classmethod
-    def parse(clz, reader):
+    def parse(cls, reader: BitsFieldReader) -> dict[str, Any]:
         rv = {}
         # r = BitsFieldReader(clz.classname(), src, rv)
         r = reader.duplicate('HEVC NAL array', rv)
@@ -1695,7 +1829,7 @@ class HEVCConfigurationBox(Mp4Atom):
     @classmethod
     def parse(clz, src, parent, options, **kwargs):
         rv = Mp4Atom.parse(src, parent, options=options, **kwargs)
-        r = BitsFieldReader(clz.classname(), src, rv, rv["size"] - rv["header_size"])
+        r: BitsFieldReader = BitsFieldReader(clz.classname(), src, rv, rv["size"] - rv["header_size"])
         r.read(8, 'configuration_version')
         if rv['configuration_version'] != 1:
             return rv
@@ -3073,7 +3207,10 @@ class IsoParser:
                     item['children'] = [a.atom_name() for a in atom.children]
                 print(json.dumps(item, sort_keys=True, indent=2))
             else:
-                exclude.remove('atom_type')
+                try:
+                    exclude.remove('atom_type')
+                except KeyError:
+                    pass
                 print(atom.as_python(exclude))
             count += 1
         if check_children and atom.children is not None:
