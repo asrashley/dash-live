@@ -356,19 +356,24 @@ class EditStream(HTMLHandlerBase):
     def create_context(self,
                        title: str | None,
                        all_csrf_tokens: bool) -> EditStreamTemplateContext:
-        context = super().create_context(title=title)
-        csrf_key = self.generate_csrf_cookie()
+        context: EditStreamTemplateContext = cast(
+            EditStreamTemplateContext, super().create_context(title=title))
+        csrf_key: str = self.generate_csrf_cookie()
         context.update({
             'csrf_key': csrf_key,
             'csrf_token': self.generate_csrf_token('streams', csrf_key),
             'error': None,
-            'stream': current_stream,
+            'stream': current_stream.to_dict(
+                with_collections=True, exclude={'media_files'}),  # type: ignore
             'model': current_stream,
             'submit_url': flask.url_for('view-stream', spk=current_stream.pk),
             'upload_url': flask.url_for('upload-blob', spk=current_stream.pk),
             "fields": current_stream.get_fields(),
+        })  # type: ignore
+        context["stream"].update({  # type: ignore
+            'media_files': [],
+            'duration': current_stream.duration(),
         })
-
         if all_csrf_tokens:
             upload: str | None = None
             if current_user.has_permission(models.Group.MEDIA):
