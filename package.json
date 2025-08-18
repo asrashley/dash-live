@@ -13,11 +13,10 @@
     "build": "webpack --mode production --config frontend/config/webpack.prod.js",
     "coverage": "vitest run --coverage",
     "legacy-css": "lessc -x static/css/legacy.less static/css/legacy.css",
-    "video-css": "lessc -x static/css/video.less static/css/video.css",
     "lint": "eslint frontend/src/**/*.{ts,tsx} static/js/*.js",
     "lint:compat": "jshint static/js/legacy",
     "main-css": "lessc -x frontend/src/styles/main.less static/css/main.css",
-    "all-css": "npm run legacy-css && npm run video-css && npm run main-css",
+    "all-css": "npm run legacy-css && npm run main-css",
     "postinstall": "patch-package",
     "start": "webpack server --host 0.0.0.0 --port 8765 --watch-files src --color",
     "test": "vitest"
