@@ -8,6 +8,7 @@ import { STATUS_EVENTS, VideoElement } from "./VideoElement";
 import { DashParameters } from "../types/DashParameters";
 import { KeyParameters } from "../types/KeyParameters";
 import { playerFactory } from "../players/playerFactory";
+import { PlaybackIconType } from "../types/PlaybackIconType";
 
 vi.mock("../players/playerFactory", { spy: true });
 
@@ -34,6 +35,7 @@ describe("VideoElement component", () => {
   const keys = signal<Map<string, KeyParameters>>(new Map());
   const currentTime = signal<number>(0);
   const controls = signal<PlayerControls | undefined>();
+  const activeIcon = signal<PlaybackIconType | null>(null);
   const events = signal<StatusEvent[]>([]);
   const mockedPlayerFactory = vi.mocked(playerFactory);
   const play = vi.fn();
@@ -58,6 +60,7 @@ describe("VideoElement component", () => {
         keys={keys}
         currentTime={currentTime}
         controls={controls}
+        activeIcon={activeIcon}
         events={events}
       />
     );
@@ -81,6 +84,7 @@ describe("VideoElement component", () => {
         keys={keys}
         currentTime={currentTime}
         controls={controls}
+        activeIcon={activeIcon}
         events={events}
       />
     );
@@ -100,6 +104,7 @@ describe("VideoElement component", () => {
         keys={keys}
         currentTime={currentTime}
         controls={controls}
+        activeIcon={activeIcon}
         events={events}
       />
     );
@@ -112,6 +117,7 @@ describe("VideoElement component", () => {
       keys={keys}
       currentTime={currentTime}
       controls={controls}
+      activeIcon={activeIcon}
       events={events}
     />);
     expect(mockedPlayerFactory).toHaveBeenCalledTimes(1);
@@ -127,6 +133,7 @@ describe("VideoElement component", () => {
         keys={keys}
         currentTime={currentTime}
         controls={controls}
+        activeIcon={activeIcon}
         events={events}
       />
     );
@@ -147,6 +154,7 @@ describe("VideoElement component", () => {
         keys={keys}
         currentTime={currentTime}
         controls={controls}
+        activeIcon={activeIcon}
         events={events}
       />
     );
@@ -167,6 +175,7 @@ describe("VideoElement component", () => {
         keys={keys}
         currentTime={currentTime}
         controls={controls}
+        activeIcon={activeIcon}
         events={events}
       />
     );
@@ -192,6 +201,7 @@ describe("VideoElement component", () => {
         keys={keys}
         currentTime={currentTime}
         controls={controls}
+        activeIcon={activeIcon}
         events={events}
       />
     );
@@ -212,6 +222,7 @@ describe("VideoElement component", () => {
         keys={keys}
         currentTime={currentTime}
         controls={controls}
+        activeIcon={activeIcon}
         events={events}
       />
     );
@@ -234,6 +245,7 @@ describe("VideoElement component", () => {
         keys={keys}
         currentTime={currentTime}
         controls={controls}
+        activeIcon={activeIcon}
         events={events}
       />
     );
@@ -258,6 +270,7 @@ describe("VideoElement component", () => {
         keys={keys}
         currentTime={currentTime}
         controls={controls}
+        activeIcon={activeIcon}
         events={events}
       />
     );
