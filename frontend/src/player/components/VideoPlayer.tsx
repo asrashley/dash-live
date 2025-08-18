@@ -10,7 +10,8 @@ export function VideoPlayer(props: VideoPlayerProps) {
   return (
     <div id="vid-window">
       <PlaybackIcon active={props.activeIcon} />
-      <VideoElement {...props}  />
+      <VideoElement {...props} subtitlesElement={subtitlesElement.current} />
+      <div className="subtitles" />
     </div>
   );
 }

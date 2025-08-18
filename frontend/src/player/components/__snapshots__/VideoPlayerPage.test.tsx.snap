@@ -11,6 +11,9 @@ exports[`VideoPlayerPage > matches snapshot 1`] = `
       <video
         src="/dash/dash/bbb/hand-made.mpd?player=native"
       />
+      <div
+        class="subtitles"
+      />
     </div>
     <div
       id="status"

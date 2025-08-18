@@ -16,12 +16,15 @@ export class DashJsPlayer extends AbstractDashPlayer {
     }
 
     async initialize(source: string): Promise<void> {
-        const { autoplay = false, version = DashJsPlayer.LOCAL_VERSIONS[0], videoElement } = this.props;
+        const { autoplay = false, version = DashJsPlayer.LOCAL_VERSIONS[0], videoElement, subtitlesElement } = this.props;
         const jsUrl = DashJsPlayer.cdnTemplate(version);
         await importLibrary(jsUrl);
         const { MediaPlayer } = window["dashjs"];
         this.player = MediaPlayer().create();
         this.player.initialize(videoElement, source, autoplay);
+        if (subtitlesElement) {
+            this.player.attachTTMLRenderingDiv(subtitlesElement);
+        }
         if (autoplay) {
             videoElement.addEventListener('canplay', this.onCanPlayEvent);
         }
@@ -30,6 +33,7 @@ export class DashJsPlayer extends AbstractDashPlayer {
     destroy(): void {
         const { videoElement } = this.props;
         videoElement.removeEventListener('canplay', this.onCanPlayEvent);
+        this.player?.reset();
         this.player?.destroy();
         this.player = undefined;
     }
