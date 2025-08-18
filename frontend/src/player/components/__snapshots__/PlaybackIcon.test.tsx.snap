@@ -1,0 +1,11 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PlaybackIcon > matches snapshot 1`] = `
+<DocumentFragment>
+  <span
+    aria-label="pause-fill icon"
+    class="bi icon bi-pause-fill "
+    role="img"
+  />
+</DocumentFragment>
+`;
