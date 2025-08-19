@@ -208,9 +208,9 @@ class EditMedia(HTMLHandlerBase):
         login_required(permission=models.Group.MEDIA),
     ]
 
-    @classmethod
-    def next_url(cls, spk: int, **kwargs) -> str:
-        return flask.url_for('view-stream', spk=current_stream.pk)
+    @staticmethod
+    def next_url(spk: int, **kwargs) -> str:
+        return flask.url_for('view-stream', spk=spk)
 
     def get(self, spk: int, mfid: int) -> flask.Response:
         mf = current_media_file
