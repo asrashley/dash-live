@@ -35,6 +35,7 @@ export default {
           '/libs',
           '/media/inspect',
           '/mps',
+          '/stream',
           '/streams',
         ],
         target: `http://localhost:${serverPort}/`,
