@@ -49,6 +49,7 @@ vi.mock("../players/playerFactory", () => ({
 
 class FakePlayer extends AbstractDashPlayer {
   public pause = vi.fn();
+  public subtitlesElement: HTMLDivElement | null = null;
 
   async initialize(source: string) {
     const { videoElement } = this.props;
@@ -61,6 +62,10 @@ class FakePlayer extends AbstractDashPlayer {
   }
 
   destroy() {}
+
+  setSubtitlesElement(subtitlesElement: HTMLDivElement | null): void {
+    this.subtitlesElement = subtitlesElement;
+  }
 }
 
 describe("VideoPlayerPage", () => {

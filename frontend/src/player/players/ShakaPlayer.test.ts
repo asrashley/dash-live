@@ -16,6 +16,7 @@ interface ShakaPlayerClass {
     configure: (config: ShakaConfig) => void;
     addEventListener(evName: string, fn: () => void): void;
     removeEventListener(evName: string, fn: () => void): void;
+    setVideoContainer(elt: HTMLDivElement): void;
     load: (mpd: string) => Promise<void>;
     destroy: () => void;
 }
@@ -188,4 +189,26 @@ describe('ShakaPlayer', () => {
         player.destroy();
         expect(mockPlayer.destroy).toHaveBeenCalledTimes(1);
     });
+
+    test('can set subtitles element before initialize', async () => {
+        const videoElement = document.createElement('video');
+        const subsElt = document.createElement('div');
+        const player = new ShakaPlayer({ logEvent, videoElement, autoplay: true, version: ShakaPlayer.LOCAL_VERSIONS[0], });
+        player.setSubtitlesElement(subsElt);
+        await player.initialize(mpdSource, {});
+        expect(mockPlayer.setVideoContainer).toHaveBeenCalledTimes(1);
+        expect(mockPlayer.setVideoContainer).toHaveBeenCalledWith(subsElt);
+    });
+
+    test('can set subtitles element after initialize', async () => {
+        const videoElement = document.createElement('video');
+        const subsElt = document.createElement('div');
+        const player = new ShakaPlayer({ logEvent, videoElement, autoplay: true, version: ShakaPlayer.LOCAL_VERSIONS[0], });
+        await player.initialize(mpdSource, {});
+        expect(mockPlayer.setVideoContainer).not.toHaveBeenCalled();
+        player.setSubtitlesElement(subsElt);
+        expect(mockPlayer.setVideoContainer).toHaveBeenCalledTimes(1);
+        expect(mockPlayer.setVideoContainer).toHaveBeenCalledWith(subsElt);
+    });
+
 });

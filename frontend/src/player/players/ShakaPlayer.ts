@@ -83,6 +83,10 @@ export class ShakaPlayer extends AbstractDashPlayer {
         videoElement.addEventListener('canplay', this.onCanPlayEvent);
     }
 
+    setSubtitlesElement(subtitlesElement: HTMLDivElement | null) {
+        this.player?.setVideoContainer(subtitlesElement);
+    }
+
     destroy(): void {
         const { videoElement } = this.props;
         videoElement.removeEventListener('canplay', this.onCanPlayEvent);
