@@ -2417,8 +2417,8 @@ class MediaHeaderBox(FullBox):
         w.write(sz, 'modification_time', value=to_iso_epoch(self.modification_time))
         w.write('I', 'timescale')
         w.write(sz, 'duration')
-        chars = [ord(c) - 0x60 for c in list(self.language)]
-        lang = (chars[0] << 10) + (chars[1] << 5) + chars[2]
+        chars: list[int] = [ord(c) - 0x60 for c in list(self.language)] + [0, 0, 0]
+        lang: int = (chars[0] << 10) + (chars[1] << 5) + chars[2]
         w.write('H', 'lang', value=lang)
         w.write('H', 'pre_defined', value=0)
 
