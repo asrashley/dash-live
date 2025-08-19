@@ -35,6 +35,7 @@ describe('DashJsPlayer', () => {
     afterEach(() => {
         vi.clearAllMocks();
         mockClear(mockMediaPlayerFactory);
+        mockClear(mockMediaPlayer);
     });
 
     test.each(DashJsPlayer.LOCAL_VERSIONS)('can use dash.js version %s', async (version: string) => {
@@ -63,5 +64,26 @@ describe('DashJsPlayer', () => {
         expect(mockMediaPlayer.initialize).toHaveBeenCalledWith(videoElement, mpdSource, true);
         expect(addEventSpy).toHaveBeenCalledWith('canplay', expect.any(Function));
         player.destroy();
+    });
+
+    test('can set subtitles element before initialize', async () => {
+        const videoElement = document.createElement('video');
+        const subsElt = document.createElement('div');
+        const player = new DashJsPlayer({ logEvent, videoElement, autoplay: true, version: DashJsPlayer.LOCAL_VERSIONS[0],  });
+        player.setSubtitlesElement(subsElt);
+        await player.initialize(mpdSource);
+        expect(mockMediaPlayer.attachTTMLRenderingDiv).toHaveBeenCalledTimes(1);
+        expect(mockMediaPlayer.attachTTMLRenderingDiv).toHaveBeenCalledWith(subsElt);
+    });
+
+    test('can set subtitles element after initialize', async () => {
+        const videoElement = document.createElement('video');
+        const subsElt = document.createElement('div');
+        const player = new DashJsPlayer({ logEvent, videoElement, autoplay: true, version: DashJsPlayer.LOCAL_VERSIONS[0],  });
+        await player.initialize(mpdSource);
+        expect(mockMediaPlayer.attachTTMLRenderingDiv).not.toHaveBeenCalled();
+        player.setSubtitlesElement(subsElt);
+        expect(mockMediaPlayer.attachTTMLRenderingDiv).toHaveBeenCalledTimes(1);
+        expect(mockMediaPlayer.attachTTMLRenderingDiv).toHaveBeenCalledWith(subsElt);
     });
 });

@@ -12,8 +12,12 @@ exports[`VideoPlayerPage > matches snapshot 1`] = `
         src="/dash/dash/bbb/hand-made.mpd?player=native"
       />
       <div
-        class="subtitles"
-      />
+        class="subtitles-wrapper"
+      >
+        <div
+          class="subtitles"
+        />
+      </div>
     </div>
     <div
       id="status"
