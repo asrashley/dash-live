@@ -95,6 +95,7 @@ class StreamTimingRef:
     segment_duration: int  # in timescale units
     num_media_segments: int
     timescale: int  # ticks per second
+    content_type: str = 'application'
 
 
 @dataclass(slots=True, kw_only=True)
