@@ -413,11 +413,9 @@ class LiveMedia(MediaRequestBase):
             return flask.make_response(
                 'Request for an encrypted stream, when drmSelection is empty', 404)
         options.update(segmentTimeline=(segment_time is not None))
-        mf = current_media_file
+        mf: models.MediaFile = current_media_file
         if mf.content_type not in {'audio', 'video', 'text'}:
-            return flask.make_response(
-                f'Unsupported content_type {html.escape(mf.content_type)}',
-                404)
+            return flask.make_response('Unsupported content_type', 404)
         if segment_num == 'init':
             return self.generate_init_segment(current_media_file, mode, options)
         try:
@@ -438,9 +436,9 @@ class LiveMedia(MediaRequestBase):
                                       seg_num: int | None,
                                       seg_time: int | None
                                       ) -> SegmentPosition:
-        first: int
-        last: int
-        mod_segment: int
+        first: int = -1
+        last: int = -1
+        mod_segment: int = 0
 
         try:
             first, last = representation.calculate_first_and_last_segment_number()
@@ -456,18 +454,27 @@ class LiveMedia(MediaRequestBase):
                 seg_num, first, last)
             raise err
 
+        # the other adaptation sets might be fractionally shorter than the reference
+        # in that situation, the DASH client might request a fragment that is one beyond those
+        # available. As a simple work-around, repeat the last fragment as a response.
+        if mode == 'vod' and timing.stream_reference.content_type != representation.content_type and seg_num == (last + 1):
+            seg_num = last
+            mod_segment = last
+
         if seg_num < first or seg_num > last:
             logging.info(
-                '%s: Request for fragment %d that is not available (%d -> %d)',
-                timing.now, seg_num, first, last)
+                '%s: Request for %s fragment %d that is not available (%d -> %d)',
+                timing.now, mode, seg_num, first, last)
             if mode == 'live':
-                first_tc = timing.availabilityStartTime + datetime.timedelta(
+                if timing.availabilityStartTime is None:
+                    raise ValueError('availabilityStartTime is None')
+                first_tc: datetime.datetime = timing.availabilityStartTime + datetime.timedelta(
                     seconds=(first * representation.segment_duration /
                              representation.timescale))
                 logging.debug('oldest fragment %d start = %s', first, first_tc)
             raise ValueError(
                 f'Segment {seg_num} not found (valid range= {first}->{last})')
-        return (mod_segment, origin_time, seg_num,)
+        return SegmentPosition(mod_segment, origin_time, seg_num,)
 
 
 class ServeMpsInitSeg(MediaRequestBase):
