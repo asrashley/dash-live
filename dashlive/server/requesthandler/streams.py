@@ -190,6 +190,7 @@ class EditStreamTemplateContext(TemplateContext):
     user_can_modify: bool
 
 class StreamTimingReferenceAjaxResponse(TypedDict):
+    content_type: str
     media_name: str
     media_duration: int
     num_media_segments: int

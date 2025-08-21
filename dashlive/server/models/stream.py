@@ -138,14 +138,21 @@ class Stream(ModelMixin["Stream"], Base):
         if self.timing_ref is None:
             return None
         return MediaFile.get(
-            name=self.timing_reference.media_name, stream_pk=self.pk)
+            name=self.timing_ref['media_name'], stream_pk=self.pk)
 
     def get_timing_reference(self) -> StreamTimingReference | None:
         if self.timing_ref is None:
             return None
         try:
-            return StreamTimingReference(**self.timing_ref)
-        except TypeError:
+            rv = StreamTimingReference(**self.timing_ref)
+            if 'content_type' not in self.timing_ref:
+                mf: MediaFile | None = self.get_timing_reference_file()
+                if mf is not None and mf.content_type is not None:
+                    rv = StreamTimingReference(content_type=mf.content_type, **self.timing_ref)
+                    self.timing_ref = rv.toJSON()
+            return rv
+        except TypeError as err:
+            logging.warning('Failed to get timing reference: %s', err)
             return None
 
     def set_timing_reference(
