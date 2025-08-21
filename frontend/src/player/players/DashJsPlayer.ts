@@ -1,16 +1,16 @@
-import type dashjs from "dashjs";
+import type { MediaPlayerClass } from "dashjs";
 import { AbstractDashPlayer } from "../types/AbstractDashPlayer";
 
 import { routeMap } from "@dashlive/routemap";
 import { importLibrary } from "./importLibrary";
 export class DashJsPlayer extends AbstractDashPlayer {
-    static LOCAL_VERSIONS: Readonly<string[]> = ['4.7.4', '4.7.1'] as const;
+    static LOCAL_VERSIONS: Readonly<string[]> = ['5.0.3', '4.7.4', '4.7.1'] as const;
 
-    private player?: dashjs.MediaPlayerClass;
+    private player?: MediaPlayerClass;
 
     static cdnTemplate(version: string): string {
         if (DashJsPlayer.LOCAL_VERSIONS.includes(version)) {
-            return routeMap.js.url({ filename: `dashjs-${version}.js` });
+            return routeMap.js.url({ filename: `dashjs-${version}/dash.all.min.js` });
         }
         return `https://cdn.dashjs.org/${version}/dash.all.min.js`;
     }
