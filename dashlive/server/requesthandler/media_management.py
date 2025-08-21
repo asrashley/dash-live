@@ -20,6 +20,7 @@
 #
 #############################################################################
 
+import binascii
 import datetime
 import html
 import logging
@@ -32,6 +33,7 @@ from langcodes import tag_is_valid
 from werkzeug.datastructures import FileStorage
 
 from dashlive.mpeg import mp4
+from dashlive.mpeg.dash.segment import Segment
 from dashlive.mpeg.dash.validator.options import ValidatorOptions
 from dashlive.mpeg.dash.validator.requests_http_client import RequestsHttpClient
 from dashlive.mpeg.dash.validator.concurrent_pool import ConcurrentWorkerPool
@@ -441,13 +443,15 @@ class SegmentInfoBase(HTMLHandlerBase):
 
     def render_segment_info(self,
                             atom: mp4.Mp4Atom,
+                            content_type: str | None,
+                            codec_fourcc: str | None,
                             back_url: str,
                             full_title: str,
-                            short_title: str) -> flask.Response:
+                            short_title: str) -> flask.Response | str:
         exclude: set[str] = {'parent', 'options'}
-        atoms = [ch.toJSON(exclude=exclude) for ch in atom.children]
+        atoms: list[JsonObject] = [ch.toJSON(exclude=exclude) for ch in atom.children]
         for ch in atoms:
-            self.filter_atom(ch)
+            self.filter_atom(content_type, codec_fourcc, ch)
         if is_ajax():
             return jsonify(atoms)
 
@@ -481,13 +485,16 @@ class SegmentInfoBase(HTMLHandlerBase):
             return True
         return False
 
-    def filter_object(self, obj: JsonObject) -> None:
+    def filter_object(self,
+                    content_type: str | None,
+                    codec_fourcc: str | None,
+                    obj: JsonObject) -> None:
         if 'children' in obj:
             if obj['children'] is None:
                 del obj['children']
             else:
                 for ch in obj['children']:
-                    self.filter_object(ch)
+                    self.filter_object(content_type, codec_fourcc, ch)
         if 'data' not in obj:
             return
         if obj['data'] is None:
@@ -498,23 +505,28 @@ class SegmentInfoBase(HTMLHandlerBase):
                 obj['data'] = obj['data']['b64']
             except KeyError:
                 obj['data'] = obj['data']['hx']
-        if len(obj['data']) > 63:
+        if content_type == 'text' and codec_fourcc == 'stpp':
+            obj['data'] = str(binascii.a2b_base64(obj['data']), 'utf-8')
+        elif len(obj['data']) > 63:
             obj['data'] = '...'
 
-    def filter_atom(self, atom: JsonObject) -> None:
-        self.filter_object(atom)
+    def filter_atom(self,
+                    content_type: str | None,
+                    codec_fourcc: str | None,
+                    atom: JsonObject) -> None:
+        self.filter_object(content_type, codec_fourcc, atom)
         if 'children' in atom:
             if atom['children'] is None:
                 del atom['children']
             else:
                 for ch in atom['children']:
-                    self.filter_atom(ch)
+                    self.filter_atom(content_type, codec_fourcc, ch)
         if 'descriptors' in atom:
             if atom['descriptors'] is None:
                 del atom['descriptors']
             else:
                 for dsc in atom['descriptors']:
-                    self.filter_object(dsc)
+                    self.filter_object(content_type, codec_fourcc, dsc)
 
 
 class MediaSegmentInfo(SegmentInfoBase):
@@ -525,15 +537,20 @@ class MediaSegmentInfo(SegmentInfoBase):
     decorators = [uses_media_file, uses_stream]
 
     def get(self, spk: int, mfid: int, segnum: int) -> flask.Response:
-        frag = current_media_file.representation.segments[int(segnum)]
+        try:
+            frag: Segment = current_media_file.representation.segments[int(segnum)]
+        except IndexError as err:
+            logging.warning('Request for unknown segment %d: %s', segnum, err)
+            return flask.make_response('Segment not found', 404)
         options = mp4.Options(lazy_load=False)
         if current_media_file.representation.encrypted:
             options.iv_size = current_media_file.representation.iv_size
         with current_media_file.open_file(start=frag.pos, buffer_size=16384) as reader:
             src = BufferedReader(
                 reader, offset=frag.pos, size=frag.size, buffersize=16384)
-            atom = mp4.Mp4Atom.load(src, options=options, use_wrapper=True)
-        back_url = flask.url_for(
+            atom: mp4.Mp4Atom = cast(
+                mp4.Mp4Atom, mp4.Mp4Atom.load(src, options=options, use_wrapper=True))
+        back_url: str = flask.url_for(
             'list-media-segments', spk=current_stream.pk, mfid=current_media_file.pk)
         full_title: str = f'Segment {segnum} in fille "{current_media_file.blob.filename}"'
         short_title: str
@@ -541,7 +558,9 @@ class MediaSegmentInfo(SegmentInfoBase):
             short_title = 'Init Segment'
         else:
             short_title = f'Segment {segnum}'
-        return self.render_segment_info(atom, back_url, full_title, short_title)
+        return self.render_segment_info(
+            atom, current_media_file.content_type, current_media_file.codec_fourcc,
+            back_url, full_title, short_title)
 
     def get_breadcrumbs(self, route: Route) -> list[NavBarItem]:
         crumbs: list[NavBarItem] = super().get_breadcrumbs(route)
@@ -613,14 +632,14 @@ class InspectMediaFile(SegmentInfoBase):
         logging.debug("Filename: " + blob_info.filename)
         if blob_info.filename == '':
             return flask.make_response('Filename not specified', 400)
-        print('blob_info', dir(blob_info))
         options = mp4.Options(lazy_load=False)
         src = BufferedReader(blob_info)
-        atom = mp4.Mp4Atom.load(src, options=options, use_wrapper=True)
+        atom: mp4.Mp4Atom = cast(
+            mp4.Mp4Atom, mp4.Mp4Atom.load(src, options=options, use_wrapper=True))
         back_url = flask.url_for('inspect-media')
         full_title: str = f"Contents of {blob_info.filename}"
         short_title: str = blob_info.filename
-        return self.render_segment_info(atom, back_url, full_title, short_title)
+        return self.render_segment_info(atom, None, None, back_url, full_title, short_title)
 
     async def fetch_and_show(self, url: str) -> flask.Response:
         pool = ConcurrentWorkerPool(pool_executor)
@@ -637,7 +656,7 @@ class InspectMediaFile(SegmentInfoBase):
         back_url = flask.url_for('inspect-media')
         full_title: str = f"Contents of {url}"
         short_title: str = url
-        return self.render_segment_info(atom, back_url, full_title, short_title)
+        return self.render_segment_info(atom, None, None, back_url, full_title, short_title)
 
 
 class ValidateMediaChanges(HTMLHandlerBase):
