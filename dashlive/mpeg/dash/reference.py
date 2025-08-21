@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import AbstractSet
 
@@ -12,6 +12,7 @@ class StreamTimingReference:
     num_media_segments: int
     segment_duration: int  # in timescale units
     timescale: int  # ticks per second
+    content_type: str = field(default='application')  # video | audio | text | application
 
     def media_duration_timedelta(self) -> timedelta:
         return timecode_to_timedelta(self.media_duration, self.timescale)
@@ -24,6 +25,7 @@ class StreamTimingReference:
 
     def toJSON(self, pure: bool = False, exclude: AbstractSet | None = None) -> JsonObject:
         rv: JsonObject = {
+            'content_type': self.content_type,
             'media_name': self.media_name,
             'media_duration': self.media_duration,
             'num_media_segments': self.num_media_segments,
