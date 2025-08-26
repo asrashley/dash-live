@@ -86,11 +86,16 @@ describe('ShakaPlayer', () => {
         expect(installAll).toHaveBeenCalledTimes(1);
         expect(mockPlayer.attach).toHaveBeenCalledWith(videoElement);
         expect(mockPlayer.load).toHaveBeenLastCalledWith(mpdSource);
+        let styles = document.head.querySelectorAll('link');
+        expect(styles[0].href).toContain('shaka/controls.css');
+        expect(styles.length).toEqual(1)
         eventTarget.dispatchEvent(new CustomEvent('loaded'));
         expect(logEvent).toHaveBeenCalledTimes(1);
         expect(logEvent).toHaveBeenCalledWith('loaded', '');
         player.destroy();
         expect(mockPlayer.destroy).toHaveBeenCalledTimes(1);
+        styles = document.head.querySelectorAll('link');
+        expect(styles.length).toEqual(0)
     });
 
     test('can use an alternate Shaka version', () => {
@@ -119,6 +124,7 @@ describe('ShakaPlayer', () => {
                     'com.microsoft.playready': options.playready.licenseUrl
                 },
             },
+            preferredTextLanguage: 'eng',
         };
         expect(mockPlayer.configure).toHaveBeenCalledWith(shakaConfig);
     });
@@ -145,6 +151,7 @@ describe('ShakaPlayer', () => {
                     'org.w3.clearkey': options.clearkey.licenseUrl
                 },
             },
+            preferredTextLanguage: 'eng',
         };
         expect(mockPlayer.configure).toHaveBeenCalledWith(shakaConfig);
     });
