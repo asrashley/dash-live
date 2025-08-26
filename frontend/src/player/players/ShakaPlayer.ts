@@ -13,6 +13,12 @@ export interface ShakaConfig {
         clearKeys?: {
             [kid: string]: string;
         }
+    },
+    preferredAudioLanguage?: string;
+    preferredTextLanguage?: string;
+    textDisplayer?: {
+        captionsUpdatePeriod?: number;
+        fontScaleFactor?: number;
     }
 }
 
@@ -39,6 +45,8 @@ export interface AllDrmOptions {
 
 export class ShakaPlayer extends AbstractDashPlayer {
     static LOCAL_VERSIONS: Readonly<string[]> = ['4.13.4', '4.11.2', '4.3.8'] as const;
+    static CSS_LINK_ID: Readonly<string> = "shaka-controls";
+
     private player?: shaka.Player;
 
     static cdnTemplate(version: string): string {
@@ -58,6 +66,7 @@ export class ShakaPlayer extends AbstractDashPlayer {
             drm: {
                 servers: {},
             },
+            preferredTextLanguage: 'eng',
         };
         const { polyfill, log, Player } = window['shaka'];
         polyfill.installAll();
@@ -73,6 +82,9 @@ export class ShakaPlayer extends AbstractDashPlayer {
         this.player = new Player();
         this.player.attach(videoElement);
         this.player.configure(shakaConfig);
+        if (this.subtitlesElement) {
+            this.player.setVideoContainer(this.subtitlesElement);
+        }
         this.player.addEventListener('error', this.onErrorEvent);
         try {
             await this.player.load(mpd);
@@ -81,15 +93,23 @@ export class ShakaPlayer extends AbstractDashPlayer {
             this.props.logEvent('error', `${err}`);
         }
         videoElement.addEventListener('canplay', this.onCanPlayEvent);
+        const styles: HTMLLinkElement = document.createElement('link');
+        styles.setAttribute("rel", "stylesheet");
+        styles.setAttribute("href", routeMap.css.url({filename: "shaka/controls.css"}));
+        styles.setAttribute("id", ShakaPlayer.CSS_LINK_ID);
+        document.head.appendChild(styles);
     }
 
     setSubtitlesElement(subtitlesElement: HTMLDivElement | null) {
+        super.setSubtitlesElement(subtitlesElement);
         this.player?.setVideoContainer(subtitlesElement);
     }
 
     destroy(): void {
         const { videoElement } = this.props;
         videoElement.removeEventListener('canplay', this.onCanPlayEvent);
+        const link = document.head.querySelector(`link[id="${ShakaPlayer.CSS_LINK_ID}"]`);
+        link?.remove();
         this.player?.destroy();
         this.player = undefined;
     }
