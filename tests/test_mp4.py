@@ -906,25 +906,30 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
                   isinstance(value[0], dict)):
                 for ch in value:
                     self.update_atom(ch)
+        if 'children' not in atom:
+            atom['children'] = []
 
     def check_parsing_against_fixture(self, name: str, lazy_load: bool) -> None:
         # To re-create a JSON fixture:
-        # python -m dashlive.mpeg.mp4 --json --show "ftyp,moov+,moof+" .\tests\fixtures\bbb_v7_enc.mp4
+        # python -m dashlive.mpeg.mp4 --json --show "ftyp,moov+,moof+" ./tests/fixtures/bbb/bbb_v7_enc.mp4
         filename = self.FIXTURES_PATH / f'{name}.mp4'
         options = mp4.Options(lazy_load=lazy_load)
         with open(filename, 'rb') as f:
             with io.BufferedReader(f) as src:
                 segments = mp4.Mp4Atom.load(src, options=options)
         filename = self.FIXTURES_PATH / f'{name}.json'
-        with open(filename, 'rt') as src:
-            expected = json.load(src)
-        actual = []
+        actual: list[JsonObject] = []
         for atom in segments:
             if atom.atom_type in {'ftyp', 'moov', 'moof'}:
                 js = atom.toJSON(pure=True)
                 self.update_atom(js)
                 actual.append(js)
-        self.assertListEqual(expected, actual)
+        self.maxDiff = None
+        expected: list[JsonObject]
+        with open(filename, 'rt') as src:
+            expected = json.load(src)
+        for exp, act in zip(expected, actual):
+            self.assertObjectEqual(exp, act)
 
     def test_insert_tfdt_after_tfhd(self) -> None:
         self.check_insert_tfdt_box_after_tfhd_box(False)
