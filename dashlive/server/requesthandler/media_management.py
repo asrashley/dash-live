@@ -486,9 +486,9 @@ class SegmentInfoBase(HTMLHandlerBase):
         return False
 
     def filter_object(self,
-                    content_type: str | None,
-                    codec_fourcc: str | None,
-                    obj: JsonObject) -> None:
+                      content_type: str | None,
+                      codec_fourcc: str | None,
+                      obj: JsonObject) -> None:
         if 'children' in obj:
             if obj['children'] is None:
                 del obj['children']
