@@ -6,7 +6,9 @@
 #
 #############################################################################
 
-def content_type_to_mime_type(content_type: str, codecs: str | None) -> str:
+def content_type_to_mime_type(content_type: str | None, codecs: str | None) -> str:
+    if content_type is None:
+        return 'application/mp4'
     if content_type in {'audio', 'video'}:
         return f"{content_type}/mp4"
     if content_type == 'text':
