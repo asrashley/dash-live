@@ -7,6 +7,7 @@
 #############################################################################
 import asyncio
 from collections.abc import Awaitable
+from typing import TypeVar
 
 from .content_protection import ContentProtection
 from .dash_element import DashElement
@@ -15,7 +16,8 @@ from .frame_rate_type import FrameRateType
 from .segment_list_type import SegmentListType
 from .segment_template import SegmentTemplate
 
-class RepresentationBaseType(DashElement):
+T = TypeVar('T')
+class RepresentationBaseType(DashElement[T]):
     attributes = [
         ('audioSamplingRate', int, None),
         ('codecs', str, None),

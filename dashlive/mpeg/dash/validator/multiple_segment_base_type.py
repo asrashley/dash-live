@@ -6,14 +6,14 @@
 #
 #############################################################################
 
-from .dash_element import DashElement
+from .dash_element import DashElement, ParentAttribute
 from .segment_base_type import SegmentBaseType
 from .segment_timeline import SegmentTimeline
 
 class MultipleSegmentBaseType(SegmentBaseType):
     attributes = SegmentBaseType.attributes + [
         ('duration', int, None),
-        ('startNumber', int, DashElement.Parent),
+        ('startNumber', int, ParentAttribute),
     ]
 
     def __init__(self, elt, parent):

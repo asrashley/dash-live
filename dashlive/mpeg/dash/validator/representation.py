@@ -32,10 +32,10 @@ from .representation_base_type import RepresentationBaseType
 from .validation_flag import ValidationFlag
 
 if TYPE_CHECKING:
-    from .adaptation_set import AdaptationSet
-    from .period import Period
+    from .adaptation_set import AdaptationSet  # noqa: F401
+    from .period import Period  # noqa: F401
 
-class Representation(RepresentationBaseType):
+class Representation(RepresentationBaseType["AdaptationSet"]):
     attributes: ClassVar[list[tuple[str, Any, Any]]] = RepresentationBaseType.attributes + [
         ('bandwidth', int, None),
         ('id', str, None),
@@ -43,8 +43,11 @@ class Representation(RepresentationBaseType):
         ('dependencyId', str, None),
     ]
 
+    bandwidth: int
+    init_segment: InitSegment
     timeline_start: int  # from start of stream (manifest timescale units)
-    parent: "AdaptationSet"
+    media_segments: list[MediaSegment]
+    _validated: bool
 
     def __init__(self, elt: ET.ElementBase, parent: DashElement) -> None:
         super().__init__(elt, parent)
@@ -107,7 +110,7 @@ class Representation(RepresentationBaseType):
         return True
 
     async def prefetch_media_info(self) -> bool:
-        rv = await self.init_segment.load()
+        rv: bool = await self.init_segment.load()
 
         if rv and len(self.media_segments) == 0:
             if self.mode == "odvod":
@@ -122,6 +125,7 @@ class Representation(RepresentationBaseType):
 
     def init_seg_url(self) -> str | None:
         if self.mode == 'odvod':
+            assert self.baseurl is not None
             return self.format_url_template(self.baseurl)
         if self.segmentTemplate is None:
             return None
@@ -564,8 +568,9 @@ class Representation(RepresentationBaseType):
         self.elt.check_not_none(self.init_segment)
         self.elt.check_not_none(self.media_segments)
         if self.mode != "live":
-            msg = ('Failed to generate any segments for Representation ' +
-                   f'{self.unique_id()} for MPD {self.mpd.url}')
+            msg: str = (
+                'Failed to generate any segments for Representation ' +
+                f'{self.unique_id()} for MPD {self.mpd.url}')
             self.elt.check_greater_than(len(self.media_segments), 0, msg=msg)
         self.attrs.check_not_none(
             self.bandwidth, msg='bandwidth is a mandatory attribute', clause='5.3.5.2')

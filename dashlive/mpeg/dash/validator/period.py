@@ -7,16 +7,20 @@
 #############################################################################
 import asyncio
 import datetime
+from typing import TYPE_CHECKING
 
 from dashlive.mpeg.dash.representation import Representation as ServerRepresentation
 from dashlive.utils.date_time import from_isodatetime
 
 from .adaptation_set import AdaptationSet
-from .dash_element import DashElement
+from .dash_element import DashElement, ParentAttribute
 from .events import EventStream
 from .validation_flag import ValidationFlag
 
-class Period(DashElement):
+if TYPE_CHECKING:
+    from .manifest import Manifest  # noqa: F401
+
+class Period(DashElement["Manifest"]):
     id: str | int | None
     adaptation_sets: list[AdaptationSet]
     event_streams: list[EventStream]
@@ -26,7 +30,7 @@ class Period(DashElement):
     attributes = [
         ('id', str, None),
         ('start', from_isodatetime, None),
-        ('duration', from_isodatetime, DashElement.Parent),
+        ('duration', from_isodatetime, ParentAttribute),
     ]
 
     def __init__(self, period, parent) -> None:
