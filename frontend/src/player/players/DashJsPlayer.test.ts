@@ -2,7 +2,7 @@ import { vi, describe, test, expect, beforeEach, afterEach } from "vitest";
 import { importLibrary } from "./importLibrary";
 import { DashJsPlayer } from "./DashJsPlayer";
 import { mock, mockClear } from "vitest-mock-extended";
-import { MediaPlayerClass, MediaPlayerFactory } from "dashjs";
+import type { MediaPlayerClass, MediaPlayerFactory } from "dashjs";
 
 vi.mock("./importLibrary", () => {
     return {
