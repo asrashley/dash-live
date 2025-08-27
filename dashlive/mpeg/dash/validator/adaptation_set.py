@@ -7,6 +7,7 @@
 #############################################################################
 import asyncio
 import datetime
+from typing import TYPE_CHECKING
 
 from dashlive.mpeg.dash.representation import Representation as ServerRepresentation
 from dashlive.utils.date_time import timedelta_to_timecode
@@ -18,7 +19,10 @@ from .representation_base_type import RepresentationBaseType
 from .representation import Representation
 from .validation_flag import ValidationFlag
 
-class AdaptationSet(RepresentationBaseType):
+if TYPE_CHECKING:
+    from .period import Period  # noqa: F401
+
+class AdaptationSet(RepresentationBaseType["Period"]):
     attributes = RepresentationBaseType.attributes + [
         ('contentType', str, None),
         ('group', int, None),
@@ -36,6 +40,7 @@ class AdaptationSet(RepresentationBaseType):
     ]
 
     contentComponents: list[ContentComponent]
+    contentType: str | None = None
     representations: list[Representation]
 
     def __init__(self, adap_set, parent) -> None:
@@ -143,7 +148,7 @@ class AdaptationSet(RepresentationBaseType):
         tasks.update({cc.validate() for cc in self.contentComponents})
         await asyncio.gather(*tasks)
 
-    async def validate_self(self, depth: int = -1) -> None:
+    async def validate_self(self) -> None:
         if len(self.contentProtection):
             self.elt.check_not_none(
                 self.default_KID,

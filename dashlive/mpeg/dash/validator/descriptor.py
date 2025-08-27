@@ -5,6 +5,7 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+from typing import cast
 from .descriptor_element import DescriptorElement
 from .dash_element import DashElement
 
@@ -13,6 +14,10 @@ class Descriptor(DashElement):
         ('schemeIdUri', str, None),
         ('value', str, ""),
     ]
+
+    schemeIdUri: str | None
+    value: str
+    _children: list[DescriptorElement]
 
     def __init__(self, elt, parent: DashElement) -> None:
         super().__init__(elt, parent)
@@ -25,4 +30,4 @@ class Descriptor(DashElement):
             self.schemeIdUri, msg='schemeIdUri is mandatory')
 
     def children(self) -> list[DashElement]:
-        return self._children
+        return cast(list[DashElement], self._children)

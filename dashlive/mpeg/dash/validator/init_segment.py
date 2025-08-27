@@ -7,12 +7,16 @@
 #############################################################################
 import io
 from pathlib import Path
+import traceback
 from typing import cast
 import urllib.parse
+from xml.etree import ElementTree
 
+from dashlive.drm.keymaterial import KeyMaterial
 from dashlive.drm.playready import PlayReady
 from dashlive.mpeg import mp4
 from dashlive.mpeg.dash.representation import Representation as DashRepresentation
+from dashlive.mpeg.dash.validator.http_client import HttpResponse
 
 from .dash_element import DashElement
 
@@ -79,49 +83,51 @@ class InitSegment(DashElement):
             return False
         if not self.elt.check_not_none(self.url, msg='URL of init segment is missing'):
             return False
+        headers: dict[str, str] | None = None
+        expected_status: int = 200
         if self.seg_range is not None:
             headers = {"Range": f"bytes={self.seg_range}"}
             expected_status = 206
-        else:
-            headers = None
-            expected_status = 200
         self.log.debug('GET: %s %s', self.url, headers)
-        response = await self.http.get(self.url, headers=headers)
+        response: HttpResponse = await self.http.get(cast(str, self.url), headers=headers)
         if not self.elt.check_equal(
                 response.status_code, expected_status,
-                msg=f'Failed to load init segment: {response.status_code}: {self.url}'):
+                msg=f'Failed to fetch init segment: status={response.status_code}: {self.url}'):
             return False
         if self.progress.aborted():
             return False
         try:
             async with self.pool.group(self.progress) as tg:
-                body = response.get_data(as_text=False)
+                body: bytes = response.get_data(as_text=False)
                 if self.options.save:
                     tg.submit(self.save, body)
                 task = tg.submit(self.parse_body, body)
             if not task.result():
                 return False
         except Exception as exc:
-            self.elt.add_error(f'Failed to load init segment: {exc}')
-            self.log.error('Failed to load init segment: %s', exc)
+            traceback.print_exception(exc)
+            self.elt.add_error(f'Exception whilst loading init segment: {exc}')
+            self.log.error('Exception whilst loading init segment: %s', exc)
             return False
         return True
 
     def parse_body(self, body: bytes) -> bool:
         src = io.BufferedReader(io.BytesIO(body))
-        atoms = mp4.Mp4Atom.load(src, options={'lazy_load': False})
+        atoms: list[mp4.Mp4Atom] = cast(
+            list[mp4.Mp4Atom], mp4.Mp4Atom.load(src, options={'lazy_load': False}))
         moov: mp4.Mp4Atom | None = None
         for atm in atoms:
             if atm.atom_type == 'moov':
                 moov = atm
         if moov is None:
-            self.elt.add_error(f'Failed to find moov box in {self.url}')
+            boxes: list[str] = [a.atom_type for a in atoms]
+            self.elt.add_error(f'Failed to find moov box in {self.url} found {boxes}')
             return False
-        key_ids = set()
+        key_ids: set[KeyMaterial] = set()
         self.dash_rep = DashRepresentation()
         self.dash_rep.process_moov(moov, key_ids)
-        self.dash_rep.segments = None
-        self.dash_rep.start_time = None
+        self.dash_rep.segments = None  # type: ignore
+        self.dash_rep.start_time = -1
         self.atoms = atoms
         return True
 
@@ -230,8 +236,8 @@ class InitSegment(DashElement):
             if not self.elt.check_not_none(
                     pro.xml, msg='Failed to parse PlayReady header XML'):
                 continue
-            root = pro.xml.getroot()
-            version = root.get("version")
+            root: ElementTree.Element = cast(ElementTree.Element, pro.xml)
+            version: str | None = root.get("version")
             self.elt.check_includes(
                 {"4.0.0.0", "4.1.0.0", "4.2.0.0", "4.3.0.0"}, version)
             if 'playready_version' not in self.mpd.params:

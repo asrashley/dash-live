@@ -5,11 +5,11 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 import logging
 import os
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar, Generic, Optional, TypeVar, cast
 import urllib.parse
 
 from lxml import etree as ET
@@ -18,21 +18,17 @@ from dashlive.utils.date_time import to_iso_datetime
 
 from .concurrent_pool import ConcurrentWorkerPool
 from .errors import ErrorSource, LineRange, ValidationChecks, ValidationError
+from .http_client import HttpClient
 from .options import ValidatorOptions
-from .progress import NullProgress
+from .pool import WorkerPool
+from .progress import NullProgress, Progress
 
-class ContextAdapter(logging.LoggerAdapter):
-    def process(self, msg: str, kwargs: dict) -> tuple[str, dict]:
-        # url = getattr(self.extra, "url", None)
-        # if url is not None and 'http' not in msg:
-        #    return (f'{msg}\n    "{url}"\n', kwargs,)
-        return (msg, kwargs,)
+class ParentAttribute:
+    pass
 
 
-class DashElement(ABC):
-    class Parent:
-        pass
-
+T = TypeVar('T')
+class DashElement(Generic[T]):
     xmlNamespaces: ClassVar[dict[str, str]] = {
         'cenc': 'urn:mpeg:cenc:2013',
         'dash': 'urn:mpeg:dash:schema:mpd:2011',
@@ -42,25 +38,38 @@ class DashElement(ABC):
         'scte35': "http://www.scte.org/schemas/35/2016",
         'xsi': 'http://www.w3.org/2001/XMLSchema-instance',
     }
-
     attributes: ClassVar[list[tuple[str, Any, Any]]] = []
+
+    attrs: ValidationChecks
+    baseurl: str | None
+    elt: ValidationChecks
+    filenames: set[str]
+    http: HttpClient
+    mode: str
+    url: str | None
+    options: ValidatorOptions
+    parent: Optional[T]
+    pool: WorkerPool
+    progress: Progress
+    log: logging.Logger
 
     def __init__(self,
                  elt: ET.ElementBase,
-                 parent: Optional["DashElement"],
+                 parent: Optional[T],
                  options: ValidatorOptions | None = None,
                  url: str | None = None) -> None:
         self.parent = parent
         self.url = url
         if parent:
-            self.mode = parent.mode
-            self.url = parent.url
+            p_elt: DashElement = cast(DashElement, parent)
+            self.mode = p_elt.mode
+            self.url = p_elt.url
             self.validator = getattr(parent, "validator")
-            self.options = parent.options
-            self.http = parent.http
-            self.filenames = parent.filenames
-            self.progress = parent.progress
-            self.pool = parent.pool
+            self.options = p_elt.options
+            self.http = p_elt.http
+            self.filenames = p_elt.filenames
+            self.progress = p_elt.progress
+            self.pool = p_elt.pool
         else:
             assert options is not None
             self.options = options
@@ -73,17 +82,19 @@ class DashElement(ABC):
                 self.pool = self.options.pool
             else:
                 self.pool = ConcurrentWorkerPool(ThreadPoolExecutor())
-        self.errors = []
-        self.log = ContextAdapter(self.options.log, self)
-        self.log.setLevel = self.options.log.setLevel
+
+        if self.options.log is not None:
+            self.log = self.options.log
+        else:
+            self.log = logging.getLogger(self.__class__.__name__)
         self.baseurl = None
         self.ID = None
 
-        sourceline: int | None = None
-        line_range: tuple | None = None
+        sourceline: int = 0
+        line_range: LineRange | None = None
         if elt is not None:
             sourceline = elt.sourceline
-            end = elt.sourceline
+            end: int = elt.sourceline
             for child in elt:
                 end = DashElement.max_source_line(end, child)
             line_range = LineRange(elt.sourceline, end)
@@ -99,8 +110,10 @@ class DashElement(ABC):
         elif parent is not None:
             sourceline = parent.elt.location.start
             line_range = parent.elt.location
-        self.attrs = ValidationChecks(
-            ErrorSource.ATTRIBUTE, LineRange(sourceline, sourceline))
+        first_line = LineRange(sourceline, sourceline)
+        self.attrs = ValidationChecks(ErrorSource.ATTRIBUTE, first_line)
+        if line_range is None:
+            line_range = first_line
         self.elt = ValidationChecks(ErrorSource.ELEMENT, line_range)
         if self.ID is None:
             self.ID = str(id(self))
@@ -123,8 +136,7 @@ class DashElement(ABC):
         return clz.__module__ + '.' + clz.__name__
 
     def has_errors(self) -> bool:
-        result = (self.attrs.has_errors() or
-                  self.elt.has_errors())
+        result: bool = self.attrs.has_errors() or self.elt.has_errors()
         if result:
             return True
         for child in self.children():
@@ -146,6 +158,10 @@ class DashElement(ABC):
 
     @abstractmethod
     def children(self) -> list["DashElement"]:
+        ...
+
+    @abstractmethod
+    async def validate(self) -> None:
         ...
 
     def previous_peer(self) -> Optional["DashElement"]:
@@ -177,7 +193,7 @@ class DashElement(ABC):
                     self.attrs.add_error(msg)
                     self.log.error(msg)
                     val = dflt
-            elif dflt == DashElement.Parent:
+            elif dflt == ParentAttribute:
                 val = getattr(self.parent, name, None)
             else:
                 val = dflt

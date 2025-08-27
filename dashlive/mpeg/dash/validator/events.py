@@ -8,6 +8,7 @@
 import asyncio
 import binascii
 import io
+from typing import ClassVar
 
 from dashlive import scte35
 from dashlive.mpeg import MPEG_TIMEBASE
@@ -18,6 +19,8 @@ from .descriptor import Descriptor
 from .validation_flag import ValidationFlag
 
 class Scte35Binary(DashElement):
+    signal: scte35.BinarySignal | None
+
     def __init__(self, elt, parent: DashElement, schemeIdUri: str) -> None:
         super().__init__(elt, parent)
         self.schemeIdUri = schemeIdUri
@@ -73,6 +76,10 @@ class DashEvent(DashElement):
         ('presentationTime', int, 0),
     ]
 
+    contentEncoding: str | None
+    messageData: str | None
+    presentationTime: int
+
     def __init__(self, elt, parent: DashElement) -> None:
         super().__init__(elt, parent)
         self._children = []
@@ -107,14 +114,16 @@ class EventStreamBase(Descriptor):
     Base class for inband and MPD event streams
     """
 
-    SCTE35_XML_EVENTS = "urn:scte:scte35:2013:xml"
-    SCTE35_XML_BIN_EVENTS = "urn:scte:scte35:2014:xml+bin"
-    SCTE35_INBAND_EVENTS = "urn:scte:scte35:2013:bin"
+    SCTE35_XML_EVENTS: ClassVar[str] = "urn:scte:scte35:2013:xml"
+    SCTE35_XML_BIN_EVENTS: ClassVar[str] = "urn:scte:scte35:2014:xml+bin"
+    SCTE35_INBAND_EVENTS: ClassVar[str] = "urn:scte:scte35:2013:bin"
 
     attributes = Descriptor.attributes + [
         ('timescale', int, 1),
         ('presentationTimeOffset', int, 0),
     ]
+
+    events: list[DashEvent]
 
     def __init__(self, elt, parent) -> None:
         super().__init__(elt, parent)
@@ -153,8 +162,8 @@ class InbandEventStream(EventStreamBase):
     """
     An EventStream, where events are carried in the media
     """
-    async def validate(self, depth: int = -1) -> None:
-        await super().validate(depth)
+    async def validate(self) -> None:
+        await super().validate()
         self.elt.check_equal(
             len(self._children), 0,
             msg='Event elements are not allowed in an inband EventStream element')
