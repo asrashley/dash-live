@@ -50,13 +50,16 @@ class PlayReadyRecord(NamedTuple):
     record_type: int
     length: int
     header: str | None
-    xml: ElementTree.ElementTree | None
+    xml: ElementTree.Element | None
 
     def __repr__(self) -> str:
-        rv = f'PlayReadyRecord(type={self.record_type}, length={self.length}'
+        rv: str = f'PlayReadyRecord(type={self.record_type}, length={self.length}'
         if self.header is not None:
             rv += f', header="{self.header}"'
-        return f'{rv})'
+        elif self.xml is not None:
+            rv += ElementTree.tostring(self.xml, encoding='utf-8')
+        rv += ')'
+        return rv
 
     def __str__(self) -> str:
         rv = [f'PlayReadyRecord: type={self.record_type} length={self.length}']
@@ -240,13 +243,13 @@ class PlayReady(DrmBase):
             record_length: int
             record_type, record_length = struct.unpack("<HH", data)
             header: str | None = None
-            xml: ElementTree.ElementTree | None = None
+            xml: ElementTree.Element | None = None
             if record_type == 1:
-                prh = src.read(record_length)
+                prh: bytes = src.read(record_length)
                 if len(prh) != record_length:
                     raise OSError("PlayReady Object too small")
                 header = prh.decode('utf-16')
-                xml = ElementTree.parse(io.StringIO(header))
+                xml = ElementTree.fromstring(header)
             objects.append(PlayReadyRecord(
                 record_type=record_type,
                 length=record_length,
