@@ -925,7 +925,7 @@ class SegmentTypeBox(FileTypeBox):
 
 
 class Descriptor(ObjectWithFields):
-    OBJECT_FIELDS = {
+    OBJECT_FIELDS: ClassVar[dict[str, Any]] = {
         'children': ListOf(ObjectWithFields),
         'data': Binary,
         'parent': ObjectWithFields,
@@ -1583,7 +1583,7 @@ class StyleRecord(ObjectWithFields):
 @fourcc('tx3g')
 class TextSampleEntry(SampleEntry):
     parse_children = True
-    OBJECT_FIELDS: dict[str, Any] = {
+    OBJECT_FIELDS: ClassVar[dict[str, Any]] = {
         "default_text_box": BoxRecord,
         "default_style": StyleRecord,
         "background_colour": HexBinary,
@@ -1597,8 +1597,8 @@ class TextSampleEntry(SampleEntry):
         rv: dict[str, Any] = SampleEntry.parse(src, parent, options, **kwargs)
         r: FieldReader = FieldReader(cls.classname(), src, rv, debug=options.debug)
         r.read('I', 'display_flags')
-        r.read('B', 'horizontal_justification') # should be signed 8 bit
-        r.read('B', 'vertical_justification') # should be signed 8 bit
+        r.read('B', 'horizontal_justification')  # should be signed 8 bit
+        r.read('B', 'vertical_justification')  # should be signed 8 bit
         r.read(4, 'background_colour')
         rv['default_text_box'] = BoxRecord.parse(r.src, rv)
         rv['default_style'] = StyleRecord.parse(r.src, rv)
