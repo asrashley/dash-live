@@ -8,8 +8,10 @@
 
 import base64
 import io
+from typing import cast
+from xml.etree import ElementTree
 
-from dashlive.drm.playready import PlayReady
+from dashlive.drm.playready import PlayReady, PlayReadyRecord
 from dashlive.mpeg import mp4
 from dashlive.utils.binary import Binary
 
@@ -43,9 +45,9 @@ class ContentProtection(Descriptor):
         self.progress.inc()
 
     def validate_cenc_element(self, child: DescriptorElement) -> None:
-        data = base64.b64decode(child.text)
+        data: bytes = base64.b64decode(child.text)
         src = io.BufferedReader(io.BytesIO(data))
-        atoms = mp4.Mp4Atom.load(src)
+        atoms: list[mp4.Mp4Atom] = mp4.Mp4Atom.load(src)
         self.elt.check_equal(len(atoms), 1, msg='Expected one child element')
         self.elt.check_equal(
             atoms[0].atom_type, 'pssh',
@@ -64,26 +66,24 @@ class ContentProtection(Descriptor):
         self.elt.check_is_instance(
             pssh.data, Binary,
             msg='PSSH payload should have been parsed to a Binary object')
-        pro = self.parse_playready_pro(pssh.data.data)
-        self.validate_playready_pro(pro)
+        self.validate_playready_header(cast(bytes, pssh.data.data))
 
     def validate_pro_element(self, child: DescriptorElement) -> None:
         self.elt.check_true(
             PlayReady.is_supported_scheme_id(self.schemeIdUri),
             msg=f'System ID "{self.schemeIdUri}" is not supported')
-        data = base64.b64decode(child.text)
-        pro = self.parse_playready_pro(data)
-        self.validate_playready_pro(pro)
+        data: bytes = base64.b64decode(child.text)
+        self.validate_playready_header(data)
 
-    def parse_playready_pro(self, data: bytes) -> None:
-        return PlayReady.parse_pro(io.BufferedReader(io.BytesIO(data)))
+    def validate_playready_header(self, data: bytes) -> None:
+        for pro in PlayReady.parse_pro(io.BufferedReader(io.BytesIO(data))):
+            self.validate_playready_pro(pro)
 
-    def validate_playready_pro(self, pro) -> None:
-        self.elt.check_equal(len(pro), 1)
+    def validate_playready_pro(self, pro: PlayReadyRecord) -> None:
         if not self.elt.check_not_none(
-                pro[0].xml, msg='Failed to parse PlayReady header'):
+                pro.xml, msg='Failed to parse PlayReady header'):
             return
-        xml = pro[0].xml.getroot()
+        xml: ElementTree.Element = cast(ElementTree.Element, pro.xml)
         self.elt.check_equal(
             xml.tag,
             '{http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader}WRMHEADER')

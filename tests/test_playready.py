@@ -37,7 +37,7 @@ import flask
 from lxml import etree
 
 from dashlive.drm.keymaterial import KeyMaterial
-from dashlive.drm.playready import PlayReady
+from dashlive.drm.playready import PlayReady, PlayReadyRecord
 from dashlive.mpeg import mp4
 from dashlive.mpeg.dash.validator import ConcurrentWorkerPool
 from dashlive.server import manifests, models
@@ -210,7 +210,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         self.assertBuffersEqual(base64.b64decode(self.expected_pro), pro,
                                 name="PlayReady Object")
 
-    def test_parsing_pro_v4_0(self):
+    def test_parsing_pro_v4_0(self) -> None:
         """
         Check parsing of a pre-defined PlayReady Object (PRO)
         """
@@ -219,12 +219,10 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             header_version=4.0)
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
-        e_pro = PlayReady.parse_pro(
-            BufferedReader(
-                None, data=base64.b64decode(
-                    self.expected_pro)))
+        e_pro: list[PlayReadyRecord] = PlayReady.parse_pro(
+            io.BufferedReader(io.BytesIO(base64.b64decode(self.expected_pro))))
         xml = e_pro[0].xml
-        self.assertEqual(xml.getroot().get("version"),
+        self.assertEqual(xml.get("version"),
                          f'{mspr.header_version:02.1f}.0.0')
         algid = xml.findall(
             './prh:DATA/prh:PROTECTINFO/prh:ALGID',
@@ -280,8 +278,8 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             self.to_hex(atoms[0].data.data),
             self.to_hex(expected_pro))
         actual_pro = mspr.parse_pro(
-            BufferedReader(None, data=atoms[0].data.data))
-        self.assertEqual(actual_pro[0].xml.getroot().get("version"),
+            io.BufferedReader(io.BytesIO(atoms[0].data.data)))
+        self.assertEqual(actual_pro[0].xml.get("version"),
                          '4.0.0.0')
         algid = actual_pro[0].xml.findall(
             './prh:DATA/prh:PROTECTINFO/prh:ALGID', self.namespaces)
@@ -327,9 +325,9 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         self.assertIsInstance(atoms[0].system_id, Binary)
         self.assertEqual(atoms[0].system_id.data, PlayReady.RAW_SYSTEM_ID)
         actual_pro = mspr.parse_pro(
-            BufferedReader(None, data=atoms[0].data.data))
+            io.BufferedReader(io.BytesIO(atoms[0].data.data)))
         self.assertEqual(
-            actual_pro[0].xml.getroot().get("version"),
+            actual_pro[0].xml.get("version"),
             '4.1.0.0')
         kid = actual_pro[0].xml.findall(
             './prh:DATA/prh:PROTECTINFO/prh:KID', self.namespaces)
@@ -357,12 +355,15 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         pssh = mspr.generate_pssh(self.la_url, default_kid, keys).encode()
         self.check_generated_pssh_v4_2(keys, mspr, pssh)
 
-    def check_generated_pssh_v4_2(self, keys, mspr, pssh):
+    def check_generated_pssh_v4_2(self,
+                                  keys: dict[str, KeyStub],
+                                  mspr: PlayReady,
+                                  pssh: bytes) -> None:
         """
         Check the PSSH matches the v4.2.0.0 Schema
         """
         parser = mp4.IsoParser()
-        src = BufferedReader(None, data=pssh)
+        src = io.BufferedReader(io.BytesIO(pssh))
         atoms = parser.walk_atoms(src)
         self.assertEqual(len(atoms), 1)
         self.assertEqual(atoms[0].atom_type, 'pssh')
@@ -370,11 +371,10 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         self.assertEqual(len(atoms[0].key_ids), len(keys))
         self.assertIsInstance(atoms[0].system_id, Binary)
         self.assertEqual(atoms[0].system_id.data, PlayReady.RAW_SYSTEM_ID)
-        actual_pro = mspr.parse_pro(
-            BufferedReader(
-                None, data=atoms[0].data.data))
+        actual_pro: list[PlayReadyRecord] = mspr.parse_pro(
+            io.BufferedReader(io.BytesIO(atoms[0].data.data)))
         self.assertEqual(
-            actual_pro[0].xml.getroot().get("version"),
+            actual_pro[0].xml.get("version"),
             '4.2.0.0')
         kids = actual_pro[0].xml.findall(
             './prh:DATA/prh:PROTECTINFO/prh:KIDS/prh:KID', self.namespaces)
@@ -412,13 +412,16 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         pssh = mspr.generate_pssh(self.la_url, default_kid, keys).encode()
         self.check_generated_pssh_v4_3(keys, mspr, pssh)
 
-    def check_generated_pssh_v4_3(self, keys, mspr, pssh):
+    def check_generated_pssh_v4_3(self,
+                                  keys: dict[str, KeyStub],
+                                  mspr: PlayReady,
+                                  pssh: bytes) -> None:
         """
         Check the PSSH matches the v4.3.0.0 Schema
         """
         parser = mp4.IsoParser()
-        src = BufferedReader(None, data=pssh)
-        atoms = parser.walk_atoms(src)
+        src = io.BufferedReader(io.BytesIO(pssh))
+        atoms: list[mp4.Mp4Atom] = parser.walk_atoms(src)
         self.assertEqual(len(atoms), 1)
         self.assertEqual(atoms[0].atom_type, 'pssh')
         self.assertTrue(isinstance(atoms[0], mp4.ContentProtectionSpecificBox))
@@ -429,7 +432,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             BufferedReader(
                 None, data=atoms[0].data.data))
         self.assertEqual(
-            actual_pro[0].xml.getroot().get("version"),
+            actual_pro[0].xml.get("version"),
             '4.3.0.0')
 
         kids = actual_pro[0].xml.findall(
@@ -634,9 +637,9 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
                 for elt in prot.children():
                     if elt.tag != pro_tag:
                         continue
-                    pro = base64.b64decode(elt.text)
+                    pro: bytes = base64.b64decode(elt.text)
                     for record in PlayReady.parse_pro(
-                            BufferedReader(None, data=pro)):
+                            io.BufferedReader(io.BytesIO(pro))):
                         self.assertIsNotNone(record.xml)
                         la_urls = record.xml.findall(
                             './prh:DATA/prh:LA_URL', mpd.xmlNamespaces)
