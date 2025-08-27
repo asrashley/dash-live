@@ -26,7 +26,7 @@ ARG PROXY_DEPTH="1"
 ENV HOME=/home/dash
 ENV FLASK_INSTANCE_PATH=/home/dash/instance
 ENV LOG_LEVEL="info"
-ENV VIRTUAL_ENV="/home/dash/.venv"
+ENV VIRTUAL_ENV="/home/dash/dash-live/.venv"
 RUN apt-get update && \
     apt-get -y -q --force-yes install \
     less \
@@ -34,11 +34,13 @@ RUN apt-get update && \
     curl \
     python3-pip \
     python3-venv
-COPY requirements.txt $HOME/dash-live/
-COPY dev-requirements.txt $HOME/dash-live/
-COPY deploy/create_virtenv.sh $HOME/dash-live/
-RUN chmod +x $HOME/dash-live/create_virtenv.sh \
-    && $HOME/dash-live/create_virtenv.sh
+COPY pyproject.toml $HOME/dash-live/
+COPY uv.lock $HOME/dash-live/
+ADD https://astral.sh/uv/0.8.13/install.sh /uv-installer.sh
+RUN sh /uv-installer.sh && rm /uv-installer.sh
+ENV PATH="${HOME}/.local/bin/:$PATH"
+WORKDIR $HOME/dash-live
+RUN uv sync --locked
 COPY static $HOME/dash-live/static
 RUN rm -rf $HOME/dash-live/static/html $HOME/dash-live/static/css
 COPY templates $HOME/dash-live/templates
