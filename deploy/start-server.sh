@@ -5,6 +5,9 @@ function die() {
   exit 1
 }
 
+if [ -f /home/dash/.local/bin/env ]; then
+    source /home/dash/.local/bin/env
+fi
 source /home/dash/.venv/bin/activate
 source /home/dash/dash-live/.env
 
@@ -30,9 +33,9 @@ if [ ! -f ${DB_FILE} ]; then
     echo "No sqlite database found, creating a new one"
     python -m dashlive.management.create_db || die "Failed to create database"
     # tell Alembic that the DB is up to date
-    python -m alembic stamp head
+    uv run alembic stamp head || die "failed to mark new database version"
 else
-    python -m alembic upgrade head
+    uv run alembic upgrade head || die "failed to migrate database to latest version"
 fi
 
 if [ ! -f ${DB_FILE} ]; then
@@ -45,10 +48,10 @@ chown www-data:www-data ${DB_FILE} || die "failed to set owner of ${DB_FILE} to 
 echo Starting server with Origin ${SERVER_NAME}:${SERVER_PORT}
 
 if [ -f /etc/nginx/sites-available/dashlive.conf -a -z "${DISABLE_NGINX}" ]; then
-    gunicorn -c gunicorn.conf.py -b 127.0.0.1:5000 --daemon application:app
+    uv run gunicorn -c gunicorn.conf.py -b 127.0.0.1:5000 --daemon application:app
     nginx -g "daemon off;"
 else
-    gunicorn -c gunicorn.conf.py -b 0.0.0.0:80 application:app
+    uv run gunicorn -c gunicorn.conf.py -b 0.0.0.0:80 application:app
 fi
 
 

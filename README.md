@@ -46,22 +46,39 @@ to use for the admin user account when creating a new blank database.
 
 ## Running the development server directly on the host machine
 
-Create a Python virtual environment and install the dependencies.
-
-If using Linux:
+Install the [uv package manager](https://docs.astral.sh/uv/getting-started/installation/)
 
 ```sh
-python3 -m venv virtenv
-. ./virtenv/bin/activate
-pip install -r requirements.txt
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+or
+
+```sh
+sudo apt install pipx
+pipx install uv
 ```
 
 or Windows:
 
 ```powershell
-python3 -m venv virtenv
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+Create a Python virtual environment and install the dependencies.
+
+If using Linux:
+
+```sh
+uv sync
+. ./virtenv/bin/activate
+```
+
+or Windows:
+
+```powershell
+uv sync
 .\virtenv\Scripts\activate
-pip install -r requirements.txt
 ```
 
 Install JavaScript libraries:
@@ -73,8 +90,7 @@ npm i
 The CSS files need to be compiled:
 
 ```sh
-npm run legacy-css
-npm run main-css
+npm run all-css
 ```
 
 The front-end Typescript code needs to be compiled:

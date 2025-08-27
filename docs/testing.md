@@ -5,7 +5,7 @@
 Install the required test libraries:
 
 ```sh
-pip install -r dev-requirements.txt
+uv sync --group dev
 ```
 
 The quickest way to run the unit tests is to use pytest to run
