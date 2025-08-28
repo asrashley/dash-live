@@ -26,10 +26,10 @@ import { DashParameters } from "../types/DashParameters";
 import { PlayerControls } from "../types/PlayerControls";
 import { playerFactory } from "../players/playerFactory";
 import {
-  AbstractDashPlayer,
   DashPlayerProps,
 } from "../types/AbstractDashPlayer";
 import { DashPlayerTypes } from "../types/DashPlayerTypes";
+import { FakePlayer } from "../players/__mocks__/FakePlayer";
 
 vi.mock("../../hooks/useSearchParams", () => ({
   useSearchParams: vi.fn(),
@@ -46,27 +46,6 @@ vi.mock("wouter-preact", async (importOriginal) => {
 vi.mock("../players/playerFactory", () => ({
   playerFactory: vi.fn(),
 }));
-
-class FakePlayer extends AbstractDashPlayer {
-  public pause = vi.fn();
-  public subtitlesElement: HTMLDivElement | null = null;
-
-  async initialize(source: string) {
-    const { videoElement } = this.props;
-    videoElement.src = source;
-    Object.defineProperties(videoElement, {
-      pause: {
-        value: this.pause,
-      },
-    });
-  }
-
-  destroy() {}
-
-  setSubtitlesElement(subtitlesElement: HTMLDivElement | null): void {
-    this.subtitlesElement = subtitlesElement;
-  }
-}
 
 describe("VideoPlayerPage", () => {
   const apiRequests = mock<ApiRequests>();
@@ -97,6 +76,7 @@ describe("VideoPlayerPage", () => {
     mockedPlayerFactory.mockImplementation(
       (_playerType: DashPlayerTypes, props: DashPlayerProps) => {
         player = new FakePlayer(props);
+        vi.spyOn(player, 'pause');
         return player;
       }
     );

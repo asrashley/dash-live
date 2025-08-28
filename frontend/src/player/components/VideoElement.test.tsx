@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { act } from "@testing-library/preact";
 import { signal } from "@preact/signals";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
@@ -9,8 +10,13 @@ import { DashParameters } from "../types/DashParameters";
 import { KeyParameters } from "../types/KeyParameters";
 import { playerFactory } from "../players/playerFactory";
 import { PlaybackIconType } from "../types/PlaybackIconType";
+import { DashPlayerTypes } from "../types/DashPlayerTypes";
+import { DashPlayerProps } from "../types/AbstractDashPlayer";
+import { FakePlayer } from "../players/__mocks__/FakePlayer";
 
-vi.mock("../players/playerFactory", { spy: true });
+vi.mock("../players/playerFactory", () => ({
+  playerFactory: vi.fn(),
+}));
 
 describe("VideoElement component", () => {
   const params: DashParameters = {
@@ -39,16 +45,26 @@ describe("VideoElement component", () => {
   const events = signal<StatusEvent[]>([]);
   const mockedPlayerFactory = vi.mocked(playerFactory);
   const play = vi.fn();
+  let player: FakePlayer | undefined;
 
   beforeEach(() => {
     dashParams.value = structuredClone(params);
     events.value = [];
     currentTime.value = 0;
     keys.value = new Map();
+    mockedPlayerFactory.mockImplementation(
+      (_playerType: DashPlayerTypes, props: DashPlayerProps) => {
+        player = new FakePlayer(props);
+        vi.spyOn(player, 'pause');
+        vi.spyOn(player, 'setSubtitlesElement');
+        return player;
+      }
+    );
   });
 
   afterEach(() => {
     vi.clearAllMocks();
+    player = undefined;
   });
 
   test("should initialize player on mount", () => {
@@ -95,7 +111,7 @@ describe("VideoElement component", () => {
     expect(destroySpy).toHaveBeenCalledTimes(1);
   });
 
-  test('does not re-render', () => {
+  test("does not re-render", () => {
     const { getBySelector, rerender } = renderWithProviders(
       <VideoElement
         mpd={params.url}
@@ -110,16 +126,18 @@ describe("VideoElement component", () => {
     );
     expect(mockedPlayerFactory).toHaveBeenCalledTimes(1);
     const vid = getBySelector("video") as HTMLVideoElement;
-    rerender(<VideoElement
-      mpd={params.url}
-      playerName="native"
-      dashParams={dashParams}
-      keys={keys}
-      currentTime={currentTime}
-      controls={controls}
-      activeIcon={activeIcon}
-      events={events}
-    />);
+    rerender(
+      <VideoElement
+        mpd={params.url}
+        playerName="native"
+        dashParams={dashParams}
+        keys={keys}
+        currentTime={currentTime}
+        controls={controls}
+        activeIcon={activeIcon}
+        events={events}
+      />
+    );
     expect(mockedPlayerFactory).toHaveBeenCalledTimes(1);
     expect(vid).toStrictEqual(getBySelector("video"));
   });
@@ -160,10 +178,15 @@ describe("VideoElement component", () => {
     );
     const videoElement = getBySelector("video") as HTMLVideoElement;
     const pauseSpy = vi.spyOn(videoElement, "pause");
+    const isPausedSpy = vi.spyOn(videoElement, "paused", "get");
+    isPausedSpy.mockReturnValue(false);
     pauseSpy.mockImplementation(() => {});
     expect(controls.value).toBeDefined();
+    expect(controls.value.isPaused()).toEqual(false);
     controls.value.pause();
     expect(pauseSpy).toHaveBeenCalledTimes(1);
+    isPausedSpy.mockReturnValue(true);
+    expect(controls.value.isPaused()).toEqual(true);
   });
 
   test("can skip()", () => {
@@ -232,7 +255,9 @@ describe("VideoElement component", () => {
     expect(events.value[0].event).toEqual("test");
     for (let i = 0; i < 20; i++) {
       mockedPlayerFactory.mock.calls[0][1].logEvent("test", `test event ${i}`);
-      expect(events.value.length).toBeLessThanOrEqual(VideoElement.DEFAULT_MAX_EVENTS);
+      expect(events.value.length).toBeLessThanOrEqual(
+        VideoElement.DEFAULT_MAX_EVENTS
+      );
     }
   });
 
@@ -297,5 +322,66 @@ describe("VideoElement component", () => {
     videoElement.dispatchEvent(ev);
     expect(events.value.length).toEqual(1);
     expect(events.value[0].event).toEqual(eventName);
+  });
+
+  test("set subtitle element after component has mounted", () => {
+    const { getByTestId } = renderWithProviders(
+      <div>
+        <VideoElement
+          mpd={params.url}
+          playerName="native"
+          dashParams={dashParams}
+          keys={keys}
+          currentTime={currentTime}
+          controls={controls}
+          activeIcon={activeIcon}
+          events={events}
+        />
+        <div data-testid="subtitles" />
+      </div>
+    );
+    const playerControls = controls.value;
+    const subsElt = getByTestId("subtitles") as HTMLDivElement;
+    expect(playerControls).toBeDefined();
+    expect(player).toBeDefined();
+    expect(player.setSubtitlesElement).not.toHaveBeenCalled();
+    playerControls.setSubtitlesElement(subsElt);
+    expect(player.setSubtitlesElement).toHaveBeenCalledTimes(1);
+    expect(player.setSubtitlesElement).toHaveBeenCalledWith(subsElt);
+  });
+
+  test("set subtitle element before component has mounted", () => {
+    let videoRef: VideoElement | undefined;
+    const setVideoRef = (elt: VideoElement) => {
+      videoRef = elt;
+    };
+    dashParams.value = undefined;
+    const { getByTestId } = renderWithProviders(
+      <div>
+        <VideoElement
+          mpd={params.url}
+          playerName="native"
+          dashParams={dashParams}
+          keys={keys}
+          currentTime={currentTime}
+          controls={controls}
+          activeIcon={activeIcon}
+          events={events}
+          ref={setVideoRef}
+        />
+        <div data-testid="subtitles" />
+      </div>
+    );
+    const subsElt = getByTestId("subtitles") as HTMLDivElement;
+    expect(controls.value).not.toBeDefined();
+    expect(videoRef).toBeDefined();
+    videoRef.setSubtitlesElement(subsElt);
+    act(() => {
+      dashParams.value = structuredClone(params);
+    });
+    expect(controls.value).toBeDefined();
+    expect(player).toBeDefined();
+    expect(player.setSubtitlesElement).toHaveBeenCalledTimes(1);
+    expect(player.setSubtitlesElement).toHaveBeenCalledWith(subsElt);
   });
 });

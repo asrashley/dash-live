@@ -1,8 +1,11 @@
 import { Component, createRef } from "preact";
-import type { ReadonlySignal, Signal } from "@preact/signals";
+import { effect, type ReadonlySignal, type Signal } from "@preact/signals";
 
 import { DashPlayerTypes } from "../types/DashPlayerTypes";
-import { AbstractDashPlayer, DashPlayerProps } from "../types/AbstractDashPlayer";
+import {
+  AbstractDashPlayer,
+  DashPlayerProps,
+} from "../types/AbstractDashPlayer";
 import { playerFactory } from "../players/playerFactory";
 import { PlayerControls } from "../types/PlayerControls";
 import { StatusEvent } from "../types/StatusEvent";
@@ -11,10 +14,19 @@ import { KeyParameters } from "../types/KeyParameters";
 import { PlaybackIconType } from "../types/PlaybackIconType";
 
 export const STATUS_EVENTS = [
-  'stalled','loadedmetadata', 'error', 'canplay', 'canplaythrough',
-  'playing', 'ended', 'pause', 'resize', 'loadstart', 'seeking', 'seeked',
+  "stalled",
+  "loadedmetadata",
+  "error",
+  "canplay",
+  "canplaythrough",
+  "playing",
+  "ended",
+  "pause",
+  "resize",
+  "loadstart",
+  "seeking",
+  "seeked",
 ];
-
 
 export interface VideoElementProps {
   mpd: string;
@@ -29,12 +41,16 @@ export interface VideoElementProps {
   maxEvents?: number;
 }
 
-export class VideoElement extends Component<VideoElementProps, undefined> implements PlayerControls {
+export class VideoElement
+  extends Component<VideoElementProps, undefined>
+  implements PlayerControls
+{
   static DEFAULT_MAX_EVENTS = 10;
   private videoElt = createRef<HTMLVideoElement>();
   private player?: AbstractDashPlayer;
   private nextId = 1;
   private subtitlesElement: HTMLDivElement | null = null;
+  private dashParamsSignalCleanup: () => void | undefined;
 
   shouldComponentUpdate() {
     // do not re-render via diff:
@@ -42,16 +58,25 @@ export class VideoElement extends Component<VideoElementProps, undefined> implem
   }
 
   componentWillReceiveProps(nextProps: VideoElementProps) {
-    if (!this.player && nextProps.dashParams.value) {
-      this.tryInitializePlayer(nextProps);
+    if (nextProps.dashParams !== this.props.dashParams) {
+      this.dashParamsSignalCleanup?.();
+      this.dashParamsSignalCleanup = effect(() => {
+        this.tryInitializePlayer(this.props);
+      });
     }
+    this.tryInitializePlayer(nextProps);
   }
 
   componentDidMount() {
+    this.dashParamsSignalCleanup = effect(() => {
+      this.tryInitializePlayer(this.props);
+    });
     this.tryInitializePlayer(this.props);
   }
 
   componentWillUnmount() {
+    this.dashParamsSignalCleanup?.();
+    this.dashParamsSignalCleanup = undefined;
     for (const name of STATUS_EVENTS) {
       this.videoElt.current.removeEventListener(name, this.logDomEvent);
     }
@@ -94,11 +119,11 @@ export class VideoElement extends Component<VideoElementProps, undefined> implem
   setSubtitlesElement = (subtitlesElement: HTMLDivElement | null) => {
     this.subtitlesElement = subtitlesElement;
     this.player?.setSubtitlesElement(subtitlesElement);
-  }
+  };
 
   private tryInitializePlayer(props: VideoElementProps) {
     const { dashParams, keys, mpd, playerName, playerVersion: version } = props;
-    if (!this.videoElt.current || !dashParams.value) {
+    if (this.player || !this.videoElt.current || !dashParams.value) {
       return;
     }
     this.videoElt.current.addEventListener("timeupdate", this.onTimeUpdate);
@@ -142,14 +167,13 @@ export class VideoElement extends Component<VideoElementProps, undefined> implem
       timecode: new Date().toISOString(),
       position: video.currentTime,
       event: ev.type,
-      text: '',
+      text: "",
     };
-    if (ev.type === "error"){
-        const { error } = video;
-        if (error) {
-          status.text = `${error.code}: ${error.message}`;
-
-        }
+    if (ev.type === "error") {
+      const { error } = video;
+      if (error) {
+        status.text = `${error.code}: ${error.message}`;
+      }
     }
     this.appendStatusEvent(status);
   };
@@ -157,7 +181,7 @@ export class VideoElement extends Component<VideoElementProps, undefined> implem
   private appendStatusEvent(status: StatusEvent) {
     const evList = [status, ...this.props.events.value];
     const { maxEvents = VideoElement.DEFAULT_MAX_EVENTS } = this.props;
-    while(evList.length > maxEvents) {
+    while (evList.length > maxEvents) {
       evList.pop();
     }
     this.props.events.value = evList;
