@@ -129,6 +129,7 @@ class Representation(ObjectWithFields):
     height: int | None
     weight: int | None
     sampleRate: int
+    nalLengthFieldLength: int
     numChannels: int
     _timing: DashTiming | None = None
 
