@@ -8,7 +8,6 @@
 import logging
 from pathlib import Path
 import urllib.parse
-import urllib.parse
 
 import flask
 
