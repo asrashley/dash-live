@@ -807,6 +807,19 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
                     pro_data.add(pro)
         self.assertEqual(len(pro_data), expected_pros)
 
+    def test_sorted_attributes(self) -> None:
+        value: dict[str, int | str] = {
+            'foo': 0,
+            'sort': 5,
+            'any': 8,
+            'zz': 'hello'
+        }
+        expected = ' any="8" foo="0" sort="5" zz="hello"'
+        actual: str = PlayReady.sorted_attributes(value)
+        self.assertEqual(expected, actual)
+        actual = PlayReady.sorted_attributes({})
+        self.assertEqual('', actual)
+
 
 if os.environ.get("TESTS"):
     def load_tests(loader, tests, pattern):

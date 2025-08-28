@@ -203,23 +203,6 @@ def xmlSafe(value: str | None) -> str:
     return value.replace('&', '&amp;')
 
 @custom_tags.app_template_filter()
-def sortedAttributes(value):
-    """
-    Output the provided dictionary as a key="value" string with the
-    keys sorted alphabetically
-    """
-    if not isinstance(value, dict):
-        return ''
-    keys = list(value.keys())
-    if not keys:
-        return ''
-    keys.sort()
-    rv = ['']
-    for k in keys:
-        rv.append(f'{k}="{value[k]}"')
-    return ' '.join(rv)
-
-@custom_tags.app_template_filter()
 def isoDateTime(value):
     return to_iso_datetime(value)
 

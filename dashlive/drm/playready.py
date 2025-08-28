@@ -26,15 +26,13 @@ import re
 import io
 import struct
 import sys
-from typing import AbstractSet, BinaryIO, NamedTuple
-import urllib.request
+from typing import AbstractSet, Any, BinaryIO, ClassVar, NamedTuple
 import urllib.parse
-import urllib.error
 
 from xml.etree import ElementTree
 from Crypto.Cipher import AES
 from Crypto.Hash import SHA256
-from flask import render_template
+from jinja2 import DictLoader, Environment, Template, select_autoescape
 
 from dashlive.mpeg import mp4
 from dashlive.server.models.stream import Stream
@@ -69,14 +67,80 @@ class PlayReadyRecord(NamedTuple):
 
 
 class PlayReady(DrmBase):
-    MAJOR_VERSIONS = [1.0, 2.0, 3.0, 4.0]
-    SYSTEM_ID = "9a04f079-9840-4286-ab92-e65be0885f95"
-    SYSTEM_ID_V10 = "79f0049a-4098-8642-ab92-e65be0885f95"
-    RAW_SYSTEM_ID = binascii.a2b_hex("9a04f07998404286ab92e65be0885f95")
-    TEST_KEY_SEED = base64.b64decode(
+    MAJOR_VERSIONS: ClassVar[list[float]] = [1.0, 2.0, 3.0, 4.0]
+    SYSTEM_ID: ClassVar[str] = "9a04f079-9840-4286-ab92-e65be0885f95"
+    SYSTEM_ID_V10: ClassVar[str] = "79f0049a-4098-8642-ab92-e65be0885f95"
+    RAW_SYSTEM_ID: ClassVar[bytes] = binascii.a2b_hex("9a04f07998404286ab92e65be0885f95")
+    TEST_KEY_SEED: ClassVar[bytes] = base64.b64decode(
         "XVBovsmzhP9gRIZxWfFta3VVRPzVEWmJsazEJ46I")
-    TEST_LA_URL = "https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg={cfgs}"
-    DRM_AES_KEYSIZE_128 = 16
+    TEST_LA_URL: ClassVar[str] = "https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg={cfgs}"
+    DRM_AES_KEYSIZE_128: ClassVar[int] = 16
+    TEMPLATES: ClassVar[dict[str, str]] = {
+        "wrmheader40.xml": """
+<WRMHEADER xmlns="http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader" version="4.0.0.0">
+  <DATA>
+    <PROTECTINFO>
+      <KEYLEN>16</KEYLEN>
+      <ALGID>AESCTR</ALGID>
+    </PROTECTINFO>
+    <KID>{{default_kid|base64}}</KID>
+    {%- if checksum %}<CHECKSUM>{{checksum|base64}}</CHECKSUM>{% endif %}
+    <LA_URL>{{la_url|xmlSafe}}</LA_URL>
+    {%- include "custom_attributes.xml" -%}
+  </DATA>
+</WRMHEADER>""",
+        "wrmheader41.xml": """
+<WRMHEADER xmlns="http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader" version="4.1.0.0">
+  <DATA>
+    <PROTECTINFO>
+        {% if checksum %}
+        <KID ALGID="AESCTR" CHECKSUM="{{checksum|base64}}" VALUE="{{default_kid|base64}}"></KID>
+        {% else %}
+        <KID ALGID="AESCTR" VALUE="{{default_kid|base64}}"></KID>
+        {% endif %}
+    </PROTECTINFO>
+    <LA_URL>{{la_url|xmlSafe}}</LA_URL>
+    {%- include "custom_attributes.xml" -%}
+  </DATA>
+</WRMHEADER>""",
+        "wrmheader42.xml": """
+<WRMHEADER xmlns="http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader" version="4.2.0.0">
+  <DATA>
+    <PROTECTINFO>
+      <KIDS>
+        {% for kid in kids %}
+          <KID ALGID="AESCTR" CHECKSUM="{{kid.checksum|base64}}"
+                     VALUE="{{kid.kid|base64}}"></KID>
+       {% endfor %}
+      </KIDS>
+    </PROTECTINFO>
+    <LA_URL>{{la_url|xmlSafe}}</LA_URL>
+    {%- include "custom_attributes.xml" -%}
+  </DATA>
+</WRMHEADER>""",
+        "wrmheader43.xml": """
+<WRMHEADER xmlns="http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader" version="4.3.0.0">
+  <DATA>
+    <PROTECTINFO>
+      <KIDS>
+        {% for kid in kids %}
+          <KID ALGID="{{kid.alg}}" CHECKSUM="{{kid.checksum|base64}}"
+                     VALUE="{{kid.kid|base64}}"></KID>
+       {% endfor %}
+      </KIDS>
+    </PROTECTINFO>
+    <LA_URL>{{la_url|xmlSafe}}</LA_URL>
+  </DATA>
+</WRMHEADER>""",
+        "custom_attributes.xml": """
+{%- for elt in customAttributes %}
+{%- if loop.first %}<CUSTOMATTRIBUTES>{% endif %}
+<{{elt.tag}}{{elt.attributes|sortedAttributes|safe}}>{{elt.value}}</{{elt.tag}}>
+{%- if loop.last %}</CUSTOMATTRIBUTES>{% endif %}
+{%- endfor %}""",
+    }
+
+    _template_env: ClassVar[Environment | None] = None
 
     def __init__(self, la_url=None, version=None, header_version=None,
                  security_level=150):
@@ -203,11 +267,11 @@ class PlayReady(DrmBase):
         if header_version not in [4.0, 4.1, 4.2, 4.3]:
             raise ValueError(
                 f"PlayReady header version {header_version} has not been implemented")
-        template_name = f'drm/wrmheader{int(header_version * 10)}.xml'
-        xml = render_template(template_name, **context)
+        template_name: str = f'wrmheader{int(header_version * 10)}.xml'
+        xml: str = PlayReady.render_template(template_name, **context)
         xml = re.sub(r'[\r\n]', '', xml)
         xml = re.sub(r'>\s+<', '><', xml)
-        wrm = xml.encode('utf-16')
+        wrm: bytes = xml.encode('utf-16')
         if wrm[0] == 0xFF and wrm[1] == 0xFE:
             # remove UTF-16 byte order mark
             wrm = wrm[2:]
@@ -219,7 +283,7 @@ class PlayReady(DrmBase):
                      keys: dict[str, KeyTuple],
                      custom_attributes: list | None) -> bytes:
         """Generate PlayReady Object (PRO)"""
-        wrm = self.generate_wrmheader(
+        wrm: bytes = self.generate_wrmheader(
             la_url, default_kid, keys, custom_attributes)
         record = struct.pack('<HH', 0x001, len(wrm)) + wrm
         pro = struct.pack('<IH', len(record) + 6, 1) + record
@@ -385,6 +449,44 @@ class PlayReady(DrmBase):
         if not uri.startswith("urn:uuid:"):
             return False
         return uri[9:] in {cls.SYSTEM_ID, cls.SYSTEM_ID_V10}
+
+    @staticmethod
+    def to_base64(value: bytes) -> str:
+        return str(base64.b64encode(value), 'ascii')
+
+    @staticmethod
+    def xml_safe(value: str | None) -> str:
+        if value is None:
+            return ""
+        return value.replace('&', '&amp;')
+
+    @staticmethod
+    def sorted_attributes(value: dict[str, Any]) -> str:
+        """
+        Output the provided dictionary as a key="value" string with the
+        keys sorted alphabetically
+        """
+        if not isinstance(value, dict):
+            return ''
+        keys: list[str] = list(value.keys())
+        if not keys:
+            return ''
+        keys.sort()
+        rv: list[str] = ['']
+        for k in keys:
+            rv.append(f'{k}="{value[k]}"')
+        return ' '.join(rv)
+
+    @classmethod
+    def render_template(cls, name: str, **kwargs) -> str:
+        if cls._template_env is None:
+            cls._template_env = Environment(
+                loader=DictLoader(cls.TEMPLATES), autoescape=select_autoescape())
+            cls._template_env.filters["base64"] = PlayReady.to_base64
+            cls._template_env.filters["xmlSafe"] = PlayReady.xml_safe
+            cls._template_env.filters["sortedAttributes"] = PlayReady.sorted_attributes
+        template: Template = cls._template_env.get_template(name)
+        return template.render(**kwargs)
 
 
 if __name__ == "__main__":

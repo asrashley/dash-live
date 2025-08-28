@@ -1,5 +1,0 @@
-{%- for elt in customAttributes %}
-{%- if loop.first %}<CUSTOMATTRIBUTES>{% endif %}
-<{{elt.tag}}{{elt.attributes|sortedAttributes|safe}}>{{elt.value}}</{{elt.tag}}>
-{%- if loop.last %}</CUSTOMATTRIBUTES>{% endif %}
-{%- endfor %}
