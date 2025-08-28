@@ -184,11 +184,6 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
             self.app_folders.static_folder / 'html' / 'index.html', encoding="utf-8",
             contents=self.INDEX_PAGE)
         self.fs.create_dir(self.app_folders.upload_folder)
-        # work around for issues with the media handler needing to render DRM templates in
-        # multiple threads. This can cause stale file descriptors when using pyfakefs
-        drm_templates: Path = self.app_folders.template_folder / "drm"
-        for name in drm_templates.glob("*.xml"):
-            assert name.exists()
 
     def setup_media(self, with_subs=False) -> None:
         self.setup_media_fixture(BBB_FIXTURE)

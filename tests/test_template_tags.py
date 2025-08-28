@@ -184,20 +184,6 @@ class TestTemplateTags(unittest.TestCase):
         self.assertEqual("false", tags.trueFalse(''))
         self.assertEqual("false", tags.trueFalse(None))
 
-    def test_sortedAttributes(self) -> None:
-        value = {
-            'foo': 0,
-            'sort': 5,
-            'any': 8,
-            'zz': 'hello'
-        }
-        expected = ' any="8" foo="0" sort="5" zz="hello"'
-        actual = tags.sortedAttributes(value)
-        self.assertEqual(expected, actual)
-
-        actual = tags.sortedAttributes({})
-        self.assertEqual('', actual)
-
     def test_length(self) -> None:
         self.assertEqual(0, tags.length(None))
         self.assertEqual(0, tags.length(''))
