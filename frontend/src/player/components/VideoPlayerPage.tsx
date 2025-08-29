@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useMemo, useRef } from "preact/hooks";
+import { useCallback, useContext, useEffect, useMemo } from "preact/hooks";
 import { useSignal } from "@preact/signals";
 import { useLocation, useParams } from "wouter-preact";
 
@@ -18,7 +18,7 @@ import { useSearchParams } from "../../hooks/useSearchParams";
 import { AppStateContext } from "../../appState";
 
 import "../styles/video.less";
-import { PlaybackIconType } from "../types/PlaybackIconType";
+import { PlaybackControls } from "./PlaybackControls";
 
 export function manifestUrl(
   mode: string,
@@ -40,45 +40,37 @@ export function manifestUrl(
 export interface KeyHandlerProps {
   controls: PlayerControls;
   setLocation: (url: string) => void;
-  setIcon: (name: string) => void;
 }
 
 export function keyHandler(
-  { controls, setIcon, setLocation }: KeyHandlerProps,
+  { controls, setLocation }: KeyHandlerProps,
   ev: KeyboardEvent
 ) {
   switch (ev.key) {
     case " ":
     case "MediaPlayPause":
-      if (controls.isPaused()) {
-        setIcon("play");
+      if (controls.isPaused.value) {
         controls.play();
       } else {
-        setIcon("pause");
         controls.pause();
       }
       break;
     case "Escape":
     case "MediaStop":
-      setIcon("stop");
       controls.stop();
       break;
     case "MediaPlay":
-      setIcon("play");
       controls.play();
       break;
     case "MediaPause":
-      setIcon("pause");
       controls.pause();
       break;
     case "ArrowLeft":
     case "MediaTrackPrevious":
-      setIcon("backward");
       controls.skip(-30);
       break;
     case "ArrowRight":
     case "MediaTrackNext":
-      setIcon("forward");
       controls.skip(30);
       break;
     case "Home":
@@ -94,16 +86,14 @@ export default function VideoPlayerPage() {
   const { searchParams } = useSearchParams();
   const { cinemaMode } = useContext(AppStateContext);
   const currentTime = useSignal<number>(0);
-  const controls = useSignal<PlayerControls | undefined>();
+  const controls = useSignal<PlayerControls | null>(null);
   const events = useSignal<StatusEvent[]>([]);
-  const activeIcon = useSignal<PlaybackIconType | null>(null);
   const { dashParams, keys, loaded } = useDashParameters(
     mode,
     stream,
     manifest,
     searchParams
   );
-  const iconTimer = useRef<number | undefined>();
   const mpd = useMemo<string>(
     () => manifestUrl(mode, stream, manifest, searchParams),
     [mode, stream, manifest, searchParams]
@@ -111,20 +101,17 @@ export default function VideoPlayerPage() {
   const playerName = useMemo<DashPlayerTypes>(() => {
     return (searchParams.get("player") ?? "native") as DashPlayerTypes;
   }, [searchParams]);
-  const setIcon = useCallback((name: PlaybackIconType) => {
-    activeIcon.value = name;
-    window.clearTimeout(iconTimer.current);
-    iconTimer.current = window.setTimeout(() => {
-      activeIcon.value = null;
-      iconTimer.current = undefined;
-    }, 2000);
-  }, [activeIcon]);
+
   const onKeyDown = useCallback((ev: KeyboardEvent) => {
     if (!controls.value) {
       return;
     }
-    keyHandler({  controls: controls.value, setIcon, setLocation }, ev);
-  }, [controls, setIcon, setLocation]);
+    keyHandler({  controls: controls.value, setLocation }, ev);
+  }, [controls, setLocation]);
+
+  const setPlayer = useCallback((player: PlayerControls | null) => {
+    controls.value = player;
+  }, [controls]);
 
   useEffect(() => {
     cinemaMode.value = true;
@@ -137,10 +124,8 @@ export default function VideoPlayerPage() {
     document.body.addEventListener("keydown", onKeyDown);
     return () => {
       document.body.removeEventListener("keydown", onKeyDown);
-      window.clearTimeout(iconTimer.current);
-      iconTimer.current = undefined;
     };
-  }, [onKeyDown, iconTimer]);
+  }, [onKeyDown]);
 
   return (
     <div data-testid="video-player-page">
@@ -151,14 +136,14 @@ export default function VideoPlayerPage() {
           dashParams={dashParams}
           keys={keys}
           currentTime={currentTime}
-          controls={controls}
           events={events}
-          activeIcon={activeIcon}
+          setPlayer={setPlayer}
         />
       ) : (
         <LoadingSpinner />
       )}
-      <StatusPanel events={events} currentTime={currentTime} />
+      <StatusPanel events={events} />
+      <PlaybackControls currentTime={currentTime} controls={controls} />
     </div>
   );
 }
