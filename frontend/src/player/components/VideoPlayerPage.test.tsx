@@ -8,6 +8,7 @@ import {
   vi,
 } from "vitest";
 import { act } from "@testing-library/preact";
+import { signal } from "@preact/signals";
 import { mock, mockReset } from "vitest-mock-extended";
 import fetchMock from "@fetch-mock/vitest";
 import { useLocation, useParams } from "wouter-preact";
@@ -26,10 +27,10 @@ import { DashParameters } from "../types/DashParameters";
 import { PlayerControls } from "../types/PlayerControls";
 import { playerFactory } from "../players/playerFactory";
 import {
-  AbstractDashPlayer,
   DashPlayerProps,
 } from "../types/AbstractDashPlayer";
 import { DashPlayerTypes } from "../types/DashPlayerTypes";
+import { FakePlayer } from "../players/__mocks__/FakePlayer";
 
 vi.mock("../../hooks/useSearchParams", () => ({
   useSearchParams: vi.fn(),
@@ -46,22 +47,6 @@ vi.mock("wouter-preact", async (importOriginal) => {
 vi.mock("../players/playerFactory", () => ({
   playerFactory: vi.fn(),
 }));
-
-class FakePlayer extends AbstractDashPlayer {
-  public pause = vi.fn();
-
-  async initialize(source: string) {
-    const { videoElement } = this.props;
-    videoElement.src = source;
-    Object.defineProperties(videoElement, {
-      pause: {
-        value: this.pause,
-      },
-    });
-  }
-
-  destroy() {}
-}
 
 describe("VideoPlayerPage", () => {
   const apiRequests = mock<ApiRequests>();
@@ -92,6 +77,7 @@ describe("VideoPlayerPage", () => {
     mockedPlayerFactory.mockImplementation(
       (_playerType: DashPlayerTypes, props: DashPlayerProps) => {
         player = new FakePlayer(props);
+        vi.spyOn(player, 'pause');
         return player;
       }
     );
@@ -203,29 +189,24 @@ describe("VideoPlayerPage", () => {
 });
 
 type PlayerControlsCallCount = {
-  setIcon: number;
   setLocation: number;
-  isPaused: number;
   pause: number;
   play: number;
   skip: number;
   stop: number;
-  icon?: string;
 };
 
 describe("Key handling", () => {
   const notCalled: PlayerControlsCallCount = {
-    setIcon: 0,
     setLocation: 0,
-    isPaused: 0,
     pause: 0,
     play: 0,
     skip: 0,
     stop: 0,
   };
-  const mockControls = mock<PlayerControls>();
+  const isPaused = signal<boolean>(false);
+  const mockControls = mock<PlayerControls>({ isPaused });
   const setLocation = vi.fn();
-  const setIcon = vi.fn();
 
   afterEach(() => {
     vi.clearAllMocks();
@@ -235,7 +216,6 @@ describe("Key handling", () => {
   test("ignores key not used by player", () => {
     const props: KeyHandlerProps = {
       controls: mockControls,
-      setIcon,
       setLocation,
     };
     const ev: KeyboardEvent = new KeyboardEvent("keydown", {
@@ -243,8 +223,6 @@ describe("Key handling", () => {
     });
     keyHandler(props, ev);
     expect(setLocation).not.toHaveBeenCalled();
-    expect(setIcon).not.toHaveBeenCalled();
-    expect(mockControls.isPaused).not.toHaveBeenCalled();
     expect(mockControls.pause).not.toHaveBeenCalled();
     expect(mockControls.play).not.toHaveBeenCalled();
     expect(mockControls.skip).not.toHaveBeenCalled();
@@ -254,10 +232,9 @@ describe("Key handling", () => {
   test.each([" ", "MediaPlayPause"])(
     'toggles play pause when "%s" pressed',
     (key: string) => {
-      mockControls.isPaused.mockReturnValue(false);
+      isPaused.value = false;
       const props: KeyHandlerProps = {
         controls: mockControls,
-        setIcon,
         setLocation,
       };
       const ev: KeyboardEvent = new KeyboardEvent("keydown", {
@@ -265,41 +242,35 @@ describe("Key handling", () => {
       });
       keyHandler(props, ev);
       expect(setLocation).not.toHaveBeenCalled();
-      expect(setIcon).toHaveBeenCalledTimes(1);
-      expect(setIcon).toHaveBeenLastCalledWith("pause");
-      expect(mockControls.isPaused).toHaveBeenCalled();
       expect(mockControls.pause).toHaveBeenCalledTimes(1);
       expect(mockControls.play).not.toHaveBeenCalled();
       expect(mockControls.skip).not.toHaveBeenCalled();
       expect(mockControls.stop).not.toHaveBeenCalled();
 
-      mockControls.isPaused.mockReturnValue(true);
+      isPaused.value = true;
       keyHandler(props, ev);
-      expect(setIcon).toHaveBeenCalledTimes(2);
-      expect(setIcon).toHaveBeenLastCalledWith("play");
       expect(mockControls.pause).toHaveBeenCalledTimes(1);
       expect(mockControls.play).toHaveBeenCalledTimes(1);
     }
   );
 
   test.each<[string, Partial<PlayerControlsCallCount>]>([
-    ["Escape", { stop: 1, icon: "stop" }],
-    ["MediaStop", { stop: 1, icon: "stop" }],
-    ["MediaPlay", { play: 1, icon: "play" }],
-    ["MediaPause", { pause: 1, icon: "pause" }],
-    ["ArrowLeft", { skip: 1, icon: "backward" }],
-    ["MediaTrackPrevious", { skip: 1, icon: "backward" }],
-    ["ArrowRight", { skip: 1, icon: "forward" }],
-    ["MediaTrackNext", { skip: 1, icon: "forward" }],
+    ["Escape", { stop: 1 }],
+    ["MediaStop", { stop: 1 }],
+    ["MediaPlay", { play: 1 }],
+    ["MediaPause", { pause: 1 }],
+    ["ArrowLeft", { skip: 1 }],
+    ["MediaTrackPrevious", { skip: 1 }],
+    ["ArrowRight", { skip: 1 }],
+    ["MediaTrackNext", { skip: 1 }],
     ["Home", { setLocation: 1 }],
     ["Finish", { setLocation: 1 }],
   ])(
     '"%s" pressed',
     (key: string, counts: Partial<PlayerControlsCallCount>) => {
-      mockControls.isPaused.mockReturnValue(false);
+      isPaused.value = false;
       const props: KeyHandlerProps = {
         controls: mockControls,
-        setIcon,
         setLocation,
       };
       const ev: KeyboardEvent = new KeyboardEvent("keydown", {
@@ -310,15 +281,7 @@ describe("Key handling", () => {
         ...notCalled,
         ...counts,
       };
-      if (counts.icon && expected.setIcon === 0) {
-        expected.setIcon = 1;
-      }
       expect(setLocation).toHaveBeenCalledTimes(expected.setLocation);
-      expect(setIcon).toHaveBeenCalledTimes(expected.setIcon);
-      if (expected.icon) {
-        expect(setIcon).toHaveBeenLastCalledWith(expected.icon);
-      }
-      expect(mockControls.isPaused).toHaveBeenCalledTimes(expected.isPaused);
       expect(mockControls.pause).toHaveBeenCalledTimes(expected.pause);
       expect(mockControls.play).toHaveBeenCalledTimes(expected.play);
       expect(mockControls.skip).toHaveBeenCalledTimes(expected.skip);

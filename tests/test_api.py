@@ -17,6 +17,7 @@ from unittest.mock import patch
 
 from bs4 import BeautifulSoup
 import flask
+from werkzeug.test import TestResponse
 
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.mpeg.dash.segment import Segment
@@ -387,13 +388,13 @@ class TestRestApi(FlaskTestBase):
         response = self.client.delete(url)
         self.assertEqual(response.status_code, 404)
 
-    def test_add_full_key_pair(self):
+    def test_add_full_key_pair(self) -> None:
         self.assertEqual(models.Key.count(), 0)
 
-        request = {
+        request: dict[str, str] = {
             'kid': '1AB45440532C439994DC5C5AD9584BAC',
             'key': 'ccc0f2b3b279926496a7f5d25da692f6',
-            'ajax': 1,
+            'ajax': '1',
         }
         url = flask.url_for('add-key', **request)
 
@@ -415,31 +416,34 @@ class TestRestApi(FlaskTestBase):
         self.assertIn("error", response.json)
         self.assertIn("CSRF", response.json["error"])
 
-        media_url = flask.url_for('list-streams', ajax=1)
-        media = self.client.get(media_url)
+        media_url: str = flask.url_for('list-streams', ajax=1)
+        media: TestResponse = self.client.get(media_url)
+        assert media is not None
         self.assert200(media)
-        csrf_token = media.json['csrf_tokens']['kids']
+        csrf_token: str = media.json['csrf_tokens']['kids']
         url += f'&csrf_token={csrf_token}'
-        response = self.client.put(url)
+        response: TestResponse = self.client.put(url)
         self.assert200(response)
-        expected_result = {
+        expected_result: JsonObject = {
             'kid': request['kid'].lower(),
             'key': request['key'].lower(),
             'computed': False,
             'csrf_token': response.json["csrf_token"],
         }
-        self.assertEqual(expected_result, response.json)
+        self.assertDictEqual(expected_result, response.json)
 
-        keys = list(models.Key.all())
+        keys: list[models.Key] = list(models.Key.all())
         self.assertEqual(len(keys), 1)
         self.assertEqual(keys[0].hkid, expected_result['kid'])
         self.assertEqual(keys[0].hkey, expected_result['key'])
         self.assertEqual(keys[0].computed, False)
 
-        url = flask.url_for('list-streams', ajax=1)
+        url: str = flask.url_for('list-streams', ajax=1)
         response = self.client.get(url)
         self.assert200(response)
         del expected_result['csrf_token']
+        expected_result['alg'] = 'AESCTR'
+
         self.assertListEqual([expected_result], response.json['keys'])
 
     def test_add_computed_keys(self):

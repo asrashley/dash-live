@@ -25,6 +25,7 @@ class TestDashTiming(TestCaseMixin, unittest.TestCase):
                               **kwargs) -> tuple[StreamTimingReference, Representation]:
         stream_ref = StreamTimingReference(
             media_name='bbb_v1',
+            content_type='video',
             media_duration=142080,
             num_media_segments=148,
             segment_duration=960,

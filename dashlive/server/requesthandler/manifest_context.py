@@ -360,8 +360,12 @@ class ManifestContext:
                 continue
             assert mf.content_type == 'video'
             assert mf.representation.content_type == 'video'
-            video.representations.append(mf.representation)
-            assert video.representations[0].track_id == mf.representation.track_id
+            if video.representations and video.representations[0].track_id != mf.representation.track_id:
+                logging.critical(
+                    'track_id %d of representation[0] does not match mediafile %s track id %d',
+                    video.representations[0].track_id, mf.name, mf.representation.track_id)
+            else:
+                video.representations.append(mf.representation)
         video.compute_av_values()
         assert isinstance(video.representations, list)
         return video

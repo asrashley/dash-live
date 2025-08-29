@@ -13,4 +13,9 @@ export class NativePlayer extends AbstractDashPlayer {
         const { videoElement } = this.props;
         videoElement.removeEventListener('canplay', this.onCanPlayEvent);
     }
+
+    setSubtitlesElement() {
+        // no op
+    }
+
 }

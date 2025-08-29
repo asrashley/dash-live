@@ -55,11 +55,13 @@ class AdaptationSet(ObjectWithFields):
         'drm': None,
         'default_kid': None,
         'lang': None,
+        'maxFrameRate': None,
     }
     default_kid: str | None
     drm: dict[str, DrmManifestContext] | None
     event_streams: list[EventStream]
     lang: str | None
+    maxFrameRate: int | None
     representations: list[Representation]
     segmentAlignment: bool
     segment_timeline: bool
@@ -200,7 +202,7 @@ class AdaptationSet(ObjectWithFields):
             self.maxHeight = max(
                 [a.height for a in self.representations])
             self.maxFrameRate = max(
-                [a.frameRate for a in self.representations])
+                [a.frameRate for a in self.representations if a.frameRate is not None])
 
     def set_dash_timing(self, timing: DashTiming) -> None:
         for rep in self.representations:

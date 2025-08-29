@@ -5,10 +5,10 @@ export interface DashPlayerProps {
     version?: string;
     autoplay?: boolean;
     videoElement: HTMLVideoElement;
-    subtitlesElement?: HTMLDivElement;
     logEvent(eventName: string, text: string): void;
 }
 export abstract class AbstractDashPlayer {
+    protected subtitlesElement: HTMLDivElement | null = null;
 
     // eslint-disable-next-line no-useless-constructor
     constructor(protected props: DashPlayerProps) {
@@ -18,6 +18,10 @@ export abstract class AbstractDashPlayer {
     abstract initialize(mpd: string, options: OptionMapWithChildren, keys: Map<string, KeyParameters>): Promise<void>;
 
     abstract destroy(): void;
+
+    setSubtitlesElement(subtitlesElement: HTMLDivElement | null) {
+        this.subtitlesElement = subtitlesElement;
+    }
 
     protected onCanPlayEvent = async () => {
         const { videoElement } = this.props;

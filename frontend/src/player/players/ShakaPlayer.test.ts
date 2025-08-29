@@ -16,6 +16,7 @@ interface ShakaPlayerClass {
     configure: (config: ShakaConfig) => void;
     addEventListener(evName: string, fn: () => void): void;
     removeEventListener(evName: string, fn: () => void): void;
+    setVideoContainer(elt: HTMLDivElement): void;
     load: (mpd: string) => Promise<void>;
     destroy: () => void;
 }
@@ -85,11 +86,16 @@ describe('ShakaPlayer', () => {
         expect(installAll).toHaveBeenCalledTimes(1);
         expect(mockPlayer.attach).toHaveBeenCalledWith(videoElement);
         expect(mockPlayer.load).toHaveBeenLastCalledWith(mpdSource);
+        let styles = document.head.querySelectorAll('link');
+        expect(styles[0].href).toContain('shaka/controls.css');
+        expect(styles.length).toEqual(1)
         eventTarget.dispatchEvent(new CustomEvent('loaded'));
         expect(logEvent).toHaveBeenCalledTimes(1);
         expect(logEvent).toHaveBeenCalledWith('loaded', '');
         player.destroy();
         expect(mockPlayer.destroy).toHaveBeenCalledTimes(1);
+        styles = document.head.querySelectorAll('link');
+        expect(styles.length).toEqual(0)
     });
 
     test('can use an alternate Shaka version', () => {
@@ -118,6 +124,7 @@ describe('ShakaPlayer', () => {
                     'com.microsoft.playready': options.playready.licenseUrl
                 },
             },
+            preferredTextLanguage: 'eng',
         };
         expect(mockPlayer.configure).toHaveBeenCalledWith(shakaConfig);
     });
@@ -144,6 +151,7 @@ describe('ShakaPlayer', () => {
                     'org.w3.clearkey': options.clearkey.licenseUrl
                 },
             },
+            preferredTextLanguage: 'eng',
         };
         expect(mockPlayer.configure).toHaveBeenCalledWith(shakaConfig);
     });
@@ -188,4 +196,26 @@ describe('ShakaPlayer', () => {
         player.destroy();
         expect(mockPlayer.destroy).toHaveBeenCalledTimes(1);
     });
+
+    test('can set subtitles element before initialize', async () => {
+        const videoElement = document.createElement('video');
+        const subsElt = document.createElement('div');
+        const player = new ShakaPlayer({ logEvent, videoElement, autoplay: true, version: ShakaPlayer.LOCAL_VERSIONS[0], });
+        player.setSubtitlesElement(subsElt);
+        await player.initialize(mpdSource, {});
+        expect(mockPlayer.setVideoContainer).toHaveBeenCalledTimes(1);
+        expect(mockPlayer.setVideoContainer).toHaveBeenCalledWith(subsElt);
+    });
+
+    test('can set subtitles element after initialize', async () => {
+        const videoElement = document.createElement('video');
+        const subsElt = document.createElement('div');
+        const player = new ShakaPlayer({ logEvent, videoElement, autoplay: true, version: ShakaPlayer.LOCAL_VERSIONS[0], });
+        await player.initialize(mpdSource, {});
+        expect(mockPlayer.setVideoContainer).not.toHaveBeenCalled();
+        player.setSubtitlesElement(subsElt);
+        expect(mockPlayer.setVideoContainer).toHaveBeenCalledTimes(1);
+        expect(mockPlayer.setVideoContainer).toHaveBeenCalledWith(subsElt);
+    });
+
 });

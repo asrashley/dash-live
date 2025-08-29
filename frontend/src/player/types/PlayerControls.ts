@@ -1,7 +1,11 @@
+import type { ReadonlySignal } from "@preact/signals";
+
 export interface PlayerControls {
-    isPaused(): boolean;
+    isPaused: ReadonlySignal<boolean>;
+    hasPlayer: ReadonlySignal<boolean>;
     pause(): void;
     play(): void;
     skip(seconds: number): void;
     stop(): void;
+    setSubtitlesElement(subtitlesElement: HTMLDivElement | null): void;
 }
