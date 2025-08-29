@@ -21,9 +21,58 @@ exports[`VideoPlayerPage > matches snapshot 1`] = `
     </div>
     <div
       id="status"
+    />
+    <div
+      class="d-flex flex-row btn-group border border-secondary"
+      data-testid="playback-controls"
+      id="playback-controls"
     >
+      <button
+        class="btn btn-secondary pe-1"
+        data-testid="play-pause-btn"
+        disabled=""
+      >
+        <span
+          aria-label="play-fill icon"
+          class="bi icon bi-play-fill "
+          role="img"
+        />
+      </button>
+      <button
+        class="btn btn-secondary"
+        data-testid="skip-back-btn"
+        disabled=""
+      >
+        <span
+          aria-label="skip-backward-fill icon"
+          class="bi icon bi-skip-backward-fill "
+          role="img"
+        />
+      </button>
+      <button
+        class="btn btn-secondary"
+        data-testid="stop-btn"
+        disabled=""
+      >
+        <span
+          aria-label="stop-fill icon"
+          class="bi icon bi-stop-fill "
+          role="img"
+        />
+      </button>
+      <button
+        class="btn btn-secondary"
+        data-testid="skip-fwd-btn"
+        disabled=""
+      >
+        <span
+          aria-label="skip-forward-fill icon"
+          class="bi icon bi-skip-forward-fill "
+          role="img"
+        />
+      </button>
       <div
-        class="play-position"
+        class="play-position flex-grow-1"
       >
         00:00:00
       </div>

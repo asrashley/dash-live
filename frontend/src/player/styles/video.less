@@ -38,10 +38,30 @@
   z-index: 3;
 }
 
+#playback-controls {
+  bottom: 11vh;
+  font-size: 1.2rem;
+  height: 2.2rem;
+  position: absolute;
+  right: 6vw;
+  width: 15em;
+
+  .play-position {
+    background-color: rgba(63, 63, 63, 0.5);
+    color: #eee;
+    text-align: center;
+    width: 10em;
+  }
+
+  > .btn {
+    font-size: 125%;
+    line-height: 1rem;
+  }
+}
+
 #status,
 .textbox,
-.source,
-.play-position {
+.source {
   background-color: rgba(63, 63, 63, 0.4);
   color: white;
   padding: 0 0.2em;
@@ -49,17 +69,13 @@
   text-align: center;
 }
 
-.source,
-.play-position {
+.source {
   font-size: 1.5em;
   height: 1em;
   height: 2vh;
   line-height: 1em;
   line-height: 2.3vh;
   z-index: 2;
-}
-
-.source {
   top: 3em;
   width: 90%;
   overflow: hidden;

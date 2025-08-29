@@ -1,5 +1,5 @@
-import { Component, createRef } from "preact";
-import { effect, type ReadonlySignal, type Signal } from "@preact/signals";
+import { Component } from "preact";
+import { effect, signal, type ReadonlySignal, type Signal } from "@preact/signals";
 
 import { DashPlayerTypes } from "../types/DashPlayerTypes";
 import {
@@ -11,7 +11,6 @@ import { PlayerControls } from "../types/PlayerControls";
 import { StatusEvent } from "../types/StatusEvent";
 import { DashParameters } from "../types/DashParameters";
 import { KeyParameters } from "../types/KeyParameters";
-import { PlaybackIconType } from "../types/PlaybackIconType";
 
 export const STATUS_EVENTS = [
   "stalled",
@@ -35,10 +34,9 @@ export interface VideoElementProps {
   dashParams: ReadonlySignal<DashParameters>;
   keys: ReadonlySignal<Map<string, KeyParameters>>;
   currentTime: Signal<number>;
-  controls: Signal<PlayerControls | undefined>;
-  activeIcon: Signal<PlaybackIconType | null>;
   events: Signal<StatusEvent[]>;
   maxEvents?: number;
+  setPlayer(controls: PlayerControls | null): void;
 }
 
 export class VideoElement
@@ -46,11 +44,14 @@ export class VideoElement
   implements PlayerControls
 {
   static DEFAULT_MAX_EVENTS = 10;
-  private videoElt = createRef<HTMLVideoElement>();
+  private videoElt: HTMLVideoElement | null = null;
   private player?: AbstractDashPlayer;
   private nextId = 1;
   private subtitlesElement: HTMLDivElement | null = null;
   private dashParamsSignalCleanup: () => void | undefined;
+  private unmountController: AbortController = new AbortController();
+  public isPaused = signal<boolean>(false);
+  public hasPlayer = signal<boolean>(false);
 
   shouldComponentUpdate() {
     // do not re-render via diff:
@@ -68,6 +69,7 @@ export class VideoElement
   }
 
   componentDidMount() {
+    this.isPaused.value = this.videoElt?.paused ?? false;
     this.dashParamsSignalCleanup = effect(() => {
       this.tryInitializePlayer(this.props);
     });
@@ -77,43 +79,45 @@ export class VideoElement
   componentWillUnmount() {
     this.dashParamsSignalCleanup?.();
     this.dashParamsSignalCleanup = undefined;
-    for (const name of STATUS_EVENTS) {
-      this.videoElt.current.removeEventListener(name, this.logDomEvent);
-    }
-    this.props.controls.value = undefined;
-    this.videoElt.current.removeEventListener("timeupdate", this.onTimeUpdate);
+    this.unmountController.abort();
+    this.props.setPlayer(null);
     this.player?.destroy();
     this.player = undefined;
     this.subtitlesElement = null;
+    this.hasPlayer.value = false;
+    this.isPaused.value = true;
   }
 
   render() {
-    return <video ref={this.videoElt} />;
+    return <video ref={this.setVideoElt} />;
   }
 
   pause() {
-    this.videoElt.current.pause();
-  }
-
-  isPaused() {
-    return this.videoElt.current.paused;
+    this.videoElt?.pause();
   }
 
   play() {
-    this.videoElt.current.play();
+    this.tryInitializePlayer(this.props);
+    this.videoElt?.play();
   }
 
   skip(seconds: number) {
-    const video = this.videoElt.current;
+    if (this.videoElt === undefined) {
+      throw new Error('video element not mounted');
+    }
+    const video = this.videoElt;
     const newTime = Math.min(
       Math.max(0, video.currentTime + seconds),
       video.duration
     );
-    this.videoElt.current.currentTime = newTime;
+    video.currentTime = newTime;
   }
 
   stop() {
-    this.videoElt.current.pause();
+    this.videoElt?.pause();
+    this.player?.destroy();
+    this.player = undefined;
+    this.hasPlayer.value = false;
   }
 
   setSubtitlesElement = (subtitlesElement: HTMLDivElement | null) => {
@@ -121,27 +125,42 @@ export class VideoElement
     this.player?.setSubtitlesElement(subtitlesElement);
   };
 
-  private tryInitializePlayer(props: VideoElementProps) {
-    const { dashParams, keys, mpd, playerName, playerVersion: version } = props;
-    if (this.player || !this.videoElt.current || !dashParams.value) {
+  private setVideoElt = (elt: HTMLVideoElement | null) => {
+    this.videoElt = elt;
+    if (!elt) {
       return;
     }
-    this.videoElt.current.addEventListener("timeupdate", this.onTimeUpdate);
+    if (this.unmountController === undefined) {
+      throw new Error('unmountController should have been created in constructor');
+    }
+    const { signal } = this.unmountController;
+    elt.addEventListener('pause', () => this.isPaused.value = true, { signal });
+    elt.addEventListener('play', () => this.isPaused.value = false, { signal });
+  }
+
+  private tryInitializePlayer(props: VideoElementProps) {
+    const { dashParams, keys, mpd, playerName, playerVersion: version } = props;
+    if (this.player || !this.videoElt || !dashParams.value) {
+      return;
+    }
+    const { signal } = this.unmountController;
+    this.videoElt.addEventListener("timeupdate", this.onTimeUpdate, { signal });
     const playerProps: DashPlayerProps = {
       version,
       logEvent: this.logEvent,
       autoplay: true,
-      videoElement: this.videoElt.current,
+      videoElement: this.videoElt,
     };
     this.player = playerFactory(playerName, playerProps);
     this.player.initialize(mpd, dashParams.value.options, keys.value);
-    this.props.controls.value = this;
+    this.props.setPlayer(this);
     for (const name of STATUS_EVENTS) {
-      this.videoElt.current.addEventListener(name, this.logDomEvent);
+      this.videoElt.addEventListener(name, this.logDomEvent, { signal });
     }
     if (this.subtitlesElement) {
       this.player.setSubtitlesElement(this.subtitlesElement);
     }
+    this.hasPlayer.value = true;
   }
 
   private onTimeUpdate = (ev: Event) => {
@@ -153,7 +172,7 @@ export class VideoElement
     const status: StatusEvent = {
       id: this.nextId++,
       timecode: new Date().toISOString(),
-      position: this.videoElt.current?.currentTime,
+      position: this.videoElt?.currentTime,
       event,
       text,
     };

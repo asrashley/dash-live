@@ -35,11 +35,6 @@ exports[`StatusPanel > matches snapshot 1`] = `
       </span>
       playing 
     </p>
-    <div
-      class="play-position"
-    >
-      00:01:23
-    </div>
   </div>
 </DocumentFragment>
 `;

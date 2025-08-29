@@ -9,7 +9,6 @@ import { STATUS_EVENTS, VideoElement } from "./VideoElement";
 import { DashParameters } from "../types/DashParameters";
 import { KeyParameters } from "../types/KeyParameters";
 import { playerFactory } from "../players/playerFactory";
-import { PlaybackIconType } from "../types/PlaybackIconType";
 import { DashPlayerTypes } from "../types/DashPlayerTypes";
 import { DashPlayerProps } from "../types/AbstractDashPlayer";
 import { FakePlayer } from "../players/__mocks__/FakePlayer";
@@ -17,6 +16,26 @@ import { FakePlayer } from "../players/__mocks__/FakePlayer";
 vi.mock("../players/playerFactory", () => ({
   playerFactory: vi.fn(),
 }));
+
+function spyOnVideo(video: HTMLVideoElement) {
+  let paused: boolean = true;
+
+  Object.defineProperties(video, {
+      play: {
+        writable: true,
+        value: vi.fn(() => {
+          paused = false;
+        }),
+      },
+      paused: {
+        get: vi.fn(() => paused),
+      },
+      duration: {
+        writable: true,
+        value: 30,
+      },
+  });
+}
 
 describe("VideoElement component", () => {
   const params: DashParameters = {
@@ -40,11 +59,8 @@ describe("VideoElement component", () => {
   const dashParams = signal<DashParameters>(params);
   const keys = signal<Map<string, KeyParameters>>(new Map());
   const currentTime = signal<number>(0);
-  const controls = signal<PlayerControls | undefined>();
-  const activeIcon = signal<PlaybackIconType | null>(null);
   const events = signal<StatusEvent[]>([]);
   const mockedPlayerFactory = vi.mocked(playerFactory);
-  const play = vi.fn();
   let player: FakePlayer | undefined;
 
   beforeEach(() => {
@@ -55,7 +71,6 @@ describe("VideoElement component", () => {
     mockedPlayerFactory.mockImplementation(
       (_playerType: DashPlayerTypes, props: DashPlayerProps) => {
         player = new FakePlayer(props);
-        vi.spyOn(player, 'pause');
         vi.spyOn(player, 'setSubtitlesElement');
         return player;
       }
@@ -68,6 +83,7 @@ describe("VideoElement component", () => {
   });
 
   test("should initialize player on mount", () => {
+    const setPlayer = vi.fn();
     const { getBySelector } = renderWithProviders(
       <VideoElement
         mpd={params.url}
@@ -75,9 +91,8 @@ describe("VideoElement component", () => {
         dashParams={dashParams}
         keys={keys}
         currentTime={currentTime}
-        controls={controls}
-        activeIcon={activeIcon}
         events={events}
+        setPlayer={setPlayer}
       />
     );
     const videoElement = getBySelector("video") as HTMLVideoElement;
@@ -92,6 +107,7 @@ describe("VideoElement component", () => {
   });
 
   test("should destroy player on unmount", () => {
+    const setPlayer = vi.fn();
     const { unmount } = renderWithProviders(
       <VideoElement
         mpd={params.url}
@@ -99,9 +115,8 @@ describe("VideoElement component", () => {
         dashParams={dashParams}
         keys={keys}
         currentTime={currentTime}
-        controls={controls}
-        activeIcon={activeIcon}
         events={events}
+        setPlayer={setPlayer}
       />
     );
     expect(mockedPlayerFactory).toHaveBeenCalledTimes(1);
@@ -112,6 +127,7 @@ describe("VideoElement component", () => {
   });
 
   test("does not re-render", () => {
+    const setPlayer = vi.fn();
     const { getBySelector, rerender } = renderWithProviders(
       <VideoElement
         mpd={params.url}
@@ -119,9 +135,8 @@ describe("VideoElement component", () => {
         dashParams={dashParams}
         keys={keys}
         currentTime={currentTime}
-        controls={controls}
-        activeIcon={activeIcon}
         events={events}
+        setPlayer={setPlayer}
       />
     );
     expect(mockedPlayerFactory).toHaveBeenCalledTimes(1);
@@ -133,9 +148,8 @@ describe("VideoElement component", () => {
         dashParams={dashParams}
         keys={keys}
         currentTime={currentTime}
-        controls={controls}
-        activeIcon={activeIcon}
         events={events}
+        setPlayer={setPlayer}
       />
     );
     expect(mockedPlayerFactory).toHaveBeenCalledTimes(1);
@@ -143,53 +157,70 @@ describe("VideoElement component", () => {
   });
 
   test("can play()", () => {
-    const { getBySelector } = renderWithProviders(
+    const setPlayer = vi.fn();
+    const { getBySelector, unmount } = renderWithProviders(
       <VideoElement
         mpd={params.url}
         playerName="native"
         dashParams={dashParams}
         keys={keys}
         currentTime={currentTime}
-        controls={controls}
-        activeIcon={activeIcon}
         events={events}
+        setPlayer={setPlayer}
       />
     );
     const videoElement = getBySelector("video") as HTMLVideoElement;
-    const playSpy = vi.spyOn(videoElement, "play");
-    playSpy.mockImplementation(play);
-    expect(controls.value).toBeDefined();
-    controls.value.play();
-    expect(playSpy).toHaveBeenCalledTimes(1);
+    spyOnVideo(videoElement);
+    expect(setPlayer).toHaveBeenCalledTimes(1);
+    const controls: PlayerControls | null = setPlayer.mock.calls[0][0];
+    expect(controls).not.toBeNull();
+    controls.play();
+    expect(videoElement.play).toHaveBeenCalledTimes(1);
+    unmount();
+    expect(setPlayer).toHaveBeenCalledTimes(2);
+    expect(setPlayer).toHaveBeenLastCalledWith(null);
   });
 
   test("can pause()", () => {
-    const { getBySelector } = renderWithProviders(
+    const setPlayer = vi.fn();
+    const { getBySelector, unmount } = renderWithProviders(
       <VideoElement
         mpd={params.url}
         playerName="native"
         dashParams={dashParams}
         keys={keys}
         currentTime={currentTime}
-        controls={controls}
-        activeIcon={activeIcon}
         events={events}
+        setPlayer={setPlayer}
       />
     );
     const videoElement = getBySelector("video") as HTMLVideoElement;
-    const pauseSpy = vi.spyOn(videoElement, "pause");
-    const isPausedSpy = vi.spyOn(videoElement, "paused", "get");
-    isPausedSpy.mockReturnValue(false);
-    pauseSpy.mockImplementation(() => {});
-    expect(controls.value).toBeDefined();
-    expect(controls.value.isPaused()).toEqual(false);
-    controls.value.pause();
-    expect(pauseSpy).toHaveBeenCalledTimes(1);
-    isPausedSpy.mockReturnValue(true);
-    expect(controls.value.isPaused()).toEqual(true);
+    spyOnVideo(videoElement);
+    expect(videoElement.paused).toEqual(true);
+    expect(setPlayer).toHaveBeenCalledTimes(1);
+    const controls: PlayerControls | null = setPlayer.mock.calls[0][0];
+    expect(controls).not.toBeNull();
+    expect(controls.hasPlayer.value).toEqual(true);
+    expect(controls.isPaused.value).toEqual(true);
+    const playEv = new Event('play');
+    act(() => {
+      videoElement.dispatchEvent(playEv);
+    });
+    expect(controls.isPaused.value).toEqual(false);
+    controls.pause();
+    //expect(videoElement.pause).toHaveBeenCalledTimes(1);
+    const pauseEv = new Event('pause');
+    act(() => {
+      videoElement.dispatchEvent(pauseEv);
+    });
+    expect(controls.isPaused.value).toEqual(true);
+    unmount();
+    expect(setPlayer).toHaveBeenCalledTimes(2);
+    expect(setPlayer).toHaveBeenLastCalledWith(null);
   });
 
   test("can skip()", () => {
+    const setPlayer = vi.fn();
     const { getBySelector } = renderWithProviders(
       <VideoElement
         mpd={params.url}
@@ -197,46 +228,24 @@ describe("VideoElement component", () => {
         dashParams={dashParams}
         keys={keys}
         currentTime={currentTime}
-        controls={controls}
-        activeIcon={activeIcon}
         events={events}
+        setPlayer={setPlayer}
       />
     );
     const videoElement = getBySelector("video") as HTMLVideoElement;
-    Object.defineProperty(videoElement, "duration", {
-      writable: true,
-      value: 30,
-    });
+    spyOnVideo(videoElement);
     videoElement.currentTime = 0;
-    expect(controls.value).toBeDefined();
-    controls.value.skip(12);
+    expect(setPlayer).toHaveBeenCalledTimes(1);
+    const controls: PlayerControls | null = setPlayer.mock.calls[0][0];
+    expect(controls).not.toBeNull();
+    controls.skip(12);
     expect(videoElement.currentTime).toEqual(12);
-    controls.value.skip(10);
+    controls.skip(10);
     expect(videoElement.currentTime).toEqual(22);
   });
 
   test("can stop()", () => {
-    const { getBySelector } = renderWithProviders(
-      <VideoElement
-        mpd={params.url}
-        playerName="native"
-        dashParams={dashParams}
-        keys={keys}
-        currentTime={currentTime}
-        controls={controls}
-        activeIcon={activeIcon}
-        events={events}
-      />
-    );
-    const videoElement = getBySelector("video") as HTMLVideoElement;
-    const pauseSpy = vi.spyOn(videoElement, "pause");
-    pauseSpy.mockImplementation(() => {});
-    expect(controls.value).toBeDefined();
-    controls.value.stop();
-    expect(pauseSpy).toHaveBeenCalledTimes(1);
-  });
-
-  test("can add items to event log", () => {
+    const setPlayer = vi.fn();
     renderWithProviders(
       <VideoElement
         mpd={params.url}
@@ -244,9 +253,30 @@ describe("VideoElement component", () => {
         dashParams={dashParams}
         keys={keys}
         currentTime={currentTime}
-        controls={controls}
-        activeIcon={activeIcon}
         events={events}
+        setPlayer={setPlayer}
+      />
+    );
+    expect(setPlayer).toHaveBeenCalledTimes(1);
+    const controls: PlayerControls | null = setPlayer.mock.calls[0][0];
+    expect(controls).not.toBeNull();
+    expect(player).toBeDefined();
+    vi.spyOn(player, 'destroy');
+    controls.stop();
+    expect(player.destroy).toHaveBeenCalledTimes(1);
+  });
+
+  test("can add items to event log", () => {
+    const setPlayer = vi.fn();
+    renderWithProviders(
+      <VideoElement
+        mpd={params.url}
+        playerName="native"
+        dashParams={dashParams}
+        keys={keys}
+        currentTime={currentTime}
+        events={events}
+        setPlayer={setPlayer}
       />
     );
     expect(mockedPlayerFactory).toHaveBeenCalledTimes(1);
@@ -262,6 +292,7 @@ describe("VideoElement component", () => {
   });
 
   test("updates currentTime on timeupdate", () => {
+    const setPlayer = vi.fn();
     const { getBySelector } = renderWithProviders(
       <VideoElement
         mpd={params.url}
@@ -269,9 +300,8 @@ describe("VideoElement component", () => {
         dashParams={dashParams}
         keys={keys}
         currentTime={currentTime}
-        controls={controls}
-        activeIcon={activeIcon}
         events={events}
+        setPlayer={setPlayer}
       />
     );
     const videoElement = getBySelector("video") as HTMLVideoElement;
@@ -287,6 +317,7 @@ describe("VideoElement component", () => {
   });
 
   test.each(STATUS_EVENTS)("should handle %s event", (eventName: string) => {
+    const setPlayer = vi.fn();
     const { getBySelector } = renderWithProviders(
       <VideoElement
         mpd={params.url}
@@ -294,16 +325,12 @@ describe("VideoElement component", () => {
         dashParams={dashParams}
         keys={keys}
         currentTime={currentTime}
-        controls={controls}
-        activeIcon={activeIcon}
         events={events}
+        setPlayer={setPlayer}
       />
     );
     const videoElement = getBySelector("video") as HTMLVideoElement;
-    Object.defineProperty(videoElement, "play", {
-      writable: true,
-      value: play,
-    });
+    spyOnVideo(videoElement);
     if (eventName === "error") {
       Object.defineProperty(videoElement, "error", {
         writable: true,
@@ -325,7 +352,8 @@ describe("VideoElement component", () => {
   });
 
   test("set subtitle element after component has mounted", () => {
-    const { getByTestId } = renderWithProviders(
+    const setPlayer = vi.fn();
+    const { getByTestId, unmount } = renderWithProviders(
       <div>
         <VideoElement
           mpd={params.url}
@@ -333,30 +361,34 @@ describe("VideoElement component", () => {
           dashParams={dashParams}
           keys={keys}
           currentTime={currentTime}
-          controls={controls}
-          activeIcon={activeIcon}
           events={events}
+          setPlayer={setPlayer}
         />
         <div data-testid="subtitles" />
       </div>
     );
-    const playerControls = controls.value;
     const subsElt = getByTestId("subtitles") as HTMLDivElement;
-    expect(playerControls).toBeDefined();
+    expect(setPlayer).toHaveBeenCalledTimes(1);
+    const controls: PlayerControls | null = setPlayer.mock.calls[0][0];
+    expect(controls).not.toBeNull();
     expect(player).toBeDefined();
     expect(player.setSubtitlesElement).not.toHaveBeenCalled();
-    playerControls.setSubtitlesElement(subsElt);
+    controls.setSubtitlesElement(subsElt);
     expect(player.setSubtitlesElement).toHaveBeenCalledTimes(1);
     expect(player.setSubtitlesElement).toHaveBeenCalledWith(subsElt);
+    unmount();
+    expect(setPlayer).toHaveBeenCalledTimes(2);
+    expect(setPlayer).toHaveBeenLastCalledWith(null);
   });
 
   test("set subtitle element before component has mounted", () => {
+    const setPlayer = vi.fn();
     let videoRef: VideoElement | undefined;
     const setVideoRef = (elt: VideoElement) => {
       videoRef = elt;
     };
     dashParams.value = undefined;
-    const { getByTestId } = renderWithProviders(
+    const { getByTestId, unmount } = renderWithProviders(
       <div>
         <VideoElement
           mpd={params.url}
@@ -364,24 +396,29 @@ describe("VideoElement component", () => {
           dashParams={dashParams}
           keys={keys}
           currentTime={currentTime}
-          controls={controls}
-          activeIcon={activeIcon}
           events={events}
           ref={setVideoRef}
+          setPlayer={setPlayer}
         />
         <div data-testid="subtitles" />
       </div>
     );
     const subsElt = getByTestId("subtitles") as HTMLDivElement;
-    expect(controls.value).not.toBeDefined();
     expect(videoRef).toBeDefined();
+    expect(setPlayer).not.toHaveBeenCalled();
     videoRef.setSubtitlesElement(subsElt);
+    expect(setPlayer).not.toHaveBeenCalled();
     act(() => {
       dashParams.value = structuredClone(params);
     });
-    expect(controls.value).toBeDefined();
+    expect(setPlayer).toHaveBeenCalledTimes(1);
+    const controls: PlayerControls | null = setPlayer.mock.calls[0][0];
+    expect(controls).not.toBeNull();
     expect(player).toBeDefined();
     expect(player.setSubtitlesElement).toHaveBeenCalledTimes(1);
     expect(player.setSubtitlesElement).toHaveBeenCalledWith(subsElt);
+    unmount();
+    expect(setPlayer).toHaveBeenCalledTimes(2);
+    expect(setPlayer).toHaveBeenLastCalledWith(null);
   });
 });
