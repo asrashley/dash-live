@@ -71,14 +71,13 @@ If using Linux:
 
 ```sh
 uv sync
-. ./virtenv/bin/activate
+. ./.venv/bin/activate
 ```
 
 or Windows:
 
 ```powershell
 uv sync
-.\virtenv\Scripts\activate
 ```
 
 Install JavaScript libraries:
@@ -108,7 +107,7 @@ To start the server:
 or if using Windows:
 
 ```powershell
-runserver.ps1
+.\runserver.ps1
 ```
 
 It will start an HTTP server on port 5000
