@@ -1,9 +1,10 @@
 [project]
 name = "dash-live"
-version = "0.1.0"
-description = "Add your description here"
+version = "3.6.0"
+description = "A simulated MPEG DASH service"
 readme = "README.md"
 requires-python = ">=3.11"
+license = { file = "LICENSE" }
 dependencies = [
     "alembic==1.16.4",
     "asgiref==3.8.1",
@@ -59,6 +60,10 @@ dev = [
     "tox>=4.28.4",
     "tox-uv>=1.28.0",
 ]
+
+[project.urls]
+Issues = "https://github.com/asrashley/dash-live/issues"
+Repository = "https://github.com/asrashley/dash-live.git"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
