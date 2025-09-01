@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 import logging
 import re
+import shutil
 import subprocess
 from typing import ClassVar, Pattern
 import unittest
@@ -72,6 +73,11 @@ class MockFfmpeg(TestCaseMixin):
                 return self.mp4box_build_encrypted(args)
             return self.mp4box_build(args)
         return self.ffmpeg_video_encode(args)
+
+    def which(self, cmd: str | Path, mode: int = 1, path: str | Path | None = None) -> str | None:
+        if f"{cmd}" in {'ffmpeg', 'ffprobe', 'MP4Box'}:
+            return f"{self.drive}/usr/local/bin/{cmd}"
+        return None
 
     def ffmpeg_video_encode(self, args: list[str]) -> int:
         ladder: list[VideoEncodingParameters] = self.bitrate_ladder()
@@ -299,6 +305,15 @@ class TestMediaCreation(TestCase):
             self.fs.create_dir(tmpdir)
         return tmpdir
 
+    def run_creator_main(self, args: list[str], ffmpeg: MockFfmpeg) -> int:
+        logging.disable(logging.CRITICAL)
+        with patch.multiple(subprocess, check_call=ffmpeg.check_call,
+                            check_output=ffmpeg.check_output):
+            with patch.object(shutil, 'which', ffmpeg.which):
+                with patch('dashlive.mpeg.mp4.Mp4Atom'):
+                    rv: int = DashMediaCreatorWithoutParser.main(args)
+        return rv
+
     def test_encode_with_surround_audio(self) -> None:
         tmpdir: Path = self.create_temp_folder()
         kid = '1ab45440532c439994dc5c5ad9584bac'
@@ -317,10 +332,7 @@ class TestMediaCreation(TestCase):
         self.assertFalse(opts.subtitles)
         self.assertTrue(opts.surround)
         ffmpeg = MockFfmpeg(self.fs, src_file, tmpdir, opts)
-        logging.disable(logging.CRITICAL)
-        with patch.object(subprocess, 'check_call', ffmpeg.check_call):
-            with patch.object(subprocess, 'check_output', ffmpeg.check_output):
-                rv: int = DashMediaCreatorWithoutParser.main(args)
+        rv: int = self.run_creator_main(args, ffmpeg)
         self.assertEqual(rv, 0)
         js_file: Path = tmpdir / 'bbb.json'
         with js_file.open('rt') as src:
@@ -362,10 +374,7 @@ class TestMediaCreation(TestCase):
         self.assertFalse(opts.subtitles)
         self.assertFalse(opts.surround)
         ffmpeg = MockFfmpeg(self.fs, src_file, tmpdir, opts)
-        logging.disable(logging.CRITICAL)
-        with patch.object(subprocess, 'check_call', ffmpeg.check_call):
-            with patch.object(subprocess, 'check_output', ffmpeg.check_output):
-                rv: int = DashMediaCreatorWithoutParser.main(args)
+        rv: int = self.run_creator_main(args, ffmpeg)
         self.assertEqual(rv, 0)
         js_file: Path = tmpdir / 'bbb.json'
         with js_file.open('rt') as src:
@@ -416,11 +425,7 @@ class TestMediaCreation(TestCase):
         self.assertTrue(opts.subtitles)
         self.assertFalse(opts.surround)
         ffmpeg = MockFfmpeg(self.fs, src_file, tmpdir, opts)
-        logging.disable(logging.CRITICAL)
-        with patch.object(subprocess, 'check_call', ffmpeg.check_call):
-            with patch.object(subprocess, 'check_output', ffmpeg.check_output):
-                with patch('dashlive.mpeg.mp4.Mp4Atom'):
-                    rv: int = DashMediaCreatorWithoutParser.main(args)
+        rv: int = self.run_creator_main(args, ffmpeg)
         self.assertEqual(rv, 0)
         js_file: Path = tmpdir / 'bbb.json'
         with js_file.open('rt') as src:
@@ -451,11 +456,29 @@ class TestMediaCreation(TestCase):
         ]
         opts: MediaCreateOptions = MediaCreateOptions.parse_args(args)
         ffmpeg = MockFfmpeg(self.fs, src_file, tmpdir, opts)
+        with self.assertRaises(IOError):
+            self.run_creator_main(args, ffmpeg)
+
+    def test_missing_media_tool(self) -> None:
+        src_file: Path = self.input_dir / 'BigBuckBunny.mp4'
+        self.fs.create_file(src_file, contents=f"{src_file}")
+        tmpdir: Path = self.create_temp_folder()
+        args: list[str] = [
+            '-i', f"{src_file}",
+            '-p', 'bbb',
+            '-o', str(tmpdir)
+        ]
         logging.disable(logging.CRITICAL)
-        with patch.object(subprocess, 'check_call', ffmpeg.check_call):
-            with patch.object(subprocess, 'check_output', ffmpeg.check_output):
-                with self.assertRaises(IOError):
-                    DashMediaCreatorWithoutParser.main(args)
+        for tool in ['ffmpeg', 'ffprobe', 'MP4Box']:
+            def mock_which(cmd: str) -> str | None:
+                if cmd == tool:
+                    return None
+                return f'/usr/bin/{cmd}'
+
+            with patch.object(shutil, 'which', mock_which):
+                with patch('dashlive.mpeg.mp4.Mp4Atom'):
+                    rv: int = DashMediaCreatorWithoutParser.main(args)
+                    self.assertEqual(rv, 1)
 
 
 if __name__ == '__main__':
