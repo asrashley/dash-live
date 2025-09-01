@@ -742,12 +742,25 @@ class DashMediaCreator:
         return x
 
     @staticmethod
+    def check_for_missing_tools() -> bool:
+        missing_tools: bool = False
+        for tool in ("ffmpeg", "ffprobe", "MP4Box"):
+            if shutil.which(tool) is None:
+                logging.error("Error: Required tool '%s' is not installed or not in PATH.", tool)
+                missing_tools = True
+        return missing_tools
+
+    @staticmethod
     def main(argv: list[str]) -> int:
         logging.basicConfig()
         ch = logging.StreamHandler()
         ch.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s: %(message)s'))
         mp4_log = logging.getLogger('mp4')
         mp4_log.addHandler(ch)
+
+        if DashMediaCreator.check_for_missing_tools():
+            return 1
+
         args: MediaCreateOptions = MediaCreateOptions.parse_args(argv)
         if args.verbose:
             logging.getLogger().setLevel(logging.DEBUG)
