@@ -1,16 +1,16 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, Mock, test, vi } from "vitest";
 import { act } from "@testing-library/preact";
 import { signal } from "@preact/signals";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import { StatusEvent } from "../types/StatusEvent";
 import { PlayerControls } from "../types/PlayerControls";
-import { STATUS_EVENTS, VideoElement } from "./VideoElement";
+import { STATUS_EVENTS, VideoElement, VideoElementProps } from "./VideoElement";
 import { DashParameters } from "../types/DashParameters";
 import { KeyParameters } from "../types/KeyParameters";
 import { playerFactory } from "../players/playerFactory";
 import { DashPlayerTypes } from "../types/DashPlayerTypes";
-import { DashPlayerProps } from "../types/AbstractDashPlayer";
+import { DashPlayerProps } from "../players/AbstractDashPlayer";
 import { FakePlayer } from "../players/__mocks__/FakePlayer";
 
 vi.mock("../players/playerFactory", () => ({
@@ -59,14 +59,21 @@ describe("VideoElement component", () => {
   const dashParams = signal<DashParameters>(params);
   const keys = signal<Map<string, KeyParameters>>(new Map());
   const currentTime = signal<number>(0);
+  const textEnabled = signal<boolean>(true);
+  const textLanguage = signal<string>("");
   const events = signal<StatusEvent[]>([]);
   const mockedPlayerFactory = vi.mocked(playerFactory);
+  const tracksChanged = vi.fn();
+  let setPlayer: Mock<VideoElementProps["setPlayer"]>;
   let player: FakePlayer | undefined;
 
   beforeEach(() => {
+    setPlayer = vi.fn();
     dashParams.value = structuredClone(params);
     events.value = [];
     currentTime.value = 0;
+    textEnabled.value = true;
+    textLanguage.value = "eng";
     keys.value = new Map();
     mockedPlayerFactory.mockImplementation(
       (_playerType: DashPlayerTypes, props: DashPlayerProps) => {
@@ -83,8 +90,7 @@ describe("VideoElement component", () => {
   });
 
   test("should initialize player on mount", () => {
-    const setPlayer = vi.fn();
-    const { getBySelector } = renderWithProviders(
+    const { getBySelector, unmount } = renderWithProviders(
       <VideoElement
         mpd={params.url}
         playerName="native"
@@ -92,7 +98,10 @@ describe("VideoElement component", () => {
         keys={keys}
         currentTime={currentTime}
         events={events}
+        textEnabled={textEnabled}
+        textLanguage={textLanguage}
         setPlayer={setPlayer}
+        tracksChanged={tracksChanged}
       />
     );
     const videoElement = getBySelector("video") as HTMLVideoElement;
@@ -102,12 +111,18 @@ describe("VideoElement component", () => {
       videoElement,
       autoplay: true,
       version: undefined,
+      textEnabled: textEnabled.value,
+      textLanguage: textLanguage.value,
       logEvent: expect.any(Function),
+      tracksChanged: expect.any(Function),
     });
+    unmount();
+    expect(setPlayer).toHaveBeenCalledTimes(2);
+    expect(setPlayer).toHaveBeenLastCalledWith(null);
   });
 
   test("should destroy player on unmount", () => {
-    const setPlayer = vi.fn();
+    expect(setPlayer).not.toHaveBeenCalled();
     const { unmount } = renderWithProviders(
       <VideoElement
         mpd={params.url}
@@ -116,7 +131,10 @@ describe("VideoElement component", () => {
         keys={keys}
         currentTime={currentTime}
         events={events}
+        textEnabled={textEnabled}
+        textLanguage={textLanguage}
         setPlayer={setPlayer}
+        tracksChanged={tracksChanged}
       />
     );
     expect(mockedPlayerFactory).toHaveBeenCalledTimes(1);
@@ -124,11 +142,13 @@ describe("VideoElement component", () => {
     const destroySpy = vi.spyOn(playerInstance, "destroy");
     unmount();
     expect(destroySpy).toHaveBeenCalledTimes(1);
+    expect(setPlayer).toHaveBeenCalledTimes(2);
+    expect(setPlayer).toHaveBeenLastCalledWith(null);
   });
 
   test("does not re-render", () => {
-    const setPlayer = vi.fn();
-    const { getBySelector, rerender } = renderWithProviders(
+    expect(setPlayer).not.toHaveBeenCalled();
+    const { getBySelector, rerender, unmount } = renderWithProviders(
       <VideoElement
         mpd={params.url}
         playerName="native"
@@ -136,7 +156,10 @@ describe("VideoElement component", () => {
         keys={keys}
         currentTime={currentTime}
         events={events}
+        textEnabled={textEnabled}
+        textLanguage={textLanguage}
         setPlayer={setPlayer}
+        tracksChanged={tracksChanged}
       />
     );
     expect(mockedPlayerFactory).toHaveBeenCalledTimes(1);
@@ -149,15 +172,18 @@ describe("VideoElement component", () => {
         keys={keys}
         currentTime={currentTime}
         events={events}
+        textEnabled={textEnabled}
+        textLanguage={textLanguage}
         setPlayer={setPlayer}
+        tracksChanged={tracksChanged}
       />
     );
     expect(mockedPlayerFactory).toHaveBeenCalledTimes(1);
     expect(vid).toStrictEqual(getBySelector("video"));
+    unmount();
   });
 
   test("can play()", () => {
-    const setPlayer = vi.fn();
     const { getBySelector, unmount } = renderWithProviders(
       <VideoElement
         mpd={params.url}
@@ -166,7 +192,10 @@ describe("VideoElement component", () => {
         keys={keys}
         currentTime={currentTime}
         events={events}
+        textEnabled={textEnabled}
+        textLanguage={textLanguage}
         setPlayer={setPlayer}
+        tracksChanged={tracksChanged}
       />
     );
     const videoElement = getBySelector("video") as HTMLVideoElement;
@@ -182,7 +211,6 @@ describe("VideoElement component", () => {
   });
 
   test("can pause()", () => {
-    const setPlayer = vi.fn();
     const { getBySelector, unmount } = renderWithProviders(
       <VideoElement
         mpd={params.url}
@@ -191,7 +219,10 @@ describe("VideoElement component", () => {
         keys={keys}
         currentTime={currentTime}
         events={events}
+        textEnabled={textEnabled}
+        textLanguage={textLanguage}
         setPlayer={setPlayer}
+        tracksChanged={tracksChanged}
       />
     );
     const videoElement = getBySelector("video") as HTMLVideoElement;
@@ -220,7 +251,6 @@ describe("VideoElement component", () => {
   });
 
   test("can skip()", () => {
-    const setPlayer = vi.fn();
     const { getBySelector } = renderWithProviders(
       <VideoElement
         mpd={params.url}
@@ -229,7 +259,10 @@ describe("VideoElement component", () => {
         keys={keys}
         currentTime={currentTime}
         events={events}
+        textEnabled={textEnabled}
+        textLanguage={textLanguage}
         setPlayer={setPlayer}
+        tracksChanged={tracksChanged}
       />
     );
     const videoElement = getBySelector("video") as HTMLVideoElement;
@@ -245,8 +278,7 @@ describe("VideoElement component", () => {
   });
 
   test("can stop()", () => {
-    const setPlayer = vi.fn();
-    renderWithProviders(
+    const { unmount } = renderWithProviders(
       <VideoElement
         mpd={params.url}
         playerName="native"
@@ -254,7 +286,10 @@ describe("VideoElement component", () => {
         keys={keys}
         currentTime={currentTime}
         events={events}
+        textEnabled={textEnabled}
+        textLanguage={textLanguage}
         setPlayer={setPlayer}
+        tracksChanged={tracksChanged}
       />
     );
     expect(setPlayer).toHaveBeenCalledTimes(1);
@@ -264,10 +299,12 @@ describe("VideoElement component", () => {
     vi.spyOn(player, 'destroy');
     controls.stop();
     expect(player.destroy).toHaveBeenCalledTimes(1);
+    unmount();
+    expect(setPlayer).toHaveBeenCalledTimes(2);
+    expect(setPlayer).toHaveBeenLastCalledWith(null);
   });
 
   test("can add items to event log", () => {
-    const setPlayer = vi.fn();
     renderWithProviders(
       <VideoElement
         mpd={params.url}
@@ -276,7 +313,10 @@ describe("VideoElement component", () => {
         keys={keys}
         currentTime={currentTime}
         events={events}
+        textEnabled={textEnabled}
+        textLanguage={textLanguage}
         setPlayer={setPlayer}
+        tracksChanged={tracksChanged}
       />
     );
     expect(mockedPlayerFactory).toHaveBeenCalledTimes(1);
@@ -292,7 +332,6 @@ describe("VideoElement component", () => {
   });
 
   test("updates currentTime on timeupdate", () => {
-    const setPlayer = vi.fn();
     const { getBySelector } = renderWithProviders(
       <VideoElement
         mpd={params.url}
@@ -301,7 +340,10 @@ describe("VideoElement component", () => {
         keys={keys}
         currentTime={currentTime}
         events={events}
+        textEnabled={textEnabled}
+        textLanguage={textLanguage}
         setPlayer={setPlayer}
+        tracksChanged={tracksChanged}
       />
     );
     const videoElement = getBySelector("video") as HTMLVideoElement;
@@ -317,8 +359,7 @@ describe("VideoElement component", () => {
   });
 
   test.each(STATUS_EVENTS)("should handle %s event", (eventName: string) => {
-    const setPlayer = vi.fn();
-    const { getBySelector } = renderWithProviders(
+    const { getBySelector, unmount } = renderWithProviders(
       <VideoElement
         mpd={params.url}
         playerName="native"
@@ -326,7 +367,10 @@ describe("VideoElement component", () => {
         keys={keys}
         currentTime={currentTime}
         events={events}
+        textEnabled={textEnabled}
+        textLanguage={textLanguage}
         setPlayer={setPlayer}
+        tracksChanged={tracksChanged}
       />
     );
     const videoElement = getBySelector("video") as HTMLVideoElement;
@@ -349,10 +393,12 @@ describe("VideoElement component", () => {
     videoElement.dispatchEvent(ev);
     expect(events.value.length).toEqual(1);
     expect(events.value[0].event).toEqual(eventName);
+    unmount();
+    expect(setPlayer).toHaveBeenCalledTimes(2);
+    expect(setPlayer).toHaveBeenLastCalledWith(null);
   });
 
   test("set subtitle element after component has mounted", () => {
-    const setPlayer = vi.fn();
     const { getByTestId, unmount } = renderWithProviders(
       <div>
         <VideoElement
@@ -362,7 +408,10 @@ describe("VideoElement component", () => {
           keys={keys}
           currentTime={currentTime}
           events={events}
+          textEnabled={textEnabled}
+          textLanguage={textLanguage}
           setPlayer={setPlayer}
+          tracksChanged={tracksChanged}
         />
         <div data-testid="subtitles" />
       </div>
@@ -382,7 +431,6 @@ describe("VideoElement component", () => {
   });
 
   test("set subtitle element before component has mounted", () => {
-    const setPlayer = vi.fn();
     let videoRef: VideoElement | undefined;
     const setVideoRef = (elt: VideoElement) => {
       videoRef = elt;
@@ -397,8 +445,11 @@ describe("VideoElement component", () => {
           keys={keys}
           currentTime={currentTime}
           events={events}
+          textEnabled={textEnabled}
+          textLanguage={textLanguage}
           ref={setVideoRef}
           setPlayer={setPlayer}
+          tracksChanged={tracksChanged}
         />
         <div data-testid="subtitles" />
       </div>

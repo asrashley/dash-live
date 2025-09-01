@@ -7,7 +7,7 @@ import {
   test,
   vi,
 } from "vitest";
-import { act } from "@testing-library/preact";
+import { act, fireEvent } from "@testing-library/preact";
 import { signal } from "@preact/signals";
 import { mock, mockReset } from "vitest-mock-extended";
 import fetchMock from "@fetch-mock/vitest";
@@ -26,11 +26,11 @@ import dashParameters from "../../test/fixtures/play/vod/bbb/hand_made.json";
 import { DashParameters } from "../types/DashParameters";
 import { PlayerControls } from "../types/PlayerControls";
 import { playerFactory } from "../players/playerFactory";
-import {
-  DashPlayerProps,
-} from "../types/AbstractDashPlayer";
+import { DashPlayerProps } from "../players/AbstractDashPlayer";
 import { DashPlayerTypes } from "../types/DashPlayerTypes";
 import { FakePlayer } from "../players/__mocks__/FakePlayer";
+import { MediaTrack } from "../types/MediaTrack";
+import { MediaTrackType } from "../types/MediaTrackType";
 
 vi.mock("../../hooks/useSearchParams", () => ({
   useSearchParams: vi.fn(),
@@ -49,6 +49,29 @@ vi.mock("../players/playerFactory", () => ({
 }));
 
 describe("VideoPlayerPage", () => {
+  const videoTrack: MediaTrack = {
+    id: "v1",
+    trackType: MediaTrackType.VIDEO,
+    active: true,
+  };
+  const audioTrack: MediaTrack = {
+    id: "a1",
+    language: "eng",
+    trackType: MediaTrackType.AUDIO,
+    active: true,
+  };
+  const textTrackOne: MediaTrack = {
+    id: "t1",
+    language: "eng",
+    trackType: MediaTrackType.TEXT,
+    active: false,
+  };
+  const textTrackTwo: MediaTrack = {
+    id: "t2",
+    language: "cym",
+    trackType: MediaTrackType.TEXT,
+    active: false,
+  };
   const apiRequests = mock<ApiRequests>();
   const mockedPlayerFactory = vi.mocked(playerFactory);
   const mockUseSearchParams = vi.mocked(useSearchParams);
@@ -77,7 +100,7 @@ describe("VideoPlayerPage", () => {
     mockedPlayerFactory.mockImplementation(
       (_playerType: DashPlayerTypes, props: DashPlayerProps) => {
         player = new FakePlayer(props);
-        vi.spyOn(player, 'pause');
+        vi.spyOn(player, "pause");
         return player;
       }
     );
@@ -95,11 +118,12 @@ describe("VideoPlayerPage", () => {
     mockUseSearchParams.mockReturnValue({
       searchParams,
     });
-    const { asFragment, findBySelector, findByText, getByTestId } = renderWithProviders(
-      <EndpointContext.Provider value={apiRequests}>
-        <VideoPlayerPage />
-      </EndpointContext.Provider>
-    );
+    const { asFragment, findBySelector, findByText, getByTestId } =
+      renderWithProviders(
+        <EndpointContext.Provider value={apiRequests}>
+          <VideoPlayerPage />
+        </EndpointContext.Provider>
+      );
     getByTestId("video-player-page");
     await findBySelector("#vid-window");
     await findByText("00:00:00");
@@ -186,6 +210,29 @@ describe("VideoPlayerPage", () => {
       vi.advanceTimersByTime(2001);
     });
     expect(queryBySelector(".bi-pause-fill")).toBeNull();
+  });
+
+  test("listens to tracksChanged from VideoPlayer component", async () => {
+    const searchParams = new URLSearchParams();
+    mockUseSearchParams.mockReturnValue({
+      searchParams,
+    });
+    const { findBySelector, findByText, getByTestId } = renderWithProviders(
+      <EndpointContext.Provider value={apiRequests}>
+        <VideoPlayerPage />
+      </EndpointContext.Provider>
+    );
+    await findBySelector("#vid-window");
+    expect(player).toBeDefined();
+    vi.spyOn(player, 'setTextTrack');
+    player.callMaybeTracksChanged([videoTrack, audioTrack, textTrackOne, textTrackTwo]);
+    const toggler = getByTestId("track-track-toggle") as HTMLButtonElement;
+    fireEvent.click(toggler);
+    const trackOneBtn: HTMLButtonElement = (await findByText('0: "eng"')) as HTMLButtonElement;
+    expect(toggler.classList.contains('show')).toEqual(true);
+    fireEvent.click(trackOneBtn);
+    expect(player.setTextTrack).toHaveBeenCalledTimes(1);
+    expect(player.setTextTrack).toHaveBeenCalledWith(textTrackOne);
   });
 });
 

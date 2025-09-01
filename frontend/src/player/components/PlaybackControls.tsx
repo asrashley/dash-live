@@ -3,15 +3,21 @@ import { useComputed, type ReadonlySignal } from "@preact/signals";
 import { createTimeObject, timeObjectToString } from "../utils/formatTimecode";
 import { Icon } from "../../components/Icon";
 import { PlayerControls } from "../types/PlayerControls";
+import { MediaTrack } from "../types/MediaTrack";
+import { TextTrackSelection } from "./TextTrackSelection";
 
 export interface PlaybackControlsProps {
   currentTime: ReadonlySignal<number>;
   controls: ReadonlySignal<PlayerControls | null>;
+  tracks: ReadonlySignal<MediaTrack[]>;
+  setTextTrack: (track: MediaTrack | null) => void;
 }
 
 export function PlaybackControls({
   currentTime,
   controls,
+  tracks,
+  setTextTrack,
 }: PlaybackControlsProps) {
   const hasPlayer = useComputed<boolean>(() => {
     return controls.value?.hasPlayer.value === true;
@@ -75,6 +81,7 @@ export function PlaybackControls({
         disabled={disableTrickButtons}  data-testid="skip-fwd-btn">
         <Icon name="skip-forward-fill" />
       </button>
+      <TextTrackSelection tracks={tracks} setTrack={setTextTrack} />
       <div className="play-position flex-grow-1">{timeCodeText}</div>
     </div>
   );

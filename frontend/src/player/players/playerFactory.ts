@@ -1,4 +1,4 @@
-import { AbstractDashPlayer, DashPlayerProps } from "../types/AbstractDashPlayer";
+import { AbstractDashPlayer, DashPlayerProps } from "./AbstractDashPlayer";
 import { DashPlayerTypes } from "../types/DashPlayerTypes";
 import { DashJsPlayer } from "./DashJsPlayer";
 import { NativePlayer } from "./NativePlayer";

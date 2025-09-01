@@ -44,7 +44,7 @@
   height: 2.2rem;
   position: absolute;
   right: 6vw;
-  width: 15em;
+  width: 16em;
 
   .play-position {
     background-color: rgba(63, 63, 63, 0.5);
@@ -56,6 +56,21 @@
   > .btn {
     font-size: 125%;
     line-height: 1rem;
+
+    > .icon {
+      display: inline-block;
+      width: 0.75em;
+    }
+  }
+
+  .dropdown-menu {
+    background-color: rgba(42, 42, 42, 0.8);
+    .dropdown-item {
+      color: #eee;
+    }
+    .dropdown-item:hover {
+      color: #33f;
+    }
   }
 }
 
@@ -195,6 +210,7 @@
     bottom: 0vh;
     height: 14vh;
     left: 5vw;
+    overflow-y: scroll;
     width: 90vw;
   }
 }
