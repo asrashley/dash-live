@@ -36,8 +36,7 @@ export abstract class AbstractDashPlayer {
         const { videoElement } = this.props;
         try {
             await videoElement.play();
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        } catch(err) {
+        } catch {
             videoElement.muted = true;
             videoElement.play();
         }
