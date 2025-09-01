@@ -15,11 +15,11 @@ export class NativePlayer extends AbstractDashPlayer {
         videoElement.removeEventListener('canplay', this.onCanPlayEvent);
     }
 
-    setSubtitlesElement() {
+    override setSubtitlesElement(_subtitlesElement: HTMLDivElement | null) {
         // no op
     }
 
-    setTextTrack(track: MediaTrack | null) {
+    override setTextTrack(track: MediaTrack | null) {
         const { videoElement } = this.props;
         for(let i=0; i < videoElement.textTracks.length; ++i) {
             const tt = videoElement.textTracks[i];
