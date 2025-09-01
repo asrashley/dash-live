@@ -46,8 +46,20 @@ ShakaVersion = DashOption(
     cgi_choices=(None, '4.11.2', '4.3.8', '2.5.4',),
     input_type='datalist')
 
-player_options = [
+TextLanguage = DashOption(
+    usage=OptionUsage.HTML,
+    featured=True,
+    short_name='ptxLang',
+    full_name='textPreference',
+    title='Text preference',
+    description='preferred language for text tracks',
+    cgi_name='text_pref',
+    cgi_choices=(None, 'eng', 'cym', 'deu', 'fra', 'gla', 'gle', 'gre', 'pol', 'spa'),
+    input_type='datalist')
+
+player_options: list[DashOption] = [
     DashjsVersion,
     NativePlayback,
     ShakaVersion,
+    TextLanguage,
 ]
