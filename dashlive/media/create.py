@@ -655,6 +655,17 @@ class DashMediaCreator:
         ap.add_argument('--prefix', '-p', help='Prefix for output files', required=True)
         args = ap.parse_args(args)
 
+        # Pre-requisite checks
+        #  Check output directory exists as MediaCreateOptions __post_init__ requires it 
+        if not Path(args.output).is_dir():
+            print(f"Error: Output directory '{args.output}' does not exist. Please create it before running this script.", file=sys.stderr)
+            sys.exit(1)
+
+        for tool in ("ffmpeg", "ffprobe", "MP4Box"):
+            if shutil.which(tool) is None:
+                print(f"Error: Required tool '{tool}' is not installed or not in PATH.", file=sys.stderr)
+                sys.exit(1)
+
         logging.basicConfig()
         ch = logging.StreamHandler()
         ch.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s: %(message)s'))
