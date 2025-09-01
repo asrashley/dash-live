@@ -72,7 +72,12 @@ export default tseslint.config({
   rules: {
     ...eslintConfigPreact.rules,
     "no-unused-vars": "off",
-    "@typescript-eslint/no-unused-vars": "error",
+    "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          "argsIgnorePattern": "^_",
+        }
+    ],
     "import/no-unresolved": [
       "error",
       {
