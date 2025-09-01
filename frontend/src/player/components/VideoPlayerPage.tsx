@@ -19,6 +19,7 @@ import { AppStateContext } from "../../appState";
 
 import "../styles/video.less";
 import { PlaybackControls } from "./PlaybackControls";
+import { MediaTrack } from "../types/MediaTrack";
 
 export function manifestUrl(
   mode: string,
@@ -101,6 +102,9 @@ export default function VideoPlayerPage() {
   const playerName = useMemo<DashPlayerTypes>(() => {
     return (searchParams.get("player") ?? "native") as DashPlayerTypes;
   }, [searchParams]);
+  const textEnabled = useSignal<boolean>(true);
+  const textLanguage = useSignal<string>(searchParams.get("text_pref") ?? "eng");
+  const tracks = useSignal<MediaTrack[]>([]);
 
   const onKeyDown = useCallback((ev: KeyboardEvent) => {
     if (!controls.value) {
@@ -112,6 +116,14 @@ export default function VideoPlayerPage() {
   const setPlayer = useCallback((player: PlayerControls | null) => {
     controls.value = player;
   }, [controls]);
+
+  const setTextTrack = useCallback((track: MediaTrack | null) => {
+    controls.value?.setTextTrack(track);
+  }, [controls]);
+
+  const tracksChanged =  useCallback((newTrackList: MediaTrack[]) => {
+    tracks.value = structuredClone(newTrackList);
+  }, [tracks]);
 
   useEffect(() => {
     cinemaMode.value = true;
@@ -127,6 +139,13 @@ export default function VideoPlayerPage() {
     };
   }, [onKeyDown]);
 
+  useEffect(() => {
+    const tp = searchParams.get("text_pref");
+    if (tp && textLanguage.value !== tp) {
+      textLanguage.value = tp;
+    }
+  }, [searchParams, textLanguage]);
+
   return (
     <div data-testid="video-player-page">
       {loaded.value ? (
@@ -137,13 +156,21 @@ export default function VideoPlayerPage() {
           keys={keys}
           currentTime={currentTime}
           events={events}
+          textEnabled={textEnabled}
+          textLanguage={textLanguage}
           setPlayer={setPlayer}
+          tracksChanged={tracksChanged}
         />
       ) : (
         <LoadingSpinner />
       )}
       <StatusPanel events={events} />
-      <PlaybackControls currentTime={currentTime} controls={controls} />
+      <PlaybackControls
+        currentTime={currentTime}
+        controls={controls}
+        tracks={tracks}
+        setTextTrack={setTextTrack}
+      />
     </div>
   );
 }

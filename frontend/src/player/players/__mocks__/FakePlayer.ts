@@ -1,8 +1,10 @@
-import { AbstractDashPlayer } from "../../types/AbstractDashPlayer";
+import { MediaTrack } from "../../types/MediaTrack";
+import { AbstractDashPlayer } from "../AbstractDashPlayer";
 
 export class FakePlayer extends AbstractDashPlayer {
   public paused = false;
   public subtitlesElement: HTMLDivElement | null = null;
+  public textTrack: MediaTrack | null = null;
 
   async initialize(source: string) {
     const { videoElement } = this.props;
@@ -20,7 +22,11 @@ export class FakePlayer extends AbstractDashPlayer {
     this.paused = true;
   }
 
-  setSubtitlesElement(subtitlesElement: HTMLDivElement | null): void {
+  setSubtitlesElement(subtitlesElement: HTMLDivElement | null) {
     this.subtitlesElement = subtitlesElement;
+  }
+
+  setTextTrack(track: MediaTrack | null) {
+    this.textTrack = track;
   }
 }

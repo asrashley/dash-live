@@ -72,6 +72,42 @@ exports[`VideoPlayerPage > matches snapshot 1`] = `
         />
       </button>
       <div
+        class="btn-group dropup"
+      >
+        <button
+          aria-expanded="false"
+          class="btn btn-secondary dropdown-toggle"
+          data-testid="track-track-toggle"
+        >
+          <span
+            aria-label="badge-cc icon"
+            class="bi icon bi-badge-cc "
+            role="img"
+          />
+        </button>
+        <ul
+          class="dropdown-menu "
+          style=""
+        >
+          <li>
+            <button
+              class="dropdown-item fw-bold"
+            >
+              - off -
+              <div
+                class="float-end"
+              >
+                <span
+                  class="bool-yes"
+                >
+                  ✓
+                </span>
+              </div>
+            </button>
+          </li>
+        </ul>
+      </div>
+      <div
         class="play-position flex-grow-1"
       >
         00:00:00

@@ -5,12 +5,13 @@ import { DashPlayerTypes } from "../types/DashPlayerTypes";
 import {
   AbstractDashPlayer,
   DashPlayerProps,
-} from "../types/AbstractDashPlayer";
+} from "../players/AbstractDashPlayer";
 import { playerFactory } from "../players/playerFactory";
 import { PlayerControls } from "../types/PlayerControls";
 import { StatusEvent } from "../types/StatusEvent";
 import { DashParameters } from "../types/DashParameters";
 import { KeyParameters } from "../types/KeyParameters";
+import { MediaTrack } from "../types/MediaTrack";
 
 export const STATUS_EVENTS = [
   "stalled",
@@ -33,22 +34,25 @@ export interface VideoElementProps {
   playerVersion?: string;
   dashParams: ReadonlySignal<DashParameters>;
   keys: ReadonlySignal<Map<string, KeyParameters>>;
+  textEnabled: ReadonlySignal<boolean>;
+  textLanguage: ReadonlySignal<string>;
   currentTime: Signal<number>;
   events: Signal<StatusEvent[]>;
   maxEvents?: number;
   setPlayer(controls: PlayerControls | null): void;
+  tracksChanged(tracks: MediaTrack[]): void;
 }
 
 export class VideoElement
   extends Component<VideoElementProps, undefined>
   implements PlayerControls
 {
-  static DEFAULT_MAX_EVENTS = 10;
+  static DEFAULT_MAX_EVENTS = 25;
   private videoElt: HTMLVideoElement | null = null;
   private player?: AbstractDashPlayer;
   private nextId = 1;
   private subtitlesElement: HTMLDivElement | null = null;
-  private dashParamsSignalCleanup: () => void | undefined;
+  private signalCleanup: () => void | undefined;
   private unmountController: AbortController = new AbortController();
   public isPaused = signal<boolean>(false);
   public hasPlayer = signal<boolean>(false);
@@ -60,25 +64,25 @@ export class VideoElement
 
   componentWillReceiveProps(nextProps: VideoElementProps) {
     if (nextProps.dashParams !== this.props.dashParams) {
-      this.dashParamsSignalCleanup?.();
-      this.dashParamsSignalCleanup = effect(() => {
-        this.tryInitializePlayer(this.props);
+      this.signalCleanup?.();
+      this.signalCleanup = effect(() => {
+        this.tryInitializePlayer();
       });
     }
-    this.tryInitializePlayer(nextProps);
+    //this.tryInitializePlayer(nextProps);
   }
 
   componentDidMount() {
     this.isPaused.value = this.videoElt?.paused ?? false;
-    this.dashParamsSignalCleanup = effect(() => {
-      this.tryInitializePlayer(this.props);
+    this.signalCleanup = effect(() => {
+      this.tryInitializePlayer();
     });
-    this.tryInitializePlayer(this.props);
+    //this.tryInitializePlayer(this.props);
   }
 
   componentWillUnmount() {
-    this.dashParamsSignalCleanup?.();
-    this.dashParamsSignalCleanup = undefined;
+    this.signalCleanup?.();
+    this.signalCleanup = undefined;
     this.unmountController.abort();
     this.props.setPlayer(null);
     this.player?.destroy();
@@ -97,7 +101,7 @@ export class VideoElement
   }
 
   play() {
-    this.tryInitializePlayer(this.props);
+    this.tryInitializePlayer();
     this.videoElt?.play();
   }
 
@@ -125,6 +129,10 @@ export class VideoElement
     this.player?.setSubtitlesElement(subtitlesElement);
   };
 
+  setTextTrack = (track: MediaTrack | null) => {
+    this.player?.setTextTrack(track);
+  };
+
   private setVideoElt = (elt: HTMLVideoElement | null) => {
     this.videoElt = elt;
     if (!elt) {
@@ -138,8 +146,8 @@ export class VideoElement
     elt.addEventListener('play', () => this.isPaused.value = false, { signal });
   }
 
-  private tryInitializePlayer(props: VideoElementProps) {
-    const { dashParams, keys, mpd, playerName, playerVersion: version } = props;
+  private tryInitializePlayer() {
+    const { dashParams, keys, mpd, playerName, textLanguage, textEnabled, playerVersion: version } = this.props;
     if (this.player || !this.videoElt || !dashParams.value) {
       return;
     }
@@ -148,8 +156,11 @@ export class VideoElement
     const playerProps: DashPlayerProps = {
       version,
       logEvent: this.logEvent,
+      tracksChanged: this.tracksChanged,
       autoplay: true,
       videoElement: this.videoElt,
+      textLanguage: textLanguage.value,
+      textEnabled: textEnabled.value,
     };
     this.player = playerFactory(playerName, playerProps);
     this.player.initialize(mpd, dashParams.value.options, keys.value);
@@ -205,4 +216,23 @@ export class VideoElement
     }
     this.props.events.value = evList;
   }
+
+  private tracksChanged = (tracks: MediaTrack[]) => {
+    const status: StatusEvent = {
+      id: 0,
+      timecode: new Date().toISOString(),
+      position: this.videoElt.currentTime,
+      event: 'TracksChanged',
+      text: "",
+    };
+
+    tracks.forEach(({active, id, trackType, language}) => {
+      this.appendStatusEvent({
+        ...status,
+        id: this.nextId++,
+        text: `${trackType}[${id}] lang="${language}" active=${active}`,
+      });
+    });
+    this.props.tracksChanged(tracks);
+  };
 }

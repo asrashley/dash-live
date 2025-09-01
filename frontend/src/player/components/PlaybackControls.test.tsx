@@ -4,15 +4,19 @@ import { signal } from "@preact/signals";
 import { PlaybackControls } from "./PlaybackControls";
 import type { PlayerControls } from "../types/PlayerControls";
 import { renderWithProviders } from "../../test/renderWithProviders";
+import { MediaTrack } from "../types/MediaTrack";
 
 describe("PlaybackControls", () => {
   const hasPlayer = signal<boolean>(true);
   const isPaused = signal<boolean>(false);
   const currentTime = signal<number>(0);
+  const tracks = signal<MediaTrack[]>([]);
   const play = vi.fn();
   const pause = vi.fn();
   const stop = vi.fn();
   const skip = vi.fn();
+  const controlsSetTextTrack = vi.fn();
+  const setTextTrack = vi.fn();
   const setSubtitlesElement = vi.fn();
 
   const controls = signal<PlayerControls>();
@@ -29,6 +33,7 @@ describe("PlaybackControls", () => {
       stop,
       skip,
       setSubtitlesElement,
+      setTextTrack: controlsSetTextTrack,
     };
   });
 
@@ -39,7 +44,12 @@ describe("PlaybackControls", () => {
   it("renders play and pause icons based on isPaused", async () => {
     isPaused.value = true;
     const { getByTestId } = renderWithProviders(
-      <PlaybackControls currentTime={currentTime} controls={controls} />
+      <PlaybackControls
+        currentTime={currentTime}
+        controls={controls}
+        tracks={tracks}
+        setTextTrack={setTextTrack}
+      />
     );
     const btn = getByTestId("play-pause-btn") as HTMLButtonElement;
     expect(btn.getAttribute("disabled")).toBeNull();
@@ -54,7 +64,12 @@ describe("PlaybackControls", () => {
 
   it("calls play and pause on playPause button click", () => {
     const { getByTestId } = renderWithProviders(
-      <PlaybackControls currentTime={currentTime} controls={controls} />
+      <PlaybackControls
+        currentTime={currentTime}
+        controls={controls}
+        tracks={tracks}
+        setTextTrack={setTextTrack}
+      />
     );
     const playPauseBtn = getByTestId("play-pause-btn") as HTMLButtonElement;
     expect(playPauseBtn.getAttribute("disabled")).toBeNull();
@@ -70,7 +85,12 @@ describe("PlaybackControls", () => {
 
   it("calls skip(-15) when skip backward is clicked", () => {
     const { getByTestId } = renderWithProviders(
-      <PlaybackControls currentTime={currentTime} controls={controls} />
+      <PlaybackControls
+        currentTime={currentTime}
+        controls={controls}
+        tracks={tracks}
+        setTextTrack={setTextTrack}
+      />
     );
     const skipBackBtn = getByTestId("skip-back-btn") as HTMLButtonElement;
     fireEvent.click(skipBackBtn);
@@ -80,7 +100,12 @@ describe("PlaybackControls", () => {
 
   it("calls skip(15) when skip forward is clicked", () => {
     const { getByTestId } = renderWithProviders(
-      <PlaybackControls currentTime={currentTime} controls={controls} />
+      <PlaybackControls
+        currentTime={currentTime}
+        controls={controls}
+        tracks={tracks}
+        setTextTrack={setTextTrack}
+      />
     );
     const skipFwdBtn = getByTestId("skip-fwd-btn") as HTMLButtonElement;
     fireEvent.click(skipFwdBtn);
@@ -91,7 +116,12 @@ describe("PlaybackControls", () => {
 
   it("calls stop on stop button", () => {
     const { getByTestId } = renderWithProviders(
-      <PlaybackControls currentTime={currentTime} controls={controls} />
+      <PlaybackControls
+        currentTime={currentTime}
+        controls={controls}
+        tracks={tracks}
+        setTextTrack={setTextTrack}
+      />
     );
     const stopBtn = getByTestId("stop-btn") as HTMLButtonElement;
     fireEvent.click(stopBtn);
@@ -102,10 +132,14 @@ describe("PlaybackControls", () => {
 
   it("disables buttons if hasPlayer is false", async () => {
     hasPlayer.value = false;
-    const { getAllByRole, findByText } =
-      renderWithProviders(
-        <PlaybackControls currentTime={currentTime} controls={controls} />
-      );
+    const { getAllByRole, findByText } = renderWithProviders(
+      <PlaybackControls
+        currentTime={currentTime}
+        controls={controls}
+        tracks={tracks}
+        setTextTrack={setTextTrack}
+      />
+    );
     await findByText("--:--:--");
     let buttons: HTMLButtonElement[] = getAllByRole(
       "button"
@@ -126,7 +160,12 @@ describe("PlaybackControls", () => {
   it("shows --:--:-- if no player", () => {
     hasPlayer.value = false;
     const { getByText } = renderWithProviders(
-      <PlaybackControls currentTime={currentTime} controls={controls} />
+      <PlaybackControls
+        currentTime={currentTime}
+        tracks={tracks}
+        controls={controls}
+        setTextTrack={setTextTrack}
+      />
     );
     expect(getByText("--:--:--")).toBeTruthy();
   });
@@ -134,7 +173,12 @@ describe("PlaybackControls", () => {
   it("shows --:--:-- if no controls", () => {
     controls.value = null;
     const { getByText, getByTestId } = renderWithProviders(
-      <PlaybackControls currentTime={currentTime} controls={controls} />
+      <PlaybackControls
+        currentTime={currentTime}
+        tracks={tracks}
+        controls={controls}
+        setTextTrack={setTextTrack}
+      />
     );
     expect(getByText("--:--:--")).toBeTruthy();
     const playPauseBtn = getByTestId("play-pause-btn") as HTMLButtonElement;

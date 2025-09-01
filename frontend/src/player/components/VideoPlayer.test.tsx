@@ -9,7 +9,7 @@ import { PlayerControls } from "../types/PlayerControls";
 import { StatusEvent } from "../types/StatusEvent";
 import { playerFactory } from "../players/playerFactory";
 import { DashPlayerTypes } from "../types/DashPlayerTypes";
-import { DashPlayerProps } from "../types/AbstractDashPlayer";
+import { DashPlayerProps } from "../players/AbstractDashPlayer";
 import { FakePlayer } from "../players/__mocks__/FakePlayer";
 import { act } from "@testing-library/preact";
 
@@ -49,7 +49,12 @@ describe("VideoPlayer component", () => {
   const dashParams = signal<DashParameters>(params);
   const keys = signal<Map<string, KeyParameters>>(new Map());
   const currentTime = signal<number>(0);
+  const textEnabled = signal<boolean>(true);
+  const textLanguage = signal<string>("eng");
+
   const events = signal<StatusEvent[]>([]);
+  const setPlayer = vi.fn();
+  const tracksChanged = vi.fn();
   let player: FakePlayer | undefined;
 
   beforeEach(() => {
@@ -67,7 +72,6 @@ describe("VideoPlayer component", () => {
   });
 
   test("matches snapshot", () => {
-    const setPlayer = vi.fn();
     const { asFragment, unmount } = renderWithProviders(
       <VideoPlayer
         mpd={params.url}
@@ -75,8 +79,11 @@ describe("VideoPlayer component", () => {
         dashParams={dashParams}
         keys={keys}
         currentTime={currentTime}
+        textEnabled={textEnabled}
+        textLanguage={textLanguage}
         events={events}
         setPlayer={setPlayer}
+        tracksChanged={tracksChanged}
       />
     );
     expect(setPlayer).toHaveBeenCalledTimes(1);
@@ -93,7 +100,6 @@ describe("VideoPlayer component", () => {
     { caller: (c) => c.skip(-5), skip: 1, cmd: "backward" },
     { caller: (c) => c.skip(5), skip: 1, cmd: "forward" },
   ])('wraps calls to $cmd', ({ caller, cmd, ...props }: PlayerControlsCallCount) => {
-    const setPlayer = vi.fn();
     const { getBySelector, unmount } = renderWithProviders(
       <VideoPlayer
         mpd={params.url}
@@ -101,8 +107,11 @@ describe("VideoPlayer component", () => {
         dashParams={dashParams}
         keys={keys}
         currentTime={currentTime}
+        textEnabled={textEnabled}
+        textLanguage={textLanguage}
         events={events}
         setPlayer={setPlayer}
+        tracksChanged={tracksChanged}
       />
     );
     const videoElement = getBySelector("video") as HTMLVideoElement;
