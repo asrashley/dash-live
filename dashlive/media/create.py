@@ -656,7 +656,7 @@ class DashMediaCreator:
         args = ap.parse_args(args)
 
         # Pre-requisite checks
-        #  Check output directory exists as MediaCreateOptions __post_init__ requires it 
+        #  Check output directory exists as MediaCreateOptions __post_init__ requires it
         if not Path(args.output).is_dir():
             print(f"Error: Output directory '{args.output}' does not exist. Please create it before running this script.", file=sys.stderr)
             sys.exit(1)
