@@ -32,6 +32,7 @@
     "css-loader": "^7.1.2",
     "eslint": "^8.57.1",
     "eslint-config-preact": "^1.5.0",
+    "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-no-barrel-files": "^1.2.0",
     "eslint-plugin-react": "^7.37.2",
