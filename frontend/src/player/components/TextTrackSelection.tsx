@@ -3,6 +3,7 @@ import { useCallback } from "preact/hooks";
 import { MediaTrack } from "../types/MediaTrack";
 import { Icon } from "../../components/Icon";
 import { BooleanCell } from "../../components/BooleanCell";
+import { MediaTrackType } from "../types/MediaTrackType";
 
 function IsActive({active}: {active: boolean}) {
     if (!active) {
@@ -49,7 +50,7 @@ export function TextTrackSelection({
 }: TextTrackSelectionProps) {
   const expanded = useSignal<boolean>(false);
   const textTracks = useComputed<MediaTrack[]>(() =>
-    tracks.value.filter((trk) => trk.trackType === "text")
+    tracks.value.filter((trk) => trk.trackType === MediaTrackType.TEXT)
   );
   const textEnabled = useComputed<boolean>(() =>
     textTracks.value.some((trk) => trk.active)
@@ -57,7 +58,7 @@ export function TextTrackSelection({
   const textIcon = useComputed<string>(() =>
     textEnabled.value ? "badge-cc-fill" : "badge-cc"
   );
-  const toggleClasses = useComputed<string>(() => `btn btn-secondary dropdown-toggle ${expanded.value ? " show": ""}`);
+  const toggleClasses = useComputed<string>(() => `btn btn-secondary dropdown-toggle${expanded.value ? " show": ""}`);
   const menuClasses = useComputed<string>(() => `dropdown-menu ${expanded.value ? " show": ""}`);
   const menuStyle = useComputed<string>(() => {
     if (!expanded.value) {
