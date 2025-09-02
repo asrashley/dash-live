@@ -57,7 +57,7 @@ export class VideoElement
   private signalCleanup: () => void | undefined;
   private unmountController: AbortController = new AbortController();
   public isPaused = signal<boolean>(false);
-  public hasPlayer = signal<boolean>(false);
+  public hasDashPlayer = signal<boolean>(false);
 
   shouldComponentUpdate() {
     // do not re-render via diff:
@@ -91,7 +91,7 @@ export class VideoElement
     this.player?.destroy();
     this.player = undefined;
     this.subtitlesElement = null;
-    this.hasPlayer.value = false;
+    this.hasDashPlayer.value = false;
     this.isPaused.value = true;
   }
 
@@ -124,7 +124,7 @@ export class VideoElement
     this.videoElt?.pause();
     this.player?.destroy();
     this.player = undefined;
-    this.hasPlayer.value = false;
+    this.hasDashPlayer.value = false;
   }
 
   setSubtitlesElement = (subtitlesElement: HTMLDivElement | null) => {
@@ -179,7 +179,7 @@ export class VideoElement
     }
     this.player = player;
     this.props.setPlayer(this);
-    this.hasPlayer.value = true;
+    this.hasDashPlayer.value = true;
   }
 
   private onTimeUpdate = (ev: Event) => {

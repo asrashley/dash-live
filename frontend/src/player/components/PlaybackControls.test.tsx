@@ -26,7 +26,7 @@ describe("PlaybackControls", () => {
     currentTime.value = 0;
     hasPlayer.value = true;
     controls.value = {
-      hasPlayer,
+      hasDashPlayer: hasPlayer,
       isPaused,
       play,
       pause,

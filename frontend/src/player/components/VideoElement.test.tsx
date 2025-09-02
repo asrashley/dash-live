@@ -286,7 +286,7 @@ describe("VideoElement component", () => {
     expect(setPlayer).toHaveBeenCalledTimes(1);
     const controls: PlayerControls | null = setPlayer.mock.calls[0][0];
     expect(controls).not.toBeNull();
-    expect(controls.hasPlayer.value).toEqual(true);
+    expect(controls.hasDashPlayer.value).toEqual(true);
     expect(controls.isPaused.value).toEqual(true);
     const playEv = new Event('play');
     act(() => {
