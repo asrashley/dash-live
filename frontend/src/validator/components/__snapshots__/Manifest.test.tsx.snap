@@ -287,7 +287,9 @@ exports[`Manifest component > matches snapshot for manifest with errors 1`] = `
       </span>
       <pre
         class="text"
-      />
+      >
+             
+      </pre>
     </div>
     <div
       class="manifest-line"
@@ -470,7 +472,9 @@ exports[`Manifest component > matches snapshot for manifest with errors 1`] = `
       </span>
       <pre
         class="text"
-      />
+      >
+                 
+      </pre>
     </div>
     <div
       class="manifest-line"
@@ -483,7 +487,9 @@ exports[`Manifest component > matches snapshot for manifest with errors 1`] = `
       </span>
       <pre
         class="text"
-      />
+      >
+          
+      </pre>
     </div>
     <div
       class="manifest-line"
@@ -496,7 +502,9 @@ exports[`Manifest component > matches snapshot for manifest with errors 1`] = `
       </span>
       <pre
         class="text"
-      />
+      >
+            
+      </pre>
     </div>
     <div
       class="manifest-line"
@@ -602,7 +610,9 @@ exports[`Manifest component > matches snapshot for manifest with errors 1`] = `
       </span>
       <pre
         class="text"
-      />
+      >
+          
+      </pre>
     </div>
     <div
       class="manifest-line"
@@ -628,7 +638,9 @@ exports[`Manifest component > matches snapshot for manifest with errors 1`] = `
       </span>
       <pre
         class="text"
-      />
+      >
+                 
+      </pre>
     </div>
     <div
       class="manifest-line"
@@ -1827,7 +1839,7 @@ exports[`Manifest component > matches snapshot for manifest with errors 1`] = `
       <pre
         class="text"
       >
-                   &lt;/Representation&gt;
+                   &lt;/Representation&gt; 
       </pre>
     </div>
     <div
@@ -1961,7 +1973,9 @@ exports[`Manifest component > matches snapshot for manifest with errors 1`] = `
       </span>
       <pre
         class="text"
-      />
+      >
+                 
+      </pre>
     </div>
     <div
       class="manifest-line"
@@ -1974,7 +1988,9 @@ exports[`Manifest component > matches snapshot for manifest with errors 1`] = `
       </span>
       <pre
         class="text"
-      />
+      >
+                 
+      </pre>
     </div>
     <div
       class="manifest-line"
@@ -2363,7 +2379,7 @@ exports[`Manifest component > matches snapshot for manifest with errors 1`] = `
       <pre
         class="text"
       >
-                   &lt;/Representation&gt;
+                   &lt;/Representation&gt; 
       </pre>
     </div>
     <div
@@ -2378,7 +2394,7 @@ exports[`Manifest component > matches snapshot for manifest with errors 1`] = `
       <pre
         class="text"
       >
-               &lt;/AdaptationSet&gt;
+               &lt;/AdaptationSet&gt; 
       </pre>
     </div>
     <div
@@ -2393,7 +2409,7 @@ exports[`Manifest component > matches snapshot for manifest with errors 1`] = `
       <pre
         class="text"
       >
-           &lt;/Period&gt;
+           &lt;/Period&gt; 
       </pre>
     </div>
     <div
@@ -2702,7 +2718,9 @@ exports[`Manifest component > matches snapshot for manifest with no errors 1`] =
       </span>
       <pre
         class="text"
-      />
+      >
+             
+      </pre>
     </div>
     <div
       class="manifest-line"
@@ -2880,7 +2898,9 @@ exports[`Manifest component > matches snapshot for manifest with no errors 1`] =
       </span>
       <pre
         class="text"
-      />
+      >
+                 
+      </pre>
     </div>
     <div
       class="manifest-line"
@@ -2893,7 +2913,9 @@ exports[`Manifest component > matches snapshot for manifest with no errors 1`] =
       </span>
       <pre
         class="text"
-      />
+      >
+          
+      </pre>
     </div>
     <div
       class="manifest-line"
@@ -2906,7 +2928,9 @@ exports[`Manifest component > matches snapshot for manifest with no errors 1`] =
       </span>
       <pre
         class="text"
-      />
+      >
+            
+      </pre>
     </div>
     <div
       class="manifest-line"
@@ -3007,7 +3031,9 @@ exports[`Manifest component > matches snapshot for manifest with no errors 1`] =
       </span>
       <pre
         class="text"
-      />
+      >
+          
+      </pre>
     </div>
     <div
       class="manifest-line"
@@ -3033,7 +3059,9 @@ exports[`Manifest component > matches snapshot for manifest with no errors 1`] =
       </span>
       <pre
         class="text"
-      />
+      >
+                 
+      </pre>
     </div>
     <div
       class="manifest-line"
@@ -4232,7 +4260,7 @@ exports[`Manifest component > matches snapshot for manifest with no errors 1`] =
       <pre
         class="text"
       >
-                   &lt;/Representation&gt;
+                   &lt;/Representation&gt; 
       </pre>
     </div>
     <div
@@ -4366,7 +4394,9 @@ exports[`Manifest component > matches snapshot for manifest with no errors 1`] =
       </span>
       <pre
         class="text"
-      />
+      >
+                 
+      </pre>
     </div>
     <div
       class="manifest-line"
@@ -4379,7 +4409,9 @@ exports[`Manifest component > matches snapshot for manifest with no errors 1`] =
       </span>
       <pre
         class="text"
-      />
+      >
+                 
+      </pre>
     </div>
     <div
       class="manifest-line"
@@ -4768,7 +4800,7 @@ exports[`Manifest component > matches snapshot for manifest with no errors 1`] =
       <pre
         class="text"
       >
-                   &lt;/Representation&gt;
+                   &lt;/Representation&gt; 
       </pre>
     </div>
     <div
@@ -4783,7 +4815,7 @@ exports[`Manifest component > matches snapshot for manifest with no errors 1`] =
       <pre
         class="text"
       >
-               &lt;/AdaptationSet&gt;
+               &lt;/AdaptationSet&gt; 
       </pre>
     </div>
     <div
@@ -4798,7 +4830,7 @@ exports[`Manifest component > matches snapshot for manifest with no errors 1`] =
       <pre
         class="text"
       >
-           &lt;/Period&gt;
+           &lt;/Period&gt; 
       </pre>
     </div>
     <div
