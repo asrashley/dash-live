@@ -3,7 +3,7 @@ from pathlib import Path
 import logging
 import re
 import subprocess
-from typing import Pattern
+from typing import ClassVar, Pattern
 import unittest
 from unittest.mock import patch
 
@@ -26,17 +26,21 @@ class DashMediaCreatorWithoutParser(TestCaseMixin, DashMediaCreator):
 
 class MockFfmpeg(unittest.TestCase):
     bitrate_index: int
+    input_file: Path
     tmpdir: Path
     aspect: float
     surround: bool
     subtitles: bool
     fs: FakeFilesystem
+    drive: str
 
-    def __init__(self, fs: FakeFilesystem, tmpdir: Path, surround: bool, subs: bool) -> None:
+    def __init__(self, fs: FakeFilesystem, input_file: Path, tmpdir: Path, surround: bool, subs: bool) -> None:
         super().__init__()
         self.fs = fs
         self.bitrate_index = 0
+        self.input_file = input_file
         self.tmpdir = tmpdir
+        self.drive = tmpdir.drive
         self.aspect = 16.0 / 9.0
         self.surround = surround
         self.subtitles = subs
@@ -63,7 +67,7 @@ class MockFfmpeg(unittest.TestCase):
         self.assertEqual(args[0], 'ffmpeg')
         self.assertEqual(args[-1], str(self.tmpdir / f'{bitrate}' / 'bbb.mp4'))
         expected: dict[str, str | None] = {
-            '-i': '/input/BigBuckBunny.mp4',
+            '-i': f'{self.input_file}',
             '-video_track_timescale': '240',
             '-codec:v': 'libx264',
             '-aspect': '16:9',
@@ -120,15 +124,20 @@ class MockFfmpeg(unittest.TestCase):
             '-segment-name', 'dash_$RepresentationID$_$Number%03d$$Init=init$',
             '-out', 'manifest',
         ]
+        filename: Path
         for idx, br in enumerate(DashMediaCreator.BITRATE_LADDER, start=1):
-            expected.append(str(self.tmpdir / f'{br[2]}' / f'bbb.mp4#video:id=v{idx}'))
+            filename = self.tmpdir / f'{br[2]}' / 'bbb.mp4'
+            expected.append(f'{filename}#video:id=v{idx}')
         min_br: int = DashMediaCreator.BITRATE_LADDER[0][2]
         mp4_dir: Path = self.tmpdir / 'dash'
-        expected.append(str(self.tmpdir / f'{min_br}' / 'bbb.mp4#trackID=2:role=main:id=a1'))
+        filename = self.tmpdir / f'{min_br}' / 'bbb.mp4'
+        expected.append(f'{filename}#trackID=2:role=main:id=a1')
         if self.surround:
-            expected.append(str(self.tmpdir / f'{min_br}' / 'bbb.mp4#trackID=3:role=alternate:id=a2'))
+            filename = self.tmpdir / f'{min_br}' / 'bbb.mp4'
+            expected.append(f'{filename}#trackID=3:role=alternate:id=a2')
         if self.subtitles:
-            expected.append(f'{self.tmpdir}/BigBuckBunny.ttml#trackID=1:role=main:id=t1:dur=94.0:ddur=8')
+            filename = self.tmpdir / 'BigBuckBunny.ttml'
+            expected.append(f'{filename}#trackID=1:role=main:id=t1:dur=94.0:ddur=8')
             self.fs.create_file(mp4_dir / 'BigBuckBunny.ttml', contents='BigBuckBunny.ttml')
         self.maxDiff = None
         self.assertListEqual(expected, args)
@@ -141,7 +150,7 @@ class MockFfmpeg(unittest.TestCase):
         return 0
 
     def mp4box_encrypt(self, args: list[str]) -> int:
-        expected = [
+        expected: list[str] = [
             'MP4Box',
             '-crypt', re.compile(r'drm.xml$'),
             '-out', re.compile(r'-moov-enc.mp4$'),
@@ -152,7 +161,7 @@ class MockFfmpeg(unittest.TestCase):
         return 0
 
     def mp4box_build_encrypted(self, args: list[str]) -> int:
-        expected = [
+        expected: list[str] = [
             'MP4Box',
             '-dash', '960',
             '-frag', '960',
@@ -167,7 +176,7 @@ class MockFfmpeg(unittest.TestCase):
             re.compile(r'-moov-enc.mp4$'),
         ]
         self.assertRegexListEqual(expected, args)
-        enc_tmp = Path(args[-1]).parent
+        enc_tmp: Path = Path(args[-1]).parent
         self.make_fake_mp4_file(enc_tmp / 'dash_enc_init.mp4')
         for segment in range(1, 6):
             self.make_fake_mp4_file(enc_tmp / f'dash_enc_{segment:03d}.mp4')
@@ -181,7 +190,9 @@ class MockFfmpeg(unittest.TestCase):
                                    universal_newlines: bool, text: bool) -> str:
         expected: list[str] = [
             'ffprobe', '-v', '0', '-of', 'json',
-            '-show_format', '-show_streams', '/input/BigBuckBunny.mp4'
+            '-show_format',
+            '-show_streams',
+            f'{self.input_file}',
         ]
         self.assertListEqual(expected, args)
         self.assertIsNone(stderr)
@@ -201,7 +212,7 @@ class MockFfmpeg(unittest.TestCase):
     def ffprobe_check_frames(self, args: list[str], stderr: int | None,
                              universal_newlines: bool, text: bool) -> str:
         width, height, bitrate, codec = DashMediaCreator.BITRATE_LADDER[self.bitrate_index]
-        expected = [
+        expected: list[str] = [
             'ffprobe',
             '-show_frames',
             '-print_format', 'compact',
@@ -242,17 +253,23 @@ class MockFfmpeg(unittest.TestCase):
                 self.assertIsNotNone(match, msg)
 
 class TestMediaCreation(TestCase):
+    SRC_DIR: ClassVar[Path] = Path(__file__).parent.parent.parent.absolute()
+    drive: str
+    input_dir: Path
 
     def setUp(self) -> None:
         super().setUp()
         self.setUpPyfakefs()
-        self.fs.create_dir('/input')
+        self.drive = TestMediaCreation.SRC_DIR.drive
+        self.input_dir = Path(f'{self.drive}/input')
+        self.fs.create_dir(self.input_dir)
 
     def tearDown(self) -> None:
         logging.disable(logging.NOTSET)
 
     def create_temp_folder(self) -> Path:
-        tmpdir: Path = Path('/tmp/TestMediaCreation')
+        drive: str = self.SRC_DIR.drive
+        tmpdir: Path = Path(f'{drive}/tmp/TestMediaCreation')
         if not tmpdir.exists():
             self.fs.create_dir(tmpdir)
         return tmpdir
@@ -260,21 +277,22 @@ class TestMediaCreation(TestCase):
     def test_encode_with_surround_audio(self) -> None:
         tmpdir: Path = self.create_temp_folder()
         kid = '1ab45440532c439994dc5c5ad9584bac'
+        src_file: Path = self.input_dir / 'BigBuckBunny.mp4'
         args: list[str] = [
-            '-i', "/input/BigBuckBunny.mp4",
+            '-i', f"{src_file}",
             '-p', 'bbb',
-            '--font', '/usr/share/fonts/truetype/freefont/FreeSansBold.ttf',
+            '--font', f'{self.SRC_DIR.drive}/usr/share/fonts/truetype/freefont/FreeSansBold.ttf',
             '--kid', kid,
             '--surround',
             '-o', str(tmpdir)
         ]
-        ffmpeg = MockFfmpeg(self.fs, tmpdir, surround=True, subs=False)
+        ffmpeg = MockFfmpeg(self.fs, src_file, tmpdir, surround=True, subs=False)
         logging.disable(logging.CRITICAL)
         with patch.object(subprocess, 'check_call', ffmpeg.check_call):
             with patch.object(subprocess, 'check_output', ffmpeg.check_output):
                 rv: int = DashMediaCreatorWithoutParser.main(args)
         self.assertEqual(rv, 0)
-        js_file = tmpdir / 'bbb.json'
+        js_file: Path = tmpdir / 'bbb.json'
         with js_file.open('rt') as src:
             js_data = json.load(src)
         files: list[str] = [
@@ -298,7 +316,7 @@ class TestMediaCreation(TestCase):
         self.assertDictEqual(expected, js_data)
 
     def test_encode_with_subtitles(self) -> None:
-        subtitles: Path = Path('/input/BigBuckBunny.srt')
+        subtitles: Path = self.input_dir / 'BigBuckBunny.srt'
         lines: list[str] = [
             "1",
             "00:00:23,000 --> 00:00:24,500",
@@ -314,13 +332,14 @@ class TestMediaCreation(TestCase):
                 dest.write(f"{line}\n")
 
         tmpdir: Path = self.create_temp_folder()
+        src_file: Path = self.input_dir / 'BigBuckBunny.mp4'
         args: list[str] = [
-            '-i', "/input/BigBuckBunny.mp4",
+            '-i', f"{src_file}",
             '-p', 'bbb',
-            '--subtitles', '/input/BigBuckBunny.srt',
+            '--subtitles', f'{subtitles}',
             '-o', str(tmpdir)
         ]
-        ffmpeg = MockFfmpeg(self.fs, tmpdir, surround=False, subs=True)
+        ffmpeg = MockFfmpeg(self.fs, src_file, tmpdir, surround=False, subs=True)
         logging.disable(logging.CRITICAL)
         with patch.object(subprocess, 'check_call', ffmpeg.check_call):
             with patch.object(subprocess, 'check_output', ffmpeg.check_output):
