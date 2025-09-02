@@ -12,6 +12,7 @@ export class FakePlayer extends AbstractDashPlayer {
     Object.defineProperties(videoElement, {
       pause: {
         value: this.pause,
+        writable: true,
       },
     });
   }
@@ -28,5 +29,9 @@ export class FakePlayer extends AbstractDashPlayer {
 
   setTextTrack(track: MediaTrack | null) {
     this.textTrack = track;
+  }
+
+  callMaybeTracksChanged(tracks: MediaTrack[]) {
+    this.maybeTracksChanged(tracks);
   }
 }

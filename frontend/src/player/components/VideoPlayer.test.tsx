@@ -18,7 +18,7 @@ vi.mock("../players/playerFactory", () => ({
 }));
 
 type PlayerControlsCallCount = {
-  caller: (controls: PlayerControls) => void;
+  caller: (controls: PlayerControls) => Promise<void>;
   cmd: string;
   pause?: number;
   play?: number;
@@ -71,7 +71,10 @@ describe("VideoPlayer component", () => {
     player = undefined;
   });
 
-  test("matches snapshot", () => {
+  test("matches snapshot", async () => {
+    const hasPlayer = new Promise<PlayerControls>((resolve) => {
+      setPlayer.mockImplementation((pc: PlayerControls) => resolve(pc))
+    });
     const { asFragment, unmount } = renderWithProviders(
       <VideoPlayer
         mpd={params.url}
@@ -86,6 +89,7 @@ describe("VideoPlayer component", () => {
         tracksChanged={tracksChanged}
       />
     );
+    await expect(hasPlayer).resolves.toBeDefined();
     expect(setPlayer).toHaveBeenCalledTimes(1);
     expect(asFragment()).toMatchSnapshot();
     unmount();
@@ -94,12 +98,15 @@ describe("VideoPlayer component", () => {
   });
 
   test.each<PlayerControlsCallCount>([
-    { caller: (c) => c.stop(), stop: 1, cmd: "stop" },
-    { caller: (c) => c.play(), play: 1, cmd: "play" },
-    { caller: (c) => c.pause(), pause: 1, cmd: "pause" },
-    { caller: (c) => c.skip(-5), skip: 1, cmd: "backward" },
-    { caller: (c) => c.skip(5), skip: 1, cmd: "forward" },
-  ])('wraps calls to $cmd', ({ caller, cmd, ...props }: PlayerControlsCallCount) => {
+    { caller: async (c) => c.stop(), stop: 1, cmd: "stop" },
+    { caller: async (c) => await c.play(), play: 1, cmd: "play" },
+    { caller: async (c) => c.pause(), pause: 1, cmd: "pause" },
+    { caller: async (c) => c.skip(-5), skip: 1, cmd: "backward" },
+    { caller: async (c) => c.skip(5), skip: 1, cmd: "forward" },
+  ])('wraps calls to $cmd', async ({ caller, cmd, ...props }: PlayerControlsCallCount) => {
+    const hasPlayer = new Promise<PlayerControls>((resolve) => {
+      setPlayer.mockImplementation((pc: PlayerControls) => resolve(pc))
+    });
     const { getBySelector, unmount } = renderWithProviders(
       <VideoPlayer
         mpd={params.url}
@@ -114,6 +121,7 @@ describe("VideoPlayer component", () => {
         tracksChanged={tracksChanged}
       />
     );
+    await expect(hasPlayer).resolves.toBeDefined();
     const videoElement = getBySelector("video") as HTMLVideoElement;
     Object.defineProperties(videoElement, {
       duration: {
@@ -139,8 +147,8 @@ describe("VideoPlayer component", () => {
     vi.spyOn(controls, "skip");
     vi.spyOn(controls, "stop");
     vi.spyOn(player, "destroy");
-    act(() => {
-      caller(controls);
+    await act(async () => {
+      await caller(controls);
     });
     if (cmd === 'backward') {
       getBySelector('.bi-skip-backward-fill');
