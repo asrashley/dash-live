@@ -5,7 +5,7 @@ export interface PlayerControls {
     isPaused: ReadonlySignal<boolean>;
     hasPlayer: ReadonlySignal<boolean>;
     pause(): void;
-    play(): void;
+    play(): Promise<void>;
     skip(seconds: number): void;
     stop(): void;
     setSubtitlesElement(subtitlesElement: HTMLDivElement | null): void;

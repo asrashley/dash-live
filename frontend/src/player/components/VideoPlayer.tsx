@@ -38,9 +38,9 @@ export function VideoPlayer({setPlayer, ...props}: VideoPlayerProps) {
         setIcon('pause');
         return controls.pause();
       },
-      play: () => {
+      play: async () => {
         setIcon('play');
-        return controls.play();
+        return await controls.play();
       },
       skip: (seconds: number) => {
         setIcon(seconds > 0 ? 'forward' : 'backward');

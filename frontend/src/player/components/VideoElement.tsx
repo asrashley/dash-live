@@ -1,5 +1,6 @@
 import { Component } from "preact";
 import { effect, signal, type ReadonlySignal, type Signal } from "@preact/signals";
+import isEqual from "lodash.isequal";
 
 import { DashPlayerTypes } from "../types/DashPlayerTypes";
 import {
@@ -50,6 +51,7 @@ export class VideoElement
   static DEFAULT_MAX_EVENTS = 25;
   private videoElt: HTMLVideoElement | null = null;
   private player?: AbstractDashPlayer;
+  private playerInitControl?: AbortController;
   private nextId = 1;
   private subtitlesElement: HTMLDivElement | null = null;
   private signalCleanup: () => void | undefined;
@@ -63,21 +65,22 @@ export class VideoElement
   }
 
   componentWillReceiveProps(nextProps: VideoElementProps) {
-    if (nextProps.dashParams !== this.props.dashParams) {
+    if (!isEqual(nextProps.dashParams.value, this.props.dashParams.value)) {
       this.signalCleanup?.();
+      this.videoElt?.pause();
+      this.player?.destroy();
+      this.player = undefined;
       this.signalCleanup = effect(() => {
-        this.tryInitializePlayer();
+        this.tryInitializePlayer(nextProps);
       });
     }
-    //this.tryInitializePlayer(nextProps);
   }
 
   componentDidMount() {
     this.isPaused.value = this.videoElt?.paused ?? false;
     this.signalCleanup = effect(() => {
-      this.tryInitializePlayer();
+      this.tryInitializePlayer(this.props);
     });
-    //this.tryInitializePlayer(this.props);
   }
 
   componentWillUnmount() {
@@ -100,9 +103,9 @@ export class VideoElement
     this.videoElt?.pause();
   }
 
-  play() {
-    this.tryInitializePlayer();
-    this.videoElt?.play();
+  async play() {
+    await this.tryInitializePlayer(this.props);
+    await this.videoElt?.play();
   }
 
   skip(seconds: number) {
@@ -138,20 +141,20 @@ export class VideoElement
     if (!elt) {
       return;
     }
-    if (this.unmountController === undefined) {
-      throw new Error('unmountController should have been created in constructor');
-    }
     const { signal } = this.unmountController;
     elt.addEventListener('pause', () => this.isPaused.value = true, { signal });
     elt.addEventListener('play', () => this.isPaused.value = false, { signal });
   }
 
-  private tryInitializePlayer() {
-    const { dashParams, keys, mpd, playerName, textLanguage, textEnabled, playerVersion: version } = this.props;
-    if (this.player || !this.videoElt || !dashParams.value) {
+  private async tryInitializePlayer({ dashParams, keys, mpd, playerName, textLanguage, textEnabled, playerVersion: version }: VideoElementProps) {
+    if (this.player || !this.videoElt) {
       return;
     }
+    this.playerInitControl?.abort('replaced with new Player');
+    const playerInitControl = new AbortController();
+    this.playerInitControl = playerInitControl;
     const { signal } = this.unmountController;
+    signal.addEventListener('abort', () => this.playerInitControl.abort('unmounting'), { signal });
     this.videoElt.addEventListener("timeupdate", this.onTimeUpdate, { signal });
     const playerProps: DashPlayerProps = {
       version,
@@ -162,15 +165,20 @@ export class VideoElement
       textLanguage: textLanguage.value,
       textEnabled: textEnabled.value,
     };
-    this.player = playerFactory(playerName, playerProps);
-    this.player.initialize(mpd, dashParams.value.options, keys.value);
-    this.props.setPlayer(this);
+    const player = playerFactory(playerName, playerProps);
+    await player.initialize(mpd, dashParams.value.options, keys.value);
+    if (this.playerInitControl !== playerInitControl || !this.videoElt || playerInitControl.signal.aborted) {
+      // destroy was called before initialize() completed
+      return;
+    }
     for (const name of STATUS_EVENTS) {
       this.videoElt.addEventListener(name, this.logDomEvent, { signal });
     }
     if (this.subtitlesElement) {
-      this.player.setSubtitlesElement(this.subtitlesElement);
+      player.setSubtitlesElement(this.subtitlesElement);
     }
+    this.player = player;
+    this.props.setPlayer(this);
     this.hasPlayer.value = true;
   }
 
