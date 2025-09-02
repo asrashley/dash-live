@@ -20,7 +20,7 @@ export function PlaybackControls({
   setTextTrack,
 }: PlaybackControlsProps) {
   const hasPlayer = useComputed<boolean>(() => {
-    return controls.value?.hasPlayer.value === true;
+    return controls.value?.hasDashPlayer.value === true;
   });
   const timeCodeText = useComputed<string>(() => {
     if (!hasPlayer.value) {
@@ -36,7 +36,7 @@ export function PlaybackControls({
 
   const playPause = () => {
     const player = controls.value;
-    if (!player.hasPlayer.value || player.isPaused.value) {
+    if (!player.hasDashPlayer.value || player.isPaused.value) {
       player.play();
     } else {
       player.pause();
