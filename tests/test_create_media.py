@@ -104,7 +104,7 @@ class MockFfmpeg(unittest.TestCase):
         return 0
 
     def mp4box_build(self, args: list[str]) -> int:
-        expected = [
+        expected: list[str] = [
             'MP4Box',
             '-dash', '960',
             '-frag', '960',
@@ -113,7 +113,7 @@ class MockFfmpeg(unittest.TestCase):
             '-fps', '24',
             '-frag-rap',
             '-profile', 'live',
-            '-profile-ext', 'urn:dvb:dash:profile:dvbdash:2014',
+            '-profile-ext', 'urn:dvb:dash:profile:dvb-dash:2014',
             '-bs-switching', 'merge',
             '-lang', 'eng',
             '-segment-ext', 'mp4',

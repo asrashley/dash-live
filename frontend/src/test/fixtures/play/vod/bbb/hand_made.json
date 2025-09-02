@@ -80,7 +80,7 @@
     ],
     "profiles": [
       "urn:mpeg:dash:profile:isoff-live:2011",
-      "urn:dvb:dash:profile:dvbdash:2014"
+      "urn:dvb:dash:profile:dvb-dash:2014"
     ],
     "publishTime": "2025-03-13T07:53:13Z",
     "startNumber": 1,

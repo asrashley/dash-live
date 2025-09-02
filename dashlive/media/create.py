@@ -530,7 +530,7 @@ class DashMediaCreator:
             "-fps", str(self.options.framerate),
             "-frag-rap",
             "-profile", "live",
-            "-profile-ext", "urn:dvb:dash:profile:dvbdash:2014",
+            "-profile-ext", "urn:dvb:dash:profile:dvb-dash:2014",
             "-bs-switching", bs_switching,
             "-lang", self.options.language,
             "-segment-ext", "mp4",
