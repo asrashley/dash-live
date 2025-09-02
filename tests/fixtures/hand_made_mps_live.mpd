@@ -10,7 +10,7 @@
     suggestedPresentationDelay="PT30S"
     availabilityStartTime="2024-10-07T00:00:00Z"
     timeShiftBufferDepth="PT3M0S"
-  profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014"
+  profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvb-dash:2014"
   minBufferTime="PT1.5S"
 >
  <ProgramInformation>

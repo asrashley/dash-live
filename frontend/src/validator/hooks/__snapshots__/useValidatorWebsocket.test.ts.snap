@@ -60,7 +60,7 @@ exports[`useValidatorWebsocket hook > validate a stream 1`] = `
     "errors": [],
     "hasError": false,
     "line": 10,
-    "text": "  profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014"",
+    "text": "  profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvb-dash:2014"",
   },
   {
     "errors": [],
@@ -114,7 +114,7 @@ exports[`useValidatorWebsocket hook > validate a stream 1`] = `
     "errors": [],
     "hasError": false,
     "line": 19,
-    "text": "     ",
+    "text": "",
   },
   {
     "errors": [],
@@ -186,19 +186,19 @@ exports[`useValidatorWebsocket hook > validate a stream 1`] = `
     "errors": [],
     "hasError": false,
     "line": 31,
-    "text": "         ",
+    "text": "",
   },
   {
     "errors": [],
     "hasError": false,
     "line": 32,
-    "text": "  ",
+    "text": "",
   },
   {
     "errors": [],
     "hasError": false,
     "line": 33,
-    "text": "    ",
+    "text": "",
   },
   {
     "errors": [],
@@ -240,7 +240,7 @@ exports[`useValidatorWebsocket hook > validate a stream 1`] = `
     "errors": [],
     "hasError": false,
     "line": 40,
-    "text": "  ",
+    "text": "",
   },
   {
     "errors": [],
@@ -252,7 +252,7 @@ exports[`useValidatorWebsocket hook > validate a stream 1`] = `
     "errors": [],
     "hasError": false,
     "line": 42,
-    "text": "         ",
+    "text": "",
   },
   {
     "errors": [],
@@ -732,7 +732,7 @@ exports[`useValidatorWebsocket hook > validate a stream 1`] = `
     "errors": [],
     "hasError": false,
     "line": 122,
-    "text": "           </Representation> ",
+    "text": "           </Representation>",
   },
   {
     "errors": [],
@@ -786,13 +786,13 @@ exports[`useValidatorWebsocket hook > validate a stream 1`] = `
     "errors": [],
     "hasError": false,
     "line": 131,
-    "text": "         ",
+    "text": "",
   },
   {
     "errors": [],
     "hasError": false,
     "line": 132,
-    "text": "         ",
+    "text": "",
   },
   {
     "errors": [],
@@ -948,19 +948,19 @@ exports[`useValidatorWebsocket hook > validate a stream 1`] = `
     "errors": [],
     "hasError": false,
     "line": 158,
-    "text": "           </Representation> ",
+    "text": "           </Representation>",
   },
   {
     "errors": [],
     "hasError": false,
     "line": 159,
-    "text": "       </AdaptationSet> ",
+    "text": "       </AdaptationSet>",
   },
   {
     "errors": [],
     "hasError": false,
     "line": 160,
-    "text": "   </Period> ",
+    "text": "   </Period>",
   },
   {
     "errors": [],
@@ -1031,7 +1031,7 @@ exports[`useValidatorWebsocket hook > validate a stream that has errors 1`] = `
     "errors": [],
     "hasError": false,
     "line": 10,
-    "text": "  profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014"",
+    "text": "  profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvb-dash:2014"",
   },
   {
     "errors": [],
@@ -1085,7 +1085,7 @@ exports[`useValidatorWebsocket hook > validate a stream that has errors 1`] = `
     "errors": [],
     "hasError": false,
     "line": 19,
-    "text": "     ",
+    "text": "",
   },
   {
     "errors": [
@@ -1159,19 +1159,19 @@ exports[`useValidatorWebsocket hook > validate a stream that has errors 1`] = `
     "errors": [],
     "hasError": false,
     "line": 31,
-    "text": "         ",
+    "text": "",
   },
   {
     "errors": [],
     "hasError": false,
     "line": 32,
-    "text": "  ",
+    "text": "",
   },
   {
     "errors": [],
     "hasError": false,
     "line": 33,
-    "text": "    ",
+    "text": "",
   },
   {
     "errors": [],
@@ -1213,7 +1213,7 @@ exports[`useValidatorWebsocket hook > validate a stream that has errors 1`] = `
     "errors": [],
     "hasError": false,
     "line": 40,
-    "text": "  ",
+    "text": "",
   },
   {
     "errors": [],
@@ -1225,7 +1225,7 @@ exports[`useValidatorWebsocket hook > validate a stream that has errors 1`] = `
     "errors": [],
     "hasError": false,
     "line": 42,
-    "text": "         ",
+    "text": "",
   },
   {
     "errors": [],
@@ -1707,7 +1707,7 @@ exports[`useValidatorWebsocket hook > validate a stream that has errors 1`] = `
     "errors": [],
     "hasError": true,
     "line": 122,
-    "text": "           </Representation> ",
+    "text": "           </Representation>",
   },
   {
     "errors": [],
@@ -1761,13 +1761,13 @@ exports[`useValidatorWebsocket hook > validate a stream that has errors 1`] = `
     "errors": [],
     "hasError": false,
     "line": 131,
-    "text": "         ",
+    "text": "",
   },
   {
     "errors": [],
     "hasError": false,
     "line": 132,
-    "text": "         ",
+    "text": "",
   },
   {
     "errors": [],
@@ -1923,19 +1923,19 @@ exports[`useValidatorWebsocket hook > validate a stream that has errors 1`] = `
     "errors": [],
     "hasError": false,
     "line": 158,
-    "text": "           </Representation> ",
+    "text": "           </Representation>",
   },
   {
     "errors": [],
     "hasError": false,
     "line": 159,
-    "text": "       </AdaptationSet> ",
+    "text": "       </AdaptationSet>",
   },
   {
     "errors": [],
     "hasError": false,
     "line": 160,
-    "text": "   </Period> ",
+    "text": "   </Period>",
   },
   {
     "errors": [],
