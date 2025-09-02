@@ -56,9 +56,15 @@ export default tseslint.config({
   settings: {
     "import/resolver": {
       node: {
-        paths: ["frontend/src"],
+        moduleDirectory: [
+          "frontend/src",
+          "node_modules"
+        ],
         extensions: [".ts", ".tsx"],
       },
+      typescript: {
+         alwaysTryTypes: true,
+      }
     },
     react: eslintConfigPreact.settings.react,
   },
