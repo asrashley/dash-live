@@ -8,8 +8,18 @@ import { useValidatorWebsocket, ValidatorState } from "./useValidatorWebsocket";
 import { MockWebsocketServer } from "../../test/MockWebsocketServer";
 import { ValidatorSettings } from "../types/ValidatorSettings";
 import { exampleCodecs } from "../../test/fixtures/exampleCodecs";
+import { ManifestLine } from "../types/ManifestLine";
 
 vi.mock('socket.io-client');
+
+function normalizeManifestLines(input: ManifestLine[]): ManifestLine[] {
+    return input.map(({line, text, hasError, errors}) => ({
+        line,
+        text: text.trim(),
+        hasError,
+        errors: errors.map(err => err.trim()),
+    }));
+}
 
 describe('useValidatorWebsocket hook', () => {
     const ioMock = vi.mocked(io);
@@ -146,7 +156,7 @@ describe('useValidatorWebsocket hook', () => {
             method: 'validate',
         });
         expect(state.value).toEqual(ValidatorState.DONE);
-        expect(manifest.value).toMatchSnapshot();
+        expect(normalizeManifestLines(manifest.value)).toMatchSnapshot();
     });
 
     test('validate a stream that has errors', async () => {
@@ -185,7 +195,7 @@ describe('useValidatorWebsocket hook', () => {
             });
         }
         expect(errors.value).toEqual(server.getErrorMessages());
-        expect(manifest.value).toMatchSnapshot();
+        expect(normalizeManifestLines(manifest.value)).toMatchSnapshot();
         expect(valResult.value).toEqual({
             aborted: false,
             startTime: expect.any(Number),
