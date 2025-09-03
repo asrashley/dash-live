@@ -67,6 +67,17 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 
 Create a Python virtual environment and install the dependencies.
 
+### Create a Python Virtual Environment
+If using Linux:
+
+```sh
+sudo apt install python3.11 python3.11-venv python3.11-distutils
+python3.11 -m venv .venv --prompt "Py3.11, dash-live"
+source .venv/bin/activate
+python --version   # 3.11.x inside the venv
+```
+
+### Install The Dependancies
 If using Linux:
 
 ```sh
