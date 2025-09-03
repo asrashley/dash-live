@@ -60,7 +60,7 @@ class H264Codec(CodecData):
     avc_type: str
     profile: int
     compatibility: int
-    level: int
+    level: float
 
     def __post_init__(self) -> None:
         self.codec = 'h.264'
@@ -69,7 +69,7 @@ class H264Codec(CodecData):
     def from_avc_box(cls, avc_type: str, avc: VisualSampleEntry) -> CodecData:
         profile = avc.avcC.AVCProfileIndication
         compatibility = avc.avcC.profile_compatibility
-        level = avc.avcC.AVCLevelIndication / 10.0
+        level: float = avc.avcC.AVCLevelIndication / 10.0
         return H264Codec(avc_type, profile, compatibility, level)
 
     @classmethod
