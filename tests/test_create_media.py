@@ -10,7 +10,7 @@ from unittest.mock import patch
 from pyfakefs.fake_filesystem_unittest import TestCase
 from pyfakefs.fake_filesystem import FakeFilesystem
 
-from dashlive.media.create import DashMediaCreator
+from dashlive.media.create import DashMediaCreator, FfmpegMediaInfo
 from dashlive.mpeg.dash.representation import Representation
 
 from .mixins.mixin import TestCaseMixin
@@ -24,7 +24,8 @@ class DashMediaCreatorWithoutParser(TestCaseMixin, DashMediaCreator):
         return Representation(track_id=int(num))
 
 
-class MockFfmpeg(unittest.TestCase):
+class MockFfmpeg(TestCaseMixin):
+    audio_codec: str
     bitrate_index: int
     input_file: Path
     tmpdir: Path
@@ -34,7 +35,14 @@ class MockFfmpeg(unittest.TestCase):
     fs: FakeFilesystem
     drive: str
 
-    def __init__(self, fs: FakeFilesystem, input_file: Path, tmpdir: Path, surround: bool, subs: bool) -> None:
+    def __init__(self,
+                fs: FakeFilesystem,
+                input_file: Path,
+                tmpdir: Path,
+                surround: bool,
+                subs: bool,
+                audio_codec: str = 'aac'
+                ) -> None:
         super().__init__()
         self.fs = fs
         self.bitrate_index = 0
@@ -44,6 +52,12 @@ class MockFfmpeg(unittest.TestCase):
         self.aspect = 16.0 / 9.0
         self.surround = surround
         self.subtitles = subs
+        self.audio_codec = audio_codec
+
+    def assertListEqual(self, a: list, b: list) -> None:
+        for one, two in zip(a,b):
+            self.assertEqual(one, two)
+        self.assertEqual(len(a), len(b))
 
     def check_output(self, args: list[str], stderr: int | None = None,
                      universal_newlines: bool = False, text: bool = False) -> str:
@@ -79,9 +93,10 @@ class MockFfmpeg(unittest.TestCase):
             '-t': '60',
             '-r': '24',
         }
+
         if self.bitrate_index == 0:
             expected.update({
-                '-codec:a:0': 'aac',
+                '-codec:a:0': self.audio_codec,
                 '-b:a:0': '96k',
                 '-ac:a:0': '2',
                 '-y': None,
@@ -97,9 +112,9 @@ class MockFfmpeg(unittest.TestCase):
             if arg[0] != '-':
                 continue
             try:
-                val = expected[arg]
+                val: str | None = expected[arg]
                 if val is not None:
-                    msg = f'Expected {arg} to have value "{val}" but found "{args[idx + 1]}"'
+                    msg: str = f'Expected {arg} to have value "{val}" but found "{args[idx + 1]}"'
                     self.assertEqual(val, args[idx + 1], msg=msg)
                 required.remove(arg)
             except KeyError:
@@ -150,7 +165,7 @@ class MockFfmpeg(unittest.TestCase):
         return 0
 
     def mp4box_encrypt(self, args: list[str]) -> int:
-        expected: list[str] = [
+        expected: list[str | Pattern] = [
             'MP4Box',
             '-crypt', re.compile(r'drm.xml$'),
             '-out', re.compile(r'-moov-enc.mp4$'),
@@ -161,7 +176,7 @@ class MockFfmpeg(unittest.TestCase):
         return 0
 
     def mp4box_build_encrypted(self, args: list[str]) -> int:
-        expected: list[str] = [
+        expected: list[str | Pattern] = [
             'MP4Box',
             '-dash', '960',
             '-frag', '960',
@@ -197,11 +212,13 @@ class MockFfmpeg(unittest.TestCase):
         self.assertListEqual(expected, args)
         self.assertIsNone(stderr)
         self.assertFalse(universal_newlines)
-        result = {
+        result: FfmpegMediaInfo = {
             'streams': [{
                 'codec_type': 'video',
                 'display_aspect_ratio': '16:9',
                 'avg_frame_rate': '24',
+                'width': 1920,
+                'height': 1080,
             }],
             'format': {
                 'duration': 60.0
@@ -307,6 +324,39 @@ class TestMediaCreation(TestCase):
                 'kid': kid,
                 'computed': True
             }],
+            'streams': [{
+                'directory': 'bbb',
+                'title': '',
+                'files': files
+            }]
+        }
+        self.assertDictEqual(expected, js_data)
+
+    def test_encode_with_eac3_audio(self) -> None:
+        tmpdir: Path = self.create_temp_folder()
+        src_file: Path = self.input_dir / 'BigBuckBunny.mp4'
+        args: list[str] = [
+            '-i', f"{src_file}",
+            '-p', 'bbb',
+            '--acodec', 'eac3',
+            '-o', str(tmpdir)
+        ]
+        ffmpeg = MockFfmpeg(
+            self.fs, src_file, tmpdir, surround=False, subs=False, audio_codec='eac3')
+        logging.disable(logging.CRITICAL)
+        with patch.object(subprocess, 'check_call', ffmpeg.check_call):
+            with patch.object(subprocess, 'check_output', ffmpeg.check_output):
+                rv: int = DashMediaCreatorWithoutParser.main(args)
+        self.assertEqual(rv, 0)
+        js_file: Path = tmpdir / 'bbb.json'
+        with js_file.open('rt') as src:
+            js_data = json.load(src)
+        files: list[str] = ['bbb_a1.mp4']
+        for idx in range(1, len(DashMediaCreator.BITRATE_LADDER) + 1):
+            files.append(f'bbb_v{idx}.mp4')
+        files.sort()
+        expected = {
+            'keys': [],
             'streams': [{
                 'directory': 'bbb',
                 'title': '',

@@ -81,7 +81,7 @@ from ttconv.tt import main as ttconv_main
 from dashlive.drm.keymaterial import KeyMaterial
 from dashlive.drm.playready import PlayReady
 from dashlive.mpeg import mp4
-from dashlive.mpeg.codec_strings import codec_data_from_string
+from dashlive.mpeg.codec_strings import CodecData, codec_data_from_string
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.utils.timezone import UTC
 
@@ -136,9 +136,15 @@ class VideoEncodingParameters(NamedTuple):
     bitrate: int
     codecString: str | None
 
+class AudioEncodingParameters(NamedTuple):
+    bitrate: int
+    codecString: str
+    channels: int
+
 @dataclass
 class MediaCreateOptions:
     aspect: str | None
+    audio_codec: str
     avc3: bool
     duration: int
     font: str
@@ -209,10 +215,12 @@ class DashMediaCreator:
       </CrypTrack>
     </GPACDRM>
     """
+
     options: MediaCreateOptions
     timescale: int | None
     frame_segment_duration: int | None
     media_info: dict[str, list]
+    audio_tracks: list[AudioEncodingParameters]
 
     def __init__(self, options: MediaCreateOptions) -> None:
         self.options = options
@@ -229,6 +237,13 @@ class DashMediaCreator:
                 }
             ]
         }
+        self.audio_tracks = [
+            AudioEncodingParameters(
+                bitrate=96, codecString=self.options.audio_codec, channels=2)
+        ]
+        if self.options.surround:
+            self.audio_tracks.append(AudioEncodingParameters(
+                bitrate=320, codecString='eac3', channels=6))
 
     def encode_all(self) -> None:
         first: bool = True
@@ -250,16 +265,16 @@ class DashMediaCreator:
         """
         Encode the stream and check key frames are in the correct place
         """
-        destdir = self.options.destdir / f'{bitrate}'
-        dest = destdir / f'{self.options.prefix}.mp4'
+        destdir: Path = self.options.destdir / f'{bitrate}'
+        dest: Path = destdir / f'{self.options.prefix}.mp4'
         if dest.exists():
             return
         destdir.mkdir(parents=True, exist_ok=True)
         height = 4 * (int(float(height) / self.options.aspect_ratio) // 4)
         logging.debug("%s: %dx%d %d Kbps", dest, width, height, bitrate)
-        cbr = (bitrate * 10) // 12
-        minrate = (bitrate * 10) // 14
-        vcodec = "libx264"
+        cbr: int = (bitrate * 10) // 12
+        minrate: int = (bitrate * 10) // 14
+        vcodec: str = "libx264"
         # buffer_size is set to 75% of VBV limit
         buffer_size = 4000
         if codec is None:
@@ -273,21 +288,20 @@ class DashMediaCreator:
             elif width > 640:
                 profile = "main"
         else:
-            codec_data = codec_data_from_string(codec)
-            profile = codec_data.profile_string()
+            codec_data: CodecData = codec_data_from_string(codec)
+            profile: str = codec_data.profile_string()
             level = codec_data.level
             if level >= 4.0:
                 buffer_size = 25000
             if codec_data.codec == 'h.265':
                 vcodec = 'hevc'
-        keyframes = []
-        pos = 0
-        end = self.options.duration + self.options.segment_duration
+        keyframes: list[str] = []
+        pos: float = 0
+        end: float = self.options.duration + self.options.segment_duration
         while pos < end:
             keyframes.append(f'{pos}')
             pos += self.options.segment_duration
-        keyframes = ','.join(keyframes)
-        ffmpeg_args = [
+        ffmpeg_args: list[str] = [
             "ffmpeg",
             "-ec", "deblock",
             "-i", self.options.source,
@@ -295,7 +309,7 @@ class DashMediaCreator:
             "-map", "0:v:0",
         ]
         if self.options.font is not None:
-            drawtext = ':'.join([
+            drawtext: str = ':'.join([
                 'fontfile=' + self.options.font,
                 'fontsize=48',
                 'text=' + str(bitrate) + ' Kbps',
@@ -327,7 +341,7 @@ class DashMediaCreator:
             "-flags2", "-local_header",
             "-g", str(self.frame_segment_duration),
             "-sc_threshold", "0",
-            "-force_key_frames", keyframes,
+            "-force_key_frames", ','.join(keyframes),
             "-y",
             "-t", str(self.options.duration),
             "-threads", "0",
@@ -335,18 +349,15 @@ class DashMediaCreator:
         if self.options.framerate:
             ffmpeg_args += ["-r", str(self.options.framerate)]
         if audio:
-            ffmpeg_args += [
-                "-codec:a:0", "aac",
-                "-b:a:0", "96k",
-                "-ac:a:0", "2",
-                "-strict", "-2",
-            ]
-            if self.options.surround:
+            for idx, trk in enumerate(self.audio_tracks):
                 ffmpeg_args += [
-                    "-codec:a:1", "eac3",
-                    "-b:a:1", "320k",
-                    "-ac:a:1", "6",
+                    f"-codec:a:{idx}", trk.codecString,
+                    f"-b:a:{idx}", f"{trk.bitrate}k",
+                    f"-ac:a:{idx}", f"{trk.channels}",
                 ]
+                if trk.codecString == 'aac':
+                    ffmpeg_args += ["-strict", "-2"]
+
         ffmpeg_args.append(str(dest))
         logging.debug(ffmpeg_args)
         subprocess.check_call(ffmpeg_args)
@@ -817,6 +828,8 @@ class DashMediaCreator:
     @classmethod
     def main(cls, args: list[str]) -> int:
         ap = argparse.ArgumentParser(description='DASH encoding and packaging')
+        ap.add_argument('--acodec', dest='audio_codec', default='aac',
+                        help='Audio codec for main audio track')
         ap.add_argument('--duration', '-d',
                         help='Stream duration (in seconds) (0=auto)',
                         type=int, default=0)
