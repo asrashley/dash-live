@@ -29,6 +29,8 @@ import bitstring
 from .mp4 import VisualSampleEntry
 
 class CodecData(ABC):
+    codec: str
+
     @abstractmethod
     def to_string(self) -> str:
         ...
@@ -55,11 +57,13 @@ class H264Codec(CodecData):
         122: 'high422',
         244: 'high444',
     }
-    codec: str = field(default='h.264', init=False)
     avc_type: str
     profile: int
     compatibility: int
     level: int
+
+    def __post_init__(self) -> None:
+        self.codec = 'h.264'
 
     @classmethod
     def from_avc_box(cls, avc_type: str, avc: VisualSampleEntry) -> CodecData:
@@ -90,7 +94,6 @@ class H264Codec(CodecData):
 
 @dataclass(slots=True)
 class H265Codec(CodecData):
-    codec: str = field(default='h.265', init=False)
     avc_type: str
     profile_idc: int
     profile_space: int
@@ -98,6 +101,9 @@ class H265Codec(CodecData):
     tier_flag: int
     profile_compatibility_flags: bitstring.BitArray
     constraint_indicator_flags: int
+
+    def __post_init__(self) -> None:
+        self.codec = 'h.265'
 
     @classmethod
     def from_avc_box(cls, avc_type: str, avc: VisualSampleEntry) -> CodecData:
