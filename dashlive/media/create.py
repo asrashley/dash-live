@@ -81,7 +81,7 @@ from ttconv.tt import main as ttconv_main
 from dashlive.drm.keymaterial import KeyMaterial
 from dashlive.drm.playready import PlayReady
 from dashlive.mpeg import mp4
-from dashlive.mpeg.codec_strings import CodecData, codec_data_from_string
+from dashlive.mpeg.codec_strings import CodecData, H264Codec, codec_data_from_string
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.utils.timezone import UTC
 
@@ -277,6 +277,7 @@ class DashMediaCreator:
         vcodec: str = "libx264"
         # buffer_size is set to 75% of VBV limit
         buffer_size = 4000
+        level: float = 0
         if codec is None:
             profile = "baseline"
             level = 3.1
@@ -290,10 +291,11 @@ class DashMediaCreator:
         else:
             codec_data: CodecData = codec_data_from_string(codec)
             profile: str = codec_data.profile_string()
-            level = codec_data.level
-            if level >= 4.0:
-                buffer_size = 25000
-            if codec_data.codec == 'h.265':
+            if codec_data.codec == 'h.264':
+                level = cast(H264Codec, codec_data).level
+                if level >= 4.0:
+                    buffer_size = 25000
+            elif codec_data.codec == 'h.265':
                 vcodec = 'hevc'
         keyframes: list[str] = []
         pos: float = 0
@@ -301,6 +303,7 @@ class DashMediaCreator:
         while pos < end:
             keyframes.append(f'{pos}')
             pos += self.options.segment_duration
+
         ffmpeg_args: list[str] = [
             "ffmpeg",
             "-ec", "deblock",
@@ -308,6 +311,7 @@ class DashMediaCreator:
             "-video_track_timescale", str(self.timescale),
             "-map", "0:v:0",
         ]
+
         if self.options.font is not None:
             drawtext: str = ':'.join([
                 'fontfile=' + self.options.font,
@@ -320,19 +324,28 @@ class DashMediaCreator:
                 'boxcolor=0x000000@0.7'])
             ffmpeg_args.append("-vf")
             ffmpeg_args.append(f"drawtext={drawtext}")
+
         if audio:
             ffmpeg_args += ["-map", "0:a:0"]
             if self.options.surround:
                 ffmpeg_args += ["-map", "0:a:0"]
+
         ffmpeg_args += [
             "-codec:v", vcodec,
             "-aspect", self.options.aspect,
             "-profile:v", profile,
-            "-level:v", str(level),
             "-field_order", "progressive",
-            "-bufsize", f'{buffer_size:d}k',
             "-maxrate", f'{bitrate:d}k',
             "-minrate", f'{minrate:d}k',
+        ]
+
+        if level > 0:
+            ffmpeg_args += ["-level:v", str(level)]
+
+        if vcodec == "libx264":
+            ffmpeg_args += ["-bufsize", f'{buffer_size:d}k']
+
+        ffmpeg_args += [
             "-b:v", f"{cbr:d}k",
             "-pix_fmt", "yuv420p",
             "-s", f"{width:d}x{height:d}",
@@ -346,8 +359,10 @@ class DashMediaCreator:
             "-t", str(self.options.duration),
             "-threads", "0",
         ]
+
         if self.options.framerate:
             ffmpeg_args += ["-r", str(self.options.framerate)]
+
         if audio:
             for idx, trk in enumerate(self.audio_tracks):
                 ffmpeg_args += [
@@ -370,10 +385,10 @@ class DashMediaCreator:
             str(dest)
         ]
         idx = 0
-        probe = subprocess.check_output(
+        probe: str = subprocess.check_output(
             ffmpeg_args, stderr=subprocess.STDOUT, text=True)
         for line in probe.splitlines():
-            info = {}
+            info: dict[str, str] = {}
             if '|' not in line:
                 continue
             for i in line.split('|'):
