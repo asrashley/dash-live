@@ -67,7 +67,7 @@ from dashlive.drm.playready import PlayReady
 from dashlive.media.create.ffmpeg_types import FfmpegMediaInfo
 from dashlive.media.create.media_create_options import MediaCreateOptions
 from dashlive.mpeg import mp4
-from dashlive.mpeg.codec_strings import CodecData, H264Codec, codec_data_from_string
+from dashlive.mpeg.codec_strings import CodecData, H264Codec, H265Codec, codec_data_from_string
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.utils.timezone import UTC
 
@@ -151,6 +151,7 @@ class DashMediaCreator:
         # buffer_size is set to 75% of VBV limit
         buffer_size = 4000
         level: float = 0
+        tier: int = 0
         if codec is None:
             profile = "baseline"
             level = 3.1
@@ -169,7 +170,11 @@ class DashMediaCreator:
                 if level >= 4.0:
                     buffer_size = 25000
             elif codec_data.codec == 'h.265':
-                vcodec = 'hevc'
+                vcodec = 'libx265'
+                profile = profile.split('.')[0]
+                hevc: H265Codec = cast(H265Codec, codec_data)
+                level = hevc.profile_idc * 10 + hevc.profile_compatibility_flags
+                tier = hevc.tier_flag
         keyframes: list[str] = []
         pos: float = 0
         end: float = self.options.duration + self.options.segment_duration
@@ -216,13 +221,25 @@ class DashMediaCreator:
             ffmpeg_args += ["-level:v", str(level)]
 
         if vcodec == "libx264":
-            ffmpeg_args += ["-bufsize", f'{buffer_size:d}k']
+            ffmpeg_args += [
+                "-bufsize", f'{buffer_size:d}k',
+                "-x264opts", f"keyint={self.frame_segment_duration:d}:videoformat=pal",
+            ]
+        elif vcodec == 'libx265':
+            x265_params: list[str] = [
+                f"keyint={self.frame_segment_duration:d}",
+                "level-idc={level}",
+            ]
+            if tier > 0:
+                x265_params.append("high-tier")
+            ffmpeg_args += [
+                "-x265-params", ":".join(x265_params),
+            ]
 
         ffmpeg_args += [
             "-b:v", f"{cbr:d}k",
             "-pix_fmt", "yuv420p",
             "-s", f"{width:d}x{height:d}",
-            "-x264opts", f"keyint={self.frame_segment_duration:d}:videoformat=pal",
             "-flags", "+cgop+global_header",
             "-flags2", "-local_header",
             "-g", str(self.frame_segment_duration),
