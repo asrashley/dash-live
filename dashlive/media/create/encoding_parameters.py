@@ -21,6 +21,14 @@ class AudioEncodingParameters(NamedTuple):
     channels: int
 
 
+UHD_8BIT_BITRATE_LADDER: list[VideoEncodingParameters] = [
+    VideoEncodingParameters(3840, 1632, 5000, "hev1.2.4.L150.90"),
+    VideoEncodingParameters(1920, 1080, 4000, "hvc1.1.6.L120.90"),
+    VideoEncodingParameters(1280, 720, 2070, "hvc1.1.6.L93.90"),
+    VideoEncodingParameters(768, 432, 1022, "hvc1.1.6.L90.90"),
+    VideoEncodingParameters(512, 288, 507, "hvc1.1.6.L63.90"),
+]
+
 HD_BITRATE_LADDER: list[VideoEncodingParameters] = [
     VideoEncodingParameters(1280, 720, 4900, "avc1.640020"),
     VideoEncodingParameters(1280, 720, 3200, "avc1.64001F"),
@@ -59,6 +67,7 @@ class BitrateProfiles(IntEnum):
     SD = 3
     HD = 4
     HQ = 5
+    UHD = 6
 
     @classmethod
     def keys(cls) -> list[str]:
@@ -75,6 +84,7 @@ class BitrateProfiles(IntEnum):
 
 
 BITRATE_PROFILES: dict[BitrateProfiles, list[VideoEncodingParameters]] = {
+    BitrateProfiles.UHD: UHD_8BIT_BITRATE_LADDER,
     BitrateProfiles.HQ: HD_HQ_BITRATE_LADDER,
     BitrateProfiles.HD: HD_BITRATE_LADDER,
     BitrateProfiles.SD: SD_BITRATE_LADDER,
