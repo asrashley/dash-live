@@ -1,19 +1,5 @@
 #############################################################################
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
-#############################################################################
-#
 #  Project Name        :    Simulated MPEG DASH service
 #
 #  Author              :    Alex Ashley
@@ -60,9 +46,7 @@
 # ./configure --enable-gpl --enable-version3 --enable-nonfree --enable-libx264 --enable-libvorbis --enable-libvpx
 #
 
-import argparse
 import binascii
-from dataclasses import dataclass, field, InitVar
 import datetime
 import io
 import json
@@ -74,139 +58,27 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from typing import Any, BinaryIO, ClassVar, NamedTuple, TypedDict, cast
+from typing import Any, BinaryIO, ClassVar, cast
 
 from ttconv.tt import main as ttconv_main
 
 from dashlive.drm.keymaterial import KeyMaterial
 from dashlive.drm.playready import PlayReady
+from dashlive.media.create.ffmpeg_types import FfmpegMediaInfo
+from dashlive.media.create.media_create_options import MediaCreateOptions
 from dashlive.mpeg import mp4
 from dashlive.mpeg.codec_strings import CodecData, H264Codec, codec_data_from_string
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.utils.timezone import UTC
 
-@dataclass
-class EncodedRepresentation:
-    source: Path
-    content_type: str
-    file_index: int
-    rep_id: str
-    dest_track_id: int
-    src_track_id: int | None = None
-    role: str | None = None
-    duration: float | None = None
-    segment_duration: float | None = None
-
-    def mp4box_track_id(self) -> str | None:
-        tk_id: str | None = None
-        if self.src_track_id is not None:
-            return f"trackID={self.src_track_id}"
-        if self.content_type == 'v':
-            return "video"
-
-        if self.content_type == 'a':
-            tk_id = "audio"
-        elif self.content_type == 't':
-            tk_id = "text"
-        if tk_id is not None:
-            tk_id += f"{self.file_index}"
-        return tk_id
-
-    def mp4box_name(self) -> str:
-        name: str = f"{self.source.absolute()}"
-        tk_id: str | None = self.mp4box_track_id()
-        if tk_id is not None:
-            name += f"#{tk_id}"
-        if self.role is not None:
-            name += f":role={self.role}"
-        name += f":id={self.rep_id}"
-        if self.duration is not None:
-            name += f":dur={self.duration}"
-        if self.segment_duration is not None:
-            name += f":ddur={self.segment_duration}"
-        return name
-
+from .encoding_parameters import BITRATE_PROFILES, AudioEncodingParameters, VideoEncodingParameters
+from .encoded_representation import EncodedRepresentation
 
 class InitialisationVector(KeyMaterial):
     length: ClassVar[int] = 8
 
-class VideoEncodingParameters(NamedTuple):
-    width: int
-    height: int
-    bitrate: int
-    codecString: str | None
-
-class AudioEncodingParameters(NamedTuple):
-    bitrate: int
-    codecString: str
-    channels: int
-
-@dataclass
-class MediaCreateOptions:
-    aspect: str | None
-    audio_codec: str
-    avc3: bool
-    duration: int
-    font: str
-    framerate: int
-    kid: list[str]
-    key: list[str]
-    segment_duration: float
-    surround: bool
-    verbose: bool
-    max_bitrate: int
-    prefix: str
-    source: str
-    subtitles: str
-    output: InitVar[str]
-    language: str = "eng"
-    iv_size: int = 64
-    aspect_ratio: float = field(init=False)
-    destdir: Path = field(init=False)
-
-    def __post_init__(self, output: str) -> None:
-        self.destdir = Path(output).resolve(strict=True)
-        if self.aspect is not None:
-            self.set_aspect(self.aspect)
-
-    def set_aspect(self, aspect: str) -> None:
-        self.aspect = aspect
-        if ':' in aspect:
-            n, d = aspect.split(':')
-            self.aspect_ratio = float(n) / float(d)
-        else:
-            self.aspect_ratio = float(aspect)
-
-
-class FfmpegStreamInfo(TypedDict):
-    codec_type: str
-    display_aspect_ratio: str
-    avg_frame_rate: str
-    width: int
-    height: int
-
-class FfmpegFormatInfo(TypedDict):
-    duration: float
-
-class FfmpegMediaInfo(TypedDict):
-    streams: list[FfmpegStreamInfo]
-    format: FfmpegFormatInfo
-
 
 class DashMediaCreator:
-    BITRATE_LADDER: ClassVar[list[VideoEncodingParameters]] = [
-        VideoEncodingParameters(1920, 1080, 8600, "avc1.64002A"),
-        VideoEncodingParameters(1280, 720, 4900, "avc1.640020"),
-        VideoEncodingParameters(1280, 720, 3200, "avc1.64001F"),
-        VideoEncodingParameters(1024, 576, 2300, "avc1.64001F"),
-        VideoEncodingParameters(800, 450, 1650, "avc1.64001E"),
-        VideoEncodingParameters(640, 360, 1150, "avc1.64001E"),
-        VideoEncodingParameters(512, 288, 800, "avc1.640015"),
-        VideoEncodingParameters(352, 198, 500, "avc1.640014"),
-        VideoEncodingParameters(320, 180, 300, "avc1.640014"),
-        VideoEncodingParameters(320, 180, 200, "avc1.4D4014"),
-    ]
-
     XML_TEMPLATE: ClassVar[str] = """<?xml version="1.0" encoding="UTF-8"?>
     <GPACDRM type="CENC AES-CTR">
       <CrypTrack trackID="{track_id:d}" IsEncrypted="1" IV_size="{iv_size:d}"
@@ -247,7 +119,8 @@ class DashMediaCreator:
 
     def encode_all(self) -> None:
         first: bool = True
-        for width, height, bitrate, codec in self.BITRATE_LADDER:
+        ladder: list[VideoEncodingParameters] = BITRATE_PROFILES[self.options.bitrate_profile]
+        for width, height, bitrate, codec in ladder:
             if self.options.max_bitrate > 0 and bitrate > self.options.max_bitrate:
                 continue
             self.encode_representation(width, height, bitrate, codec, first)
@@ -472,8 +345,9 @@ class DashMediaCreator:
         ttconv_main(argv)
 
     def package_all(self) -> bool:
+        ladder: list[VideoEncodingParameters] = BITRATE_PROFILES[self.options.bitrate_profile]
         bitrates: list[int] = []
-        for br in self.BITRATE_LADDER:
+        for br in ladder:
             rate: int = br[2]
             if self.options.max_bitrate == 0 or rate <= self.options.max_bitrate:
                 bitrates.append(rate)
@@ -644,11 +518,14 @@ class DashMediaCreator:
         for item in media_keys.values():
             self.media_info["keys"].append(item)
         self.media_info["keys"].sort(key=lambda item: item['kid'])
+
+        ladder: list[VideoEncodingParameters] = BITRATE_PROFILES[self.options.bitrate_profile]
         files: list[tuple[str, int]] = []
-        for idx in range(len(self.BITRATE_LADDER)):
+        for idx in range(len(ladder)):
             files.append(('v', idx + 1))
         files.append(('a', 1))
-        files.append(('a', 2))
+        if self.options.surround:
+            files.append(('a', 2))
         for contentType, index in files:
             src_file = self.options.destdir / self.destination_filename(contentType, index, False)
             dest_file = self.destination_filename(contentType, index, True)
@@ -691,7 +568,7 @@ class DashMediaCreator:
             args += ["-fps", str(self.options.framerate)]
         args.append(str(source))
         logging.debug('MP4Box arguments: %s', args)
-        subprocess.check_call(args)
+        subprocess.check_call(args, cwd=self.options.destdir)
 
         prefix = str(tmpdir / "dash_enc_")
         assert self.timescale is not None
@@ -724,7 +601,7 @@ class DashMediaCreator:
     def parse_representation(self, filename: str) -> Representation:
         parser = mp4.IsoParser()
         logging.debug('Parse %s', filename)
-        atoms: list[mp4.Mp4Atom] = parser.walk_atoms(filename)
+        atoms: list[mp4.Mp4Atom] = cast(list[mp4.Mp4Atom], parser.walk_atoms(filename))
         verbose: int = 2 if self.options.verbose else 0
         logging.debug('Create Representation from "%s"', filename)
         return Representation.load(filename=filename.replace('\\', '/'),
@@ -835,69 +712,31 @@ class DashMediaCreator:
             atom.encode(dest)
 
     @staticmethod
-    def gcd(x, y):
+    def gcd(x: int, y: int) -> int:
         while y:
             x, y = (y, x % y)
         return x
 
-    @classmethod
-    def main(cls, args: list[str]) -> int:
-        ap = argparse.ArgumentParser(description='DASH encoding and packaging')
-        ap.add_argument('--acodec', dest='audio_codec', default='aac',
-                        help='Audio codec for main audio track')
-        ap.add_argument('--duration', '-d',
-                        help='Stream duration (in seconds) (0=auto)',
-                        type=int, default=0)
-        ap.add_argument('--aspect',
-                        help='Aspect ratio (default=same as source)')
-        ap.add_argument('--avc3',
-                        help='Use in-band (AVC3 format) init segments',
-                        action="store_true")
-        ap.add_argument('--surround',
-                        help='Add E-AC3 surround-sound audio track',
-                        action="store_true")
-        ap.add_argument('--subtitles',
-                        help='Add subtitle text track')
-        ap.add_argument('--font',
-                        help='Truetype font file to use to show bitrate',
-                        type=str, dest='font', default=None)
-        ap.add_argument('--frag', help='Fragment duration (in seconds)',
-                        type=float, dest='segment_duration', default=4)
-        ap.add_argument('--fps', help='Frames per second (0=auto)', type=int,
-                        dest='framerate', default=0)
-        ap.add_argument('--max-bitrate',
-                        help='Maximum bitrate (Kbps) (0=all bitrates)',
-                        type=int, dest='max_bitrate', default=0)
-        ap.add_argument('--input', '-i', help='Input audio/video file',
-                        required=True, dest='source')
-        ap.add_argument('--kid', help='Key ID ("random" = auto generate KID)', nargs="*")
-        ap.add_argument('--key', help='Encryption Key', nargs="*")
-        ap.add_argument('-v', '--verbose', help='Verbose mode', action="store_true")
-        ap.add_argument('--output', '-o', help='Output directory', dest='output', required=True)
-        ap.add_argument('--prefix', '-p', help='Prefix for output files', required=True)
-        args = ap.parse_args(args)
-
+    @staticmethod
+    def main(argv: list[str]) -> int:
         logging.basicConfig()
         ch = logging.StreamHandler()
         ch.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s: %(message)s'))
         mp4_log = logging.getLogger('mp4')
         mp4_log.addHandler(ch)
+        args: MediaCreateOptions = MediaCreateOptions.parse_args(argv)
         if args.verbose:
             logging.getLogger().setLevel(logging.DEBUG)
             mp4_log.setLevel(logging.DEBUG)
-        Path(args.output).mkdir(exist_ok=True)
-        dmc = cls(MediaCreateOptions(**vars(args)))
+        args.destdir.mkdir(exist_ok=True)
+        dmc = DashMediaCreator(args)
         dmc.probe_media_info()
         dmc.encode_all()
         dmc.package_all()
         if args.kid:
             dmc.encrypt_all()
-        mi = dmc.options.destdir / f'{args.prefix}.json'
+        mi: Path = dmc.options.destdir / f'{args.prefix}.json'
         dmc.media_info['streams'][0]['files'].sort()
         with mi.open('wt', encoding='utf-8') as f:
             json.dump(dmc.media_info, f, indent=2)
         return 0
-
-
-if __name__ == "__main__":
-    sys.exit(DashMediaCreator.main(sys.argv[1:]))
