@@ -11,6 +11,8 @@ from pyfakefs.fake_filesystem_unittest import TestCase
 from pyfakefs.fake_filesystem import FakeFilesystem
 
 from dashlive.media.create import DashMediaCreator, FfmpegMediaInfo
+from dashlive.media.create.encoding_parameters import BITRATE_PROFILES, VideoEncodingParameters
+from dashlive.media.create.media_create_options import MediaCreateOptions
 from dashlive.mpeg.dash.representation import Representation
 
 from .mixins.mixin import TestCaseMixin
@@ -25,24 +27,20 @@ class DashMediaCreatorWithoutParser(TestCaseMixin, DashMediaCreator):
 
 
 class MockFfmpeg(TestCaseMixin):
-    audio_codec: str
+    options: MediaCreateOptions
     bitrate_index: int
     input_file: Path
     tmpdir: Path
     aspect: float
-    surround: bool
-    subtitles: bool
     fs: FakeFilesystem
     drive: str
 
     def __init__(self,
-                fs: FakeFilesystem,
-                input_file: Path,
-                tmpdir: Path,
-                surround: bool,
-                subs: bool,
-                audio_codec: str = 'aac'
-                ) -> None:
+                 fs: FakeFilesystem,
+                 input_file: Path,
+                 tmpdir: Path,
+                 options: MediaCreateOptions
+                 ) -> None:
         super().__init__()
         self.fs = fs
         self.bitrate_index = 0
@@ -50,12 +48,13 @@ class MockFfmpeg(TestCaseMixin):
         self.tmpdir = tmpdir
         self.drive = tmpdir.drive
         self.aspect = 16.0 / 9.0
-        self.surround = surround
-        self.subtitles = subs
-        self.audio_codec = audio_codec
+        self.options = options
+
+    def bitrate_ladder(self) -> list[VideoEncodingParameters]:
+        return BITRATE_PROFILES[self.options.bitrate_profile]
 
     def assertListEqual(self, a: list, b: list) -> None:
-        for one, two in zip(a,b):
+        for one, two in zip(a, b):
             self.assertEqual(one, two)
         self.assertEqual(len(a), len(b))
 
@@ -75,7 +74,9 @@ class MockFfmpeg(TestCaseMixin):
         return self.ffmpeg_video_encode(args)
 
     def ffmpeg_video_encode(self, args: list[str]) -> int:
-        width, height, bitrate, codec = DashMediaCreator.BITRATE_LADDER[self.bitrate_index]
+        ladder: list[VideoEncodingParameters] = self.bitrate_ladder()
+        assert self.bitrate_index < len(ladder)
+        width, height, bitrate, codec = ladder[self.bitrate_index]
         height = 4 * (int(float(height) / self.aspect) // 4)
         minrate = (bitrate * 10) // 14
         self.assertEqual(args[0], 'ffmpeg')
@@ -96,12 +97,12 @@ class MockFfmpeg(TestCaseMixin):
 
         if self.bitrate_index == 0:
             expected.update({
-                '-codec:a:0': self.audio_codec,
+                '-codec:a:0': self.options.audio_codec,
                 '-b:a:0': '96k',
                 '-ac:a:0': '2',
                 '-y': None,
             })
-            if self.surround:
+            if self.options.surround:
                 expected.update({
                     '-codec:a:1': 'eac3',
                     '-b:a:1': '320k',
@@ -139,25 +140,26 @@ class MockFfmpeg(TestCaseMixin):
             '-segment-name', 'dash_$RepresentationID$_$Number%03d$$Init=init$',
             '-out', 'manifest',
         ]
+        ladder: list[VideoEncodingParameters] = self.bitrate_ladder()
         filename: Path
-        for idx, br in enumerate(DashMediaCreator.BITRATE_LADDER, start=1):
+        for idx, br in enumerate(ladder, start=1):
             filename = self.tmpdir / f'{br[2]}' / 'bbb.mp4'
             expected.append(f'{filename}#video:id=v{idx}')
-        min_br: int = DashMediaCreator.BITRATE_LADDER[0][2]
+        min_br: int = ladder[0][2]
         mp4_dir: Path = self.tmpdir / 'dash'
         filename = self.tmpdir / f'{min_br}' / 'bbb.mp4'
         expected.append(f'{filename}#trackID=2:role=main:id=a1')
-        if self.surround:
+        if self.options.surround:
             filename = self.tmpdir / f'{min_br}' / 'bbb.mp4'
             expected.append(f'{filename}#trackID=3:role=alternate:id=a2')
-        if self.subtitles:
+        if self.options.subtitles:
             filename = self.tmpdir / 'BigBuckBunny.ttml'
             expected.append(f'{filename}#trackID=1:role=main:id=t1:dur=94.0:ddur=8')
             self.fs.create_file(mp4_dir / 'BigBuckBunny.ttml', contents='BigBuckBunny.ttml')
         self.maxDiff = None
         self.assertListEqual(expected, args)
 
-        for rep_id in range(1, 3 + len(DashMediaCreator.BITRATE_LADDER)):
+        for rep_id in range(1, 3 + len(ladder)):
             self.make_fake_mp4_file(mp4_dir / f'dash_{rep_id}_init.mp4')
             for segment in range(1, 6):
                 self.make_fake_mp4_file(mp4_dir / f'dash_{rep_id}_{segment:03d}.mp4')
@@ -228,7 +230,9 @@ class MockFfmpeg(TestCaseMixin):
 
     def ffprobe_check_frames(self, args: list[str], stderr: int | None,
                              universal_newlines: bool, text: bool) -> str:
-        width, height, bitrate, codec = DashMediaCreator.BITRATE_LADDER[self.bitrate_index]
+        ladder: list[VideoEncodingParameters] = self.bitrate_ladder()
+        assert self.bitrate_index < len(ladder)
+        width, height, bitrate, codec = ladder[self.bitrate_index]
         expected: list[str] = [
             'ffprobe',
             '-show_frames',
@@ -303,7 +307,11 @@ class TestMediaCreation(TestCase):
             '--surround',
             '-o', str(tmpdir)
         ]
-        ffmpeg = MockFfmpeg(self.fs, src_file, tmpdir, surround=True, subs=False)
+        opts: MediaCreateOptions = MediaCreateOptions.parse_args(args)
+        self.assertEqual(opts.audio_codec, 'aac')
+        self.assertFalse(opts.subtitles)
+        self.assertTrue(opts.surround)
+        ffmpeg = MockFfmpeg(self.fs, src_file, tmpdir, opts)
         logging.disable(logging.CRITICAL)
         with patch.object(subprocess, 'check_call', ffmpeg.check_call):
             with patch.object(subprocess, 'check_output', ffmpeg.check_output):
@@ -315,7 +323,9 @@ class TestMediaCreation(TestCase):
         files: list[str] = [
             'bbb_a1.mp4', 'bbb_a1_enc.mp4',
             'bbb_a2.mp4', 'bbb_a2_enc.mp4']
-        for idx in range(1, len(DashMediaCreator.BITRATE_LADDER) + 1):
+
+        ladder: list[VideoEncodingParameters] = ffmpeg.bitrate_ladder()
+        for idx in range(1, len(ladder) + 1):
             files.append(f'bbb_v{idx}.mp4')
             files.append(f'bbb_v{idx}_enc.mp4')
         files.sort()
@@ -341,8 +351,11 @@ class TestMediaCreation(TestCase):
             '--acodec', 'eac3',
             '-o', str(tmpdir)
         ]
-        ffmpeg = MockFfmpeg(
-            self.fs, src_file, tmpdir, surround=False, subs=False, audio_codec='eac3')
+        opts: MediaCreateOptions = MediaCreateOptions.parse_args(args)
+        self.assertEqual(opts.audio_codec, 'eac3')
+        self.assertFalse(opts.subtitles)
+        self.assertFalse(opts.surround)
+        ffmpeg = MockFfmpeg(self.fs, src_file, tmpdir, opts)
         logging.disable(logging.CRITICAL)
         with patch.object(subprocess, 'check_call', ffmpeg.check_call):
             with patch.object(subprocess, 'check_output', ffmpeg.check_output):
@@ -352,7 +365,9 @@ class TestMediaCreation(TestCase):
         with js_file.open('rt') as src:
             js_data = json.load(src)
         files: list[str] = ['bbb_a1.mp4']
-        for idx in range(1, len(DashMediaCreator.BITRATE_LADDER) + 1):
+
+        ladder: list[VideoEncodingParameters] = ffmpeg.bitrate_ladder()
+        for idx in range(1, len(ladder) + 1):
             files.append(f'bbb_v{idx}.mp4')
         files.sort()
         expected = {
@@ -389,7 +404,11 @@ class TestMediaCreation(TestCase):
             '--subtitles', f'{subtitles}',
             '-o', str(tmpdir)
         ]
-        ffmpeg = MockFfmpeg(self.fs, src_file, tmpdir, surround=False, subs=True)
+        opts: MediaCreateOptions = MediaCreateOptions.parse_args(args)
+        self.assertEqual(opts.audio_codec, 'aac')
+        self.assertTrue(opts.subtitles)
+        self.assertFalse(opts.surround)
+        ffmpeg = MockFfmpeg(self.fs, src_file, tmpdir, opts)
         logging.disable(logging.CRITICAL)
         with patch.object(subprocess, 'check_call', ffmpeg.check_call):
             with patch.object(subprocess, 'check_output', ffmpeg.check_output):
@@ -400,7 +419,8 @@ class TestMediaCreation(TestCase):
         with js_file.open('rt') as src:
             js_data = json.load(src)
         files: list[str] = ['bbb_a1.mp4', 'bbb_t1.mp4']
-        for idx in range(1, len(DashMediaCreator.BITRATE_LADDER) + 1):
+        ladder: list[VideoEncodingParameters] = ffmpeg.bitrate_ladder()
+        for idx in range(1, len(ladder) + 1):
             files.append(f'bbb_v{idx}.mp4')
         files.sort()
         expected = {
