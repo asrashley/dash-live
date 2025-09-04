@@ -299,6 +299,7 @@ class TestMediaCreation(TestCase):
         tmpdir: Path = self.create_temp_folder()
         kid = '1ab45440532c439994dc5c5ad9584bac'
         src_file: Path = self.input_dir / 'BigBuckBunny.mp4'
+        self.fs.create_file(src_file, contents=f"{src_file}")
         args: list[str] = [
             '-i', f"{src_file}",
             '-p', 'bbb',
@@ -345,6 +346,7 @@ class TestMediaCreation(TestCase):
     def test_encode_with_eac3_audio(self) -> None:
         tmpdir: Path = self.create_temp_folder()
         src_file: Path = self.input_dir / 'BigBuckBunny.mp4'
+        self.fs.create_file(src_file, contents=f"{src_file}")
         args: list[str] = [
             '-i', f"{src_file}",
             '-p', 'bbb',
@@ -398,6 +400,7 @@ class TestMediaCreation(TestCase):
 
         tmpdir: Path = self.create_temp_folder()
         src_file: Path = self.input_dir / 'BigBuckBunny.mp4'
+        self.fs.create_file(src_file, contents=f"{src_file}")
         args: list[str] = [
             '-i', f"{src_file}",
             '-p', 'bbb',
@@ -433,6 +436,22 @@ class TestMediaCreation(TestCase):
         }
         self.maxDiff = None
         self.assertDictEqual(expected, js_data)
+
+    def test_missing_input_file(self) -> None:
+        src_file: Path = self.input_dir / 'BigBuckBunny.mp4'
+        tmpdir: Path = self.create_temp_folder()
+        args: list[str] = [
+            '-i', f"{src_file}",
+            '-p', 'bbb',
+            '-o', str(tmpdir)
+        ]
+        opts: MediaCreateOptions = MediaCreateOptions.parse_args(args)
+        ffmpeg = MockFfmpeg(self.fs, src_file, tmpdir, opts)
+        logging.disable(logging.CRITICAL)
+        with patch.object(subprocess, 'check_call', ffmpeg.check_call):
+            with patch.object(subprocess, 'check_output', ffmpeg.check_output):
+                with self.assertRaises(IOError):
+                    DashMediaCreatorWithoutParser.main(args)
 
 
 if __name__ == '__main__':
