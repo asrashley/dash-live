@@ -118,6 +118,8 @@ class DashMediaCreator:
                 bitrate=320, codecString='eac3', channels=6))
 
     def encode_all(self) -> None:
+        if not self.options.source.exists():
+            raise IOError(f'Input file "{self.options.source}" does not exist')
         first: bool = True
         ladder: list[VideoEncodingParameters] = BITRATE_PROFILES[self.options.bitrate_profile]
         for width, height, bitrate, codec in ladder:
@@ -185,7 +187,7 @@ class DashMediaCreator:
         ffmpeg_args: list[str] = [
             "ffmpeg",
             "-ec", "deblock",
-            "-i", self.options.source,
+            "-i", f"{self.options.source.absolute()}",
             "-video_track_timescale", str(self.timescale),
             "-map", "0:v:0",
         ]
@@ -631,7 +633,7 @@ class DashMediaCreator:
             "-of", "json",
             "-show_format",
             "-show_streams",
-            self.options.source
+            f"{self.options.source.absolute()}",
         ]))
         if self.options.aspect is None:
             self.options.aspect = '1'

@@ -18,6 +18,7 @@ class MediaCreateOptions:
     aspect: str | None
     audio_codec: str
     avc3: bool
+    bitrate_profile: BitrateProfiles
     duration: int
     font: str
     framerate: int
@@ -28,14 +29,13 @@ class MediaCreateOptions:
     verbose: bool
     max_bitrate: int
     prefix: str
-    source: str
+    source: Path
     subtitles: str
     output: InitVar[str]
     language: str = "eng"
     iv_size: int = 64
     aspect_ratio: float = field(init=False)
     destdir: Path = field(init=False)
-    bitrate_profile: BitrateProfiles = field(init=False, default=BitrateProfiles.DEFAULT)
 
     def __post_init__(self, output: str) -> None:
         self.destdir = Path(output).absolute()
@@ -84,7 +84,7 @@ class MediaCreateOptions:
         ap.add_argument('--max-bitrate',
                         help='Maximum bitrate (Kbps) (0=all bitrates)',
                         type=int, dest='max_bitrate', default=0)
-        ap.add_argument('--profile', help='video bitrate ladder profile',
+        ap.add_argument('--profile', help='video bitrate ladder profile', dest='bitrate_profile',
                         default='hd', choices=[p.lower() for p in BitrateProfiles.keys()])
         ap.add_argument('--input', '-i', help='Input audio/video file',
                         required=True, dest='source')
@@ -95,7 +95,7 @@ class MediaCreateOptions:
         ap.add_argument('--prefix', '-p', help='Prefix for output files', required=True)
         args: argparse.Namespace = ap.parse_args(argv)
         mc_args: dict[str, Any] = {**vars(args)}
-        del mc_args["profile"]
+        mc_args["bitrate_profile"] = BitrateProfiles.from_string(args.bitrate_profile)
+        mc_args["source"] = Path(args.source)
         rv = MediaCreateOptions(**mc_args)
-        rv.set_profile(args.profile)
         return rv
