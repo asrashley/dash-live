@@ -32,9 +32,9 @@ and which ones are in the clear. For example:
 There is a [create_media.py](../dashlive/media/create.py)
 Python script which gives an example of how to encode and package the media files.
 
-Probably the easiest way to use it is to create a Docker container that can be build using
-this [Dockerfile](../encoder/Dockerfile) file. This container has all the required libraries
-and applications.
+Probably the easiest way to use it is to create a Docker container that can be built using
+this [Dockerfile](../encoder/Dockerfile). This container has all the required libraries
+and applications for media encoding, encryption and DASH packaging.
 
 ```sh
 docker buildx build -t dashlive/encoder:latest -f encoder/Dockerfile .
@@ -47,8 +47,8 @@ used to start an encoding job within this container.
 ./create-media.sh --profile uhd --duration 30 --acodec eac3 -i ToS-4k-1920-Dolby.5.1.mp4 --subtitles Tears_Of_Steel_1080p.eng.srt --output ToS --prefix tears
 ```
 
-If you would prefer to run the encoder without using a Docker container, the `dashlive.media.create`
-can be used directly:
+If you would prefer to run the media creation script without using a Docker container,
+`dashlive.media.create` can be used directly:
 
 For example:
 
@@ -58,4 +58,4 @@ python -m dashlive.media.create -i "BigBuckBunny.mp4" -p bbb --kid '1ab45440532c
 ```
 
 It will require that [ffmpeg](https://source.ffmpeg.org/ffmpeg), `ffprobe` and
-[MP4Box](https://github.com/gpac/gpac/) and been compiled are in your shell's `PATH`.
+[MP4Box](https://github.com/gpac/gpac/) have been compiled and are in your shell's `PATH`.
