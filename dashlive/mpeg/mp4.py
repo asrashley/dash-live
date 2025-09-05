@@ -78,15 +78,15 @@ def fourcc(box_name: str):
 
 fourcc.BOXES = {}  # map from fourcc code to Mp4Atom class
 fourcc.BOX_TYPES = {}
+MP4_DESCRIPTORS: dict[int, type["Descriptor"]] = {}  # map from descriptor tag to class
 
 def mp4descriptor(tag: int):
-    def func(cls: "Descriptor") -> "Descriptor":
-        mp4descriptor.DESCRIPTORS[tag] = cls
+    def func(cls: type["Descriptor"]) -> type["Descriptor"]:
+        MP4_DESCRIPTORS[tag] = cls
         return cls
     return func
 
 
-mp4descriptor.DESCRIPTORS: dict[int, "Descriptor"] = {}  # map from descriptor tag to class
 
 class BytesIoWithOffset(io.BufferedReader):
     def __init__(self, data: bytes, offset: int) -> None:
@@ -935,7 +935,11 @@ class Descriptor(ObjectWithFields):
         'tag': int,
     }
 
-    def __init__(self, **kwargs):
+    _fullname: str
+    children: list[ObjectWithFields]
+    tag: int
+
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.apply_defaults({
             "children": [],
@@ -949,13 +953,13 @@ class Descriptor(ObjectWithFields):
             self._fullname = self.classname()
 
     @classmethod
-    def load(clz, src, parent, options=None, **kwargs):
+    def load(cls, src, parent, options=None, **kwargs) -> "Descriptor":
         if options is None:
             options = Options()
         position = src.tell()
         kw = Descriptor.parse_header(src)
         try:
-            Desc = mp4descriptor.DESCRIPTORS[kw["tag"]]
+            Desc: type[Descriptor] = MP4_DESCRIPTORS[kw["tag"]]
         except KeyError:
             Desc = UnknownDescriptor
         total_size = kw["size"] + kw["header_size"]
@@ -963,13 +967,14 @@ class Descriptor(ObjectWithFields):
             'load descriptor: tag=%s type=%s pos=%d size=%d',
             kw["tag"], Desc.__name__, position, total_size)
         Desc.parse_payload(src, kw, parent=parent, options=options)
-        rv = Desc(parent=parent, options=options, **kw)
-        end = position + rv.size + rv.header_size
+        rv: Descriptor = Desc(
+            parent=parent, options=options, position=position, **kw)
+        end: int = position + rv.size + rv.header_size
         while src.tell() < end:
             options.log.debug(
                 'Descriptor: parse descriptor pos=%d end=%d',
                 src.tell(), end)
-            dc = Descriptor.load(src, parent=rv, options=options)
+            dc: Descriptor = Descriptor.load(src, parent=rv, options=options)
             rv.children.append(dc)
         return rv
 
@@ -1010,9 +1015,9 @@ class Descriptor(ObjectWithFields):
             "size": size,
         }
 
-    def encode(self, dest):
-        start = dest.tell()
-        d = FieldWriter(self, dest, debug=self.options.debug)
+    def encode(self, dest: BinaryIO) -> None:
+        start: int = dest.tell()
+        d: FieldWriter[Self, BinaryIO] = FieldWriter(self, dest, debug=self.options.debug)
         self.options.log.debug(
             r'%s: encode descriptor pos=%d', self._fullname, start)
         payload = io.BytesIO()
@@ -1062,19 +1067,19 @@ class Descriptor(ObjectWithFields):
                 return v
         raise AttributeError(name)
 
-    def _to_json(self, exclude):
+    def _to_json(self, exclude: set[str]) -> JsonObject:
         exclude = exclude.union({'parent', 'options'})
         return super()._to_json(exclude)
 
-    def dump(self, indent=''):
-        f = '{}{}: {:d} -> {:d} [header {:d} bytes] [{:d} bytes]'
+    def dump(self, indent: str = '') -> None:
+        f = r'{}{}: {:d} -> {:d} [header {:d} bytes] [{:d} bytes]'
         print(f.format(indent,
                        self.classname(),
                        self.position,
                        self.position + self.size + self.header_size,
                        self.header_size,
                        self.size))
-        for c in self._children:
+        for c in self.children:
             c.dump(indent + '  ')
 
 
