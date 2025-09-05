@@ -79,6 +79,7 @@ class InitialisationVector(KeyMaterial):
 
 
 class DashMediaCreator:
+    # See https://wiki.gpac.io/xmlformats/Common-Encryption
     XML_TEMPLATE: ClassVar[str] = """<?xml version="1.0" encoding="UTF-8"?>
     <GPACDRM type="CENC AES-CTR">
       <CrypTrack trackID="{track_id:d}" IsEncrypted="1" IV_size="{iv_size:d}"
@@ -567,15 +568,17 @@ class DashMediaCreator:
             self, source: Path, dest_filename: Path,
             kid: KeyMaterial, key: KeyMaterial, iv: InitialisationVector,
             tmpdir: Path) -> None:
-        representation = self.parse_representation(str(source))
-        basename = source.stem
-        moov_filename = tmpdir / f'{basename}-moov-enc.mp4'
-        xmlfile = tmpdir / "drm.xml"
+        assert source.exists()
+        representation: Representation = self.parse_representation(str(source))
+        basename: str = source.stem
+        moov_filename: Path = tmpdir / f'{basename}-moov-enc.mp4'
+        xmlfile: Path = tmpdir / "drm.xml"
         with xmlfile.open('wt', encoding='utf-8') as xml:
-            xml.write(self.XML_TEMPLATE.format(kid=kid.hex, key=key.hex, iv=iv.hex,
-                                               iv_size=iv.length,
-                                               track_id=representation.track_id))
-
+            template: str = self.XML_TEMPLATE.format(
+                kid=kid.hex, key=key.hex, iv=iv.hex, iv_size=iv.length,
+                track_id=representation.track_id)
+            logging.debug("%s", template)
+            xml.write(template)
         # MP4Box does not appear to be able to encrypt and fragment in one
         # stage, so first encrypt the media and then fragment it afterwards
         args: list[str] = [
@@ -583,11 +586,13 @@ class DashMediaCreator:
             "-crypt", str(xmlfile),
             "-out", str(moov_filename),
         ]
-        if self.options.framerate:
+        if representation.content_type == 'video' and self.options.framerate:
             args += ["-fps", str(self.options.framerate)]
         args.append(str(source))
         logging.debug('MP4Box arguments: %s', args)
         subprocess.check_call(args, cwd=self.options.destdir)
+
+        assert moov_filename.exists()
 
         prefix = str(tmpdir / "dash_enc_")
         assert self.timescale is not None
@@ -596,7 +601,7 @@ class DashMediaCreator:
             "-dash", str(self.options.segment_duration * self.timescale),
             "-frag", str(self.options.segment_duration * self.timescale),
             "-segment-ext", "mp4",
-            "-segment-name", 'dash_enc_$number%03d$$Init=init$',
+            "-segment-name", 'dash_enc_$Number%03d$$Init=init$',
             "-profile", "live",
             "-frag-rap",
             "-fps", str(self.options.framerate),
