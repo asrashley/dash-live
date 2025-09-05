@@ -64,7 +64,7 @@ class MockFfmpeg(TestCaseMixin):
             return self.ffprobe_source_stream_info(args, stderr, universal_newlines, text)
         return self.ffprobe_check_frames(args, stderr, universal_newlines, text)
 
-    def check_call(self, args: list[str]) -> int:
+    def check_call(self, args: list[str], cwd: Path | str | None = None) -> int:
         if args[0] == 'MP4Box':
             if args[1] == '-crypt':
                 return self.mp4box_encrypt(args)
@@ -171,10 +171,15 @@ class MockFfmpeg(TestCaseMixin):
             'MP4Box',
             '-crypt', re.compile(r'drm.xml$'),
             '-out', re.compile(r'-moov-enc.mp4$'),
-            '-fps', '24',
-            re.compile(r'(bbb_[av]\d+).mp4$'),
         ]
+        if args[-1].startswith('bbb_v'):
+            expected += ['-fps', '24']
+
+        expected.append(re.compile(r'(bbb_[av]\d+).mp4$'))
         self.assertRegexListEqual(expected, args)
+        for idx, arg in enumerate(args):
+            if arg == '-out':
+                self.fs.create_file(args[idx + 1], contents=args[idx + 1])
         return 0
 
     def mp4box_build_encrypted(self, args: list[str]) -> int:
@@ -183,7 +188,7 @@ class MockFfmpeg(TestCaseMixin):
             '-dash', '960',
             '-frag', '960',
             '-segment-ext', 'mp4',
-            '-segment-name', 'dash_enc_$number%03d$$Init=init$',
+            '-segment-name', 'dash_enc_$Number%03d$$Init=init$',
             '-profile', 'live',
             '-frag-rap',
             '-fps', '24',
@@ -200,8 +205,7 @@ class MockFfmpeg(TestCaseMixin):
         return 0
 
     def make_fake_mp4_file(self, filename: Path) -> None:
-        with filename.open('wb') as dest:
-            dest.write(bytes(str(filename), 'utf-8'))
+        self.fs.create_file(filename, contents=f"{filename}")
 
     def ffprobe_source_stream_info(self, args: list[str], stderr: int | None,
                                    universal_newlines: bool, text: bool) -> str:
