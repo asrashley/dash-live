@@ -26,7 +26,7 @@ import json
 import logging
 from pathlib import Path
 import struct
-from typing import ClassVar
+from typing import BinaryIO, ClassVar, cast
 import unittest
 
 from dashlive.mpeg import mp4
@@ -249,15 +249,16 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         self.assertEqual(
             new_wrap.mdat.position + new_wrap.mdat.header_size, first_sample_pos)
 
-    def test_update_mfhd_sequence_number(self):
-        src = io.BufferedReader(io.BytesIO(self.segment))
-        frag = mp4.Mp4Atom.load(src, options={'lazy_load': True})
+    def test_update_mfhd_sequence_number(self) -> None:
+        src: BinaryIO = io.BufferedReader(io.BytesIO(self.segment))
+        frag: list[mp4.Mp4Atom] = cast(
+            list[mp4.Mp4Atom], mp4.Mp4Atom.load(src, options={'lazy_load': True}))
         self.assertEqual(len(frag), 4)
         self.assertEqual(frag[0].atom_type, 'moof')
-        moof = frag[0]
-        offset = moof.mfhd.position + 12
-        segment_num = 0x1234
-        expected_data = b''.join([
+        moof: mp4.MovieFragmentBox = cast(mp4.MovieFragmentBox, frag[0])
+        offset: int = moof.mfhd.position + 12
+        segment_num: int = 0x1234
+        expected_data: bytes = b''.join([
             self.segment[moof.position:offset],
             struct.pack('>I', segment_num),
             self.segment[offset + 4:moof.position + moof.size]])
