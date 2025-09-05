@@ -38,7 +38,7 @@ RUN cd ${HOME}/ffmpeg \
     --enable-libmp3lame --enable-libvorbis --enable-shared --enable-libfreetype --prefix=/usr \
     && make -j4 \
     && make install
-RUN git-checkout.sh https://github.com/gpac/gpac.git e86def24d41f677b307d4cbd69b77e6ffda1b371
+RUN git-checkout.sh https://github.com/gpac/gpac.git 1c4cf6e6376b8917215f6da8c90744497e5ee6b9
 RUN cd ${HOME}/gpac \
     ./configure --prefix=/usr --strip --isomedia-only --enable-cecrypt \
     && make -j4 \
@@ -56,5 +56,6 @@ RUN uv run -m compileall -f -j 0 ${HOME}/dash-live/dashlive
 COPY encoder/encoder.sh ${HOME}
 RUN chmod a+rx ${HOME}/encoder.sh \
     && chmod -R a+rX-w ${HOME}/dash-live/dashlive \
-    && chmod -R a+rwX ${HOME}/.cache/uv
+    && chmod -R a+rwX ${HOME}/.cache/uv \
+    && mkdir -p ${HOME}/.gpac
 ENTRYPOINT ["/home/dash/encoder.sh"]
