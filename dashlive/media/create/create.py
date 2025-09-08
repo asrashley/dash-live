@@ -50,7 +50,6 @@ import binascii
 import datetime
 import io
 import json
-from json import tool
 import logging
 import os
 import math
@@ -752,7 +751,7 @@ class DashMediaCreator:
                 print(f"Error: Required tool '{tool}' is not installed or not in PATH.", file=sys.stderr)
                 missing_tools = True
         if missing_tools:
-                return 1
+            return 1
 
         logging.basicConfig()
         ch = logging.StreamHandler()
