@@ -19,46 +19,59 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-
-import os
+import io
+from pathlib import Path
+from typing import cast
 import unittest
 
 from dashlive.server import models
 from dashlive.mpeg.mp4 import Mp4Atom
 from dashlive.mpeg.dash.representation import Representation
-from dashlive.utils.buffered_reader import BufferedReader
+from dashlive.utils.json_object import JsonObject
 
 from .mixins.flask_base import FlaskTestBase
-from .mixins.stream_fixtures import BBB_FIXTURE
+from .mixins.stream_fixtures import BBB_FIXTURE, TEARS_FIXTURE
 
 class RepresentationTests(FlaskTestBase, unittest.TestCase):
-    def test_load_representation(self) -> None:
+
+    @staticmethod
+    def load_representation(filename: Path) -> tuple[Representation, list[Mp4Atom]]:
+        with filename.open('rb') as src:
+            atoms: list[Mp4Atom] = cast(list[Mp4Atom], Mp4Atom.load(io.BufferedReader(src)))
+        rep: Representation = Representation.load(f"{filename}", atoms)
+        return (rep, atoms,)
+
+    def test_load_bbb_representation(self) -> None:
         self.setup_media_fixture(BBB_FIXTURE, with_subs=True)
         self.assertGreaterThan(models.MediaFile.count(), 0)
         for mfile in models.MediaFile.all():
             filename = self.fixtures_folder / BBB_FIXTURE.name / f'{mfile.name}.mp4'
-            with filename.open('rb') as src:
-                atoms = Mp4Atom.load(BufferedReader(src))
-            rep = Representation.load(filename, atoms)
-            expected = rep.toJSON()
-            actual = mfile.representation.toJSON()
+            rep, atoms = self.load_representation(filename)
+            expected: JsonObject = rep.toJSON()
+            actual: JsonObject = mfile.representation.toJSON()
             self.assertObjectEqual(expected, actual)
 
-    def test_load_ebu_tt_d(self):
-        filename = self.fixtures_folder / "ebuttd.mp4"
-        with filename.open('rb') as src:
-            atoms = Mp4Atom.load(BufferedReader(src))
-        rep = Representation.load(filename, atoms)
+    def test_load_tears_representation(self) -> None:
+        self.setup_media_fixture(TEARS_FIXTURE, with_subs=True)
+        self.assertGreaterThan(models.MediaFile.count(), 0)
+        for mfile in models.MediaFile.all():
+            filename: Path = self.fixtures_folder / TEARS_FIXTURE.name / f'{mfile.name}.mp4'
+            rep, atoms = self.load_representation(filename)
+            expected: JsonObject = rep.toJSON()
+            actual: JsonObject = mfile.representation.toJSON()
+            self.assertObjectEqual(expected, actual)
+
+    def test_load_ebu_tt_d(self) -> None:
+        filename: Path = self.fixtures_folder / "ebuttd.mp4"
+        rep, atoms = self.load_representation(filename)
         self.assertEqual(rep.content_type, 'text')
         self.assertEqual(rep.timescale, 200)
         self.assertEqual(rep.mimeType, 'application/ttml+xml')
         self.assertEqual(rep.codecs, 'im1t|etd1')
 
     def test_load_bbb_t1(self):
-        filename = self.fixtures_folder / "bbb" / "bbb_t1.mp4"
-        with filename.open('rb') as src:
-            atoms = Mp4Atom.load(BufferedReader(src))
-        rep = Representation.load(filename, atoms)
+        filename: Path = self.fixtures_folder / "bbb" / "bbb_t1.mp4"
+        rep, atoms = self.load_representation(filename)
         self.assertEqual(rep.content_type, 'text')
         self.assertEqual(rep.timescale, 200)
         self.assertEqual(rep.mimeType, 'application/mp4')
@@ -66,9 +79,7 @@ class RepresentationTests(FlaskTestBase, unittest.TestCase):
 
     def test_load_web_vtt(self):
         filename = self.fixtures_folder / "webvtt.mp4"
-        with filename.open('rb') as src:
-            atoms = Mp4Atom.load(BufferedReader(src))
-        rep = Representation.load(filename, atoms)
+        rep, atoms = self.load_representation(filename)
         self.assertEqual(rep.content_type, 'text')
         self.assertEqual(rep.timescale, 1000)
         self.assertEqual(rep.mimeType, 'text/vtt')
@@ -80,9 +91,7 @@ class RepresentationTests(FlaskTestBase, unittest.TestCase):
 
     def test_load_hevc(self):
         filename = self.fixtures_folder / "hevc-rep.mp4"
-        with filename.open('rb') as src:
-            atoms = Mp4Atom.load(BufferedReader(src))
-        rep = Representation.load(filename, atoms)
+        rep, atoms = self.load_representation(filename)
         self.assertEqual(rep.content_type, 'video')
         self.assertEqual(rep.timescale, 600)
         self.assertEqual(rep.frameRate, 24)
@@ -98,9 +107,7 @@ class RepresentationTests(FlaskTestBase, unittest.TestCase):
 
     def test_load_ac3(self):
         filename = self.fixtures_folder / "ac3-rep.mp4"
-        with filename.open('rb') as src:
-            atoms = Mp4Atom.load(BufferedReader(src))
-        rep = Representation.load(filename, atoms)
+        rep, atoms = self.load_representation(filename)
         self.assertEqual(rep.content_type, 'audio')
         self.assertEqual(rep.timescale, 48000)
         self.assertEqual(rep.mimeType, 'audio/mp4')
@@ -114,9 +121,7 @@ class RepresentationTests(FlaskTestBase, unittest.TestCase):
 
     def test_load_eac3(self):
         filename = self.fixtures_folder / "bbb" / "bbb_a2.mp4"
-        with filename.open('rb') as src:
-            atoms = Mp4Atom.load(BufferedReader(src))
-        rep = Representation.load(filename, atoms)
+        rep, atoms = self.load_representation(filename)
         self.assertEqual(rep.content_type, 'audio')
         self.assertEqual(rep.timescale, 44100)
         self.assertEqual(rep.mimeType, 'audio/mp4')
@@ -130,9 +135,7 @@ class RepresentationTests(FlaskTestBase, unittest.TestCase):
 
     def test_load_encrypted_eac3(self):
         filename = self.fixtures_folder / "bbb" / "bbb_a2_enc.mp4"
-        with filename.open('rb') as src:
-            atoms = Mp4Atom.load(BufferedReader(src))
-        rep = Representation.load(filename, atoms)
+        rep, atoms = self.load_representation(filename)
         self.assertEqual(rep.content_type, 'audio')
         self.assertEqual(rep.timescale, 44100)
         self.assertEqual(rep.mimeType, 'audio/mp4')
@@ -144,12 +147,6 @@ class RepresentationTests(FlaskTestBase, unittest.TestCase):
         self.assertEqual(rep.numChannels, 6)
         self.assertEqual(rep.sampleRate, 44100)
 
-
-if os.environ.get("TESTS"):
-    def load_tests(loader, tests, pattern):
-        return unittest.loader.TestLoader().loadTestsFromNames(
-            os.environ["TESTS"].split(','),
-            RepresentationTests)
 
 if __name__ == "__main__":
     unittest.main()

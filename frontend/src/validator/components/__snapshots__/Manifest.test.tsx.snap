@@ -153,7 +153,7 @@ exports[`Manifest component > matches snapshot for manifest with errors 1`] = `
       <pre
         class="text"
       >
-          profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014"
+          profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvb-dash:2014"
       </pre>
     </div>
     <div
@@ -2584,7 +2584,7 @@ exports[`Manifest component > matches snapshot for manifest with no errors 1`] =
       <pre
         class="text"
       >
-          profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014"
+          profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvb-dash:2014"
       </pre>
     </div>
     <div

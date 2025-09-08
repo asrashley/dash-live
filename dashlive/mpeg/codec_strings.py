@@ -29,6 +29,8 @@ import bitstring
 from .mp4 import VisualSampleEntry
 
 class CodecData(ABC):
+    codec: str
+
     @abstractmethod
     def to_string(self) -> str:
         ...
@@ -55,17 +57,19 @@ class H264Codec(CodecData):
         122: 'high422',
         244: 'high444',
     }
-    codec: str = field(default='h.264', init=False)
     avc_type: str
     profile: int
     compatibility: int
-    level: int
+    level: float
+
+    def __post_init__(self) -> None:
+        self.codec = 'h.264'
 
     @classmethod
     def from_avc_box(cls, avc_type: str, avc: VisualSampleEntry) -> CodecData:
         profile = avc.avcC.AVCProfileIndication
         compatibility = avc.avcC.profile_compatibility
-        level = avc.avcC.AVCLevelIndication / 10.0
+        level: float = avc.avcC.AVCLevelIndication / 10.0
         return H264Codec(avc_type, profile, compatibility, level)
 
     @classmethod
@@ -90,14 +94,16 @@ class H264Codec(CodecData):
 
 @dataclass(slots=True)
 class H265Codec(CodecData):
-    codec: str = field(default='h.265', init=False)
     avc_type: str
     profile_idc: int
     profile_space: int
     level_idc: int
     tier_flag: int
-    profile_compatibility_flags: bitstring.BitArray
+    profile_compatibility_flags: int
     constraint_indicator_flags: int
+
+    def __post_init__(self) -> None:
+        self.codec = 'h.265'
 
     @classmethod
     def from_avc_box(cls, avc_type: str, avc: VisualSampleEntry) -> CodecData:
@@ -129,18 +135,19 @@ class H265Codec(CodecData):
         #   containing the general_progressive_source_flag, each encoded as a
         #   hexadecimal number, and the encoding of each byte separated by a
         #   period; trailing bytes that are zero may be omitted.
-        gps = ['', 'A', 'B', 'C'][self.profile_space]
-        tier = '{}{}'.format('LH'[self.tier_flag], self.level_idc)
-        parts = [
+        gps: str = ['', 'A', 'B', 'C'][self.profile_space]
+        lh: str = 'LH'[self.tier_flag]
+        tier: str = f'{lh}{self.level_idc}'
+        parts: list[str] = [
             str(self.avc_type),
             f'{gps}{self.profile_idc:d}',
             f'{self.profile_compatibility_flags:x}',
             tier,
         ]
-        gcif = self.constraint_indicator_flags
+        gcif: int = self.constraint_indicator_flags
         pos = 40
         while gcif > 0:
-            mask = 0xFF << pos
+            mask: int = 0xFF << pos
             parts.append(f'{(gcif & mask) >> pos:x}'.upper())
             gcif = gcif & ~mask
             pos -= 8
@@ -153,20 +160,20 @@ class H265Codec(CodecData):
 
     @classmethod
     def from_string(cls, codec_string: str) -> CodecData:
-        parts = codec_string.split('.')
+        parts: list[str] = codec_string.split('.')
         if parts[1][0] >= 'A':
-            profile_space = 1 + parts[1][0] - 'A'
+            profile_space: int = 1 + ord(parts[1][0]) - ord('A')
             profile_idc = int(parts[1][1:], 10)
         else:
             profile_space = 0
             profile_idc = int(parts[1], 10)
         profile_compatibility_flags = int(parts[2], 16)
         level_idc = int(parts[3][1:], 10)
-        tier_flag = 1 if parts[3] == 'H' else 0
-        constraint_indicator_flags = 0
+        tier_flag: int = 1 if parts[3] == 'H' else 0
+        constraint_indicator_flags: int = 0
         if len(parts) > 4:
             constraint_indicator_flags = int(''.join(parts[4:]), 16)
-            shift = 8 * (10 - len(parts))
+            shift: int = 8 * (10 - len(parts))
             constraint_indicator_flags = constraint_indicator_flags << shift
         return H265Codec(
             avc_type=parts[0], profile_space=profile_space,

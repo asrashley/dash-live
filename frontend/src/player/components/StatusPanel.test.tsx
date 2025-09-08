@@ -29,16 +29,15 @@ describe("StatusPanel", () => {
     },
   ];
   const events = signal<StatusEvent[]>([]);
-  const currentTime = signal<number>(0);
 
   test("matches snapshot", () => {
-    currentTime.value = 83;
     events.value = [...exampleEvents];
-    const { asFragment, getBySelector } = renderWithProviders(
-      <StatusPanel events={events} currentTime={currentTime} />
+    const { asFragment, getByText } = renderWithProviders(
+      <StatusPanel events={events} />
     );
-    const tcElt = getBySelector(".play-position") as HTMLDivElement;
-    expect(tcElt?.innerHTML).toEqual("00:01:23");
+    events.value.forEach(({timecode}) => {
+      getByText(timecode);
+    });
     expect(asFragment()).toMatchSnapshot();
   });
 });

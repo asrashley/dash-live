@@ -172,7 +172,9 @@ class MediaFile(ModelMixin["MediaFile"], Base):
     def as_stream_timing_reference(self) -> StreamTimingReference | None:
         if self.representation is None:
             return None
+        ct: str = self.content_type if self.content_type else 'application'
         return StreamTimingReference(
+            content_type=ct,
             media_name=self.name,
             media_duration=self.representation.mediaDuration,
             segment_duration=self.representation.segment_duration,

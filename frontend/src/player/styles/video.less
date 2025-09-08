@@ -5,10 +5,27 @@
   z-index: 0;
 }
 
-#vid-window > video,
-#vid-window .subtitles {
+#vid-window > video {
   width: 100%;
   height: 100%;
+}
+
+#vid-window .subtitles-wrapper {
+  height: 80vh;
+  left: 0;
+  position: absolute;
+  top: 5vh;
+  width: 100%;
+  z-index: 2;
+
+  .subtitles {
+    height: 100%;
+    width: 100%;
+
+    .shaka-text-container {
+      font-size: 1.75rem;
+    }
+  }
 }
 
 #vid-window .icon {
@@ -18,13 +35,48 @@
   right: 4vw;
   text-shadow: 0px 0px 12px #160906;
   top: 3vh;
-  z-index: 2;
+  z-index: 3;
+}
+
+#playback-controls {
+  bottom: 11vh;
+  font-size: 1.2rem;
+  height: 2.2rem;
+  position: absolute;
+  right: 6vw;
+  width: 16em;
+
+  .play-position {
+    background-color: rgba(63, 63, 63, 0.5);
+    color: #eee;
+    text-align: center;
+    width: 10em;
+  }
+
+  > .btn {
+    font-size: 125%;
+    line-height: 1rem;
+
+    > .icon {
+      display: inline-block;
+      width: 0.75em;
+    }
+  }
+
+  .dropdown-menu {
+    background-color: rgba(42, 42, 42, 0.8);
+    .dropdown-item {
+      color: #eee;
+    }
+    .dropdown-item:hover {
+      color: #33f;
+    }
+  }
 }
 
 #status,
 .textbox,
-.source,
-.play-position {
+.source {
   background-color: rgba(63, 63, 63, 0.4);
   color: white;
   padding: 0 0.2em;
@@ -32,17 +84,13 @@
   text-align: center;
 }
 
-.source,
-.play-position {
+.source {
   font-size: 1.5em;
   height: 1em;
   height: 2vh;
   line-height: 1em;
   line-height: 2.3vh;
   z-index: 2;
-}
-
-.source {
   top: 3em;
   width: 90%;
   overflow: hidden;
@@ -162,6 +210,7 @@
     bottom: 0vh;
     height: 14vh;
     left: 5vw;
+    overflow-y: scroll;
     width: 90vw;
   }
 }

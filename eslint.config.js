@@ -56,9 +56,15 @@ export default tseslint.config({
   settings: {
     "import/resolver": {
       node: {
-        paths: ["frontend/src"],
+        moduleDirectory: [
+          "frontend/src",
+          "node_modules"
+        ],
         extensions: [".ts", ".tsx"],
       },
+      typescript: {
+         alwaysTryTypes: true,
+      }
     },
     react: eslintConfigPreact.settings.react,
   },
@@ -66,7 +72,12 @@ export default tseslint.config({
   rules: {
     ...eslintConfigPreact.rules,
     "no-unused-vars": "off",
-    "@typescript-eslint/no-unused-vars": "error",
+    "@typescript-eslint/no-unused-vars": [
+        "error",
+        {
+          "argsIgnorePattern": "^_",
+        }
+    ],
     "import/no-unresolved": [
       "error",
       {

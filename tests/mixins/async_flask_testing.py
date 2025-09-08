@@ -63,6 +63,8 @@ def _make_test_response(response_class):
 class AsyncFlaskTestCase(IsolatedAsyncioTestCase):
     render_templates: ClassVar[bool] = True
     app: Flask
+    client: FlaskClient
+    async_client: AsyncTestClient
 
     @abstractmethod
     def create_app(self):

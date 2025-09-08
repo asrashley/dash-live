@@ -22,6 +22,7 @@
 
 import base64
 import copy
+import io
 import logging
 import os
 import unittest
@@ -31,7 +32,6 @@ from crccheck.crc import Crc32Mpeg2
 from dashlive.mpeg import MPEG_TIMEBASE
 from dashlive.scte35.binarysignal import BinarySignal
 from dashlive.scte35.descriptors import SegmentationTypeId
-from dashlive.utils.buffered_reader import BufferedReader
 
 from .mixins.mixin import TestCaseMixin
 
@@ -56,6 +56,7 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
                 'out_of_network_indicator': True,
                 'program_splice_flag': True,
                 'duration_flag': True,
+                'components': [],
                 'splice_immediate_flag': False,
                 'splice_time': {
                     'pts': 0x07369c02e,
@@ -369,15 +370,17 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
                 tc['expected']['crc'] = crc.final()
                 tc['expected']['crc_valid'] = True
 
-    def test_parsing_splice_info_section(self):
+    def test_parsing_splice_info_section(self) -> None:
         for idx, tc in enumerate(self.test_cases):
             # print('test_case', idx + 1, tc['name'])
-            data = base64.b64decode(tc['input'])
-            src = BufferedReader(None, data=data)
+            data: bytes = base64.b64decode(tc['input'])
+            src = io.BufferedReader(io.BytesIO(data))
             splice_kwargs = BinarySignal.parse(src, size=len(data))
             self.assertIn('crc', tc['expected'])
-            msg = r'{:d}: {}'.format(idx, tc['name'])
-            self.assertObjectEqual(tc['expected'], splice_kwargs, msg)
+            msg: str = f'{idx:d}: {tc["name"]}'
+            self.maxDiff = None
+            expected = self.update_recursively(splice_kwargs, tc['expected'])
+            self.assertDictEqual(expected, splice_kwargs, msg)
             splice = BinarySignal(**splice_kwargs)
             encoded = splice.encode()
             self.assertBuffersEqual(data, encoded, msg)

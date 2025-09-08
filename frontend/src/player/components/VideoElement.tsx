@@ -1,20 +1,33 @@
-import { Component, createRef } from "preact";
-import type { ReadonlySignal, Signal } from "@preact/signals";
+import { Component } from "preact";
+import { effect, signal, type ReadonlySignal, type Signal } from "@preact/signals";
+import isEqual from "lodash.isequal";
 
 import { DashPlayerTypes } from "../types/DashPlayerTypes";
-import { AbstractDashPlayer, DashPlayerProps } from "../types/AbstractDashPlayer";
+import {
+  AbstractDashPlayer,
+  DashPlayerProps,
+} from "../players/AbstractDashPlayer";
 import { playerFactory } from "../players/playerFactory";
 import { PlayerControls } from "../types/PlayerControls";
 import { StatusEvent } from "../types/StatusEvent";
 import { DashParameters } from "../types/DashParameters";
 import { KeyParameters } from "../types/KeyParameters";
-import { PlaybackIconType } from "../types/PlaybackIconType";
+import { MediaTrack } from "../types/MediaTrack";
 
 export const STATUS_EVENTS = [
-  'stalled','loadedmetadata', 'error', 'canplay', 'canplaythrough',
-  'playing', 'ended', 'pause', 'resize', 'loadstart', 'seeking', 'seeked',
+  "stalled",
+  "loadedmetadata",
+  "error",
+  "canplay",
+  "canplaythrough",
+  "playing",
+  "ended",
+  "pause",
+  "resize",
+  "loadstart",
+  "seeking",
+  "seeked",
 ];
-
 
 export interface VideoElementProps {
   mpd: string;
@@ -22,19 +35,29 @@ export interface VideoElementProps {
   playerVersion?: string;
   dashParams: ReadonlySignal<DashParameters>;
   keys: ReadonlySignal<Map<string, KeyParameters>>;
+  textEnabled: ReadonlySignal<boolean>;
+  textLanguage: ReadonlySignal<string>;
   currentTime: Signal<number>;
-  controls: Signal<PlayerControls | undefined>;
-  activeIcon: Signal<PlaybackIconType | null>;
   events: Signal<StatusEvent[]>;
   maxEvents?: number;
-  subtitlesElement?: HTMLDivElement;
+  setPlayer(controls: PlayerControls | null): void;
+  tracksChanged(tracks: MediaTrack[]): void;
 }
 
-export class VideoElement extends Component<VideoElementProps, undefined> implements PlayerControls {
-  static DEFAULT_MAX_EVENTS = 10;
-  private videoElt = createRef<HTMLVideoElement>();
+export class VideoElement
+  extends Component<VideoElementProps, undefined>
+  implements PlayerControls
+{
+  static DEFAULT_MAX_EVENTS = 25;
+  private videoElt: HTMLVideoElement | null = null;
   private player?: AbstractDashPlayer;
+  private playerInitControl?: AbortController;
   private nextId = 1;
+  private subtitlesElement: HTMLDivElement | null = null;
+  private signalCleanup: () => void | undefined;
+  private unmountController: AbortController = new AbortController();
+  public isPaused = signal<boolean>(false);
+  public hasDashPlayer = signal<boolean>(false);
 
   shouldComponentUpdate() {
     // do not re-render via diff:
@@ -42,73 +65,121 @@ export class VideoElement extends Component<VideoElementProps, undefined> implem
   }
 
   componentWillReceiveProps(nextProps: VideoElementProps) {
-    if (!this.player && nextProps.dashParams.value) {
-      this.tryInitializePlayer(nextProps);
+    if (!isEqual(nextProps.dashParams.value, this.props.dashParams.value)) {
+      this.signalCleanup?.();
+      this.videoElt?.pause();
+      this.player?.destroy();
+      this.player = undefined;
+      this.signalCleanup = effect(() => {
+        this.tryInitializePlayer(nextProps);
+      });
     }
   }
 
   componentDidMount() {
-    this.tryInitializePlayer(this.props);
+    this.isPaused.value = this.videoElt?.paused ?? false;
+    this.signalCleanup = effect(() => {
+      this.tryInitializePlayer(this.props);
+    });
   }
 
   componentWillUnmount() {
-    for (const name of STATUS_EVENTS) {
-      this.videoElt.current.removeEventListener(name, this.logDomEvent);
-    }
-    this.props.controls.value = undefined;
-    this.videoElt.current.removeEventListener("timeupdate", this.onTimeUpdate);
+    this.signalCleanup?.();
+    this.signalCleanup = undefined;
+    this.unmountController.abort();
+    this.props.setPlayer(null);
     this.player?.destroy();
     this.player = undefined;
+    this.subtitlesElement = null;
+    this.hasDashPlayer.value = false;
+    this.isPaused.value = true;
   }
 
   render() {
-    return <video ref={this.videoElt} />;
+    return <video ref={this.setVideoElt} />;
   }
 
   pause() {
-    this.videoElt.current.pause();
+    this.videoElt?.pause();
   }
 
-  isPaused() {
-    return this.videoElt.current.paused;
-  }
-
-  play() {
-    this.videoElt.current.play();
+  async play() {
+    await this.tryInitializePlayer(this.props);
+    await this.videoElt?.play();
   }
 
   skip(seconds: number) {
-    const video = this.videoElt.current;
+    if (this.videoElt === undefined) {
+      throw new Error('video element not mounted');
+    }
+    const video = this.videoElt;
     const newTime = Math.min(
       Math.max(0, video.currentTime + seconds),
       video.duration
     );
-    this.videoElt.current.currentTime = newTime;
+    video.currentTime = newTime;
   }
 
   stop() {
-    this.videoElt.current.pause();
+    this.videoElt?.pause();
+    this.player?.destroy();
+    this.player = undefined;
+    this.hasDashPlayer.value = false;
   }
 
-  private tryInitializePlayer(props: VideoElementProps) {
-    const { dashParams, keys, mpd, playerName, playerVersion: version, subtitlesElement } = props;
-    if (!this.videoElt.current || !dashParams.value) {
+  setSubtitlesElement = (subtitlesElement: HTMLDivElement | null) => {
+    this.subtitlesElement = subtitlesElement;
+    this.player?.setSubtitlesElement(subtitlesElement);
+  };
+
+  setTextTrack = (track: MediaTrack | null) => {
+    this.player?.setTextTrack(track);
+  };
+
+  private setVideoElt = (elt: HTMLVideoElement | null) => {
+    this.videoElt = elt;
+    if (!elt) {
       return;
     }
-    this.videoElt.current.addEventListener("timeupdate", this.onTimeUpdate);
+    const { signal } = this.unmountController;
+    elt.addEventListener('pause', () => this.isPaused.value = true, { signal });
+    elt.addEventListener('play', () => this.isPaused.value = false, { signal });
+  }
+
+  private async tryInitializePlayer({ dashParams, keys, mpd, playerName, textLanguage, textEnabled, playerVersion: version }: VideoElementProps) {
+    if (this.player || !this.videoElt) {
+      return;
+    }
+    this.playerInitControl?.abort('replaced with new Player');
+    const playerInitControl = new AbortController();
+    this.playerInitControl = playerInitControl;
+    const { signal } = this.unmountController;
+    signal.addEventListener('abort', () => this.playerInitControl.abort('unmounting'), { signal });
+    this.videoElt.addEventListener("timeupdate", this.onTimeUpdate, { signal });
     const playerProps: DashPlayerProps = {
       version,
       logEvent: this.logEvent,
+      tracksChanged: this.tracksChanged,
       autoplay: true,
-      videoElement: this.videoElt.current,
-      subtitlesElement,
+      videoElement: this.videoElt,
+      textLanguage: textLanguage.value,
+      textEnabled: textEnabled.value,
     };
-    this.player = playerFactory(playerName, playerProps);
-    this.player.initialize(mpd, dashParams.value.options, keys.value);
-    this.props.controls.value = this;
-    for (const name of STATUS_EVENTS) {
-      this.videoElt.current.addEventListener(name, this.logDomEvent);
+    const player = playerFactory(playerName, playerProps);
+    await player.initialize(mpd, dashParams.value.options, keys.value);
+    if (this.playerInitControl !== playerInitControl || !this.videoElt || playerInitControl.signal.aborted) {
+      // destroy was called before initialize() completed
+      return;
     }
+    for (const name of STATUS_EVENTS) {
+      this.videoElt.addEventListener(name, this.logDomEvent, { signal });
+    }
+    if (this.subtitlesElement) {
+      player.setSubtitlesElement(this.subtitlesElement);
+    }
+    this.player = player;
+    this.props.setPlayer(this);
+    this.hasDashPlayer.value = true;
   }
 
   private onTimeUpdate = (ev: Event) => {
@@ -120,7 +191,7 @@ export class VideoElement extends Component<VideoElementProps, undefined> implem
     const status: StatusEvent = {
       id: this.nextId++,
       timecode: new Date().toISOString(),
-      position: this.videoElt.current?.currentTime,
+      position: this.videoElt?.currentTime,
       event,
       text,
     };
@@ -134,14 +205,13 @@ export class VideoElement extends Component<VideoElementProps, undefined> implem
       timecode: new Date().toISOString(),
       position: video.currentTime,
       event: ev.type,
-      text: '',
+      text: "",
     };
-    if (ev.type === "error"){
-        const { error } = video;
-        if (error) {
-          status.text = `${error.code}: ${error.message}`;
-
-        }
+    if (ev.type === "error") {
+      const { error } = video;
+      if (error) {
+        status.text = `${error.code}: ${error.message}`;
+      }
     }
     this.appendStatusEvent(status);
   };
@@ -149,9 +219,28 @@ export class VideoElement extends Component<VideoElementProps, undefined> implem
   private appendStatusEvent(status: StatusEvent) {
     const evList = [status, ...this.props.events.value];
     const { maxEvents = VideoElement.DEFAULT_MAX_EVENTS } = this.props;
-    while(evList.length > maxEvents) {
+    while (evList.length > maxEvents) {
       evList.pop();
     }
     this.props.events.value = evList;
   }
+
+  private tracksChanged = (tracks: MediaTrack[]) => {
+    const status: StatusEvent = {
+      id: 0,
+      timecode: new Date().toISOString(),
+      position: this.videoElt.currentTime,
+      event: 'TracksChanged',
+      text: "",
+    };
+
+    tracks.forEach(({active, id, trackType, language}) => {
+      this.appendStatusEvent({
+        ...status,
+        id: this.nextId++,
+        text: `${trackType}[${id}] lang="${language}" active=${active}`,
+      });
+    });
+    this.props.tracksChanged(tracks);
+  };
 }

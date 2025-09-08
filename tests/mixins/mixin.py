@@ -30,10 +30,31 @@ from dashlive.utils.hexdump import hexdump_buffer
 
 class TestCaseMixin:
     @classmethod
-    def classname(clz):
-        if clz.__module__.startswith('__'):
-            return clz.__name__
-        return clz.__module__ + '.' + clz.__name__
+    def classname(cls) -> str:
+        if cls.__module__.startswith('__'):
+            return cls.__name__
+        return cls.__module__ + '.' + cls.__name__
+
+    def update_recursively(self, lower: dict, upper: dict) -> dict[str, Any]:
+        rv: dict[str, Any] = {**lower}
+        rv.update(upper)
+        for key, value in upper.items():
+            if key not in lower:
+                continue
+            if isinstance(value, list):
+                items: list[Any] = []
+                for exp, act in zip(value, lower[key]):
+                    if isinstance(exp, dict):
+                        merged: dict = {**act}
+                        merged.update(exp)
+                        items.append(merged)
+                    else:
+                        items.append(exp)
+                rv[key] = items
+            elif isinstance(value, dict):
+                rv[key] = {**lower[key]}
+                rv[key].update(value)
+        return rv
 
     def _assert_true(self, result, a, b, msg, template):
         if not result:
@@ -71,58 +92,39 @@ class TestCaseMixin:
     def assertGreaterOrEqual(self, a, b, msg=None):
         self._assert_true(a >= b, a, b, msg, r'{} < {}')
 
-    def assertObjectEqual(self, expected, actual, msg=None, strict=False, list_key=None):
+    def assertObjectEqual(self, expected, actual, msg=None, strict=False, list_key=None) -> None:
+        if expected is None:
+            self.assertEqual(expected, actual)
+            return
+        if isinstance(expected, (str, int)):
+            self.assertEqual(expected, actual)
+            return
+        if strict:
+            self.asssertDictEqual(expected, actual)
+            return
         for key, value in expected.items():
             if msg is None:
-                key_name = key
+                key_name: str = key
             else:
                 key_name = f'{msg}.{key}'
-            if expected is None:
-                self.assertIsNone(
-                    actual, f'{key_name}: {actual} should be None')
+            self.assertIn(key, actual, f'{key_name}: key "{key}" missing')
+            act: Any = actual[key]
+            if value is None:
+                self.assertIsNone(act, f'{key_name}: {act} should be None')
             else:
-                self.assertIsNotNone(
-                    actual, f'{key_name}: {actual} should not be None')
+                self.assertIsNotNone(act, f'{key_name}: {act} should not be None')
             if isinstance(value, dict):
-                self.assertIn(key, actual, f'{key_name}: key "{key}" missing')
                 self.assertObjectEqual(value, actual[key], msg=key_name, strict=strict)
             elif isinstance(value, list):
-                self.assertListEqual(value, actual[key], msg=key_name, list_key=list_key)
+                if strict:
+                    self.assertListEqual(value, actual[key], msg=key_name)
+                else:
+                    for e, a in zip(value, act):
+                        self.assertObjectEqual(e, a)
             else:
-                self.assertIn(key, actual,
-                              f'{key_name}: missing key {key}')
                 assert_msg = r'{}: expected "{}" got "{}"'.format(
                     key_name, value, actual[key])
                 self.assertEqual(value, actual[key], msg=assert_msg)
-        if strict:
-            for key in list(actual.keys()):
-                self.assertIn(key, expected)
-
-    def assertListEqual(self, expected: list, actual: list, msg=None, list_key=None) -> None:
-        if msg is None:
-            msg = ''
-        assert_msg = '{}: expected length {} got {}'.format(
-            msg, len(expected), len(actual))
-        self.assertEqual(len(expected), len(actual), assert_msg)
-        idx = 0
-        for exp, act in zip(expected, actual):
-            if list_key is None:
-                item_msg = f'{msg:s}[{idx:d}]'
-            else:
-                lk = list_key(exp, idx)
-                item_msg = f'{msg:s}[{lk}]'
-            if isinstance(exp, list):
-                self.assertListEqual(exp, act, msg=item_msg, list_key=list_key)
-            elif isinstance(exp, dict):
-                self.assertObjectEqual(exp, act, msg=item_msg, list_key=list_key)
-            else:
-                assert_msg = f'{item_msg} expected "{exp}" got "{act}"'
-                if exp != act:
-                    print(type(exp), type(act))
-                    print(f'expected="{exp}"')
-                    print(f'actual="{act}"')
-                self.assertEqual(exp, act, assert_msg)
-            idx += 1
 
     def assertGreaterThan(self, a, b, msg=None):
         self._assert_true(a > b, a, b, msg, r'{} <= {}')

@@ -10,7 +10,7 @@ type="dynamic"
   
   minBufferTime="PT5.000S" maxSegmentDuration="PT4S"
   publishTime="2023-10-01T02:03:52Z"
-  profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvbdash:2014">
+  profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvb-dash:2014">
  <BaseURL>http://unit.test/dash/live/bbb/</BaseURL>
  <Location>http://unit.test/dash/live/bbb/manifest_e.mpd?start=2023-01-01T00:00:00Z</Location>
  <Location>http://unit.test/dash/live/bbb/manifest_e.mpd</Location>

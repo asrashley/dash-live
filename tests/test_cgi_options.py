@@ -273,6 +273,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             'textCodec': None,
             'textErrors': [],
             'textLanguage': None,
+            'textPreference': None,
             'timeShiftBufferDepth': 1800,
             'videoCorruption': [],
             'videoCorruptionFrameCount': None,
@@ -440,6 +441,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             "textCodec": None,
             "textErrors": [],
             "textLanguage": None,
+            "textPreference": None,
             "timeShiftBufferDepth": 1800,
             "updateCount": None,
             "useBaseUrls": True,
@@ -532,15 +534,19 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
         })
 
     def check_generate_drm_input_fields(self, drm_map: dict[str, tuple]) -> None:
-        expected = []
+        expected: list[dict] = []
         for name in ['clearkey', 'marlin', 'playready']:
             try:
-                loc = drm_map[name][1]
+                loc: str = drm_map[name][1]
             except KeyError:
                 loc = ''
             expected.append({
+                'className': 'drm-checkbox',
                 'name': f'{name}__enabled',
+                'shortName': f'{name}__enabled',
+                'fullName': 'enabled',
                 'prefix': name,
+                'text': f'Enable {name.title()} DRM support?',
                 'title': f'{name.title()} DRM',
                 'value': name in drm_map,
                 'type': 'checkbox'
@@ -576,7 +582,10 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
                 'selected': loc == 'cenc-moov'
             }]
             expected.append({
+                'featured': True,
+                'fullName': 'drmloc',
                 'name': f'{name}__drmloc',
+                'shortName': f'{name}__drmloc',
                 'title': f'{name.title()} location',
                 'value': loc,
                 'text': 'Location to place DRM data',
@@ -590,6 +599,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
         for key in sorted(list(drm_map.keys())):
             drm_selection.append((key, drm_map[key][0]))
         fields: list[JsonObject] = defaults.generate_drm_fields(drm_selection)
+        self.maxDiff = None
         self.assertListEqual(expected, fields)
 
     def test_apply_restrictions(self) -> None:

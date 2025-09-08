@@ -94,7 +94,7 @@ class Representation(ObjectWithFields):
         'default_kid': None,
         'iv_size': None,
         'encrypted': False,
-        'mediaDuration': None,
+        'mediaDuration': 0,
         'max_bitrate': None,
         'mimeType': None,
         'nalLengthFieldLength': None,
@@ -109,11 +109,13 @@ class Representation(ObjectWithFields):
     VERSION: ClassVar[int] = 4
     KNOWN_CODEC_BOXES: ClassVar[set[str]] = {
         'ac_3', 'avc1', 'avc3', 'mp4a', 'ec_3', 'encv', 'enca',
-        'hev1', 'hvc1', 'stpp', 'wvtt',
+        'hev1', 'hvc1', 'stpp', 'wvtt', 'tx3g',
     }
     segments: list[Segment]
     kids: list[KeyMaterial]
+    content_type: str | None
     codes: str | None
+    mediaDuration: int
     sar: str | None
     scanType: str | None
     startWithSAP: int
@@ -127,7 +129,9 @@ class Representation(ObjectWithFields):
     height: int | None
     weight: int | None
     sampleRate: int
+    nalLengthFieldLength: int
     numChannels: int
+    _timing: DashTiming | None = None
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
@@ -152,13 +156,15 @@ class Representation(ObjectWithFields):
             })
         self.apply_defaults(defaults)
         self.num_media_segments = len(self.segments) - 1
-        self._timing: DashTiming | None = None
         start: int = 0
         for seg in self.segments[1:]:
             seg.start = start
-            start += seg.duration
-        if self.mediaDuration is None:
-            self.mediaDuration = sum([s.duration for s in self.segments[1:]])
+            if seg.duration is not None:
+                start += seg.duration
+        if not self.mediaDuration:
+            self.mediaDuration = sum([
+                s.duration for s in self.segments[1:] if s.duration is not None
+            ])
         if self.segment_duration is None and self.num_media_segments > 0:
             self.segment_duration = int(floor(
                 self.mediaDuration / self.num_media_segments))
@@ -508,9 +514,11 @@ class Representation(ObjectWithFields):
         timing = self._timing
         if timing.mode != 'live':
             if segment_num is None:
-                st = segment_time + (self.segment_duration >> 2)
+                if segment_time is None:
+                    raise ValueError('segment_time cannot be None is segment_num is None')
+                st: int = segment_time + (self.segment_duration >> 2)
                 segment_num = int(st // self.segment_duration) + self.start_number
-            mod_segment = 1 + segment_num - self.start_number
+            mod_segment: int = 1 + segment_num - self.start_number
             return SegmentNumberAndTime(segment_num, mod_segment, 0)
 
         # 5.3.9.5.3 Media Segment information
