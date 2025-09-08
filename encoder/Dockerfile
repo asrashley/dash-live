@@ -24,6 +24,7 @@ WORKDIR ${HOME}
 RUN mkdir ${HOME}/bin
 ENV PATH=${PATH}:${HOME}/bin
 COPY encoder/git-checkout.sh ${HOME}/bin
+COPY encoder/patches ${HOME}/patches
 RUN git-checkout.sh https://github.com/mstorsjo/fdk-aac.git d8e6b1a3aa606c450241632b64b703f21ea31ce3
 RUN cd ${HOME}/fdk-aac \
     && ./autogen.sh \
