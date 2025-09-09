@@ -7,6 +7,7 @@
 #############################################################################
 import argparse
 from dataclasses import dataclass, field, InitVar
+import math
 from pathlib import Path
 from typing import Any
 
@@ -41,6 +42,17 @@ class MediaCreateOptions:
         self.destdir = Path(output).absolute()
         if self.aspect is not None:
             self.set_aspect(self.aspect)
+
+    @property
+    def frame_segment_duration(self) -> int:
+        """
+        Duration of a segment (in frames)
+        """
+        return int(math.floor(self.segment_duration * self.framerate))
+
+    @property
+    def timescale(self) -> int:
+        return int(math.ceil(self.framerate * 10))
 
     def set_profile(self, profile: str | BitrateProfiles) -> None:
         if isinstance(profile, str):
