@@ -60,12 +60,13 @@ import sys
 import tempfile
 from typing import Any, BinaryIO, ClassVar, cast
 
-from ttconv.tt import main as ttconv_main
-
 from dashlive.drm.keymaterial import KeyMaterial
 from dashlive.drm.playready import PlayReady
+from dashlive.media.create.convert_subtitles_task import ConvertSubtitlesTask
 from dashlive.media.create.ffmpeg_types import FfmpegMediaInfo
 from dashlive.media.create.media_create_options import MediaCreateOptions
+from dashlive.media.create.task import MediaCreationTask
+from dashlive.media.create.video_encode_task import VideoEncodeTask
 from dashlive.mpeg import mp4
 from dashlive.mpeg.codec_strings import CodecData, H264Codec, H265Codec, codec_data_from_string
 from dashlive.mpeg.dash.representation import Representation
@@ -90,16 +91,12 @@ class DashMediaCreator:
     """
 
     options: MediaCreateOptions
-    timescale: int | None
-    frame_segment_duration: int | None
     media_info: dict[str, list]
-    audio_tracks: list[AudioEncodingParameters]
+    tasks: list[MediaCreationTask]
 
     def __init__(self, options: MediaCreateOptions) -> None:
         self.options = options
-        self.frame_segment_duration = None
-        self.timescale = None
-
+        self.tasks = []
         self.media_info = {
             "keys": [],
             "streams": [
@@ -110,194 +107,38 @@ class DashMediaCreator:
                 }
             ]
         }
-        self.audio_tracks = [
-            AudioEncodingParameters(
-                bitrate=96, codecString=self.options.audio_codec, channels=2)
-        ]
-        if self.options.surround:
-            self.audio_tracks.append(AudioEncodingParameters(
-                bitrate=320, codecString='eac3', channels=6))
 
-    def encode_all(self) -> None:
-        if not self.options.source.exists():
-            raise IOError(f'Input file "{self.options.source}" does not exist')
+    def create_encoding_tasks(self) -> None:
         first: bool = True
         ladder: list[VideoEncodingParameters] = BITRATE_PROFILES[self.options.bitrate_profile]
         for width, height, bitrate, codec in ladder:
             if self.options.max_bitrate > 0 and bitrate > self.options.max_bitrate:
                 continue
-            self.encode_representation(width, height, bitrate, codec, first)
+            task = VideoEncodeTask(
+                options=self.options, height=height, width=width, bitrate=bitrate,
+                codec=codec, audio=first)
+            if first:
+                task.audio_tracks = [AudioEncodingParameters(
+                    bitrate=96, codecString=self.options.audio_codec, channels=2)]
+                if self.options.surround:
+                    task.audio_tracks.append(AudioEncodingParameters(
+                        bitrate=320, codecString='eac3', channels=6))
+            self.tasks.append(task)
             first = False
 
         if self.options.subtitles:
             src: Path = Path(self.options.subtitles)
             ttml_file: Path = self.options.destdir / src.with_suffix('.ttml').name
             if not ttml_file.exists():
-                self.convert_subtitles(src, ttml_file)
+                self.tasks.append(ConvertSubtitlesTask(
+                    options=self.options, src=src, dest=ttml_file))
 
-    def encode_representation(self, width: int, height: int,
-                              bitrate: int, codec: str | None,
-                              audio: bool) -> None:
-        """
-        Encode the stream and check key frames are in the correct place
-        """
-        destdir: Path = self.options.destdir / f'{bitrate}'
-        dest: Path = destdir / f'{self.options.prefix}.mp4'
-        if dest.exists():
-            return
-        destdir.mkdir(parents=True, exist_ok=True)
-        height = 4 * (int(float(height) / self.options.aspect_ratio) // 4)
-        logging.debug("%s: %dx%d %d Kbps", dest, width, height, bitrate)
-        cbr: int = (bitrate * 10) // 12
-        minrate: int = (bitrate * 10) // 14
-        vcodec: str = "libx264"
-        # buffer_size is set to 75% of VBV limit
-        buffer_size = 4000
-        level: float = 0
-        tier: int = 0
-        if codec is None:
-            profile = "baseline"
-            level = 3.1
-            if height > 720:
-                profile = "high"
-                level = 4.0
-                # buffer_size is set to 75% of VBV limit
-                buffer_size = 25000
-            elif width > 640:
-                profile = "main"
-        else:
-            codec_data: CodecData = codec_data_from_string(codec)
-            profile: str = codec_data.profile_string()
-            if codec_data.codec == 'h.264':
-                level = cast(H264Codec, codec_data).level
-                if level >= 4.0:
-                    buffer_size = 25000
-            elif codec_data.codec == 'h.265':
-                vcodec = 'libx265'
-                profile = profile.split('.')[0]
-                hevc: H265Codec = cast(H265Codec, codec_data)
-                level = hevc.profile_idc * 10 + hevc.profile_compatibility_flags
-                tier = hevc.tier_flag
-        keyframes: list[str] = []
-        pos: float = 0
-        end: float = self.options.duration + self.options.segment_duration
-        while pos < end:
-            keyframes.append(f'{pos}')
-            pos += self.options.segment_duration
+    def encode_all(self) -> None:
+        if not self.options.source.exists():
+            raise IOError(f'Input file "{self.options.source}" does not exist')
+        for task in self.tasks:
+            task.run()
 
-        ffmpeg_args: list[str] = [
-            "ffmpeg",
-            "-ec", "deblock",
-            "-i", f"{self.options.source.absolute()}",
-            "-video_track_timescale", str(self.timescale),
-            "-map", "0:v:0",
-        ]
-
-        if self.options.font is not None:
-            drawtext: str = ':'.join([
-                'fontfile=' + self.options.font,
-                'fontsize=48',
-                'text=' + str(bitrate) + ' Kbps',
-                'x=(w-tw)/2',
-                'y=h-(2*lh)',
-                'fontcolor=white',
-                'box=1',
-                'boxcolor=0x000000@0.7'])
-            ffmpeg_args.append("-vf")
-            ffmpeg_args.append(f"drawtext={drawtext}")
-
-        if audio:
-            ffmpeg_args += ["-map", "0:a:0"]
-            if self.options.surround:
-                ffmpeg_args += ["-map", "0:a:0"]
-
-        ffmpeg_args += [
-            "-codec:v", vcodec,
-            "-aspect", self.options.aspect,
-            "-profile:v", profile,
-            "-field_order", "progressive",
-            "-maxrate", f'{bitrate:d}k',
-            "-minrate", f'{minrate:d}k',
-        ]
-
-        if level > 0:
-            ffmpeg_args += ["-level:v", str(level)]
-
-        if vcodec == "libx264":
-            ffmpeg_args += [
-                "-bufsize", f'{buffer_size:d}k',
-                "-x264opts", f"keyint={self.frame_segment_duration:d}:videoformat=pal",
-            ]
-        elif vcodec == 'libx265':
-            x265_params: list[str] = [
-                f"keyint={self.frame_segment_duration:d}",
-                "level-idc={level}",
-            ]
-            if tier > 0:
-                x265_params.append("high-tier")
-            ffmpeg_args += [
-                "-x265-params", ":".join(x265_params),
-            ]
-
-        ffmpeg_args += [
-            "-b:v", f"{cbr:d}k",
-            "-pix_fmt", "yuv420p",
-            "-s", f"{width:d}x{height:d}",
-            "-flags", "+cgop+global_header",
-            "-flags2", "-local_header",
-            "-g", str(self.frame_segment_duration),
-            "-sc_threshold", "0",
-            "-force_key_frames", ','.join(keyframes),
-            "-y",
-            "-t", str(self.options.duration),
-            "-threads", "0",
-        ]
-
-        if self.options.framerate:
-            ffmpeg_args += ["-r", str(self.options.framerate)]
-
-        if audio:
-            for idx, trk in enumerate(self.audio_tracks):
-                ffmpeg_args += [
-                    f"-codec:a:{idx}", trk.codecString,
-                    f"-b:a:{idx}", f"{trk.bitrate}k",
-                    f"-ac:a:{idx}", f"{trk.channels}",
-                ]
-                if trk.codecString == 'aac':
-                    ffmpeg_args += ["-strict", "-2"]
-
-        ffmpeg_args.append(str(dest))
-        logging.debug(ffmpeg_args)
-        subprocess.check_call(ffmpeg_args)
-
-        logging.info('Checking key frames in %s', dest)
-        ffmpeg_args = [
-            "ffprobe",
-            "-show_frames",
-            "-print_format", "compact",
-            str(dest)
-        ]
-        idx = 0
-        probe: str = subprocess.check_output(
-            ffmpeg_args, stderr=subprocess.STDOUT, text=True)
-        for line in probe.splitlines():
-            info: dict[str, str] = {}
-            if '|' not in line:
-                continue
-            for i in line.split('|'):
-                if '=' not in i:
-                    continue
-                k, v = i.split('=')
-                info[k] = v
-            try:
-                if info['media_type'] == 'video':
-                    assert self.frame_segment_duration is not None
-                    if (idx % self.frame_segment_duration) == 0 and info['key_frame'] != '1':
-                        logging.warning('Info: %s', info)
-                        raise ValueError(f'Frame {idx} should be a key frame')
-                    idx += 1
-            except KeyError:
-                pass
 
     def create_file_from_fragments(self, dest_filename: Path, moov: Path, prefix: str) -> None:
         """
@@ -329,40 +170,6 @@ class DashMediaCreator:
             if self.options.verbose:
                 sys.stdout.write('\n')
         logging.info(r'Generated file %s', dest_filename)
-
-    def convert_subtitles(self, src: Path, ttml: Path) -> None:
-        self.convert_subtitles_using_ttconv(src, ttml)
-
-    def convert_subtitles_using_gpac(self, src: Path, ttml: Path) -> None:
-        args: list[str] = [
-            'gpac',
-            '-i', f"{src.absolute()}",
-            '-o', f"{ttml.absolute()}",
-        ]
-        subprocess.check_call(args)
-
-    def convert_subtitles_using_ttconv(self, src: Path, ttml: Path) -> None:
-        config: dict[str, Any] = {
-            "general": {
-                "progress_bar": False,
-                "log_level": "WARN",
-                "document_lang": self.options.language,
-            },
-            "lcd": {
-                "bg_color": None,
-                "color": None,
-            },
-        }
-        argv: list[str] = [
-            "convert",
-            "-i", f"{src.absolute()}",
-            "-o", f"{ttml.absolute()}",
-            "--otype", "TTML",
-            "--filter", "lcd",
-            "--config", json.dumps(config),
-        ]
-        logging.debug('ttconv args: %s', argv)
-        ttconv_main(argv)
 
     def package_all(self) -> bool:
         ladder: list[VideoEncodingParameters] = BITRATE_PROFILES[self.options.bitrate_profile]
@@ -439,13 +246,12 @@ class DashMediaCreator:
     def package_sources(self, source_files: list[EncodedRepresentation]) -> None:
         tmpdir: Path = self.options.destdir / "dash"
         tmpdir.mkdir(parents=True, exist_ok=True)
-        bs_switching = 'inband' if self.options.avc3 else 'merge'
-        assert self.timescale is not None
+        bs_switching: str = 'inband' if self.options.avc3 else 'merge'
         mp4box_args: list[str] = [
             "MP4Box",
-            "-dash", str(self.options.segment_duration * self.timescale),
-            "-frag", str(self.options.segment_duration * self.timescale),
-            "-dash-scale", str(self.timescale),
+            "-dash", str(self.options.segment_duration * self.options.timescale),
+            "-frag", str(self.options.segment_duration * self.options.timescale),
+            "-dash-scale", str(self.options.timescale),
             "-rap",
             "-fps", str(self.options.framerate),
             "-frag-rap",
@@ -595,17 +401,16 @@ class DashMediaCreator:
         assert moov_filename.exists()
 
         prefix = str(tmpdir / "dash_enc_")
-        assert self.timescale is not None
         args = [
             "MP4Box",
-            "-dash", str(self.options.segment_duration * self.timescale),
-            "-frag", str(self.options.segment_duration * self.timescale),
+            "-dash", str(self.options.segment_duration * self.options.timescale),
+            "-frag", str(self.options.segment_duration * self.options.timescale),
             "-segment-ext", "mp4",
             "-segment-name", 'dash_enc_$Number%03d$$Init=init$',
             "-profile", "live",
             "-frag-rap",
             "-fps", str(self.options.framerate),
-            "-timescale", str(self.timescale),
+            "-timescale", str(self.options.timescale),
             "-rap",
             "-out", "manifest",
             str(moov_filename),
@@ -678,14 +483,6 @@ class DashMediaCreator:
                     pass
         assert self.options.framerate > 0
         assert self.options.segment_duration > 0
-
-        # Duration of a segment (in frames)
-        self.frame_segment_duration = int(math.floor(
-            self.options.segment_duration * self.options.framerate))
-        assert self.frame_segment_duration > 0
-
-        # The MP4 timescale to use for video
-        self.timescale = self.options.framerate * 10
 
     def modify_mp4_file(self, mp4file: Path, track_id: int, language: str,
                         encrypted: bool = False) -> None:
@@ -768,6 +565,7 @@ class DashMediaCreator:
         args.destdir.mkdir(exist_ok=True)
         dmc = DashMediaCreator(args)
         dmc.probe_media_info()
+        dmc.create_encoding_tasks()
         dmc.encode_all()
         dmc.package_all()
         if args.kid:
