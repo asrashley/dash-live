@@ -80,6 +80,13 @@ or Windows:
 uv sync
 ```
 
+NOTE: If `uv sync` fails, you might need to install the Python virtual
+environment tools:
+
+```sh
+sudo apt install python3.11 python3.11-venv python3.11-distutils
+```
+
 Install JavaScript libraries:
 
 ```sh
