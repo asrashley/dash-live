@@ -27,7 +27,7 @@ class DashMediaCreatorWithoutParser(TestCaseMixin, DashMediaCreator):
         return Representation(track_id=int(num))
 
 
-class MockFfmpeg(TestCaseMixin):
+class MockMediaTools(TestCaseMixin):
     options: MediaCreateOptions
     bitrate_index: int
     input_file: Path
@@ -147,17 +147,20 @@ class MockFfmpeg(TestCaseMixin):
             '-out', 'manifest',
         ]
         ladder: list[VideoEncodingParameters] = self.bitrate_ladder()
+        dur: int = 60
+        if self.options.duration > 0:
+            dur = self.options.duration
         filename: Path
         for idx, br in enumerate(ladder, start=1):
             filename = self.tmpdir / f'{br[2]}' / 'bbb.mp4'
-            expected.append(f'{filename}#video:id=v{idx}')
+            expected.append(f'{filename}#trackID=1:id=v{idx}:dur={dur}')
         min_br: int = ladder[0][2]
         mp4_dir: Path = self.tmpdir / 'dash'
         filename = self.tmpdir / f'{min_br}' / 'bbb.mp4'
-        expected.append(f'{filename}#trackID=2:role=main:id=a1')
+        expected.append(f'{filename}#trackID=2:role=main:id=a1:dur={dur}')
         if self.options.surround:
             filename = self.tmpdir / f'{min_br}' / 'bbb.mp4'
-            expected.append(f'{filename}#trackID=3:role=alternate:id=a2')
+            expected.append(f'{filename}#trackID=3:role=alternate:id=a2:dur={dur}')
         if self.options.subtitles:
             filename = self.tmpdir / 'BigBuckBunny.ttml'
             expected.append(f'{filename}#trackID=1:role=main:id=t1:dur=94.0:ddur=8')
@@ -305,7 +308,7 @@ class TestMediaCreation(TestCase):
             self.fs.create_dir(tmpdir)
         return tmpdir
 
-    def run_creator_main(self, args: list[str], ffmpeg: MockFfmpeg) -> int:
+    def run_creator_main(self, args: list[str], ffmpeg: MockMediaTools) -> int:
         logging.disable(logging.CRITICAL)
         with patch.multiple(subprocess, check_call=ffmpeg.check_call,
                             check_output=ffmpeg.check_output):
@@ -331,7 +334,7 @@ class TestMediaCreation(TestCase):
         self.assertEqual(opts.audio_codec, 'aac')
         self.assertFalse(opts.subtitles)
         self.assertTrue(opts.surround)
-        ffmpeg = MockFfmpeg(self.fs, src_file, tmpdir, opts)
+        ffmpeg = MockMediaTools(self.fs, src_file, tmpdir, opts)
         rv: int = self.run_creator_main(args, ffmpeg)
         self.assertEqual(rv, 0)
         js_file: Path = tmpdir / 'bbb.json'
@@ -357,6 +360,7 @@ class TestMediaCreation(TestCase):
                 'files': files
             }]
         }
+        self.maxDiff = None
         self.assertDictEqual(expected, js_data)
 
     def test_encode_with_eac3_audio(self) -> None:
@@ -373,7 +377,7 @@ class TestMediaCreation(TestCase):
         self.assertEqual(opts.audio_codec, 'eac3')
         self.assertFalse(opts.subtitles)
         self.assertFalse(opts.surround)
-        ffmpeg = MockFfmpeg(self.fs, src_file, tmpdir, opts)
+        ffmpeg = MockMediaTools(self.fs, src_file, tmpdir, opts)
         rv: int = self.run_creator_main(args, ffmpeg)
         self.assertEqual(rv, 0)
         js_file: Path = tmpdir / 'bbb.json'
@@ -424,7 +428,7 @@ class TestMediaCreation(TestCase):
         self.assertEqual(opts.audio_codec, 'aac')
         self.assertTrue(opts.subtitles)
         self.assertFalse(opts.surround)
-        ffmpeg = MockFfmpeg(self.fs, src_file, tmpdir, opts)
+        ffmpeg = MockMediaTools(self.fs, src_file, tmpdir, opts)
         rv: int = self.run_creator_main(args, ffmpeg)
         self.assertEqual(rv, 0)
         js_file: Path = tmpdir / 'bbb.json'
@@ -455,7 +459,7 @@ class TestMediaCreation(TestCase):
             '-o', str(tmpdir)
         ]
         opts: MediaCreateOptions = MediaCreateOptions.parse_args(args)
-        ffmpeg = MockFfmpeg(self.fs, src_file, tmpdir, opts)
+        ffmpeg = MockMediaTools(self.fs, src_file, tmpdir, opts)
         with self.assertRaises(IOError):
             self.run_creator_main(args, ffmpeg)
 

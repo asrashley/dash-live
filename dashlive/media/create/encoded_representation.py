@@ -5,20 +5,32 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-from dataclasses import dataclass
 from pathlib import Path
 
-@dataclass
-class EncodedRepresentation:
+from .creation_result import CreationResult
+
+class EncodedRepresentation(CreationResult):
     source: Path
-    content_type: str
     file_index: int
     rep_id: str
-    dest_track_id: int
-    src_track_id: int | None = None
-    role: str | None = None
-    duration: float | None = None
-    segment_duration: float | None = None
+    src_track_id: int | None
+    role: str | None
+    segment_duration: float | None
+    encrypted: bool
+
+    def __init__(self, filename: Path, content_type: str, track_id: int,
+                 duration: float | None, source: Path, file_index: int,
+                 rep_id: str, src_track_id: int | None = None, role: str | None = None,
+                 segment_duration: float | None = None, encrypted: bool = False) -> None:
+        super().__init__(filename=filename, content_type=content_type, track_id=track_id,
+                         duration=duration)
+        self.source = source
+        self.file_index = file_index
+        self.rep_id = rep_id
+        self.src_track_id = src_track_id
+        self.role = role
+        self.segment_duration = segment_duration
+        self.encrypted = encrypted
 
     def mp4box_track_id(self) -> str | None:
         tk_id: str | None = None

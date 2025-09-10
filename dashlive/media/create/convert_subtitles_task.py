@@ -1,3 +1,10 @@
+#############################################################################
+#
+#  Project Name        :    Simulated MPEG DASH service
+#
+#  Author              :    Alex Ashley
+#
+#############################################################################
 import json
 import logging
 from pathlib import Path
@@ -7,7 +14,7 @@ from typing import Any
 from ttconv.tt import main as ttconv_main
 
 from .media_create_options import MediaCreateOptions
-from .task import MediaCreationTask
+from .task import CreationResult, MediaCreationTask
 
 class ConvertSubtitlesTask(MediaCreationTask):
     src: Path
@@ -20,11 +27,14 @@ class ConvertSubtitlesTask(MediaCreationTask):
         self.dest = dest
         self.use_ttconv = use_ttconv
 
-    def run(self) -> None:
+    def run(self) -> list[CreationResult]:
         if self.use_ttconv:
             self.convert_subtitles_using_ttconv(self.src, self.dest)
         else:
             self.convert_subtitles_using_gpac(self.src, self.dest)
+        result: CreationResult = CreationResult(
+            filename=self.dest, content_type='text', track_id=1, duration=self.options.duration)
+        return [result]
 
     @staticmethod
     def convert_subtitles_using_gpac(src: Path, ttml: Path) -> None:
@@ -57,5 +67,3 @@ class ConvertSubtitlesTask(MediaCreationTask):
         ]
         logging.debug('ttconv args: %s', argv)
         ttconv_main(argv)
-
-
