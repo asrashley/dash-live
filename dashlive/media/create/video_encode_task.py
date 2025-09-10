@@ -1,12 +1,18 @@
+#############################################################################
+#
+#  Project Name        :    Simulated MPEG DASH service
+#
+#  Author              :    Alex Ashley
+#
+#############################################################################
 import logging
 from pathlib import Path
 import subprocess
-from typing import cast
+from typing import Sequence, cast
 from dashlive.media.create.encoding_parameters import AudioEncodingParameters
 from dashlive.media.create.media_create_options import MediaCreateOptions
-from dashlive.media.create.task import MediaCreationTask
+from dashlive.media.create.task import CreationResult, MediaCreationTask
 from dashlive.mpeg.codec_strings import CodecData, H264Codec, H265Codec, codec_data_from_string
-
 
 class VideoEncodeTask(MediaCreationTask):
     width: int
@@ -26,14 +32,16 @@ class VideoEncodeTask(MediaCreationTask):
         self.codec = codec
         self.audio = audio
 
-    def run(self) -> None:
+    def run(self) -> Sequence[CreationResult]:
         """
         Encode the stream and check key frames are in the correct place
         """
         destdir: Path = self.options.destdir / f'{self.bitrate}'
         dest: Path = destdir / f'{self.options.prefix}.mp4'
+        result: CreationResult = CreationResult(
+            filename=dest, content_type='video', track_id=1, duration=self.options.duration)
         if dest.exists():
-            return
+            return [result]
         destdir.mkdir(parents=True, exist_ok=True)
         height: int = 4 * (int(float(self.height) / self.options.aspect_ratio) // 4)
         logging.debug("%s: %dx%d %d Kbps", dest, self.width, height, self.bitrate)
@@ -159,8 +167,13 @@ class VideoEncodeTask(MediaCreationTask):
         logging.debug(ffmpeg_args)
         subprocess.check_call(ffmpeg_args)
 
+        self.check_key_frames(dest)
+
+        return [result]
+
+    def check_key_frames(self, dest: Path) -> None:
         logging.info('Checking key frames in %s', dest)
-        ffmpeg_args = [
+        ffmpeg_args: list[str] = [
             "ffprobe",
             "-show_frames",
             "-print_format", "compact",
@@ -180,7 +193,7 @@ class VideoEncodeTask(MediaCreationTask):
                 info[k] = v
             try:
                 if info['media_type'] == 'video':
-                    frame_segment_duration = self.options.frame_segment_duration
+                    frame_segment_duration: int = self.options.frame_segment_duration
                     assert frame_segment_duration is not None
                     assert frame_segment_duration > 0
                     if (idx % frame_segment_duration) == 0 and info['key_frame'] != '1':
@@ -189,5 +202,3 @@ class VideoEncodeTask(MediaCreationTask):
                     idx += 1
             except KeyError:
                 pass
-
-

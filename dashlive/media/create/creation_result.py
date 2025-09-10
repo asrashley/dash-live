@@ -5,7 +5,12 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-from .create import DashMediaCreator
-from .ffmpeg_types import FfmpegMediaInfo
+from dataclasses import dataclass
+from pathlib import Path
 
-__all__ = ["DashMediaCreator", "FfmpegMediaInfo"]
+@dataclass
+class CreationResult:
+    filename: Path
+    content_type: str
+    track_id: int
+    duration: float | None
