@@ -46,10 +46,26 @@ class MediaCreationTask(ABC):
         return Representation.load(filename=filename.replace('\\', '/'),
                                    atoms=atoms, verbose=verbose)
 
+    def copy_and_modify(self, src_file: Path, dest_file: Path, track_id: int, language: str,
+                        encrypted: bool = False) -> None:
+        """
+        Copies the specified mp4 file, updating the track ID and language tag during the copy
+        """
+        logging.info('Copying MP4 file "%s" -> "%s"', src_file, dest_file)
+        mp4_options = mp4.Options(mode='rw', lazy_load=True)
+        if encrypted:
+            mp4_options.iv_size = self.options.iv_size
+        with src_file.open('rb') as src:
+            with dest_file.open('wb') as dest:
+                reader: io.BufferedReader = io.BufferedReader(src)
+                atoms: list[mp4.Mp4Atom] = cast(list[mp4.Mp4Atom], mp4.Mp4Atom.load(
+                    reader, options=mp4_options, use_wrapper=False))
+                self.copy_and_modify_atoms(atoms, dest, track_id, language)
+
     def modify_mp4_file(self, mp4file: Path, track_id: int, language: str,
                         encrypted: bool = False) -> None:
         """
-        Updates the track ID and language tag of the specified MP4 file
+        Updates the track ID and language tag of the specified MP4 file, modifying in-place
         """
         mp4_options = mp4.Options(mode='rw', lazy_load=True)
         if encrypted:
@@ -61,14 +77,14 @@ class MediaCreationTask(ABC):
                 reader: io.BufferedReader = io.BufferedReader(src)
                 atoms: list[mp4.Mp4Atom] = cast(list[mp4.Mp4Atom], mp4.Mp4Atom.load(
                     reader, options=mp4_options, use_wrapper=False))
-                self.copy_and_modify(atoms, tmp, track_id, language)
+                self.copy_and_modify_atoms(atoms, tmp, track_id, language)
             mp4file.unlink()
             tmp.seek(0)
             with mp4file.open('wb') as dest:
                 shutil.copyfileobj(tmp, dest)
 
     @staticmethod
-    def copy_and_modify(atoms: list[mp4.Mp4Atom], dest: BinaryIO, track_id: int, language: str) -> None:
+    def copy_and_modify_atoms(atoms: list[mp4.Mp4Atom], dest: BinaryIO, track_id: int, language: str) -> None:
         def modify_atom(atom: mp4.Mp4Atom) -> None:
             if atom.atom_type not in {'moov', 'moof'}:
                 return
@@ -77,7 +93,10 @@ class MediaCreationTask(ABC):
                 modified: bool = False
                 if moov.trak.tkhd.track_id != track_id:
                     moov.trak.tkhd.track_id = track_id
-                    moov.mvex.trex.track_id = track_id
+                    try:
+                        moov.mvex.trex.track_id = track_id
+                    except AttributeError:
+                        pass
                     moov.mvhd.next_track_id = track_id + 1
                     modified = True
                 if moov.trak.mdia.mdhd.language != language:
@@ -86,9 +105,10 @@ class MediaCreationTask(ABC):
                 if modified:
                     moov.trak.tkhd.modification_time = datetime.datetime.now(tz=UTC())
                 return
-            moof: mp4.MovieFragmentBox = cast(mp4.MovieFragmentBox, atom)
-            if moof.traf.tfhd.track_id != track_id:
-                moof.traf.tfhd.track_id = track_id
+            elif atom.atom_type == 'moof':
+                moof: mp4.MovieFragmentBox = cast(mp4.MovieFragmentBox, atom)
+                if moof.traf.tfhd.track_id != track_id:
+                    moof.traf.tfhd.track_id = track_id
 
         for atom in atoms:
             modify_atom(atom)

@@ -5,70 +5,54 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+from collections import defaultdict
+from collections.abc import Callable
 import logging
 import os
 from pathlib import Path
 import subprocess
 from typing import Sequence
 
+from dashlive.media.create.media_create_options import MediaCreateOptions
+
 from .creation_result import CreationResult
-from .encoding_parameters import BITRATE_PROFILES, VideoEncodingParameters
 from .encoded_representation import EncodedRepresentation
 from .task import MediaCreationTask
 
 class PackageSourcesTask(MediaCreationTask):
+    get_files_fn: Callable[[], list[CreationResult]]
+
+    def __init__(self, options: MediaCreateOptions, get_files: Callable[[], list[CreationResult]]) -> None:
+        super().__init__(options)
+        self.get_files_fn = get_files
+
     def run(self) -> Sequence[CreationResult]:
         results: list[EncodedRepresentation] = []
-        ladder: list[VideoEncodingParameters] = BITRATE_PROFILES[self.options.bitrate_profile]
         nothing_to_do: bool = True
+        media_files: list[CreationResult] = self.get_files_fn()
 
-        src_file: Path
+        indexes: dict[str, int] = defaultdict(int)  # empty items will be initialized to zero
         dest_file: Path
-        for idx, br in enumerate(ladder, start=1):
-            bitrate: int = br[2]
-            if self.options.max_bitrate > 0 and bitrate > self.options.max_bitrate:
-                break
+        for media in media_files:
+            idx = indexes[media.content_type] + 1
+            indexes[media.content_type] = idx
+            dest_file = self.options.destdir / self.destination_filename(media.content_type, idx, False)
 
-            src_file = self.options.destdir / f'{bitrate}' / f'{self.options.prefix}.mp4'
-            dest_file = self.options.destdir / self.destination_filename('v', idx, False)
-            results.append(EncodedRepresentation(
-                source=src_file, content_type='video', filename=dest_file, file_index=idx, track_id=1,
-                src_track_id=1, rep_id=f"v{idx}", duration=self.options.duration))
+            rep_id: str = f"{media.content_type[0]}{idx}"
+            er = EncodedRepresentation(
+                source=media.filename, content_type=media.content_type, filename=dest_file, file_index=idx,
+                track_id=media.track_id, src_track_id=media.track_id, rep_id=rep_id, duration=media.duration)
+            if media.content_type != 'video':
+                er.role = 'main' if idx == 1 else 'alternate'
+            if media.content_type == "text":
+                er.segment_duration = self.options.segment_duration * 2
+                # ! ugly hack !
+                # for some reason, when a duration is provided to MP4Box, it only
+                # produces a stream with 2/3 of the requested duration
+                er.duration = self.options.duration * 1.5 + self.options.segment_duration
+
             nothing_to_do = nothing_to_do and dest_file.exists()
-
-        # Add main audio track
-        src_file = self.options.destdir / f'{ladder[0][2]}' / f'{self.options.prefix}.mp4'
-        dest_file = self.options.destdir / self.destination_filename('a', 1, False)
-        results.append(EncodedRepresentation(
-            source=src_file, filename=dest_file, content_type='audio', track_id=2, file_index=1, role="main",
-            src_track_id=2, rep_id="a1", duration=self.options.duration))
-        nothing_to_do = nothing_to_do and dest_file.exists()
-
-        # alternate audio track
-        if self.options.surround:
-            dest_file = self.options.destdir / self.destination_filename('a', 2, False)
-            nothing_to_do = nothing_to_do and dest_file.exists()
-            results.append(EncodedRepresentation(
-                source=src_file, filename=dest_file, content_type='audio', track_id=3, file_index=2,
-                src_track_id=3, role="alternate", rep_id="a2", duration=self.options.duration))
-
-        if self.options.subtitles:
-            src: Path = Path(self.options.subtitles)
-            ttml_file: Path = src
-            if src.suffix != '.ttml':
-                ttml_file = self.options.destdir / Path(self.options.subtitles).with_suffix('.ttml').name
-            nothing_to_do = nothing_to_do and ttml_file.exists()
-            dest_file = self.options.destdir / self.destination_filename('t', 1, False)
-            nothing_to_do = nothing_to_do and dest_file.exists()
-            dest_track_id: int = 4 if self.options.surround else 3
-            # ! ugly hack !
-            # for some reason, when a duration is provided to MP4Box, it only
-            # produces a stream with 2/3 of the requested duration
-            results.append(EncodedRepresentation(
-                source=ttml_file, filename=dest_file, content_type='text', src_track_id=1, track_id=dest_track_id,
-                file_index=1, role="main", rep_id="t1",
-                duration=self.options.duration * 1.5 + self.options.segment_duration,
-                segment_duration=self.options.segment_duration * 2))
+            results.append(er)
 
         if nothing_to_do:
             return results

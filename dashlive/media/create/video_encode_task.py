@@ -9,7 +9,6 @@ import logging
 from pathlib import Path
 import subprocess
 from typing import Sequence, cast
-from dashlive.media.create.encoding_parameters import AudioEncodingParameters
 from dashlive.media.create.media_create_options import MediaCreateOptions
 from dashlive.media.create.task import CreationResult, MediaCreationTask
 from dashlive.mpeg.codec_strings import CodecData, H264Codec, H265Codec, codec_data_from_string
@@ -21,28 +20,32 @@ class VideoEncodeTask(MediaCreationTask):
     codec: str | None
     audio: bool
     timescale: int
-    audio_tracks: list[AudioEncodingParameters] = []
 
     def __init__(self, options: MediaCreateOptions, width: int, height: int,
-                 bitrate: int, codec: str | None, audio: bool) -> None:
+                 bitrate: int, codec: str | None) -> None:
         super().__init__(options)
         self.width = width
         self.height = height
         self.bitrate = bitrate
         self.codec = codec
-        self.audio = audio
 
     def run(self) -> Sequence[CreationResult]:
         """
-        Encode the stream and check key frames are in the correct place
+        Encode a video track and check key frames are in the correct place
         """
         destdir: Path = self.options.destdir / f'{self.bitrate}'
         dest: Path = destdir / f'{self.options.prefix}.mp4'
-        result: CreationResult = CreationResult(
+        video_track: CreationResult = CreationResult(
             filename=dest, content_type='video', track_id=1, duration=self.options.duration)
-        if dest.exists():
-            return [result]
-        destdir.mkdir(parents=True, exist_ok=True)
+
+        if not dest.exists():
+            destdir.mkdir(parents=True, exist_ok=True)
+            self.encode_video(dest)
+            self.check_key_frames(dest)
+
+        return [video_track]
+
+    def encode_video(self, dest: Path) -> None:
         height: int = 4 * (int(float(self.height) / self.options.aspect_ratio) // 4)
         logging.debug("%s: %dx%d %d Kbps", dest, self.width, height, self.bitrate)
         cbr: int = (self.bitrate * 10) // 12
@@ -103,11 +106,6 @@ class VideoEncodeTask(MediaCreationTask):
             ffmpeg_args.append("-vf")
             ffmpeg_args.append(f"drawtext={drawtext}")
 
-        if self.audio:
-            ffmpeg_args += ["-map", "0:a:0"]
-            if self.options.surround:
-                ffmpeg_args += ["-map", "0:a:0"]
-
         ffmpeg_args += [
             "-codec:v", vcodec,
             "-aspect", self.options.aspect,
@@ -153,23 +151,9 @@ class VideoEncodeTask(MediaCreationTask):
         if self.options.framerate:
             ffmpeg_args += ["-r", str(self.options.framerate)]
 
-        if self.audio:
-            for idx, trk in enumerate(self.audio_tracks):
-                ffmpeg_args += [
-                    f"-codec:a:{idx}", trk.codecString,
-                    f"-b:a:{idx}", f"{trk.bitrate}k",
-                    f"-ac:a:{idx}", f"{trk.channels}",
-                ]
-                if trk.codecString == 'aac':
-                    ffmpeg_args += ["-strict", "-2"]
-
         ffmpeg_args.append(str(dest))
         logging.debug(ffmpeg_args)
         subprocess.check_call(ffmpeg_args)
-
-        self.check_key_frames(dest)
-
-        return [result]
 
     def check_key_frames(self, dest: Path) -> None:
         logging.info('Checking key frames in %s', dest)
