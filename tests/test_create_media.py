@@ -29,7 +29,6 @@ class DashMediaCreatorWithoutParser(TestCaseMixin, DashMediaCreator):
 
 class MockMediaTools(TestCaseMixin):
     options: MediaCreateOptions
-    bitrate_index: int
     input_file: Path
     tmpdir: Path
     aspect: float
@@ -44,7 +43,6 @@ class MockMediaTools(TestCaseMixin):
                  ) -> None:
         super().__init__()
         self.fs = fs
-        self.bitrate_index = 0
         self.input_file = input_file
         self.tmpdir = tmpdir
         self.drive = tmpdir.drive
@@ -59,61 +57,7 @@ class MockMediaTools(TestCaseMixin):
             self.assertEqual(one, two)
         self.assertEqual(len(a), len(b))
 
-    def check_output(self, args: list[str], stderr: int | None = None,
-                     universal_newlines: bool = False, text: bool = False) -> str:
-        if '-show_format' in ' '.join(args):
-            return self.ffprobe_source_stream_info(args, stderr, universal_newlines, text)
-        return self.ffprobe_check_frames(args, stderr, universal_newlines, text)
-
-    def check_call(self, args: list[str], cwd: Path | str | None = None) -> int:
-        if args[0] == 'MP4Box':
-            if args[1] == '-crypt':
-                return self.mp4box_encrypt(args)
-            if 'moov-enc' in args[-1]:
-                return self.mp4box_build_encrypted(args)
-            return self.mp4box_build(args)
-        return self.ffmpeg_video_encode(args)
-
-    def which(self, cmd: str | Path, mode: int = 1, path: str | Path | None = None) -> str | None:
-        if f"{cmd}" in {'ffmpeg', 'ffprobe', 'MP4Box'}:
-            return f"{self.drive}/usr/local/bin/{cmd}"
-        return None
-
-    def ffmpeg_video_encode(self, args: list[str]) -> int:
-        ladder: list[VideoEncodingParameters] = self.bitrate_ladder()
-        assert self.bitrate_index < len(ladder)
-        width, height, bitrate, codec = ladder[self.bitrate_index]
-        height = 4 * (int(float(height) / self.aspect) // 4)
-        minrate = (bitrate * 10) // 14
-        self.assertEqual(args[0], 'ffmpeg')
-        self.assertEqual(args[-1], str(self.tmpdir / f'{bitrate}' / 'bbb.mp4'))
-        expected: dict[str, str | None] = {
-            '-i': f'{self.input_file}',
-            '-video_track_timescale': '240',
-            '-codec:v': 'libx264',
-            '-aspect': '16:9',
-            '-maxrate': f'{bitrate}k',
-            '-minrate': f'{minrate}k',
-            '-s': f'{width}x{height}',
-            '-g': '96',
-            '-force_key_frames': '0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60',
-            '-t': '60',
-            '-r': '24',
-        }
-
-        if self.bitrate_index == 0:
-            expected.update({
-                '-codec:a:0': self.options.audio_codec,
-                '-b:a:0': '96k',
-                '-ac:a:0': '2',
-                '-y': None,
-            })
-            if self.options.surround:
-                expected.update({
-                    '-codec:a:1': 'eac3',
-                    '-b:a:1': '320k',
-                    '-ac:a:1': '6',
-                })
+    def assertCommandArguments(self, expected: dict[str, str | None], args: list[str]) -> None:
         required: set[str] = set(expected.keys())
         for idx, arg in enumerate(args):
             if arg[0] != '-':
@@ -127,6 +71,78 @@ class MockMediaTools(TestCaseMixin):
             except KeyError:
                 self.assertNotIn(arg, required)
         self.assertEqual(required, set())
+
+    def check_output(self, args: list[str], stderr: int | None = None,
+                     universal_newlines: bool = False, text: bool = False) -> str:
+        if '-show_format' in ' '.join(args):
+            return self.ffprobe_source_stream_info(args, stderr, universal_newlines, text)
+        return self.ffprobe_check_frames(args, stderr, universal_newlines, text)
+
+    def check_call(self, args: list[str], cwd: Path | str | None = None) -> int:
+        if args[0] == 'MP4Box':
+            if args[1] == '-crypt':
+                return self.mp4box_encrypt(args)
+            if 'moov-enc' in args[-1]:
+                return self.mp4box_build_encrypted(args)
+            return self.mp4box_build(args)
+        if '-codec:v' in args:
+            return self.ffmpeg_video_encode(args)
+        return self.ffmpeg_audio_encode(args)
+
+    def which(self, cmd: str | Path, mode: int = 1, path: str | Path | None = None) -> str | None:
+        if f"{cmd}" in {'ffmpeg', 'ffprobe', 'MP4Box'}:
+            return f"{self.drive}/usr/local/bin/{cmd}"
+        return None
+
+    def find_encoding_parameters(self, filename: str) -> VideoEncodingParameters:
+        ladder: list[VideoEncodingParameters] = self.bitrate_ladder()
+        dest_file: Path = Path(filename)
+        for item in ladder:
+            fname: Path = self.tmpdir / f'{item.bitrate}' / 'bbb.mp4'
+            if fname == dest_file:
+                return item
+        raise IndexError(filename)
+
+    def ffmpeg_video_encode(self, args: list[str]) -> int:
+        params: VideoEncodingParameters = self.find_encoding_parameters(args[-1])
+        height: int = 4 * (int(float(params.height) / self.aspect) // 4)
+        minrate: int = (params.bitrate * 10) // 14
+        self.assertEqual(args[0], 'ffmpeg')
+        expected: dict[str, str | None] = {
+            '-i': f'{self.input_file}',
+            '-video_track_timescale': '240',
+            '-codec:v': 'libx264',
+            '-aspect': '16:9',
+            '-maxrate': f'{params.bitrate}k',
+            '-minrate': f'{minrate}k',
+            '-s': f'{params.width}x{height}',
+            '-g': '96',
+            '-force_key_frames': '0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60',
+            '-t': '60',
+            '-r': '24',
+        }
+        self.assertCommandArguments(expected, args)
+        self.fs.create_file(args[-1], contents=args[-1])
+        return 0
+
+    def ffmpeg_audio_encode(self, args: list[str]) -> int:
+        expected: dict[str, str | None] = {
+            '-i': f'{self.input_file}',
+            '-codec:a:0': self.options.audio_codec,
+            '-b:a:0': '96k',
+            '-ac:a:0': '2',
+            '-y': None,
+        }
+        if self.options.surround:
+            chan_idx: int = args.index('-ac:a:0')
+            if args[chan_idx + 1] == '6':
+                expected.update({
+                    '-codec:a:0': 'eac3',
+                    '-ac:a:0': '6',
+                    '-b:a:0': '320k',
+                })
+        self.assertCommandArguments(expected, args)
+        self.fs.create_file(args[-1], contents=args[-1])
         return 0
 
     def mp4box_build(self, args: list[str]) -> int:
@@ -154,12 +170,11 @@ class MockMediaTools(TestCaseMixin):
         for idx, br in enumerate(ladder, start=1):
             filename = self.tmpdir / f'{br[2]}' / 'bbb.mp4'
             expected.append(f'{filename}#trackID=1:id=v{idx}:dur={dur}')
-        min_br: int = ladder[0][2]
         mp4_dir: Path = self.tmpdir / 'dash'
-        filename = self.tmpdir / f'{min_br}' / 'bbb.mp4'
+        filename = self.tmpdir / 'audio' / 'bbb_a1.mp4'
         expected.append(f'{filename}#trackID=2:role=main:id=a1:dur={dur}')
         if self.options.surround:
-            filename = self.tmpdir / f'{min_br}' / 'bbb.mp4'
+            filename = self.tmpdir / 'audio' / 'bbb_a2.mp4'
             expected.append(f'{filename}#trackID=3:role=alternate:id=a2:dur={dur}')
         if self.options.subtitles:
             filename = self.tmpdir / 'BigBuckBunny.ttml'
@@ -243,22 +258,19 @@ class MockMediaTools(TestCaseMixin):
 
     def ffprobe_check_frames(self, args: list[str], stderr: int | None,
                              universal_newlines: bool, text: bool) -> str:
-        ladder: list[VideoEncodingParameters] = self.bitrate_ladder()
-        assert self.bitrate_index < len(ladder)
-        width, height, bitrate, codec = ladder[self.bitrate_index]
+        self.find_encoding_parameters(args[-1])
         expected: list[str] = [
             'ffprobe',
             '-show_frames',
             '-print_format', 'compact',
-            str(self.tmpdir / f'{bitrate}' / 'bbb.mp4')
+            args[-1],
         ]
         self.assertEqual(expected, args)
         self.assertIsNotNone(stderr)
         self.assertTrue(text)
-        self.bitrate_index += 1
         result: list[str] = []
         for num in range(60 * 24 * 10):
-            pts = num * 100
+            pts: int = num * 100
             if num % (24 * 4) == 0:
                 key_frame = '1'
             else:

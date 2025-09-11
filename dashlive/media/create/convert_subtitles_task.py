@@ -28,10 +28,11 @@ class ConvertSubtitlesTask(MediaCreationTask):
         self.use_ttconv = use_ttconv
 
     def run(self) -> list[CreationResult]:
-        if self.use_ttconv:
-            self.convert_subtitles_using_ttconv(self.src, self.dest)
-        else:
-            self.convert_subtitles_using_gpac(self.src, self.dest)
+        if not self.dest.exists():
+            if self.use_ttconv:
+                self.convert_subtitles_using_ttconv(self.src, self.dest)
+            else:
+                self.convert_subtitles_using_gpac(self.src, self.dest)
         result: CreationResult = CreationResult(
             filename=self.dest, content_type='text', track_id=1, duration=self.options.duration)
         return [result]

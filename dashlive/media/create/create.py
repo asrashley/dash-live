@@ -54,28 +54,35 @@ import math
 from pathlib import Path
 import shutil
 import subprocess
-from typing import Sequence, cast
+from typing import Protocol, Sequence, cast
 
 from dashlive.drm.key_tuple import KeyTuple
 from dashlive.drm.keymaterial import KeyMaterial
 from dashlive.drm.playready import PlayReady
+from dashlive.media.create.audio_encode_task import AudioEncodingTask
 from dashlive.media.create.convert_subtitles_task import ConvertSubtitlesTask
 from dashlive.media.create.encrypt_media_task import EncryptMediaTask
 from dashlive.media.create.ffmpeg_types import FfmpegMediaInfo
 from dashlive.media.create.media_create_options import MediaCreateOptions
 from dashlive.media.create.media_info_json import KeyInfoJson, MediaInfoJson, StreamInfoJson
 from dashlive.media.create.package_sources_task import PackageSourcesTask
-from dashlive.media.create.task import CreationResult, MediaCreationTask
+from dashlive.media.create.task import CreationResult
 from dashlive.media.create.video_encode_task import VideoEncodeTask
 
-from .encoding_parameters import BITRATE_PROFILES, AudioEncodingParameters, VideoEncodingParameters
+from .encoding_parameters import BITRATE_PROFILES, VideoEncodingParameters
 from .encoded_representation import EncodedRepresentation
+
+class RunnableTask(Protocol):
+    def run(self) -> Sequence[CreationResult]:
+        ...
+
 
 class DashMediaCreator:
     options: MediaCreateOptions
     media_info: MediaInfoJson
-    pending_tasks: list[MediaCreationTask]
-    completed_tasks: list[MediaCreationTask]
+    pending_tasks: list[RunnableTask]
+    completed_tasks: list[RunnableTask]
+    generated_files: list[CreationResult]
     keys: list[KeyTuple]
 
     def __init__(self, options: MediaCreateOptions) -> None:
@@ -89,42 +96,51 @@ class DashMediaCreator:
         self.keys = self.create_all_media_keys()
 
     def create_all_tasks(self) -> None:
-        first: bool = True
+        self.pending_tasks = []
+        self.completed_tasks = []
+        self.generated_files = []
         ladder: list[VideoEncodingParameters] = BITRATE_PROFILES[self.options.bitrate_profile]
         for width, height, bitrate, codec in ladder:
             if self.options.max_bitrate > 0 and bitrate > self.options.max_bitrate:
                 continue
             task = VideoEncodeTask(
                 options=self.options, height=height, width=width, bitrate=bitrate,
-                codec=codec, audio=first)
-            if first:
-                task.audio_tracks = [AudioEncodingParameters(
-                    bitrate=96, codecString=self.options.audio_codec, channels=2)]
-                if self.options.surround:
-                    task.audio_tracks.append(AudioEncodingParameters(
-                        bitrate=320, codecString='eac3', channels=6))
+                codec=codec)
             self.pending_tasks.append(task)
-            first = False
+
+        self.pending_tasks.append(AudioEncodingTask(
+            options=self.options, source=self.options.source, bitrate=96,
+            codecString=self.options.audio_codec, channels=2, file_index=1))
+
+        if self.options.surround:
+            self.pending_tasks.append(AudioEncodingTask(
+                options=self.options, source=self.options.source, bitrate=320,
+                codecString='eac3', channels=6, file_index=2))
 
         if self.options.subtitles:
             src: Path = Path(self.options.subtitles)
             ttml_file: Path = self.options.destdir / src.with_suffix('.ttml').name
-            if not ttml_file.exists():
-                self.pending_tasks.append(ConvertSubtitlesTask(
-                    options=self.options, src=src, dest=ttml_file))
+            self.pending_tasks.append(ConvertSubtitlesTask(
+                options=self.options, src=src, dest=ttml_file))
 
-        self.pending_tasks.append(PackageSourcesTask(self.options))
+        self.pending_tasks.append(PackageSourcesTask(self.options, self.get_unpackaged_media_files))
+
+    def get_unpackaged_media_files(self) -> list[CreationResult]:
+        media_files: list[CreationResult] = []
+        for cf in self.generated_files:
+            if not isinstance(cf, EncodedRepresentation):
+                media_files.append(cf)
+        return media_files
 
     def run_all_tasks(self) -> list[CreationResult]:
         if not self.options.source.exists():
             raise IOError(f'Input file "{self.options.source}" does not exist')
         done: bool = False
-        generated_files: list[CreationResult] = []
         while not done:
             try:
-                task: MediaCreationTask = self.pending_tasks.pop(0)
+                task: RunnableTask = self.pending_tasks.pop(0)
                 new_files: Sequence[CreationResult] = task.run()
-                generated_files += new_files
+                self.generated_files += new_files
                 self.completed_tasks.append(task)
                 self.add_encryption_tasks(new_files)
             except IndexError:
@@ -134,14 +150,14 @@ class DashMediaCreator:
             "title": "",
             "files": []
         }
-        for gf in generated_files:
+        for gf in self.generated_files:
             if not isinstance(gf, EncodedRepresentation):
                 continue
             en_rep: EncodedRepresentation = cast(EncodedRepresentation, gf)
             stream["files"].append(en_rep.filename.name)
         stream["files"].sort()
         self.media_info["streams"] = [stream]
-        return generated_files
+        return self.generated_files
 
     def add_encryption_tasks(self, new_files: Sequence[CreationResult]) -> None:
         if not self.keys:
