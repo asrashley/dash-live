@@ -51,7 +51,7 @@ class VideoStreamInfo(StreamInfoBase):
                 info["avg_frame_rate"])  # pyright: ignore[reportTypedDictNotRequiredAccess]
         except KeyError:
             framerate = None
-        return VideoStreamInfo(
+        vsi = VideoStreamInfo(
             content_type=info["codec_type"],
             index=info["index"],
             codec=info["codec_name"],
@@ -62,6 +62,7 @@ class VideoStreamInfo(StreamInfoBase):
             framerate=framerate,
             display_aspect_ratio=info.get("display_aspect_ratio")
         )
+        return vsi
 
     @staticmethod
     def framerate_from_str(fps: str) -> float:
@@ -82,7 +83,7 @@ class AudioStreamInfo(StreamInfoBase):
 
     @classmethod
     def from_json(cls, info: FfmpegStreamJson) -> "AudioStreamInfo":
-        return AudioStreamInfo(
+        asi = AudioStreamInfo(
             content_type=info["codec_type"],
             index=info["index"],
             codec=info["codec_name"],
@@ -92,6 +93,10 @@ class AudioStreamInfo(StreamInfoBase):
             channels=info.get("channels", 2),
             channel_layout=info.get("channel_layout", "stereo")
         )
+        asi.channel_layout = asi.channel_layout.replace(r'(side)', '')
+        if asi.codec == 'ac3':
+            asi.codec = 'eac3'
+        return asi
 
 
 class FfmpegFormatJson(TypedDict):

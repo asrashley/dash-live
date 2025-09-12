@@ -58,10 +58,11 @@ from typing import Protocol, Sequence, cast
 from dashlive.drm.key_tuple import KeyTuple
 from dashlive.drm.keymaterial import KeyMaterial
 from dashlive.drm.playready import PlayReady
+from dashlive.media.create.encoding_parameters import AudioEncodingParameters
 
 from .audio_encode_task import AudioEncodingTask
 from .convert_subtitles_task import ConvertSubtitlesTask
-from .encoding_parameters import BITRATE_PROFILES, VideoEncodingParameters
+from .encoding_parameters import AUDIO_PROFILES, BITRATE_PROFILES, AudioProfile, VideoEncodingParameters
 from .encoded_representation import EncodedRepresentation
 from .encrypt_media_task import EncryptMediaTask
 from .ffmpeg_helper import FfmpegHelper, MediaProbeResults
@@ -106,15 +107,21 @@ class DashMediaCreator:
                 options=self.options, height=height, width=width, bitrate=bitrate,
                 codec=codec)
             self.pending_tasks.append(task)
-
+        assert self.options.audio_channels is not None
+        assert self.options.audio_codec is not None
+        audio_bitrate: int = AUDIO_PROFILES[AudioProfile.STEREO].bitrate
+        if self.options.audio_channels > 2:
+            audio_bitrate = AUDIO_PROFILES[AudioProfile.SURROUND].bitrate
+        main_audio_params = AudioEncodingParameters(
+            codecString=self.options.audio_codec, bitrate=audio_bitrate,
+            channels=self.options.audio_channels)
         self.pending_tasks.append(AudioEncodingTask(
-            options=self.options, source=self.options.source, bitrate=96,
-            codecString=self.options.audio_codec, channels=2, file_index=1))
+            options=self.options, source=self.options.source, file_index=1, params=main_audio_params))
 
         if self.options.surround:
             self.pending_tasks.append(AudioEncodingTask(
-                options=self.options, source=self.options.source, bitrate=320,
-                codecString='eac3', channels=6, file_index=2))
+                options=self.options, source=self.options.source, file_index=2,
+                params=AUDIO_PROFILES[AudioProfile.SURROUND]))
 
         if self.options.subtitles:
             src: Path = Path(self.options.subtitles)
@@ -235,6 +242,13 @@ class DashMediaCreator:
                     self.options.framerate = int(round(vid.framerate))
         assert self.options.framerate > 0
         assert self.options.segment_duration > 0
+        for aud in info.audio:
+            if aud.channels < 1:
+                continue
+            if self.options.audio_channels is None:
+                self.options.audio_channels = aud.channels
+            if self.options.audio_codec is None:
+                self.options.audio_codec = aud.codec
 
     @staticmethod
     def gcd(x: int, y: int) -> int:

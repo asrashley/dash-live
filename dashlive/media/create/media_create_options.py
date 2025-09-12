@@ -17,7 +17,8 @@ from dashlive.media.create.encoding_parameters import BitrateProfiles
 @dataclass
 class MediaCreateOptions:
     aspect: str | None
-    audio_codec: str
+    audio_codec: str | None
+    audio_channels: int | None
     avc3: bool
     bitrate_profile: BitrateProfiles
     duration: int
@@ -72,8 +73,10 @@ class MediaCreateOptions:
     @staticmethod
     def parse_args(argv: list[str]) -> "MediaCreateOptions":
         ap = argparse.ArgumentParser(description='DASH encoding and packaging')
-        ap.add_argument('--acodec', dest='audio_codec', default='aac',
+        ap.add_argument('--acodec', dest='audio_codec',
                         help='Audio codec for main audio track')
+        ap.add_argument('--channels', dest='audio_channels', type=int,
+                        help='Audio channel count for main audio track')
         ap.add_argument('--duration', '-d',
                         help='Stream duration (in seconds) (0=auto)',
                         type=int, default=0)
