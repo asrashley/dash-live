@@ -40,6 +40,7 @@ class MediaCreateOptions:
 
     def __post_init__(self, output: str) -> None:
         self.destdir = Path(output).absolute()
+        self.aspect_ratio = 1.0
         if self.aspect is not None:
             self.set_aspect(self.aspect)
 

@@ -9,6 +9,7 @@ import logging
 from pathlib import Path
 import subprocess
 from typing import Sequence, cast
+from dashlive.media.create.ffmpeg_helper import FfmpegHelper, VideoFrameInfo
 from dashlive.media.create.media_create_options import MediaCreateOptions
 from dashlive.media.create.task import CreationResult, MediaCreationTask
 from dashlive.mpeg.codec_strings import CodecData, H264Codec, H265Codec, codec_data_from_string
@@ -157,32 +158,12 @@ class VideoEncodeTask(MediaCreationTask):
 
     def check_key_frames(self, dest: Path) -> None:
         logging.info('Checking key frames in %s', dest)
-        ffmpeg_args: list[str] = [
-            "ffprobe",
-            "-show_frames",
-            "-print_format", "compact",
-            str(dest)
-        ]
-        idx = 0
-        probe: str = subprocess.check_output(
-            ffmpeg_args, stderr=subprocess.STDOUT, text=True)
-        for line in probe.splitlines():
-            info: dict[str, str] = {}
-            if '|' not in line:
-                continue
-            for i in line.split('|'):
-                if '=' not in i:
-                    continue
-                k, v = i.split('=')
-                info[k] = v
-            try:
-                if info['media_type'] == 'video':
-                    frame_segment_duration: int = self.options.frame_segment_duration
-                    assert frame_segment_duration is not None
-                    assert frame_segment_duration > 0
-                    if (idx % frame_segment_duration) == 0 and info['key_frame'] != '1':
-                        logging.warning('Info: %s', info)
-                        raise ValueError(f'Frame {idx} should be a key frame')
-                    idx += 1
-            except KeyError:
-                pass
+        frames: list[VideoFrameInfo] = FfmpegHelper.probe_video_frames(dest)
+        frame_segment_duration: int = self.options.frame_segment_duration
+        assert frame_segment_duration is not None
+        assert frame_segment_duration > 0
+        for idx, frame in enumerate(frames):
+            if (idx % frame_segment_duration) == 0 and not frame.key_frame:
+                logging.warning('Info: %s', frame)
+                raise ValueError(f'Frame {idx} should be a key frame')
+            idx += 1

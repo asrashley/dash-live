@@ -53,24 +53,23 @@ import os
 import math
 from pathlib import Path
 import shutil
-import subprocess
 from typing import Protocol, Sequence, cast
 
 from dashlive.drm.key_tuple import KeyTuple
 from dashlive.drm.keymaterial import KeyMaterial
 from dashlive.drm.playready import PlayReady
-from dashlive.media.create.audio_encode_task import AudioEncodingTask
-from dashlive.media.create.convert_subtitles_task import ConvertSubtitlesTask
-from dashlive.media.create.encrypt_media_task import EncryptMediaTask
-from dashlive.media.create.ffmpeg_types import FfmpegMediaInfo
-from dashlive.media.create.media_create_options import MediaCreateOptions
-from dashlive.media.create.media_info_json import KeyInfoJson, MediaInfoJson, StreamInfoJson
-from dashlive.media.create.package_sources_task import PackageSourcesTask
-from dashlive.media.create.task import CreationResult
-from dashlive.media.create.video_encode_task import VideoEncodeTask
 
+from .audio_encode_task import AudioEncodingTask
+from .convert_subtitles_task import ConvertSubtitlesTask
 from .encoding_parameters import BITRATE_PROFILES, VideoEncodingParameters
 from .encoded_representation import EncodedRepresentation
+from .encrypt_media_task import EncryptMediaTask
+from .ffmpeg_helper import FfmpegHelper, MediaProbeResults
+from .media_create_options import MediaCreateOptions
+from .media_info_json import KeyInfoJson, MediaInfoJson, StreamInfoJson
+from .package_sources_task import PackageSourcesTask
+from .task import CreationResult
+from .video_encode_task import VideoEncodeTask
 
 class RunnableTask(Protocol):
     def run(self) -> Sequence[CreationResult]:
@@ -215,50 +214,25 @@ class DashMediaCreator:
         return rv
 
     def probe_media_info(self) -> None:
-        info: FfmpegMediaInfo = json.loads(subprocess.check_output([
-            "ffprobe",
-            "-v", "0",
-            "-of", "json",
-            "-show_format",
-            "-show_streams",
-            f"{self.options.source.absolute()}",
-        ]))
+        info: MediaProbeResults = FfmpegHelper.probe_media_info(self.options.source)
         if self.options.aspect is None:
             self.options.aspect = '1'
             self.options.aspect_ratio = 1.0
-            for s in info["streams"]:
-                try:
-                    if s["codec_type"] != "video":
-                        continue
-                except KeyError:
-                    continue
-                try:
-                    self.options.set_aspect(s["display_aspect_ratio"])
-                except KeyError:
-                    width = s["width"]
-                    height = s["height"]
-                    m = self.gcd(width, height)
-                    width /= m
-                    height /= m
+            for vid in info.video:
+                if vid.display_aspect_ratio is not None:
+                    self.options.set_aspect(vid.display_aspect_ratio)
+                else:
+                    m: int = self.gcd(vid.width, vid.height)
+                    width: int = vid.width // m
+                    height: int = vid.height // m
                     self.options.aspect = f'{width}:{height}'
                     self.options.aspect_ratio = width / height
         if self.options.duration == 0:
-            self.options.duration = math.floor(float(info["format"]["duration"]))
+            self.options.duration = math.floor(info.format.duration)
         if self.options.framerate == 0:
-            for s in info["streams"]:
-                try:
-                    fps = s["avg_frame_rate"]
-                    if '/' in fps:
-                        n, d = fps.split('/')
-                        if float(d) == 0:
-                            continue
-                        fps = int(round(float(n) / float(d)))
-                    else:
-                        fps = int(fps)
-                    self.options.framerate = fps
-                    break
-                except KeyError:
-                    pass
+            for vid in info.video:
+                if vid.framerate is not None:
+                    self.options.framerate = int(round(vid.framerate))
         assert self.options.framerate > 0
         assert self.options.segment_duration > 0
 
@@ -295,6 +269,10 @@ class DashMediaCreator:
         args.destdir.mkdir(exist_ok=True)
         dmc = DashMediaCreator(args)
         dmc.probe_media_info()
+        if args.verbose:
+            print('Encoding using options:')
+            print(args)
+            print('-----------------------')
         dmc.create_all_tasks()
         dmc.run_all_tasks()
         mi: Path = dmc.options.destdir / f'{args.prefix}.json'
