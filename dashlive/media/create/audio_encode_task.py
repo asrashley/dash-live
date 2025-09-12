@@ -2,30 +2,26 @@ import logging
 from pathlib import Path
 import subprocess
 from typing import Sequence
-from dashlive.media.create.creation_result import CreationResult
-from dashlive.media.create.media_create_options import MediaCreateOptions
-from dashlive.media.create.task import MediaCreationTask
 
+from .creation_result import CreationResult
+from .encoding_parameters import AudioEncodingParameters
+from .media_create_options import MediaCreateOptions
+from .task import MediaCreationTask
 
 class AudioEncodingTask(MediaCreationTask):
-    bitrate: int
-    codec: str
-    channels: int
+    params: AudioEncodingParameters
     file_index: int
     source: Path
 
-    def __init__(self, options: MediaCreateOptions, source: Path, bitrate: int,
-                 codecString: str, channels: int, file_index: int) -> None:
+    def __init__(self, options: MediaCreateOptions, source: Path, file_index: int, params: AudioEncodingParameters) -> None:
         super().__init__(options)
         self.source = source
-        self.bitrate = bitrate
-        self.codec = codecString
-        self.channels = channels
+        self.params = params
         self.file_index = file_index
 
     def run(self) -> Sequence[CreationResult]:
         dest_dir: Path = self.options.destdir / 'audio'
-        tmp_file: Path = dest_dir / f'{self.options.prefix}-a{self.file_index}-{self.codec}.mp4'
+        tmp_file: Path = dest_dir / f'{self.options.prefix}-a{self.file_index}-{self.params.codecString}.mp4'
         dest_file: Path = dest_dir / self.destination_filename('audio', self.file_index, False)
         result: CreationResult = CreationResult(
             filename=dest_file, content_type='audio', track_id=self.file_index + 1,
@@ -43,13 +39,13 @@ class AudioEncodingTask(MediaCreationTask):
             "ffmpeg",
             "-i", f"{self.source.absolute()}",
             "-map", "0:a:0",
-            "-codec:a:0", self.codec,
-            "-b:a:0", f"{self.bitrate}k",
-            "-ac:a:0", f"{self.channels}",
+            "-codec:a:0", self.params.codecString,
+            "-b:a:0", f"{self.params.bitrate}k",
+            "-ac:a:0", f"{self.params.channels}",
             "-y",
             "-t", str(self.options.duration),
         ]
-        if self.codec == 'aac':
+        if self.params.codecString == 'aac':
             ffmpeg_args += ["-strict", "-2"]
 
         ffmpeg_args.append(str(dest_file))

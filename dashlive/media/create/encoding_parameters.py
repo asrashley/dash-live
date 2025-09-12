@@ -82,6 +82,23 @@ class BitrateProfiles(IntEnum):
         name = name.strip().upper()
         return cls[name]
 
+class AudioProfile(IntEnum):
+    STEREO = 1
+    SURROUND = 2
+
+    @classmethod
+    def keys(cls) -> list[str]:
+        """get list of items in this enum"""
+        return sorted(cls.__members__.keys())  # type: ignore
+
+    @classmethod
+    def from_string(cls, name: str) -> "AudioProfile":
+        """
+        Create a profile from a string
+        """
+        name = name.strip().upper()
+        return cls[name]
+
 
 BITRATE_PROFILES: dict[BitrateProfiles, list[VideoEncodingParameters]] = {
     BitrateProfiles.UHD: UHD_8BIT_BITRATE_LADDER,
@@ -90,4 +107,9 @@ BITRATE_PROFILES: dict[BitrateProfiles, list[VideoEncodingParameters]] = {
     BitrateProfiles.SD: SD_BITRATE_LADDER,
     BitrateProfiles.MOBILE: MOBILE_BITRATE_LADDER,
     BitrateProfiles.DEFAULT: HD_HQ_BITRATE_LADDER,
+}
+
+AUDIO_PROFILES: dict[AudioProfile, AudioEncodingParameters] = {
+    AudioProfile.STEREO: AudioEncodingParameters(bitrate=96, codecString='aac', channels=2),
+    AudioProfile.SURROUND: AudioEncodingParameters(bitrate=320, codecString='eac3', channels=6),
 }

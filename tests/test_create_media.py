@@ -16,6 +16,7 @@ from dashlive.media.create.encoding_parameters import BITRATE_PROFILES, VideoEnc
 from dashlive.media.create.ffmpeg_helper import (
     AudioStreamInfo,
     FfmpegMediaJson,
+    FfmpegStreamJson,
     MediaFormatInfo,
     MediaProbeResults,
     VideoFrameJson,
@@ -439,6 +440,29 @@ class TestMediaCreation(TestCase):
         self.assertEqual(info.video[0], vid)
         self.assertEqual(info.audio[0], aud)
 
+    def test_convert_ac3_audio_probe(self) -> None:
+        input: FfmpegStreamJson = {
+            "index": 1,
+            "codec_name": "ac3",
+            "codec_type": "audio",
+            "sample_rate": "48000",
+            "channels": 6,
+            "channel_layout": "5.1(side)",
+            "duration": "734.016000",
+        }
+        info: AudioStreamInfo = AudioStreamInfo.from_json(input)
+        expected: AudioStreamInfo = AudioStreamInfo(
+            content_type='audio',
+            index=1,
+            codec="eac3",
+            duration=734.016,
+            profile=None,
+            sample_rate=48000,
+            channels=6,
+            channel_layout="5.1")
+        self.maxDiff = None
+        self.assertEqual(expected, info)
+
     def test_encode_with_surround_audio(self) -> None:
         tmpdir: Path = self.create_temp_folder()
         kid = '1ab45440532c439994dc5c5ad9584bac'
@@ -453,7 +477,7 @@ class TestMediaCreation(TestCase):
             '-o', str(tmpdir)
         ]
         opts: MediaCreateOptions = MediaCreateOptions.parse_args(args)
-        self.assertEqual(opts.audio_codec, 'aac')
+        self.assertIsNone(opts.audio_codec)
         self.assertFalse(opts.subtitles)
         self.assertTrue(opts.surround)
         ffmpeg = MockMediaTools(self.fs, src_file, tmpdir, opts)
@@ -547,7 +571,7 @@ class TestMediaCreation(TestCase):
             '-o', str(tmpdir)
         ]
         opts: MediaCreateOptions = MediaCreateOptions.parse_args(args)
-        self.assertEqual(opts.audio_codec, 'aac')
+        self.assertIsNone(opts.audio_codec)
         self.assertTrue(opts.subtitles)
         self.assertFalse(opts.surround)
         ffmpeg = MockMediaTools(self.fs, src_file, tmpdir, opts)
