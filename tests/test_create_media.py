@@ -11,8 +11,16 @@ from unittest.mock import patch
 from pyfakefs.fake_filesystem_unittest import TestCase
 from pyfakefs.fake_filesystem import FakeFilesystem
 
-from dashlive.media.create import DashMediaCreator, FfmpegMediaInfo
+from dashlive.media.create import DashMediaCreator
 from dashlive.media.create.encoding_parameters import BITRATE_PROFILES, VideoEncodingParameters
+from dashlive.media.create.ffmpeg_helper import (
+    AudioStreamInfo,
+    FfmpegMediaJson,
+    MediaFormatInfo,
+    MediaProbeResults,
+    VideoFrameJson,
+    VideoStreamInfo
+)
 from dashlive.media.create.media_create_options import MediaCreateOptions
 from dashlive.mpeg.dash.representation import Representation
 
@@ -32,6 +40,7 @@ class MockMediaTools(TestCaseMixin):
     input_file: Path
     tmpdir: Path
     aspect: float
+    media_duration: float
     fs: FakeFilesystem
     drive: str
 
@@ -39,7 +48,8 @@ class MockMediaTools(TestCaseMixin):
                  fs: FakeFilesystem,
                  input_file: Path,
                  tmpdir: Path,
-                 options: MediaCreateOptions
+                 options: MediaCreateOptions,
+                 media_duration: float = 60
                  ) -> None:
         super().__init__()
         self.fs = fs
@@ -48,6 +58,9 @@ class MockMediaTools(TestCaseMixin):
         self.drive = tmpdir.drive
         self.aspect = 16.0 / 9.0
         self.options = options
+        self.media_duration = media_duration
+        if self.options.duration == 0:
+            self.options.duration = int(round(self.media_duration))
 
     def bitrate_ladder(self) -> list[VideoEncodingParameters]:
         return BITRATE_PROFILES[self.options.bitrate_profile]
@@ -118,7 +131,7 @@ class MockMediaTools(TestCaseMixin):
             '-s': f'{params.width}x{height}',
             '-g': '96',
             '-force_key_frames': '0,4,8,12,16,20,24,28,32,36,40,44,48,52,56,60',
-            '-t': '60',
+            '-t': f"{self.options.duration}",
             '-r': '24',
         }
         self.assertCommandArguments(expected, args)
@@ -242,16 +255,37 @@ class MockMediaTools(TestCaseMixin):
         self.assertListEqual(expected, args)
         self.assertIsNone(stderr)
         self.assertFalse(universal_newlines)
-        result: FfmpegMediaInfo = {
+        result: FfmpegMediaJson = {
             'streams': [{
+                "index": 0,
+                "codec_name": "h264",
+                "profile": "High",
                 'codec_type': 'video',
                 'display_aspect_ratio': '16:9',
                 'avg_frame_rate': '24',
                 'width': 1920,
                 'height': 1080,
+                "duration": f"{self.media_duration}",
+            }, {
+                "index": 1,
+                "codec_name": "aac",
+                "profile": "LC",
+                "codec_type": "audio",
+                "sample_rate": "44100",
+                "channels": 2,
+                "channel_layout": "stereo",
+                "avg_frame_rate": "0/0",
+                "duration": f"{self.media_duration - 0.01}",
             }],
             'format': {
-                'duration': 60.0
+                "filename": args[-1],
+                "nb_streams": 2,
+                "nb_programs": 0,
+                "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+                "start_time": "0.000000",
+                "duration": f"{self.media_duration}",
+                "size": "738876331",
+                "bit_rate": "8051319",
             }
         }
         return json.dumps(result)
@@ -260,31 +294,37 @@ class MockMediaTools(TestCaseMixin):
                              universal_newlines: bool, text: bool) -> str:
         self.find_encoding_parameters(args[-1])
         expected: list[str] = [
-            'ffprobe',
-            '-show_frames',
-            '-print_format', 'compact',
+            "ffprobe",
+            "-v", "0",
+            "-show_frames",
+            "-print_format", "json",
             args[-1],
         ]
         self.assertEqual(expected, args)
         self.assertIsNotNone(stderr)
         self.assertTrue(text)
-        result: list[str] = []
+        frames: list[VideoFrameJson] = []
+        frame_types: list[str] = ['P', 'B', 'B', 'B']
         for num in range(60 * 24 * 10):
             pts: int = num * 100
             if num % (24 * 4) == 0:
-                key_frame = '1'
+                key_frame: int = 1
             else:
-                key_frame = '0'
-            frame_info = [
-                'frame',
-                'media_type=video',
-                'stream_index=0',
-                f'key_frame={key_frame}',
-                f'pts={pts}',
-                f'coded_picture_number={num}'
-            ]
-            result.append('|'.join(frame_info))
-        return '\r\n'.join(result)
+                key_frame = 0
+            vid: VideoFrameJson = {
+                'key_frame': key_frame,
+                'pts': pts,
+                'duration': 100,
+                'pkt_pos': f"{num}",
+                'pkt_size': "123",
+                'pict_type': frame_types[num % len(frame_types)],
+                'interlaced_frame': 0,
+                'top_field_first': 1,
+            }
+            if key_frame:
+                vid['pict_type'] = 'I'
+            frames.append(vid)
+        return json.dumps(dict(frames=frames))
 
     def assertRegexListEqual(self, expected: list[str | Pattern[str]],
                              actual: list[str]) -> None:
@@ -328,6 +368,76 @@ class TestMediaCreation(TestCase):
                 with patch('dashlive.mpeg.mp4.Mp4Atom'):
                     rv: int = DashMediaCreatorWithoutParser.main(args)
         return rv
+
+    def test_convert_media_probe_json(self) -> None:
+        src_file: Path = self.input_dir / 'BigBuckBunny.mp4'
+        input: FfmpegMediaJson = {
+            'streams': [{
+                "index": 0,
+                "codec_name": "h264",
+                "profile": "High",
+                'codec_type': 'video',
+                'display_aspect_ratio': '16:9',
+                'avg_frame_rate': '24',
+                'width': 1920,
+                'height': 1080,
+                "duration": "734.122086",
+            }, {
+                "index": 1,
+                "codec_name": "aac",
+                "profile": "LC",
+                "codec_type": "audio",
+                "sample_rate": "44100",
+                "channels": 2,
+                "channel_layout": "stereo",
+                "avg_frame_rate": "0/0",
+                "duration": "734.122086",
+            }],
+            'format': {
+                "filename": f"{src_file}",
+                "nb_streams": 2,
+                "nb_programs": 0,
+                "format_name": "mov,mp4,m4a,3gp,3g2,mj2",
+                "start_time": "0.000000",
+                "duration": "734.166667",
+                "size": "738876331",
+                "bit_rate": "8051319",
+            }
+        }
+        expected_format: MediaFormatInfo = MediaFormatInfo(
+            duration=734.166667,
+            format_name="mov,mp4,m4a,3gp,3g2,mj2",
+            start_time=0,
+            size=738876331,
+            bit_rate=8051319
+        )
+        vid = VideoStreamInfo(
+            content_type='video',
+            index=0,
+            codec="h264",
+            duration=734.122086,
+            profile="High",
+            display_aspect_ratio="16:9",
+            width=1920,
+            height=1080,
+            framerate=24)
+        aud = AudioStreamInfo(
+            content_type='audio',
+            index=1,
+            codec="aac",
+            duration=734.122086,
+            profile="LC",
+            sample_rate=44100,
+            channels=2,
+            channel_layout="stereo")
+
+        info: MediaProbeResults = MediaProbeResults.from_json(input)
+        self.maxDiff = None
+        self.assertEqual(info.format, expected_format)
+        self.assertEqual(len(info.video), 1)
+        self.assertEqual(len(info.audio), 1)
+        self.assertEqual(info.video[0], vid)
+        self.assertEqual(info.audio[0], aud)
 
     def test_encode_with_surround_audio(self) -> None:
         tmpdir: Path = self.create_temp_folder()

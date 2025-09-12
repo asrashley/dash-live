@@ -6,6 +6,6 @@
 #
 #############################################################################
 from .create import DashMediaCreator
-from .ffmpeg_types import FfmpegMediaInfo
+from .ffmpeg_helper import FfmpegHelper, MediaProbeResults
 
-__all__ = ["DashMediaCreator", "FfmpegMediaInfo"]
+__all__ = ["DashMediaCreator", "FfmpegHelper", "MediaProbeResults"]
