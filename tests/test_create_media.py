@@ -23,6 +23,7 @@ from dashlive.media.create.ffmpeg_helper import (
     VideoStreamInfo
 )
 from dashlive.media.create.media_create_options import MediaCreateOptions
+from dashlive.media.create.media_info_json import MediaInfoJson
 from dashlive.mpeg.dash.representation import Representation
 
 from .mixins.mixin import TestCaseMixin
@@ -147,7 +148,7 @@ class MockMediaTools(TestCaseMixin):
             '-ac:a:0': '2',
             '-y': None,
         }
-        if self.options.surround:
+        try:
             chan_idx: int = args.index('-ac:a:0')
             if args[chan_idx + 1] == '6':
                 expected.update({
@@ -155,6 +156,8 @@ class MockMediaTools(TestCaseMixin):
                     '-ac:a:0': '6',
                     '-b:a:0': '320k',
                 })
+        except ValueError:
+            pass
         self.assertCommandArguments(expected, args)
         self.fs.create_file(args[-1], contents=args[-1])
         return 0
@@ -187,9 +190,9 @@ class MockMediaTools(TestCaseMixin):
         mp4_dir: Path = self.tmpdir / 'dash'
         filename = self.tmpdir / 'audio' / 'bbb_a1.mp4'
         expected.append(f'{filename}#trackID=2:role=main:id=a1:dur={dur}')
-        if self.options.surround:
-            filename = self.tmpdir / 'audio' / 'bbb_a2.mp4'
-            expected.append(f'{filename}#trackID=3:role=alternate:id=a2:dur={dur}')
+        for idx in range(2, 2 + len(self.options.audio_sources)):
+            filename = self.tmpdir / 'audio' / f'bbb_a{idx}.mp4'
+            expected.append(f'{filename}#trackID={idx + 1}:role=alternate:id=a{idx}:dur={dur}')
         if self.options.subtitles:
             filename = self.tmpdir / 'BigBuckBunny.ttml'
             expected.append(f'{filename}#trackID=1:role=main:id=t1:dur=94.0:ddur=8')
@@ -247,11 +250,14 @@ class MockMediaTools(TestCaseMixin):
 
     def ffprobe_source_stream_info(self, args: list[str], stderr: int | None,
                                    universal_newlines: bool, text: bool) -> str:
+        src_file = Path(args[-1])
+        if not src_file.exists():
+            raise IOError(f'File {src_file} does not exist')
         expected: list[str] = [
             'ffprobe', '-v', '0', '-of', 'json',
             '-show_format',
             '-show_streams',
-            f'{self.input_file}',
+            args[-1],
         ]
         self.assertListEqual(expected, args)
         self.assertIsNone(stderr)
@@ -289,6 +295,16 @@ class MockMediaTools(TestCaseMixin):
                 "bit_rate": "8051319",
             }
         }
+        if src_file != self.input_file:
+            result['format']['nb_streams'] = 1
+            result['streams'] = [result['streams'][1]]
+            result['streams'][0].update({
+                "index": 0,
+                "codec_name": src_file.suffix[1:],
+                "channels": 6,
+                "channel_layout": "5.1(side)",
+            })
+        result['format']['format_name'] = src_file.suffix[1:]
         return json.dumps(result)
 
     def ffprobe_check_frames(self, args: list[str], stderr: int | None,
@@ -473,19 +489,62 @@ class TestMediaCreation(TestCase):
             '-p', 'bbb',
             '--font', f'{self.SRC_DIR.drive}/usr/share/fonts/truetype/freefont/FreeSansBold.ttf',
             '--kid', kid,
-            '--surround',
+            '--channels', '6',
+            '--acodec', 'ac3',
             '-o', str(tmpdir)
         ]
         opts: MediaCreateOptions = MediaCreateOptions.parse_args(args)
-        self.assertIsNone(opts.audio_codec)
+        self.assertEqual(opts.audio_codec, 'eac3')
         self.assertFalse(opts.subtitles)
-        self.assertTrue(opts.surround)
         ffmpeg = MockMediaTools(self.fs, src_file, tmpdir, opts)
         rv: int = self.run_creator_main(args, ffmpeg)
         self.assertEqual(rv, 0)
         js_file: Path = tmpdir / 'bbb.json'
         with js_file.open('rt') as src:
-            js_data = json.load(src)
+            js_data: MediaInfoJson = json.load(src)
+        files: list[str] = ['bbb_a1.mp4', 'bbb_a1_enc.mp4']
+        ladder: list[VideoEncodingParameters] = ffmpeg.bitrate_ladder()
+        for idx in range(1, len(ladder) + 1):
+            files.append(f'bbb_v{idx}.mp4')
+            files.append(f'bbb_v{idx}_enc.mp4')
+        files.sort()
+        expected: MediaInfoJson = {
+            'keys': [{
+                'kid': kid,
+                'computed': True
+            }],
+            'streams': [{
+                'directory': 'bbb',
+                'title': '',
+                'files': files
+            }]
+        }
+        self.maxDiff = None
+        self.assertDictEqual(expected, js_data)
+
+    def test_encode_with_multiple_audio_tracks(self) -> None:
+        tmpdir: Path = self.create_temp_folder()
+        kid = '1ab45440532c439994dc5c5ad9584bac'
+        src_file: Path = self.input_dir / 'BigBuckBunny.mp4'
+        self.fs.create_file(src_file, contents=f"{src_file}")
+        audio_src: Path = self.input_dir / 'ExtraAudio.wav'
+        self.fs.create_file(audio_src, contents=f"{audio_src}")
+        args: list[str] = [
+            '-i', f"{src_file}",
+            '--audio', f"{audio_src}",
+            '-p', 'bbb',
+            '--kid', kid,
+            '-o', str(tmpdir)
+        ]
+        opts: MediaCreateOptions = MediaCreateOptions.parse_args(args)
+        self.assertIsNone(opts.audio_codec)
+        self.assertFalse(opts.subtitles)
+        ffmpeg = MockMediaTools(self.fs, src_file, tmpdir, opts)
+        rv: int = self.run_creator_main(args, ffmpeg)
+        self.assertEqual(rv, 0)
+        js_file: Path = tmpdir / 'bbb.json'
+        with js_file.open('rt') as src:
+            js_data: MediaInfoJson = json.load(src)
         files: list[str] = [
             'bbb_a1.mp4', 'bbb_a1_enc.mp4',
             'bbb_a2.mp4', 'bbb_a2_enc.mp4']
@@ -495,7 +554,7 @@ class TestMediaCreation(TestCase):
             files.append(f'bbb_v{idx}.mp4')
             files.append(f'bbb_v{idx}_enc.mp4')
         files.sort()
-        expected = {
+        expected: MediaInfoJson = {
             'keys': [{
                 'kid': kid,
                 'computed': True
@@ -522,20 +581,19 @@ class TestMediaCreation(TestCase):
         opts: MediaCreateOptions = MediaCreateOptions.parse_args(args)
         self.assertEqual(opts.audio_codec, 'eac3')
         self.assertFalse(opts.subtitles)
-        self.assertFalse(opts.surround)
         ffmpeg = MockMediaTools(self.fs, src_file, tmpdir, opts)
         rv: int = self.run_creator_main(args, ffmpeg)
         self.assertEqual(rv, 0)
         js_file: Path = tmpdir / 'bbb.json'
         with js_file.open('rt') as src:
-            js_data = json.load(src)
+            js_data: MediaInfoJson = json.load(src)
         files: list[str] = ['bbb_a1.mp4']
 
         ladder: list[VideoEncodingParameters] = ffmpeg.bitrate_ladder()
         for idx in range(1, len(ladder) + 1):
             files.append(f'bbb_v{idx}.mp4')
         files.sort()
-        expected = {
+        expected: MediaInfoJson = {
             'keys': [],
             'streams': [{
                 'directory': 'bbb',
@@ -573,19 +631,18 @@ class TestMediaCreation(TestCase):
         opts: MediaCreateOptions = MediaCreateOptions.parse_args(args)
         self.assertIsNone(opts.audio_codec)
         self.assertTrue(opts.subtitles)
-        self.assertFalse(opts.surround)
         ffmpeg = MockMediaTools(self.fs, src_file, tmpdir, opts)
         rv: int = self.run_creator_main(args, ffmpeg)
         self.assertEqual(rv, 0)
         js_file: Path = tmpdir / 'bbb.json'
         with js_file.open('rt') as src:
-            js_data = json.load(src)
+            js_data: MediaInfoJson = json.load(src)
         files: list[str] = ['bbb_a1.mp4', 'bbb_t1.mp4']
         ladder: list[VideoEncodingParameters] = ffmpeg.bitrate_ladder()
         for idx in range(1, len(ladder) + 1):
             files.append(f'bbb_v{idx}.mp4')
         files.sort()
-        expected = {
+        expected: MediaInfoJson = {
             'keys': [],
             'streams': [{
                 'directory': 'bbb',
