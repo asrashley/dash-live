@@ -19,6 +19,7 @@ class MediaCreateOptions:
     aspect: str | None
     audio_codec: str | None
     audio_channels: int | None
+    audio_sources: list[Path]
     avc3: bool
     bitrate_profile: BitrateProfiles
     duration: int
@@ -27,7 +28,6 @@ class MediaCreateOptions:
     kid: list[str]
     key: list[str]
     segment_duration: float
-    surround: bool
     verbose: bool
     max_bitrate: int
     prefix: str
@@ -75,6 +75,8 @@ class MediaCreateOptions:
         ap = argparse.ArgumentParser(description='DASH encoding and packaging')
         ap.add_argument('--acodec', dest='audio_codec',
                         help='Audio codec for main audio track')
+        ap.add_argument('--audio', help='additional audio tracks', nargs='*',
+                        dest='audio_sources', default=[])
         ap.add_argument('--channels', dest='audio_channels', type=int,
                         help='Audio channel count for main audio track')
         ap.add_argument('--duration', '-d',
@@ -84,9 +86,6 @@ class MediaCreateOptions:
                         help='Aspect ratio (default=same as source)')
         ap.add_argument('--avc3',
                         help='Use in-band (AVC3 format) init segments',
-                        action="store_true")
-        ap.add_argument('--surround',
-                        help='Add E-AC3 surround-sound audio track',
                         action="store_true")
         ap.add_argument('--subtitles',
                         help='Add subtitle text track')
@@ -113,5 +112,8 @@ class MediaCreateOptions:
         mc_args: dict[str, Any] = {**vars(args)}
         mc_args["bitrate_profile"] = BitrateProfiles.from_string(args.bitrate_profile)
         mc_args["source"] = Path(args.source)
+        mc_args["audio_sources"] = [Path(a) for a in args.audio_sources]
+        if args.audio_codec == 'ac3':
+            mc_args["audio_codec"] = "eac3"
         rv = MediaCreateOptions(**mc_args)
         return rv

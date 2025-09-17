@@ -193,6 +193,8 @@ class FfmpegVideoProbeJson(TypedDict):
 class FfmpegHelper:
     @classmethod
     def probe_media_info(cls, src: Path) -> MediaProbeResults:
+        if not src.exists():
+            raise IOError(f"File {src} does not exist")
         info: FfmpegMediaJson = json.loads(subprocess.check_output([
             "ffprobe",
             "-v", "0",
@@ -205,6 +207,8 @@ class FfmpegHelper:
 
     @classmethod
     def probe_video_frames(cls, src: Path) -> list[VideoFrameInfo]:
+        if not src.exists():
+            raise IOError(f"File {src} does not exist")
         ffmpeg_args: list[str] = [
             "ffprobe",
             "-v", "0",

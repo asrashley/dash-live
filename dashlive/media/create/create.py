@@ -33,13 +33,21 @@
 #    --kid a2c786d0-f9ef-4cb3-b333-cd323a4284a5 db06a8fe-ec16-4de2-9228-2c71e9b856ab -o tears
 #
 #
-# A more complex example, where the audio track is replaced with a 5.1 version before encoding
+# Example where the audio track is replaced with a 5.1 version before encoding:
 #
 # curl -o ToS-4k-1920.mov http://ftp.nluug.nl/pub/graphics/blender/demo/movies/ToS/ToS-4k-1920.mov
 # curl -o ToS-Dolby-5.1.ac3 'http://media.xiph.org/tearsofsteel/Surround-TOS_DVDSURROUND-Dolby%205.1.ac3'
 # ffmpeg -i ToS-4k-1920.mov -i ToS-Dolby-5.1.ac3 -c:v copy -c:a copy -map 0:v:0 -map 1:a:0 ToS-4k-1920-Dolby.5.1.mp4
-# python -m dashlive.media.create -d 61 -i ToS-4k-1920-Dolby.5.1.mp4 -p tears --surround \
+# python -m dashlive.media.create -d 61 -i ToS-4k-1920-Dolby.5.1.mp4 -p tears --channels 6 \
 #    --kid a2c786d0-f9ef-4cb3-b333-cd323a4284a5 db06a8fe-ec16-4de2-9228-2c71e9b856ab -o tears-v2
+#
+#
+# Example with multiple audio tracks:
+#
+# curl -o ToS-4k-1920.mov http://ftp.nluug.nl/pub/graphics/blender/demo/movies/ToS/ToS-4k-1920.mov
+# curl -o ToS-Dolby-5.1.ac3 'http://media.xiph.org/tearsofsteel/Surround-TOS_DVDSURROUND-Dolby%205.1.ac3'
+# python -m dashlive.media.create -d 30 -i ToS-4k-1920.mov --audio ToS-Dolby-5.1.ac3 -p tears3 \
+#    --kid a2c786d0-f9ef-4cb3-b333-cd323a4284a5 db06a8fe-ec16-4de2-9228-2c71e9b856ab -o tears-v3
 #
 #
 # ffmpeg was compiled with the following options:
@@ -65,7 +73,7 @@ from .convert_subtitles_task import ConvertSubtitlesTask
 from .encoding_parameters import AUDIO_PROFILES, BITRATE_PROFILES, AudioProfile, VideoEncodingParameters
 from .encoded_representation import EncodedRepresentation
 from .encrypt_media_task import EncryptMediaTask
-from .ffmpeg_helper import FfmpegHelper, MediaProbeResults
+from .ffmpeg_helper import AudioStreamInfo, FfmpegHelper, MediaProbeResults
 from .media_create_options import MediaCreateOptions
 from .media_info_json import KeyInfoJson, MediaInfoJson, StreamInfoJson
 from .package_sources_task import PackageSourcesTask
@@ -95,7 +103,7 @@ class DashMediaCreator:
         }
         self.keys = self.create_all_media_keys()
 
-    def create_all_tasks(self) -> None:
+    def create_all_tasks(self, media: MediaProbeResults) -> None:
         self.pending_tasks = []
         self.completed_tasks = []
         self.generated_files = []
@@ -107,21 +115,15 @@ class DashMediaCreator:
                 options=self.options, height=height, width=width, bitrate=bitrate,
                 codec=codec)
             self.pending_tasks.append(task)
-        assert self.options.audio_channels is not None
-        assert self.options.audio_codec is not None
-        audio_bitrate: int = AUDIO_PROFILES[AudioProfile.STEREO].bitrate
-        if self.options.audio_channels > 2:
-            audio_bitrate = AUDIO_PROFILES[AudioProfile.SURROUND].bitrate
-        main_audio_params = AudioEncodingParameters(
-            codecString=self.options.audio_codec, bitrate=audio_bitrate,
-            channels=self.options.audio_channels)
-        self.pending_tasks.append(AudioEncodingTask(
-            options=self.options, source=self.options.source, file_index=1, params=main_audio_params))
-
-        if self.options.surround:
-            self.pending_tasks.append(AudioEncodingTask(
-                options=self.options, source=self.options.source, file_index=2,
-                params=AUDIO_PROFILES[AudioProfile.SURROUND]))
+        aud_file_index: int = 1
+        for audio in media.audio:
+            self.append_audio_encode_task(audio, aud_file_index)
+            aud_file_index += 1
+        for source in self.options.audio_sources:
+            aud_info: MediaProbeResults = FfmpegHelper.probe_media_info(source)
+            for audio in aud_info.audio:
+                self.append_audio_encode_task(audio, aud_file_index)
+                aud_file_index += 1
 
         if self.options.subtitles:
             src: Path = Path(self.options.subtitles)
@@ -130,6 +132,26 @@ class DashMediaCreator:
                 options=self.options, src=src, dest=ttml_file))
 
         self.pending_tasks.append(PackageSourcesTask(self.options, self.get_unpackaged_media_files))
+
+    def append_audio_encode_task(self, info: AudioStreamInfo, file_index: int) -> None:
+        available_codecs: set[str] = {a.codecString for a in AUDIO_PROFILES.values()}
+        codec: str = info.codec
+        if self.options.audio_codec:
+            codec = self.options.audio_codec
+        channels: int = info.channels
+        if self.options.audio_channels:
+            channels = self.options.audio_channels
+        audio_bitrate: int = AUDIO_PROFILES[AudioProfile.STEREO].bitrate
+        if channels > 2:
+            audio_bitrate = AUDIO_PROFILES[AudioProfile.SURROUND].bitrate
+        if codec not in available_codecs:
+            if channels > 2:
+                codec = AUDIO_PROFILES[AudioProfile.SURROUND].codecString
+            else:
+                codec = AUDIO_PROFILES[AudioProfile.STEREO].codecString
+        params = AudioEncodingParameters(codecString=codec, bitrate=audio_bitrate, channels=channels)
+        self.pending_tasks.append(AudioEncodingTask(
+            options=self.options, source=self.options.source, file_index=file_index, params=params))
 
     def get_unpackaged_media_files(self) -> list[CreationResult]:
         media_files: list[CreationResult] = []
@@ -220,7 +242,7 @@ class DashMediaCreator:
             rv.append(kid)
         return rv
 
-    def probe_media_info(self) -> None:
+    def probe_media_info(self) -> MediaProbeResults:
         info: MediaProbeResults = FfmpegHelper.probe_media_info(self.options.source)
         if self.options.aspect is None:
             self.options.aspect = '1'
@@ -242,13 +264,7 @@ class DashMediaCreator:
                     self.options.framerate = int(round(vid.framerate))
         assert self.options.framerate > 0
         assert self.options.segment_duration > 0
-        for aud in info.audio:
-            if aud.channels < 1:
-                continue
-            if self.options.audio_channels is None:
-                self.options.audio_channels = aud.channels
-            if self.options.audio_codec is None:
-                self.options.audio_codec = aud.codec
+        return info
 
     @staticmethod
     def gcd(x: int, y: int) -> int:
@@ -282,12 +298,11 @@ class DashMediaCreator:
             mp4_log.setLevel(logging.DEBUG)
         args.destdir.mkdir(exist_ok=True)
         dmc = DashMediaCreator(args)
-        dmc.probe_media_info()
+        info: MediaProbeResults = dmc.probe_media_info()
         if args.verbose:
             print('Encoding using options:')
-            print(args)
-            print('-----------------------')
-        dmc.create_all_tasks()
+            print(f'   {args}')
+        dmc.create_all_tasks(info)
         dmc.run_all_tasks()
         mi: Path = dmc.options.destdir / f'{args.prefix}.json'
         dmc.media_info['streams'][0]['files'].sort()
