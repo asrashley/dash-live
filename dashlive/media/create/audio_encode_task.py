@@ -11,26 +11,37 @@ from .task import MediaCreationTask
 class AudioEncodingTask(MediaCreationTask):
     params: AudioEncodingParameters
     file_index: int
+    track_id: int
     source: Path
+    dest_dir: Path
+    dest_file: Path
 
-    def __init__(self, options: MediaCreateOptions, source: Path, file_index: int, params: AudioEncodingParameters) -> None:
+    def __init__(self, options: MediaCreateOptions, source: Path, file_index: int,
+                 track_id: int, params: AudioEncodingParameters) -> None:
         super().__init__(options)
         self.source = source
         self.params = params
         self.file_index = file_index
+        self.track_id = track_id
+        self.dest_dir = self.options.destdir / 'audio'
+        self.dest_file = self.dest_dir / self.destination_filename('audio', self.file_index, False)
+
+    def __str__(self) -> str:
+        return f"AudioEncodeTask: {self.source} -> {self.dest_file} track={self.track_id} params={self.params}"
 
     def run(self) -> Sequence[CreationResult]:
-        dest_dir: Path = self.options.destdir / 'audio'
-        tmp_file: Path = dest_dir / f'{self.options.prefix}-a{self.file_index}-{self.params.codecString}.mp4'
-        dest_file: Path = dest_dir / self.destination_filename('audio', self.file_index, False)
+        if not self.source.exists():
+            raise IOError(f"{self.source} not found")
+        tmp_file: Path = self.dest_dir / f'{self.options.prefix}-a{self.file_index}-{self.params.codecString}.mp4'
         result: CreationResult = CreationResult(
-            filename=dest_file, content_type='audio', track_id=self.file_index + 1,
-            duration=self.options.duration)
-        if not dest_file.exists():
-            dest_dir.mkdir(parents=True, exist_ok=True)
+            filename=self.dest_file, content_type='audio', current_track_id=self.track_id,
+            final_track_id=self.track_id, duration=self.options.duration)
+        if not self.dest_file.exists():
+            self.dest_dir.mkdir(parents=True, exist_ok=True)
             self.encode_audio(tmp_file)
-            assert tmp_file.exists()
-            self.copy_and_modify(src_file=tmp_file, dest_file=dest_file, track_id=result.track_id,
+            if not tmp_file.exists():
+                raise IOError(f"{tmp_file} not found")
+            self.copy_and_modify(src_file=tmp_file, dest_file=self.dest_file, track_id=result.final_track_id,
                                  language=self.options.language)
         return [result]
 

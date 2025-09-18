@@ -4,7 +4,7 @@ import logging
 import re
 import shutil
 import subprocess
-from typing import ClassVar, Pattern
+from typing import ClassVar, Pattern, cast
 import unittest
 from unittest.mock import patch
 
@@ -24,6 +24,7 @@ from dashlive.media.create.ffmpeg_helper import (
 )
 from dashlive.media.create.media_create_options import MediaCreateOptions
 from dashlive.media.create.media_info_json import MediaInfoJson
+from dashlive.media.create.convert_subtitles_task import TtconvMainOptions
 from dashlive.mpeg.dash.representation import Representation
 
 from .mixins.mixin import TestCaseMixin
@@ -186,15 +187,22 @@ class MockMediaTools(TestCaseMixin):
         filename: Path
         for idx, br in enumerate(ladder, start=1):
             filename = self.tmpdir / f'{br[2]}' / 'bbb.mp4'
+            self.assertTrue(filename.exists())
             expected.append(f'{filename}#trackID=1:id=v{idx}:dur={dur}')
+        track_id: int = 2
         mp4_dir: Path = self.tmpdir / 'dash'
         filename = self.tmpdir / 'audio' / 'bbb_a1.mp4'
-        expected.append(f'{filename}#trackID=2:role=main:id=a1:dur={dur}')
+        self.assertTrue(filename.exists())
+        expected.append(f'{filename}#trackID={track_id}:role=main:id=a1:dur={dur}')
+        track_id += 1
         for idx in range(2, 2 + len(self.options.audio_sources)):
             filename = self.tmpdir / 'audio' / f'bbb_a{idx}.mp4'
-            expected.append(f'{filename}#trackID={idx + 1}:role=alternate:id=a{idx}:dur={dur}')
-        if self.options.subtitles:
+            self.assertTrue(filename.exists())
+            expected.append(f'{filename}#trackID={track_id}:role=alternate:id=a{idx}:dur={dur}')
+            track_id += 1
+        if self.options.subtitles is not None:
             filename = self.tmpdir / 'BigBuckBunny.ttml'
+            self.assertTrue(filename.exists())
             expected.append(f'{filename}#trackID=1:role=main:id=t1:dur=94.0:ddur=8')
             self.fs.create_file(mp4_dir / 'BigBuckBunny.ttml', contents='BigBuckBunny.ttml')
         self.maxDiff = None
@@ -343,6 +351,22 @@ class MockMediaTools(TestCaseMixin):
             frames.append(vid)
         return json.dumps(dict(frames=frames))
 
+    def ttconv_main(self, args: list[str]) -> None:
+        self.assertIsNotNone(self.options.subtitles)
+        ttml: Path = self.options.destdir / cast(Path, self.options.subtitles).with_suffix(".ttml").name
+        expected: dict[str, str | None] = {
+            "-i": f"{self.options.subtitles}",
+            "-o": f"{ttml.absolute()}",
+            "--otype": "TTML",
+            "--filter": "lcd",
+        }
+        self.assertCommandArguments(expected, args)
+        for idx, arg in enumerate(args):
+            if arg == "--config":
+                config: TtconvMainOptions = json.loads(args[idx + 1])
+                self.assertEqual(config["general"]["document_lang"], self.options.language)
+        self.fs.create_file(ttml, contents=f"{ttml}")
+
     def assertRegexListEqual(self, expected: list[str | Pattern[str]],
                              actual: list[str]) -> None:
         self.assertEqual(len(expected), len(actual))
@@ -377,13 +401,14 @@ class TestMediaCreation(TestCase):
             self.fs.create_dir(tmpdir)
         return tmpdir
 
-    def run_creator_main(self, args: list[str], ffmpeg: MockMediaTools) -> int:
+    def run_creator_main(self, args: list[str], mocks: MockMediaTools) -> int:
         logging.disable(logging.CRITICAL)
-        with patch.multiple(subprocess, check_call=ffmpeg.check_call,
-                            check_output=ffmpeg.check_output):
-            with patch.object(shutil, 'which', ffmpeg.which):
+        with patch.multiple(subprocess, check_call=mocks.check_call,
+                            check_output=mocks.check_output):
+            with patch.object(shutil, 'which', mocks.which):
                 with patch('dashlive.mpeg.mp4.Mp4Atom'):
-                    rv: int = DashMediaCreatorWithoutParser.main(args)
+                    with patch('dashlive.media.create.convert_subtitles_task.ttconv_main', new=mocks.ttconv_main):
+                        rv: int = DashMediaCreatorWithoutParser.main(args)
         return rv
 
     def test_convert_media_probe_json(self) -> None:

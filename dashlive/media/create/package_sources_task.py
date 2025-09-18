@@ -26,22 +26,31 @@ class PackageSourcesTask(MediaCreationTask):
         super().__init__(options)
         self.get_files_fn = get_files
 
+    def __str__(self) -> str:
+        return f"PackageSourcesTask {self.options.destdir}"
+
     def run(self) -> Sequence[CreationResult]:
         results: list[PackagedRepresentation] = []
         nothing_to_do: bool = True
         media_files: list[CreationResult] = self.get_files_fn()
-
+        if self.options.verbose:
+            logging.debug('files to package:')
+            for mf in media_files:
+                logging.debug('  %s track=%d', mf.filename, mf.current_track_id)
         indexes: dict[str, int] = defaultdict(int)  # empty items will be initialized to zero
         dest_file: Path
         for media in media_files:
-            idx = indexes[media.content_type] + 1
+            if not media.filename.exists():
+                raise IOError(f"{media.filename} not found")
+            idx: int = indexes[media.content_type] + 1
             indexes[media.content_type] = idx
             dest_file = self.options.destdir / self.destination_filename(media.content_type, idx, False)
 
             rep_id: str = f"{media.content_type[0]}{idx}"
             er = PackagedRepresentation(
-                source=media.filename, content_type=media.content_type, filename=dest_file, file_index=idx,
-                track_id=media.track_id, src_track_id=media.track_id, rep_id=rep_id, duration=media.duration)
+                source=media.filename, content_type=media.content_type, filename=dest_file,
+                file_index=idx, final_track_id=media.final_track_id,
+                current_track_id=media.current_track_id, rep_id=rep_id, duration=media.duration)
             if media.content_type != 'video':
                 er.role = 'main' if idx == 1 else 'alternate'
             if media.content_type == "text":
@@ -115,6 +124,7 @@ class PackageSourcesTask(MediaCreationTask):
                               source.rep_id, prefix)
                 continue
             logging.debug('Check for file: "%s"', dest_file)
+            # TODO: modify create_file_from_fragments to also set track ID
             self.create_file_from_fragments(dest_file, moov, prefix)
-            if source.src_track_id is not None and source.src_track_id != source.track_id:
-                self.modify_mp4_file(dest_file, source.track_id, self.options.language)
+            if source.current_track_id != source.final_track_id:
+                self.modify_mp4_file(dest_file, source.final_track_id, self.options.language)

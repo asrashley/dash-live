@@ -21,6 +21,8 @@ class VideoEncodeTask(MediaCreationTask):
     codec: str | None
     audio: bool
     timescale: int
+    destdir: Path
+    dest: Path
 
     def __init__(self, options: MediaCreateOptions, width: int, height: int,
                  bitrate: int, codec: str | None) -> None:
@@ -29,20 +31,30 @@ class VideoEncodeTask(MediaCreationTask):
         self.height = height
         self.bitrate = bitrate
         self.codec = codec
+        self.destdir = self.options.destdir / f'{self.bitrate}'
+        self.dest = self.destdir / f'{self.options.prefix}.mp4'
+
+    def __str__(self) -> str:
+        return ' '.join([
+            "VideoEncodeTask:",
+            f"{self.options.source} -> {self.dest}",
+            f'{self.codec}',
+            f' {self.bitrate}Kbps',
+            f'{self.width}x{self.height}',
+        ])
 
     def run(self) -> Sequence[CreationResult]:
         """
         Encode a video track and check key frames are in the correct place
         """
-        destdir: Path = self.options.destdir / f'{self.bitrate}'
-        dest: Path = destdir / f'{self.options.prefix}.mp4'
         video_track: CreationResult = CreationResult(
-            filename=dest, content_type='video', track_id=1, duration=self.options.duration)
+            filename=self.dest, content_type='video', current_track_id=1, final_track_id=1,
+            duration=self.options.duration)
 
-        if not dest.exists():
-            destdir.mkdir(parents=True, exist_ok=True)
-            self.encode_video(dest)
-            self.check_key_frames(dest)
+        if not self.dest.exists():
+            self.destdir.mkdir(parents=True, exist_ok=True)
+            self.encode_video(self.dest)
+            self.check_key_frames(self.dest)
 
         return [video_track]
 

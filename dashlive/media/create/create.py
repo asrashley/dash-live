@@ -116,24 +116,27 @@ class DashMediaCreator:
                 codec=codec)
             self.pending_tasks.append(task)
         aud_file_index: int = 1
+        track_id: int = 2
         for audio in media.audio:
-            self.append_audio_encode_task(audio, aud_file_index)
+            self.append_audio_encode_task(audio, aud_file_index, track_id=track_id)
             aud_file_index += 1
+            track_id += 1
         for source in self.options.audio_sources:
             aud_info: MediaProbeResults = FfmpegHelper.probe_media_info(source)
             for audio in aud_info.audio:
-                self.append_audio_encode_task(audio, aud_file_index)
+                self.append_audio_encode_task(audio, aud_file_index, track_id=track_id)
                 aud_file_index += 1
+                track_id += 1
 
-        if self.options.subtitles:
-            src: Path = Path(self.options.subtitles)
-            ttml_file: Path = self.options.destdir / src.with_suffix('.ttml').name
+        if self.options.subtitles is not None:
+            ttml_file: Path = self.options.destdir / self.options.subtitles.with_suffix('.ttml').name
             self.pending_tasks.append(ConvertSubtitlesTask(
-                options=self.options, src=src, dest=ttml_file))
+                options=self.options, src=self.options.subtitles, dest=ttml_file, track_id=track_id))
+            track_id += 1
 
         self.pending_tasks.append(PackageSourcesTask(self.options, self.get_unpackaged_media_files))
 
-    def append_audio_encode_task(self, info: AudioStreamInfo, file_index: int) -> None:
+    def append_audio_encode_task(self, info: AudioStreamInfo, file_index: int, track_id: int) -> None:
         available_codecs: set[str] = {a.codecString for a in AUDIO_PROFILES.values()}
         codec: str = info.codec
         if self.options.audio_codec:
@@ -151,7 +154,8 @@ class DashMediaCreator:
                 codec = AUDIO_PROFILES[AudioProfile.STEREO].codecString
         params = AudioEncodingParameters(codecString=codec, bitrate=audio_bitrate, channels=channels)
         self.pending_tasks.append(AudioEncodingTask(
-            options=self.options, source=self.options.source, file_index=file_index, params=params))
+            options=self.options, source=self.options.source, file_index=file_index,
+            track_id=track_id, params=params))
 
     def get_unpackaged_media_files(self) -> list[CreationResult]:
         media_files: list[CreationResult] = []
@@ -170,6 +174,7 @@ class DashMediaCreator:
                 new_files: Sequence[CreationResult] = task.run()
                 self.generated_files += new_files
                 self.completed_tasks.append(task)
+                logging.debug('Completed task %s', task)
                 self.add_encryption_tasks(new_files)
             except IndexError:
                 done = True
@@ -198,7 +203,7 @@ class DashMediaCreator:
             en_rep: PackagedRepresentation = cast(PackagedRepresentation, nf)
             if en_rep.encrypted:
                 continue
-            key: KeyTuple = self.keys[min(en_rep.track_id, len(self.keys)) - 1]
+            key: KeyTuple = self.keys[min(en_rep.final_track_id, len(self.keys)) - 1]
             self.pending_tasks.append(EncryptMediaTask(options=self.options, key=key, src=en_rep))
 
     def create_all_media_keys(self) -> list[KeyTuple]:
@@ -286,7 +291,7 @@ class DashMediaCreator:
         logging.basicConfig()
         ch = logging.StreamHandler()
         ch.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s: %(message)s'))
-        mp4_log = logging.getLogger('mp4')
+        mp4_log: logging.Logger = logging.getLogger('mp4')
         mp4_log.addHandler(ch)
 
         if DashMediaCreator.check_for_missing_tools():
@@ -303,6 +308,10 @@ class DashMediaCreator:
             print('Encoding using options:')
             print(f'   {args}')
         dmc.create_all_tasks(info)
+        if args.verbose:
+            print('Pending tasks:')
+            for idx, tsk in enumerate(dmc.pending_tasks):
+                print(f'{idx:02d}: {tsk}')
         dmc.run_all_tasks()
         mi: Path = dmc.options.destdir / f'{args.prefix}.json'
         dmc.media_info['streams'][0]['files'].sort()

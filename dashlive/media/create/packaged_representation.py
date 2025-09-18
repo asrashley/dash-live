@@ -13,32 +13,29 @@ class PackagedRepresentation(CreationResult):
     source: Path
     file_index: int
     rep_id: str
-    src_track_id: int | None
     role: str | None
     segment_duration: float | None
     encrypted: bool
 
-    def __init__(self, filename: Path, content_type: str, track_id: int,
+    def __init__(self, filename: Path, content_type: str, current_track_id: int,
                  duration: float | None, source: Path, file_index: int,
-                 rep_id: str, src_track_id: int | None = None, role: str | None = None,
+                 rep_id: str, final_track_id: int, role: str | None = None,
                  segment_duration: float | None = None, encrypted: bool = False) -> None:
-        super().__init__(filename=filename, content_type=content_type, track_id=track_id,
-                         duration=duration)
+        super().__init__(filename=filename, content_type=content_type, current_track_id=current_track_id,
+                         final_track_id=final_track_id, duration=duration)
         self.source = source
         self.file_index = file_index
         self.rep_id = rep_id
-        self.src_track_id = src_track_id
         self.role = role
         self.segment_duration = segment_duration
         self.encrypted = encrypted
 
     def mp4box_track_id(self) -> str | None:
         tk_id: str | None = None
-        if self.src_track_id is not None:
-            return f"trackID={self.src_track_id}"
+        if self.current_track_id > 0:
+            return f"trackID={self.current_track_id}"
         if self.content_type == 'v':
             return "video"
-
         if self.content_type == 'a':
             tk_id = "audio"
         elif self.content_type == 't':

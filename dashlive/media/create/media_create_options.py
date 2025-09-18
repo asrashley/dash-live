@@ -32,7 +32,7 @@ class MediaCreateOptions:
     max_bitrate: int
     prefix: str
     source: Path
-    subtitles: str
+    subtitles: Path | None
     output: InitVar[str]
     language: str = "eng"
     iv_size: int = 64
@@ -112,6 +112,7 @@ class MediaCreateOptions:
         mc_args: dict[str, Any] = {**vars(args)}
         mc_args["bitrate_profile"] = BitrateProfiles.from_string(args.bitrate_profile)
         mc_args["source"] = Path(args.source)
+        mc_args["subtitles"] = Path(args.subtitles) if args.subtitles else None
         mc_args["audio_sources"] = [Path(a) for a in args.audio_sources]
         if args.audio_codec == 'ac3':
             mc_args["audio_codec"] = "eac3"
