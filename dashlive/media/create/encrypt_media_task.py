@@ -46,9 +46,12 @@ class EncryptMediaTask(MediaCreationTask):
         self.iv = InitialisationVector(raw=os.urandom(self.options.iv_size // 8))
 
     def run(self) -> Sequence[CreationResult]:
+        if not self.src.filename.exists():
+            raise IOError(f"{self.src.filename} not found")
         result: PackagedRepresentation = PackagedRepresentation(
             source=self.src.filename, filename=self.dest_file,
-            src_track_id=self.src.track_id, track_id=self.src.track_id,
+            current_track_id=self.src.current_track_id,
+            final_track_id=self.src.final_track_id,
             duration=self.src.duration, rep_id=self.src.rep_id, file_index=self.src.file_index,
             content_type=self.src.content_type, encrypted=True)
         if not self.dest_file.exists():
@@ -57,7 +60,6 @@ class EncryptMediaTask(MediaCreationTask):
         return [result]
 
     def build_encrypted_file(self, tmpdir: Path) -> None:
-        assert self.src.filename.exists()
         representation: Representation = self.parse_representation(str(self.src.filename))
         basename: str = self.src.filename.stem
         moov_filename: Path = tmpdir / f'{basename}-moov-enc.mp4'
@@ -83,7 +85,8 @@ class EncryptMediaTask(MediaCreationTask):
         logging.debug('MP4Box arguments: %s', args)
         subprocess.check_call(args, cwd=self.options.destdir)
 
-        assert moov_filename.exists()
+        if not moov_filename.exists():
+            raise IOError(f"Init segment {moov_filename} not found")
 
         prefix = str(tmpdir / "dash_enc_")
         args = [

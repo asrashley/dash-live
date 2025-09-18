@@ -12,5 +12,6 @@ from pathlib import Path
 class CreationResult:
     filename: Path
     content_type: str
-    track_id: int
+    current_track_id: int
+    final_track_id: int
     duration: float | None
