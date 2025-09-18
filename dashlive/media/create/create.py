@@ -71,7 +71,7 @@ from dashlive.media.create.encoding_parameters import AudioEncodingParameters
 from .audio_encode_task import AudioEncodingTask
 from .convert_subtitles_task import ConvertSubtitlesTask
 from .encoding_parameters import AUDIO_PROFILES, BITRATE_PROFILES, AudioProfile, VideoEncodingParameters
-from .encoded_representation import EncodedRepresentation
+from .packaged_representation import PackagedRepresentation
 from .encrypt_media_task import EncryptMediaTask
 from .ffmpeg_helper import AudioStreamInfo, FfmpegHelper, MediaProbeResults
 from .media_create_options import MediaCreateOptions
@@ -156,7 +156,7 @@ class DashMediaCreator:
     def get_unpackaged_media_files(self) -> list[CreationResult]:
         media_files: list[CreationResult] = []
         for cf in self.generated_files:
-            if not isinstance(cf, EncodedRepresentation):
+            if not isinstance(cf, PackagedRepresentation):
                 media_files.append(cf)
         return media_files
 
@@ -179,9 +179,9 @@ class DashMediaCreator:
             "files": []
         }
         for gf in self.generated_files:
-            if not isinstance(gf, EncodedRepresentation):
+            if not isinstance(gf, PackagedRepresentation):
                 continue
-            en_rep: EncodedRepresentation = cast(EncodedRepresentation, gf)
+            en_rep: PackagedRepresentation = cast(PackagedRepresentation, gf)
             stream["files"].append(en_rep.filename.name)
         stream["files"].sort()
         self.media_info["streams"] = [stream]
@@ -191,11 +191,11 @@ class DashMediaCreator:
         if not self.keys:
             return
         for nf in new_files:
-            if not isinstance(nf, EncodedRepresentation):
+            if not isinstance(nf, PackagedRepresentation):
                 continue
             if nf.content_type not in {'audio', 'video'}:
                 continue
-            en_rep: EncodedRepresentation = cast(EncodedRepresentation, nf)
+            en_rep: PackagedRepresentation = cast(PackagedRepresentation, nf)
             if en_rep.encrypted:
                 continue
             key: KeyTuple = self.keys[min(en_rep.track_id, len(self.keys)) - 1]

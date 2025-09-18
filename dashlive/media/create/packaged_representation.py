@@ -9,7 +9,7 @@ from pathlib import Path
 
 from .creation_result import CreationResult
 
-class EncodedRepresentation(CreationResult):
+class PackagedRepresentation(CreationResult):
     source: Path
     file_index: int
     rep_id: str

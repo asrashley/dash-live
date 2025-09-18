@@ -16,7 +16,7 @@ from typing import Sequence
 from dashlive.media.create.media_create_options import MediaCreateOptions
 
 from .creation_result import CreationResult
-from .encoded_representation import EncodedRepresentation
+from .packaged_representation import PackagedRepresentation
 from .task import MediaCreationTask
 
 class PackageSourcesTask(MediaCreationTask):
@@ -27,7 +27,7 @@ class PackageSourcesTask(MediaCreationTask):
         self.get_files_fn = get_files
 
     def run(self) -> Sequence[CreationResult]:
-        results: list[EncodedRepresentation] = []
+        results: list[PackagedRepresentation] = []
         nothing_to_do: bool = True
         media_files: list[CreationResult] = self.get_files_fn()
 
@@ -39,7 +39,7 @@ class PackageSourcesTask(MediaCreationTask):
             dest_file = self.options.destdir / self.destination_filename(media.content_type, idx, False)
 
             rep_id: str = f"{media.content_type[0]}{idx}"
-            er = EncodedRepresentation(
+            er = PackagedRepresentation(
                 source=media.filename, content_type=media.content_type, filename=dest_file, file_index=idx,
                 track_id=media.track_id, src_track_id=media.track_id, rep_id=rep_id, duration=media.duration)
             if media.content_type != 'video':
@@ -61,7 +61,7 @@ class PackageSourcesTask(MediaCreationTask):
 
         return results
 
-    def package_sources(self, source_files: list[EncodedRepresentation]) -> None:
+    def package_sources(self, source_files: list[PackagedRepresentation]) -> None:
         tmpdir: Path = self.options.destdir / "dash"
         tmpdir.mkdir(parents=True, exist_ok=True)
         bs_switching: str = 'inband' if self.options.avc3 else 'merge'

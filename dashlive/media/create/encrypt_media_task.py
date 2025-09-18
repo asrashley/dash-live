@@ -14,7 +14,7 @@ from typing import ClassVar, Sequence
 from dashlive.drm.key_tuple import KeyTuple
 from dashlive.drm.keymaterial import KeyMaterial
 from dashlive.media.create.creation_result import CreationResult
-from dashlive.media.create.encoded_representation import EncodedRepresentation
+from dashlive.media.create.packaged_representation import PackagedRepresentation
 from dashlive.media.create.media_create_options import MediaCreateOptions
 from dashlive.media.create.task import MediaCreationTask
 from dashlive.mpeg.dash.representation import Representation
@@ -35,10 +35,10 @@ class EncryptMediaTask(MediaCreationTask):
 
     iv: InitialisationVector
     key_material: KeyTuple
-    src: EncodedRepresentation
+    src: PackagedRepresentation
     dest_file: Path
 
-    def __init__(self, options: MediaCreateOptions, src: EncodedRepresentation, key: KeyTuple) -> None:
+    def __init__(self, options: MediaCreateOptions, src: PackagedRepresentation, key: KeyTuple) -> None:
         super().__init__(options)
         self.src = src
         self.dest_file = src.filename.parent / f"{src.filename.stem}_enc{src.filename.suffix}"
@@ -46,7 +46,7 @@ class EncryptMediaTask(MediaCreationTask):
         self.iv = InitialisationVector(raw=os.urandom(self.options.iv_size // 8))
 
     def run(self) -> Sequence[CreationResult]:
-        result: EncodedRepresentation = EncodedRepresentation(
+        result: PackagedRepresentation = PackagedRepresentation(
             source=self.src.filename, filename=self.dest_file,
             src_track_id=self.src.track_id, track_id=self.src.track_id,
             duration=self.src.duration, rep_id=self.src.rep_id, file_index=self.src.file_index,
