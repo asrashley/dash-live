@@ -30,26 +30,40 @@ and which ones are in the clear. For example:
 * bbb_v3_enc.mp4
 
 There is a [dashlive.media.create](../dashlive/media/create/__main__.py)
-Python script which can be used to encode and package the media files. It needs at least
+Python script which can be used to encode and package DASH media files. It needs at least
 one file that is used as the source of audio and video. It should have a video resolution
 that is at least as high as the highest quality video Representation you want in the DASH
 stream. For example, if you use the HD profile setting, the source material should have a
 video resoltion of 1280x720 or higher (e.g. 1920x1080).
 
 Probably the easiest way to use `dashlive.media.create` is to create a Docker container that
-can be built using this [Dockerfile](../encoder/Dockerfile). This container has all the required
+can be built using [this Dockerfile](../encoder/Dockerfile). This container has all the required
 libraries and applications for media encoding, encryption and DASH packaging.
 
 ```sh
 docker buildx build -t dashlive/encoder:latest -f encoder/Dockerfile .
 ```
 
-Once the `dashlive/encoder` container has been build, the [create-media.sh](../create-media.sh)
+Once the `dashlive/encoder` container has been built, the [create-media.sh](../create-media.sh)
 script can be used to start an encoding job within this container.
+
+<details>
+<summary>UNIX</summary>
 
 ```sh
 ./create-media.sh --profile uhd --duration 30 --acodec eac3 -i ToS-4k-1920-Dolby.5.1.mp4 --subtitles Tears_Of_Steel_1080p.eng.srt --output ToS --prefix tears
 ```
+
+</details>
+
+<details>
+<summary>Windows</summary>
+
+```powershell
+.\create-media.ps1 --profile uhd --duration 30 --acodec eac3 -i ToS-4k-1920-Dolby.5.1.mp4 --subtitles Tears_Of_Steel_1080p.eng.srt --output ToS --prefix tears
+```
+
+</details>
 
 If you would prefer to run the media creation script without using a Docker container,
 `dashlive.media.create` can be used directly:
