@@ -7,36 +7,44 @@
 #############################################################################
 import asyncio
 import concurrent.futures
+from typing import Callable
 
-from .pool import WorkerPool
+from .pool import AsyncPoolContextManager, WorkerPool
 from .progress import Progress
 
-class AsyncPoolContextManager:
+class ConcurrentAsyncPoolContextManager(AsyncPoolContextManager):
+    executor: concurrent.futures.Executor
+    tasks: list[asyncio.Future]
+    loop: asyncio.AbstractEventLoop
+
     def __init__(self, executor: concurrent.futures.Executor,
                  progress: Progress | None) -> None:
+        super().__init__(progress)
         self.executor = executor
         self.loop = asyncio.get_running_loop()
         self.tasks = []
-        self.progress = progress
 
     async def __aenter__(self):
         return self
 
-    async def __aexit__(self, exc_type, exc, tb):
-        todo = len(self.tasks)
+    async def __aexit__(self, exc_type, exc, tb) -> None:
+        todo: int = len(self.tasks)
         await asyncio.gather(*self.tasks)
         if self.progress:
             self.progress.inc(todo)
 
-    def submit(self, fn, *args) -> asyncio.Future:
+    def submit(self, fn: Callable, *args) -> asyncio.Future:
         if self.progress:
             self.progress.add_todo(1)
-        future = self.loop.run_in_executor(self.executor, fn, *args)
+        future: asyncio.Future = self.loop.run_in_executor(self.executor, fn, *args)
         self.tasks.append(future)
         return future
 
 
 class ConcurrentWorkerPool(WorkerPool):
+    executor: concurrent.futures.Executor
+    tasks: set[asyncio.Future]
+
     def __init__(self, executor: concurrent.futures.Executor) -> None:
         self.executor = executor
         self.tasks = set()
@@ -46,18 +54,10 @@ class ConcurrentWorkerPool(WorkerPool):
         Creates a new task group that will wait for their completion when
         the context manager exits.
         """
-        return AsyncPoolContextManager(self.executor, progress)
+        return ConcurrentAsyncPoolContextManager(self.executor, progress)
 
-    def submit(self, fn, *args) -> asyncio.Future:
-        loop = asyncio.get_running_loop()
-        future = loop.run_in_executor(self.executor, fn, *args)
+    def submit(self, fn: Callable, *args) -> asyncio.Future:
+        loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
+        future: asyncio.Future = loop.run_in_executor(self.executor, fn, *args)
         self.tasks.add(future)
         return future
-
-    async def wait_for_completion(self) -> list[str]:
-        errors: list[Exception] = []
-        for result in await asyncio.gather(*list(self.tasks), return_exceptions=True):
-            if result is not None:
-                errors.append(result)
-        self.tasks = set()
-        return errors
