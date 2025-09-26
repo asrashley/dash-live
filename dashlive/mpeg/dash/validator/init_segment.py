@@ -97,8 +97,8 @@ class InitSegment(DashElement):
         if self.progress.aborted():
             return False
         try:
+            body: bytes = cast(bytes, response.get_data(as_text=False))
             async with self.pool.group(self.progress) as tg:
-                body: bytes = response.get_data(as_text=False)
                 if self.options.save:
                     tg.submit(self.save, body)
                 task = tg.submit(self.parse_body, body)
@@ -112,6 +112,9 @@ class InitSegment(DashElement):
         return True
 
     def parse_body(self, body: bytes) -> bool:
+        if not body:
+            self.elt.add_error('Attempt to parse empty init segment')
+            return False
         src = io.BufferedReader(io.BytesIO(body))
         atoms: list[mp4.Mp4Atom] = cast(
             list[mp4.Mp4Atom], mp4.Mp4Atom.load(src, options={'lazy_load': False}))
@@ -121,7 +124,7 @@ class InitSegment(DashElement):
                 moov = atm
         if moov is None:
             boxes: list[str] = [a.atom_type for a in atoms]
-            self.elt.add_error(f'Failed to find moov box in {self.url} found {boxes}')
+            self.elt.add_error(f'Failed to find moov box in {self.url} found {boxes} len={len(body)}')
             return False
         key_ids: set[KeyMaterial] = set()
         self.dash_rep = DashRepresentation()
