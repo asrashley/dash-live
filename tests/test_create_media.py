@@ -208,10 +208,22 @@ class MockMediaTools(TestCaseMixin):
         self.maxDiff = None
         self.assertListEqual(expected, args)
 
-        for rep_id in range(1, 3 + len(ladder)):
-            self.make_fake_mp4_file(mp4_dir / f'dash_{rep_id}_init.mp4')
+        for idx in range(1, 2 + len(ladder)):
+            filename = mp4_dir / f'dash_v{idx}_init.mp4'
+            self.make_fake_mp4_file(filename)
             for segment in range(1, 6):
-                self.make_fake_mp4_file(mp4_dir / f'dash_{rep_id}_{segment:03d}.mp4')
+                self.make_fake_mp4_file(mp4_dir / f'dash_v{idx}_{segment:03d}.mp4')
+
+        for idx in range(1, 2 + len(self.options.audio_sources)):
+            filename = mp4_dir / f'dash_a{idx}_init.mp4'
+            self.make_fake_mp4_file(filename)
+            for segment in range(1, 6):
+                self.make_fake_mp4_file(mp4_dir / f'dash_a{idx}_{segment:03d}.mp4')
+        if self.options.subtitles is not None:
+            filename = mp4_dir / 'dash_t1_init.mp4'
+            self.make_fake_mp4_file(filename)
+            for segment in range(1, 3):
+                self.make_fake_mp4_file(mp4_dir / f'dash_t1_{segment:03d}.mp4')
 
         return 0
 
@@ -409,6 +421,34 @@ class TestMediaCreation(TestCase):
                 with patch('dashlive.mpeg.mp4.Mp4Atom'):
                     with patch('dashlive.media.create.convert_subtitles_task.ttconv_main', new=mocks.ttconv_main):
                         rv: int = DashMediaCreatorWithoutParser.main(args)
+
+        ladder: list[VideoEncodingParameters] = mocks.bitrate_ladder()
+        mp4_dir: Path = self.create_temp_folder() / 'dash'
+        action: str = "preserved" if mocks.options.preserve else "deleted"
+        for rep_id in range(1, 1 + len(ladder)):
+            init_seg: Path = mp4_dir / f'dash_v{rep_id}_init.mp4'
+            self.assertTrue(init_seg.exists(), msg=f"Init segment {init_seg} not found")
+            for segment in range(1, 6):
+                fragment: Path = mp4_dir / f'dash_v{rep_id}_{segment:03d}.mp4'
+                self.assertEqual(fragment.exists(), mocks.options.preserve,
+                                 msg=f"{fragment} should have been {action}")
+
+        for idx in range(1, 2 + len(mocks.options.audio_sources)):
+            init_seg = mp4_dir / f'dash_a{idx}_init.mp4'
+            self.assertTrue(init_seg.exists(), msg=f"Init segment {init_seg} not found")
+            for segment in range(1, 6):
+                fragment = mp4_dir / f'dash_a{idx}_{segment:03d}.mp4'
+                self.assertEqual(fragment.exists(), mocks.options.preserve,
+                                 msg=f"{fragment} should have been {action}")
+
+        if mocks.options.subtitles is not None:
+            init_seg = mp4_dir / 'dash_t1_init.mp4'
+            self.assertTrue(init_seg.exists(), msg=f"Init segment {init_seg} not found")
+            for segment in range(1, 3):
+                fragment = mp4_dir / f'dash_t1_{segment:03d}.mp4'
+                self.assertEqual(fragment.exists(), mocks.options.preserve,
+                                 msg=f"{fragment} should have been {action}")
+
         return rv
 
     def test_convert_media_probe_json(self) -> None:
@@ -592,6 +632,29 @@ class TestMediaCreation(TestCase):
         }
         self.maxDiff = None
         self.assertDictEqual(expected, js_data)
+
+    def test_preserve_fragments(self) -> None:
+        tmpdir: Path = self.create_temp_folder()
+        kid = '1ab45440532c439994dc5c5ad9584bac'
+        src_file: Path = self.input_dir / 'BigBuckBunny.mp4'
+        self.fs.create_file(src_file, contents=f"{src_file}")
+        audio_src: Path = self.input_dir / 'ExtraAudio.wav'
+        self.fs.create_file(audio_src, contents=f"{audio_src}")
+        args: list[str] = [
+            '-i', f"{src_file}",
+            '--audio', f"{audio_src}",
+            '-p', 'bbb',
+            '--kid', kid,
+            '--preserve',
+            '-o', str(tmpdir)
+        ]
+        opts: MediaCreateOptions = MediaCreateOptions.parse_args(args)
+        self.assertIsNone(opts.audio_codec)
+        self.assertFalse(opts.subtitles)
+        self.assertTrue(opts.preserve)
+        ffmpeg = MockMediaTools(self.fs, src_file, tmpdir, opts)
+        rv: int = self.run_creator_main(args, ffmpeg)
+        self.assertEqual(rv, 0)
 
     def test_encode_with_eac3_audio(self) -> None:
         tmpdir: Path = self.create_temp_folder()

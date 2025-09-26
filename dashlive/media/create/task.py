@@ -139,7 +139,8 @@ class MediaCreationTask(ABC):
                     sys.stdout.flush()
                 with open(moof, "rb") as src:
                     shutil.copyfileobj(src, dest)
-                os.remove(moof)
+                if not self.options.preserve:
+                    os.remove(moof)
                 segment += 1
             if self.options.verbose:
                 sys.stdout.write('\n')

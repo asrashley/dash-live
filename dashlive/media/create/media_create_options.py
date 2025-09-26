@@ -36,6 +36,7 @@ class MediaCreateOptions:
     output: InitVar[str]
     language: str = "eng"
     iv_size: int = 64
+    preserve: bool = False
     aspect_ratio: float = field(init=False)
     destdir: Path = field(init=False)
 
@@ -99,6 +100,9 @@ class MediaCreateOptions:
         ap.add_argument('--max-bitrate',
                         help='Maximum bitrate (Kbps) (0=all bitrates)',
                         type=int, dest='max_bitrate', default=0)
+        ap.add_argument('--preserve',
+                        help='Keep intermediate files rather than delete them',
+                        action="store_true")
         ap.add_argument('--profile', help='video bitrate ladder profile', dest='bitrate_profile',
                         default='hd', choices=[p.lower() for p in BitrateProfiles.keys()])
         ap.add_argument('--input', '-i', help='Input audio/video file',
