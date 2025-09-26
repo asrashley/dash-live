@@ -5,16 +5,22 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Protocol
 
-class HttpResponse(ABC):
+from lxml import etree
+
+from dashlive.utils.json_object import JsonObject
+
+class HttpResponse(Protocol):
+    status_code: int
+
     @property
-    def xml(self):
+    def xml(self) -> etree.Element:
         raise Exception("Not implemented")
 
     @property
-    def json(self):
+    def json(self) -> JsonObject:
         raise Exception("Not implemented")
 
     @abstractmethod

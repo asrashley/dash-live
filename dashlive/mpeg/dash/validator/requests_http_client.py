@@ -6,6 +6,7 @@
 #
 #############################################################################
 from concurrent.futures import ThreadPoolExecutor
+import logging
 
 from lxml import etree as ET
 import requests
@@ -13,11 +14,13 @@ from werkzeug.utils import cached_property
 
 from .concurrent_pool import ConcurrentWorkerPool
 from .options import ValidatorOptions
+from .pool import WorkerPool
 
 class HttpResponse:
     headers: dict
     status_int: int
     _pos: int
+    _xml: ET.Element
 
     def __init__(self, response) -> None:
         self.response = response
@@ -34,7 +37,7 @@ class HttpResponse:
         self._pos = 0
 
     @cached_property
-    def xml(self):
+    def xml(self) -> ET.Element:
         if self._xml is None:
             self._xml = ET.fromstring(self.response.text)
         return self._xml
@@ -66,12 +69,19 @@ class RequestsHttpClient:
     Implements HttpClient protocol using the requests library
     """
 
+    log: logging.Logger
+    pool: WorkerPool
+
     def __init__(self, options: ValidatorOptions) -> None:
         self.session = requests.Session()
-        self.log = options.log
-        self.pool = options.pool
-        if self.pool is None:
+        if options.log is None:
+            self.log = logging.getLogger()
+        else:
+            self.log = options.log
+        if options.pool is None:
             self.pool = ConcurrentWorkerPool(ThreadPoolExecutor())
+        else:
+            self.pool = options.pool
 
     async def head(self, url, headers=None, params=None, status=None, xhr=False) -> HttpResponse:
         def do_head():
