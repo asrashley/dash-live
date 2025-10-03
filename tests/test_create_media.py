@@ -142,8 +142,13 @@ class MockMediaTools(TestCaseMixin):
         return 0
 
     def ffmpeg_audio_encode(self, args: list[str]) -> int:
+        input_idx: int = args.index('-i')
+        filename: str = args[input_idx + 1]
+        names: set[str] = {f"{a}" for a in self.options.audio_sources}
+        names.add(f'{self.input_file}')
+        self.assertIn(filename, names)
         expected: dict[str, str | None] = {
-            '-i': f'{self.input_file}',
+            '-i': filename,
             '-codec:a:0': self.options.audio_codec,
             '-b:a:0': '96k',
             '-ac:a:0': '2',
@@ -160,7 +165,8 @@ class MockMediaTools(TestCaseMixin):
         except ValueError:
             pass
         self.assertCommandArguments(expected, args)
-        self.fs.create_file(args[-1], contents=args[-1])
+        contents: str = f"{filename}\n{args[-1]}\n"
+        self.fs.create_file(args[-1], contents=contents)
         return 0
 
     def mp4box_build(self, args: list[str]) -> int:
@@ -632,6 +638,11 @@ class TestMediaCreation(TestCase):
         }
         self.maxDiff = None
         self.assertDictEqual(expected, js_data)
+        surr_audio: Path = tmpdir / "audio/bbb-a2-eac3.mp4"
+        self.assertTrue(surr_audio.exists(), msg=f"{surr_audio} not found")
+        with surr_audio.open('rt') as src:
+            contents: str = src.read()
+        self.assertEqual(contents, f"{audio_src}\n{surr_audio}\n")
 
     def test_preserve_fragments(self) -> None:
         tmpdir: Path = self.create_temp_folder()
