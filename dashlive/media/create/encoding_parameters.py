@@ -19,6 +19,7 @@ class AudioEncodingParameters(NamedTuple):
     bitrate: int
     codecString: str
     channels: int
+    layout: str
 
 
 UHD_8BIT_BITRATE_LADDER: list[VideoEncodingParameters] = [
@@ -110,6 +111,10 @@ BITRATE_PROFILES: dict[BitrateProfiles, list[VideoEncodingParameters]] = {
 }
 
 AUDIO_PROFILES: dict[AudioProfile, AudioEncodingParameters] = {
-    AudioProfile.STEREO: AudioEncodingParameters(bitrate=96, codecString='aac', channels=2),
-    AudioProfile.SURROUND: AudioEncodingParameters(bitrate=320, codecString='eac3', channels=6),
+    AudioProfile.STEREO: AudioEncodingParameters(
+        bitrate=96, codecString='aac', channels=2, layout='stereo',
+    ),
+    AudioProfile.SURROUND: AudioEncodingParameters(
+        bitrate=320, codecString='eac3', channels=6, layout='5.1',
+    ),
 }

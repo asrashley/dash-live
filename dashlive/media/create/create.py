@@ -140,6 +140,7 @@ class DashMediaCreator:
             self, source: Path, info: AudioStreamInfo, file_index: int, track_id: int) -> None:
         available_codecs: set[str] = {a.codecString for a in AUDIO_PROFILES.values()}
         codec: str = info.codec
+        layout: str = info.channel_layout
         if self.options.audio_codec:
             codec = self.options.audio_codec
         channels: int = info.channels
@@ -151,9 +152,12 @@ class DashMediaCreator:
         if codec not in available_codecs:
             if channels > 2:
                 codec = AUDIO_PROFILES[AudioProfile.SURROUND].codecString
+                if layout == 'stereo':
+                    AUDIO_PROFILES[AudioProfile.SURROUND].layout
             else:
                 codec = AUDIO_PROFILES[AudioProfile.STEREO].codecString
-        params = AudioEncodingParameters(codecString=codec, bitrate=audio_bitrate, channels=channels)
+        params = AudioEncodingParameters(
+            codecString=codec, bitrate=audio_bitrate, channels=channels, layout=layout)
         self.pending_tasks.append(AudioEncodingTask(
             options=self.options, source=source, file_index=file_index,
             track_id=track_id, params=params, info=info))

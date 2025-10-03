@@ -161,6 +161,7 @@ class MockMediaTools(TestCaseMixin):
                     '-codec:a:0': 'eac3',
                     '-ac:a:0': '6',
                     '-b:a:0': '320k',
+                    '-af': 'channelmap=channel_layout=5.1(side)',
                 })
         except ValueError:
             pass
@@ -330,6 +331,12 @@ class MockMediaTools(TestCaseMixin):
                 "channels": 6,
                 "channel_layout": "5.1(side)",
             })
+        elif self.options.audio_channels == 6:
+            result['streams'][1].update({
+                "channels": 6,
+                "channel_layout": "5.1(side)",
+            })
+
         result['format']['format_name'] = src_file.suffix[1:]
         return json.dumps(result)
 
@@ -546,7 +553,7 @@ class TestMediaCreation(TestCase):
             profile=None,
             sample_rate=48000,
             channels=6,
-            channel_layout="5.1")
+            channel_layout="5.1(side)")
         self.maxDiff = None
         self.assertEqual(expected, info)
 
