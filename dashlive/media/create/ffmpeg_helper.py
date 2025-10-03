@@ -93,7 +93,6 @@ class AudioStreamInfo(StreamInfoBase):
             channels=info.get("channels", 2),
             channel_layout=info.get("channel_layout", "stereo")
         )
-        asi.channel_layout = asi.channel_layout.replace(r'(side)', '')
         if asi.codec == 'ac3':
             asi.codec = 'eac3'
         return asi

@@ -5,6 +5,7 @@ from typing import Sequence
 
 from .creation_result import CreationResult
 from .encoding_parameters import AudioEncodingParameters
+from .ffmpeg_helper import AudioStreamInfo
 from .media_create_options import MediaCreateOptions
 from .task import MediaCreationTask
 
@@ -15,9 +16,10 @@ class AudioEncodingTask(MediaCreationTask):
     source: Path
     dest_dir: Path
     dest_file: Path
+    info: AudioStreamInfo
 
     def __init__(self, options: MediaCreateOptions, source: Path, file_index: int,
-                 track_id: int, params: AudioEncodingParameters) -> None:
+                 track_id: int, params: AudioEncodingParameters, info: AudioStreamInfo) -> None:
         super().__init__(options)
         self.source = source
         self.params = params
@@ -25,6 +27,7 @@ class AudioEncodingTask(MediaCreationTask):
         self.track_id = track_id
         self.dest_dir = self.options.destdir / 'audio'
         self.dest_file = self.dest_dir / self.destination_filename('audio', self.file_index, False)
+        self.info = info
 
     def __str__(self) -> str:
         return f"AudioEncodeTask: {self.source} -> {self.dest_file} track={self.track_id} params={self.params}"
@@ -58,7 +61,8 @@ class AudioEncodingTask(MediaCreationTask):
         ]
         if self.params.codecString == 'aac':
             ffmpeg_args += ["-strict", "-2"]
-
+        if self.params.channels != 2:
+            ffmpeg_args += ["-af", f"channelmap=channel_layout={self.params.layout}"]
         ffmpeg_args.append(str(dest_file))
         logging.debug(ffmpeg_args)
         subprocess.check_call(ffmpeg_args)
