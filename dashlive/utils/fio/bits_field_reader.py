@@ -21,35 +21,45 @@
 #############################################################################
 
 import logging
+from typing import BinaryIO, Union, cast
 
 import bitstring
 
 class BitsFieldReader:
     __slots__ = ('name', 'debug', 'data', 'src', 'kwargs', 'bitsize', 'log')
 
-    def __init__(self, name, src, kwargs, size=None, data=None, debug=False):
+    debug: bool
+    name: str
+    data: bytes
+    bitsize: int
+    src: bitstring.ConstBitStream
+    log: logging.Logger | None
+
+    def __init__(self, name: str, src: Union["BitsFieldReader", BinaryIO], kwargs,
+                 size: int | None = None, data: bytes | None = None, debug: bool = False) -> None:
         self.name = name
         self.debug = debug
-        bitsize = None
+        bitsize: int | None = None
         if isinstance(src, BitsFieldReader):
             if size is None:
                 bitsize = src.bitsize - src.bitpos()
-                size = bitsize // 8
+                size = cast(int, bitsize) // 8
             if data is None:
                 data = src.data
-            src = src.src
-        if size is None:
+            src = cast(BinaryIO, src.src)
+        elif size is None:
             if data is None:
                 try:
                     size = kwargs["size"] - kwargs["header_size"]
                 except KeyError:
-                    pos = src.tell()
+                    pos: int = src.tell()
                     src.seek(0, 2)  # seek to end
                     size = src.tell() - pos
                     src.seek(pos)
             else:
                 size = len(data)
         if data is None:
+            assert size is not None
             self.data = src.read(size)
             self.src = bitstring.ConstBitStream(bytes=self.data)
         else:
@@ -64,14 +74,14 @@ class BitsFieldReader:
         else:
             self.log = None
 
-    def duplicate(self, name, kwargs):
+    def duplicate(self, name, kwargs) -> "BitsFieldReader":
         return BitsFieldReader(name, self.src, kwargs, debug=self.debug,
                                size=len(self.data), data=self.data)
 
-    def read(self, size, field):
+    def read(self, size, field) -> None:
         self.kwargs[field] = self.get(size, field)
 
-    def read_bytes(self, length, field):
+    def read_bytes(self, length, field) -> None:
         if self.log:
             self.log.debug(
                 '%s: read_bytes %s size=%d pos=%s', self.name, field, length,
@@ -79,25 +89,25 @@ class BitsFieldReader:
         data = self.src.read(f'bytes:{length}')
         self.kwargs[field] = data
 
-    def get(self, size, field):
+    def get(self, size: int, field: str) -> bool | int:
         if self.log:
             self.log.debug(
                 '%s: read %s size=%d pos=%s', self.name, field, size,
                 self.src.bitpos)
         if size == 1:
-            return self.src.read('bool')
-        return self.src.read('uint:%d' % size)
+            return cast(bool, self.src.read('bool'))
+        return cast(int, self.src.read('uint:%d' % size))
 
-    def get_bytes(self, length, field):
+    def get_bytes(self, length, field) -> bytes:
         if self.log:
             self.log.debug(
                 '%s: read_bytes %s size=%d pos=%s', self.name, field, length,
                 self.src.pos)
-        data = self.src.read(f'bytes:{length}')
+        data: bytes = cast(bytes, self.src.read(f'bytes:{length}'))
         return data
 
-    def bitpos(self):
+    def bitpos(self) -> int:
         return self.src.bitpos
 
-    def bytepos(self):
+    def bytepos(self) -> int:
         return self.src.bytepos
