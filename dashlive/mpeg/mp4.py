@@ -2019,12 +2019,19 @@ class EAC3SpecificBox(Mp4Atom):
     }
     OBJECT_FIELDS.update(Mp4Atom.OBJECT_FIELDS)
 
+    substreams: list[EAC3SubStream]
+    data_rate: int
+    flag_ec3_extension_type_a: bool = False
+    complexity_index_type_a: int | None = None
+
     @classmethod
-    def parse(clz, src, parent, **kwargs):
-        rv = Mp4Atom.parse(src, parent, **kwargs)
-        r = BitsFieldReader(clz.classname(), src, rv, size=None)
+    def parse(clz, src, parent, **kwargs) -> dict[str, Any] | None:
+        rv: dict[str, Any] | None = Mp4Atom.parse(src, parent, **kwargs)
+        if rv is None:
+            return None
+        r: BitsFieldReader = BitsFieldReader(clz.classname(), src, rv, size=None)
         r.read(13, "data_rate")
-        num_ind_sub = r.get(3, "num_ind_sub") + 1
+        num_ind_sub: int = r.get(3, "num_ind_sub") + 1
         rv["substreams"] = []
         for i in range(num_ind_sub):
             r2 = r.duplicate("EAC3SubStream", {})
@@ -2036,9 +2043,9 @@ class EAC3SpecificBox(Mp4Atom):
             r.read(8, 'complexity_index_type_a')
         return rv
 
-    def encode_fields(self, dest):
+    def encode_fields(self, dest) -> None:
         ba = bitstring.BitArray()
-        num_ind_sub = len(self.substreams)
+        num_ind_sub: int = len(self.substreams)
         ba.append(bitstring.pack('uint:13, uint:3', self.data_rate,
                                  num_ind_sub - 1))
         for s in self.substreams:
@@ -2052,8 +2059,8 @@ class EAC3SpecificBox(Mp4Atom):
 
 @fourcc('dac3')
 class AC3SpecificBox(Mp4Atom):
-    SAMPLE_RATES = [48000, 44100, 32000, 0]
-    CHANNEL_CONFIGURATIONS = [
+    SAMPLE_RATES: ClassVar[list[int]] = [48000, 44100, 32000, 0]
+    CHANNEL_CONFIGURATIONS: ClassVar[list[tuple[int, str]]] = [
         (2, "1 + 1 (Ch1, Ch2)"),
         (1, "1/0 (C)"),
         (2, "2/0 (L, R)"),
