@@ -313,7 +313,7 @@ requires-dist = [
     { name = "ply", specifier = "==3.11" },
     { name = "pycryptodome", specifier = "==3.19.1" },
     { name = "python-dotenv", specifier = "==1.0.0" },
-    { name = "python-socketio", specifier = "==5.9.0" },
+    { name = "python-socketio", specifier = "==5.14.0" },
     { name = "requests", specifier = "==2.32.4" },
     { name = "six", specifier = "==1.16.0" },
     { name = "soupsieve", specifier = "==2.4.1" },
@@ -983,15 +983,15 @@ wheels = [
 
 [[package]]
 name = "python-socketio"
-version = "5.9.0"
+version = "5.14.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "bidict" },
     { name = "python-engineio" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/12/b5/5084ce6c772ee2f7d20714a116976cdb5d24c850745b1364d43e024e5a89/python-socketio-5.9.0.tar.gz", hash = "sha256:dc42735f65534187f381fde291ebf620216a4960001370f32de940229b2e7f8f", size = 47982, upload-time = "2023-09-03T19:22:47.083Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ec/bf/bbc41facdb33a7f440a39f213e59202032106b42df4667a32ef4c9ffe604/python_socketio-5.14.0.tar.gz", hash = "sha256:d057737f658b3948392ff452a5c865c5ccc969859c37cf095a73393ce755f98e", size = 122099, upload-time = "2025-09-30T19:30:40.902Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2b/31/fd41960cf365177f323d8c10d774a0b017336556c6f0ba0a38403240914d/python_socketio-5.9.0-py3-none-any.whl", hash = "sha256:c20f12e4ed0cba57581af26bbeea9998bc2eeebb3b952fa92493a1e051cfe9dc", size = 57630, upload-time = "2023-09-03T19:22:45.482Z" },
+    { url = "https://files.pythonhosted.org/packages/ee/8d/f41abde5846c456b33f25e7fa71d8b8ad78785bb812ef0f2393cda2caaf2/python_socketio-5.14.0-py3-none-any.whl", hash = "sha256:7de5ad8a55efc33e17897f6cf91d20168d3d259f98c38d38e2940af83136d6f8", size = 78438, upload-time = "2025-09-30T19:30:39.134Z" },
 ]
 
 [[package]]
