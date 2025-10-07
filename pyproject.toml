@@ -35,7 +35,7 @@ dependencies = [
     "ply==3.11",
     "pycryptodome==3.19.1",
     "python-dotenv==1.0.0",
-    "python-socketio==5.9.0",
+    "python-socketio==5.14.0",
     "requests==2.32.4",
     "six==1.16.0",
     "soupsieve==2.4.1",
