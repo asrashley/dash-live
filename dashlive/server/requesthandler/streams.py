@@ -157,6 +157,8 @@ class AddStream(HTMLHandlerBase):
                 data[f] = None
         if 'prefix' in params:
             data['directory'] = params['prefix']
+        if data.get('title') is None or data['title'].strip() == '':
+            data['title'] = data['directory']
         result = {}
         st = models.Stream.get(directory=data['directory'])
         if st:
