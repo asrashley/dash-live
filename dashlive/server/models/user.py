@@ -19,7 +19,7 @@ from .mixin import ModelMixin
 from .session import DatabaseSession
 
 password_context = CryptContext(
-    schemes=["bcrypt", "pbkdf2_sha256"],
+    schemes=["sha512_crypt", "bcrypt", "pbkdf2_sha256"],
     deprecated="auto",
 )
 
