@@ -68,18 +68,19 @@ class TestRestApi(FlaskTestBase):
         }
         response = self.client.post(url, json=payload)
         self.assert200(response)
-        js_response: LoginResponseJson = response.json
+        js_response: LoginResponseJson = cast(LoginResponseJson, response.json)
         self.assertNotIn('error', js_response)
-        expected = {
+        expected: LoginResponseJson = {
             'csrf_token': js_response['csrf_token'],
             'success': True,
-            'accessToken': js_response['accessToken'],
-            'refreshToken': js_response['refreshToken'],
+            'accessToken': js_response['accessToken'],  # pyright: ignore[reportTypedDictNotRequiredAccess]
+            'refreshToken': js_response['refreshToken'],  # pyright: ignore[reportTypedDictNotRequiredAccess]
             'mustChange': False,
             'user': {
                 'email': self.STD_EMAIL,
                 'groups': ['USER'],
-                'last_login': '2023-07-18T20:10:02Z',
+                'lastLogin': '2023-07-18T20:10:02Z',
+                'mustChange': False,
                 'pk': 2,
                 'username': self.STD_USER,
             }

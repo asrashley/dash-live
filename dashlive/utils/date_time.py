@@ -72,7 +72,7 @@ def to_iso_datetime(value: datetime.datetime) -> str:
     :param value: the dateTime to convert
     :returns: an ISO8601 formatted string version of the dateTime
     """
-    rv = value.isoformat()
+    rv: str = value.isoformat()
     if value.tzinfo is None:
         rv += 'Z'
     else:

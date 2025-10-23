@@ -221,7 +221,11 @@ routes: dict[str, Route] = {
     "add-stream": Route(
         r'/streams/add',
         handler='streams.AddStream',
-        title='Add stream'),
+        title='Add a stream'),
+    "upload-stream": Route(
+        r'/streams/upload',
+        handler='streams.CreatUploadStreamToken',
+        title='Start uploading a stream'),
     "view-stream": Route(
         r'/stream/<int:spk>',
         handler='streams.EditStream',

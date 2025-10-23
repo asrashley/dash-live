@@ -90,13 +90,17 @@ duration.
 ## Automating Upload
 
 The [dashlive.upload](../dashlive/upload.py) script can be used to automate the
-installation of streams, files and keys:
+installation of streams, files and keys. Firstly, go the `streams` page and click
+the `Upload a stream` button. This will cause the server to generate a temporary
+upload token and display this token on the HTML page.
+
+This token can then be used for up to an hour for uploading media:
 
 ```sh
-python -m dashlive.upload --username=admin --password=secret --host http://localhost:5000/ bbb.json
+python -m dashlive.upload --token=abcddac2-61ea-4e1a-a1e3-5b502506e704 --host http://localhost:5000/ bbb.json
 ```
 
-Where bbb.json is a JSON file that looks like this:
+Where `bbb.json` is a JSON file that looks like this:
 
 ```json
 {
@@ -110,18 +114,18 @@ Where bbb.json is a JSON file that looks like this:
         }
     ],
     "streams": [{
-            "directory": "bbb",
-            "title": "Big Buck Bunny",
-            "marlin_la_url": "ms3://ms3.test.expressplay.com:8443/hms/ms3/rights/?b=...",
-            "playready_la_url": "https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg={cfgs}",
-            "files": [
-                "bbb_a1.mp4", "bbb_a1_enc.mp4", "bbb_a2.mp4", "bbb_a2_enc.mp4",
-                "bbb_v1.mp4", "bbb_v1_enc.mp4", "bbb_v2.mp4", "bbb_v2_enc.mp4",
-                "bbb_v3.mp4", "bbb_v3_enc.mp4", "bbb_v4.mp4", "bbb_v4_enc.mp4",
-                "bbb_v5.mp4", "bbb_v5_enc.mp4", "bbb_v6.mp4", "bbb_v6_enc.mp4",
-                "bbb_v7.mp4", "bbb_v7_enc.mp4"
-            ],
-         "timing_ref": "bbb_v1.mp4"
+        "directory": "bbb",
+        "title": "Big Buck Bunny",
+        "marlin_la_url": "ms3://ms3.test.expressplay.com:8443/hms/ms3/rights/?b=...",
+        "playready_la_url": "https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg={cfgs}",
+        "files": [
+            "bbb_a1.mp4", "bbb_a1_enc.mp4", "bbb_a2.mp4", "bbb_a2_enc.mp4",
+            "bbb_v1.mp4", "bbb_v1_enc.mp4", "bbb_v2.mp4", "bbb_v2_enc.mp4",
+            "bbb_v3.mp4", "bbb_v3_enc.mp4", "bbb_v4.mp4", "bbb_v4_enc.mp4",
+            "bbb_v5.mp4", "bbb_v5_enc.mp4", "bbb_v6.mp4", "bbb_v6_enc.mp4",
+            "bbb_v7.mp4", "bbb_v7_enc.mp4"
+        ],
+        "timing_ref": "bbb_v1.mp4"
     }]
 }
 ```

@@ -10,6 +10,7 @@ from passlib.context import CryptContext  # type: ignore
 from sqlalchemy import DateTime, String, Integer
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
+from dashlive.utils.date_time import to_iso_datetime
 from dashlive.utils.json_object import JsonObject
 
 from .base import Base
@@ -182,7 +183,7 @@ class User(ModelMixin["User"], Base):
             "email": self.email,
             "username": self.username,
             "mustChange": self.must_change,
-            "lastLogin": self.last_login.isoformat() if self.last_login else None,
+            "lastLogin": to_iso_datetime(self.last_login) if self.last_login else None,
             "groups": self.get_groups(),
         }
         return user_json

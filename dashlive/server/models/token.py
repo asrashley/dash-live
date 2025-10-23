@@ -2,7 +2,7 @@
 Database table for storing refresh tokens and expired access tokens
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from enum import IntEnum
 import hashlib
 from typing import ClassVar, NamedTuple, TypedDict, TYPE_CHECKING
@@ -12,12 +12,12 @@ from sqlalchemy import (
     ForeignKey, func, delete
 )
 from sqlalchemy.orm import relationship, Mapped, mapped_column
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.exc import NoResultFound
 from flask_jwt_extended import create_access_token, create_refresh_token, get_jti
 
-from .base import Base
 from dashlive.utils.date_time import to_iso_datetime
 
+from .base import Base
 from .db import db
 from .session import DatabaseSession
 from .mixin import ModelMixin
@@ -31,6 +31,7 @@ class TokenType(IntEnum):
     """
     ACCESS = 1
     REFRESH = 2
+    UPLOAD = 3
     CSRF = 4
 
     @classmethod
@@ -50,6 +51,7 @@ class TokenType(IntEnum):
 
 KEY_LIFETIMES: dict[TokenType, timedelta] = {
     TokenType.ACCESS: timedelta(hours=2),
+    TokenType.UPLOAD: timedelta(hours=1),
     TokenType.REFRESH: timedelta(days=7),
     TokenType.CSRF: timedelta(minutes=20),
 }
@@ -81,7 +83,7 @@ class Token(ModelMixin["Token"], Base):
     """
     Database table for storing refresh tokens and expired access tokens
     """
-    __tablename__: ClassVar[str] = 'Token'
+    __tablename__: ClassVar[str] = 'Token'  # pyright: ignore[reportIncompatibleVariableOverride]
     __plural__: ClassVar[str] = 'Tokens'
     API_KEY_LENGTH: ClassVar[int] = 32
     CSRF_KEY_LENGTH: ClassVar[int] = 32
@@ -94,7 +96,7 @@ class Token(ModelMixin["Token"], Base):
     token_type: Mapped[int] = mapped_column(Integer, nullable=False)
     user_pk: Mapped[int | None] = mapped_column("user_pk", Integer, ForeignKey('User.pk'), nullable=True)
     created: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
-    expires: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    expires: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     revoked: Mapped[bool] = mapped_column(Boolean, nullable=False)
     user: Mapped["User"] = relationship("User", back_populates="tokens")
 
@@ -115,7 +117,7 @@ class Token(ModelMixin["Token"], Base):
     @classmethod
     def generate_api_token(cls, user: "User", token_type: TokenType) -> EncodedJWToken:
         assert user is not None
-        expires: datetime = datetime.now() + KEY_LIFETIMES[token_type]
+        expires: datetime = datetime.now(tz=timezone.utc) + KEY_LIFETIMES[token_type]
         if token_type == TokenType.REFRESH:
             jwt: str = create_refresh_token(identity=user.username)
             jti: str | None = get_jti(jwt)
@@ -130,13 +132,28 @@ class Token(ModelMixin["Token"], Base):
         return EncodedJWToken(jwt=jwt, expires=expires)
 
     @classmethod
+    def generate_upload_token(cls, user: "User") -> "Token":
+        assert user is not None
+        expires: datetime = datetime.now(timezone.utc) + KEY_LIFETIMES[TokenType.UPLOAD]
+        jwt: str = create_refresh_token(identity=user.username)
+        jti: str | None = get_jti(jwt)
+        assert jti is not None
+        token = Token(
+            user=user, token_type=TokenType.UPLOAD.value, jti=jti,
+            expires=expires, revoked=False)
+        db.session.add(token)
+        db.session.commit()
+        return token
+
+    @classmethod
     def is_revoked(cls, decoded_token: DecodedJwtToken) -> bool:
         """
         Has the specified token been revoked?
         """
         jti: str = decoded_token['jti']
+        tok_type: TokenType = TokenType.ACCESS
         try:
-            tok_type: TokenType = TokenType.from_string(decoded_token["type"])
+            tok_type = TokenType.from_string(decoded_token["type"])
             token: Token = db.session.query(cls).filter_by(jti=jti, token_type=tok_type.value).one()
             return token.revoked
         except NoResultFound:
@@ -147,10 +164,10 @@ class Token(ModelMixin["Token"], Base):
         """
         Delete tokens that have expired from the database.
         """
-        now = datetime.now()
+        now: datetime = datetime.now(tz=timezone.utc)
         stmt = delete(cls).where(cls.expires < now)
         session.execute(stmt)
         if all_csrf:
-            stmt = delete(cls).where(cls.token_type == TokenType.CSRF)
+            stmt = delete(cls).where(cls.token_type == TokenType.CSRF.value)
             session.execute(stmt)
         session.commit()

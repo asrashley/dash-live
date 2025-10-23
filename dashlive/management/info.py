@@ -22,21 +22,24 @@
 from dataclasses import dataclass, InitVar
 from typing import AbstractSet
 
+from dashlive.server.models.user import UserSummaryJson
 from dashlive.utils.json_object import JsonObject
 
 @dataclass(slots=True)
 class UserInfo:
     email: str
     groups: list[str]
-    last_login: str
+    lastLogin: str | None
     pk: int
     username: str
+    mustChange: bool = False
 
-    def to_dict(self) -> JsonObject:
+    def to_dict(self) -> UserSummaryJson:
         return {
             'email': self.email,
-            'groups': str(self.groups),
-            'last_login': self.last_login,
+            'groups': self.groups,
+            'lastLogin': self.lastLogin,
+            'mustChange': self.mustChange,
             'pk': self.pk,
             'username': self.username
         }

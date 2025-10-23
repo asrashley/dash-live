@@ -29,6 +29,8 @@ from unittest.mock import patch
 
 import flask
 
+from dashlive.management.info import UserInfo
+from dashlive.server.models.user import UserSummaryJson
 import dashlive.upload
 from dashlive.server import models
 from dashlive.management.populate import PopulateDatabase
@@ -53,6 +55,21 @@ class TestPopulateDatabase(FlaskTestBase):
             cls.log_context = None
         logging.disable(logging.NOTSET)
         super().tearDownClass()
+
+    def test_user_info(self) -> None:
+        summary: UserSummaryJson = {
+            "pk": 12,
+            "email": "user.info@unittest.local",
+            "username": "test_user_info",
+            "lastLogin": None,
+            "groups": ["users"]
+        }
+        info: UserInfo = UserInfo(**summary)
+        for field in summary.keys():
+            self.assertEqual(getattr(info, field), summary[field])
+        info_dict: UserSummaryJson = info.to_dict()
+        summary["mustChange"] = False
+        self.assertDictEqual(summary, info_dict)
 
     def test_login_failure(self) -> None:
         fda = FrontendDatabaseAccess(
