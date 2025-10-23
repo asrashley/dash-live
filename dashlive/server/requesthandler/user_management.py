@@ -16,9 +16,8 @@ from flask.views import MethodView
 
 from dashlive.server.models.db import db
 from dashlive.server.models.group import Group
-from dashlive.server.models.token import EncodedJWTokenJson, TokenType, Token
+from dashlive.server.models.token import EncodedJWToken, EncodedJWTokenJson, TokenType, Token
 from dashlive.server.models.user import User, UserSummaryJson
-from dashlive.utils.json_object import JsonObject
 
 from .base import HTMLHandlerBase
 from .csrf import CsrfProtection, CsrfTokenCollection
@@ -26,12 +25,20 @@ from .decorators import login_required, jwt_login_required
 from .utils import jsonify, jsonify_no_content
 
 
+class LoginRequestJson(TypedDict):
+    username: str
+    password: str
+    token: NotRequired[str]
+    rememberme: NotRequired[bool]
+
 class LoginResponseJson(TypedDict):
+    error: NotRequired[str]
     success: bool
-    csrfToken: str
-    accessToken: NotRequired[str]
-    refreshToken: NotRequired[str]
-    user: UserSummaryJson
+    csrf_token: str
+    accessToken: NotRequired[EncodedJWTokenJson]
+    refreshToken: NotRequired[EncodedJWTokenJson]
+    user: NotRequired[UserSummaryJson]
+    mustChange: NotRequired[bool]
 
 class LoginPage(HTMLHandlerBase):
     """
@@ -46,7 +53,7 @@ class LoginPage(HTMLHandlerBase):
         user_json: UserSummaryJson = user.summary()
         result: LoginResponseJson = {
             'success': True,
-            'csrfToken': self.generate_csrf_token('login', csrf_key),
+            'csrf_token': self.generate_csrf_token('login', csrf_key),
             'accessToken': access_token,
             'user': user_json,
         }
@@ -54,14 +61,36 @@ class LoginPage(HTMLHandlerBase):
         return jsonify(result)
 
     def post(self) -> flask.Response:
-        data: JsonObject = flask.request.json
+        data: LoginRequestJson = cast(LoginRequestJson, flask.request.json)
         username: str | None = data.get("username", None)
         password: str | None = data.get("password", None)
+        upload_token: str | None = data.get("token", None)
         rememberme: bool = data.get("rememberme", False)
-        user: User | None = User.get_one(username=username)
+        user: User | None = None
+        if upload_token:
+            token: Token | None = Token.get_one(jti=upload_token, token_type=TokenType.UPLOAD.value)
+            if token is None or token.user is None or token.has_expired():
+                csrf_key: str = self.generate_csrf_cookie()
+                result: LoginResponseJson = {
+                    'error': "Invalid token",
+                    'csrf_token': self.generate_csrf_token('login', csrf_key),
+                    'success': False,
+                }
+                return jsonify(result)
+            user = token.user
+        elif username is None or password is None:
+            result: LoginResponseJson = {
+                'error': "Missing username or password",
+                'csrf_token': self.generate_csrf_token('login', csrf_key),
+                'success': False,
+            }
+            return jsonify(result)
+
+        if user is None and username:
+            user = User.get_one(username=username)
         if not user:
             user = User.get_one(email=username)
-        if user is None or not user.check_password(password):
+        if user is None or (password is not None and not user.check_password(password)):
             csrf_key: str = self.generate_csrf_cookie()
             result: LoginResponseJson = {
                 'error': "Wrong username or password",
@@ -73,17 +102,17 @@ class LoginPage(HTMLHandlerBase):
         user.last_login = datetime.datetime.now()
         db.session.commit()
         csrf_key = self.generate_csrf_cookie()
-        access_token: Token = Token.generate_api_token(user, TokenType.ACCESS)
-        refresh_token: Token = Token.generate_api_token(current_user, TokenType.REFRESH)
+        access_token: EncodedJWToken = Token.generate_api_token(user, TokenType.ACCESS)
+        refresh_token: EncodedJWToken = Token.generate_api_token(user, TokenType.REFRESH)
+        summary: UserSummaryJson = user.summary()
         result: LoginResponseJson = {
             'success': True,
             'mustChange': user.must_change,
             'csrf_token': self.generate_csrf_token('login', csrf_key),
             'accessToken': access_token.toJSON(),
             'refreshToken': refresh_token.toJSON(),
-            'user': user.to_dict(only={'email', 'username', 'pk', 'last_login'}),
+            'user': summary,
         }
-        result['user']['groups'] = user.get_groups()
         return jsonify(result)
 
     @jwt_required()

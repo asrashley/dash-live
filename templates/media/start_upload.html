@@ -1,0 +1,72 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div id="media-management" class="container">
+  <h1>Upload a new stream</h1>
+  <p>
+    Please use the <span class="font-monospace fw-bold">dashlive.upload</span> script to upload all the
+    files and keys for a stream. Your temporary upload access token is
+    <span class="font-monospace fw-bold fs-5 user-select-all">{{ token }}</span>
+    </p>
+    <form action="{{ url_for('upload-stream') }}" method="post">
+    <p>
+      This token will expire at {{ expires | dateTimeFormat("%H:%M") }} on {{ expires | dateTimeFormat("%d %B %Y") }}.
+      <input type="hidden" value="{{ token }}" name="token" />
+      <button class="btn btn-warning ms-3" name="revoke" id="id-revoke">Delete token</button>
+    </p>
+    </form>
+    <div class="card mb-3">
+      <div class="card-header d-flex flex-row">
+        <div class="flex-grow-1">Stream upload command</div>
+        <div>
+          <button type="button" class="btn-clipboard mt-0 me-0 visually-hidden" aria-label="Copy to clipboard" id="copy-to-clipboard"
+          aria-labelledby="copy-to-clipboard-tip" data-bs-toggle="tooltip" data-bs-title="Copy to clipboard">
+            <span class="bi icon bi-clipboard">&nbsp;</span>
+          </button>
+        </div>
+      </div>
+      <div class="card-body bg-secondary-subtle mb-0 pb-1">
+        <pre class="user-select-all" id="upload-command">python -m dashlive.upload --token={{token}} --host {{ origin }} my-stream.json</pre>
+      </div>
+    </div>
+  <p>
+    Where <span class="font-monospace fw-bold">my-stream.json</span> is the JSON file that describes the stream.
+  </p>
+  <div class="card mb-3">
+      <div class="card-header">
+        An example JSON stream description
+      </div>
+      <div class="card-body bg-secondary-subtle mb-0 pb-1">
+    <pre>{
+  "keys": [{
+      "computed": false,
+      "key": "533a583a843436a536fbe2a5821c4b6c",
+      "kid": "c001de8e567b5fcfbc22c565ed5bda24"
+  }, {
+      "computed": true,
+      "kid": "1ab45440532c439994dc5c5ad9584bac"
+  }],
+  "streams": [{
+      "directory": "bbb",
+      "title": "Big Buck Bunny",
+      "marlin_la_url": "ms3://ms3.test.expressplay.com:8443/hms/ms3/rights/?b=...",
+      "playready_la_url": "https://test.playready.microsoft.com/service/rightsmanager.asmx?cfg={cfgs}",
+      "files": [
+        "bbb_a1.mp4", "bbb_a1_enc.mp4", "bbb_a2.mp4", "bbb_a2_enc.mp4",
+        "bbb_v1.mp4", "bbb_v1_enc.mp4", "bbb_v2.mp4", "bbb_v2_enc.mp4",
+        "bbb_v3.mp4", "bbb_v3_enc.mp4", "bbb_v4.mp4", "bbb_v4_enc.mp4",
+        "bbb_v5.mp4", "bbb_v5_enc.mp4", "bbb_v6.mp4", "bbb_v6_enc.mp4",
+        "bbb_v7.mp4", "bbb_v7_enc.mp4"
+      ],
+      "timing_ref": "bbb_v1.mp4"
+  }]
+}</pre>
+      </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extraheaders %}
+  <script src="{{ url_for('static', filename='js/upload.js') }}" type="module"></script>
+{% endblock %}

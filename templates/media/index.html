@@ -10,6 +10,7 @@
         <th class="stream-actions">
           {% if user_can_modify %}
           <a href="{{url_for('add-stream')}}" class="btn btn-success add-stream">Add</a>
+          <a href="{{url_for('upload-stream')}}" class="btn btn-success add-stream">Upload</a>
           {% endif %}
         </th>
         <th class="title">Title</th>

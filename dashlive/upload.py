@@ -36,6 +36,7 @@ def main(argv: list[str]) -> int:
                     default="http://localhost:5000/")
     ap.add_argument('--username')
     ap.add_argument('--password')
+    ap.add_argument('--token')
     ap.add_argument('jsonfile', help='JSON file', nargs='+', default=None)
     args = ap.parse_args(argv)
     mm_log = logging.getLogger('management')
@@ -50,7 +51,7 @@ def main(argv: list[str]) -> int:
         mm_log.setLevel(logging.WARNING)
     else:
         mm_log.setLevel(logging.INFO)
-    fda = FrontendDatabaseAccess(args.host, args.username, args.password)
+    fda = FrontendDatabaseAccess(url=args.host, username=args.username, password=args.password, token=args.token)
     pd = PopulateDatabase(fda)
     rv: int = 0
     for jsonfile in args.jsonfile:

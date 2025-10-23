@@ -6,11 +6,13 @@
 #
 #############################################################################
 from dataclasses import dataclass
+from datetime import datetime, timezone
 import html
 import logging
 from pathlib import Path
-from typing import cast, TypedDict
+from typing import NotRequired, cast, TypedDict
 import urllib
+import urllib.parse
 
 import flask
 from flask_login import current_user
@@ -20,6 +22,8 @@ from dashlive.drm.system import DrmSystem
 from dashlive.mpeg.dash.adaptation_set import AdaptationSet
 from dashlive.server import models
 from dashlive.server.manifests import default_manifest
+from dashlive.server.models.key import KeyJson
+from dashlive.server.models.token import EncodedJWToken
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.options.drm_options import DrmSelection
 from dashlive.server.requesthandler.navbar import NavBarItem
@@ -45,18 +49,23 @@ class ListStreamsTemplateContext(TemplateContext):
     streams: list[models.Stream]
     user_can_modify: bool
 
+class ListStreamsJson(TypedDict):
+    csrf_tokens: CsrfTokenCollection
+    keys: list[KeyJson]
+    streams: list[JsonObject]
+
 class ListStreams(HTMLHandlerBase):
     """
     View handler that provides a list of all media in the
     database.
     """
-    def get(self) -> flask.Response:
+    def get(self) -> flask.Response | str:
         """
         Get list of all streams
         """
         user_can_modify: bool = current_user.has_permission(models.Group.MEDIA)
 
-        csrf_key = self.generate_csrf_cookie()
+        csrf_key: str = self.generate_csrf_cookie()
         upload: str | None = None
         if user_can_modify:
             upload = self.generate_csrf_token('upload', csrf_key)
@@ -66,14 +75,14 @@ class ListStreams(HTMLHandlerBase):
             streams=self.generate_csrf_token('streams', csrf_key),
             upload=upload)
 
-        keys = models.Key.all(order_by=[models.Key.hkid])
-        streams = models.Stream.all()
+        keys: list[models.Key] = models.Key.all(order_by=[models.Key.hkid])  # pyright: ignore[reportArgumentType]
+        streams: list[models.Stream] = models.Stream.all()
 
         if is_ajax():
             exclude: set[str] = set()
             if not current_user.has_permission(models.Group.MEDIA):
                 exclude.add('key')
-            result = {
+            result: ListStreamsJson = {
                 'keys': [
                     k.toJSON(pure=True, exclude=exclude) for k in keys
                 ],
@@ -90,7 +99,7 @@ class ListStreams(HTMLHandlerBase):
                 result['streams'].append(jss)
             return jsonify(result)
 
-        context = cast(ListStreamsTemplateContext, self.create_context(
+        context: ListStreamsTemplateContext = cast(ListStreamsTemplateContext, self.create_context(
             csrf_tokens=csrf_tokens,
             drm={
                 'playready': DrmLicenseContext(laurl=PlayReady.TEST_LA_URL),
@@ -114,7 +123,7 @@ class AddStream(HTMLHandlerBase):
     """
     decorators = [login_required(permission=models.Group.MEDIA)]
 
-    def get(self, error: str | None = None) -> flask.Response:
+    def get(self, error: str | None = None) -> flask.Response | str:
         """
         Returns an HTML form to add a new stream
         """
@@ -173,6 +182,73 @@ class AddStream(HTMLHandlerBase):
         csrf_key = self.generate_csrf_cookie()
         result["csrf_token"] = self.generate_csrf_token('streams', csrf_key)
         return jsonify(result)
+
+
+class UploadTokenRequest(TypedDict):
+    token: str
+
+class UploadTokenResponse(TypedDict):
+    accessToken: EncodedJWToken | None
+    success: bool
+    error: NotRequired[str]
+
+class UploadTokenRevokeForm(TypedDict):
+    token: str
+    revoke: str
+
+class CreatUploadStreamToken(HTMLHandlerBase):
+    """
+    handler for creating a token for uploading a stream
+    """
+
+    @login_required(permission=models.Group.MEDIA)
+    def get(self) -> flask.Response | str:
+        """
+        Returns an HTML page providing a temporary access token
+        to upload a new stream.
+        """
+        token: models.Token | None = models.Token.get_one(
+            user=current_user, token_type=models.TokenType.UPLOAD.value)
+        if token is not None:
+            if token.has_expired():
+                models.db.session.delete(token)
+                models.db.session.commit()
+                token = None
+        if token is None:
+            token = models.Token.generate_upload_token(cast(models.User, current_user))
+        cur_url: urllib.parse.ParseResult = urllib.parse.urlparse(flask.request.url, 'http')
+        origin: str = '{}://{}'.format(cur_url.scheme, cur_url.netloc)
+        expires: datetime = cast(datetime, token.expires)
+        if expires.tzinfo is None:
+            expires = expires.replace(tzinfo=timezone.utc)
+        expires = expires.astimezone()
+        context: TemplateContext = self.create_context(
+            title='Upload a new stream',
+            token=token.jti, expires=expires, origin=origin)
+        return flask.render_template('media/start_upload.html', **context)
+
+    @login_required(permission=models.Group.MEDIA)
+    def post(self) -> flask.Response | str:
+        """
+        Used to revoke an upload token
+        """
+        params: UploadTokenRevokeForm
+        if is_ajax():
+            params = cast(UploadTokenRevokeForm, flask.request.json)
+        else:
+            params = cast(UploadTokenRevokeForm, flask.request.form)
+        try:
+            token_jti: str = params["token"]
+        except KeyError as err:
+            logging.warning("Missing token param: %s", err)
+            return flask.make_response('Invalid request', 400)
+        token: models.Token | None = models.Token.get_one(user=current_user, jti=token_jti)
+        if token is None:
+            return flask.make_response("Unknown token", 404)
+        token.revoked = True
+        models.db.session.commit()
+        flask.flash("Successfully deleted upload token", "success")
+        return cast(flask.Response, flask.redirect(flask.url_for("list-streams")))
 
 
 class EditStreamTemplateContext(TemplateContext):

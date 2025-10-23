@@ -22,6 +22,7 @@
 
 import datetime
 import re
+from typing import ClassVar
 
 # A UTC class, see https://docs.python.org/2.7/library/datetime.html#datetime.tzinfo
 class UTC(datetime.tzinfo):
@@ -44,28 +45,31 @@ class UTC(datetime.tzinfo):
 class FixedOffsetTimeZone(datetime.tzinfo):
     """Fixed offset in hours and minutes east from UTC."""
 
-    tzinfo_re = re.compile(r'^(?P<delta>[+-])(?P<hour>\d+):(?P<minute>\d+)$')
+    tzinfo_re: ClassVar[re.Pattern[str]] = re.compile(r'^(?P<delta>[+-])(?P<hour>\d+):(?P<minute>\d+)$')
 
-    def __init__(self, delta_str):
-        tz_match = self.tzinfo_re.match(delta_str)
+    __offset: datetime.timedelta
+    __name: str
+
+    def __init__(self, delta_str: str) -> None:
+        tz_match: re.Match[str] | None = self.tzinfo_re.match(delta_str)
         if tz_match is None:
             raise ValueError(
                 fr'Failed to parse timezone {delta_str}')
-        offset = int(tz_match.group('hour'), 10) * 60
+        offset: int = int(tz_match.group('hour'), 10) * 60
         offset += int(tz_match.group('minute'), 10)
         if tz_match.group('delta') == '-':
             offset = -offset
         self.__offset = datetime.timedelta(minutes=offset)
         self.__name = delta_str
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'FixedOffsetTimeZone("{self.__name}")'
 
-    def utcoffset(self, dt):
+    def utcoffset(self, dt: datetime.datetime | None) -> datetime.timedelta:
         return self.__offset
 
-    def tzname(self, dt):
+    def tzname(self, dt: datetime.datetime | None) -> str:
         return self.__name
 
-    def dst(self, dt):
+    def dst(self, dt: datetime.datetime | None) -> datetime.timedelta:
         return datetime.timedelta(0)

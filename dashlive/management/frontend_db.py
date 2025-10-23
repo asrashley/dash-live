@@ -8,11 +8,16 @@
 import logging
 from pathlib import Path
 import time
+from typing import Any, cast
 import urllib
 
 import requests
 
+from dashlive.management.http import HttpResponse
+from dashlive.server.models.user import UserSummaryJson
+from dashlive.server.requesthandler.user_management import LoginRequestJson, LoginResponseJson
 from dashlive.server.routes import routes
+from dashlive.utils.json_object import JsonObject
 
 from .db_access import DatabaseAccess
 from .http import HttpSession
@@ -22,42 +27,61 @@ class FrontendDatabaseAccess(DatabaseAccess):
     """
     Access to database using front-end ajax API
     """
+    base_url: str
+    csrf_tokens: dict[str, Any]
+    keys: dict[str, KeyInfo]
+    log: logging.Logger
+    password: str
+    session: HttpSession
+    streams: dict[str, StreamInfo]
+    token: str
+    user: UserInfo | None
+    username: str
 
-    def __init__(self, url: str, username: str, password: str,
+    def __init__(self, url: str, username: str='', password: str='',
+                 token: str = '',
                  session: HttpSession | None = None) -> None:
         self.base_url = url
         self.username = username
         self.password = password
+        self.token = token
         if session:
             self.session = session
         else:
-            self.session = requests.Session()
+            self.session = cast(HttpSession, requests.Session())
         self.csrf_tokens = {}
-        self.keys: dict[str, KeyInfo] = {}
-        self.streams: dict[str, StreamInfo] = {}
+        self.keys = {}
+        self.streams = {}
         self.log = logging.getLogger('management')
-        self.user: UserInfo | None = None
+        self.user = None
 
     def login(self) -> bool:
         if self.user:
             return True
-        login_url = self.url_for('api-login')
-        fields = {
+        login_url: str = self.url_for('api-login')
+        fields: LoginRequestJson = {
             "username": self.username,
             "password": self.password,
             "rememberme": False,
         }
-        result = self.session.post(login_url, json=fields)
+        if self.token:
+            fields['token'] = self.token
+        result: HttpResponse = self.session.post(login_url, json=cast(JsonObject, fields))
         if result.status_code != 200:
             self.log.warning('Login HTTP status %d', result.status_code)
             self.log.debug('HTTP headers %s', str(result.headers))
             return False
-        js = result.json()
+        js: LoginResponseJson = cast(LoginResponseJson, result.json())
         if js.get('error'):
             self.log.error('%s', js.get('error'))
             return False
-        self.user = UserInfo(**js['user'])
-        return True
+        try:
+            user: UserSummaryJson = js['user'] # pyright: ignore[reportTypedDictNotRequiredAccess]
+            self.user = UserInfo(**user)
+            return True
+        except KeyError as err:
+            self.log.error('%s', js.get('error'))
+            return False
 
     def fetch_media_info(self, with_details: bool = False) -> bool:
         if not self.login():
