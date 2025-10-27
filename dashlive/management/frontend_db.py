@@ -38,9 +38,8 @@ class FrontendDatabaseAccess(DatabaseAccess):
     user: UserInfo | None
     username: str
 
-    def __init__(self, url: str, username: str='', password: str='',
-                 token: str = '',
-                 session: HttpSession | None = None) -> None:
+    def __init__(self, url: str, username: str = '', password: str = '',
+                 token: str = '', session: HttpSession | None = None) -> None:
         self.base_url = url
         self.username = username
         self.password = password
@@ -76,11 +75,11 @@ class FrontendDatabaseAccess(DatabaseAccess):
             self.log.error('%s', js.get('error'))
             return False
         try:
-            user: UserSummaryJson = js['user'] # pyright: ignore[reportTypedDictNotRequiredAccess]
+            user: UserSummaryJson = js['user']  # pyright: ignore[reportTypedDictNotRequiredAccess]
             self.user = UserInfo(**user)
             return True
         except KeyError as err:
-            self.log.error('%s', js.get('error'))
+            self.log.error('KeyError: %s', err)
             return False
 
     def fetch_media_info(self, with_details: bool = False) -> bool:
