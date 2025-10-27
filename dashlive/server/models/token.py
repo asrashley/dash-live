@@ -103,7 +103,10 @@ class Token(ModelMixin["Token"], Base):
     def has_expired(self) -> bool:
         if self.expires is None:
             return False
-        return self.expires <= datetime.now()
+        expires: datetime = self.expires
+        if expires.tzinfo is None:
+            expires = expires.replace(tzinfo=timezone.utc)
+        return expires <= datetime.now(timezone.utc)
 
     def to_decoded_jwt(self) -> DecodedJwtToken:
         djt: DecodedJwtToken = {
