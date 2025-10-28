@@ -6,18 +6,30 @@
   <h1>Available DASH streams</h1>
   <table class="table table-striped" id="streams" data-csrf="{{csrf_tokens.streams}}">
     <caption>Streams</caption>
-    <thead><tr>
+    <thead>
+      {% if user_can_modify %}
+      <tr>
+        <th colspan="5" class="pb-0 border-bottom-0">
+          <div  class="d-flex w-100">
+          <div class="flex-grow-1">
+            <a href="{{url_for('add-stream')}}" class="btn btn-success add-stream">Add a new stream</a>
+          </div>
+          <div class="flex-grow-1">
+            <a href="{{url_for('upload-stream')}}" class="btn btn-success add-stream">Upload a stream</a>
+          </div>
+          </div>
+        </th>
+      </tr>
+      {% endif %}
+      <tr>
         <th class="stream-actions">
-          {% if user_can_modify %}
-          <a href="{{url_for('add-stream')}}" class="btn btn-success add-stream">Add</a>
-          <a href="{{url_for('upload-stream')}}" class="btn btn-success add-stream">Upload</a>
-          {% endif %}
         </th>
         <th class="title">Title</th>
         <th class="directory">Directory</th>
         <th class="duration">Duration</th>
         <th class="tracks">Tracks</th>
-    </tr></thead>
+      </tr>
+    </thead>
     <tbody>
     {% for stream in streams %}
     <tr>
