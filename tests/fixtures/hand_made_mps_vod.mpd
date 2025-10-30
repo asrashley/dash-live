@@ -6,7 +6,7 @@
      publishTime="2023-10-25T07:56:58Z"
      id="testmps"
     type="static"
-    mediaPresentationDuration="PT1M4S"
+    mediaPresentationDuration="PT1M16S"
   profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvb-dash:2014"
   minBufferTime="PT1.5S"
 >
