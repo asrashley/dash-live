@@ -39,6 +39,7 @@ class Period(ObjectWithFields):
     id: str
     adaptationSets: list[AdaptationSet]
     start: datetime.timedelta
+    duration: datetime.timedelta | None = None
 
     OBJECT_FIELDS: ClassVar[dict[str, Any]] = {
         'adaptationSets': ListOf(AdaptationSet),

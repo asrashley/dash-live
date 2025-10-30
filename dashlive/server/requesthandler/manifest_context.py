@@ -34,7 +34,6 @@ from dashlive.utils import objects
 from dashlive.utils.date_time import scale_timedelta
 from dashlive.utils.json_object import JsonObject
 from dashlive.utils.lang import lang_is_equal
-from dashlive.utils.timezone import UTC
 
 from .cgi_parameter_collection import CgiParameterCollection
 from .drm_context import DrmContext
@@ -46,7 +45,7 @@ class ManifestContext:
     cgi_params: CgiParameterCollection
     locationURL: str
     manifest: DashManifest | None
-    mediaDuration: int
+    mediaDuration: float
     minBufferTime: datetime.timedelta
     mpd_name: str
     mpd_id: str
@@ -55,6 +54,7 @@ class ManifestContext:
     patch: PatchLocation | None = None
     periods: list[Period]
     profiles: list[str]
+    publishTime: datetime.datetime
     startNumber: int
     stream: models.Stream
     suggestedPresentationDelay: int
@@ -71,7 +71,7 @@ class ManifestContext:
         if multi_period is None and stream is None:
             raise ValueError('Either Stream or MultiPeriodStream must be provided')
 
-        now = datetime.datetime.now(tz=UTC())
+        now: datetime.datetime = datetime.datetime.now(tz=datetime.timezone.utc)
         if options.clockDrift:
             now -= datetime.timedelta(seconds=options.clockDrift)
         self.minBufferTime = datetime.timedelta(seconds=1.5)
@@ -96,6 +96,8 @@ class ManifestContext:
         timing: DashTiming | None = None
         if self.timing_ref is not None:
             timing = DashTiming(self.now, self.timing_ref, options)
+
+        if timing and not multi_period:
             self.mediaDuration = self.timing_ref.media_duration_timedelta().total_seconds()
 
         if multi_period:
@@ -103,6 +105,7 @@ class ManifestContext:
                 self.create_all_live_periods(multi_period)
             else:
                 self.create_all_vod_periods(multi_period)
+                self.mediaDuration = multi_period.total_duration().total_seconds()
         else:
             self.periods.append(
                 self.create_period(stream, timing, db_period=None))
@@ -120,7 +123,8 @@ class ManifestContext:
                 stream=stream.directory,
                 manifest=self.manifest.name,
                 publish=int(timing.publishTime.timestamp()))
-            ttl = max(
+            assert timing.minimumUpdatePeriod is not None
+            ttl: int = max(
                 timing.timeShiftBufferDepth,
                 int(math.ceil(timing.minimumUpdatePeriod)))
             if self.cgi_params.patch:
@@ -189,15 +193,14 @@ class ManifestContext:
         for prd in multi_period.periods:
             timing = DashTiming(
                 self.now, prd.stream.timing_reference, self.options)
-            period = self.create_period(
-                stream=prd.stream, timing=timing, db_period=prd)
-            period.start = start
+            period: Period = self.create_period(
+                stream=prd.stream, timing=timing, db_period=prd, start=start)
             self.periods.append(period)
-            start += period.duration
+            start += prd.duration
 
     def create_all_live_periods(self,
                                 multi_period: models.MultiPeriodStream) -> None:
-        duration = multi_period.total_duration()
+        duration: datetime.timedelta = multi_period.total_duration()
         timing_ref = StreamTimingReference(
             media_name=multi_period.name,
             media_duration=int(duration.total_seconds() * 1000),
@@ -205,7 +208,8 @@ class ManifestContext:
             segment_duration=1000,
             timescale=1000)
         timing = DashTiming(self.now, timing_ref, self.options)
-        oldest_frag = timing.availabilityStartTime + timing.firstAvailableTime
+        assert timing.availabilityStartTime is not None
+        oldest_frag: datetime.datetime = timing.availabilityStartTime + timing.firstAvailableTime
         num_loops = int(timing.firstAvailableTime.total_seconds() //
                         duration.total_seconds())
         logging.debug(
@@ -216,22 +220,20 @@ class ManifestContext:
         start: datetime.timedelta = duration * num_loops
         periods: list[models.Period] = list(multi_period.periods)
         index: int = 0
-        # todo: datetime.timedelta = self.now - oldest_frag
         while start <= timing.elapsedTime:
-            prd = periods[index]
+            prd: models.Period = periods[index]
             prd_timing = DashTiming(
                 self.now, prd.stream.timing_reference, self.options)
-            period = self.create_period(
-                stream=prd.stream, timing=prd_timing, db_period=prd)
+            period: Period = self.create_period(
+                stream=prd.stream, timing=prd_timing, db_period=prd,
+                start=start)
             period.id = f"{period.id}_{num_loops}"
-            period.start = start
-            period_end = start + period.duration
+            period_end: datetime.timedelta = start + prd.duration
             if period_end >= timing.firstAvailableTime:
                 # don't output Periods where all its fragments are
                 # no longer available
                 self.periods.append(period)
-            start += period.duration
-            # todo -= period.duration
+            start += prd.duration
             index = (index + 1) % len(periods)
             if index == 0:
                 num_loops += 1
@@ -241,15 +243,18 @@ class ManifestContext:
     def create_period(self,
                       stream: models.Stream,
                       timing: DashTiming | None,
-                      db_period: models.Period | None) -> Period:
+                      db_period: models.Period | None,
+                      start: datetime.timedelta | None = None) -> Period:
         opts = self.options
+
+        if start is None:
+            start = datetime.timedelta(0)
 
         if db_period:
             period: Period = Period(
-                start=datetime.timedelta(0), id=db_period.pid,
-                duration=db_period.duration)
+                start=start, id=db_period.pid, duration=db_period.duration)
         else:
-            period = Period(start=datetime.timedelta(0), id="p0")
+            period = Period(start=start, id="p0")
         max_items = None
         if opts.abr is False:
             max_items = 1
@@ -289,7 +294,7 @@ class ManifestContext:
         if timing:
             opts.availabilityStartTime = timing.availabilityStartTime
             opts.timeShiftBufferDepth = timing.timeShiftBufferDepth
-            self.update_timing(timing)
+            self.update_timing(timing, db_period)
 
         self.cgi_params = self.calculate_cgi_parameters(
             audio=audio_adps, video=video)
@@ -585,13 +590,14 @@ class ManifestContext:
                 drops.append(f'{code}={drop_seg}')
         return urllib.parse.quote_plus(','.join(drops))
 
-    def update_timing(self, timing: DashTiming) -> None:
-        tc = timing.generate_manifest_context()
+    def update_timing(self, timing: DashTiming, db_period: models.Period | None) -> None:
+        tc: DynamicManifestTimingContext | StaticManifestTimingContext = timing.generate_manifest_context()
         self.now = tc.now
         self.publishTime = tc.publishTime
         if self.options.mode != 'live':
-            stc = cast(StaticManifestTimingContext, tc)
-            self.mediaDuration = stc.mediaDuration
+            stc: StaticManifestTimingContext = cast(StaticManifestTimingContext, tc)
+            if db_period is None:
+                self.mediaDuration = stc.mediaDuration.total_seconds()
             return
         ltc = cast(DynamicManifestTimingContext, tc)
         self.availabilityStartTime = ltc.availabilityStartTime
