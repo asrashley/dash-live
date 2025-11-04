@@ -17,18 +17,21 @@ from .options import ValidatorOptions
 from .pool import WorkerPool
 
 class HttpResponse:
-    headers: dict
+    headers: dict[str, str]
+    status: str
     status_int: int
+    status_code: int
+    response: requests.Response
     _pos: int
-    _xml: ET.Element
+    _xml: ET.Element | None
 
-    def __init__(self, response) -> None:
+    def __init__(self, response: requests.Response) -> None:
         self.response = response
         self.status_int = self.status_code = response.status_code
         self._xml = None
         self.headers = {}
         for key, value in response.headers.items():
-            name = '-'.join([k.title() for k in key.split('-')])
+            name: str = '-'.join([k.title() for k in key.split('-')])
             self.headers[name] = value
         if response.ok:
             self.status = 'OK'
@@ -44,7 +47,7 @@ class HttpResponse:
 
     @property
     def json(self) -> dict:
-        return self.response.json
+        return self.response.json()
 
     @property
     def body(self) -> bytes:
@@ -53,13 +56,14 @@ class HttpResponse:
     def get_data(self, as_text: bool) -> bytes | str:
         if as_text:
             return self.response.text
+        self.response.raise_for_status()
         return self.response.content
 
     def tell(self) -> int:
         return self._pos
 
     def read(self, length: int) -> bytes:
-        rv = self.response.raw.read(length)
+        rv: bytes = self.response.raw.read(length)
         self._pos += len(rv)
         return rv
 
