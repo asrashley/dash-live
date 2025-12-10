@@ -25,7 +25,7 @@ interface WindowWithShaka extends Window {
                 V1: string,
             },
         },
-        Player: () => shaka.Player;
+        Player: () => shaka.Player,
         util: {
             EventManager: () => shaka.util.EventManager,
         },
@@ -37,8 +37,7 @@ describe('ShakaPlayer', () => {
     const mockedImportLibrary = vi.mocked(importLibrary);
     const logEvent = vi.fn();
     const tracksChanged = vi.fn();
-    const PlayerFactory = vi.fn();
-    const EventManagerFactory = vi.fn();
+    const playerConstructorSpy = vi.fn();
     const videoElement = mock<HTMLVideoElement>();
     const mockPlayer = mock<shaka.Player>();
     const mockEventManager = mock<shaka.util.EventManager>();
@@ -73,8 +72,6 @@ describe('ShakaPlayer', () => {
                 eventTarget.addEventListener(evName, fn as EventListener);
             }
         });
-        PlayerFactory.mockReturnValue(mockPlayer);
-        EventManagerFactory.mockReturnValue(mockEventManager);
         mockPlayer.load.mockResolvedValue(undefined);
         mockedImportLibrary.mockImplementationOnce(async () => {
             (window as unknown as WindowWithShaka)["shaka"] = {
@@ -87,9 +84,18 @@ describe('ShakaPlayer', () => {
                         V1: 'V1',
                     }
                 },
-                Player: PlayerFactory,
+                // eslint-disable-next-line object-shorthand
+                Player: function(...args) {
+                    // cannot be an arrow function nor vi.fn(), as that causes a
+                    // "value is not a constructor" error with vitest v4
+                    playerConstructorSpy(...args);
+                    return mockPlayer;
+                },
                 util: {
-                    EventManager: EventManagerFactory,
+                    // eslint-disable-next-line object-shorthand
+                    EventManager: function() { // cannot be an arrow function
+                        return mockEventManager;
+                    },
                 },
             };
         });
@@ -112,7 +118,7 @@ describe('ShakaPlayer', () => {
         });
         await player.initialize(mpdSource, {});
         expect(mockedImportLibrary).toHaveBeenCalledWith(jsUrl);
-        expect(PlayerFactory).toHaveBeenCalledTimes(1);
+        expect(playerConstructorSpy).toHaveBeenCalledTimes(1);
         expect(installAll).toHaveBeenCalledTimes(1);
         expect(mockPlayer.attach).toHaveBeenCalledWith(videoElement);
         expect(mockPlayer.load).toHaveBeenLastCalledWith(mpdSource);
@@ -210,7 +216,7 @@ describe('ShakaPlayer', () => {
             textLanguage: '',
         });
         await player.initialize(mpdSource, {});
-        expect(PlayerFactory).toHaveBeenCalledTimes(1);
+        expect(playerConstructorSpy).toHaveBeenCalledTimes(1);
         expect(mockPlayer.attach).toHaveBeenCalledWith(videoElement);
         expect(mockPlayer.load).toHaveBeenCalledTimes(1);
         expect(mockPlayer.load).toHaveBeenLastCalledWith(mpdSource);
