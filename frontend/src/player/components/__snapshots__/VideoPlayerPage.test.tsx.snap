@@ -30,7 +30,6 @@ exports[`VideoPlayerPage > matches snapshot 1`] = `
       <button
         class="btn btn-secondary pe-1"
         data-testid="play-pause-btn"
-        disabled=""
       >
         <span
           aria-label="play-fill icon"
@@ -41,7 +40,6 @@ exports[`VideoPlayerPage > matches snapshot 1`] = `
       <button
         class="btn btn-secondary"
         data-testid="skip-back-btn"
-        disabled=""
       >
         <span
           aria-label="skip-backward-fill icon"
@@ -52,7 +50,6 @@ exports[`VideoPlayerPage > matches snapshot 1`] = `
       <button
         class="btn btn-secondary"
         data-testid="stop-btn"
-        disabled=""
       >
         <span
           aria-label="stop-fill icon"
@@ -63,7 +60,6 @@ exports[`VideoPlayerPage > matches snapshot 1`] = `
       <button
         class="btn btn-secondary"
         data-testid="skip-fwd-btn"
-        disabled=""
       >
         <span
           aria-label="skip-forward-fill icon"
