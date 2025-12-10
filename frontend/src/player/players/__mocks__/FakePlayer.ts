@@ -5,6 +5,7 @@ export class FakePlayer extends AbstractDashPlayer {
   public paused = false;
   public subtitlesElement: HTMLDivElement | null = null;
   public textTrack: MediaTrack | null = null;
+  public onInitialize?: (source: string) => void;
 
   async initialize(source: string) {
     const { videoElement } = this.props;
@@ -15,6 +16,7 @@ export class FakePlayer extends AbstractDashPlayer {
         writable: true,
       },
     });
+    this.onInitialize?.(source);
   }
 
   destroy() {}

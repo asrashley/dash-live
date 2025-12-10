@@ -78,6 +78,7 @@ describe("VideoPlayerPage", () => {
   const mockUseLocation = vi.mocked(useLocation);
   const mockUseParams = vi.mocked(useParams);
   const setLocation = vi.fn();
+  const playerConstructorSpy = vi.fn();
   let player: FakePlayer | undefined;
 
   afterAll(() => {
@@ -101,6 +102,7 @@ describe("VideoPlayerPage", () => {
       (_playerType: DashPlayerTypes, props: DashPlayerProps) => {
         player = new FakePlayer(props);
         vi.spyOn(player, "pause");
+        playerConstructorSpy(player);
         return player;
       }
     );
@@ -118,6 +120,11 @@ describe("VideoPlayerPage", () => {
     mockUseSearchParams.mockReturnValue({
       searchParams,
     });
+    const initializePromise = new Promise<string>(resolve => {
+      playerConstructorSpy.mockImplementationOnce((player: FakePlayer) => {
+        player.onInitialize = resolve;
+      });
+    });
     const { asFragment, findBySelector, findByText, getByTestId } =
       renderWithProviders(
         <EndpointContext.Provider value={apiRequests}>
@@ -125,6 +132,7 @@ describe("VideoPlayerPage", () => {
         </EndpointContext.Provider>
       );
     getByTestId("video-player-page");
+    await initializePromise;
     await findBySelector("#vid-window");
     await findByText("00:00:00");
     expect(asFragment()).toMatchSnapshot();
