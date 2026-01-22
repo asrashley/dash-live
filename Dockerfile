@@ -23,6 +23,7 @@ FROM python:3.11 as dashlive
 EXPOSE 5000
 ARG DEFAULT_PASSWORD=""
 ARG PROXY_DEPTH="1"
+ARG UV_VERSION="0.9.6"
 ENV HOME=/home/dash
 ENV FLASK_INSTANCE_PATH=/home/dash/instance
 ENV LOG_LEVEL="info"
@@ -36,7 +37,7 @@ RUN apt-get update && \
     python3-venv
 COPY pyproject.toml $HOME/dash-live/
 COPY uv.lock $HOME/dash-live/
-ADD https://astral.sh/uv/0.8.13/install.sh /uv-installer.sh
+ADD https://astral.sh/uv/${UV_VERSION}/install.sh /uv-installer.sh
 RUN sh /uv-installer.sh && rm /uv-installer.sh
 ENV PATH="${HOME}/.local/bin/:$PATH"
 WORKDIR $HOME/dash-live
