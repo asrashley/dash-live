@@ -1,7 +1,9 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
-import { act, render } from "@testing-library/preact";
+import { render, waitFor } from "@testing-library/preact";
+import { useComputed } from "@preact/signals";
 import { mock } from "vitest-mock-extended";
 import fetchMock from '@fetch-mock/vitest';
+import userEvent from "@testing-library/user-event";
 import { useContext } from "preact/hooks";
 import { useLocation } from 'wouter-preact';
 import { io, Socket } from "socket.io-client";
@@ -10,7 +12,7 @@ import log from "loglevel";
 import { routeMap, uiRouteMap } from "@dashlive/routemap";
 
 import { App } from "./App";
-import { AppStateContext, AppStateType } from "./appState";
+import { AppStateContext } from "./appState";
 import { adminUser, mediaUser, MockDashServer, UserModel } from "./test/MockServer";
 import { FakeEndpoint, HttpRequestHandlerResponse } from "./test/FakeEndpoint";
 import { JWToken } from "./user/types/JWToken";
@@ -28,6 +30,41 @@ vi.mock('wouter-preact', async (importOriginal) => {
 vi.mock("socket.io-client");
 
 vi.mock("./validator/utils/wssUrl");
+
+function ModalTest() {
+  const { dialog, closeDialog } = useContext(AppStateContext);
+  const enabled = useComputed<string>(() => dialog.value ? "open": "closed");
+  const onEnable = () => {
+    dialog.value = {
+      backdrop: true,
+    };
+  };
+  const onDisable = () => {
+    closeDialog();
+  };
+  return <div data-testid="dialog-test">
+    <p>Dialog is {enabled.value}</p>
+    <button onClick={onEnable}>Open Dialog</button>
+    <button onClick={onDisable}>Close Dialog</button>
+  </div>;
+}
+
+function CinemaTest() {
+  const { cinemaMode } = useContext(AppStateContext);
+  const enabled = useComputed<string>(() => cinemaMode.value ? "on": "off");
+
+  const onEnable = () => {
+    cinemaMode.value = true;
+  };
+  const onDisable = () => {
+    cinemaMode.value = false;
+  };
+  return <div data-testid="cinema-test">
+    <p>Cinema mode={enabled.value}</p>
+    <button onClick={onEnable}>Enable Cinema</button>
+    <button onClick={onDisable}>Disable Cinema</button>
+  </div>;
+}
 
 describe("main entry-point app", () => {
   const useLocationSpy = vi.mocked(useLocation);
@@ -64,6 +101,7 @@ describe("main entry-point app", () => {
       toFake: ['Date'],
     });
     log.setLevel('error');
+    document.body.className = "";
     useLocationSpy.mockImplementation(() => [mockLocation.pathname, setLocation]);
     endpoint = new FakeEndpoint(document.location.origin);
     dashServer = new MockDashServer({
@@ -206,32 +244,49 @@ describe("main entry-point app", () => {
   });
 
   test("modal backdrop is displayed", async () => {
-    let appState: AppStateType;
-    const StateSpy = () => {
-      appState = useContext(AppStateContext);
-      return <div />;
-    };
     mockLocation.pathname = "/";
-    const { findByText } = render(
-      <App><StateSpy /></App>,
+    const user = userEvent.setup();
+    const { findByText, getByText } = render(
+      <App><ModalTest /></App>,
       { baseElement }
     );
     await findByText("Stream to play");
-    expect(appState).toBeDefined();
     const elt = document.querySelector('.modal-backdrop');
     expect(elt.className).toEqual('modal-backdrop d-none');
-    act(() => {
-      appState!.dialog.value = {
-        backdrop: true,
-      };
+    await user.click(getByText("Open Dialog"));
+    await waitFor(() => {
+      expect(elt.className).toEqual('modal-backdrop show');
     });
-    expect(elt.className).toEqual('modal-backdrop show');
-    act(() => {
-      appState!.dialog.value = {
-        backdrop: false,
-      };
+    await user.click(getByText("Close Dialog"));
+    await waitFor(() => {
+      expect(elt.className).toEqual('modal-backdrop d-none');
     });
-    expect(elt.className).toEqual('modal-backdrop d-none');
+  });
+
+  test("cinema mode causes body element to change", async () => {
+    mockLocation.pathname = "/";
+    const user = userEvent.setup();
+    const addClassSpy = vi.spyOn(document.body.classList, "add");
+    const removeClassSpy = vi.spyOn(document.body.classList, "remove");
+    const { findByText, getByText } = render(
+      <App><CinemaTest /></App>,
+      { baseElement }
+    );
+    await findByText("Stream to play");
+    await findByText("Cinema mode=off");
+    expect(document.body.className).toEqual("");
+    await user.click(getByText("Enable Cinema"));
+    await findByText("Cinema mode=on");
+    waitFor(() => {
+      expect(addClassSpy).toHaveBeenCalledTimes(1);
+      expect(addClassSpy).toHaveBeenCalledWith("cinema-mode");
+    });
+    await user.click(getByText("Disable Cinema"));
+    await findByText("Cinema mode=off");
+    waitFor(() => {
+      expect(removeClassSpy).toHaveBeenCalledTimes(2);
+      expect(removeClassSpy).toHaveBeenCalledWith("cinema-mode");
+    });
   });
 
   test("doesn't reload page when navigating to another SPA page", async () => {
