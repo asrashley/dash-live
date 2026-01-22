@@ -1,5 +1,5 @@
 import { type ComponentChildren } from "preact";
-import { useCallback, useMemo, useRef } from "preact/hooks";
+import { useCallback, useRef } from "preact/hooks";
 import { useSignalEffect } from "@preact/signals";
 import { useLocation } from "wouter-preact";
 
@@ -10,7 +10,7 @@ import { ModalBackdrop } from "./components/ModalBackdrop";
 import { NavHeader } from "./nav/components/NavHeader";
 
 import { ApiRequests, EndpointContext } from "./endpoints";
-import { AppStateContext, AppStateType, createAppState } from "./appState";
+import { AppStateContext, createAppState } from "./appState";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { useWhoAmI, WhoAmIContext } from "./user/hooks/useWhoAmI";
 import { Footer } from "./components/Footer";
@@ -28,8 +28,8 @@ export function App({ children }: AppProps) {
     setLocation(uiRouteMap.login.url());
   }, [setLocation]);
   const apiRequests = useRef(new ApiRequests({ hasUserInfo: whoAmI.setUser, needsRefreshToken }));
-  const state: AppStateType = useMemo(() => createAppState(), []);
-  const { backdrop, cinemaMode } = state;
+  const state = useRef(createAppState());
+  const { backdrop, cinemaMode } = state.current;
 
   useSignalEffect(() => {
     if (backdrop.value) {
@@ -52,7 +52,7 @@ export function App({ children }: AppProps) {
   });
 
   return (
-    <AppStateContext.Provider value={state}>
+    <AppStateContext.Provider value={state.current}>
       <WhoAmIContext.Provider value={whoAmI}>
         <EndpointContext.Provider value={apiRequests.current}>
           <NavHeader />
