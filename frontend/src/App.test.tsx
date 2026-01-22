@@ -59,6 +59,10 @@ describe("main entry-point app", () => {
   });
 
   beforeEach(() => {
+    vi.useFakeTimers({
+      now: new Date("2025-01-02T03:04:05Z"),
+      toFake: ['Date'],
+    });
     log.setLevel('error');
     useLocationSpy.mockImplementation(() => [mockLocation.pathname, setLocation]);
     endpoint = new FakeEndpoint(document.location.origin);
@@ -87,6 +91,7 @@ describe("main entry-point app", () => {
     localStorage.clear();
     endpoint.shutdown();
     fetchMock.mockReset();
+    vi.useRealTimers();
   });
 
   test("matches snapshot for home page", async () => {
