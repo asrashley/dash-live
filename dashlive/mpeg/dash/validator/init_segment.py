@@ -5,6 +5,7 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+import asyncio
 import io
 from pathlib import Path
 import traceback
@@ -89,15 +90,42 @@ class InitSegment(DashElement):
             headers = {"Range": f"bytes={self.seg_range}"}
             expected_status = 206
         self.log.debug('GET: %s %s', self.url, headers)
-        response: HttpResponse = await self.http.get(cast(str, self.url), headers=headers)
+        retries: int = self.options.retry_count
+        fetch_delay: int = self.options.retry_delay_ms
+        response: HttpResponse | None = None
+        body: bytes | None = None
+        try:
+            while not body and retries > 0 and not self.progress.aborted():
+                response = await self.http.get(cast(str, self.url), headers=headers)
+                if response.status_code == expected_status:
+                    body = cast(bytes, response.get_data(as_text=False))
+                if self.progress.aborted():
+                    return False
+                if not body:
+                    retries -= 1
+                    await asyncio.sleep(fetch_delay / 1000)  # asyncio.sleep() uses seconds
+                    fetch_delay *= 2
+        except Exception as exc:
+            traceback.print_exception(exc)
+            self.elt.add_error(f'Exception whilst loading init segment: {exc}')
+            self.log.error('Exception whilst loading init segment: %s', exc)
+            return False
+        if response is None:
+            self.elt.add_error("Fetching of init segment failed")
+            return False
         if not self.elt.check_equal(
                 response.status_code, expected_status,
                 msg=f'Failed to fetch init segment: status={response.status_code}: {self.url}'):
             return False
+        if body is None:
+            self.elt.add_error('Received an init segment with body=None')
+            return False
+        if not body:
+            self.elt.add_error(f'Received an empty init segment type={type(body)} len={len(body)}')
+            return False
         if self.progress.aborted():
             return False
         try:
-            body: bytes = cast(bytes, response.get_data(as_text=False))
             async with self.pool.group(self.progress) as tg:
                 if self.options.save:
                     tg.submit(self.save, body)
@@ -112,8 +140,11 @@ class InitSegment(DashElement):
         return True
 
     def parse_body(self, body: bytes) -> bool:
+        if body is None:
+            self.elt.add_error('Attempt to parse init segment with body=None')
+            return False
         if not body:
-            self.elt.add_error('Attempt to parse empty init segment')
+            self.elt.add_error(f'Attempt to parse empty init segment type={type(body)} len={len(body)}')
             return False
         src = io.BufferedReader(io.BytesIO(body))
         atoms: list[mp4.Mp4Atom] = cast(

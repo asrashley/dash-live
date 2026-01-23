@@ -34,3 +34,5 @@ class ValidatorOptions:
     progress: Progress | None = None
     log: Logger | None = None
     pool: Optional[WorkerPool] = None
+    retry_count: int = 2
+    retry_delay_ms: int = 250
