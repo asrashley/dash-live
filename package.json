@@ -70,7 +70,7 @@
     "shaka-player": "^4.13.4",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
-    "temporal-polyfill": "^0.2.5",
+    "temporal-polyfill": "^0.3.0",
     "wouter-preact": "^3.9.0"
   }
 }
