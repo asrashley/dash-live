@@ -51,9 +51,9 @@
     "typescript-eslint": "^8.53.1",
     "vitest": "^4.0.18",
     "vitest-mock-extended": "^3.1.0",
-    "webpack": "^5.97.1",
-    "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^5.2.1"
+    "webpack": "^5.104.1",
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^5.2.3"
   },
   "dependencies": {
     "@preact/signals": "^2.6.1",
