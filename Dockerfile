@@ -1,7 +1,7 @@
 #
 # Build client app
 #
-FROM node:22 AS clientbuild
+FROM node:24 AS clientbuild
 ENV HOME=/home/dash
 ENV CI=1
 ARG GIT_SHA="-----"
