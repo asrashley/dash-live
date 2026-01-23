@@ -71,6 +71,6 @@
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
     "temporal-polyfill": "^0.2.5",
-    "wouter-preact": "^3.3.5"
+    "wouter-preact": "^3.9.0"
   }
 }
