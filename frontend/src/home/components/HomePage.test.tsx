@@ -20,7 +20,7 @@ describe("HomePage", () => {
   let endpoint: FakeEndpoint;
 
   beforeEach(() => {
-    log.setLevel("debug");
+    log.setLevel("error");
     endpoint = new FakeEndpoint(document.location.origin);
     const server = new MockDashServer({
       endpoint,

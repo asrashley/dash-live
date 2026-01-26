@@ -296,19 +296,19 @@ exports[`HomePage > matches snapshot 1`] = `
                       Big Buck Bunny
                     </option>
                     <option
-                      value="std.tears"
+                      value="mps.demo"
                     >
-                      Tears of Steel
+                      first title
                     </option>
                     <option
                       value="mps.second"
                     >
-                      a second example
+                      Second MPS example
                     </option>
                     <option
-                      value="mps.demo"
+                      value="std.tears"
                     >
-                      first title
+                      Tears of Steel
                     </option>
                   </select>
                 </div>

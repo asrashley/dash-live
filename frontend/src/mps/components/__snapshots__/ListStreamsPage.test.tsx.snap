@@ -101,7 +101,7 @@ exports[`ListStreamsPage > should display list of multi-period streams 1`] = `
           <a
             href="/multi-period-streams/second"
           >
-            a second example
+            Second MPS example
           </a>
         </td>
         <td

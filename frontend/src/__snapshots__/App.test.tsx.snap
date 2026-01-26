@@ -4261,19 +4261,19 @@ exports[`main entry-point app > matches snapshot for home page 1`] = `
                         Big Buck Bunny
                       </option>
                       <option
-                        value="std.tears"
+                        value="mps.demo"
                       >
-                        Tears of Steel
+                        first title
                       </option>
                       <option
                         value="mps.second"
                       >
-                        a second example
+                        Second MPS example
                       </option>
                       <option
-                        value="mps.demo"
+                        value="std.tears"
                       >
-                        first title
+                        Tears of Steel
                       </option>
                     </select>
                   </div>
@@ -6663,19 +6663,19 @@ exports[`main entry-point app > matches snapshot for home page when user not log
                         Big Buck Bunny
                       </option>
                       <option
-                        value="std.tears"
+                        value="mps.demo"
                       >
-                        Tears of Steel
+                        first title
                       </option>
                       <option
                         value="mps.second"
                       >
-                        a second example
+                        Second MPS example
                       </option>
                       <option
-                        value="mps.demo"
+                        value="std.tears"
                       >
-                        first title
+                        Tears of Steel
                       </option>
                     </select>
                   </div>
@@ -8912,7 +8912,7 @@ exports[`main entry-point app > matches snapshot for list MPS 1`] = `
             <a
               href="/multi-period-streams/second"
             >
-              a second example
+              Second MPS example
             </a>
           </td>
           <td
