@@ -3137,6 +3137,762 @@ exports[`main entry-point app > matches snapshot for DASH validator 1`] = `
 </DocumentFragment>
 `;
 
+exports[`main entry-point app > matches snapshot for add MPS 1`] = `
+<DocumentFragment>
+  <header
+    class=""
+  >
+    <nav
+      class="navbar navbar-expand-lg navbar-light bg-body-tertiary"
+    >
+      <span
+        class="navbar-brand"
+      >
+        DASH server
+      </span>
+      <button
+        aria-controls="navbarSupportedContent"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
+        class="navbar-toggler collapsed"
+        type="button"
+      >
+        <span
+          class="navbar-toggler-icon"
+        />
+      </button>
+      <div
+        class="collapse navbar-collapse"
+        id="navbarSupportedContent"
+      >
+        <ul
+          class="navbar-nav flex-fill"
+        >
+          <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link spa"
+              href="/"
+              role="menuitem"
+            >
+              Home
+            </a>
+          </li>
+          <li
+            class="nav-item "
+          >
+            <a
+              class="nav-link "
+              href="/streams"
+              role="menuitem"
+            >
+              Streams
+            </a>
+          </li>
+          <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link spa"
+              href="/multi-period-streams"
+              role="menuitem"
+            >
+              Multi-Period
+            </a>
+          </li>
+          <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link spa"
+              href="/validate"
+              role="menuitem"
+            >
+              Validate
+            </a>
+          </li>
+          <li
+            class="nav-item "
+          >
+            <a
+              class="nav-link "
+              href="/media/inspect"
+              role="menuitem"
+            >
+              Inspect
+            </a>
+          </li>
+          <li
+            class="nav-item dropdown ms-auto me-4"
+          >
+            <span
+              class="username me-1"
+            >
+              mediamgr
+            </span>
+            <button
+              aria-expanded="false"
+              class="btn btn-light dropdown-toggle"
+              data-testid="toggle-user-menu"
+              role="menubar"
+            >
+              <span
+                aria-label="gear-fill icon"
+                class="bi icon bi-gear-fill "
+                role="img"
+              />
+            </button>
+            <ul
+              class="dropdown-menu"
+            >
+              <li>
+                <button
+                  class="dropdown-item"
+                  role="menuitem"
+                >
+                  Change Password
+                </button>
+              </li>
+              <li>
+                <button
+                  class="dropdown-item"
+                  role="menuitem"
+                >
+                  Log Out
+                </button>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </nav>
+    <nav
+      aria-label="breadcrumb"
+      class="breadcrumbs"
+      data-location="/multi-period-streams/.add"
+    >
+      <ol
+        class="breadcrumb"
+      >
+        <li
+          class="breadcrumb-item "
+          id="crumb_0"
+        >
+          <a
+            href="/"
+            title="Home"
+          >
+            Home
+          </a>
+        </li>
+        <li
+          class="breadcrumb-item "
+          id="crumb_1"
+        >
+          <a
+            href="/multi-period-streams"
+            title="multi-period-streams"
+          >
+            multi-period-streams
+          </a>
+        </li>
+        <li
+          class="breadcrumb-item active"
+          id="crumb_2"
+        >
+          <span>
+            .add
+          </span>
+        </li>
+      </ol>
+    </nav>
+  </header>
+  <div
+    class="messages-panel"
+  />
+  <div
+    class="content container-fluid"
+  >
+    <div
+      class="card "
+      id="edit_mps_form"
+    >
+      <div
+        class="card-header"
+      >
+        <h2>
+          Add new Multi-Period stream
+        </h2>
+      </div>
+      <div
+        class="card-body"
+      >
+        <div
+          class=""
+        >
+          <div
+            class="row mb-2 form-group "
+          >
+            <label
+              class="col-2 col-form-label"
+              for="model-name"
+              id="label-name"
+            >
+              Name:
+            </label>
+            <div
+              class="col-7"
+            >
+              <input
+                class="form-control is-invalid"
+                id="field-name"
+                name="name"
+                type="text"
+              />
+            </div>
+            <div
+              class="col-3 form-text"
+              id="text-name"
+            >
+              Unique name for this stream
+            </div>
+            <div
+              class="invalid-feedback d-block"
+            >
+              Name is required
+            </div>
+          </div>
+          <div
+            class="row mb-2 form-group "
+          >
+            <label
+              class="col-2 col-form-label"
+              for="model-title"
+              id="label-title"
+            >
+              Title:
+            </label>
+            <div
+              class="col-7"
+            >
+              <input
+                class="form-control is-invalid"
+                id="field-title"
+                name="title"
+                type="text"
+              />
+            </div>
+            <div
+              class="col-3 form-text"
+              id="text-title"
+            >
+              Title for this stream
+            </div>
+            <div
+              class="invalid-feedback d-block"
+            >
+              Title is required
+            </div>
+          </div>
+          <div
+            class="row mb-2 form-group "
+          >
+            <label
+              class="col-2 col-form-label"
+              for="model-options"
+              id="label-options"
+            >
+              Stream Options:
+            </label>
+            <div
+              class="col-10"
+            >
+              <div
+                class="d-flex flex-row"
+              >
+                <div
+                  class="json bg-secondary-subtle border border-dark-subtle flex-fill me-1"
+                />
+                <button
+                  class="btn btn-primary"
+                >
+                  Options
+                </button>
+              </div>
+            </div>
+            <div
+              class="invalid-feedback d-none"
+            />
+          </div>
+          <div
+            class="row mb-2 form-group has-validation"
+          >
+            <label
+              class="col-2 col-form-label"
+              for="model-periods"
+              id="label-periods"
+            >
+              Periods:
+            </label>
+            <div
+              class="col-10"
+            >
+              <div>
+                <div
+                  class="period-table border"
+                >
+                  <div
+                    class="row bg-secondary text-white table-head"
+                  >
+                    <div
+                      class="col period-ordering"
+                    >
+                      #
+                    </div>
+                    <div
+                      class="col period-id"
+                    >
+                      ID
+                    </div>
+                    <div
+                      class="col period-stream"
+                    >
+                      Stream
+                    </div>
+                    <div
+                      class="col period-start"
+                    >
+                      Start Time
+                    </div>
+                    <div
+                      class="col period-duration"
+                    >
+                      Duration
+                    </div>
+                    <div
+                      class="col period-tracks"
+                    >
+                      Tracks
+                    </div>
+                  </div>
+                  <ul />
+                  <div
+                    class="btn-toolbar"
+                  >
+                    <button
+                      class="btn btn-primary btn-sm m-2"
+                    >
+                      Add a Period
+                    </button>
+                  </div>
+                </div>
+                <div
+                  class="alert alert-warning show"
+                  id="alert_0"
+                  role="alert"
+                >
+                  At least one Period is required
+                </div>
+              </div>
+            </div>
+            <div
+              class="invalid-feedback d-none"
+            />
+          </div>
+          <div
+            class="btn-toolbar"
+          >
+            <button
+              class="btn btn-success m-2"
+              disabled=""
+            >
+              Save new stream
+            </button>
+            <a
+              class="btn btn-danger m-2"
+              href="/multi-period-streams"
+            >
+              Cancel
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer
+    class="bg-body-tertiary footer row border-top border-secondary-subtle"
+  >
+    <div
+      class="col-3 github-link"
+    >
+      <div>
+        <a
+          href="https://github.com/asrashley/dash-live"
+        >
+          github.com/asrashley/dash-live
+        </a>
+      </div>
+      <div>
+        12345abcde
+      </div>
+    </div>
+    <div
+      class="col-6 text-center service-name"
+    >
+      Simulated MPEG DASH service
+    </div>
+    <div
+      class="col-3 text-end copyright"
+    >
+      ©2025 Alexis Ashley
+    </div>
+  </footer>
+  <div
+    class="modal-backdrop d-none"
+    data-testid="modal-backdrop"
+  />
+</DocumentFragment>
+`;
+
+exports[`main entry-point app > matches snapshot for change password page 1`] = `
+<DocumentFragment>
+  <header
+    class=""
+  >
+    <nav
+      class="navbar navbar-expand-lg navbar-light bg-body-tertiary"
+    >
+      <span
+        class="navbar-brand"
+      >
+        DASH server
+      </span>
+      <button
+        aria-controls="navbarSupportedContent"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
+        class="navbar-toggler collapsed"
+        type="button"
+      >
+        <span
+          class="navbar-toggler-icon"
+        />
+      </button>
+      <div
+        class="collapse navbar-collapse"
+        id="navbarSupportedContent"
+      >
+        <ul
+          class="navbar-nav flex-fill"
+        >
+          <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link spa"
+              href="/"
+              role="menuitem"
+            >
+              Home
+            </a>
+          </li>
+          <li
+            class="nav-item "
+          >
+            <a
+              class="nav-link "
+              href="/streams"
+              role="menuitem"
+            >
+              Streams
+            </a>
+          </li>
+          <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link spa"
+              href="/multi-period-streams"
+              role="menuitem"
+            >
+              Multi-Period
+            </a>
+          </li>
+          <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link spa"
+              href="/validate"
+              role="menuitem"
+            >
+              Validate
+            </a>
+          </li>
+          <li
+            class="nav-item "
+          >
+            <a
+              class="nav-link "
+              href="/media/inspect"
+              role="menuitem"
+            >
+              Inspect
+            </a>
+          </li>
+          <li
+            class="nav-item dropdown ms-auto me-4"
+          >
+            <span
+              class="username me-1"
+            >
+              mediamgr
+            </span>
+            <button
+              aria-expanded="false"
+              class="btn btn-light dropdown-toggle"
+              data-testid="toggle-user-menu"
+              role="menubar"
+            >
+              <span
+                aria-label="gear-fill icon"
+                class="bi icon bi-gear-fill "
+                role="img"
+              />
+            </button>
+            <ul
+              class="dropdown-menu"
+            >
+              <li>
+                <button
+                  class="dropdown-item"
+                  role="menuitem"
+                >
+                  Change Password
+                </button>
+              </li>
+              <li>
+                <button
+                  class="dropdown-item"
+                  role="menuitem"
+                >
+                  Log Out
+                </button>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </nav>
+    <nav
+      aria-label="breadcrumb"
+      class="breadcrumbs"
+      data-location="/change-password"
+    >
+      <ol
+        class="breadcrumb"
+      >
+        <li
+          class="breadcrumb-item "
+          id="crumb_0"
+        >
+          <a
+            href="/"
+            title="Home"
+          >
+            Home
+          </a>
+        </li>
+        <li
+          class="breadcrumb-item active"
+          id="crumb_1"
+        >
+          <span>
+            change-password
+          </span>
+        </li>
+      </ol>
+    </nav>
+  </header>
+  <div
+    class="messages-panel"
+  />
+  <div
+    class="content container-fluid"
+  >
+    <div
+      class="content mb-4"
+      style="max-width: 65rem;"
+    >
+      <div
+        class="card "
+        id="edit-user"
+      >
+        <div
+          class="card-header"
+        >
+          Change my password
+        </div>
+        <div
+          class="card-body"
+        >
+          <form>
+            <div
+              class="row mb-2 form-group "
+            >
+              <label
+                class="col-2 col-form-label"
+                for="model-email"
+                id="label-email"
+              >
+                Email:
+              </label>
+              <div
+                class="col-10"
+              >
+                <input
+                  aria-describedby="label-email"
+                  class="form-control is-valid "
+                  id="model-email"
+                  name="email"
+                  title="Email"
+                  type="email"
+                />
+              </div>
+              <div
+                class="invalid-feedback d-none"
+              />
+            </div>
+            <div
+              class="row mb-2 form-group "
+            >
+              <label
+                class="col-2 col-form-label"
+                for="model-password"
+                id="label-password"
+              >
+                Password:
+              </label>
+              <div
+                class="col-10"
+              >
+                <div
+                  class="input-group"
+                >
+                  <input
+                    aria-describedby="label-password"
+                    class="form-control is-valid "
+                    id="model-password"
+                    name="password"
+                    placeholder="***"
+                    title="Password"
+                    type="password"
+                  />
+                  <button
+                    class="d-none"
+                    type="button"
+                  >
+                    Reveal
+                  </button>
+                </div>
+              </div>
+              <div
+                class="invalid-feedback d-none"
+              />
+            </div>
+            <div
+              class="row mb-2 form-group "
+            >
+              <label
+                class="col-2 col-form-label"
+                for="model-confirmPassword"
+                id="label-confirmPassword"
+              >
+                Confirm Password:
+              </label>
+              <div
+                class="col-10"
+              >
+                <div
+                  class="input-group"
+                >
+                  <input
+                    aria-describedby="label-confirmPassword"
+                    class="form-control is-valid "
+                    id="model-confirmPassword"
+                    name="confirmPassword"
+                    placeholder="***"
+                    title="Confirm Password"
+                    type="password"
+                  />
+                  <button
+                    class="d-none"
+                    type="button"
+                  >
+                    Reveal
+                  </button>
+                </div>
+              </div>
+              <div
+                class="invalid-feedback d-none"
+              />
+            </div>
+          </form>
+          <div
+            class="form-actions mt-2"
+          >
+            <button
+              class="btn btn-primary me-3"
+            >
+              Change Password
+            </button>
+            <a
+              class="btn btn-warning"
+              href="/"
+            >
+              Cancel
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer
+    class="bg-body-tertiary footer row border-top border-secondary-subtle"
+  >
+    <div
+      class="col-3 github-link"
+    >
+      <div>
+        <a
+          href="https://github.com/asrashley/dash-live"
+        >
+          github.com/asrashley/dash-live
+        </a>
+      </div>
+      <div>
+        12345abcde
+      </div>
+    </div>
+    <div
+      class="col-6 text-center service-name"
+    >
+      Simulated MPEG DASH service
+    </div>
+    <div
+      class="col-3 text-end copyright"
+    >
+      ©2025 Alexis Ashley
+    </div>
+  </footer>
+  <div
+    class="modal-backdrop d-none"
+    data-testid="modal-backdrop"
+  />
+</DocumentFragment>
+`;
+
 exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
 <DocumentFragment>
   <header
@@ -3771,6 +4527,500 @@ exports[`main entry-point app > matches snapshot for edit MPS 1`] = `
               href="/multi-period-streams"
             >
               Back
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer
+    class="bg-body-tertiary footer row border-top border-secondary-subtle"
+  >
+    <div
+      class="col-3 github-link"
+    >
+      <div>
+        <a
+          href="https://github.com/asrashley/dash-live"
+        >
+          github.com/asrashley/dash-live
+        </a>
+      </div>
+      <div>
+        12345abcde
+      </div>
+    </div>
+    <div
+      class="col-6 text-center service-name"
+    >
+      Simulated MPEG DASH service
+    </div>
+    <div
+      class="col-3 text-end copyright"
+    >
+      ©2025 Alexis Ashley
+    </div>
+  </footer>
+  <div
+    class="modal-backdrop d-none"
+    data-testid="modal-backdrop"
+  />
+</DocumentFragment>
+`;
+
+exports[`main entry-point app > matches snapshot for edit user 1`] = `
+<DocumentFragment>
+  <header
+    class=""
+  >
+    <nav
+      class="navbar navbar-expand-lg navbar-light bg-body-tertiary"
+    >
+      <span
+        class="navbar-brand"
+      >
+        DASH server
+      </span>
+      <button
+        aria-controls="navbarSupportedContent"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
+        class="navbar-toggler collapsed"
+        type="button"
+      >
+        <span
+          class="navbar-toggler-icon"
+        />
+      </button>
+      <div
+        class="collapse navbar-collapse"
+        id="navbarSupportedContent"
+      >
+        <ul
+          class="navbar-nav flex-fill"
+        >
+          <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link spa"
+              href="/"
+              role="menuitem"
+            >
+              Home
+            </a>
+          </li>
+          <li
+            class="nav-item "
+          >
+            <a
+              class="nav-link "
+              href="/streams"
+              role="menuitem"
+            >
+              Streams
+            </a>
+          </li>
+          <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link spa"
+              href="/multi-period-streams"
+              role="menuitem"
+            >
+              Multi-Period
+            </a>
+          </li>
+          <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link spa"
+              href="/validate"
+              role="menuitem"
+            >
+              Validate
+            </a>
+          </li>
+          <li
+            class="nav-item "
+          >
+            <a
+              class="nav-link "
+              href="/media/inspect"
+              role="menuitem"
+            >
+              Inspect
+            </a>
+          </li>
+          <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link spa"
+              href="/users"
+              role="menuitem"
+            >
+              Users
+            </a>
+          </li>
+          <li
+            class="nav-item dropdown ms-auto me-4"
+          >
+            <span
+              class="username me-1"
+            >
+              admin
+            </span>
+            <button
+              aria-expanded="false"
+              class="btn btn-light dropdown-toggle"
+              data-testid="toggle-user-menu"
+              role="menubar"
+            >
+              <span
+                aria-label="gear-fill icon"
+                class="bi icon bi-gear-fill "
+                role="img"
+              />
+            </button>
+            <ul
+              class="dropdown-menu"
+            >
+              <li>
+                <button
+                  class="dropdown-item"
+                  role="menuitem"
+                >
+                  Change Password
+                </button>
+              </li>
+              <li>
+                <button
+                  class="dropdown-item"
+                  role="menuitem"
+                >
+                  Log Out
+                </button>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </nav>
+    <nav
+      aria-label="breadcrumb"
+      class="breadcrumbs"
+      data-location="/users/mediamgr"
+    >
+      <ol
+        class="breadcrumb"
+      >
+        <li
+          class="breadcrumb-item "
+          id="crumb_0"
+        >
+          <a
+            href="/"
+            title="Home"
+          >
+            Home
+          </a>
+        </li>
+        <li
+          class="breadcrumb-item "
+          id="crumb_1"
+        >
+          <a
+            href="/users"
+            title="users"
+          >
+            users
+          </a>
+        </li>
+        <li
+          class="breadcrumb-item active"
+          id="crumb_2"
+        >
+          <span>
+            mediamgr
+          </span>
+        </li>
+      </ol>
+    </nav>
+  </header>
+  <div
+    class="messages-panel"
+  />
+  <div
+    class="content container-fluid"
+  >
+    <div
+      class="content mb-4"
+      style="max-width: 65rem;"
+    >
+      <div
+        class="card "
+        id="edit-user"
+      >
+        <div
+          class="card-header"
+        >
+          Editing user mediamgr
+        </div>
+        <div
+          class="card-body"
+        >
+          <form>
+            <div
+              class="row mb-2 form-group "
+            >
+              <label
+                class="col-2 col-form-label"
+                for="model-username"
+                id="label-username"
+              >
+                Username:
+              </label>
+              <div
+                class="col-10"
+              >
+                <input
+                  aria-describedby="label-username"
+                  class="form-control is-valid "
+                  id="model-username"
+                  name="username"
+                  title="Username"
+                  type="text"
+                />
+              </div>
+              <div
+                class="invalid-feedback d-none"
+              />
+            </div>
+            <div
+              class="row mb-2 form-group "
+            >
+              <label
+                class="col-2 col-form-label"
+                for="model-email"
+                id="label-email"
+              >
+                Email:
+              </label>
+              <div
+                class="col-10"
+              >
+                <input
+                  aria-describedby="label-email"
+                  class="form-control is-valid "
+                  id="model-email"
+                  name="email"
+                  title="Email"
+                  type="email"
+                />
+              </div>
+              <div
+                class="invalid-feedback d-none"
+              />
+            </div>
+            <div
+              class="row mb-2 form-group "
+            >
+              <label
+                class="col-2 col-form-label"
+                for="model-password"
+                id="label-password"
+              >
+                Password:
+              </label>
+              <div
+                class="col-10"
+              >
+                <div
+                  class="input-group"
+                >
+                  <input
+                    aria-describedby="label-password"
+                    class="form-control is-valid "
+                    id="model-password"
+                    name="password"
+                    placeholder="***"
+                    title="Password"
+                    type="password"
+                  />
+                  <button
+                    class="d-none"
+                    type="button"
+                  >
+                    Reveal
+                  </button>
+                </div>
+              </div>
+              <div
+                class="invalid-feedback d-none"
+              />
+            </div>
+            <div
+              class="row mb-2 form-group "
+            >
+              <label
+                class="col-2 col-form-label"
+                for="model-confirmPassword"
+                id="label-confirmPassword"
+              >
+                Confirm Password:
+              </label>
+              <div
+                class="col-10"
+              >
+                <div
+                  class="input-group"
+                >
+                  <input
+                    aria-describedby="label-confirmPassword"
+                    class="form-control is-valid "
+                    id="model-confirmPassword"
+                    name="confirmPassword"
+                    placeholder="***"
+                    title="Confirm Password"
+                    type="password"
+                  />
+                  <button
+                    class="d-none"
+                    type="button"
+                  >
+                    Reveal
+                  </button>
+                </div>
+              </div>
+              <div
+                class="invalid-feedback d-none"
+              />
+            </div>
+            <div
+              class="row mb-2 form-group "
+            >
+              <label
+                class="col-2 col-form-label"
+                for="model-mustChange"
+                id="label-mustChange"
+              >
+                Must Change:
+              </label>
+              <div
+                class="col-7"
+              >
+                <input
+                  aria-describedby="text-mustChange"
+                  class="form-check-input is-valid "
+                  id="model-mustChange"
+                  name="mustChange"
+                  title="Must Change"
+                  type="checkbox"
+                />
+              </div>
+              <div
+                class="col-3 form-text"
+                id="text-mustChange"
+              >
+                User must change password at next login?
+              </div>
+              <div
+                class="invalid-feedback d-none"
+              />
+            </div>
+            <div
+              class="row mb-2 form-group "
+            >
+              <label
+                class="col-2 col-form-label"
+                for="model-groups"
+                id="label-groups"
+              >
+                Groups:
+              </label>
+              <div
+                class="col-10"
+              >
+                <div
+                  class="form-check form-switch is-valid "
+                  data-testid="msi-groups"
+                >
+                  <div
+                    class="form-check form-check-inline"
+                  >
+                    <input
+                      class="form-check-input"
+                      id="msiadminGroup"
+                      name="adminGroup"
+                      type="checkbox"
+                    />
+                    <label
+                      class="form-check-label me-3"
+                      for="msiadminGroup"
+                    >
+                      ADMIN
+                    </label>
+                  </div>
+                  <div
+                    class="form-check form-check-inline"
+                  >
+                    <input
+                      class="form-check-input"
+                      id="msimediaGroup"
+                      name="mediaGroup"
+                      type="checkbox"
+                    />
+                    <label
+                      class="form-check-label me-3"
+                      for="msimediaGroup"
+                    >
+                      MEDIA
+                    </label>
+                  </div>
+                  <div
+                    class="form-check form-check-inline"
+                  >
+                    <input
+                      class="form-check-input"
+                      id="msiuserGroup"
+                      name="userGroup"
+                      type="checkbox"
+                    />
+                    <label
+                      class="form-check-label me-3"
+                      for="msiuserGroup"
+                    >
+                      USER
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div
+                class="invalid-feedback d-none"
+              />
+            </div>
+          </form>
+          <div
+            class="form-actions mt-2"
+          >
+            <button
+              class="btn btn-primary me-3"
+            >
+              Save Changes
+            </button>
+            <button
+              class="btn btn-danger me-3"
+            >
+              Delete User
+            </button>
+            <a
+              class="btn btn-warning"
+              href="/users"
+            >
+              Cancel
             </a>
           </div>
         </div>
@@ -9521,6 +10771,641 @@ exports[`main entry-point app > matches snapshot for list users 1`] = `
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+  </div>
+  <footer
+    class="bg-body-tertiary footer row border-top border-secondary-subtle"
+  >
+    <div
+      class="col-3 github-link"
+    >
+      <div>
+        <a
+          href="https://github.com/asrashley/dash-live"
+        >
+          github.com/asrashley/dash-live
+        </a>
+      </div>
+      <div>
+        12345abcde
+      </div>
+    </div>
+    <div
+      class="col-6 text-center service-name"
+    >
+      Simulated MPEG DASH service
+    </div>
+    <div
+      class="col-3 text-end copyright"
+    >
+      ©2025 Alexis Ashley
+    </div>
+  </footer>
+  <div
+    class="modal-backdrop d-none"
+    data-testid="modal-backdrop"
+  />
+</DocumentFragment>
+`;
+
+exports[`main entry-point app > matches snapshot for login page 1`] = `
+<DocumentFragment>
+  <header
+    class=""
+  >
+    <nav
+      class="navbar navbar-expand-lg navbar-light bg-body-tertiary"
+    >
+      <span
+        class="navbar-brand"
+      >
+        DASH server
+      </span>
+      <button
+        aria-controls="navbarSupportedContent"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
+        class="navbar-toggler collapsed"
+        type="button"
+      >
+        <span
+          class="navbar-toggler-icon"
+        />
+      </button>
+      <div
+        class="collapse navbar-collapse"
+        id="navbarSupportedContent"
+      >
+        <ul
+          class="navbar-nav flex-fill"
+        >
+          <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link spa"
+              href="/"
+              role="menuitem"
+            >
+              Home
+            </a>
+          </li>
+          <li
+            class="nav-item "
+          >
+            <a
+              class="nav-link "
+              href="/streams"
+              role="menuitem"
+            >
+              Streams
+            </a>
+          </li>
+          <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link spa"
+              href="/multi-period-streams"
+              role="menuitem"
+            >
+              Multi-Period
+            </a>
+          </li>
+          <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link spa"
+              href="/validate"
+              role="menuitem"
+            >
+              Validate
+            </a>
+          </li>
+          <li
+            class="nav-item "
+          >
+            <a
+              class="nav-link "
+              href="/media/inspect"
+              role="menuitem"
+            >
+              Inspect
+            </a>
+          </li>
+          <li
+            class="nav-item dropdown ms-auto me-4"
+          >
+            <button
+              class="nav-link"
+              role="menuitem"
+            >
+              Log In
+            </button>
+          </li>
+        </ul>
+      </div>
+    </nav>
+    <nav
+      aria-label="breadcrumb"
+      class="breadcrumbs"
+      data-location="/login"
+    >
+      <ol
+        class="breadcrumb"
+      >
+        <li
+          class="breadcrumb-item "
+          id="crumb_0"
+        >
+          <a
+            href="/"
+            title="Home"
+          >
+            Home
+          </a>
+        </li>
+        <li
+          class="breadcrumb-item active"
+          id="crumb_1"
+        >
+          <span>
+            login
+          </span>
+        </li>
+      </ol>
+    </nav>
+  </header>
+  <div
+    class="messages-panel"
+  />
+  <div
+    class="content container-fluid"
+  >
+    <div
+      class="card "
+      id="login"
+    >
+      <div
+        class="card-header"
+      >
+        Log into DASH server
+      </div>
+      <div
+        class="card-body"
+      >
+        <form
+          class=""
+          id="login-form"
+          name="login"
+        >
+          <div
+            class="d-none"
+            role="alert"
+          />
+          <div
+            class="row mb-2 form-group "
+          >
+            <label
+              class="col-2 col-form-label"
+              for="model-username"
+              id="label-username"
+            >
+              Username:
+            </label>
+            <div
+              class="col-10"
+            >
+              <input
+                aria-describedby="label-username"
+                class="form-control "
+                id="model-username"
+                name="username"
+                title="Username"
+                type="text"
+              />
+            </div>
+            <div
+              class="invalid-feedback d-none"
+            />
+          </div>
+          <div
+            class="row mb-2 form-group "
+          >
+            <label
+              class="col-2 col-form-label"
+              for="model-password"
+              id="label-password"
+            >
+              Password:
+            </label>
+            <div
+              class="col-10"
+            >
+              <div
+                class="input-group"
+              >
+                <input
+                  aria-describedby="label-password"
+                  class="form-control "
+                  id="model-password"
+                  name="password"
+                  title="Password"
+                  type="password"
+                />
+                <button
+                  class="d-none"
+                  type="button"
+                >
+                  Reveal
+                </button>
+              </div>
+            </div>
+            <div
+              class="invalid-feedback d-none"
+            />
+          </div>
+          <div
+            class="row mb-2 form-group "
+          >
+            <label
+              class="col-2 col-form-label"
+              for="model-rememberme"
+              id="label-rememberme"
+            >
+              Remember Me:
+            </label>
+            <div
+              class="col-10"
+            >
+              <input
+                aria-describedby="label-rememberme"
+                class="form-check-input "
+                id="model-rememberme"
+                name="rememberme"
+                title="Remember Me"
+                type="checkbox"
+              />
+            </div>
+            <div
+              class="invalid-feedback d-none"
+            />
+          </div>
+          <div>
+            <button
+              class="btn btn-primary"
+              disabled=""
+              type="submit"
+            >
+              Login
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <footer
+    class="bg-body-tertiary footer row border-top border-secondary-subtle"
+  >
+    <div
+      class="col-3 github-link"
+    >
+      <div>
+        <a
+          href="https://github.com/asrashley/dash-live"
+        >
+          github.com/asrashley/dash-live
+        </a>
+      </div>
+      <div>
+        12345abcde
+      </div>
+    </div>
+    <div
+      class="col-6 text-center service-name"
+    >
+      Simulated MPEG DASH service
+    </div>
+    <div
+      class="col-3 text-end copyright"
+    >
+      ©2025 Alexis Ashley
+    </div>
+  </footer>
+  <div
+    class="modal-backdrop d-none"
+    data-testid="modal-backdrop"
+  />
+</DocumentFragment>
+`;
+
+exports[`main entry-point app > matches snapshot for video player page 1`] = `
+<DocumentFragment>
+  <header
+    class=""
+  >
+    <nav
+      class="navbar navbar-expand-lg navbar-light bg-body-tertiary"
+    >
+      <span
+        class="navbar-brand"
+      >
+        DASH server
+      </span>
+      <button
+        aria-controls="navbarSupportedContent"
+        aria-expanded="false"
+        aria-label="Toggle navigation"
+        class="navbar-toggler collapsed"
+        type="button"
+      >
+        <span
+          class="navbar-toggler-icon"
+        />
+      </button>
+      <div
+        class="collapse navbar-collapse"
+        id="navbarSupportedContent"
+      >
+        <ul
+          class="navbar-nav flex-fill"
+        >
+          <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link spa"
+              href="/"
+              role="menuitem"
+            >
+              Home
+            </a>
+          </li>
+          <li
+            class="nav-item "
+          >
+            <a
+              class="nav-link "
+              href="/streams"
+              role="menuitem"
+            >
+              Streams
+            </a>
+          </li>
+          <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link spa"
+              href="/multi-period-streams"
+              role="menuitem"
+            >
+              Multi-Period
+            </a>
+          </li>
+          <li
+            class="nav-item spa"
+          >
+            <a
+              class="nav-link spa"
+              href="/validate"
+              role="menuitem"
+            >
+              Validate
+            </a>
+          </li>
+          <li
+            class="nav-item "
+          >
+            <a
+              class="nav-link "
+              href="/media/inspect"
+              role="menuitem"
+            >
+              Inspect
+            </a>
+          </li>
+          <li
+            class="nav-item dropdown ms-auto me-4"
+          >
+            <span
+              class="username me-1"
+            >
+              mediamgr
+            </span>
+            <button
+              aria-expanded="false"
+              class="btn btn-light dropdown-toggle"
+              data-testid="toggle-user-menu"
+              role="menubar"
+            >
+              <span
+                aria-label="gear-fill icon"
+                class="bi icon bi-gear-fill "
+                role="img"
+              />
+            </button>
+            <ul
+              class="dropdown-menu"
+            >
+              <li>
+                <button
+                  class="dropdown-item"
+                  role="menuitem"
+                >
+                  Change Password
+                </button>
+              </li>
+              <li>
+                <button
+                  class="dropdown-item"
+                  role="menuitem"
+                >
+                  Log Out
+                </button>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </nav>
+    <nav
+      aria-label="breadcrumb"
+      class="breadcrumbs"
+      data-location="/play/vod/bbb/hand_made"
+    >
+      <ol
+        class="breadcrumb"
+      >
+        <li
+          class="breadcrumb-item "
+          id="crumb_0"
+        >
+          <a
+            href="/"
+            title="Home"
+          >
+            Home
+          </a>
+        </li>
+        <li
+          class="breadcrumb-item "
+          id="crumb_1"
+        >
+          <a
+            href="/play"
+            title="play"
+          >
+            play
+          </a>
+        </li>
+        <li
+          class="breadcrumb-item "
+          id="crumb_2"
+        >
+          <a
+            href="/play/vod"
+            title="vod"
+          >
+            vod
+          </a>
+        </li>
+        <li
+          class="breadcrumb-item "
+          id="crumb_3"
+        >
+          <a
+            href="/play/vod/bbb"
+            title="bbb"
+          >
+            bbb
+          </a>
+        </li>
+        <li
+          class="breadcrumb-item active"
+          id="crumb_4"
+        >
+          <span>
+            hand_made
+          </span>
+        </li>
+      </ol>
+    </nav>
+  </header>
+  <div
+    class="messages-panel"
+  />
+  <div
+    class="content container-fluid"
+  >
+    <div
+      data-testid="video-player-page"
+    >
+      <div
+        id="vid-window"
+      >
+        <video
+          src="/dash/vod/bbb/hand_made.mpd"
+        />
+        <div
+          class="subtitles-wrapper"
+        >
+          <div
+            class="subtitles"
+          />
+        </div>
+      </div>
+      <div
+        id="status"
+      />
+      <div
+        class="d-flex flex-row btn-group border border-secondary"
+        data-testid="playback-controls"
+        id="playback-controls"
+      >
+        <button
+          class="btn btn-secondary pe-1"
+          data-testid="play-pause-btn"
+        >
+          <span
+            aria-label="play-fill icon"
+            class="bi icon bi-play-fill "
+            role="img"
+          />
+        </button>
+        <button
+          class="btn btn-secondary"
+          data-testid="skip-back-btn"
+        >
+          <span
+            aria-label="skip-backward-fill icon"
+            class="bi icon bi-skip-backward-fill "
+            role="img"
+          />
+        </button>
+        <button
+          class="btn btn-secondary"
+          data-testid="stop-btn"
+        >
+          <span
+            aria-label="stop-fill icon"
+            class="bi icon bi-stop-fill "
+            role="img"
+          />
+        </button>
+        <button
+          class="btn btn-secondary"
+          data-testid="skip-fwd-btn"
+        >
+          <span
+            aria-label="skip-forward-fill icon"
+            class="bi icon bi-skip-forward-fill "
+            role="img"
+          />
+        </button>
+        <div
+          class="btn-group dropup"
+        >
+          <button
+            aria-expanded="false"
+            class="btn btn-secondary dropdown-toggle"
+            data-testid="track-track-toggle"
+          >
+            <span
+              aria-label="badge-cc icon"
+              class="bi icon bi-badge-cc "
+              role="img"
+            />
+          </button>
+          <ul
+            class="dropdown-menu "
+            style=""
+          >
+            <li>
+              <button
+                class="dropdown-item fw-bold"
+              >
+                - off -
+                <div
+                  class="float-end"
+                >
+                  <span
+                    class="bool-yes"
+                  >
+                    ✓
+                  </span>
+                </div>
+              </button>
+            </li>
+          </ul>
+        </div>
+        <div
+          class="play-position flex-grow-1"
+        >
+          00:00:00
+        </div>
       </div>
     </div>
   </div>
