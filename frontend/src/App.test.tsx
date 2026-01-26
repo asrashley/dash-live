@@ -5,7 +5,7 @@ import { mock } from "vitest-mock-extended";
 import fetchMock from '@fetch-mock/vitest';
 import userEvent from "@testing-library/user-event";
 import { useContext } from "preact/hooks";
-import { useLocation } from 'wouter-preact';
+import { useLocation, useSearch } from 'wouter-preact';
 import { io, Socket } from "socket.io-client";
 import log from "loglevel";
 
@@ -19,11 +19,13 @@ import { JWToken } from "./user/types/JWToken";
 import { LocalStorageKeys } from "./hooks/useLocalStorage";
 import { wssUrl } from "./validator/utils/wssUrl";
 import { MockWebsocketServer } from "./test/MockWebsocketServer";
+import { resetAllMessages } from "./hooks/useMessages";
 
 vi.mock('wouter-preact', async (importOriginal) => {
   return {
     ...await importOriginal(),
     useLocation: vi.fn(),
+    useSearch: vi.fn(),
   };
 });
 
@@ -68,6 +70,7 @@ function CinemaTest() {
 
 describe("main entry-point app", () => {
   const useLocationSpy = vi.mocked(useLocation);
+  const useSearchMock = vi.mocked(useSearch);
   const setLocation = vi.fn();
   const mockLocation = {
     ...new URL(document.location.href),
@@ -103,11 +106,13 @@ describe("main entry-point app", () => {
     log.setLevel('error');
     document.body.className = "";
     useLocationSpy.mockImplementation(() => [mockLocation.pathname, setLocation]);
+    useSearchMock.mockReturnValue('');
     endpoint = new FakeEndpoint(document.location.origin);
     dashServer = new MockDashServer({
       endpoint,
     });
     wssUrlMock.mockReturnValue(websocketUrl);
+    resetAllMessages();
     const { server } = MockWebsocketServer.create(websocketUrl, mockSocket);
     expect(server).toBeDefined();
     wssServer = server;
@@ -125,7 +130,7 @@ describe("main entry-point app", () => {
 
   afterEach(async () => {
     await wssServer.destroy();
-    vi.clearAllMocks();
+    vi.resetAllMocks();
     localStorage.clear();
     endpoint.shutdown();
     fetchMock.mockReset();
@@ -179,6 +184,26 @@ describe("main entry-point app", () => {
     expect(asFragment()).toMatchSnapshot();
   });
 
+  test("matches snapshot for login page", async () => {
+    mockLocation.pathname = uiRouteMap.login.url();
+    const { asFragment, findByText } = render(
+      <App />,
+      { baseElement }
+    );
+    await findByText("Log into DASH server");
+    expect(asFragment()).toMatchSnapshot();
+  });
+
+  test("matches snapshot for change password page", async () => {
+    mockLocation.pathname = uiRouteMap.changePassword.url();
+    const { asFragment, findByText } = render(
+      <App />,
+      { baseElement }
+    );
+    await findByText("Change my password");
+    expect(asFragment()).toMatchSnapshot();
+  });
+
   test("matches snapshot for list MPS", async () => {
     mockLocation.pathname = uiRouteMap.listMps.url();
     const listMpsProm = endpoint.addResponsePromise('get', routeMap.listMps.url());
@@ -191,6 +216,18 @@ describe("main entry-point app", () => {
     await findByText("Log Out");
     await findByText('first title');
     await findByText('Add a Stream');
+    expect(asFragment()).toMatchSnapshot();
+  });
+
+  test("matches snapshot for add MPS", async () => {
+    mockLocation.pathname = uiRouteMap.addMps.url();
+    const { asFragment, findByText } = render(
+      <App />,
+      { baseElement }
+    );
+    await userPromise;
+    await findByText("Log Out");
+    await findByText('Add new Multi-Period stream');
     expect(asFragment()).toMatchSnapshot();
   });
 
@@ -220,6 +257,21 @@ describe("main entry-point app", () => {
     await userPromise;
     await findByText("Log Out");
     await findByText(mediaUser.email);
+    expect(asFragment()).toMatchSnapshot();
+  });
+
+  test('matches snapshot for edit user', async () => {
+    user = dashServer.login(adminUser.email, adminUser.password);
+    expect(user).not.toBeNull();
+    localStorage.setItem(LocalStorageKeys.REFRESH_TOKEN, JSON.stringify(user.refreshToken));
+    mockLocation.pathname = uiRouteMap.editUser.url({ username: mediaUser.username });
+    const { asFragment, findByText } = render(
+      <App />,
+      { baseElement }
+    );
+    await userPromise;
+    await findByText("Log Out");
+    await findByText(`Editing user ${mediaUser.username}`);
     expect(asFragment()).toMatchSnapshot();
   });
 
@@ -324,5 +376,16 @@ describe("main entry-point app", () => {
     await findByText("Log In");
     expect(setLocation).toHaveBeenCalledTimes(1);
     expect(setLocation).toHaveBeenCalledWith(uiRouteMap.login.url());
+  });
+
+  test("matches snapshot for video player page", async () => {
+    mockLocation.pathname = uiRouteMap.video.url({mode: 'vod', stream: 'bbb', manifest: 'hand_made'});
+    const { asFragment, findByText } = render(
+      <App />,
+      { baseElement }
+    );
+    await userPromise;
+    await findByText("00:00:00");
+    expect(asFragment()).toMatchSnapshot();
   });
 });
