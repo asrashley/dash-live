@@ -39,22 +39,23 @@ export function useCombinedStreams(): UseCombinedStreamsHook {
     names.sort((a, b) => {
       const t1 = smap.get(a).title;
       const t2 = smap.get(b).title;
-      if (t1 == t2) {
-        return 0;
-      }
-      if (t1 < t2) {
-        return -1;
-      }
-      return 1;
+      return t1.localeCompare(t2);
     });
     return names;
   });
   const loaded = useComputed<boolean>(() => streamsLoaded.value && mpsLoaded.value);
   const error = useComputed<string | null>(() => {
-    if (!streamsError && !mpsError) {
+    if (!streamsError.value && !mpsError.value) {
       return null;
     }
-    return [streamsError ?? '', mpsError ?? ''].join(' ');
-  })
+    const errors: string[] = [];
+    if (streamsError.value) {
+      errors.push(streamsError.value);
+    }
+    if (mpsError.value) {
+      errors.push(mpsError.value);
+    }
+    return errors.join(', ');
+  });
   return { streamNames, streamsMap, loaded, error };
 }
