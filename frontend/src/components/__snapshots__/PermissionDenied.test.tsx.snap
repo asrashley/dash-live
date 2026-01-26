@@ -1,0 +1,56 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PermissionDenied > renders message and login link 1`] = `
+<DocumentFragment>
+  <div
+    class="card m-3"
+    id="permission-denied"
+  >
+    <div
+      class="card-header"
+    >
+      You need to log in to access this page
+    </div>
+    <div
+      class="card-body"
+    >
+      <div
+        class="d-flex flex-row mb-3"
+      >
+        <div>
+          <img
+            alt="Vector image of a dog looking sad"
+            class="not-found-img"
+            src="/static/img/sad-puppy-dog.svg"
+          />
+          <a
+            class="fs-6 link-opacity-50"
+            href="https://www.wannapik.com/vectors/88"
+          >
+            Image designed by Wannapik
+          </a>
+        </div>
+        <div>
+          <p
+            class="fs-3"
+          >
+            This page is only available for users who have logged in.
+          </p>
+          <p
+            class="fs-4"
+          >
+            Probably a good idea to 
+            <a
+              class="link link-underline-light"
+              href="/login"
+            >
+              go to the login page
+            </a>
+            .
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
