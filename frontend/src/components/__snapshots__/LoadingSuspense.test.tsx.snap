@@ -1,0 +1,72 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`LoadingSuspense > shows ErrorCard when error is set (even if loaded) 1`] = `
+<DocumentFragment>
+  <div
+    class="card m-3"
+    id="loading-suspense"
+  >
+    <div
+      class="card-header"
+    >
+      Load widgets
+    </div>
+    <div
+      class="card-body"
+    >
+      <div
+        class="d-flex flex-row mb-3"
+      >
+        <div>
+          <img
+            alt="Vector image of a dog looking sad"
+            class="not-found-img"
+            src="/static/img/sad-puppy-dog.svg"
+          />
+          <a
+            class="fs-6 link-opacity-50"
+            href="https://www.wannapik.com/vectors/88"
+          >
+            Image designed by Wannapik
+          </a>
+        </div>
+        <div>
+          <p>
+            Failed to Load widgets: server exploded
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`LoadingSuspense > shows title and spinner while not loaded 1`] = `
+<DocumentFragment>
+  <div
+    id="loading-suspense"
+  >
+    <h2
+      class="title"
+    >
+      Fetching data...
+    </h2>
+    <div
+      class="lds-ring"
+    >
+      <div
+        class="lds-seg"
+      />
+      <div
+        class="lds-seg"
+      />
+      <div
+        class="lds-seg"
+      />
+      <div
+        class="lds-seg"
+      />
+    </div>
+  </div>
+</DocumentFragment>
+`;
