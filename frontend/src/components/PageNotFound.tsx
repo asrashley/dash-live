@@ -1,13 +1,16 @@
 import { uiRouteMap } from "@dashlive/routemap";
 import { ErrorCard } from "./ErrorCard";
+import { useLocation } from "wouter-preact";
 
 export function PageNotFound() {
+  const [location] = useLocation();
+
   return (
     <ErrorCard
       id="page-not-found"
       header="Sorry I don't know about this page"
     >
-          <p className="fs-3">
+          <p className="fs-3" data-location={location}>
             This page might have moved, or it might be a bug in this site.
           </p>
           <p className="fs-4">

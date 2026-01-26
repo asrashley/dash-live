@@ -33,6 +33,7 @@ exports[`PageNotFound component > matches snapshot 1`] = `
         <div>
           <p
             class="fs-3"
+            data-location="/"
           >
             This page might have moved, or it might be a bug in this site.
           </p>
