@@ -1,5 +1,6 @@
 import { useCallback, useContext } from "preact/hooks";
 import { useLocation } from "wouter-preact";
+import { useComputed } from "@preact/signals";
 
 import { uiRouteMap } from "@dashlive/routemap";
 
@@ -17,6 +18,7 @@ import {
 } from "../../hooks/useMultiPeriodStream";
 import { WhoAmIContext } from "../../user/hooks/useWhoAmI";
 import { useMessages } from "../../hooks/useMessages";
+import { LoadingSuspense } from "../../components/LoadingSuspense";
 
 interface HeaderProps {
   newStream: boolean;
@@ -51,6 +53,26 @@ export function EditStreamCard({
   const modelContext = useMultiPeriodStream({ name, newStream });
   const streamsContext = useAllStreams();
   const header = <Header name={name} newStream={newStream} />;
+  const loaded = useComputed<boolean>(() => (newStream || modelContext.loaded.value) && streamsContext.loaded.value);
+  const error = useComputed<string | null>(() => {
+    const errors: string[] = [];
+    if (!newStream && modelContext.loaded.value) {
+      for(const item of Object.values(modelContext.errors.value || {}) ) {
+        if(typeof item === 'string') {
+          errors.push(item);
+        } else if(typeof item === 'object' && item !== null) {
+          errors.push(...Object.values(item).filter(v => typeof v === 'string') as string[]);
+        }
+      }
+    }
+    if(streamsContext.error.value) {
+      errors.push(streamsContext.error.value);
+    }
+    if (errors.length === 0) {
+      return null;
+    }
+    return errors.join(', ');
+  });
 
   const closeDialog = useCallback(() => {
     dialog.value = null;
@@ -74,12 +96,14 @@ export function EditStreamCard({
   return (
     <AllStreamsContext.Provider value={streamsContext}>
       <MultiPeriodModelContext.Provider value={modelContext}>
-        <Card header={header} id="edit_mps_form">
-          <EditStreamForm name={name} newStream={newStream} />
-        </Card>
-        <TrackSelectionDialog onClose={closeDialog} />
-        <ConfirmDeleteDialog onClose={closeDialog} onConfirm={confirmDeleteStream} />
-        <OptionsDialog onClose={closeDialog} />
+        <LoadingSuspense action="fetching stream information" error={error} loaded={loaded}>
+          <Card header={header} id="edit_mps_form">
+            <EditStreamForm name={name} newStream={newStream} />
+          </Card>
+          <TrackSelectionDialog onClose={closeDialog} />
+          <ConfirmDeleteDialog onClose={closeDialog} onConfirm={confirmDeleteStream} />
+          <OptionsDialog onClose={closeDialog} />
+        </LoadingSuspense>
       </MultiPeriodModelContext.Provider>
     </AllStreamsContext.Provider>
   );
