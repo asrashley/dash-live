@@ -46,7 +46,7 @@ exports[`EditStreamPage component > allows an existing stream to be edited 1`] =
             Unique name for this stream
           </div>
           <div
-            class="invalid-feedback d-block"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
@@ -76,7 +76,7 @@ exports[`EditStreamPage component > allows an existing stream to be edited 1`] =
             Title for this stream
           </div>
           <div
-            class="invalid-feedback d-block"
+            class="invalid-feedback d-none"
           />
         </div>
         <div
