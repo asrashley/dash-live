@@ -6,49 +6,102 @@ import { uiRouteMap } from "@dashlive/routemap";
 import { LoadingSpinner } from "./components/LoadingSpinner";
 import { PageNotFound } from "./components/PageNotFound";
 
+interface PageFallbackProps {
+  component: string;
+}
+function PageFallback({ component }: PageFallbackProps) {
+  return <div id="loading-suspense">
+    <h2 className="title">Loading {component} component...</h2>
+    <LoadingSpinner />
+  </div>;
+}
+
+function AddStreamPageFallback() {
+  return <PageFallback component="add multi-period stream" />;
+}
 const AddStreamPage = lazy(
   () => import("./mps/components/AddStreamPage"),
-  LoadingSpinner
+  AddStreamPageFallback
 );
+
+function EditStreamPageFallback() {
+  return <PageFallback component="edit multi-period stream" />;
+}
 const EditStreamPage = lazy(
   () => import("./mps/components/EditStreamPage"),
-  LoadingSpinner
+  EditStreamPageFallback
 );
+
+function HomePageFallback() {
+  return <PageFallback component="home page" />;
+}
 const HomePage = lazy(
   () => import("./home/components/HomePage"),
-  LoadingSpinner
+  HomePageFallback
 );
+
+function ListMpsPageFallback() {
+  return <PageFallback component="browse multi-period streams" />;
+}
 const ListStreamsPage = lazy(
   () => import("./mps/components/ListStreamsPage"),
-  LoadingSpinner
+  ListMpsPageFallback
 );
+
+function LoginPageFallback() {
+  return <PageFallback component="login" />;
+}
 const LoginPage = lazy(
   () => import("./user/components/LoginPage"),
-  LoadingSpinner
+  LoginPageFallback
 );
+
+function CgiOptionsPageFallback() {
+  return <PageFallback component="cgi options" />;
+}
 const CgiOptionsPage = lazy(
   () => import("./cgi/components/CgiOptionsPage"),
-  LoadingSpinner
+  CgiOptionsPageFallback
 );
+
+function ListUsersPageFallback() {
+  return <PageFallback component="list users" />;
+}
 const ListUsersPage = lazy(
   () => import("./user/components/ListUsersPage"),
-  LoadingSpinner
+  ListUsersPageFallback
 );
+
+function EditUserPageFallback() {
+  return <PageFallback component="edit user" />;
+}
 const EditUserPage = lazy(
   () => import("./user/components/EditUserPage"),
-  LoadingSpinner
+  EditUserPageFallback
 );
+
+function ChangePasswordPageFallback() {
+  return <PageFallback component="change password" />;
+}
 const ChangePasswordPage = lazy(
   () => import("./user/components/ChangePasswordPage"),
-  LoadingSpinner
+  ChangePasswordPageFallback
 );
+
+function ValidatorPageFallback() {
+  return <PageFallback component="stream validator" />;
+}
 const ValidatorPage = lazy(
   () => import("./validator/components/ValidatorPage"),
-  LoadingSpinner
+  ValidatorPageFallback
 );
+
+function VideoPlayerFallback() {
+  return <PageFallback component="video player" />;
+}
 const VideoPlayer = lazy(
   () => import("./player/components/VideoPlayerPage"),
-  LoadingSpinner
+  VideoPlayerFallback
 );
 
 export function AppRoutes() {
