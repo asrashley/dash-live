@@ -24,7 +24,7 @@ export function ErrorCard({id, header, children}: ErrorCardProps) {
             className="not-found-img"
           />
           <a
-            className="fs-6 link-opacity-50"
+            className="link-opacity-50 not-found-img-credit"
             href="https://www.wannapik.com/vectors/88"
           >
             Image designed by Wannapik

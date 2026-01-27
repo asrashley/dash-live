@@ -1,5 +1,87 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`LoadingSuspense > can set a heading string for the error card 1`] = `
+<DocumentFragment>
+  <div
+    class="card m-3"
+    id="loading-suspense"
+  >
+    <div
+      class="card-header"
+    >
+      my custom heading
+    </div>
+    <div
+      class="card-body"
+    >
+      <div
+        class="d-flex flex-row mb-3"
+      >
+        <div>
+          <img
+            alt="Vector image of a dog looking sad"
+            class="not-found-img"
+            src="/static/img/sad-puppy-dog.svg"
+          />
+          <a
+            class="link-opacity-50 not-found-img-credit"
+            href="https://www.wannapik.com/vectors/88"
+          >
+            Image designed by Wannapik
+          </a>
+        </div>
+        <div>
+          <p>
+            Load widgets failed: server exploded
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
+exports[`LoadingSuspense > can use a signal to a heading for the error card 1`] = `
+<DocumentFragment>
+  <div
+    class="card m-3"
+    id="loading-suspense"
+  >
+    <div
+      class="card-header"
+    >
+      my custom heading via signal
+    </div>
+    <div
+      class="card-body"
+    >
+      <div
+        class="d-flex flex-row mb-3"
+      >
+        <div>
+          <img
+            alt="Vector image of a dog looking sad"
+            class="not-found-img"
+            src="/static/img/sad-puppy-dog.svg"
+          />
+          <a
+            class="link-opacity-50 not-found-img-credit"
+            href="https://www.wannapik.com/vectors/88"
+          >
+            Image designed by Wannapik
+          </a>
+        </div>
+        <div>
+          <p>
+            Load widgets failed: server exploded
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</DocumentFragment>
+`;
+
 exports[`LoadingSuspense > shows ErrorCard when error is set (even if loaded) 1`] = `
 <DocumentFragment>
   <div
@@ -24,7 +106,7 @@ exports[`LoadingSuspense > shows ErrorCard when error is set (even if loaded) 1`
             src="/static/img/sad-puppy-dog.svg"
           />
           <a
-            class="fs-6 link-opacity-50"
+            class="link-opacity-50 not-found-img-credit"
             href="https://www.wannapik.com/vectors/88"
           >
             Image designed by Wannapik
@@ -32,7 +114,7 @@ exports[`LoadingSuspense > shows ErrorCard when error is set (even if loaded) 1`
         </div>
         <div>
           <p>
-            Failed to Load widgets: server exploded
+            Load widgets failed: server exploded
           </p>
         </div>
       </div>
