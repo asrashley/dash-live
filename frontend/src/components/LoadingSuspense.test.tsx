@@ -15,7 +15,44 @@ describe("LoadingSuspense", () => {
       </LoadingSuspense>
     );
 
-    getByText("Failed to Load widgets: server exploded");
+    getByText("Load widgets failed: server exploded");
+    expect(document.getElementById("loading-suspense")).not.toBeNull();
+    expect(queryBySelector(".lds-ring")).toBeNull();
+    expect(queryBySelector(".title")).toBeNull();
+    expect(asFragment()).toMatchSnapshot();
+  });
+
+  test("can set a heading string for the error card", () => {
+    const loaded = signal(true);
+    const error = signal<string | null>("server exploded");
+
+    const { asFragment, getByText, queryBySelector } = renderWithProviders(
+      <LoadingSuspense action="Load widgets" heading="my custom heading" loaded={loaded} error={error}>
+        <p>Child content</p>
+      </LoadingSuspense>
+    );
+
+    getByText("Load widgets failed: server exploded");
+    getByText("my custom heading");
+    expect(document.getElementById("loading-suspense")).not.toBeNull();
+    expect(queryBySelector(".lds-ring")).toBeNull();
+    expect(queryBySelector(".title")).toBeNull();
+    expect(asFragment()).toMatchSnapshot();
+  });
+
+  test("can use a signal to a heading for the error card", () => {
+    const loaded = signal(true);
+    const error = signal<string | null>("server exploded");
+    const heading = signal<string>("my custom heading via signal");
+
+    const { asFragment, getByText, queryBySelector } = renderWithProviders(
+      <LoadingSuspense action="Load widgets" heading={heading} loaded={loaded} error={error}>
+        <p>Child content</p>
+      </LoadingSuspense>
+    );
+
+    getByText("Load widgets failed: server exploded");
+    getByText("my custom heading via signal");
     expect(document.getElementById("loading-suspense")).not.toBeNull();
     expect(queryBySelector(".lds-ring")).toBeNull();
     expect(queryBySelector(".title")).toBeNull();
