@@ -162,6 +162,57 @@ describe('endpoints', () => {
         expect(hasUserInfo).toHaveBeenCalledWith(null);
     });
 
+    test('getting user info without a refresh token', async () => {
+        api.setRefreshToken(null);
+        const response = await api.getUserInfo() as Response;
+        expect(response).toEqual(expect.objectContaining({
+            status: 401,
+        }));
+        const text = await response.text();
+        expect(text).toEqual("No refresh token");
+    });
+
+    test('getting user info connection fails', async () => {
+        api.setRefreshToken(user.refreshToken);
+        endpoint.setResponseModifier(
+            'get',
+            routeMap.login.url(),
+            async () => {
+                throw new Error("connection failed");
+            }
+        );
+        const response = await api.getUserInfo() as Response;
+        expect(response).toEqual(expect.objectContaining({
+            status: 401,
+        }));
+        const text = await response.text();
+        expect(text).toEqual("Error: connection failed");
+    });
+
+    test('signal timeout getting user info', async () => {
+        api.setRefreshToken(user.refreshToken);
+        const blocker = Promise.withResolvers<void>();
+        endpoint.setResponseModifier(
+            'get',
+            routeMap.login.url(),
+            async (_props: ServerRouteProps, response: HttpRequestHandlerResponse) => {
+                await blocker.promise;
+                return response;
+            }
+        );
+        const controller = new AbortController();
+        const req = api.getUserInfo(controller.signal);
+        try{
+            controller.abort("timeout");
+        } catch{
+            // no op
+        }
+        await expect(async() => {
+            blocker.resolve();
+            await req;
+        }).rejects.toThrowError("The operation was aborted.");
+    });
+
     test('get all conventional streams', async () => {
         const { keys, streams } = allStdStreams;
         await expect(api.getAllStreams()).resolves.toEqual({ keys, streams });
