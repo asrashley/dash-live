@@ -36,7 +36,7 @@ const emptyStream: CombinedStream = {
   title: "",
   value: "",
   mps: false
-}
+};
 
 export interface UseStreamOptionsProps {
   streamNames: ReadonlySignal<string[]>;
