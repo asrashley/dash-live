@@ -20,6 +20,7 @@ import contentRoles from './test/fixtures/content_roles.json';
 import allStdStreams from './test/fixtures/streams.json';
 import { model as demoMps } from './test/fixtures/multi-period-streams/demo.json';
 import cgiOptions from './test/fixtures/cgiOptions.json';
+import bbbDashParams from './test/fixtures/play/vod/bbb/hand_made.json';
 
 describe('endpoints', () => {
     const needsRefreshToken = vi.fn();
@@ -290,6 +291,13 @@ describe('endpoints', () => {
                 title: 'a title is required'
             }
         });
+    });
+
+    test('gets DASH parameters for a stream', async () => {
+        api.setRefreshToken(user.refreshToken);
+        const params = new URLSearchParams();
+        await expect(api.getDashParameters('vod', 'bbb', 'hand_made', params)).resolves.toEqual(
+            bbbDashParams);
     });
 
     test('refreshes CSRF tokens', async () => {
