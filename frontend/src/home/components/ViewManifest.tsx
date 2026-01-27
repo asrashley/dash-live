@@ -1,12 +1,13 @@
 import {
   type ReadonlySignal,
+  useComputed,
   useSignal,
   useSignalEffect,
 } from "@preact/signals";
 import { useState } from "preact/hooks";
 
 import { useMessages } from "../../hooks/useMessages";
-import { LoadingSpinner } from "../../components/LoadingSpinner";
+import { LoadingSuspense } from "../../components/LoadingSuspense";
 
 export interface ViewManifestProps {
     manifestUrl: ReadonlySignal<URL>;
@@ -15,8 +16,10 @@ export interface ViewManifestProps {
 export function ViewManifest({ manifestUrl }: ViewManifestProps) {
   const loadedUrl = useSignal<string>("");
   const [xmlText, setXmlText] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(true);
+  const loaded = useSignal<boolean>(false);
+  const error = useSignal<string | null>(null);
   const { appendMessage } = useMessages();
+  const heading = useComputed<string>(() => `Manifest ${manifestUrl.value.href}`);
 
   useSignalEffect(() => {
     const controller = new AbortController();
@@ -28,7 +31,7 @@ export function ViewManifest({ manifestUrl }: ViewManifestProps) {
           accept: "application/dash+xml",
         });
         try {
-          setLoading(true);
+          loaded.value = false;
           const response = await fetch(url, {
             headers,
             signal,
@@ -42,20 +45,21 @@ export function ViewManifest({ manifestUrl }: ViewManifestProps) {
             );
             const ser = new XMLSerializer();
             setXmlText(ser.serializeToString(doc));
+            error.value = null;
           } else {
             appendMessage(
               "danger",
               `Fetching manifest failed: ${response.status}: ${response.statusText}`
             );
-            setXmlText(`Fetching manifest failed: ${response.status}: ${response.statusText}`);
+            error.value = `Fetching manifest failed: ${response.status}: ${response.statusText}`;
           }
         } catch (err) {
           if (!signal.aborted) {
             appendMessage("danger", `Fetching manifest failed: ${err}`);
-            setXmlText(`Fetching manifest failed: ${err}`);
+            error.value = `Fetching manifest failed: ${err}`;
           }
         } finally {
-            setLoading(false);
+            loaded.value = true;
         }
       }
     };
@@ -70,7 +74,9 @@ export function ViewManifest({ manifestUrl }: ViewManifestProps) {
 
   return (
     <div className="display-manifest">
-      {loading ? <LoadingSpinner /> : <pre id="manifest-xml">{xmlText}</pre>}
+      <LoadingSuspense action="fetching manifest" heading={heading} loaded={loaded} error={error}>
+        <pre id="manifest-xml">{xmlText}</pre>
+      </LoadingSuspense>
     </div>
   );
 }

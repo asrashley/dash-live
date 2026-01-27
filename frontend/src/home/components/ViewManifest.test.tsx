@@ -49,13 +49,35 @@ describe("ViewManifest component", () => {
     expect(asFragment).toMatchSnapshot();
   });
 
-  test("shows error if manifest fetch fails", async () => {
+  test("shows error if manifest fetch fails due to a server error", async () => {
     endpoint.setServerStatus(500);
     const prom = endpoint.addResponsePromise("get", manifestUrl.value.pathname);
     const { findByText } = renderWithProviders(
       <ViewManifest manifestUrl={manifestUrl} />
     );
     await expect(prom).resolves.toEqual(expect.objectContaining({status: 500}));
+    await findByText("Fetching manifest failed", { exact: false });
+    expect(messagesMock.appendMessage).toHaveBeenCalledTimes(1);
+    expect(messagesMock.appendMessage).toHaveBeenCalledWith(
+      "danger",
+      expect.stringContaining("Fetching manifest failed")
+    );
+  });
+
+  test("shows error if manifest fetch fails due to a network error", async () => {
+    const prom = new Promise<void>((resolve) => {
+    endpoint.setResponseModifier(
+      "get", 
+      manifestUrl.value.pathname,
+      async () => { 
+        resolve();
+        throw new Error("Network error");
+    });
+    });
+    const { findByText } = renderWithProviders(
+      <ViewManifest manifestUrl={manifestUrl} />
+    );
+    await expect(prom).resolves.toBeUndefined();
     await findByText("Fetching manifest failed", { exact: false });
     expect(messagesMock.appendMessage).toHaveBeenCalledTimes(1);
     expect(messagesMock.appendMessage).toHaveBeenCalledWith(
