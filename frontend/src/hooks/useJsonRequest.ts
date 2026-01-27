@@ -32,19 +32,19 @@ export function useJsonRequest<T>({ request, initialData, name }: UseJsonRequest
     const { signal } = controller;
 
     const fetchDataIfRequired = async () => {
-      if (!loaded.value) {
-        try {
-          const response = await request(signal);
+      try {
+        const response = await request(signal);
+        if (!loaded.value) {
           batch(() => {
             data.value = response as T;
             error.value = null;
             loaded.value = true;
 
           });
-        } catch (err) {
-          if (!signal.aborted) {
-            error.value = `Failed to fetch ${name} - ${err}`;
-          }
+        }
+      } catch (err) {
+        if (!signal.aborted) {
+          error.value = `Failed to fetch ${name} - ${err}`;
         }
       }
     };
