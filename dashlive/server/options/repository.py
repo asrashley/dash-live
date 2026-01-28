@@ -85,8 +85,9 @@ class OptionsRepository:
         Get a list of all DASH options that match
         """
         def matches(item: DashOption) -> bool:
-            if item.cgi_name in exclude:
-                return False
+            if exclude is not None:
+                if item.cgi_name in exclude:
+                    return False
             if only is not None and item.cgi_name not in only:
                 return False
             for name, value in filter.items():

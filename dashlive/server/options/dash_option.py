@@ -42,7 +42,7 @@ class DashOption:
     full_name: str
     title: str
     description: str
-    cgi_name: str | list[str]
+    cgi_name: str
     cgi_choices: tuple[CgiChoiceType, ...] | None = field(default=None)
     cgi_type: str | None = None
     input_type: str = ''
@@ -209,6 +209,8 @@ class DashOption:
 
     @staticmethod
     def list_without_none_from_string(value: str | None) -> list[str]:
+        if value is None:
+            return []
         if value.lower() in {'', 'none'}:
             return []
         rv = []
