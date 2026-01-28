@@ -40,9 +40,11 @@ from .types import OptionUsage
 
 class OptionsContainer(ObjectWithFields):
     OBJECT_FIELDS = {}
+    _parameter_map: Optional[dict[str, DashOption]]
+    _defaults: Optional["OptionsContainer"]
 
     def __init__(self,
-                 parameter_map: dict[str, DashOption] = None,
+                 parameter_map: Optional[dict[str, DashOption]] = None,
                  defaults: Optional["OptionsContainer"] = None,
                  **kwargs) -> None:
         super().__init__(**kwargs)
@@ -165,7 +167,8 @@ class OptionsContainer(ObjectWithFields):
         if exclude is None:
             exclude = {'encrypted', 'mode'}
         if destination is None:
-            destination: dict[str, str] = {}
+            destination = {}
+        assert self._parameter_map is not None
         for key, value in self.items():
             if isinstance(value, OptionsContainer):
                 self._convert_sub_options(destination, key, value, use, exclude, remove_defaults)

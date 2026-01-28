@@ -20,7 +20,7 @@
 #
 #############################################################################
 
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 import datetime
 from typing import Any, Union
 
@@ -173,6 +173,11 @@ class DashOption:
             input['type'] = 'select'
         return input
 
+    def replace(self, **kwargs) -> "DashOption":
+        new_kwargs = asdict(self)
+        new_kwargs.update(kwargs)
+        return DashOption(**new_kwargs)
+
     @staticmethod
     def bool_from_string(value: str) -> bool:
         return value.lower() in {'true', '1', 'on'}
@@ -196,7 +201,7 @@ class DashOption:
         return float(value)
 
     @staticmethod
-    def datetime_or_none_from_string(value: str) -> float | None:
+    def datetime_or_none_from_string(value: str) -> datetime.datetime | datetime.timedelta | None:
         if value in {None, '', 'none'}:
             return None
         return from_isodatetime(value)

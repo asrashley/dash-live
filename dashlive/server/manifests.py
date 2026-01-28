@@ -23,9 +23,10 @@
 from dataclasses import dataclass, field
 import hashlib
 import logging
-from typing import AbstractSet, Iterator, NamedTuple, Set
+from typing import AbstractSet, Any, Iterator, NamedTuple, Set, cast
 
 from dashlive.mpeg.dash.profiles import primary_profiles
+from dashlive.server.options.dash_option import DashOption
 from dashlive.server.options.drm_options import DrmLocationOption, DrmSelection
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.options.types import OptionUsage
@@ -43,7 +44,13 @@ class SupportedOptionTuple(NamedTuple):
 
 
 class SupportedOptionTupleList:
-    __dict__ = ('options', 'mode', 'title', 'restrictions', 'num_tests', 'kwargs')
+    __slots__ = ('options', 'mode', 'title', 'restrictions', 'num_tests', 'kwargs')
+    mode: str
+    title: str
+    num_tests: int
+    kwargs: dict[str, Any]
+    options: list[SupportedOptionTuple]
+    restrictions: dict[str, tuple]
 
     def __init__(self, mode: str, title: str,
                  restrictions: dict[str, tuple],
@@ -52,7 +59,7 @@ class SupportedOptionTupleList:
         self.mode = mode
         self.title = title
         self.restrictions = restrictions
-        self.num_tests = SupportedOptionTupleList.num_tests(options)
+        self.num_tests = SupportedOptionTupleList.calc_num_tests(options)
         self.kwargs = kwargs
 
     def __str__(self) -> str:
@@ -66,7 +73,7 @@ class SupportedOptionTupleList:
         return '\n'.join(lines)
 
     @staticmethod
-    def num_tests(options: list[SupportedOptionTuple]) -> int:
+    def calc_num_tests(options: list[SupportedOptionTuple]) -> int:
         count = 0
         for opt in options:
             if count:
@@ -77,7 +84,7 @@ class SupportedOptionTupleList:
 
     def cgi_query_combinations(self) -> Iterator[str]:
         """
-        Returns an interator that yields of all possible combinations of CGI query parameters
+        Returns an iterator that yields of all possible combinations of CGI query parameters
         """
         defaults = OptionsRepository.get_default_options()
         indexes = [0] * len(self.options)
@@ -102,7 +109,7 @@ class SupportedOptionTupleList:
                 candidate.update(**self.kwargs)
                 candidate.remove_unused_parameters(self.mode)
                 cgi_str = candidate.generate_cgi_parameters_string()
-                digest = hashlib.sha1(bytes(cgi_str, 'ascii')).digest()
+                digest: bytes = hashlib.sha1(bytes(cgi_str, 'ascii')).digest()
                 if digest not in checked:
                     checked.add(digest)
                     yield cgi_str
@@ -123,11 +130,11 @@ class DashManifest:
     name: str
     title: str
     features: set[str]
-    restrictions: dict[str, tuple] | None = field(default_factory=lambda: dict())
+    restrictions: dict[str, tuple] = field(default_factory=lambda: dict())
     segment_timeline: bool = field(default=False)
 
     def supported_modes(self) -> list[str]:
-        return self.restrictions.get('mode', primary_profiles.keys())
+        return cast(list[str], self.restrictions.get('mode', list(primary_profiles.keys())))
 
     def get_supported_dash_options(
             self,
@@ -135,7 +142,7 @@ class DashManifest:
             simplified: bool = False,
             use: OptionUsage | None = None,
             only: AbstractSet | None = None,
-            extras: list[tuple] | None = None,
+            extras: list[SupportedOptionTuple] | None = None,
             **kwargs) -> SupportedOptionTupleList:
         """
         Returns an list of support DASH options
@@ -164,7 +171,11 @@ class DashManifest:
         options: list[SupportedOptionTuple] = []
         if use is None:
             use = ~OptionUsage.HTML
-        for dash_opt in OptionsRepository.get_dash_options(only=only, exclude=exclude, use=use):
+        dash_options: list[DashOption] = OptionsRepository.get_dash_options(
+            only=only, exclude=exclude, use=use)
+        for dash_opt in dash_options:
+            if dash_opt.cgi_choices is None:
+                continue
             choices: list[str] = []
             for choice in dash_opt.cgi_choices:
                 if isinstance(choice, tuple):
@@ -173,7 +184,7 @@ class DashManifest:
                     value = choice
                 if value in {None, '', 'none'}:
                     continue
-                choices.append(value)
+                choices.append(value)  # pyright: ignore[reportArgumentType]
             options.append(SupportedOptionTuple(dash_opt.cgi_name, len(choices), choices))
         if drm_opts != {'drm=none'} and 'drm' not in exclude:
             options.append(SupportedOptionTuple('drm', len(drm_opts), list(drm_opts)))
