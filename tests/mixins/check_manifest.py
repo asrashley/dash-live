@@ -20,14 +20,16 @@
 #
 #############################################################################
 
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 import datetime
 from functools import wraps
+import math
 import os
 import logging
 from pathlib import Path
-from typing import AbstractSet
+from typing import AbstractSet, ClassVar
 import urllib.parse
 
 import flask
@@ -38,6 +40,7 @@ from dashlive.mpeg.dash.validator import ConcurrentWorkerPool
 from dashlive.server import manifests, models
 from dashlive.server.options.container import OptionsContainer
 from dashlive.server.options.dash_option import DashOption
+from dashlive.server.options.types import OptionUsage
 from dashlive.server.options.utc_time_options import UTCMethod
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.requesthandler.base import TemplateContext
@@ -77,6 +80,9 @@ class MockServeManifest(ServeManifest):
         raise ValueError(fr'Unsupported route name: {route}')
 
 class DashManifestCheckMixin:
+    progress: Callable[[int, int], None]
+    checked_urls: ClassVar[set[str]]
+
     async def check_a_manifest_using_major_options(
             self,
             filename: str,
@@ -137,15 +143,15 @@ class DashManifestCheckMixin:
         if test_duration == 0:
             if mode == 'live':
                 if mps is not None:
-                    test_duration = mps.total_duration() * 2
+                    test_duration = int(math.ceil(mps.total_duration().total_seconds() * 2))
                 else:
-                    test_duration = (fixture.segment_duration +
-                                     fixture.media_duration * 2)
+                    test_duration = int(math.ceil(
+                        fixture.segment_duration + fixture.media_duration * 2))
             else:
                 if mps is not None:
-                    test_duration = mps.total_duration()
+                    test_duration = int(math.ceil(mps.total_duration().total_seconds()))
                 else:
-                    test_duration = 4 * fixture.segment_duration
+                    test_duration = int(math.ceil(4 * fixture.segment_duration))
 
         if now is None:
             now = "2024-09-02T09:57:02Z"
@@ -175,12 +181,12 @@ class DashManifestCheckMixin:
             'utcMethod': utc_method,
             'useBaseUrls': use_base_url,
         }
-        options = manifest.get_supported_dash_options(
-            mode=mode, simplified=simplified, only=only, extras=extras,
+        options: manifests.SupportedOptionTupleList = manifest.get_supported_dash_options(
+            mode=mode, simplified=simplified, only=only, extras=extras, use=OptionUsage.MANIFEST,
             **manifest_kwargs)
         logging.debug('Testing options: %s', options)
-        total_tests = options.num_tests
-        if 'utcMethod' in manifest.features and 'utcMethod' not in kwargs:
+        total_tests: int = options.num_tests
+        if not simplified and 'utcMethod' in manifest.features and 'utcMethod' not in kwargs:
             total_tests += len(UTCMethod.cgi_choices)
         if 'useBaseUrls' in manifest.features and 'useBaseUrls' not in kwargs:
             total_tests += 2
@@ -192,21 +198,21 @@ class DashManifestCheckMixin:
         for query in options.cgi_query_combinations():
             if 'events=' in query:
                 if duration == 0:
-                    test_duration = 9 * fixture.segment_duration
+                    test_duration = int(math.ceil(9 * fixture.segment_duration))
                 ev_interval = fixture.segment_duration * 300
                 if 'ping' in query:
                     query += f'&ping_interval={ev_interval}&ping_timescale=100'
                 if 'scte35' in query:
                     query += f'&scte35_interval={ev_interval}&scte35_timescale=100'
             elif duration == 0:
-                test_duration = 3 * fixture.segment_duration
+                test_duration = int(math.ceil(3 * fixture.segment_duration))
             await self.check_manifest_using_options(
                 mode, url, query, debug=debug, check_media=check_media,
                 now=now, duration=test_duration, check_head=check_head,
                 fixture=fixture)
             count += 1
             self.progress(count, total_tests)
-        if 'utcMethod' in manifest.features and 'utcMethod' not in kwargs:
+        if not simplified and 'utcMethod' in manifest.features and 'utcMethod' not in kwargs:
             for method in UTCMethod.cgi_choices:
                 if method is None or method == utc_method:
                     continue
@@ -250,7 +256,7 @@ class DashManifestCheckMixin:
     async def check_manifest_url(
             self, mpd_url: str, mode: str, encrypted: bool, now: str, duration: int,
             debug: bool, check_head: bool, check_media: bool,
-            fixture: StreamFixture) -> ViewsTestDashValidator:
+            fixture: StreamFixture) -> ViewsTestDashValidator | None:
         """
         Test one manifest for validity (wrapped in context of MPD url)
         """

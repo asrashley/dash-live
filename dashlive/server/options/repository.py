@@ -208,6 +208,7 @@ class OptionsRepository:
                         params: dict[str, str],
                         is_cgi: bool,
                         defaults: OptionsContainer | None = None) -> OptionsContainer:
+        result: OptionsContainer
         if defaults is not None:
             result = defaults.clone(
                 parameter_map=cls.get_parameter_map(),
