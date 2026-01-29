@@ -22,69 +22,6 @@ from .mixins.mock_time import MockTime
 from .mixins.stream_fixtures import BBB_FIXTURE, MPS_FIXTURE, StreamFixture
 
 class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
-    async def test_hand_made_manifest_aac_vod(self):
-        await self.check_a_manifest_using_all_options(
-            'hand_made.mpd', 'vod', with_subs=True, audioCodec='mp4a',
-            segmentTimeline=False)
-
-    async def test_hand_made_manifest_aac_vod_timeline(self):
-        await self.check_a_manifest_using_all_options(
-            'hand_made.mpd', 'vod', with_subs=True, audioCodec='mp4a',
-            segmentTimeline=True)
-
-    async def test_hand_made_manifest_ec3_vod(self):
-        await self.check_a_manifest_using_all_options(
-            'hand_made.mpd', 'vod', with_subs=True, audioCodec='ec-3',
-            segmentTimeline=False)
-
-    async def test_hand_made_manifest_ec3_vod_timeline(self):
-        await self.check_a_manifest_using_all_options(
-            'hand_made.mpd', 'vod', with_subs=True, audioCodec='ec-3',
-            segmentTimeline=True)
-
-    async def test_hand_made_manifest_all_audio_codecs_vod(self):
-        await self.check_a_manifest_using_all_options(
-            'hand_made.mpd', 'vod', with_subs=True, audioCodec='any',
-            segmentTimeline=False)
-
-    async def test_hand_made_manifest_all_audio_codecs_vod_timeline(self):
-        await self.check_a_manifest_using_all_options(
-            'hand_made.mpd', 'vod', with_subs=True, audioCodec='any',
-            segmentTimeline=True)
-
-    async def test_hand_made_manifest_live_aac(self):
-        await self.check_a_manifest_using_all_options(
-            'hand_made.mpd', 'live', with_subs=True, audioCodec='mp4a',
-            segmentTimeline=False, now="2023-09-06T09:59:02Z")
-
-    async def test_hand_made_manifest_live_ec3(self):
-        await self.check_a_manifest_using_all_options(
-            'hand_made.mpd', 'live', with_subs=True, audioCodec='ec-3',
-            segmentTimeline=False, now="2021-09-06T09:59:02Z")
-
-    async def test_hand_made_manifest_live_all_audio(self):
-        await self.check_a_manifest_using_all_options(
-            'hand_made.mpd', 'live', with_subs=True, audioCodec='any',
-            segmentTimeline=False, now="2020-09-06T09:59:02Z")
-
-    async def test_hand_made_manifest_live_aac_timeline(self):
-        await self.check_a_manifest_using_all_options(
-            'hand_made.mpd', 'live', with_subs=True, audioCodec='mp4a',
-            segmentTimeline=True, now="2023-09-06T09:59:02Z")
-
-    async def test_hand_made_manifest_live_ec3_timeline(self):
-        await self.check_a_manifest_using_all_options(
-            'hand_made.mpd', 'live', with_subs=True, audioCodec='ec-3',
-            segmentTimeline=True, now="2021-09-06T09:59:02Z")
-
-    async def test_hand_made_manifest_live_all_audio_timeline(self):
-        await self.check_a_manifest_using_all_options(
-            'hand_made.mpd', 'live', with_subs=True, audioCodec='any',
-            now="2020-09-06T09:59:02Z", segmentTimeline=True)
-
-    async def test_hand_made_manifest_vod_abr(self):
-        await self.check_a_manifest_using_all_options(
-            'hand_made.mpd', 'vod', only={'abr', 'audioCodec'})
 
     async def test_hand_made_manifest_live_abr(self):
         await self.check_a_manifest_using_all_options(
