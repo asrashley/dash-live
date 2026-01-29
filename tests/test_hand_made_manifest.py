@@ -1,19 +1,5 @@
 #############################################################################
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
-#############################################################################
-#
 #  Project Name        :    Simulated MPEG DASH service
 #
 #  Author              :    Alex Ashley
@@ -27,12 +13,13 @@ import flask
 from dashlive.drm.system import DrmSystem
 from dashlive.server import models
 from dashlive.server.options.repository import OptionsRepository
+from dashlive.server.options.utc_time_options import UTCMethod
 from dashlive.utils import objects
 
 from .mixins.check_manifest import DashManifestCheckMixin
 from .mixins.flask_base import FlaskTestBase
 from .mixins.mock_time import MockTime
-from .mixins.stream_fixtures import BBB_FIXTURE
+from .mixins.stream_fixtures import BBB_FIXTURE, MPS_FIXTURE, StreamFixture
 
 class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
     async def test_hand_made_manifest_aac_vod(self):
@@ -115,6 +102,40 @@ class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
     async def test_hand_made_manifest_odvod_all_audio(self):
         await self.check_a_manifest_using_major_options(
             'hand_made.mpd', 'odvod', with_subs=True, audioCodec='any')
+
+    async def check_utc_timing_methods(self, mps: bool):
+        url: str
+        fixture: StreamFixture
+        if mps:
+            self.setup_multi_period_stream(MPS_FIXTURE)
+            fixture = MPS_FIXTURE
+            url = flask.url_for(
+                'mps-manifest', manifest='hand_made.mpd', mode='live', mps_name=fixture.name)
+        else:
+            fixture = BBB_FIXTURE
+            self.setup_media_fixture(fixture, with_subs=False)
+            url = flask.url_for(
+                'dash-mpd-v3', manifest='hand_made.mpd', mode='live', stream=fixture.name)
+
+        self.logout_user()
+        self.assertGreaterThan(models.MediaFile.count(), 0)
+
+        assert UTCMethod.cgi_choices is not None
+        for method in UTCMethod.cgi_choices:
+            if method is None:
+                continue
+            query: str = f'?time={method}'
+            with self.subTest(method=method, url=url):
+                await self.check_manifest_using_options(
+                    'live', url, query, debug=False, check_media=False,
+                    check_head=False, now='2026-01-02T03:04:05Z', duration=(fixture.segment_duration * 2),
+                    fixture=fixture)
+
+    async def test_utc_timing_methods_std_manifest(self):
+        await self.check_utc_timing_methods(False)
+
+    async def test_utc_timing_methods_mps_manifest(self):
+        await self.check_utc_timing_methods(True)
 
     async def test_legacy_vod_manifest_name(self):
         self.setup_media_fixture(BBB_FIXTURE)

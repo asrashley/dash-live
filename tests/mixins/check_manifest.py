@@ -39,7 +39,6 @@ from dashlive.mpeg.dash.profiles import primary_profiles
 from dashlive.mpeg.dash.validator import ConcurrentWorkerPool
 from dashlive.server import manifests, models
 from dashlive.server.options.container import OptionsContainer
-from dashlive.server.options.dash_option import DashOption
 from dashlive.server.options.types import OptionUsage
 from dashlive.server.options.utc_time_options import UTCMethod
 from dashlive.server.options.repository import OptionsRepository
@@ -115,9 +114,9 @@ class DashManifestCheckMixin:
             abr: bool = False,
             with_subs: bool = False,
             only: AbstractSet | None = None,
-            extras: list[DashOption] | None = None,
+            extras: list[manifests.SupportedOptionTuple] | None = None,
             now: str | None = None,
-            duration: int = 0,
+            duration: float = 0,
             fixture: StreamFixture | None = None,
             **kwargs) -> None:
         """
@@ -139,26 +138,26 @@ class DashManifestCheckMixin:
         if mps_name is not None:
             mps = models.MultiPeriodStream.get(name=mps_name)
             assert mps is not None
-        test_duration: int = duration
-        if test_duration == 0:
+        test_duration: float = duration
+        if test_duration < 1:
             if mode == 'live':
                 if mps is not None:
-                    test_duration = int(math.ceil(mps.total_duration().total_seconds() * 2))
+                    test_duration = mps.total_duration().total_seconds() * 2
                 else:
-                    test_duration = int(math.ceil(
-                        fixture.segment_duration + fixture.media_duration * 2))
+                    test_duration = fixture.segment_duration + fixture.media_duration * 2
             else:
                 if mps is not None:
-                    test_duration = int(math.ceil(mps.total_duration().total_seconds()))
+                    test_duration = mps.total_duration().total_seconds()
                 else:
-                    test_duration = int(math.ceil(4 * fixture.segment_duration))
+                    test_duration = 4 * fixture.segment_duration
 
         if now is None:
             now = "2024-09-02T09:57:02Z"
 
-        if mps is not None:
-            url: str = flask.url_for(
-                'mps-manifest', manifest=fixture, mode=mode, mps_name=mps_name)
+        url: str
+        if mps_name is not None:
+            url = flask.url_for(
+                'mps-manifest', manifest=filename, mode=mode, mps_name=mps_name)
         else:
             url = flask.url_for(
                 'dash-mpd-v3', manifest=filename, mode=mode, stream=fixture.name)
@@ -173,12 +172,10 @@ class DashManifestCheckMixin:
         if check_media is None:
             check_media = not simplified
 
-        utc_method = kwargs.get('utcMethod', '')
         use_base_url = kwargs.get('useBaseUrls', True)
         manifest_kwargs = {
             **kwargs,
             'abr': abr,
-            'utcMethod': utc_method,
             'useBaseUrls': use_base_url,
         }
         options: manifests.SupportedOptionTupleList = manifest.get_supported_dash_options(
@@ -186,8 +183,6 @@ class DashManifestCheckMixin:
             **manifest_kwargs)
         logging.debug('Testing options: %s', options)
         total_tests: int = options.num_tests
-        if not simplified and 'utcMethod' in manifest.features and 'utcMethod' not in kwargs:
-            total_tests += len(UTCMethod.cgi_choices)
         if 'useBaseUrls' in manifest.features and 'useBaseUrls' not in kwargs:
             total_tests += 2
 
@@ -212,17 +207,6 @@ class DashManifestCheckMixin:
                 fixture=fixture)
             count += 1
             self.progress(count, total_tests)
-        if not simplified and 'utcMethod' in manifest.features and 'utcMethod' not in kwargs:
-            for method in UTCMethod.cgi_choices:
-                if method is None or method == utc_method:
-                    continue
-                query = f'?time={method}'
-                await self.check_manifest_using_options(
-                    mode, url, query, debug=debug, check_media=False,
-                    check_head=False, now=now, duration=test_duration,
-                    fixture=fixture)
-                count += 1
-                self.progress(count, total_tests)
         if 'useBaseUrls' in manifest.features and 'useBaseUrls' not in kwargs:
             for ubu in [True, False]:
                 if ubu == use_base_url:
@@ -238,7 +222,7 @@ class DashManifestCheckMixin:
 
     async def check_manifest_using_options(
             self, mode: str, url: str, query: str, debug: bool,
-            now: str, duration: int,
+            now: str, duration: float,
             check_media: bool, check_head: bool,
             fixture: StreamFixture) -> None:
         """
@@ -254,7 +238,7 @@ class DashManifestCheckMixin:
             check_head=check_head, now=now, duration=duration, fixture=fixture)
 
     async def check_manifest_url(
-            self, mpd_url: str, mode: str, encrypted: bool, now: str, duration: int,
+            self, mpd_url: str, mode: str, encrypted: bool, now: str, duration: float,
             debug: bool, check_head: bool, check_media: bool,
             fixture: StreamFixture) -> ViewsTestDashValidator | None:
         """
@@ -276,7 +260,7 @@ class DashManifestCheckMixin:
 
     async def do_check_manifest_url(
             self, mpd_url: str, mode: str, encrypted: bool, debug: bool,
-            check_head: bool, check_media: bool, duration: int,
+            check_head: bool, check_media: bool, duration: float,
             fixture: StreamFixture) -> ViewsTestDashValidator:
         """
         Test one manifest for validity
@@ -304,7 +288,7 @@ class DashManifestCheckMixin:
             pool = ConcurrentWorkerPool(tpe)
             dv = ViewsTestDashValidator(
                 http_client=self.async_client, mode=mode, pool=pool,
-                duration=duration, url=mpd_url,
+                duration=int(math.ceil(duration)), url=mpd_url,
                 encrypted=encrypted, debug=debug, check_media=check_media)
             loaded = await dv.load(data=response.get_data(as_text=False))
             if not loaded:
