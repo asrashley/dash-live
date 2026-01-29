@@ -24,6 +24,7 @@ import datetime
 import math
 import re
 import time
+from typing import cast
 
 from .timezone import UTC, FixedOffsetTimeZone
 
@@ -156,7 +157,7 @@ def parse_timezone(value):
         return UTC()
     return FixedOffsetTimeZone(value)
 
-def from_isodatetime(date_time: str | None):
+def from_isodatetime(date_time: str | None) -> datetime.timedelta | datetime.datetime:
     """
     Convert an ISO formated date string to a datetime.datetime or datetime.timedelta
     """
@@ -211,9 +212,9 @@ def from_isodatetime(date_time: str | None):
         except ValueError:
             return datetime.datetime.strptime(date_time, "%d/%m/%Y")
     return datetime.datetime.strptime(
-        date_time, "%H:%M:%SZ").replace(tzinfo=UTC()).time()
+        date_time, "%H:%M:%SZ").replace(tzinfo=UTC())
 
-def DateTimeField(value):
+def DateTimeField(value: datetime.datetime | str | int) -> datetime.datetime:
     """
     Used for in OBJECT_FIELDS for a datetime or timedelta
     field.
@@ -221,8 +222,8 @@ def DateTimeField(value):
     if isinstance(value, datetime.datetime):
         return value
     if isinstance(value, str):
-        return from_isodatetime(value)
-    return datetime.datetime(value)
+        return cast(datetime.datetime, from_isodatetime(value))
+    return datetime.datetime.fromtimestamp(value)
 
 def multiply_timedelta(delta: datetime.timedelta, num: int) -> int:
     """

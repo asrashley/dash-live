@@ -91,6 +91,7 @@ class DashManifestCheckMixin:
             debug: bool = False,
             now: str | None = None,
             fixture: StreamFixture | None = None,
+            check_media: bool | None = None,
             **kwargs) -> None:
         """
         Exhaustive test of a manifest with every combination of options
@@ -100,7 +101,7 @@ class DashManifestCheckMixin:
         """
         await self.check_a_manifest_using_all_options(
             filename, mode, simplified=simplified, debug=debug, now=now,
-            fixture=fixture, **kwargs)
+            mps_name=mps_name, fixture=fixture, check_media=check_media, **kwargs)
 
     async def check_a_manifest_using_all_options(
             self,
@@ -208,16 +209,12 @@ class DashManifestCheckMixin:
             count += 1
             self.progress(count, total_tests)
         if 'useBaseUrls' in manifest.features and 'useBaseUrls' not in kwargs:
-            for ubu in [True, False]:
-                if ubu == use_base_url:
-                    continue
-                query = f'?base={ubu}'
-                await self.check_manifest_using_options(
-                    mode, url, query, debug=debug, check_media=False,
-                    check_head=False, now=now, duration=test_duration,
-                    fixture=fixture)
-                count += 1
-                self.progress(count, total_tests)
+            query = f'?base={not use_base_url}'
+            await self.check_manifest_using_options(
+                mode, url, query, debug=debug, check_media=False, check_head=False,
+                now=now, duration=test_duration, fixture=fixture)
+            count += 1
+            self.progress(count, total_tests)
         self.progress(total_tests, total_tests)
 
     async def check_manifest_using_options(
