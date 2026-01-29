@@ -150,7 +150,7 @@ class DashManifest:
         drm_opts = self.get_drm_options(mode)
         exclude: Set[str] = {
             'abr', 'bugCompatibility', 'drmSelection',
-            'leeway', 'mode', 'minimumUpdatePeriod',
+            'leeway', 'mode', 'minimumUpdatePeriod', 'utcMethod',
         }
         exclude.update(set(kwargs.keys()))
         if simplified:
