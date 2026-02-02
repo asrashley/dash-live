@@ -28,6 +28,12 @@ class SegmentBaseType(DashElement):
 
     initializationList: list[URLType]
     representationIndex: list[URLType]
+    timescale: int
+    presentationTimeOffset: int
+    indexRange: HttpRange | None
+    indexRangeExact: bool
+    availabilityTimeOffset: float | None
+    availabilityTimeComplete: bool | None
 
     def __init__(self, elt, parent):
         super().__init__(elt, parent)

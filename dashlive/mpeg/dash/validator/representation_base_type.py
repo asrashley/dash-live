@@ -27,6 +27,17 @@ class RepresentationBaseType(DashElement[T]):
         ('frameRate', FrameRateType, None),
         ('mimeType', str, None),
     ]
+    audioSamplingRate: int | None
+    codecs: str | None
+    profiles: str | None
+    width: int | None
+    height: int | None
+    frameRate: FrameRateType | None
+    mimeType: str | None
+    contentProtection: list[ContentProtection]
+    segmentTemplate: SegmentTemplate | None
+    segmentList: list[SegmentListType]
+    event_streams: list[InbandEventStream]
 
     def __init__(self, elt, parent):
         super().__init__(elt, parent)
@@ -36,7 +47,6 @@ class RepresentationBaseType(DashElement[T]):
         templates = elt.findall('./dash:SegmentTemplate', self.xmlNamespaces)
         if len(templates):
             self.segmentTemplate = SegmentTemplate(templates[0], self)
-        self.segmentList = None
         seg_list = elt.findall('./dash:SegmentList', self.xmlNamespaces)
         self.segmentList = [SegmentListType(s, self) for s in seg_list]
         ibevs = elt.findall('./dash:InbandEventStream', self.xmlNamespaces)

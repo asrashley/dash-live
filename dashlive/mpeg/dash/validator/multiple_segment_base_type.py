@@ -15,6 +15,10 @@ class MultipleSegmentBaseType(SegmentBaseType):
         ('duration', int, None),
         ('startNumber', int, ParentAttribute),
     ]
+    duration: int | None
+    startNumber: int
+    segmentTimeline: SegmentTimeline | None
+    bitstream_switching: str | None
 
     def __init__(self, elt, parent):
         super().__init__(elt, parent)
@@ -22,10 +26,10 @@ class MultipleSegmentBaseType(SegmentBaseType):
         timeline = elt.findall('./dash:SegmentTimeline', self.xmlNamespaces)
         if len(timeline):
             self.segmentTimeline = SegmentTimeline(timeline[0], self)
-        self.BitstreamSwitching = None
+        self.bitstream_switching = None
         bss = elt.findall('./dash:BitstreamSwitching', self.xmlNamespaces)
         if len(bss):
-            self.BitstreamSwitching = bss[0].text
+            self.bitstream_switching = bss[0].text
 
     async def validate(self) -> None:
         await super().validate()

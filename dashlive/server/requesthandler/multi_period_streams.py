@@ -49,8 +49,8 @@ class TracksItemPayload:
 class TracksJsonPayload(TypedDict):
     track_id: int
     role: str
-    lang: str | None = None
-    encrypted: bool = False
+    lang: str | None
+    encrypted: bool
 
 class PeriodJsonData(TypedDict):
     duration: str

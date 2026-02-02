@@ -9,7 +9,7 @@ import contextlib
 from datetime import datetime
 from io import SEEK_SET
 from pathlib import Path
-from typing import cast, AbstractSet, TYPE_CHECKING
+from typing import BinaryIO, cast, AbstractSet, TYPE_CHECKING
 
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship, Mapped, mapped_column
@@ -62,7 +62,7 @@ class Blob(ModelMixin["Blob"], Base):
 
     def open_file(self, media_directory: Path,
                   start: int | None,
-                  buffer_size: int) -> contextlib.AbstractContextManager:
+                  buffer_size: int) -> contextlib.AbstractContextManager[BinaryIO]:
         filename = media_directory / self.filename
         handle = open(filename, mode='rb', buffering=buffer_size)
         if start is not None:

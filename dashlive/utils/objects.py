@@ -142,7 +142,7 @@ def pick_items(src: dict, keys: AbstractSet[str]) -> dict:
             pass
     return rv
 
-def dict_to_cgi_params(params: dict[str, str]) -> str:
+def dict_to_cgi_params(params: dict[str, str], question_mark: bool = True) -> str:
     """
     Convert dictionary into a CGI parameter string
     """
@@ -154,6 +154,8 @@ def dict_to_cgi_params(params: dict[str, str]) -> str:
     for name in keys:
         val = params[name]
         lst.append(f'{name}={val}')
+    if not question_mark:
+        return '&'.join(lst)
     return '?' + '&'.join(lst)
 
 def merge(*items):

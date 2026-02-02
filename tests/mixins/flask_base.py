@@ -321,6 +321,8 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
     def setup_multi_period_stream(self,
                                   fixture: MultiPeriodStreamFixture
                                   ) -> None:
+        if models.MultiPeriodStream.count(name=fixture.name):
+            return
         for period in fixture.periods:
             self.setup_media_fixture(period.fixture)
         with self.app.app_context():
@@ -330,10 +332,9 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
             for idx, period in enumerate(fixture.periods, start=1):
                 stream = models.Stream.get(directory=period.fixture.name)
                 assert stream is not None
-                start: int = period.fixture.segment_duration * period.start
-                duration: int = period.fixture.media_duration
-                duration -= start
-                duration -= period.end * period.fixture.segment_duration
+                start: float = period.fixture.segment_duration * period.start
+                end: float = period.fixture.segment_duration * period.end
+                duration: float = end - start
                 prd = models.Period(
                     pid=period.pid, parent=mps, ordering=idx, stream=stream,
                     start=timedelta(seconds=start),

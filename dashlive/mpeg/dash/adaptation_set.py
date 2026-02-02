@@ -20,10 +20,12 @@
 #
 #############################################################################
 
+from datetime import timedelta
 import time
 from dataclasses import dataclass
 from typing import Any, ClassVar, Set
 
+from dashlive.utils.date_time import timedelta_to_timecode
 from dashlive.utils.objects import dict_to_cgi_params
 from dashlive.utils.list_of import ListOf
 from dashlive.utils.object_with_fields import ObjectWithFields
@@ -57,11 +59,18 @@ class AdaptationSet(ObjectWithFields):
         'lang': None,
         'maxFrameRate': None,
     }
+    content_type: str
     default_kid: str | None
     drm: dict[str, DrmManifestContext] | None
     event_streams: list[EventStream]
+    fileSuffix: str
+    id: int
+    initURL: str | None = ''
     lang: str | None
     maxFrameRate: int | None
+    mediaURL: str
+    mode: str
+    presentation_time_offset: timedelta
     representations: list[Representation]
     segmentAlignment: bool
     segment_timeline: bool
@@ -81,6 +90,7 @@ class AdaptationSet(ObjectWithFields):
             'mimeType': content_type_to_mime_type(
                 self.content_type, kwargs.get('codecs', None)),
             'fileSuffix': content_type_file_suffix(self.content_type),
+            'presentation_time_offset': timedelta(),
         }
         if self.content_type == 'audio':
             defaults['lang'] = 'und'
@@ -156,6 +166,7 @@ class AdaptationSet(ObjectWithFields):
         qs = dict_to_cgi_params(params)
         self.mediaURL += qs
         if self.mode != 'odvod':
+            assert self.initURL is not None
             self.initURL += qs
 
     @property

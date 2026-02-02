@@ -7,9 +7,10 @@
 #############################################################################
 from abc import abstractmethod
 from concurrent.futures import ThreadPoolExecutor
+import copy
 import logging
 import os
-from typing import Any, ClassVar, Generic, Optional, TypeVar, cast
+from typing import Any, ClassVar, Generic, Optional, TypeVar, cast, TYPE_CHECKING
 import urllib.parse
 
 from lxml import etree as ET
@@ -23,6 +24,8 @@ from .options import ValidatorOptions
 from .pool import WorkerPool
 from .progress import NullProgress, Progress
 
+if TYPE_CHECKING:
+    from .manifest import Manifest
 class ParentAttribute:
     pass
 
@@ -45,6 +48,7 @@ class DashElement(Generic[T]):
     elt: ValidationChecks
     filenames: set[str]
     http: HttpClient
+    id: str | None = None
     mode: str
     url: str | None
     options: ValidatorOptions
@@ -52,6 +56,7 @@ class DashElement(Generic[T]):
     pool: WorkerPool
     progress: Progress
     log: logging.Logger
+    ID: str
 
     def __init__(self,
                  elt: ET.ElementBase,
@@ -88,7 +93,7 @@ class DashElement(Generic[T]):
         else:
             self.log = logging.getLogger(self.__class__.__name__)
         self.baseurl = None
-        self.ID = None
+        unique_id: str | None = None
 
         sourceline: int = 0
         line_range: LineRange | None = None
@@ -106,7 +111,7 @@ class DashElement(Generic[T]):
                         parent.baseurl, self.baseurl)
             elif parent:
                 self.baseurl = parent.baseurl
-            self.ID = elt.get('id')
+            unique_id = elt.get('id')
         elif parent is not None:
             sourceline = parent.elt.location.start
             line_range = parent.elt.location
@@ -115,8 +120,9 @@ class DashElement(Generic[T]):
         if line_range is None:
             line_range = first_line
         self.elt = ValidationChecks(ErrorSource.ELEMENT, line_range)
-        if self.ID is None:
-            self.ID = str(id(self))
+        if unique_id is None:
+            unique_id = str(id(self))
+        self.ID = unique_id
         self.parse_attributes(elt, self.attributes)
 
     @staticmethod
@@ -130,10 +136,10 @@ class DashElement(Generic[T]):
         return linenum
 
     @classmethod
-    def classname(clz) -> str:
-        if clz.__module__.startswith('__'):
-            return clz.__name__
-        return clz.__module__ + '.' + clz.__name__
+    def classname(cls) -> str:
+        if cls.__module__.startswith('__'):
+            return cls.__name__
+        return cls.__module__ + '.' + cls.__name__
 
     def has_errors(self) -> bool:
         result: bool = self.attrs.has_errors() or self.elt.has_errors()
@@ -145,7 +151,7 @@ class DashElement(Generic[T]):
         return False
 
     def get_errors(self) -> list[ValidationError]:
-        result = self.attrs.errors + self.elt.errors
+        result = copy.copy(self.attrs.errors) + copy.copy(self.elt.errors)
         for child in self.children():
             result += child.get_errors()
         return result
@@ -207,10 +213,10 @@ class DashElement(Generic[T]):
                         self, item[0], None)))
 
     @property
-    def mpd(self):
+    def mpd(self) -> "Manifest":
         if self.parent:
-            return self.parent.mpd
-        return self
+            return cast(DashElement, self.parent).mpd
+        return cast(Manifest, self)
 
     def find_parent(self, name: str) -> Optional["DashElement"]:
         if name == self.__class__.__name__:

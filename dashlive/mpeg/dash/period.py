@@ -40,6 +40,7 @@ class Period(ObjectWithFields):
     adaptationSets: list[AdaptationSet]
     start: datetime.timedelta
     duration: datetime.timedelta | None = None
+    time_offset: datetime.timedelta
 
     OBJECT_FIELDS: ClassVar[dict[str, Any]] = {
         'adaptationSets': ListOf(AdaptationSet),
@@ -55,6 +56,8 @@ class Period(ObjectWithFields):
         defaults = {
             'adaptationSets': [],
             'event_streams': [],
+            'start': datetime.timedelta(),
+            'time_offset': datetime.timedelta(),
         }
         self.apply_defaults(defaults)
 
