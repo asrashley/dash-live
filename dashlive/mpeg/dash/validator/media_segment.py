@@ -19,13 +19,18 @@ from .events import InbandEventStream
 from .http_range import HttpRange
 
 class MediaSegment(DashElement):
+    availability_start_time: datetime.datetime | None = None
+    availability_end_time: datetime.datetime | None = None
+    decode_time: int | None = None
+    seg_num: int | None = None
     expected_decode_time: int | None
     expected_seg_num: int | None
     expected_duration: int | None
+    next_decode_time: int | None = None
     presentation_time_offset: int  # manifest timescale units
     seg_range: HttpRange | None
     tolerance: int
-    url: str
+    name: str
 
     def __init__(self,
                  parent: DashElement,
@@ -48,11 +53,6 @@ class MediaSegment(DashElement):
         self.seg_range = seg_range
         self.duration: int | None = None
         self.validated = False
-        self.decode_time: int | None = None
-        self.seg_num: int | None = None
-        self.next_decode_time: int | None = None
-        self.availability_start_time: datetime.datetime | None = None
-        self.availability_end_time: datetime.datetime | None = None
         path = Path(urllib.parse.urlparse(url).path)
         if self.parent.id is not None:
             self.name = f'{self.parent.id}:{path.name}'
@@ -62,8 +62,8 @@ class MediaSegment(DashElement):
             self.name += f'?range={self.seg_range}'
         self.elt.prefix = f'{self.name}: '
         self.log.debug(
-            'MediaSegment: url=%s $Number$=%s $Time$=%s tolerance=%d',
-            url, str(expected_seg_num), str(expected_decode_time), tolerance)
+            'MediaSegment[%s]: url=%s $Number$=%s $Time$=%s tolerance=%d',
+            self.name, url, str(expected_seg_num), str(expected_decode_time), tolerance)
 
     def children(self) -> list[DashElement]:
         return []

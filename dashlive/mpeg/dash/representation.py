@@ -26,11 +26,12 @@ import logging
 from math import floor
 import os
 import sys
-from typing import Any, ClassVar, NamedTuple, Optional, Set
+from typing import Any, ClassVar, NamedTuple, Optional, Set, cast
 
 from dashlive.drm.keymaterial import KeyMaterial
 from dashlive.mpeg.codec_strings import codec_string_from_avc_box
-from dashlive.mpeg.mp4 import Mp4Atom
+from dashlive.mpeg.dash.reference import StreamTimingReference
+from dashlive.mpeg.mp4 import AudioSampleEntry, Mp4Atom, SampleEntry, TrackBox, VisualSampleEntry, XMLSubtitleSampleEntry
 from dashlive.utils.date_time import scale_timedelta, timecode_to_timedelta, timedelta_to_timecode
 from dashlive.utils.list_of import ListOf
 from dashlive.utils.object_with_fields import ObjectWithFields
@@ -98,6 +99,8 @@ class Representation(ObjectWithFields):
         'max_bitrate': None,
         'mimeType': None,
         'nalLengthFieldLength': None,
+        'period_duration': None,
+        'presentation_time_offset': 0,
         'segment_duration': None,
         'startWithSAP': 1,
         'start_number': 1,
@@ -116,6 +119,11 @@ class Representation(ObjectWithFields):
     content_type: str | None
     codes: str | None
     mediaDuration: int
+    bitrate: int
+    max_bitrate: int | None = None
+    period_start: datetime.timedelta  # start of period, relative to start of DASH stream
+    period_duration: datetime.timedelta | None
+    presentation_time_offset: int  # in timescale units
     sar: str | None
     scanType: str | None
     startWithSAP: int
@@ -131,6 +139,7 @@ class Representation(ObjectWithFields):
     sampleRate: int
     nalLengthFieldLength: int
     numChannels: int
+    num_media_segments: int
     _timing: DashTiming | None = None
 
     def __init__(self, **kwargs) -> None:
@@ -140,6 +149,7 @@ class Representation(ObjectWithFields):
             'kids': [],
             'segments': [],
             'codecs': '',
+            'period_start': datetime.timedelta(),
         }
         if self.content_type == 'video':
             defaults.update({
@@ -173,7 +183,7 @@ class Representation(ObjectWithFields):
         return self.as_python(exclude={'num_media_segments'})
 
     @classmethod
-    def load(clz, filename: str, atoms: list[Mp4Atom], verbose: int = 0) -> "Representation":
+    def load(cls, filename: str, atoms: list[Mp4Atom], verbose: int = 0) -> "Representation":
         representation_start_time: int | None = None
         segment_start_time = 0
         segment_end_time = 0
@@ -286,7 +296,7 @@ class Representation(ObjectWithFields):
         except AttributeError:
             print('Warning: Unable to find default_sample_duration')
             default_sample_duration = 0
-        avc = None
+        avc: VisualSampleEntry | None = None
         avc_type = None
         for box in self.KNOWN_CODEC_BOXES:
             try:
@@ -302,14 +312,16 @@ class Representation(ObjectWithFields):
             self.iv_size = avc.sinf.schi.tenc.iv_size
             key_ids.add(KeyMaterial(hex=self.default_kid))
         if moov.trak.mdia.hdlr.handler_type == 'vide':
-            self.process_video_moov(avc, avc_type, default_sample_duration)
+            self.process_video_avc_box(avc, avc_type, default_sample_duration)
         elif moov.trak.mdia.hdlr.handler_type == 'soun':
-            self.process_audio_moov(avc, avc_type)
+            self.process_audio_avc_box(avc, avc_type)
         elif moov.trak.mdia.hdlr.handler_type in {'text', 'subt'}:
-            self.process_text_moov(avc, avc_type)
+            self.process_text_avc_box(avc, avc_type)
 
-    def process_video_moov(self, avc: Mp4Atom, avc_type: str | None,
-                           default_sample_duration: int) -> None:
+    def process_video_avc_box(self,
+                              avc: VisualSampleEntry,
+                              avc_type: str | None,
+                              default_sample_duration: int) -> None:
         trak = avc.find_atom('trak')
         self.content_type = "video"
         self.mimeType = "video/mp4"
@@ -335,7 +347,7 @@ class Representation(ObjectWithFields):
             self.add_field('nalLengthFieldLength',
                            avc.hvcC.length_size_minus_one + 1)
 
-    def process_audio_moov(self, avc: Mp4Atom, avc_type: str | None) -> None:
+    def process_audio_avc_box(self, avc: AudioSampleEntry, avc_type: str | None) -> None:
         self.content_type = "audio"
         self.mimeType = "audio/mp4"
         self.codecs = codec_string_from_avc_box(avc_type, avc)
@@ -366,15 +378,16 @@ class Representation(ObjectWithFields):
                 self.add_field('sampleRate', avc.sampling_frequency)
                 self.add_field('numChannels', avc.channel_count)
 
-    def process_text_moov(self, avc: Mp4Atom, avc_type: str | None) -> None:
+    def process_text_avc_box(self, avc: SampleEntry, avc_type: str | None) -> None:
         self.content_type = 'text'
         self.codecs = avc_type
         self.mimeType = 'application/mp4'
         if avc_type == 'wvtt':
             self.mimeType = 'text/vtt'
         elif avc_type == 'stpp':
-            trak = avc.find_atom('trak')
-            stpp = trak.mdia.minf.stbl.stsd.stpp
+            trak: TrackBox | None = cast(TrackBox | None, avc.find_atom('trak'))
+            assert trak is not None
+            stpp: XMLSubtitleSampleEntry = cast(XMLSubtitleSampleEntry, trak.mdia.minf.stbl.stsd.stpp)
             if stpp.mime_types:
                 self.mimeType = stpp.mime_types
             try:
@@ -571,7 +584,11 @@ class Representation(ObjectWithFields):
         returns the segment number, time when the stream last looped and
         the start time of segment
         """
-        rid = f'{self.content_type[0]}{self.track_id}'
+        rid: str
+        if self.content_type is None:
+            rid = f'm{self.track_id}'
+        else:
+            rid = f'{self.content_type[0]}{self.track_id}'
         logging.debug('%s: calculate_segment_from_timecode timecode=%d (%s)',
                       rid, timecode, timecode_to_timedelta(timecode, self.timescale))
 

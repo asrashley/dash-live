@@ -49,13 +49,14 @@ class InitSegment(DashElement):
     def children(self) -> list[DashElement]:
         return []
 
-    async def get_moov(self) -> mp4.Mp4Atom | None:
+    async def get_moov(self) -> mp4.MovieBox | None:
         if self.atoms is None:
             if not await self.load():
                 return None
+        assert self.atoms is not None
         for atom in self.atoms:
             if atom.atom_type == 'moov':
-                return atom
+                return cast(mp4.MovieBox, atom)
         return None
 
     def media_timescale(self) -> int | None:

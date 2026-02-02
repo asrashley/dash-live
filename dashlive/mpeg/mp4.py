@@ -557,7 +557,7 @@ class Mp4Atom(ObjectWithFields):
         return rv
 
     @classmethod
-    def parse(cls, src, parent, options=None, **kwargs) -> dict[str, Any] | None:
+    def parse(cls, src: BinaryIO, parent: "Mp4Atom", options: Options | None = None, **kwargs) -> dict[str, Any] | None:
         try:
             return kwargs['initial_data']
         except KeyError:
@@ -566,7 +566,7 @@ class Mp4Atom(ObjectWithFields):
         data = src.read(8)
         # hexdump_buffer(f'header position={position}', data)
         if not data or len(data) != 8:
-            if options:
+            if options is not None:
                 if len(data) == 0:
                     options.log.debug("EOS at %d", position)
                 else:
@@ -662,7 +662,7 @@ class Mp4Atom(ObjectWithFields):
         return dest
 
     @abstractmethod
-    def encode_fields(self, dest):
+    def encode_fields(self, dest: BinaryIO) -> None:
         pass
 
     def post_encode_all(self, dest):
@@ -735,7 +735,7 @@ class Wrapper(Mp4Atom):
             return out.getvalue()
         return dest
 
-    def encode_fields(self, dest):
+    def encode_fields(self, dest: BinaryIO) -> None:
         pass
 
     def __iter__(self):
@@ -759,7 +759,7 @@ class UnknownBox(Mp4Atom):
             rv["data"] = None
         return rv
 
-    def encode_fields(self, dest):
+    def encode_fields(self, dest: BinaryIO) -> None:
         if self.data is not None:
             try:
                 dest.write(self.data.data)
@@ -809,7 +809,7 @@ class LazyLoadedBox(Mp4Atom):
             self.post_encode_all(dest)
         return dest
 
-    def encode_fields(self, dest):
+    def encode_fields(self, dest: BinaryIO) -> None:
         raise RuntimeError(
             'encode_fields should not be called for LazyLoadedBox')
 
@@ -892,11 +892,13 @@ class FileTypeBox(Mp4Atom):
     OBJECT_FIELDS = {
         "compatible_brands": ListOf(str),
     }
+    compatible_brands: list[str]
 
     @classmethod
-    def parse(clz, src, *args, **kwargs):
+    def parse(cls, src, *args, **kwargs):
         rv = Mp4Atom.parse(src, *args, **kwargs)
-        r = FieldReader(clz.classname(), src, rv)
+        assert rv is not None
+        r = FieldReader(cls.classname(), src, rv)
         rv['major_brand'] = str(r.get(4, 'major_brand'), 'ascii')
         r.read('I', 'minor_version')
         size = rv["size"] - rv["header_size"] - 8
@@ -909,7 +911,7 @@ class FileTypeBox(Mp4Atom):
             size -= 4
         return rv
 
-    def encode_fields(self, dest):
+    def encode_fields(self, dest: BinaryIO) -> None:
         d = FieldWriter(self, dest)
         d.write(4, 'major_brand')
         d.write('I', 'minor_version')
@@ -1059,7 +1061,7 @@ class Descriptor(ObjectWithFields):
             self.classname(), len(payload), start, dest.tell())
 
     @abstractmethod
-    def encode_fields(self, dest):
+    def encode_fields(self, dest: BinaryIO) -> None:
         pass
 
     @classmethod
@@ -1104,6 +1106,7 @@ class UnknownDescriptor(Descriptor):
     OBJECT_FIELDS.update(Descriptor.OBJECT_FIELDS)
 
     include_atom_type = True
+    data: Binary
 
     @classmethod
     def parse_payload(cls, src: BinaryIO, fields: dict[str, Any],
@@ -1115,7 +1118,7 @@ class UnknownDescriptor(Descriptor):
             fields["data"] = None
         return fields
 
-    def encode_fields(self, dest):
+    def encode_fields(self, dest: BinaryIO) -> None:
         if self.data is not None:
             assert isinstance(self.data, Binary)
             dest.write(self.data.data)
@@ -1145,7 +1148,7 @@ class ESDescriptor(Descriptor):
             rv['ocr_es_id'] = None
         return rv
 
-    def encode_fields(self, dest):
+    def encode_fields(self, dest: BinaryIO) -> None:
         w = FieldWriter(self, dest, debug=self.options.debug)
         w.write('H', 'es_id')
         b = self.stream_priority & 0x1f
@@ -1180,7 +1183,7 @@ class DecoderConfigDescriptor(Descriptor):
         r.read('I', "avg_bitrate")
         return rv
 
-    def encode_fields(self, dest):
+    def encode_fields(self, dest: BinaryIO) -> None:
         w = FieldWriter(self, dest)
         w.write('B', "object_type")
         b = self.stream_type << 2
@@ -1243,7 +1246,7 @@ class DecoderSpecificInfo(Descriptor):
                 rv["data"] = r.data[r.bytepos():]
         return rv
 
-    def encode_fields(self, dest):
+    def encode_fields(self, dest: BinaryIO) -> None:
         w = FieldWriter(self, dest)
         if self.object_type == 0x40:  # Audio ISO/IEC 14496-3 subpart 1
             w.writebits(5, "audio_object_type")
@@ -1273,29 +1276,33 @@ class DecoderSpecificInfo(Descriptor):
 
 
 class FullBox(Mp4Atom):
+    version: int
+    flags: int
+
     @classmethod
-    def parse(clz, src, parent, options, **kwargs):
+    def parse(cls, src, parent, options, **kwargs) -> dict[str, Any]:
         rv = Mp4Atom.parse(src, parent, options=options, **kwargs)
-        r = FieldReader(clz.classname(), src, rv, debug=options.debug)
+        assert rv is not None
+        r = FieldReader(cls.classname(), src, rv, debug=options.debug)
         r.read("B", "version")
         r.read('3I', "flags")
         return rv
 
-    def encode_fields(self, dest):
+    def encode_fields(self, dest: BinaryIO) -> None:
         d = FieldWriter(self, dest)
         d.write('B', 'version')
         d.write(3, 'flags', value=struct.pack('>I', self.flags)[1:])
         self.encode_box_fields(dest)
 
     @abstractmethod
-    def encode_box_fields(self, dest):
+    def encode_box_fields(self, dest: BinaryIO) -> None:
         pass
 
 class BoxWithChildren(Mp4Atom):
     parse_children = True
     include_atom_type = True
 
-    def encode_fields(self, dest):
+    def encode_fields(self, dest: BinaryIO) -> None:
         pass
 
 
@@ -1428,12 +1435,22 @@ class SampleEntry(Mp4Atom):
         r.read('H', 'data_reference_index')
         return rv
 
-    def encode_fields(self, dest):
+    def encode_fields(self, dest: BinaryIO) -> None:
         dest.write(b'\0' * 6)  # reserved
         dest.write(struct.pack('>H', self.data_reference_index))
 
 class VisualSampleEntry(SampleEntry):
     parse_children = True
+    version: int
+    revision: int
+    vendor: int
+    temporal_quality: int
+    spatial_quality: int
+    width: int
+    height: int
+    compressorname: str
+    horizresolution: float
+    vertresolution: float
 
     @classmethod
     def parse(clz, src, parent, options, **kwargs):
@@ -1457,7 +1474,7 @@ class VisualSampleEntry(SampleEntry):
         r.read('H', "colour_table")
         return rv
 
-    def encode_fields(self, dest):
+    def encode_fields(self, dest: BinaryIO) -> None:
         super().encode_fields(dest)
         dest.write(struct.pack('>H', self.version))
         dest.write(struct.pack('>H', self.revision))
@@ -1677,11 +1694,15 @@ class WVTTSampleEntry(PlainTextSampleEntry):
 @fourcc('stpp')
 class XMLSubtitleSampleEntry(SampleEntry):
     parse_children = True
+    namespace: str
+    schema_location: str
+    mime_types: str
+    mime: "MimeBox"
 
     @classmethod
-    def parse(clz, src, parent, options, **kwargs):
+    def parse(cls, src: BinaryIO, parent: Mp4Atom, options: Options, **kwargs) -> dict[str, Any]:
         rv = SampleEntry.parse(src, parent, options, **kwargs)
-        r = FieldReader(clz.classname(), src, rv, debug=options.debug)
+        r = FieldReader(cls.classname(), src, rv, debug=options.debug)
         r.read('S0', 'namespace')
         r.read('S0', 'schema_location')
         r.read('S0', 'mime_types')
@@ -1697,6 +1718,8 @@ class XMLSubtitleSampleEntry(SampleEntry):
 
 @fourcc('mime')
 class MimeBox(FullBox):
+    content_type: str
+
     @classmethod
     def parse(clz, src, parent, options, **kwargs):
         rv = FullBox.parse(src, parent=parent, options=options, **kwargs)
@@ -2351,8 +2374,10 @@ class TrackHeaderBox(FullBox):
 
 @fourcc('tfdt')
 class TrackFragmentDecodeTimeBox(FullBox):
+    base_media_decode_time: int
+
     @classmethod
-    def parse(clz, src, parent, **kwargs):
+    def parse(cls, src: BinaryIO, parent: "Mp4Atom", **kwargs) -> dict[str, Any]:
         rv = FullBox.parse(src, parent, **kwargs)
         if rv["version"] == 1:
             rv["base_media_decode_time"] = struct.unpack('>Q', src.read(8))[0]
@@ -2360,7 +2385,7 @@ class TrackFragmentDecodeTimeBox(FullBox):
             rv["base_media_decode_time"] = struct.unpack('>I', src.read(4))[0]
         return rv
 
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value: Any) -> None:
         if name == 'base_media_decode_time':
             if self.version == 0 and value.bit_length() > 32:
                 object.__setattr__(self, 'version', 1)
@@ -2371,11 +2396,13 @@ class TrackFragmentDecodeTimeBox(FullBox):
                     'base media decode time is too large to use version 0 header')
         super().__setattr__(name, value)
 
-    def encode_box_fields(self, dest):
+    def encode_box_fields(self, dest: BinaryIO) -> None:
+        assert self.base_media_decode_time >= 0
         d = FieldWriter(self, dest)
         if self.version == 1:
             d.write('Q', 'base_media_decode_time')
         else:
+            assert self.base_media_decode_time < (2 << 32)
             d.write('I', 'base_media_decode_time')
 
 

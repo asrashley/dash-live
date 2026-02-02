@@ -17,6 +17,7 @@ import urllib.parse
 from lxml import etree as ET
 
 from dashlive.mpeg.dash.representation import Representation as DashRepresentation
+from dashlive.mpeg.dash.validator.segment_template import SegmentTemplate
 from dashlive.utils.date_time import (
     multiply_timedelta,
     scale_timedelta,
@@ -47,6 +48,7 @@ class Representation(RepresentationBaseType["AdaptationSet"]):
     init_segment: InitSegment
     timeline_start: int  # from start of stream (manifest timescale units)
     media_segments: list[MediaSegment]
+    segmentTemplate: SegmentTemplate
     _validated: bool
 
     def __init__(self, elt: ET.ElementBase, parent: DashElement) -> None:
@@ -669,9 +671,11 @@ class Representation(RepresentationBaseType["AdaptationSet"]):
 
     URL_TEMPLATE_RE = re.compile(r'\$(Bandwidth|Number|RepresentationID|Time)(%0\d+d)?\$')
 
-    def format_url_template(self, url: str, seg_num: int = 0, decode_time: int = 0) -> str:
+    def format_url_template(self, url: str, seg_num: int = 0, seg_time: int = 0) -> str:
         """
-        Replaces the template variables according the DASH template syntax
+        Replaces the template variables according the DASH template syntax.
+        :seg_num: Segment number, used to replace $Number$
+        :seg_time: Segment time, used to replace $Time$
         """
         def repfn(matchobj) -> str:
             value = params[matchobj.group(1)]
@@ -684,7 +688,7 @@ class Representation(RepresentationBaseType["AdaptationSet"]):
             'RepresentationID': self.ID,
             'Bandwidth': self.bandwidth,
             'Number': seg_num,
-            'Time': decode_time,
+            'Time': seg_time,
             '': '$',
         }
         return self.URL_TEMPLATE_RE.sub(repfn, url)

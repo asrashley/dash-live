@@ -26,7 +26,7 @@ from typing import ClassVar
 
 import bitstring
 
-from .mp4 import VisualSampleEntry
+from .mp4 import SampleEntry, VisualSampleEntry
 
 class CodecData(ABC):
     codec: str
@@ -273,7 +273,9 @@ CODEC_DATA_TYPES = {
     'mp4a': Mp4AudioCodec,
 }
 
-def codec_string_from_avc_box(avc_type: str, avc_box: VisualSampleEntry) -> str:
+def codec_string_from_avc_box(avc_type: str | None, avc_box: SampleEntry) -> str | None:
+    if avc_type is None:
+        return None
     try:
         cls = CODEC_DATA_TYPES[avc_type]
         data = cls.from_avc_box(avc_type, avc_box)

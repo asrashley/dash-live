@@ -9,7 +9,7 @@ import contextlib
 import hashlib
 import logging
 from pathlib import Path
-from typing import cast, Callable, ClassVar, Optional, TYPE_CHECKING
+from typing import BinaryIO, cast, Callable, ClassVar, Optional, TYPE_CHECKING
 
 import flask
 from langcodes import tag_is_valid
@@ -156,12 +156,12 @@ class MediaFile(ModelMixin["MediaFile"], Base):
         return retval
 
     @classmethod
-    def absolute_path(cls, stream_dir: Path) -> Path:
+    def absolute_path(cls, stream_dir: Path | str) -> Path:
         app = flask.current_app
         return Path(app.config['BLOB_FOLDER']) / stream_dir
 
     def open_file(self, start: int | None = None,
-                  buffer_size: int = 4096) -> contextlib.AbstractContextManager:
+                  buffer_size: int = 4096) -> contextlib.AbstractContextManager[BinaryIO]:
         abs_path = self.absolute_path(self.stream.directory)
         return self.blob.open_file(abs_path, start=start, buffer_size=buffer_size)
 

@@ -1,19 +1,5 @@
 #############################################################################
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
-#############################################################################
-#
 #  Project Name        :    Simulated MPEG DASH service
 #
 #  Author              :    Alex Ashley
@@ -24,6 +10,7 @@ from copy import deepcopy
 import datetime
 import io
 import json
+from typing import cast
 
 from lxml import etree as ET
 
@@ -31,12 +18,11 @@ from dashlive.mpeg.dash.representation import Representation as ServerRepresenta
 
 from .dash_element import DashElement
 from .errors import ValidationError, ValidationHistory
-from .http_client import HttpClient
+from .http_client import HttpClient, HttpResponse
 from .manifest import Manifest
 from .options import ValidatorOptions
 
 class DashValidator(DashElement):
-    baseurl: str
     http_client: HttpClient
     history: list[ValidationHistory]
     manifest: Manifest | None
@@ -45,7 +31,6 @@ class DashValidator(DashElement):
     options: ValidatorOptions
     prev_manifest: Manifest | None
     xml: ET.ElementBase | None
-    url: str
 
     def __init__(self,
                  url: str,
@@ -57,13 +42,15 @@ class DashValidator(DashElement):
         self.http = http_client
         self.baseurl = self.url = url
         self.options = options if options is not None else ValidatorOptions()
+        assert self.options is not None
         self.mode = mode
         self.validator = self
         self.xml = None
         self.manifest: Manifest | None = None
         self.manifest_text = []
         self.prev_manifest = None
-        self.pool = options.pool
+        assert self.options.pool is not None
+        self.pool = self.options.pool
         self.history = []
 
     async def load(self,
@@ -140,7 +127,7 @@ class DashValidator(DashElement):
 
     def get_validation_history(self) -> list[ValidationHistory]:
         vh: ValidationHistory
-
+        assert self.url is not None
         if self.manifest is None:
             vh = ValidationHistory(
                 url=self.url, publishTime=datetime.datetime.now(),
@@ -170,18 +157,19 @@ class DashValidator(DashElement):
         return self.manifest.get_codecs()
 
     async def fetch_manifest(self) -> bool:
+        assert self.url is not None
         self.progress.text(self.url)
         self.log.debug('Fetch manifest %s', self.url)
-        result = await self.http.get(self.url)
+        result: HttpResponse = await self.http.get(self.url)
         if not self.elt.check_equal(
                 result.status_code, 200,
                 msg=f'Failed to load manifest: {result.status_code} {self.url}'):
             return False
         parser = ET.XMLParser(remove_blank_text=self.options.pretty)
-        xml = ET.parse(
-            io.BytesIO(result.get_data(as_text=False)), parser)
+        payload: bytes = cast(bytes, result.get_data(as_text=False))
+        xml = ET.parse(io.BytesIO(payload), parser)
         self.manifest_text = []
-        for line in io.StringIO(result.get_data(as_text=True)):
+        for line in io.StringIO(str(payload, xml.docinfo.encoding)):
             self.manifest_text.append(line.rstrip())
         if self.options.pretty:
             encoding = xml.docinfo.encoding
@@ -301,11 +289,13 @@ class DashValidator(DashElement):
         else:
             print(ET.tostring(self.xml, pretty_print=True))
 
-    async def sleep(self):
-        if not self.elt.check_equal(self.mode, 'live'):
+    async def sleep(self) -> None:
+        if self.mode != 'live':
+            await asyncio.sleep(1)
             return
         if not self.elt.check_not_none(self.manifest):
             return
+        assert self.manifest is not None
         next_refresh = self.manifest.publishTime + self.manifest.minimumUpdatePeriod
         self.log.debug(
             'publishTime=%s minimumUpdatePeriod=%s nextUpdate=%s',

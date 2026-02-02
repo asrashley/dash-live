@@ -7,6 +7,10 @@ class SegmentTemplate(MultipleSegmentBaseType):
         ('initialization', str, None),
         ('bitstreamSwitching', str, None),
     ]
+    media: str | None
+    index: str | None
+    initialization: str | None
+    startNumber: int
 
     def __init__(self, template, parent):
         super().__init__(template, parent)

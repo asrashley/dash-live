@@ -95,13 +95,13 @@ class ValidationHistory:
     errors: list[ValidationError] = field(default_factory=list)
 
     def has_errors(self) -> bool:
-        if self.errors:
-            return True
-        return False
+        return len(self.errors) > 0
 
     def __str__(self) -> str:
+        if not self.has_errors():
+            return 'No errors'
         lines: list[str] = [
-            f'{self.publishTime.isoformat()}: {self.url}',
+            f'{self.publishTime.isoformat()}: {self.url} has {len(self.errors)} errors',
         ]
         for err in self.errors:
             lines.append(str(err))
@@ -118,7 +118,7 @@ class ValidationChecks:
         self.prefix = ''
 
     def has_errors(self) -> bool:
-        return bool(self.errors)
+        return len(self.errors) > 0
 
     def reset(self) -> None:
         self.errors = []
@@ -127,11 +127,11 @@ class ValidationChecks:
         for item in traceback.walk_stack(None):
             sf = StackFrame(item)
             if sf.filename != 'errors.py':
-                break
+                return sf
             limit -= 1
             if limit == 0:
-                break
-        return sf
+                return sf
+        raise IndexError("Failed to find caller in the stack frame")
 
     def add_error(self, msg: str, clause: str | None = None) -> None:
         frame = self.find_caller()
@@ -222,15 +222,15 @@ class ValidationChecks:
                            a: float,
                            b: float,
                            places: int = 7,
-                           delta: int | None = None,
+                           delta: float | None = None,
                            template: str | None = None,
                            msg: str | None = None,
                            **kwargs) -> bool:
         if template is None:
             template = r'{} !~= {}'
         if delta is not None:
-            d = abs(a - b)
-            return self.check_true(d <= delta, a, b, template=template, **kwargs)
+            d: float = abs(a - b)
+            return self.check_true(d <= delta, a, b, template=template, msg=msg, **kwargs)
         ar = round(a, places)
         br = round(b, places)
         return self.check_true(

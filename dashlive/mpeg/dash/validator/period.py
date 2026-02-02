@@ -7,7 +7,7 @@
 #############################################################################
 import asyncio
 import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from dashlive.mpeg.dash.representation import Representation as ServerRepresentation
 from dashlive.utils.date_time import from_isodatetime
@@ -26,6 +26,7 @@ class Period(DashElement["Manifest"]):
     event_streams: list[EventStream]
     start: datetime.timedelta | None
     duration: datetime.timedelta | None
+    target_duration: datetime.timedelta | None = None
 
     attributes = [
         ('id', str, None),
@@ -70,21 +71,23 @@ class Period(DashElement["Manifest"]):
         return False not in results
 
     async def merge_previous_element(self, prev: "Period") -> bool:
-        self.log.debug('Merging previous Period element')
-        adp_map = {}
-        for idx, adp in enumerate(self.adaptation_sets):
+        self.log.debug('Merging previous Period element for %s', self.id)
+        adp_map: dict[str, AdaptationSet] = {}
+        for adp in self.adaptation_sets:
+            assert adp.id is not None
             adp_map[adp.id] = adp
         futures = []
-        for idx, adp in enumerate(prev.adaptation_sets):
+        for adp in prev.adaptation_sets:
             try:
+                assert adp.id is not None
                 futures.append(adp_map[adp.id].merge_previous_element(adp))
             except KeyError as err:
-                self.log.debug('New AdaptationSet %s', err)
+                self.log.debug('Did not find matching AdaptationSet from previous Period %s', err)
         results = await asyncio.gather(*futures)
         return False not in results
 
     def get_codecs(self) -> set[str]:
-        codecs = set()
+        codecs: set[str] = set()
         for adp in self.adaptation_sets:
             codecs.update(adp.get_codecs())
         return codecs
@@ -94,7 +97,7 @@ class Period(DashElement["Manifest"]):
             a.set_representation_info(info)
 
     def children(self) -> list[DashElement]:
-        return self.adaptation_sets + self.event_streams
+        return cast(list[DashElement], self.adaptation_sets) + self.event_streams
 
     def finished(self) -> bool:
         if self.progress.aborted():

@@ -59,6 +59,8 @@ class ViewsTestDashValidator(DashValidator):
                    xml: Optional[ET.ElementBase] = None,
                    data: Optional[bytes] = None) -> bool:
         rv = await super().load(xml=xml, data=data)
+        if not rv:
+            return rv
         for mf in models.MediaFile.all():
             self.set_representation_info(mf.representation)
         return rv
