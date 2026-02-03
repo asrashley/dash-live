@@ -1,17 +1,3 @@
-############################################################################
-#
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
 #############################################################################
 #
 #  Project Name        :    Simulated MPEG DASH service
@@ -29,7 +15,7 @@ import math
 import os
 import logging
 from pathlib import Path
-from typing import AbstractSet, ClassVar
+from typing import AbstractSet, ClassVar, Self
 import urllib.parse
 
 import flask
@@ -37,6 +23,7 @@ from lxml import etree as ET
 
 from dashlive.mpeg.dash.profiles import primary_profiles
 from dashlive.mpeg.dash.validator import ConcurrentWorkerPool
+from dashlive.mpeg.dash.validator.errors import ValidationError
 from dashlive.server import manifests, models
 from dashlive.server.options.container import OptionsContainer
 from dashlive.server.options.types import OptionUsage
@@ -47,7 +34,7 @@ from dashlive.server.requesthandler.manifest_context import ManifestContext
 from dashlive.server.requesthandler.manifest_requests import ServeManifest
 
 from .mock_time import MockTime
-from .stream_fixtures import StreamFixture, BBB_FIXTURE
+from .stream_fixtures import MPS_FIXTURE, StreamFixture, BBB_FIXTURE
 from .view_validator import ViewsTestDashValidator
 
 def add_url(method, url):
@@ -94,10 +81,7 @@ class DashManifestCheckMixin:
             check_media: bool | None = None,
             **kwargs) -> None:
         """
-        Exhaustive test of a manifest with every combination of options
-        used by the manifest.
-        This test might be _very_ slow (i.e. expect it to take several minutes)
-        if the manifest uses lots of features.
+        Exhaustive test of a manifest with all combinations of commonly used options.
         """
         await self.check_a_manifest_using_all_options(
             filename, mode, simplified=simplified, debug=debug, now=now,
@@ -131,8 +115,12 @@ class DashManifestCheckMixin:
         modes = manifest.restrictions.get('mode', primary_profiles.keys())
         self.assertIn(mode, modes)
         if fixture is None:
-            fixture = BBB_FIXTURE
-        self.setup_media_fixture(fixture, with_subs=with_subs)
+            if mps_name:
+                fixture = MPS_FIXTURE
+                self.setup_multi_period_stream(MPS_FIXTURE)
+            else:
+                fixture = BBB_FIXTURE
+                self.setup_media_fixture(fixture, with_subs=with_subs)
         self.logout_user()
         self.assertGreaterThan(models.MediaFile.count(), 0)
         mps: models.MultiPeriodStream | None = None
@@ -163,13 +151,16 @@ class DashManifestCheckMixin:
             url = flask.url_for(
                 'dash-mpd-v3', manifest=filename, mode=mode, stream=fixture.name)
 
+        if debug:
+            wsgi_log = logging.getLogger('wsgi')
+            wsgi_log.setLevel(logging.DEBUG)
         if not kwargs:
             # do a first pass check with no CGI options
             await self.check_manifest_url(
                 url, mode, encrypted=False, debug=debug, duration=test_duration,
                 check_media=(check_media in {True, None}), check_head=True, now=now,
                 fixture=fixture)
-
+            
         if check_media is None:
             check_media = not simplified
 
@@ -202,17 +193,19 @@ class DashManifestCheckMixin:
                     query += f'&scte35_interval={ev_interval}&scte35_timescale=100'
             elif duration == 0:
                 test_duration = int(math.ceil(3 * fixture.segment_duration))
-            await self.check_manifest_using_options(
-                mode, url, query, debug=debug, check_media=check_media,
-                now=now, duration=test_duration, check_head=check_head,
-                fixture=fixture)
+            with self.subTest(query=query, test_duration=test_duration):
+                await self.check_manifest_using_options(
+                    mode, url, query, debug=debug, check_media=check_media,
+                    now=now, duration=test_duration, check_head=check_head,
+                    fixture=fixture)
             count += 1
             self.progress(count, total_tests)
         if 'useBaseUrls' in manifest.features and 'useBaseUrls' not in kwargs:
             query = f'?base={not use_base_url}'
-            await self.check_manifest_using_options(
-                mode, url, query, debug=debug, check_media=False, check_head=False,
-                now=now, duration=test_duration, fixture=fixture)
+            with self.subTest(query=query):
+                await self.check_manifest_using_options(
+                    mode, url, query, debug=debug, check_media=False, check_head=False,
+                    now=now, duration=test_duration, fixture=fixture)
             count += 1
             self.progress(count, total_tests)
         self.progress(total_tests, total_tests)
@@ -247,6 +240,7 @@ class DashManifestCheckMixin:
         try:
             self.log_context.add_item('url', mpd_url)
             self.__class__.checked_urls.add(mpd_url)
+            logging.debug("Using mocked time %s", now)
             with MockTime(now):
                 return await self.do_check_manifest_url(
                     mpd_url, mode, encrypted=encrypted, debug=debug,
@@ -323,23 +317,30 @@ class DashManifestCheckMixin:
                 self.assertAlmostEqual(
                     dur.total_seconds(), fixture.media_duration, delta=1.0)
             else:
+                msg: str = (
+                    f"{fixture.name}: Expected media duration {fixture.media_duration} " +
+                    f"found {dv.manifest.mediaPresentationDuration.total_seconds()}")
                 self.assertAlmostEqual(
                     dv.manifest.mediaPresentationDuration.total_seconds(),
-                    fixture.media_duration, delta=1.0)
+                    fixture.media_duration, delta=1.0, msg=msg)
         return dv
 
     @contextmanager
-    def create_mock_request_context(self, url: str, stream: models.Stream,
+    def create_mock_request_context(self,
+                                    url: str,
+                                    stream: models.Stream | None,
+                                    mps_stream: models.MultiPeriodStream | None,
                                     method: str = 'GET'):
-        abs_url = urllib.parse.urljoin('http://unit.test/', url)
+        abs_url: str = urllib.parse.urljoin('http://unit.test/', url)
         parsed = urllib.parse.urlparse(abs_url)
         with self.app.test_request_context(url, method='GET') as context:
             flask.g.stream = stream
-            flask.request.url = abs_url
-            flask.request.scheme = parsed.scheme
-            flask.request.remote_addr = '127.0.0.1'
-            flask.request.host = r'unit.test'
-            flask.request.host_url = r'http://unit.test/'
+            flask.g.mp_stream = mps_stream
+            context.request.url = abs_url
+            context.request.scheme = parsed.scheme
+            context.request.remote_addr = '127.0.0.1'
+            context.request.host = r'unit.test'
+            context.request.host_url = r'http://unit.test/'
             yield context
 
     def check_generated_manifest_against_fixture(
@@ -383,8 +384,9 @@ class DashManifestCheckMixin:
         else:
             stream = models.Stream.get(directory=BBB_FIXTURE.name)
             assert stream is not None
+        text: str = ""
         with MockTime(now):
-            with self.create_mock_request_context(url, stream):
+            with self.create_mock_request_context(url, stream, mps):
                 context = self.generate_manifest_context(
                     mpd_filename, mode=mode, stream=stream,
                     mps=mps, options=options)
@@ -396,7 +398,7 @@ class DashManifestCheckMixin:
         # pyfakefs, so disable it when loading or creating the fixture
         self.fs.pause()
         if not real_fixture.exists():
-            print('Creating MPD fixture file', real_fixture)
+            print(f"Creating MPD fixture file: {real_fixture}")
             with real_fixture.open('wt', encoding='utf-8') as dest:
                 dest.write(text)
         expected = ET.parse(str(real_fixture)).getroot()
@@ -449,7 +451,7 @@ class DashManifestCheckMixin:
         for prefix, url in clz.xmlNamespaces.items():
             ET.register_namespace(prefix, url)
 
-    def assertXmlTextEqual(self, expected, actual, msg=None):
+    def assertXmlTextEqual(self, expected, actual, msg: str | None = None) -> None:
         if expected is not None:
             expected = expected.strip()
             if expected == "":
@@ -461,7 +463,12 @@ class DashManifestCheckMixin:
         msg = fr'{msg}: Expected "{expected}" got "{actual}"'
         self.assertEqual(expected, actual, msg=msg)
 
-    def assertXmlEqual(self, expected, actual, index=0, msg=None, strict=False):
+    def assertXmlEqual(self, 
+                       expected: ET.Element,
+                       actual: ET.Element,
+                       index: int = 0, 
+                       msg: str | None = None, 
+                       strict: bool = False) -> None:
         tag = ET.QName(expected.tag)
         if msg is None:
             prefix = tag.localname

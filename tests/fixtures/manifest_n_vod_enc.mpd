@@ -52,7 +52,7 @@
           <S d="177152"/>
           <S r="2" d="176128"/>
           <S d="177152"/>
-          <S r="2" d="176128"/>
+          <S r="1" d="176128"/>
         </SegmentTimeline>
       </SegmentTemplate>
       <Representation audioSamplingRate="44100" bandwidth="101243" codecs="mp4a.40.2" id="bbb_a1_enc"/>

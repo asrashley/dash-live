@@ -49,13 +49,13 @@ class MultiPeriodStreamFixture(StreamFixture):
 BBB_FIXTURE = StreamFixture(
     name="bbb",
     title="Big Buck Bunny",
-    media_duration=40,
+    media_duration=40,  # 10 fragments
     segment_duration=4)
 
 TEARS_FIXTURE = StreamFixture(
     name="tears",
     title="Tears of Steel",
-    media_duration=64,
+    media_duration=64,  # 16 fragments
     segment_duration=4)
 
 
@@ -64,15 +64,15 @@ MPS_FIXTURE = MultiPeriodStreamFixture(
     title="Example multi-period stream",
     segment_duration=0,
     media_duration=(
-        BBB_FIXTURE.media_duration - 2 * BBB_FIXTURE.segment_duration +
-        TEARS_FIXTURE.media_duration - 5 * TEARS_FIXTURE.segment_duration),
+        8 * BBB_FIXTURE.segment_duration +
+        10 * TEARS_FIXTURE.segment_duration),
     periods=[
-        FixturePeriod(pid="p1", fixture=BBB_FIXTURE, start=1, end=1,
+        FixturePeriod(pid="p1", fixture=BBB_FIXTURE, start=1, end=9,
                       tracks=[
                           FixtureTrack('video', 1, ContentRole.MAIN),
                           FixtureTrack('audio', 2, ContentRole.MAIN),
                       ]),
-        FixturePeriod(pid="p2", fixture=TEARS_FIXTURE, start=2, end=3,
+        FixturePeriod(pid="p2", fixture=TEARS_FIXTURE, start=2, end=12,
                       tracks=[
                           FixtureTrack('video', 1, ContentRole.MAIN),
                           FixtureTrack('audio', 2, ContentRole.MAIN),

@@ -139,10 +139,11 @@ class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
             options = OptionsRepository.convert_cgi_options(args, defaults=defaults)
             params = options.generate_cgi_parameters(exclude={'mode'})
             query = objects.dict_to_cgi_params(params)
-            await self.check_manifest_using_options(
-                mode='live', url=url, query=query, debug=False,
-                now="2023-09-06T09:59:02Z", duration=45,
-                check_media=True, check_head=False, fixture=BBB_FIXTURE)
+            with self.subTest(drm=drm, query=query):
+                await self.check_manifest_using_options(
+                    mode='live', url=url, query=query, debug=False,
+                    now="2023-09-06T09:59:02Z", duration=45,
+                    check_media=True, check_head=False, fixture=BBB_FIXTURE)
 
 
 if __name__ == '__main__':

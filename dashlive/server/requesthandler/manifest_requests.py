@@ -158,6 +158,7 @@ class ServeMultiPeriodManifest(RequestHandlerBase):
         except ValueError as e:
             logging.info('Invalid CGI parameters: %s', e)
             return flask.make_response('Invalid CGI parameters', 400)
+        options.segmentTimeline = True
         dash = ManifestContext(
             manifest=current_manifest, options=options, stream=None,
             multi_period=current_mps)

@@ -22,7 +22,7 @@ class TestDashTiming(TestCaseMixin, unittest.TestCase):
     def create_representation(self,
                               mode: str,
                               now: datetime.datetime | None = None,
-                              **kwargs) -> tuple[StreamTimingReference, Representation]:
+                              **kwargs) -> tuple[StreamTimingReference, Representation, Representation]:
         stream_ref = StreamTimingReference(
             media_name='bbb_v1',
             content_type='video',
@@ -53,7 +53,9 @@ class TestDashTiming(TestCaseMixin, unittest.TestCase):
             segments=segments,
             timescale=stream_ref.timescale,
             segment_duration=stream_ref.segment_duration)
-        vid.set_dash_timing(timing)
+        zero_td = datetime.timedelta()
+        vid.set_dash_timing(
+            timing, period_start=zero_td, period_time_offset=zero_td, duration=None)
         # 591996ms
         # 6526756
         segments: list[Segment] = [Segment(pos=0, duration=0, size=12)]
@@ -73,7 +75,8 @@ class TestDashTiming(TestCaseMixin, unittest.TestCase):
             segments=segments,
             timescale=44100,
             segment_duration=int(total_dur // stream_ref.num_media_segments))
-        aud.set_dash_timing(timing)
+        aud.set_dash_timing(
+            timing, period_start=zero_td, period_time_offset=zero_td, duration=None)
         return (stream_ref, vid, aud,)
 
     def test_generate_segment_timeline_vod(self) -> None:
@@ -185,6 +188,7 @@ class TestDashTiming(TestCaseMixin, unittest.TestCase):
         for seg in timeline:
             if seg.start is not None:
                 tc = seg.start
+            assert tc is not None
             for i in range(seg.repeat + 1):
                 vid_segs.append(tc)
                 mod_seg, origin, seg_tc = vid.calculate_segment_from_timecode(tc, True)
@@ -192,20 +196,23 @@ class TestDashTiming(TestCaseMixin, unittest.TestCase):
                     origin, tc + vid.timescale,
                     msg=f'{num}: Expected origin {origin} to be less than {tc}')
                 self.assertEqual(seg_tc, tc)
+                assert seg.duration is not None
                 tc += seg.duration
                 dur += seg.duration
         next_now = now + timecode_to_timedelta(dur, vid.timescale)
         timeline = aud.generateSegmentTimeline()
-        num = 1
-        tc = None
+        num: int = 1
+        tc: int | None = None
         for seg in timeline:
             if seg.start is not None:
                 tc = seg.start
+            assert tc is not None
             if num == (1 + len(vid_segs)):
                 self.assertLessThanOrEqual(num, 1 + len(vid_segs))
                 break
             a_delta = timecode_to_timedelta(tc, aud.timescale)
             v_delta = timecode_to_timedelta(vid_segs[num - 1], vid.timescale)
+            assert seg.duration is not None
             if num == 1 and a_delta < v_delta:
                 tc += seg.duration * (seg.repeat + 1)
                 num += seg.repeat
