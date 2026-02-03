@@ -80,10 +80,10 @@ class Manifest(DashElement):
         if self.options.duration is None:
             return
         todo = datetime.timedelta(seconds=self.options.duration)
-        for period in self.periods:
+        for idx, period in enumerate(self.periods):
             if period.duration is None:
                 self.log.debug(
-                    'Using target duration %s for last period %s', todo, period.id)
+                    '%d: Using target duration %s for last period %s', idx, todo, period.id)
                 period.target_duration = todo
                 break
             if todo < period.duration:
@@ -91,8 +91,8 @@ class Manifest(DashElement):
             else:
                 period.target_duration = period.duration
             self.log.debug(
-                'Using target duration %s for period %s',
-                period.target_duration, period.id)
+                '%d: Using target duration %s for period %s',
+                idx, period.target_duration, period.id)
             todo -= period.target_duration
             if todo.total_seconds() < 0:
                 todo = datetime.timedelta(seconds=0)
