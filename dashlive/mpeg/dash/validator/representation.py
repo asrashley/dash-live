@@ -278,7 +278,8 @@ class Representation(RepresentationBaseType["AdaptationSet"]):
 
     def generate_segments_using_segment_timeline(self, frameRate: float) -> None:
         timeline = self.segmentTemplate.segmentTimeline
-        seg_duration = self.segmentTemplate.duration
+        assert timeline is not None
+        seg_duration: int | None = self.segmentTemplate.duration
         if seg_duration is None:
             if not self.elt.check_not_none(timeline, msg='Failed to find segment timeline'):
                 return
@@ -286,32 +287,36 @@ class Representation(RepresentationBaseType["AdaptationSet"]):
                     len(timeline.segments), 0, msg='Failed to find any segments in timeline'):
                 return
             seg_duration = timeline.duration // len(timeline.segments)
+        tolerance: int
         if self.parent.contentType == 'audio':
             tolerance = self.dash_timescale() // 20
         else:
-            tolerance = self.dash_timescale() // frameRate
+            tolerance = int(math.ceil(self.dash_timescale() / frameRate))
         total_duration = 0
         self.log.debug('Generating up to %d MediaSegments using SegmentTimeline', len(timeline.segments))
-        need_duration = None
+        need_duration: int | None = None
         if self.target_duration is not None:
             need_duration = timedelta_to_timecode(self.target_duration, self.dash_timescale())
         presentation_time_offset: int = self.presentation_time_offset()
         for idx, seg in enumerate(timeline.segments):
-            decode_time = seg.start - self.segmentTemplate.presentationTimeOffset
+            assert seg.start is not None
             if self.mode == 'vod':
                 seg_num = idx + 1
             else:
+                decode_time: int = seg.start - self.segmentTemplate.presentationTimeOffset
                 seg_num = self.segmentTemplate.startNumber + int(decode_time // seg_duration)
             expected_seg_num = None
+            assert self.segmentTemplate.media is not None
             if '$Number$' in self.segmentTemplate.media:
                 expected_seg_num = seg_num
-            self.log.debug('%d: seg_num=%d decode_time=%d', idx, seg_num, decode_time)
-            url = self.format_url_template(
-                self.segmentTemplate.media, seg_num, decode_time)
+            self.log.debug('%d: seg_num=%d start=%d decode_time=%d', idx, seg_num, seg.start, seg.start)
+            # NOTE: the URL uses the time value from the SegmentTimeline, *not* the segments decode time
+            url = self.format_url_template(self.segmentTemplate.media, seg_num, seg.start)
+            assert self.baseurl is not None
             url = urllib.parse.urljoin(self.baseurl, url)
             ms = MediaSegment(
                 self, url=url, presentation_time_offset=presentation_time_offset,
-                expected_decode_time=decode_time, expected_duration=seg.duration,
+                expected_decode_time=seg.start, expected_duration=seg.duration,
                 expected_seg_num=expected_seg_num, tolerance=tolerance)
             if self.mode == 'live':
                 ms.set_segment_availability(
@@ -457,10 +462,15 @@ class Representation(RepresentationBaseType["AdaptationSet"]):
             if self.mode != 'live' and total_dur.total_seconds() > 0:
                 return True
             return False
-        self.log.debug('%s: Total media duration %s, need %s %s',
+        seg_duration: datetime.timedelta = datetime.timedelta(seconds=1)
+        if self.segmentTemplate and self.segmentTemplate.duration:
+            seg_duration = timecode_to_timedelta(self.segmentTemplate.duration, self.dash_timescale())
+
+        has_finished: bool = (total_dur + seg_duration) > self.target_duration
+        self.log.debug('%s: Total media duration: %s, need: %s finished: %s',
                        self.unique_id(), total_dur, self.target_duration,
-                       total_dur >= self.target_duration)
-        return total_dur >= self.target_duration
+                       has_finished)
+        return has_finished
 
     def get_validated_duration(self) -> datetime.timedelta:
         """
@@ -504,11 +514,13 @@ class Representation(RepresentationBaseType["AdaptationSet"]):
             return
         next_decode_time = None
         next_seg_num = None
-        total_dur = 0
-        if self.target_duration is None:
-            need_duration = None
-        else:
+        total_dur: int = 0
+        need_duration: int | None = None
+        if self.target_duration is not None:
             need_duration = timedelta_to_timecode(self.target_duration, self.dash_timescale())
+            if need_duration == 0:
+                # the media in this Period is not needed
+                return
         dash_timescale = self.dash_timescale()
         media_timescale = self.init_segment.media_timescale()
         for idx, seg in enumerate(self.media_segments):

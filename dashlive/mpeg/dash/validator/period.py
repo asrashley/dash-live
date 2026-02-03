@@ -50,16 +50,11 @@ class Period(DashElement["Manifest"]):
         next_id: int = 0
         for adp in self.adaptation_sets:
             if adp.id is not None:
-                next_id = max(next_id, adp.id)
+                next_id = max(next_id, int(adp.id))
         next_id += 1
-        self.target_duration: datetime.timedelta | None = None
-        if self.options.duration:
-            self.target_duration = datetime.timedelta(seconds=self.options.duration)
-            if self.duration is not None:
-                self.target_duration = min(self.target_duration, self.duration)
         for adp in self.adaptation_sets:
             if adp.id is None:
-                adp.id = next_id
+                adp.id = f"{next_id}"
                 next_id += 1
 
     async def prefetch_media_info(self) -> bool:
@@ -101,6 +96,8 @@ class Period(DashElement["Manifest"]):
 
     def finished(self) -> bool:
         if self.progress.aborted():
+            return True
+        if self.target_duration is not None and self.target_duration.total_seconds() < 1:
             return True
         for child in self.children():
             if not child.finished():

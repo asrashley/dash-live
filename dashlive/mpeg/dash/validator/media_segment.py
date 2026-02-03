@@ -73,17 +73,24 @@ class MediaSegment(DashElement):
                                  period_availability_start: datetime.datetime,
                                  presentationTimeOffset: int,
                                  timescale: int) -> None:
-        decode_time = self.expected_decode_time
+        self.log.debug("%s: setting segment availability decode=%s num=%s",
+                       self.name, self.expected_decode_time, self.expected_seg_num)
+        decode_time: int | None = self.expected_decode_time
         if decode_time is None:
-            decode_time = (
-                self.expected_seg_num - self.parent.segmentTemplate.startNumber) * segment_duration
+            assert self.expected_seg_num is not None
+            start_number: int = 1
+            if self.parent.segmentTemplate:
+                start_number = self.parent.segmentTemplate.startNumber
+            decode_time = (self.expected_seg_num - start_number) * segment_duration
         delta = timecode_to_timedelta(
             decode_time + segment_duration - presentationTimeOffset,
             timescale)
+        # availability_start_time is the datetime when the fragment first becomes available at the origin
         self.availability_start_time = period_availability_start + delta
         self.availability_end_time = self.availability_start_time + self.mpd.timeShiftBufferDepth
         self.availability_end_time += timecode_to_timedelta(segment_duration, timescale)
-        self.log.debug('Segment availability %s -> %s',
+        self.log.debug('%s: Segment availability %s -> %s',
+                       self.name,
                        to_iso_datetime(self.availability_start_time),
                        to_iso_datetime(self.availability_end_time))
 
@@ -161,10 +168,11 @@ class MediaSegment(DashElement):
                 self.expected_seg_num, moof.mfhd.sequence_number,
                 template=r'Sequence number error, expected {0}, got {1}')
         if self.expected_decode_time is not None:
-            tc_diff = moof.traf.tfdt.base_media_decode_time - self.expected_decode_time
+            assert self.decode_time is not None
+            tc_diff = self.decode_time - self.expected_decode_time
             tc_delta = timecode_to_timedelta(
                 tc_diff, self.parent.dash_timescale()).total_seconds()
-            msg = (
+            msg: str = (
                 f'Decode time {self.decode_time} should ' +
                 f'be {self.expected_decode_time} ({tc_diff}) [{tc_delta} seconds]')
             self.elt.check_almost_equal(
@@ -183,11 +191,17 @@ class MediaSegment(DashElement):
                 pts = dts + sample.composition_time_offset
             except AttributeError:
                 pts = dts
-            pts -= self.presentation_time_offset
-            # TODO: some PTS values in first segment might be < zero
-            self.elt.check_greater_or_equal(pts, 0)
-            self.elt.check_not_in(pts, pts_values)
-            pts_values.add(pts)
+
+            # See clause 7.2.1:
+            # If smaller values are present, i.e. the value of the @eptDelta is negative,
+            # then presentation of the Media Segment is expected to only take place for
+            # presentation times greater than or equal to To
+            if pts >= self.presentation_time_offset:
+                pts -= self.presentation_time_offset
+                self.elt.check_greater_or_equal(pts, 0, msg=f"Expected PTS {pts} to be >= 0")
+                self.elt.check_not_in(pts, pts_values)
+                pts_values.add(pts)
+
             if sample.duration is None:
                 samp_dur = moov.mvex.trex.default_sample_duration
             else:
