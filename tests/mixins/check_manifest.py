@@ -15,7 +15,7 @@ import math
 import os
 import logging
 from pathlib import Path
-from typing import AbstractSet, ClassVar, Self
+from typing import AbstractSet, ClassVar
 import urllib.parse
 
 import flask
@@ -27,7 +27,6 @@ from dashlive.mpeg.dash.validator.errors import ValidationError
 from dashlive.server import manifests, models
 from dashlive.server.options.container import OptionsContainer
 from dashlive.server.options.types import OptionUsage
-from dashlive.server.options.utc_time_options import UTCMethod
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.requesthandler.base import TemplateContext
 from dashlive.server.requesthandler.manifest_context import ManifestContext
@@ -160,7 +159,7 @@ class DashManifestCheckMixin:
                 url, mode, encrypted=False, debug=debug, duration=test_duration,
                 check_media=(check_media in {True, None}), check_head=True, now=now,
                 fixture=fixture)
-            
+
         if check_media is None:
             check_media = not simplified
 
@@ -295,9 +294,10 @@ class DashManifestCheckMixin:
                     await dv.refresh()
         if dv.has_errors():
             dv.print_manifest_text()
-            print(f'{mpd_url} has errors:')
-            for hist in dv.get_validation_history():
-                print(hist)
+            errs: list[ValidationError] = dv.get_errors()
+            print(f'{mpd_url} has {len(errs)} validation errors:')
+            for idx, hist in enumerate(errs):
+                print(f"{idx:03d}: {hist}")
         self.assertFalse(dv.has_errors(), 'DASH stream validation failed')
         self.assertGreaterThan(
             timeout, 0, 'Timeout waiting for validation to complete')
@@ -463,11 +463,11 @@ class DashManifestCheckMixin:
         msg = fr'{msg}: Expected "{expected}" got "{actual}"'
         self.assertEqual(expected, actual, msg=msg)
 
-    def assertXmlEqual(self, 
+    def assertXmlEqual(self,
                        expected: ET.Element,
                        actual: ET.Element,
-                       index: int = 0, 
-                       msg: str | None = None, 
+                       index: int = 0,
+                       msg: str | None = None,
                        strict: bool = False) -> None:
         tag = ET.QName(expected.tag)
         if msg is None:
