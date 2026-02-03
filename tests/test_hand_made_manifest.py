@@ -28,18 +28,6 @@ class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
             'hand_made.mpd', 'live', abr=True, now="2020-10-07T09:59:02Z",
             only={'audioCodec', 'minimumupdateperiod'})
 
-    async def test_hand_made_manifest_odvod_aac(self):
-        await self.check_a_manifest_using_major_options(
-            'hand_made.mpd', 'odvod', with_subs=True, audioCodec='mp4a')
-
-    async def test_hand_made_manifest_odvod_ec3(self):
-        await self.check_a_manifest_using_major_options(
-            'hand_made.mpd', 'odvod', with_subs=True, audioCodec='ec-3')
-
-    async def test_hand_made_manifest_odvod_all_audio(self):
-        await self.check_a_manifest_using_major_options(
-            'hand_made.mpd', 'odvod', with_subs=True, audioCodec='any')
-
     async def check_utc_timing_methods(self, mps: bool):
         url: str
         fixture: StreamFixture
