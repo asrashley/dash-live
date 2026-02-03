@@ -252,7 +252,8 @@ class ManifestContext:
 
         if db_period:
             period: Period = Period(
-                start=start, id=db_period.pid, duration=db_period.duration)
+                start=start, id=db_period.pid, duration=db_period.duration,
+                time_offset=db_period.start)
         else:
             period = Period(start=start, id="p0")
         max_items = None
@@ -265,12 +266,12 @@ class ManifestContext:
         if db_period:
             for adp in db_period.adaptation_sets:
                 adp_set = AdaptationSet(
-                    mode=self.options.mode,
+                    mode=opts.mode,
                     content_type=adp.content_type.name,
                     id=adp.track_id,
                     role=adp.role.name.lower(),
-                    segment_timeline=self.options.segmentTimeline)
-                for mf in adp.media_files(encrypted=self.options.encrypted):
+                    segment_timeline=opts.segmentTimeline)
+                for mf in adp.media_files(encrypted=opts.encrypted):
                     if mf.representation is None:
                         mf.parse_media_file()
                     if mf.representation is None:
@@ -292,23 +293,27 @@ class ManifestContext:
                 stream, video.lang)
         assert video is not None
         if timing:
-            opts.availabilityStartTime = timing.availabilityStartTime
-            opts.timeShiftBufferDepth = timing.timeShiftBufferDepth
             self.update_timing(timing, db_period)
+            if opts.mode == "live":
+                # the manifest CGI parameters need to include the calculated
+                # values for availability start time so that this value never
+                # changes during the lifetime of this stream
+                opts = opts.clone(
+                    availabilityStartTime=timing.availabilityStartTime,
+                    timeShiftBufferDepth=timing.timeShiftBufferDepth)
 
         self.cgi_params = self.calculate_cgi_parameters(
-            audio=audio_adps, video=video)
+            options=opts, audio=audio_adps, video=video)
         video.append_cgi_params(self.cgi_params.video)
         for audio in audio_adps:
             audio.append_cgi_params(self.cgi_params.audio)
         for text in text_adps:
             text.append_cgi_params(self.cgi_params.text)
         if self.cgi_params.manifest:
-            locationURL = flask.request.url
-            if '?' in locationURL:
-                locationURL = locationURL[:flask.request.url.index('?')]
-            locationURL = locationURL + objects.dict_to_cgi_params(self.cgi_params.manifest)
-            self.locationURL = locationURL
+            url_parts = urllib.parse.urlparse(flask.request.url)
+            url_parts = url_parts._replace(query=objects.dict_to_cgi_params(
+                self.cgi_params.manifest, question_mark=False))
+            self.locationURL = urllib.parse.urlunparse(url_parts)
         event_generators = EventFactory.create_event_generators(opts)
         for evgen in event_generators:
             ev_stream = evgen.create_manifest_context(context=vars(self))
@@ -494,10 +499,10 @@ class ManifestContext:
 
     def calculate_cgi_parameters(
             self,
+            options: OptionsContainer,
             audio: list[AdaptationSet],
             video: AdaptationSet) -> CgiParameterCollection:
         exclude = {'encrypted', 'mode'}
-        options = self.options
 
         vid_cgi_params = options.generate_cgi_parameters(
             use=OptionUsage.VIDEO, exclude=exclude)
@@ -590,7 +595,9 @@ class ManifestContext:
                 drops.append(f'{code}={drop_seg}')
         return urllib.parse.quote_plus(','.join(drops))
 
-    def update_timing(self, timing: DashTiming, db_period: models.Period | None) -> None:
+    def update_timing(self,
+                      timing: DashTiming,
+                      db_period: models.Period | None) -> None:
         tc: DynamicManifestTimingContext | StaticManifestTimingContext = timing.generate_manifest_context()
         self.now = tc.now
         self.publishTime = tc.publishTime

@@ -89,6 +89,7 @@
                    startNumber="{{adp.start_number}}"
                    timescale="{{adp.timescale}}"
                    duration="{{rep.segment_duration}}"
+                   presentationTimeOffset="{{adp.presentationTimeOffset}}"
                    initialization="{{adp.initURL|xmlSafe}}"
                    media="{{adp.mediaURL|xmlSafe}}">
 		 {%- if options.segmentTimeline %}

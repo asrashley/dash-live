@@ -1,19 +1,5 @@
 #############################################################################
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
-#############################################################################
-#
 #  Project Name        :    Simulated MPEG DASH service
 #
 #  Author              :    Alex Ashley
@@ -24,8 +10,7 @@ from abc import abstractmethod
 import datetime
 import io
 import logging
-import math
-from typing import cast, NamedTuple
+from typing import BinaryIO, cast, NamedTuple
 
 import flask
 
@@ -37,7 +22,7 @@ from dashlive.mpeg.dash.timing import DashTiming
 from dashlive.server import models
 from dashlive.server.events.factory import EventFactory
 from dashlive.server.options.container import OptionsContainer
-from dashlive.utils.date_time import UTC
+from dashlive.utils.date_time import UTC, timedelta_to_timecode
 from dashlive.utils.buffered_reader import BufferedReader
 
 from .base import RequestHandlerBase
@@ -141,7 +126,8 @@ class MediaRequestBase(RequestHandlerBase):
             mode: str,
             options: OptionsContainer,
             seg_num: int | None,
-            seg_time: int | None = None) -> flask.Response:
+            seg_time: int | None = None,
+            period: models.Period | None = None) -> flask.Response:
         mod_segment: int = 0
         origin_time: int = 0
 
@@ -159,7 +145,12 @@ class MediaRequestBase(RequestHandlerBase):
 
         now: datetime.datetime = datetime.datetime.now(tz=UTC())
         timing = DashTiming(now, stream.timing_reference, options)
-        adp_set.set_dash_timing(timing)
+
+        if period is None:
+            adp_set.set_dash_timing(timing, start=datetime.timedelta(), time_offset=datetime.timedelta(), duration=None)
+        else:
+            adp_set.set_dash_timing(timing, start=period.start, time_offset=period.start, duration=period.duration)
+
         try:
             mod_segment, origin_time, sn = self.calculate_media_segment_index(
                 mode, representation, timing, seg_num, seg_time)
@@ -182,17 +173,17 @@ class MediaRequestBase(RequestHandlerBase):
         moof_modified: bool = False
         traf_modified: bool = False
 
-        moof: mp4.Mp4Atom = atom.moof
-        traf: mp4.Mp4Atom = moof.traf
+        moof: mp4.MovieFragmentBox = cast(mp4.MovieFragmentBox, atom.moof)
+        traf: mp4.TrackFragmentBox = cast(mp4.TrackFragmentBox, moof.traf)
 
-        tfdt: mp4.Mp4Atom
+        tfdt: mp4.TrackFragmentDecodeTimeBox
         try:
-            tfdt = traf.tfdt
+            tfdt = cast(mp4.TrackFragmentDecodeTimeBox, traf.tfdt)
         except AttributeError as err:
             logging.debug('Adding tfdt box to traf: %s', err)
             base_media_decode_time: int
             base_media_decode_time = sum([
-                seg.duration for seg in representation.segments[1:mod_segment]])
+                cast(int, seg.duration) for seg in representation.segments[1:mod_segment]])
             tfdt = mp4.TrackFragmentDecodeTimeBox(
                 version=0, flags=0,
                 base_media_decode_time=base_media_decode_time)
@@ -309,7 +300,7 @@ class MediaRequestBase(RequestHandlerBase):
         with media.open_file(start=frag.pos, buffer_size=16384) as reader:
             src = BufferedReader(
                 reader, offset=frag.pos, size=frag.size, buffersize=16384)
-            atom = mp4.Mp4Atom.load(src, options=mp4_options, use_wrapper=True)
+            atom = cast(mp4.Wrapper, mp4.Mp4Atom.load(cast(BinaryIO, src), options=mp4_options, use_wrapper=True))
             if parse_samples:
                 atom.moof.traf.trun.parse_samples(
                     src, media.representation.nalLengthFieldLength)
@@ -542,7 +533,7 @@ class ServeMpsMedia(MediaRequestBase):
         flask.g.period = period
         return self.generate_media_segment(
             stream=period.stream, media_file=media, mode=mode, options=options,
-            seg_num=segment_num, seg_time=segment_time)
+            seg_num=segment_num, seg_time=segment_time, period=period)
 
     def calculate_media_segment_index(self,
                                       mode: str,
@@ -551,36 +542,19 @@ class ServeMpsMedia(MediaRequestBase):
                                       seg_num: int | None,
                                       seg_time: int | None
                                       ) -> SegmentPosition:
-        origin_time: int
+        mod_seg: int
+
         period: models.Period = cast(models.Period, flask.g.period)
-        timing_ref = period.stream.timing_reference
-        assert timing_ref is not None
-        start_time: int = int(math.floor(
-            period.start.total_seconds() * timing_ref.timescale))
-        if representation.timescale != timing_ref.timescale:
-            start_time = int(math.floor(
-                start_time * representation.timescale / timing_ref.timescale))
-        if seg_time is not None:
-            start_time += seg_time
-        mod_seg, seg_start_tc, origin_time = representation.get_segment_index(
-            start_time)
+        start_time: int = timedelta_to_timecode(period.start, representation.timescale)
 
-        origin_time = -seg_start_tc
-        if seg_time is not None:
-            origin_time += seg_time
+        logging.debug("MPS media seg: pid=%s start=%d num=%s time=%s url=%s",
+                      period.pid, start_time, seg_num, seg_time, flask.request.url)
 
-        if seg_num is not None:
-            mod_seg += seg_num - representation.start_number
-            if mod_seg > representation.num_media_segments:
-                logging.warning(
-                    "Request for segment %d in file %s with duration %d",
-                    mod_seg, representation.id,
-                    representation.num_media_segments)
-                raise ValueError('Segment beyond end of media')
-                # assert representation.mediaDuration is not None
-                # origin_time += representation.mediaDuration
-                # mod_seg -= representation.num_media_segments
-                # assert mod_seg > 0
-        else:
-            seg_num = mod_seg + 1
-        return SegmentPosition(mod_seg, origin_time, seg_num)
+        if seg_time is not None:
+            seg_time = max(seg_time, start_time)
+            mod_seg = representation.get_segment_index(seg_time)[0]
+            return SegmentPosition(mod_seg, 0, mod_seg - 1 + representation.start_number)
+
+        assert seg_num is not None
+        mod_seg = 1 + ((seg_num - representation.start_number) % representation.num_media_segments)
+        return SegmentPosition(mod_seg, 0, seg_num)

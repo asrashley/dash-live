@@ -284,8 +284,15 @@ class Representation(ObjectWithFields):
             rv.bitrate = 8 * rv.timescale * file_size // rv.mediaDuration
         return rv
 
-    def set_dash_timing(self, timing: DashTiming) -> None:
+    def set_dash_timing(self,
+                        timing: DashTiming,
+                        period_start: datetime.timedelta,
+                        period_time_offset: datetime.timedelta,
+                        duration: datetime.timedelta | None) -> None:
         self._timing = timing
+        self.period_start = period_start
+        self.presentation_time_offset = timedelta_to_timecode(period_time_offset, self.timescale)
+        self.period_duration = duration
 
     def process_moov(self, moov: Mp4Atom, key_ids: set[KeyMaterial]) -> None:
         self.timescale = moov.trak.mdia.mdhd.timescale
@@ -439,35 +446,64 @@ class Representation(ObjectWithFields):
             if sn.duration is not None:
                 rv.append(sn)
 
-        stream_ref = self._timing.stream_reference
-        ref_duration_tc = stream_ref.media_duration_using_timescale(self.timescale)
+        assert self._timing is not None
+        stream_ref: StreamTimingReference = self._timing.stream_reference
+        ref_duration_tc: int = stream_ref.media_duration_using_timescale(self.timescale)
+        timeline_start: int = 0
+        seg_start_time: int = 0
+        origin_time: int = 0
+        mod_segment: int = 1
+        drift: int = 0
+        end: int = ref_duration_tc
+        if self.mediaDuration > 0:
+            end = min(end, self.mediaDuration)
+
         if self._timing.mode == 'live':
             timeline_start = timedelta_to_timecode(
-                self._timing.firstAvailableTime, self.timescale)
+                max(self.period_start, self._timing.firstAvailableTime) - self.period_start,
+                self.timescale)
+            assert timeline_start >= 0
             mod_segment, origin_time, seg_start_time = self.calculate_segment_from_timecode(
                 timeline_start, True)
             drift = ref_duration_tc - self.mediaDuration
-            end = self._timing.timeShiftBufferDepth * self.timescale
+            period_duration: datetime.timedelta
+            if self.period_duration is None:
+                assert self._timing.availabilityStartTime is not None
+                period_start_date: datetime.datetime = self._timing.availabilityStartTime + self.period_start
+                period_duration = self._timing.now - period_start_date
+            else:
+                period_duration = self.period_duration
+            period_dur_tc: int = timedelta_to_timecode(period_duration, self.timescale)
+            end = min(period_dur_tc, self._timing.timeShiftBufferDepth * self.timescale)
+            end += self.presentation_time_offset
             logging.debug(
-                'target=%d start=%d origin=%d mod_segment=%d drift=%d',
-                timeline_start, seg_start_time, origin_time, mod_segment, drift)
-        else:
-            timeline_start = 0
-            seg_start_time = 0
-            origin_time = 0
-            mod_segment = 1
-            drift = 0
-            end = ref_duration_tc
-        rv = []
-        dur = 0
+                'period=%s target=%d start=%d origin=%d mod_segment=%d drift=%d end=%d',
+                self.period_start, timeline_start, seg_start_time, origin_time, mod_segment, drift, end)
+
+        start_offset: int = self.presentation_time_offset
+        while start_offset > 0:
+            seg = self.segments[mod_segment]
+            assert seg.duration is not None
+            start_offset -= seg.duration
+            if start_offset >= 0:
+                seg_start_time += seg.duration
+                mod_segment += 1
+                if mod_segment > self.num_media_segments:
+                    mod_segment = 1
+
+        rv: list[SegmentTimelineElement] = []
+        dur: int = 0
         s_node = SegmentTimelineElement(mod_segment=mod_segment)
         while dur < end:
             seg = self.segments[mod_segment]
-            duration = seg.duration
+            assert seg.duration is not None
+            duration: int = seg.duration
             if mod_segment == self.num_media_segments:
                 duration += drift
             if dur == 0:
-                assert seg_start_time is not None
+                if seg_start_time < self.presentation_time_offset:
+                    duration -= self.presentation_time_offset - seg_start_time
+                    seg_start_time = self.presentation_time_offset
                 s_node.start = seg_start_time
             elif duration != s_node.duration:
                 output_s_node(s_node)
@@ -625,14 +661,18 @@ class Representation(ObjectWithFields):
         origin_time: int = int(num_loops * ref_duration_tc)
         mod_segment: int = 1
         seg_start_tc: int = origin_time
+        assert origin_time <= timecode
         # TODO use binary search to find correct segment
         while (seg_start_tc + (self.segments[mod_segment].duration // 2)) < timecode:
+            assert self.segments[mod_segment].duration is not None
             seg_start_tc += self.segments[mod_segment].duration
             mod_segment += 1
             if mod_segment > self.num_media_segments:
                 mod_segment = 1
                 origin_time += ref_duration_tc
                 seg_start_tc = origin_time
+        assert mod_segment > 0 and mod_segment <= self.num_media_segments
+        assert origin_time >= 0
         logging.debug(
             '%d: target=%d (%s) found=%d (%s)',
             self.track_id, timecode, timecode_to_timedelta(timecode, self.timescale),

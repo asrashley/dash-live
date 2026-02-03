@@ -688,6 +688,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             manifests.SupportedOptionTuple(
                 'playready_la_url', 2, ['https://some.server/pr', 'http://another.addr/abc']),
         ]
+        self.setup_media_fixture(BBB_FIXTURE)
         await self.check_a_manifest_using_all_options(
             filename,
             mode='vod',

@@ -6,7 +6,7 @@
      publishTime="2023-10-25T07:56:58Z"
      id="testmps"
     type="static"
-    mediaPresentationDuration="PT1M16S"
+    mediaPresentationDuration="PT1M12S"
   profiles="urn:mpeg:dash:profile:isoff-live:2011,urn:dvb:dash:profile:dvb-dash:2014"
   minBufferTime="PT1.5S"
 >
@@ -102,7 +102,7 @@
            </Representation> 
        </AdaptationSet> 
    </Period>
-   <Period start="PT32S" id="p2" duration="PT44S"
+   <Period start="PT32S" id="p2" duration="PT40S"
    ><BaseURL>http://unit.test/mps/vod/testmps/2/</BaseURL>
      
        <AdaptationSet

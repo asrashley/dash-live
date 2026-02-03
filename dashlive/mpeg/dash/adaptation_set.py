@@ -189,12 +189,17 @@ class AdaptationSet(ObjectWithFields):
             return 0
         return max([a.bitrate for a in self.representations])
 
+    @property
+    def presentationTimeOffset(self) -> int:
+        pto: int = int(
+            (self.start_number - 1) * self.representations[0].segment_duration)
+        pto += timedelta_to_timecode(self.presentation_time_offset, self.timescale)
+        return pto
+
     def compute_av_values(self) -> None:
         if not self.representations:
             return
         self.timescale = self.representations[0].timescale
-        self.presentationTimeOffset = int(
-            (self.start_number - 1) * self.representations[0].segment_duration)
 
         if self.content_type in {'audio', 'text'}:
             for rep in self.representations:
@@ -215,6 +220,11 @@ class AdaptationSet(ObjectWithFields):
             self.maxFrameRate = max(
                 [a.frameRate for a in self.representations if a.frameRate is not None])
 
-    def set_dash_timing(self, timing: DashTiming) -> None:
+    def set_dash_timing(self,
+                        timing: DashTiming,
+                        start: timedelta,
+                        time_offset: timedelta,
+                        duration: timedelta | None) -> None:
+        self.presentation_time_offset = time_offset
         for rep in self.representations:
-            rep.set_dash_timing(timing)
+            rep.set_dash_timing(timing, start, time_offset, duration)

@@ -105,4 +105,4 @@ class Period(ObjectWithFields):
                     adp.initURL = f"{base_url}{adp.initURL}"
                 adp.mediaURL = f"{base_url}{adp.mediaURL}"
             if timing:
-                adp.set_dash_timing(timing)
+                adp.set_dash_timing(timing, self.start, self.time_offset, self.duration)

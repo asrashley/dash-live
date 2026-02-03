@@ -95,14 +95,15 @@ def process_period(mp_stream: models.MultiPeriodStream,
         return f"Unknown stream {data['stream']} for period {data['pid']}"
     if stream.timing_reference is None:
         return f"No timing ref in stream {data['stream']} for period {data['pid']}"
-    mf = stream.get_timing_reference_file()
+    mf: models.MediaFile | None = stream.get_timing_reference_file()
     if mf is None:
         return f"Failed to find MediaFile for stream {stream.directory}"
     if mf.representation is None:
         return f"MediaFile {mf.name} in stream {stream.directory} needs indexing"
     now = datetime.datetime.now(tz=UTC())
     timing = DashTiming(now, stream.timing_reference, options)
-    mf.representation.set_dash_timing(timing)
+    mf.representation.set_dash_timing(
+        timing, period_start=period.start, period_time_offset=period.start, duration=period.duration)
     period.stream = stream
     period.stream_pk = stream.pk
     period.ordering = data['ordering']

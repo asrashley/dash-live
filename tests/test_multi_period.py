@@ -70,7 +70,9 @@ class MultiPeriodTests(FlaskTestBase, DashManifestCheckMixin):
             filename='hand_made.mpd',
             mode='vod',
             mps_name=MPS_FIXTURE.name,
-            simplified=True)
+            simplified=True,
+            debug=False,
+            check_media=True)
 
     async def test_live(self):
         self.setup_multi_period_stream(MPS_FIXTURE)
