@@ -348,7 +348,6 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
                         role=trk.role.value,
                         content_type=ct)
                     models.db.session.add(adp)
-                models.db.session.add(adp)
             models.db.session.commit()
             self.assertEqual(
                 timedelta(seconds=fixture.media_duration),
