@@ -504,7 +504,7 @@ class Mp4Atom(ObjectWithFields):
             kwargs['options'] = options
             new_atom = Box(**kwargs)
             new_atom.payload_start = src.tell()
-            if atom.parse_children:
+            if Box.parse_children:
                 options.log.debug('Parse %s children', new_atom.atom_type)
                 Mp4Atom.load(src, new_atom, options)
             options.log.debug('finished parsing of deferred "%s"',
@@ -778,13 +778,17 @@ class LazyLoadedBox(Mp4Atom):
     }
     OBJECT_FIELDS.update(Mp4Atom.OBJECT_FIELDS)
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         self._real_atom: Mp4Atom | None = None
         super().__init__(**kwargs)
         self._init_complete = True
 
     @classmethod
-    def parse(clz, src, parent, options, initial_data):
+    def parse(cls,
+              src: BinaryIO,
+              parent: Mp4Atom | None,
+              options: Options | None,
+              initial_data: dict[str, Any]) -> dict[str, Any]:
         rv = initial_data
         size = rv["size"] - rv["header_size"]
         if size > 0:
@@ -864,9 +868,10 @@ class LazyLoadedBox(Mp4Atom):
         src.seek(self.header_size, os.SEEK_CUR)
         kwargs = self._box_class.parse(
             src, self.parent, options=self.options, initial_data=hdr)
+        assert kwargs is not None
         kwargs['parent'] = self.parent
         kwargs['options'] = self.options
-        atom = self._box_class(**kwargs)
+        atom: Mp4Atom = self._box_class(**kwargs)
         atom._ev_bus = self._ev_bus
         self._real_atom = atom
         if self.parent:
@@ -879,11 +884,9 @@ class LazyLoadedBox(Mp4Atom):
             object.__setattr__(
                 self, name, object.__getattribute__(atom, name))
         del self._buffer
-        if src.tell() != (self.position + self.size):
-            if self.options.strict:
-                raise RuntimeError(
-                    f'Expected position {self.position + self.size} but actual position {src.tell()}')
-            src.seek(self.position + self.size)
+        if src.tell() != (self.position + self.size) and self.options.strict:
+            raise RuntimeError(
+                f'Expected position {self.position + self.size} but actual position {src.tell()}')
         return atom
 
 
