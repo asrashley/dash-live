@@ -21,6 +21,7 @@
 #############################################################################
 
 import io
+import math
 import time
 from typing import BinaryIO
 
@@ -53,6 +54,7 @@ class BufferedReader(io.RawIOBase):
     pos: int
     reader: BinaryIO
     size: int | None
+    buffers: dict[int, Buffer]
 
     def __init__(self, reader: BinaryIO, buffersize: int = 16384, data: bytes | None = None,
                  offset: int = 0, size: int | None = None, max_buffers: int = 30) -> None:
@@ -76,7 +78,12 @@ class BufferedReader(io.RawIOBase):
     def readable(self) -> bool:
         return not self.closed
 
-    def seek(self, offset, whence=io.SEEK_SET) -> int:
+    def close(self) -> None:
+        self.reader = io.BytesIO(b'')
+        self.buffers = {}
+        super().close()
+
+    def seek(self, offset: int, whence=io.SEEK_SET) -> int:
         # print('seek', offset, whence)
         if whence == io.SEEK_SET:
             self.pos = offset
@@ -123,13 +130,13 @@ class BufferedReader(io.RawIOBase):
         buf.close()
         return data
 
-    def cache(self, bucket) -> None:
+    def cache(self, bucket: int) -> None:
         # print('cache', bucket)
         if bucket in self.buffers:
             return
         if self.num_buffers == self.max_buffers:
-            remove = None
-            oldest = None
+            remove: int | None = None
+            oldest: float = math.inf
             for k, v in self.buffers.items():
                 if remove is None or v.timestamp < oldest:
                     remove = k

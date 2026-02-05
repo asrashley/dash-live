@@ -304,6 +304,7 @@ class MediaRequestBase(RequestHandlerBase):
             if parse_samples:
                 atom.moof.traf.trun.parse_samples(
                     src, media.representation.nalLengthFieldLength)
+            src.close()
 
         return atom
 
