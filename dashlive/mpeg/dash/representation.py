@@ -20,10 +20,12 @@
 #
 #############################################################################
 
+from bisect import bisect_left, bisect_right
 import datetime
 from dataclasses import dataclass, field
 import logging
 from math import floor
+from operator import attrgetter
 import os
 import sys
 from typing import Any, ClassVar, NamedTuple, Optional, Set, cast
@@ -126,6 +128,7 @@ class Representation(ObjectWithFields):
     presentation_time_offset: int  # in timescale units
     sar: str | None
     scanType: str | None
+    segment_duration: int
     startWithSAP: int
     start_number: int
     start_time: int
@@ -175,9 +178,12 @@ class Representation(ObjectWithFields):
             self.mediaDuration = sum([
                 s.duration for s in self.segments[1:] if s.duration is not None
             ])
-        if self.segment_duration is None and self.num_media_segments > 0:
-            self.segment_duration = int(floor(
-                self.mediaDuration / self.num_media_segments))
+        if self.segment_duration is None:
+            if self.num_media_segments > 0:
+                self.segment_duration = int(floor(
+                    self.mediaDuration / self.num_media_segments))
+            else:
+                self.segment_duration = 1
 
     def __repr__(self) -> str:
         return self.as_python(exclude={'num_media_segments'})
@@ -454,6 +460,7 @@ class Representation(ObjectWithFields):
         origin_time: int = 0
         mod_segment: int = 1
         drift: int = 0
+
         end: int = ref_duration_tc
         if self.mediaDuration > 0:
             end = min(end, self.mediaDuration)
@@ -480,16 +487,12 @@ class Representation(ObjectWithFields):
                 'period=%s target=%d start=%d origin=%d mod_segment=%d drift=%d end=%d',
                 self.period_start, timeline_start, seg_start_time, origin_time, mod_segment, drift, end)
 
-        start_offset: int = self.presentation_time_offset
-        while start_offset > 0:
-            seg = self.segments[mod_segment]
-            assert seg.duration is not None
-            start_offset -= seg.duration
-            if start_offset >= 0:
-                seg_start_time += seg.duration
-                mod_segment += 1
-                if mod_segment > self.num_media_segments:
-                    mod_segment = 1
+        # find highest numbered segment that has a start value <= presentation_time_offset
+        first_seg_idx: int = bisect_right(
+            self.segments, self.presentation_time_offset, lo=1, key=attrgetter('start')) - 1
+        assert first_seg_idx > 0
+        seg_start_time += self.segments[first_seg_idx].start
+        mod_segment += first_seg_idx - 1
 
         rv: list[SegmentTimelineElement] = []
         dur: int = 0
@@ -659,20 +662,17 @@ class Representation(ObjectWithFields):
         assert ref_duration_tc > 0
         num_loops: int = int(timecode // ref_duration_tc)
         origin_time: int = int(num_loops * ref_duration_tc)
-        mod_segment: int = 1
-        seg_start_tc: int = origin_time
         assert origin_time <= timecode
-        # TODO use binary search to find correct segment
-        while (seg_start_tc + (self.segments[mod_segment].duration // 2)) < timecode:
-            assert self.segments[mod_segment].duration is not None
-            seg_start_tc += self.segments[mod_segment].duration
-            mod_segment += 1
-            if mod_segment > self.num_media_segments:
-                mod_segment = 1
-                origin_time += ref_duration_tc
-                seg_start_tc = origin_time
+        min_tc: int = timecode - origin_time + self.segment_duration // 2
+        if min_tc >= ref_duration_tc:
+            origin_time += ref_duration_tc
+            min_tc -= ref_duration_tc
+        by_start = attrgetter('start')
+        mod_segment: int = bisect_left(self.segments, min_tc, lo=1, key=by_start) - 1
+        assert self.segments[mod_segment].duration is not None
         assert mod_segment > 0 and mod_segment <= self.num_media_segments
         assert origin_time >= 0
+        seg_start_tc: int = origin_time + self.segments[mod_segment].start
         logging.debug(
             '%d: target=%d (%s) found=%d (%s)',
             self.track_id, timecode, timecode_to_timedelta(timecode, self.timescale),
