@@ -30,7 +30,7 @@ class Segment:
     pos: int
     size: int
     duration: int | None = None
-    start: int | None = None
+    start: int = -1
 
     def toJSON(self, pure: bool = False,
                exclude: AbstractSet | None = None) -> JsonObject:
@@ -38,7 +38,7 @@ class Segment:
             "pos": self.pos,
             "size": self.size,
         }
-        if self.duration:
+        if self.duration is not None:
             rv["duration"] = self.duration
         if exclude is None:
             return rv
