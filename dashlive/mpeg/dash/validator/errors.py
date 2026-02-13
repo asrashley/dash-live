@@ -209,7 +209,7 @@ class ValidationChecks:
         result = a >= b
         if template is None:
             template = f'{0} should be >=  {1}'
-        return self.check_true(result, a, b, **kwargs)
+        return self.check_true(result, a, b, template=template, **kwargs)
 
     def check_starts_with(self, text: str, prefix: str, template: str | None = None,
                           **kwargs) -> bool:
