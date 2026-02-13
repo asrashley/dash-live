@@ -338,9 +338,7 @@ class ManifestContext:
             base_url = flask.url_for(
                 'dash-media-base-url', mode=opts.mode, stream=stream.directory)
 
-        period.finish_setup(
-            mode=opts.mode, timing=timing, base_url=base_url,
-            use_base_urls=opts.useBaseUrls)
+        period.finish_setup(timing=timing, base_url=base_url, options=opts)
         if is_https_request():
             period.baseURL = period.baseURL.replace('http://', 'https://')
         for adp in period.adaptationSets:

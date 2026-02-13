@@ -195,11 +195,27 @@ UsePatches = DashOption(
         ('Yes', '1'),
     ))
 
+ForcePeriodDurations = DashOption(
+    usage=OptionUsage.MANIFEST,
+    short_name='fpd',
+    full_name='forcePeriodDurations',
+    title='Forced Period durations',
+    description='Always add a duration attribute to Period elements',
+    from_string=DashOption.bool_from_string,
+    to_string=DashOption.bool_to_string,
+    input_type='checkbox',
+    cgi_name='periodDur',
+    cgi_choices=(
+        ('No', '0'),
+        ('Yes', '1'),
+    ))
+
 manifest_options = [
     AbrControl,
     AvailabilityStartTime,
     Bugs,
     FailureCount,
+    ForcePeriodDurations,
     Leeway,
     ManifestHttpError,
     MinimumUpdatePeriod,
