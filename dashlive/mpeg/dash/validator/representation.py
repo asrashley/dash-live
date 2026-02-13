@@ -79,6 +79,10 @@ class Representation(RepresentationBaseType["AdaptationSet"]):
         return cast("Period", self.parent.parent)
 
     @property
+    def expected_duration(self) -> datetime.timedelta | None:
+        return self.period.duration
+
+    @property
     def target_duration(self) -> datetime.timedelta | None:
         return self.period.target_duration
 
@@ -330,10 +334,10 @@ class Representation(RepresentationBaseType["AdaptationSet"]):
                     self.id, idx + 1, need_duration)
                 break
         if self.mode == 'live':
-            if self.target_duration is None or self.target_duration >= self.mpd.timeShiftBufferDepth:
-                tsb = self.mpd.timeShiftBufferDepth.total_seconds() * self.dash_timescale()
+            if self.expected_duration is not None:
+                expected_dur = timedelta_to_timecode(self.expected_duration, self.dash_timescale())
                 self.elt.check_greater_or_equal(
-                    total_duration, tsb,
+                    total_duration, expected_dur,
                     template=r'SegmentTimeline has duration {0}, expected {1} based upon timeshiftbufferdepth')
 
     def presentation_time_offset(self) -> int:

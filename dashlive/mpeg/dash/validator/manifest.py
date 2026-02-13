@@ -81,6 +81,13 @@ class Manifest(DashElement):
             return
         todo = datetime.timedelta(seconds=self.options.duration)
         for idx, period in enumerate(self.periods):
+            if period.duration is None and idx < len(self.periods) - 1:
+                next_period = self.periods[idx + 1]
+                if next_period.start is not None and period.start is not None:
+                    period.duration = next_period.start - period.start
+                    self.log.debug(
+                        '%d: Setting duration of period %s to %s based on next period start time',
+                        idx, period.id, toIsoDuration(period.duration))
             if period.duration is None:
                 self.log.debug(
                     '%d: Using target duration %s for last period %s', idx, todo, period.id)
@@ -209,19 +216,21 @@ class Manifest(DashElement):
             self.elt.check_equal(
                 self.patches, [],
                 msg='PatchLocation elements should only be used in live streams')
-        start: datetime.timedelta | None = datetime.timedelta()
-        if self.periods:
-            start = self.periods[0].start
+        start: datetime.timedelta | None = datetime.timedelta() if self.mode == 'vod' else None
         for period in self.periods:
+            if start is not None and period.start is not None:
+                period.attrs.check_almost_equal(
+                    period.start.total_seconds(),
+                    start.total_seconds(),
+                    delta=0.2,
+                    msg=(
+                        f"Expected Period@start {toIsoDuration(start)} " +
+                        f"but found {toIsoDuration(period.start)}"))
+            if start is None:
+                start = period.start
             if not period.attrs.check_not_none(
-                    start, 'Previous Period@duration was absent'):
+                    start, 'Period@start is missing, but previous Period did not have a duration'):
                 continue
-            period.attrs.check_almost_equal(
-                period.start.total_seconds(),
-                start.total_seconds(),
-                delta=0.2,
-                msg=(f"Expected Period@start {toIsoDuration(start)} " +
-                     f"but found {toIsoDuration(period.start)}"))
             if period.duration is None:
                 start = None
             else:

@@ -26,7 +26,7 @@ class Period(DashElement["Manifest"]):
     event_streams: list[EventStream]
     start: datetime.timedelta | None
     duration: datetime.timedelta | None
-    target_duration: datetime.timedelta | None = None
+    target_duration: datetime.timedelta | None = None  # the amount of this period to verify
 
     attributes = [
         ('id', str, None),
