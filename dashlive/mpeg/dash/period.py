@@ -24,6 +24,9 @@ import datetime
 from typing import Any, ClassVar
 import urllib.parse
 
+from dashlive.drm.keymaterial import KeyMaterial
+from dashlive.mpeg.dash.event_stream import EventStream
+from dashlive.server.options.container import OptionsContainer
 import flask
 
 from dashlive.utils.list_of import ListOf
@@ -38,8 +41,10 @@ class Period(ObjectWithFields):
     """
     id: str
     adaptationSets: list[AdaptationSet]
+    event_streams: list[EventStream]
     start: datetime.timedelta
     duration: datetime.timedelta | None = None
+    mpdDuration: datetime.timedelta | None = None  # value used in manifest
     time_offset: datetime.timedelta
 
     OBJECT_FIELDS: ClassVar[dict[str, Any]] = {
@@ -51,7 +56,7 @@ class Period(ObjectWithFields):
         'id': 'p0',
     }
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         defaults = {
             'adaptationSets': [],
@@ -61,7 +66,7 @@ class Period(ObjectWithFields):
         }
         self.apply_defaults(defaults)
 
-    def key_ids(self):
+    def key_ids(self) -> set[KeyMaterial]:
         kids = set()
         for adp in self.adaptationSets:
             kids.update(adp.key_ids())
@@ -87,21 +92,24 @@ class Period(ObjectWithFields):
         return max([a.maxSegmentDuration for a in self.adaptationSets])
 
     def finish_setup(self,
-                     mode: str,
                      timing: DashTiming | None,
                      base_url: str,
-                     use_base_urls: bool) -> None:
-        if use_base_urls:
+                     options: OptionsContainer) -> None:
+        if options.useBaseUrls:
             self.baseURL = urllib.parse.urljoin(flask.request.host_url, base_url)
+        if options.mode == 'live' and not options.forcePeriodDurations:
+            self.mpdDuration = None
+        else:
+            self.mpdDuration = self.duration
 
         for adp in self.adaptationSets:
-            if mode == 'odvod':
+            if options.mode == 'odvod':
                 for rep in adp.representations:
                     rep.baseURL = f"{rep.id}.{adp.fileSuffix}"
-                    if not use_base_urls:
+                    if not options.useBaseUrls:
                         rep.baseURL = f"{base_url}{rep.baseURL}"
-            if not use_base_urls:
-                if mode != 'odvod':
+            if not options.useBaseUrls:
+                if options.mode != 'odvod':
                     adp.initURL = f"{base_url}{adp.initURL}"
                 adp.mediaURL = f"{base_url}{adp.mediaURL}"
             if timing:

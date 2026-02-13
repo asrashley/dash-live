@@ -227,6 +227,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
             'drmSelection': [],
             'eventTypes': [],
             'failureCount': None,
+            'forcePeriodDurations': False,
             'leeway': 16,
             'mainAudio': None,
             'mode': 'vod',
@@ -395,6 +396,7 @@ class TestServerOptions(TestCaseMixin, unittest.TestCase):
                 "ping"
             ],
             "failureCount": None,
+            'forcePeriodDurations': False,
             "leeway": 16,
             "mainAudio": None,
             "mainText": None,
