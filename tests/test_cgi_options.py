@@ -11,7 +11,7 @@ from dashlive.utils.json_object import JsonObject
 from .mixins.mock_time import MockTime
 from .mixins.mixin import TestCaseMixin
 
-class TestServerOptions(TestCaseMixin, unittest.TestCase):
+class TestCgiOptions(TestCaseMixin, unittest.TestCase):
     def test_option_usage_from_string(self) -> None:
         test_cases = [
             ('manifest', OptionUsage.MANIFEST),
