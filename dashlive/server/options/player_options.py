@@ -1,7 +1,7 @@
-from .dash_option import DashOption
+from .dash_option import DashOption, StringOrNoneDashOption
 from .types import OptionUsage
 
-DashjsVersion = DashOption(
+DashjsVersion = StringOrNoneDashOption(
     usage=OptionUsage.HTML,
     short_name='djVer',
     full_name='dashjsVersion',
@@ -20,7 +20,7 @@ PLAYBACK_HTML = '''
 </ol>
 '''
 
-NativePlayback = DashOption(
+NativePlayback = StringOrNoneDashOption(
     usage=OptionUsage.HTML,
     short_name='vp',
     full_name='videoPlayer',
@@ -36,7 +36,7 @@ NativePlayback = DashOption(
     input_type='select',
     featured=True)
 
-ShakaVersion = DashOption(
+ShakaVersion = StringOrNoneDashOption(
     usage=OptionUsage.HTML,
     short_name='skVer',
     full_name='shakaVersion',
@@ -46,7 +46,7 @@ ShakaVersion = DashOption(
     cgi_choices=(None, '4.11.2', '4.3.8', '2.5.4',),
     input_type='datalist')
 
-TextLanguage = DashOption(
+TextLanguage = StringOrNoneDashOption(
     usage=OptionUsage.HTML,
     featured=True,
     short_name='ptxLang',

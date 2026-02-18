@@ -6,11 +6,11 @@
 #
 #############################################################################
 
-from .dash_option import DashOption
+from .dash_option import StringDashOption, StringOrNoneDashOption
 from .http_error import AudioHttpError
 from .types import OptionUsage
 
-AudioCodec = DashOption(
+AudioCodec = StringDashOption(
     usage=(OptionUsage.MANIFEST | OptionUsage.AUDIO),
     short_name='ac',
     full_name='audioCodec',
@@ -23,9 +23,10 @@ AudioCodec = DashOption(
         ('Any codec', 'any'),
     ),
     input_type='select',
+    default='mp4a',
     featured=True)
 
-AudioDescriptionTrack = DashOption(
+AudioDescriptionTrack = StringOrNoneDashOption(
     usage=OptionUsage.MANIFEST,
     short_name='ad',
     full_name='audioDescription',
@@ -35,7 +36,7 @@ AudioDescriptionTrack = DashOption(
     cgi_name='ad_audio',
     input_type='audio_representation')
 
-MainAudioTrack = DashOption(
+MainAudioTrack = StringOrNoneDashOption(
     usage=OptionUsage.MANIFEST,
     short_name='ma',
     full_name='mainAudio',
