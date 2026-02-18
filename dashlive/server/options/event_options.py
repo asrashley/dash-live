@@ -8,7 +8,7 @@
 
 from dashlive.server.events.factory import EventFactory
 
-from .dash_option import DashOption
+from .dash_option import StringListDashOption
 from .types import OptionUsage
 
 EV_HTML = '''
@@ -25,14 +25,12 @@ EV_HTML = '''
 </ul>
 '''
 
-EventSelection = DashOption(
+EventSelection = StringListDashOption(
     usage=(OptionUsage.MANIFEST | OptionUsage.AUDIO | OptionUsage.VIDEO),
     short_name='evs',
     full_name='eventTypes',
     title='DASH events',
     description='A comma separated list of event formats',
-    from_string=DashOption.list_without_none_from_string,
-    to_string=lambda evs: ','.join(evs),
     html=EV_HTML,
     cgi_name='events',
     cgi_type='<format>,..',

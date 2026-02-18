@@ -17,6 +17,7 @@ class FormInputContext(TypedDict):
     disabled: NotRequired[bool]
     error: NotRequired[str]
     featured: NotRequired[bool]
+    fullName: str
     href: NotRequired[str]
     link_title: NotRequired[str]
     max: NotRequired[int]
@@ -31,6 +32,7 @@ class FormInputContext(TypedDict):
     prefix: NotRequired[str]
     required: NotRequired[bool]
     rowClass: NotRequired[str]
+    shortName: str
     spellcheck: NotRequired[bool]
     step: NotRequired[int]
     title: NotRequired[str]

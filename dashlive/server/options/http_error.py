@@ -1,19 +1,5 @@
 #############################################################################
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
-#############################################################################
-#
 #  Project Name        :    Simulated MPEG DASH service
 #
 #  Author              :    Alex Ashley
@@ -22,44 +8,48 @@
 
 from dashlive.utils.date_time import from_isodatetime
 
-from .dash_option import DashOption
+from .dash_option import DashOption, IntOrNoneDashOption
 from .types import OptionUsage
 
-def _errors_from_string(value: str) -> list[tuple[int, str]]:
-    if value.lower() in ['', 'none']:
-        return []
-    items: list[tuple] = []
-    for val in value.split(','):
-        code, pos = val.split('=')
-        try:
-            pos = int(pos, 10)
-        except ValueError:
-            pos = from_isodatetime(pos)
-        items.append((int(code, 10), pos))
-    return items
+class HttpErrorOption(DashOption[list[tuple[int, str]]]):
+    def __init__(self, use: str, description: str) -> None:
+        prefix: str = use[0]
+        super().__init__(
+            usage=OptionUsage.from_string(use),
+            short_name=f'{prefix}he',
+            full_name=f'{use}Errors',
+            title=f'{description} HTTP errors',
+            description=f'Cause an HTTP error to be generated when requesting {description}',
+            cgi_name=f'{prefix}err',
+            cgi_type='<code>=<num|isoDateTime>,..'
+        )
 
-def http_error_factory(use: str, description: str):
-    prefix = use[0]
-    return DashOption(
-        usage=OptionUsage.from_string(use),
-        short_name=f'{prefix}he',
-        full_name=f'{use}Errors',
-        title=f'{description} HTTP errors',
-        description=f'Cause an HTTP error to be generated when requesting {description}',
-        from_string=_errors_from_string,
-        cgi_name=f'{prefix}err',
-        cgi_type='<code>=<num|isoDateTime>,..')
+    def from_string(self, value: str) -> list[tuple[int, str]]:
+        if value.lower() in ['', 'none']:
+            return []
+        items: list[tuple] = []
+        for val in value.split(','):
+            code, pos = val.split('=')
+            try:
+                pos = int(pos, 10)
+            except ValueError:
+                pos = from_isodatetime(pos)
+            items.append((int(code, 10), pos))
+        return items
+
+    def to_string(self, value: list[tuple[int, str]]) -> str:
+        return str(value)
 
 
-ManifestHttpError = http_error_factory('manifest', 'Manifest')
+ManifestHttpError = HttpErrorOption('manifest', 'Manifest')
 
-VideoHttpError = http_error_factory('video', 'Video fragments')
+VideoHttpError = HttpErrorOption('video', 'Video fragments')
 
-AudioHttpError = http_error_factory('audio', 'Audio fragments')
+AudioHttpError = HttpErrorOption('audio', 'Audio fragments')
 
-TextHttpError = http_error_factory('text', 'Text fragments')
+TextHttpError = HttpErrorOption('text', 'Text fragments')
 
-FailureCount = DashOption(
+FailureCount = IntOrNoneDashOption(
     usage=(OptionUsage.MANIFEST | OptionUsage.AUDIO | OptionUsage.VIDEO | OptionUsage.TEXT),
     short_name='hfc',
     full_name='failureCount',
@@ -68,6 +58,5 @@ FailureCount = DashOption(
         'Number of times to respond with a 5xx error before ' +
         'accepting the request. Only relevant in combination ' +
         'with one of the error injection parameters (e.g. v503, m503).'),
-    from_string=DashOption.int_or_none_from_string,
     cgi_name='failures',
     cgi_type='<number>')

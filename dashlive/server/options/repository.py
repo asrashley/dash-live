@@ -7,9 +7,7 @@
 #############################################################################
 
 import logging
-from operator import attrgetter
-from pathlib import Path
-from typing import AbstractSet, Any, ClassVar, NamedTuple
+from typing import AbstractSet, ClassVar, NamedTuple
 
 from .audio_options import audio_options
 from .container import OptionsContainer
@@ -106,7 +104,7 @@ class OptionsRepository:
         return result
 
     @classmethod
-    def get_cgi_map(cls) -> dict[str, str]:
+    def get_cgi_map(cls) -> dict[str, DashOption]:
         """
         Returns a dictionary that maps from the CGI parameter used in a
         URL to its DashOption entry
@@ -178,93 +176,6 @@ class OptionsRepository:
                 dest = result
             dest.add_field(opt.full_name, value)
         return result
-    
-    @staticmethod
-    def guess_python_type(value: Any) -> str:
-        if value is None:
-            return 'str | None'
-        if isinstance(value, bool):
-            return 'bool'
-        if isinstance(value, int):
-            return 'int'
-        if isinstance(value, float):
-            return 'float'
-        if isinstance(value, list):
-            if len(value) > 0:
-                return f"list[{OptionsRepository.guess_python_type(value[0])}]"
-            return 'list'
-        return 'Any'
-        
-    @staticmethod
-    def guess_typescript_type(value: Any) -> str:
-        if value is None:
-            return 'string | null | undefined'
-        if isinstance(value, bool):
-            return 'boolean'
-        if isinstance(value, (int, float)):
-            return 'number'
-        if isinstance(value, list):
-            if len(value) > 0:
-                return f"{OptionsRepository.guess_python_type(value[0])}[]"
-            return 'unknown[]'
-        return 'unknown'
-
-    @classmethod
-    def create_python_options_container_types(cls, py_dest: Path, ts_dest: Path) -> None:
-        primary_options: list[DashOptionTypeHint] = []
-        sub_options: dict[str, list[DashOptionTypeHint]] = {}
-        defaults = cls.get_default_options()
-        for key, value in defaults.items():
-            if key == "_type":
-                continue
-            if isinstance(value, OptionsContainer):
-                sub: list[DashOptionTypeHint] = []
-                for k2, v2 in value.items():
-                    if k2 == "_type":
-                        continue
-                    sub.append(DashOptionTypeHint(
-                        name=k2, 
-                        py_type=cls.guess_python_type(v2),
-                        ts_type=cls.guess_typescript_type(v2)))
-                sub.sort(key=attrgetter('name'))
-                name: str = f"{key.title()}OptionsType"
-                sub_options[name] = sub
-                primary_options.append(DashOptionTypeHint(
-                    name=key,
-                    py_type=name,
-                    ts_type=name))
-            else:
-                primary_options.append(DashOptionTypeHint(
-                    name=key,
-                    py_type=cls.guess_python_type(value),
-                    ts_type=cls.guess_typescript_type(value)))
-        primary_options.sort(key=attrgetter('name'))
-        print(sub_options)
-        print(primary_options)
-        with py_dest.open('wt', encoding='utf-8') as dest:
-            dest.write('# this file is auto-generated, do not edit!\n\n')
-            dest.write('from typing import Any\n')
-            dest.write('from dataclasses import dataclass\n\n')
-            for name, options in sub_options.items():
-                dest.write(f'@dataclass\nclass {name}:\n')
-                for opt in options:
-                    dest.write(f'  {opt.name}: {opt.py_type}\n')
-                dest.write('\n\n')
-            dest.write(f'@dataclass\nclass OptionsContainerType:\n')        
-            for opt in primary_options:
-                dest.write(f'  {opt.name}: {opt.py_type}\n')
-            dest.write('\n\n')
-        with ts_dest.open('wt', encoding='utf-8') as dest:
-            dest.write('// this file is auto-generated, do not edit!\n\n')
-            for name, options in sub_options.items():
-                dest.write(f'export type {name} = {{\n')
-                for opt in options:
-                    dest.write(f'  {opt.name}: {opt.ts_type};\n')
-                dest.write('}\n\n')
-            dest.write(f'export type OptionsContainerType = {{\n')        
-            for opt in primary_options:
-                dest.write(f'  {opt.name}: {opt.ts_type};\n')
-            dest.write('}\n')
 
     @classmethod
     def convert_cgi_options(cls, params: dict[str, str],
@@ -295,8 +206,9 @@ class OptionsRepository:
                 defaults=defaults)
         else:
             result = OptionsContainer(cls.get_parameter_map(), defaults)
+        param_map: dict[str, DashOption]
         if is_cgi:
-            param_map: dict[str, DashOption] = cls.get_cgi_map()
+            param_map = cls.get_cgi_map()
         else:
             param_map = cls.get_short_param_map()
         for key, value in params.items():
@@ -327,7 +239,3 @@ class OptionsRepository:
 for opt in OptionsRepository._all_options:
     if opt.prefix and opt.prefix not in OptionsContainer.OBJECT_FIELDS:
         OptionsContainer.OBJECT_FIELDS[opt.prefix] = OptionsContainer
-
-if __name__ == "__main__":
-    OptionsRepository.create_python_options_container_types(
-        Path("/tmp/options_types.py"), Path("/tmp/options_types.d.ts"))

@@ -1,42 +1,28 @@
 #############################################################################
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
-#############################################################################
-#
 #  Project Name        :    Simulated MPEG DASH service
 #
 #  Author              :    Alex Ashley
 #
 #############################################################################
 
+from abc import abstractmethod
 from dataclasses import asdict, dataclass, field
-import datetime
-from typing import Any, Union
+from datetime import datetime, timedelta
+from typing import Any, Generic, TypeVar, Union, cast
 
-from collections.abc import Callable
 import urllib.parse
 
-from dashlive.utils.date_time import from_isodatetime, to_iso_datetime
-from dashlive.utils.objects import flatten
+from dashlive.utils.date_time import from_isodatetime, to_iso_datetime, toIsoDuration
 
-from .form_input_field import FormInputContext
+from .form_input_field import FieldOption, FormInputContext
 from .types import CgiOption, CgiOptionChoice, OptionUsage
 
 CgiChoiceType = Union[tuple[str, str], str, None]
+T = TypeVar('T')
 
 @dataclass(slots=True, frozen=True)
-class DashOption:
+class DashOption(Generic[T]):
     usage: OptionUsage
     short_name: str
     full_name: str
@@ -46,11 +32,21 @@ class DashOption:
     cgi_choices: tuple[CgiChoiceType, ...] | None = field(default=None)
     cgi_type: str | None = None
     input_type: str = ''
-    from_string: Callable[[str], Any] = field(default_factory=lambda: DashOption.string_or_none)
-    to_string: Callable[[str], Any] = field(default_factory=lambda: flatten)
     prefix: str = field(default='')
     featured: bool = False
     html: str | None = None
+    default: T | None = None
+
+    @abstractmethod
+    def from_string(self, value: str) -> T:
+        raise NotImplementedError(f"{__class__}.from_string() not implemented")
+
+    @abstractmethod
+    def to_string(self, value: T) -> str:
+        raise NotImplementedError(f"{__class__}.to_string() not implemented")
+
+    def html_input_type(self) -> str:
+        return self.input_type
 
     def get_cgi_option(self, omit_empty: bool = True) -> CgiOption | None:
         """
@@ -107,7 +103,7 @@ class DashOption:
             "title": self.title,
             "value": value,
             "text": self.description,
-            "type": self.input_type,
+            "type": self.html_input_type(),
             "prefix": self.prefix,
             "fullName": self.full_name,
             "shortName": self.short_name,
@@ -124,44 +120,42 @@ class DashOption:
                     title = '--'
                 if val is None:
                     val = ''
-                input['options'].append({
-                    "value": val,
-                    "title": title,
-                    "selected": value == val
-                })
+                input['options'].append(FieldOption(
+                    value=val,
+                    title=title,
+                    selected=(value == val)
+                ))
         if input['type'] == '':
-            if isinstance(value, bool) or self.to_string == DashOption.bool_to_string:
+            if isinstance(value, bool):
                 input['type'] = 'bool'
-            elif isinstance(value, int) or self.to_string == DashOption.int_or_none_from_string:
+            elif isinstance(value, (int, float)):
                 input['type'] = 'number'
             elif self.cgi_choices and len(self.cgi_choices) > 1:
                 input['type'] = 'select'
         if input['type'] == 'multipleSelect':
             input['type'] = 'select'
             input['multiple'] = True
-            for val in value:
-                for ch in input['options']:
-                    if ch['value'] == val:
-                        ch['selected'] = True
+            options: list[FieldOption] = input.get('options', [])
+            for val in cast(list, value):
+                for idx, ch in enumerate(options):  # pyright: ignore[reportTypedDictNotRequiredAccess]
+                    if ch.value == val:
+                        options[idx] = FieldOption(
+                            value=ch.value, title=ch.title, selected=True)
+            input['options'] = options
         elif input['type'] == 'bool':
             if value is None:
                 input['type'] = 'select'
-                input['options'] = [{
-                    "value": '',
-                    "title": '--',
-                    "selected": value is None,
-                }, {
-                    "value": '1',
-                    "title": 'True',
-                    "selected": value is True,
-                }, {
-                    "value": '0',
-                    "title": 'False',
-                    "selected": value is False,
-                }]
+                input['options'] = [
+                    FieldOption(value='', title='--', selected=(value is None)),
+                    FieldOption(value='1', title='True', selected=(value is True)),
+                    FieldOption(value='0', title='False', selected=(value is False)),
+                ]
             else:
                 input['type'] = 'checkbox'
-                del input['options']
+                try:
+                    del input['options']
+                except KeyError:
+                    pass
         elif input['type'] == 'numberList':
             input['datalist_type'] = 'number'
             input['type'] = 'datalist'
@@ -178,44 +172,82 @@ class DashOption:
         new_kwargs.update(kwargs)
         return DashOption(**new_kwargs)
 
-    @staticmethod
-    def bool_from_string(value: str) -> bool:
+
+class BoolDashOption(DashOption[bool]):
+    def from_string(self, value: str) -> bool:
         return value.lower() in {'true', '1', 'on'}
 
-    @staticmethod
-    def bool_to_string(value: bool) -> str:
+    def to_string(self, value: bool) -> str:
         if value:
             return '1'
         return '0'
 
-    @staticmethod
-    def int_or_none_from_string(value: str) -> int | None:
+    def html_input_type(self) -> str:
+        return 'bool'
+
+
+class IntOrNoneDashOption(DashOption[int | None]):
+    def from_string(self, value: str) -> int | None:
         if value in {None, '', 'none'}:
-            return None
+            return self.default
         return int(value, 10)
 
-    @staticmethod
-    def float_or_none_from_string(value: str) -> float | None:
+    def to_string(self, value: int | None) -> str:
+        if value is None:
+            return ''
+        return f"{value:d}"
+
+    def html_input_type(self) -> str:
+        return 'number'
+
+
+class FloatOrNoneDashOption(DashOption[float | None]):
+    def from_string(self, value: str) -> float | None:
         if value in {None, '', 'none'}:
-            return None
+            return self.default
         return float(value)
 
-    @staticmethod
-    def datetime_or_none_from_string(value: str) -> datetime.datetime | datetime.timedelta | None:
-        if value in {None, '', 'none'}:
-            return None
-        return from_isodatetime(value)
-
-    @staticmethod
-    def datetime_or_none_to_string(value: datetime.datetime | None) -> str | None:
+    def to_string(self, value: float | None) -> str:
         if value is None:
-            return None
-        return to_iso_datetime(value)
+            return ''
+        return f'{value:f}'
 
-    @staticmethod
-    def list_without_none_from_string(value: str | None) -> list[str]:
+
+class StringDashOption(DashOption[str]):
+    def from_string(self, value: str) -> str:
+        if value.lower() in ['', 'none']:
+            if self.default is None:
+                return ''
+            return self.default
+        return value
+
+    def to_string(self, value: str) -> str:
+        return value
+
+class StringOrNoneDashOption(DashOption[str | None]):
+    def from_string(self, value: str) -> str | None:
+        if value.lower() in ['', 'none']:
+            return self.default
+        return value
+
+    def to_string(self, value: str | None) -> str:
         if value is None:
-            return []
+            return ''
+        return value
+
+class UrlOrNoneDashOption(DashOption[str | None]):
+    def from_string(self, value: str) -> str | None:
+        if value.lower() in ['', 'none']:
+            return self.default
+        return urllib.parse.unquote_plus(value)
+
+    def to_string(self, value: str | None) -> str:
+        if value is None:
+            return ''
+        return urllib.parse.quote_plus(value)
+
+class StringListDashOption(DashOption[list[str]]):
+    def from_string(self, value: str) -> list[str]:
         if value.lower() in {'', 'none'}:
             return []
         rv = []
@@ -224,20 +256,19 @@ class DashOption:
                 rv.append(item)
         return rv
 
-    @staticmethod
-    def string_or_none(value: str) -> str | None:
-        if value.lower() in ['', 'none']:
-            return None
-        return value
+    def to_string(self, value: list[str]) -> str:
+        return ','.join(value)
 
-    @staticmethod
-    def unquoted_url_or_none_from_string(value: str):
-        if value.lower() in ['', 'none']:
-            return None
-        return urllib.parse.unquote_plus(value)
 
-    @staticmethod
-    def quoted_url_or_none_to_string(value: str | None):
+class DateTimeDashOption(DashOption[datetime | timedelta | None]):
+    def from_string(self, value: str) -> datetime | timedelta | None:
+        if value in {None, '', 'none'}:
+            return self.default
+        return from_isodatetime(value)
+
+    def to_string(self, value: datetime | timedelta | None) -> str:
         if value is None:
-            return None
-        return urllib.parse.quote_plus(value)
+            return ''
+        if isinstance(value, timedelta):
+            return toIsoDuration(value)
+        return to_iso_datetime(value)

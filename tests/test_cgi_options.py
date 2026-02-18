@@ -3,6 +3,7 @@ import unittest
 from dashlive.drm.location import DrmLocation
 from dashlive.server.options.drm_options import DrmSelection
 from dashlive.server.options.container import OptionsContainer
+from dashlive.server.options.form_input_field import FieldOption
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.options.types import OptionUsage
 from dashlive.server.requesthandler.base import RequestHandlerBase
@@ -553,36 +554,36 @@ class TestCgiOptions(TestCaseMixin, unittest.TestCase):
                 'value': name in drm_map,
                 'type': 'checkbox'
             })
-            options = [{
-                'value': '',
-                'title':
-                'All locations',
-                'selected': loc == ''
-            }, {
-                'value': 'pro',
-                'title': 'mspr:pro element in MPD',
-                'selected': loc == 'pro'
-            }, {
-                'value': 'cenc',
-                'title': 'dash:cenc element in MPD',
-                'selected': loc == 'cenc'
-            }, {
-                'value': 'moov',
-                'title': 'PSSH in init segment',
-                'selected': loc == 'moov'
-            }, {
-                'value': 'cenc-pro',
-                'title': 'mspr:pro + dash:cenc in MPD',
-                'selected': loc == 'cenc-pro'
-            }, {
-                'value': 'moov-pro',
-                'title': 'mspr:pro MPD + PSSH init',
-                'selected': loc == 'moov-pro'
-            }, {
-                'value': 'cenc-moov',
-                'title': 'dash:cenc MPD + PSSH init',
-                'selected': loc == 'cenc-moov'
-            }]
+            options: list[FieldOption] = [
+                FieldOption(
+                    value='',
+                    title='All locations',
+                    selected=(loc == '')),
+                FieldOption(
+                    value='pro',
+                    title='mspr:pro element in MPD',
+                    selected=(loc == 'pro')),
+                FieldOption(
+                    value='cenc',
+                    title='dash:cenc element in MPD',
+                    selected=(loc == 'cenc')),
+                FieldOption(
+                    value='moov',
+                    title='PSSH in init segment',
+                    selected=(loc == 'moov')),
+                FieldOption(
+                    value='cenc-pro',
+                    title='mspr:pro + dash:cenc in MPD',
+                    selected=(loc == 'cenc-pro')),
+                FieldOption(
+                    value='moov-pro',
+                    title='mspr:pro MPD + PSSH init',
+                    selected=(loc == 'moov-pro')),
+                FieldOption(
+                    value='cenc-moov',
+                    title='dash:cenc MPD + PSSH init',
+                    selected=(loc == 'cenc-moov')),
+            ]
             expected.append({
                 'featured': True,
                 'fullName': 'drmloc',

@@ -6,21 +6,26 @@
 #
 #############################################################################
 import datetime
-import logging
+from typing import ClassVar, cast
 
 from dashlive.utils.date_time import from_isodatetime, to_iso_datetime
-from .dash_option import DashOption
+from .dash_option import (
+    BoolDashOption,
+    CgiChoiceType,
+    DashOption,
+    IntOrNoneDashOption,
+    StringDashOption,
+    StringListDashOption,
+)
 from .http_error import FailureCount, ManifestHttpError
 from .types import OptionUsage
 
-AbrControl = DashOption(
+AbrControl = BoolDashOption(
     usage=OptionUsage.MANIFEST,
     short_name='ab',
     full_name='abr',
     title='Adaptive bitrate',
     description='Enable or disable adaptive bitrate',
-    from_string=DashOption.bool_from_string,
-    to_string=DashOption.bool_to_string,
     cgi_name='abr',
     cgi_choices=(
         ('Enabled', '1'),
@@ -29,7 +34,8 @@ AbrControl = DashOption(
     input_type='checkbox',
     featured=True)
 
-AST_HTML = '''
+class AvailabilityStartTimeDashOption(DashOption[datetime.datetime | str]):
+    AST_HTML: ClassVar[str] = '''
 <p>
   Specify availabilityStartTime as "today", "now", "year",
   "month", "epoch" or an ISO datetime (YYYY-MM-DDTHH:MM:SSZ).
@@ -41,48 +47,45 @@ AST_HTML = '''
 </p>
 '''
 
-SPECIAL_AST_VALUES = {'now', 'today', 'month', 'year', 'epoch'}
+    SPECIAL_AST_VALUES: ClassVar[set[str]] = {'now', 'today', 'month', 'year', 'epoch'}
 
-def ast_from_string(value: str) -> datetime.datetime | str:
-    if value in SPECIAL_AST_VALUES:
-        return value
-    try:
-        value = from_isodatetime(value)
-    except ValueError as err:
-        logging.warning('Failed to parse availabilityStartTime: %s', err)
-        raise err
-    return value
+    def __init__(self) -> None:
+        super().__init__(
+            usage=OptionUsage.MANIFEST + OptionUsage.VIDEO + OptionUsage.AUDIO + OptionUsage.TEXT,
+            short_name='ast',
+            full_name='availabilityStartTime',
+            title='Availability start time',
+            description='Sets availabilityStartTime for live streams',
+            cgi_name='start',
+            cgi_type='(today|month|year|epoch|now|<iso-datetime>)',
+            cgi_choices=('year', 'today', 'month', 'epoch', 'now'),
+            html=AvailabilityStartTimeDashOption.AST_HTML,
+            input_type='textList'
+        )
 
-def ast_to_string(value: datetime.datetime | str | None) -> str:
-    if value in SPECIAL_AST_VALUES:
-        return value
-    if value is None:
-        return ''
-    return to_iso_datetime(value)
+    def from_string(self, value: str) -> datetime.datetime | str:
+        if value == '' and self.default is not None:
+            return self.default
+        if value in AvailabilityStartTimeDashOption.SPECIAL_AST_VALUES:
+            return value
+        return cast(datetime.datetime, from_isodatetime(value))
+
+    def to_string(self, value: datetime.datetime | str | None) -> str:
+        if value is None:
+            return ''
+        if value in AvailabilityStartTimeDashOption.SPECIAL_AST_VALUES:
+            return cast(str, value)
+        return to_iso_datetime(value)
 
 
-AvailabilityStartTime = DashOption(
-    usage=OptionUsage.MANIFEST + OptionUsage.VIDEO + OptionUsage.AUDIO + OptionUsage.TEXT,
-    short_name='ast',
-    full_name='availabilityStartTime',
-    title='Availability start time',
-    description='Sets availabilityStartTime for live streams',
-    from_string=ast_from_string,
-    to_string=ast_to_string,
-    cgi_name='start',
-    cgi_type='(today|month|year|epoch|now|<iso-datetime>)',
-    cgi_choices=('year', 'today', 'month', 'epoch', 'now'),
-    html=AST_HTML,
-    input_type='textList')
+AvailabilityStartTime = AvailabilityStartTimeDashOption()
 
-UseBaseUrl = DashOption(
+UseBaseUrl = BoolDashOption(
     usage=OptionUsage.MANIFEST,
     short_name='base',
     full_name='useBaseUrls',
     title='Use BaseURLs',
     description='Include a BaseURL element?',
-    from_string=DashOption.bool_from_string,
-    to_string=DashOption.bool_to_string,
     input_type='checkbox',
     cgi_name='base',
     cgi_choices=(
@@ -90,29 +93,26 @@ UseBaseUrl = DashOption(
         ('No', '0')
     ))
 
-Bugs = DashOption(
+Bugs = StringListDashOption(
     usage=OptionUsage.MANIFEST + OptionUsage.VIDEO + OptionUsage.AUDIO + OptionUsage.TEXT,
     short_name='bug',
     full_name='bugCompatibility',
     title='Bug compatibility',
     description='Produce a stream with known bugs',
-    from_string=DashOption.list_without_none_from_string,
-    to_string=lambda bugs: ','.join(bugs),
     cgi_name='bugs',
     cgi_choices=(None, 'saio'))
 
-Leeway = DashOption(
+Leeway = IntOrNoneDashOption(
     usage=OptionUsage.MANIFEST + OptionUsage.VIDEO + OptionUsage.AUDIO + OptionUsage.TEXT,
     short_name='lee',
     full_name='leeway',
     title='Fragment expiration leeway',
     description='Number of seconds after a fragment has expired before it becomes unavailable',
-    from_string=DashOption.int_or_none_from_string,
     cgi_name='leeway',
     input_type='numberList',
     cgi_choices=('16', '60', '0'))
 
-OperatingMode = DashOption(
+OperatingMode = StringDashOption(
     usage=OptionUsage.MANIFEST,
     short_name='md',
     full_name='mode',
@@ -126,16 +126,15 @@ OperatingMode = DashOption(
     ),
     featured=True)
 
-MinimumUpdatePeriod = DashOption(
+MinimumUpdatePeriod = IntOrNoneDashOption(
     usage=OptionUsage.MANIFEST,
     short_name='mup',
     full_name='minimumUpdatePeriod',
     title='Minimum update period',
     description='Specify minimumUpdatePeriod (in seconds) or -1 to disable updates',
-    from_string=DashOption.int_or_none_from_string,
     cgi_name='mup',
     cgi_choices=(
-        ('Every 2 fragments', None),
+        cast(CgiChoiceType, ('Every 2 fragments', None)),
         ('Never', '-1'),
         ('Every fragment', '4'),
         ('Every 30 seconds', '30'),
@@ -143,14 +142,12 @@ MinimumUpdatePeriod = DashOption(
     cgi_type='<number>',
     input_type='numberList')
 
-SegmentTimeline = DashOption(
+SegmentTimeline = BoolDashOption(
     usage=OptionUsage.MANIFEST,
     short_name='st',
     full_name='segmentTimeline',
     title='Segment timeline',
     description='Enable or disable segment timeline',
-    from_string=DashOption.bool_from_string,
-    to_string=DashOption.bool_to_string,
     input_type='checkbox',
     cgi_name='timeline',
     cgi_choices=(
@@ -158,36 +155,32 @@ SegmentTimeline = DashOption(
         ('Yes (use $Time$)', '1')),
     featured=True)
 
-TimeshiftBufferDepth = DashOption(
+TimeshiftBufferDepth = IntOrNoneDashOption(
     usage=OptionUsage.MANIFEST + OptionUsage.VIDEO + OptionUsage.AUDIO + OptionUsage.TEXT,
     short_name='tbd',
     full_name='timeShiftBufferDepth',
     title='timeShiftBufferDepth size',
     description='Number of seconds for timeShiftBufferDepth',
-    from_string=DashOption.int_or_none_from_string,
     cgi_name='depth',
     cgi_type='<seconds>',
     cgi_choices=('1800', '30'),
     input_type='numberList')
 
-UpdateCount = DashOption(
+UpdateCount = IntOrNoneDashOption(
     usage=OptionUsage.MANIFEST,
     short_name='uc',
     full_name='updateCount',
     title='Manifest update count',
     description='Counter of manifest reloads',
-    from_string=DashOption.int_or_none_from_string,
     cgi_name='update',
     cgi_type='<number>')
 
-UsePatches = DashOption(
+UsePatches = BoolDashOption(
     usage=OptionUsage.MANIFEST,
     short_name='patch',
     full_name='patch',
     title='Use MPD patches',
     description='Use MPD patches for live streams',
-    from_string=DashOption.bool_from_string,
-    to_string=DashOption.bool_to_string,
     input_type='checkbox',
     cgi_name='patch',
     cgi_choices=(
@@ -195,14 +188,12 @@ UsePatches = DashOption(
         ('Yes', '1'),
     ))
 
-ForcePeriodDurations = DashOption(
+ForcePeriodDurations = BoolDashOption(
     usage=OptionUsage.MANIFEST,
     short_name='fpd',
     full_name='forcePeriodDurations',
     title='Forced Period durations',
     description='Always add a duration attribute to Period elements',
-    from_string=DashOption.bool_from_string,
-    to_string=DashOption.bool_to_string,
     input_type='checkbox',
     cgi_name='periodDur',
     cgi_choices=(
