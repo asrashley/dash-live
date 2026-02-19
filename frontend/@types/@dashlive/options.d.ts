@@ -1,14 +1,11 @@
 import { InputFormGroup } from "../../src/form/types/InputFormGroup";
+import { OptionsContainerType } from "./dash-options";
 
 type OptionMap = {
   [field: string]: boolean | string | number | null;
 };
 
-type OptionMapWithChildren = {
-  [field: string]: boolean | string | number | null | OptionMap;
-};
-
-export const defaultFullOptions: OptionMapWithChildren;
+export const defaultFullOptions: OptionsContainerType;
 
 export const defaultShortOptions: OptionMap;
 

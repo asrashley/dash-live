@@ -1,19 +1,5 @@
 #############################################################################
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
-#############################################################################
-#
 #  Project Name        :    Simulated MPEG DASH service
 #
 #  Author              :    Alex Ashley
@@ -69,6 +55,7 @@ class ServeManifest(RequestHandlerBase):
         return self.get(**kwargs)
 
     def get(self, mode: str, stream: str, manifest: str) -> flask.Response:
+        # logging.getLogger().setLevel(logging.DEBUG)
         logging.debug('ServeManifest: mode=%s stream=%s manifest=%s', mode, stream, manifest)
         mft: DashManifest = current_manifest
         try:
@@ -92,7 +79,7 @@ class ServeManifest(RequestHandlerBase):
             options.update(segmentTimeline=False)
         elif mft.segment_timeline or options.patch:
             options.update(segmentTimeline=True)
-        options.remove_unused_parameters(mode)
+        options.reset_unused_parameters(mode)
         dash = ManifestContext(
             manifest=mft, options=options, stream=current_stream,
             multi_period=None)
@@ -267,7 +254,7 @@ class ServePatch(RequestHandlerBase):
             return flask.make_response('Invalid CGI parameters', 400)
 
         options.update(patch=True, segmentTimeline=True)
-        options.remove_unused_parameters('live')
+        options.reset_unused_parameters('live')
         original_publish_time = datetime.datetime.fromtimestamp(
             publish, tz=UTC())
         dash = ManifestContext(

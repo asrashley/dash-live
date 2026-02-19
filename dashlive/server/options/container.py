@@ -1,19 +1,5 @@
 #############################################################################
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
-#############################################################################
-#
 #  Project Name        :    Simulated MPEG DASH service
 #
 #  Author              :    Alex Ashley
@@ -21,35 +7,29 @@
 #############################################################################
 
 from collections import defaultdict
+import copy
+import dataclasses
+import logging
 from typing import AbstractSet, Any, Optional
 
 from dashlive.drm.location import DrmLocation
 from dashlive.drm.system import DrmSystem
 from dashlive.server.options.drm_options import (
+    ALL_DRM_LOCATIONS,
     DrmLocationOption,
     DrmSelectionTuple
 )
 from dashlive.components.field_group import InputFieldGroup
 from dashlive.server.options.form_input_field import FormInputContext
+from dashlive.server.options.name_maps import DashOptionNameMaps
+from dashlive.server.options.options_types import OptionsContainerType
 from dashlive.utils.json_object import JsonObject
-from dashlive.utils.object_with_fields import ObjectWithFields
 from dashlive.utils.objects import dict_to_cgi_params
 
 from .dash_option import DashOption
 from .types import OptionUsage
 
-class OptionsContainer(ObjectWithFields):
-    OBJECT_FIELDS = {}
-    _parameter_map: Optional[dict[str, DashOption]]
-    _defaults: Optional["OptionsContainer"]
-
-    def __init__(self,
-                 parameter_map: Optional[dict[str, DashOption]] = None,
-                 defaults: Optional["OptionsContainer"] = None,
-                 **kwargs) -> None:
-        super().__init__(**kwargs)
-        self._parameter_map = parameter_map
-        self._defaults = defaults
+class OptionsContainer(OptionsContainerType):
 
     @property
     def encrypted(self) -> bool:
@@ -59,74 +39,118 @@ class OptionsContainer(ObjectWithFields):
             return False
 
     def clone(self, **kwargs) -> "OptionsContainer":
-        args = {
-            'parameter_map': self._parameter_map,
-        }
-        for key in self._fields:
-            if key[0] == '_':
-                continue
-            ours = getattr(self, key)
-            value = kwargs.get(key, ours)
-            if isinstance(value, OptionsContainer) or isinstance(ours, OptionsContainer):
-                if ours is None:
-                    ours = {}
-                elif isinstance(ours, OptionsContainer):
-                    ours = ours.toJSON()
-                if value is None:
-                    theirs = {}
-                elif isinstance(value, OptionsContainer):
-                    theirs = value.toJSON()
-                else:
-                    theirs = value
-                value = {
-                    **ours,
-                    **theirs,
-                }
-                dflt = None
-                if self._defaults is not None:
-                    dflt = self._defaults[key]
-                value = self.__class__(
-                    parameter_map=self._parameter_map, defaults=dflt, **value)
-            args[key] = value
-        for key, value in kwargs.items():
-            if key in self._fields or key[0] == '_':
-                continue
-            args[key] = value
-        if 'defaults' not in args:
-            args['defaults'] = self._defaults
-        return OptionsContainer(**args)
+        result: OptionsContainer = copy.deepcopy(self)
+        result.update(**kwargs)
+        return result
 
     def update(self, **kwargs) -> None:
         """
-        Apply the provided values to this options container
+        Apply the provided values to this options container. Each item in kwargs
+        must be a full-name field name. If a sub-option group is provided, this function
+        will recursively apply the provided values to update the sub-option.
         """
+        parameter_map = DashOptionNameMaps.get_parameter_map()
         for key, value in kwargs.items():
-            self.add_field(key, value)
+            assert key in self.__dict__, f"Invalid option name: {key}"
+            if key not in parameter_map:  # must be a sub-option group
+                assert isinstance(value, dict)
+                dest = getattr(self, key)
+                for k2, v2 in value.items():
+                    opt: DashOption = parameter_map[f'{key}.{k2}']
+                    self.set_with_type_coercion(dest, opt, k2, v2)
+            elif key == 'drmSelection':
+                # special handling for drmSelection to translate to DrmLocation enum values
+                # TODO: find a general way to handle this kind of field
+                if value is None:
+                    value = []
+                new_value: list[DrmSelectionTuple] = []
+                for name, loc_val in value:
+                    locs: set[DrmLocation] = set()
+                    if loc_val is None:
+                        locs = ALL_DRM_LOCATIONS
+                    elif isinstance(loc_val, str):
+                        locs.add(DrmLocation.from_string(loc_val))
+                    else:
+                        for it in loc_val:
+                            if isinstance(it, str):
+                                locs.add(DrmLocation.from_string(it))
+                            else:
+                                locs.add(it)
+                    new_value.append((name, locs))
+                self.drmSelection = new_value
+            else:
+                opt: DashOption = parameter_map[key]
+                self.set_with_type_coercion(self, opt, key, value)
+
+    @staticmethod
+    def set_with_type_coercion(dest: object, opt: DashOption, key: str, value: Any) -> None:
+        ours = getattr(dest, key)
+        if ours == value:
+            return
+        if ours is not None and value is not None and not isinstance(value, type(ours)):
+            if isinstance(value, str):
+                value = opt.from_string(value)
+            if not isinstance(value, type(ours)):
+                py_type: str | None = opt.python_type_hint()
+                if py_type is None or value.__class__.__name__ not in py_type:
+                    raise ValueError(
+                        f"Invalid type for field {key}: expected {type(ours)}, got {type(value)}. Allowed types: {py_type}")
+        setattr(dest, key, value)
+
+    def apply_options(self,
+                      params: dict[str, str],
+                      is_cgi: bool) -> None:
+        """
+        Apply the provided CGI parameters (or short name parameters) to this options container
+        """
+        param_map: dict[str, DashOption]
+        if is_cgi:
+            param_map = DashOptionNameMaps.get_cgi_map()
+        else:
+            param_map = DashOptionNameMaps.get_short_param_map()
+        for key, value in params.items():
+            try:
+                opt: DashOption = param_map[key]
+                value = opt.from_string(value)
+                default = opt.default_value()
+                if value is None and default is not None:
+                    value = default
+                if opt.prefix:
+                    dest = getattr(self, opt.prefix)
+                    setattr(dest, opt.full_name, value)
+                else:
+                    setattr(self, opt.full_name, value)
+            except KeyError as err:
+                logging.warning(r'Invalid parameter name %s is_cgi=%s: %s', key, is_cgi, err)
+                print(f"Invalid parameter name {key} is_cgi={is_cgi}: {err}")
 
     def _convert_sub_options(self,
                              destination: dict[str, str],
                              prefix: str,
-                             sub_opts: dict[str, Any],
+                             sub_opts: object,
                              use: OptionUsage | None,
                              exclude: AbstractSet | None,
-                             remove_defaults: bool) -> None:
-        defaults = ObjectWithFields()
-        if self._defaults is not None and prefix in self._defaults._fields:
-            defaults = self._defaults[prefix]
-        for key, value in sub_opts.items():
-            name: str = f'{prefix}.{key}'
-            opt: DashOption = self._parameter_map[name]
-            if use is not None and (opt.usage & use) == 0:
-                continue
+                             defaults: object | None) -> None:
+        if exclude is None:
+            exclude = set()
+        assert dataclasses.is_dataclass(sub_opts)
+        parameter_map = DashOptionNameMaps.get_parameter_map()
+        for field in dataclasses.fields(sub_opts):
+            name: str = f'{prefix}.{field.name}'
             if name in exclude:
                 continue
-            try:
-                dft_val = defaults[key]
-                if remove_defaults and value == dft_val:
-                    continue
-            except KeyError:
-                pass
-            destination[opt.cgi_name] = opt.to_string(value)
+            opt: DashOption = parameter_map[name]
+            skip: bool = use is not None and (opt.usage & use) == 0
+            value: Any = getattr(sub_opts, field.name)
+            if defaults is not None:
+                try:
+                    dft_val = getattr(defaults, field.name)
+                    if value == dft_val:
+                        skip = True
+                except AttributeError:
+                    pass
+            if not skip:
+                destination[opt.cgi_name] = opt.to_string(value)
 
     def generate_cgi_parameters(self,
                                 destination: dict[str, str] | None = None,
@@ -168,48 +192,53 @@ class OptionsContainer(ObjectWithFields):
             exclude = {'encrypted', 'mode'}
         if destination is None:
             destination = {}
-        assert self._parameter_map is not None
-        for key, value in self.items():
-            if isinstance(value, OptionsContainer):
-                self._convert_sub_options(destination, key, value, use, exclude, remove_defaults)
+        parameter_map = DashOptionNameMaps.get_parameter_map()
+        defaults = OptionsContainer()
+        for field in dataclasses.fields(self):
+            if field.name in exclude:
                 continue
-            if key in exclude:
+
+            value = getattr(self, field.name)
+
+            if dataclasses.is_dataclass(value):
+                sub_defaults = getattr(defaults, field.name) if remove_defaults else None
+                self._convert_sub_options(
+                    destination=destination, prefix=field.name, sub_opts=value, use=use,
+                    exclude=exclude, defaults=sub_defaults)
                 continue
-            if remove_defaults and self._defaults is not None:
-                if key in self._defaults._fields:
-                    dft_val = getattr(self._defaults, key)
-                    if value == dft_val:
-                        continue
-            opt: DashOption = self._parameter_map[key]
+
+            skip: bool = False
+            if remove_defaults:
+                try:
+                    dft_val = getattr(defaults, field.name)
+                    skip = value == dft_val
+                except AttributeError:
+                    pass
+            opt: DashOption = parameter_map[field.name]
             if use is not None and (opt.usage & use) == 0:
-                continue
-            destination[getattr(opt, attr_name)] = opt.to_string(value)
+                skip = True
+            if not skip:
+                destination[getattr(opt, attr_name)] = opt.to_string(value)
         return destination
 
-    def remove_default_values(self, defaults: Optional["OptionsContainer"] = None) -> JsonObject:
+    def json_without_default_values(self, defaults: Optional["OptionsContainer"] = None) -> JsonObject:
         if defaults is None:
-            defaults = self._defaults
-        if defaults is None:
-            return self.toJSON()
+            defaults = OptionsContainer()
         result: JsonObject = {}
-        for key, value in self.items():
-            try:
-                dflt = defaults[key]
-            except KeyError:
-                continue
-            if isinstance(value, OptionsContainer):
-                sub_result = {}
-                for k, v in value.items():
-                    if k not in dflt:
-                        continue
-                    d = dflt[k]
+        for field in dataclasses.fields(self):
+            value = getattr(self, field.name)
+            dflt = getattr(defaults, field.name)
+            if dataclasses.is_dataclass(value):
+                sub_result: JsonObject = {}
+                for it in dataclasses.fields(value):
+                    v = getattr(value, it.name)
+                    d = getattr(dflt, it.name)
                     if d != v:
-                        sub_result[k] = v
+                        sub_result[it.name] = v
                 if sub_result:
-                    result[key] = sub_result
-                continue
-            if value != dflt:
-                result[key] = value
+                    result[field.name] = sub_result
+            elif value != dflt:
+                result[field.name] = value
         return result
 
     def generate_cgi_parameters_string(self,
@@ -219,56 +248,75 @@ class OptionsContainer(ObjectWithFields):
             use=use, exclude=exclude))
 
     def remove_unsupported_features(self, supported_features: AbstractSet[str]) -> None:
-        todo = {
+        todo: set[str] = {
             'abr', 'audioCodec', 'useBaseUrls', 'drmSelection', 'eventTypes',
             'minimumUpdatePeriod', 'segmentTimeline', 'utcMethod'
         }
         todo.difference_update(supported_features)
+        defaults = OptionsContainer()
         for name in todo:
-            if self._defaults is None:
-                self.remove_field(name)
-            else:
-                setattr(self, name, getattr(self._defaults, name))
+            setattr(self, name, getattr(defaults, name))
 
-    def remove_unused_parameters(self, mode: str, encrypted: bool | None = None,
-                                 use: OptionUsage | None = None) -> None:
+    def reset_unused_parameters(
+            self,
+            mode: str,
+            encrypted: bool | None = None,
+            use: OptionUsage | None = None) -> None:
+        """
+        Reset to default all values that are not relevant based upon selected mode.
+        """
         if encrypted is None:
             encrypted = self.encrypted
         todo: list[str] = []
         if mode != 'live':
-            todo += {'availabilityStartTime', 'minimumUpdatePeriod',
+            todo += ['availabilityStartTime', 'minimumUpdatePeriod',
                      'ntpSources', 'timeShiftBufferDepth', 'utcMethod',
-                     'utcValue', 'patch'}
+                     'utcValue', 'patch']
         if encrypted:
-            drms = {item[0] for item in self.drmSelection}
+            drms: set[str] = {item[0] for item in self.drmSelection}
             if 'playready' not in drms:
-                todo += {'playreadyLicenseUrl', 'playreadyPiff', 'playreadyVersion'}
+                todo += ['playready.licenseUrl', 'playready.piff', 'playready.version']
             if 'marlin' not in drms:
-                todo.append('marlinLicenseUrl')
+                todo.append('marlin.licenseUrl')
+            if 'clearkey' not in drms:
+                todo.append('clearkey.licenseUrl')
         else:
-            todo += {'marlinLicenseUrl', 'playreadyLicenseUrl', 'playreadyPiff',
-                     'playreadyVersion'}
+            todo += ['marlin.licenseUrl', 'playready.licenseUrl', 'playready.piff',
+                     'playready.version', 'clearkey.licenseUrl']
         if use is not None:
-            fields = set(self._fields)
-            fields.discard(set(todo))
+            fields: set[str] = set()
+            for field in dataclasses.fields(self):
+                if dataclasses.is_dataclass(field.type):
+                    for it in dataclasses.fields(field.type):
+                        fields.add(f"{field.name}.{it.name}")
+                else:
+                    fields.add(field.name)
+            fields -= set(todo)
+            parameter_map = DashOptionNameMaps.get_parameter_map()
             for name in fields:
                 try:
-                    opt = self._parameter_map[name]
+                    opt = parameter_map[name]
+                    if (opt.usage & use) == 0:
+                        todo.append(name)
                 except KeyError:
-                    continue
-                if (opt.usage & use) == 0:
-                    todo.append(name)
+                    pass
+        defaults = OptionsContainer()
         for name in todo:
-            self.remove_field(name)
+            if '.' in name:
+                prefix, key = name.split('.')
+                val = getattr(getattr(defaults, prefix), key)
+                setattr(getattr(self, prefix), key, val)
+            else:
+                setattr(self, name, getattr(defaults, name))
 
     def generate_input_field_groups(
             self, field_choices: dict,
             exclude: AbstractSet | None = None) -> list[InputFieldGroup]:
         sections: dict[str, list[FormInputContext]] = defaultdict(list)
         for field in self.generate_input_fields(field_choices, exclude):
-            group: str = field['prefix']
+            group: str = field.get('prefix', '')
             if group == "":
-                group = "general" if field["featured"] else "advanced"
+                group = "general" if field.get("featured", False) else "advanced"
             sections[group].append(field)
         result: list[InputFieldGroup] = [
             InputFieldGroup("general", "General Options", sections["general"], show=True),
@@ -283,20 +331,22 @@ class OptionsContainer(ObjectWithFields):
         fields: list[FormInputContext] = []
         if exclude is None:
             exclude = set()
-        for key, value in self.items():
-            if key in exclude:
+        parameter_map = DashOptionNameMaps.get_parameter_map()
+        for field in dataclasses.fields(self):
+            if field.name in exclude:
                 continue
-            if isinstance(value, OptionsContainer):
-                for ok, ov in value.items():
-                    name: str = f'{key}.{ok}'
+            value = getattr(self, field.name)
+            if dataclasses.is_dataclass(value):
+                for it in dataclasses.fields(value):
+                    name: str = f'{field.name}.{it.name}'
                     if name in exclude:
                         continue
-                    op: DashOption = self._parameter_map[name]
+                    op: DashOption = parameter_map[name]
                     fields.append(
-                        op.input_field(ov, field_choices))
+                        op.input_field(getattr(value, it.name), field_choices))
                 continue
             try:
-                opt = self._parameter_map[key]
+                opt = parameter_map[field.name]
             except KeyError:
                 continue
             if opt.full_name == 'drmSelection':

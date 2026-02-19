@@ -1,17 +1,3 @@
-############################################################################
-#
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
 #############################################################################
 #
 #  Project Name        :    Simulated MPEG DASH service
@@ -652,7 +638,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         """
         self.setup_media()
         self.logout_user()
-        args = ['drm=playready', 'playready_version=1.0']
+        args = ['drm=playready', 'playready__version=1.0']
         await self.check_piff_uuid_is_present(args)
 
     async def test_playready_piff_sample_encryption_if_flag_present(self):
@@ -661,10 +647,10 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         """
         self.setup_media()
         self.logout_user()
-        args = ['drm=playready', 'playready_version=3.0',
+        args = ['drm=playready', 'playready__version=3.0',
                 'playready_piff=1']
         await self.check_piff_uuid_is_present(args)
-        args = ['drm=playready', 'playready_version=3.0',
+        args = ['drm=playready', 'playready__version=3.0',
                 'playready_piff=true']
         await self.check_piff_uuid_is_present(args)
 
@@ -674,7 +660,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         """
         self.setup_media()
         self.logout_user()
-        args = ['drm=playready', 'playready_version=3.0',
+        args = ['drm=playready', 'playready__version=3.0',
                 'playready_piff=1', 'bugs=saio']
         with self.assertRaises(AssertionError):
             await self.check_piff_uuid_is_present(args, expect_errors=True)

@@ -90,8 +90,8 @@ class ContentProtection(Descriptor):
         self.elt.check_includes(
             ["4.0.0.0", "4.1.0.0", "4.2.0.0", "4.3.0.0"],
             xml.attrib['version'])
-        if 'playready_version' in self.mpd.params:
-            version = float(self.mpd.params['playready_version'])
+        if 'playready__version' in self.mpd.params:
+            version = float(self.mpd.params['playready__version'])
             if version < 2.0:
                 self.elt.check_equal(xml.attrib['version'], "4.0.0.0")
                 self.elt.check_equal(

@@ -40,6 +40,12 @@ class HttpErrorOption(DashOption[list[tuple[int, str]]]):
     def to_string(self, value: list[tuple[int, str]]) -> str:
         return str(value)
 
+    def python_type_hint(self) -> str | None:
+        return 'list[tuple[int, str]]'
+
+    def default_value(self) -> list[tuple[int, str]] | None:
+        return []
+
 
 ManifestHttpError = HttpErrorOption('manifest', 'Manifest')
 

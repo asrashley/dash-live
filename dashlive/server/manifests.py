@@ -1,19 +1,5 @@
 #############################################################################
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
-#############################################################################
-#
 #  Project Name        :    Simulated MPEG DASH service
 #
 #  Author              :    Alex Ashley
@@ -86,7 +72,6 @@ class SupportedOptionTupleList:
         """
         Returns an iterator that yields of all possible combinations of CGI query parameters
         """
-        defaults = OptionsRepository.get_default_options()
         indexes = [0] * len(self.options)
         done = False
         num_options = len(self.options)
@@ -105,9 +90,9 @@ class SupportedOptionTupleList:
                     break
                 params[name] = val
             if allowed:
-                candidate = OptionsRepository.convert_cgi_options(params, defaults)
+                candidate = OptionsRepository.convert_cgi_options(params)
                 candidate.update(**self.kwargs)
-                candidate.remove_unused_parameters(self.mode)
+                candidate.reset_unused_parameters(self.mode)
                 cgi_str = candidate.generate_cgi_parameters_string()
                 digest: bytes = hashlib.sha1(bytes(cgi_str, 'ascii')).digest()
                 if digest not in checked:

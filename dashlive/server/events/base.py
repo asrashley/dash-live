@@ -16,6 +16,7 @@ from dashlive.server.options.dash_option import (
     DashOption,
     DateTimeDashOption,
     IntOrNoneDashOption,
+    StringDashOption,
     StringOrNoneDashOption,
 )
 from dashlive.server.options.types import OptionUsage
@@ -32,6 +33,14 @@ class EventBase(ObjectWithFields):
         'value': '0',
         'version': 0,
     }
+    count: int
+    duration: int
+    inband: bool
+    interval: int
+    start: int
+    timescale: int
+    value: str
+    version: int
 
     @abstractmethod
     def create_manifest_context(self, context: dict) -> dict:
@@ -54,8 +63,10 @@ class EventBase(ObjectWithFields):
             cgi_choices: tuple[CgiChoiceType, ...] | None = None
             cgi_type: str | None = None
             input_type: str = 'text'
-            OptionType: type[DashOption] = StringOrNoneDashOption
-            if isinstance(dflt, bool):
+            OptionType: type[DashOption] = StringDashOption
+            if dflt is None or dflt == "":
+                OptionType = StringOrNoneDashOption
+            elif isinstance(dflt, bool):
                 OptionType = BoolDashOption
                 cgi_type = '(0|1)'
                 input_type = 'checkbox'
@@ -71,7 +82,7 @@ class EventBase(ObjectWithFields):
                 OptionType = DateTimeDashOption
                 cgi_type = '<iso-datetime>'
                 cgi_choices = tuple([str(dflt)])
-            elif dflt is not None:
+            else:
                 cgi_choices = tuple(str(dflt))
             opt = OptionType(
                 usage=(OptionUsage.MANIFEST + OptionUsage.AUDIO + OptionUsage.VIDEO),
@@ -83,7 +94,6 @@ class EventBase(ObjectWithFields):
                 input_type=input_type,
                 cgi_name=name,
                 cgi_type=cgi_type,
-                cgi_choices=cgi_choices,
-                default=dflt)
+                cgi_choices=cgi_choices)
             result.append(opt)
         return result

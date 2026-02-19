@@ -24,7 +24,7 @@ import base64
 import copy
 import io
 import logging
-import os
+from typing import ClassVar
 import unittest
 
 from crccheck.crc import Crc32Mpeg2
@@ -36,8 +36,8 @@ from dashlive.scte35.descriptors import SegmentationTypeId
 from .mixins.mixin import TestCaseMixin
 
 class Scte35Tests(TestCaseMixin, unittest.TestCase):
-    dash_timebase = 10000000
-    test_cases = [{
+    dash_timebase: ClassVar[int] = 10000000
+    test_cases: ClassVar[list[dict]] = [{
         'name': 'section 14.2 splice_insert example from SCTE-35',
         'input': r'/DAvAAAAAAAA///wFAVIAACPf+/+c2nALv4AUsz1AAAAAAAKAAhDVUVJAAABNWLbowo=',
         'expected': {
@@ -386,21 +386,15 @@ class Scte35Tests(TestCaseMixin, unittest.TestCase):
             self.assertBuffersEqual(data, encoded, msg)
 
     def test_generating_splice_info_section(self):
-        for idx, tc in enumerate(self.test_cases):
-            # print('test_case', idx + 1)
-            data = base64.b64decode(tc['input'])
-            kwargs = copy.deepcopy(BinarySignal.DEFAULT_VALUES)
-            kwargs.update(**tc['expected'])
-            splice = BinarySignal(**kwargs)
-            encoded = splice.encode()
-            self.assertBuffersEqual(data, encoded)
+        for tc in self.test_cases:
+            with self.subTest(tc['name']):
+                data = base64.b64decode(tc['input'])
+                kwargs = copy.deepcopy(BinarySignal.DEFAULT_VALUES)
+                kwargs.update(**tc['expected'])
+                splice = BinarySignal(**kwargs)
+                encoded = splice.encode()
+                self.assertBuffersEqual(data, encoded)
 
-
-if os.environ.get("TESTS"):
-    def load_tests(loader, tests, pattern):
-        return unittest.loader.TestLoader().loadTestsFromNames(
-            os.environ["TESTS"].split(','),
-            Scte35Tests)
 
 if __name__ == "__main__":
     logging.basicConfig()

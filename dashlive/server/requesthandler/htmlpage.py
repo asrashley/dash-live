@@ -9,6 +9,8 @@ import logging
 from pathlib import Path
 import urllib.parse
 
+from dashlive.server.options.dash_option import DashOption
+from dashlive.server.options.name_maps import DashOptionNameMaps
 import flask
 
 from dashlive.server import manifests, models
@@ -67,7 +69,7 @@ class ES5MainPage(HTMLHandlerBase):
                     ),
                 }
             )
-        defaults: OptionsContainer = OptionsRepository.get_default_options()
+        defaults: OptionsContainer = OptionsContainer()
         field_choices = {
             "representation": [
                 dict(value=mf.name, title=mf.name) for mf in models.MediaFile.all()
@@ -108,7 +110,7 @@ class ES5MainPage(HTMLHandlerBase):
                 "utcValue",
             },
         )
-        dash_options = OptionsRepository.get_cgi_map()
+        dash_options: dict[str, DashOption] = DashOptionNameMaps.get_cgi_map()
         for idx, group in enumerate(context["field_groups"]):
             if idx > 0:
                 group.className = "advanced hidden"
@@ -250,7 +252,7 @@ class VideoPlayer(RequestHandlerBase):
             options.clearkey.licenseUrl = flask.url_for('clearkey')
         js_opts = options.toJSON(exclude={'drmSelection', 'videoPlayer'})
         js_opts['drmSelection'] = drm_selections
-        options.remove_unused_parameters(mode)
+        options.reset_unused_parameters(mode)
         mpd_url += options.generate_cgi_parameters_string(use=~OptionUsage.HTML)
         return jsonify({
             'dash': dash,
@@ -300,7 +302,7 @@ class ES5VideoPlayer(RequestHandlerBase):
         except ValueError as err:
             logging.error("Invalid CGI parameters: %s", err)
             return flask.make_response("Invalid CGI parameters", 400)
-        options.remove_unused_parameters(mode)
+        options.reset_unused_parameters(mode)
         if stream_model:
             mpd_url: str = flask.url_for(
                 "dash-mpd-v3", stream=stream, manifest=manifest, mode=mode

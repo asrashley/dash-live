@@ -35,7 +35,6 @@ class DashOption(Generic[T]):
     prefix: str = field(default='')
     featured: bool = False
     html: str | None = None
-    default: T | None = None
 
     @abstractmethod
     def from_string(self, value: str) -> T:
@@ -47,6 +46,23 @@ class DashOption(Generic[T]):
 
     def html_input_type(self) -> str:
         return self.input_type
+
+    def python_type_hint(self) -> str | None:
+        return None
+
+    def default_value(self) -> T | None:
+        if self.cgi_choices is None:
+            return None
+        if len(self.cgi_choices) == 0:
+            return None
+        first = self.cgi_choices[0]
+        if isinstance(first, tuple):
+            if first[1] is None:
+                return None
+            return self.from_string(first[1])
+        if isinstance(first, str):
+            return self.from_string(first)
+        return cast(T, first)
 
     def get_cgi_option(self, omit_empty: bool = True) -> CgiOption | None:
         """
@@ -185,11 +201,14 @@ class BoolDashOption(DashOption[bool]):
     def html_input_type(self) -> str:
         return 'bool'
 
+    def python_type_hint(self) -> str | None:
+        return 'bool'
+
 
 class IntOrNoneDashOption(DashOption[int | None]):
     def from_string(self, value: str) -> int | None:
-        if value in {None, '', 'none'}:
-            return self.default
+        if value == '' or value.lower() == 'none':
+            return None
         return int(value, 10)
 
     def to_string(self, value: int | None) -> str:
@@ -200,11 +219,15 @@ class IntOrNoneDashOption(DashOption[int | None]):
     def html_input_type(self) -> str:
         return 'number'
 
+    def python_type_hint(self) -> str | None:
+        if self.default_value() is not None:
+            return 'int'
+        return 'int | None'
 
 class FloatOrNoneDashOption(DashOption[float | None]):
     def from_string(self, value: str) -> float | None:
         if value in {None, '', 'none'}:
-            return self.default
+            return None
         return float(value)
 
     def to_string(self, value: float | None) -> str:
@@ -212,22 +235,27 @@ class FloatOrNoneDashOption(DashOption[float | None]):
             return ''
         return f'{value:f}'
 
+    def python_type_hint(self) -> str | None:
+        return 'float | None'
+
 
 class StringDashOption(DashOption[str]):
     def from_string(self, value: str) -> str:
         if value.lower() in ['', 'none']:
-            if self.default is None:
-                return ''
-            return self.default
+            return ''
         return value
 
     def to_string(self, value: str) -> str:
         return value
 
+    def python_type_hint(self) -> str | None:
+        return 'str'
+
+
 class StringOrNoneDashOption(DashOption[str | None]):
     def from_string(self, value: str) -> str | None:
         if value.lower() in ['', 'none']:
-            return self.default
+            return None
         return value
 
     def to_string(self, value: str | None) -> str:
@@ -235,16 +263,23 @@ class StringOrNoneDashOption(DashOption[str | None]):
             return ''
         return value
 
+    def python_type_hint(self) -> str | None:
+        return 'str | None'
+
+
 class UrlOrNoneDashOption(DashOption[str | None]):
     def from_string(self, value: str) -> str | None:
         if value.lower() in ['', 'none']:
-            return self.default
+            return None
         return urllib.parse.unquote_plus(value)
 
     def to_string(self, value: str | None) -> str:
         if value is None:
             return ''
         return urllib.parse.quote_plus(value)
+
+    def python_type_hint(self) -> str | None:
+        return 'str | None'
 
 class StringListDashOption(DashOption[list[str]]):
     def from_string(self, value: str) -> list[str]:
@@ -259,11 +294,21 @@ class StringListDashOption(DashOption[list[str]]):
     def to_string(self, value: list[str]) -> str:
         return ','.join(value)
 
+    def python_type_hint(self) -> str | None:
+        return 'list[str]'
+
+    def default_value(self) -> list[str] | None:
+        if not self.cgi_choices:
+            return []
+        default: str | None = cast(str | None, self.cgi_choices[0])
+        if default is None:
+            return []
+        return [default]
 
 class DateTimeDashOption(DashOption[datetime | timedelta | None]):
     def from_string(self, value: str) -> datetime | timedelta | None:
         if value in {None, '', 'none'}:
-            return self.default
+            return None
         return from_isodatetime(value)
 
     def to_string(self, value: datetime | timedelta | None) -> str:
@@ -272,3 +317,6 @@ class DateTimeDashOption(DashOption[datetime | timedelta | None]):
         if isinstance(value, timedelta):
             return toIsoDuration(value)
         return to_iso_datetime(value)
+
+    def python_type_hint(self) -> str | None:
+        return 'datetime.datetime | datetime.timedelta | None'

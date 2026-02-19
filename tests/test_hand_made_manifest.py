@@ -127,7 +127,6 @@ class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
             'drm': 'none',
             'timeline': '1',
         }
-        defaults = OptionsRepository.get_default_options()
         url = flask.url_for(
             'dash-mpd-v3',
             manifest='hand_made.mpd',
@@ -136,7 +135,7 @@ class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
         drm_checks = ['none'] + DrmSystem.values()
         for drm in drm_checks:
             args['drm'] = drm
-            options = OptionsRepository.convert_cgi_options(args, defaults=defaults)
+            options = OptionsRepository.convert_cgi_options(args)
             params = options.generate_cgi_parameters(exclude={'mode'})
             query = objects.dict_to_cgi_params(params)
             with self.subTest(drm=drm, query=query):

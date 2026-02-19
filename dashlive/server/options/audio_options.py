@@ -23,7 +23,6 @@ AudioCodec = StringDashOption(
         ('Any codec', 'any'),
     ),
     input_type='select',
-    default='mp4a',
     featured=True)
 
 AudioDescriptionTrack = StringOrNoneDashOption(

@@ -1,19 +1,5 @@
 #############################################################################
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
-#############################################################################
-#
 #  Project Name        :    Simulated MPEG DASH service
 #
 #  Author              :    Alex Ashley
@@ -301,7 +287,7 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                 # Playready version 1.0 only allows mspr:pro element
                 if float(version) < 2.0 and choice[1] != 'pro':
                     continue
-                drm_options.append(f'drm=playready-{choice[1]}&playready_version={version}')
+                drm_options.append(f'drm=playready-{choice[1]}&playready__version={version}')
         for choice in DrmLocationOption.cgi_choices:
             if choice[1] is None:
                 drm_options.append('drm=clearkey')
@@ -517,7 +503,7 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
             self.assertTrue(await mpd.load())
             await mpd.validate()
         if mpd.has_errors():
-            print(mpd_url)
+            print(f"Validation failed for MPD URL: {mpd_url}")
             for err in mpd.get_errors():
                 print(err)
         self.assertFalse(mpd.has_errors(), 'Stream validation failed')

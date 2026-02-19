@@ -1,19 +1,5 @@
 #############################################################################
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
-#############################################################################
-#
 #  Project Name        :    Simulated MPEG DASH service
 #
 #  Author              :    Alex Ashley
@@ -24,9 +10,6 @@ from abc import abstractmethod
 import logging
 from typing import AbstractSet
 
-import urllib.request
-import urllib.parse
-import urllib.error
 import urllib.parse
 
 import flask  # type: ignore
@@ -35,7 +18,6 @@ from flask.views import MethodView  # type: ignore
 from dashlive.server import models
 from dashlive.server.routes import routes, Route
 from dashlive.server.options.container import OptionsContainer
-from dashlive.server.options.repository import OptionsRepository
 from dashlive.utils.json_object import JsonObject
 
 from .csrf import CsrfProtection
@@ -86,10 +68,10 @@ class RequestHandlerBase(MethodView):
                           stream: models.Stream | None = None,
                           features: AbstractSet[str] | None = None,
                           restrictions: dict[str, tuple] | None = None) -> OptionsContainer:
-        defaults = OptionsRepository.get_default_options()
+        options = OptionsContainer(mode=mode)
         if stream is not None:
             if stream.defaults is not None:
-                defaults = defaults.clone(**stream.defaults)
+                options.update(**stream.defaults)
         if restrictions is not None:
             args = {**args}
             for key, allowed_values in restrictions.items():
@@ -102,10 +84,9 @@ class RequestHandlerBase(MethodView):
                             del args[key]
                 except KeyError:
                     pass
-        options = OptionsRepository.convert_cgi_options(args, defaults=defaults)
+        options.apply_options(args, True)
         if features is not None:
             options.remove_unsupported_features(features)
-        options.add_field('mode', mode)
         return options
 
     def has_http_range(self) -> bool:
