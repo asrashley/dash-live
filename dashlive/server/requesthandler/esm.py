@@ -125,7 +125,7 @@ class OptionFieldGroups(MethodView):
                 field_name_map[f"{opt.prefix}__{opt.cgi_name}"] = opt
             else:
                 field_name_map[opt.cgi_name] = opt
-        options: OptionsContainer = OptionsRepository.get_default_options()
+        options: OptionsContainer = OptionsContainer()
         field_groups: list[InputFieldGroupJson] = [
             fg.toJSON(exclude={'className', 'show'}) for fg in options.generate_input_field_groups(
                 {},
@@ -145,7 +145,7 @@ class OptionFieldGroups(MethodView):
                 field['fullName'] = opt.full_name
         body: str = flask.render_template(
             'esm/options.tjs',
-            full_options=options.toJSON(exclude={"_type"}),
+            full_options=options.toJSON(),
             cgi_options=options.generate_cgi_parameters(remove_defaults=False),
             short_options=options.generate_short_parameters(remove_defaults=False),
             drm_systems=DrmSystem.values(),

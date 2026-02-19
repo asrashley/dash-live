@@ -27,7 +27,6 @@ from dashlive.mpeg.dash.validator.errors import ValidationError
 from dashlive.server import manifests, models
 from dashlive.server.options.container import OptionsContainer
 from dashlive.server.options.types import OptionUsage
-from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.requesthandler.base import TemplateContext
 from dashlive.server.requesthandler.manifest_context import ManifestContext
 from dashlive.server.requesthandler.manifest_requests import ServeManifest
@@ -369,12 +368,11 @@ class DashManifestCheckMixin:
                 mode=mode,
                 stream=BBB_FIXTURE.name,
                 manifest=mpd_filename)
-        defaults = OptionsRepository.get_default_options()
-        options = OptionsRepository.convert_cgi_options(kwargs, defaults=defaults)
+        options = OptionsContainer(mode=mode)
+        options.apply_options(params=kwargs, is_cgi=True)
         manifest = manifests.manifest_map[mpd_filename]
         options.segmentTimeline = manifest.segment_timeline
-        options.add_field('mode', mode)
-        options.remove_unused_parameters(mode)
+        options.reset_unused_parameters(mode=mode, encrypted=encrypted)
         url += options.generate_cgi_parameters_string()
         stream: models.Stream | None = None
         mps: models.MultiPeriodStream | None = None

@@ -275,9 +275,9 @@ class InitSegment(DashElement):
             version: str | None = root.get("version")
             self.elt.check_includes(
                 {"4.0.0.0", "4.1.0.0", "4.2.0.0", "4.3.0.0"}, version)
-            if 'playready_version' not in self.mpd.params:
+            if 'playready__version' not in self.mpd.params:
                 continue
-            version = float(self.mpd.params['playready_version'])
+            version = float(self.mpd.params['playready__version'])
             if version < 2.0:
                 self.elt.check_equal(root.attrib['version'], "4.0.0.0")
             elif version < 3.0:

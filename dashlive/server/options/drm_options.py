@@ -123,11 +123,24 @@ class DrmSelectionOption(DashOption[list[DrmSelectionTuple]]):
             if locations == ALL_DRM_LOCATIONS:
                 result.append(drm)
             else:
-                parts = [drm] + sorted([loc.to_json() for loc in locations])
+                locs: list[str] = []
+                for it in locations:
+                    if isinstance(it, DrmLocation):
+                        locs.append(it.to_json())
+                    elif isinstance(it, str):
+                        locs.append(it)
+                locs.sort()
+                parts: list[str] = [drm] + locs
                 result.append('-'.join(parts))
         if set(result) == ALL_DRM_NAMES:
             return 'all'
         return ','.join(result)
+
+    def default_value(self) -> list[tuple[str, set[DrmLocation]]] | None:
+        return []
+
+    def python_type_hint(self) -> str | None:
+        return 'list[tuple]'
 
 
 DrmSelection = DrmSelectionOption()

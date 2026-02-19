@@ -13,7 +13,7 @@ from dashlive.mpeg.dash.reference import StreamTimingReference
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.mpeg.dash.segment import Segment
 from dashlive.mpeg.dash.timing import DashTiming
-from dashlive.server.options.repository import OptionsRepository
+from dashlive.server.options.container import OptionsContainer
 from dashlive.utils.date_time import timecode_to_timedelta
 
 from .mixins.mixin import TestCaseMixin
@@ -32,15 +32,14 @@ class TestDashTiming(TestCaseMixin, unittest.TestCase):
             timescale=240)
         if now is None:
             now = datetime.datetime.fromisoformat('2020-01-01T01:00:00Z')
-        defaults = OptionsRepository.get_default_options()
         args = {
             'leeway': '0',
             'depth': '60',
             'start': '2020-01-01T00:00:00Z',
             **kwargs,
         }
-        options = OptionsRepository.convert_cgi_options(args, defaults)
-        options.add_field('mode', mode)
+        options = OptionsContainer(mode=mode)
+        options.apply_options(args, is_cgi=True)
         timing = DashTiming(now, stream_ref, options)
         segments: list[Segment] = [Segment(pos=0, duration=0, size=42)]
         for num in range(stream_ref.num_media_segments):

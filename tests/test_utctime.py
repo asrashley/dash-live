@@ -1,19 +1,5 @@
 #############################################################################
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
-#############################################################################
-#
 #  Project Name        :    Simulated MPEG DASH service
 #
 #  Author              :    Alex Ashley
@@ -90,12 +76,11 @@ class TestUtcTime(FlaskTestBase):
             ('sntp', 'urn:mpeg:dash:utc:sntp:2014'),
             ('xsd', 'urn:mpeg:dash:utc:http-xsdate:2014'),
         ]
-        defaults = OptionsRepository.get_default_options()
         cgi_params = CgiParameterCollection(
             audio={}, video={}, text={}, manifest={}, patch={}, time={})
         for method, scheme_id in test_cases:
             options = OptionsRepository.convert_cgi_options(
-                {'time': method}, defaults=defaults)
+                {'time': method})
             tsc = TimeSourceContext(
                 options, cgi_params, datetime.datetime.fromisoformat(self.NOW))
             self.assertEqual(tsc.schemeIdUri, scheme_id)
@@ -112,12 +97,11 @@ class TestUtcTime(FlaskTestBase):
         self.assertEqual(tsc.value, url)
 
     def test_default_ntp_servers(self) -> None:
-        defaults = OptionsRepository.get_default_options()
         cgi_params = CgiParameterCollection(
             audio={}, video={}, text={}, manifest={}, patch={}, time={})
         for alg in ['ntp', 'sntp']:
             options = OptionsRepository.convert_cgi_options(
-                {'time': alg}, defaults=defaults)
+                {'time': alg})
             self.assertEqual(options.ntpSources, [])
             tsc = TimeSourceContext(
                 options, cgi_params,
@@ -126,7 +110,6 @@ class TestUtcTime(FlaskTestBase):
             self.assertEqual(tsc.value, ' '.join(default_pool))
 
     def test_set_ntp_pool(self) -> None:
-        defaults = OptionsRepository.get_default_options()
         cgi_params = CgiParameterCollection(
             audio={}, video={}, text={}, manifest={}, patch={}, time={})
         for pool in NTP_POOLS.keys():
@@ -134,7 +117,7 @@ class TestUtcTime(FlaskTestBase):
                 options = OptionsRepository.convert_cgi_options({
                     'time': alg,
                     'ntp_servers': pool,
-                }, defaults=defaults)
+                })
                 self.assertEqual(options.ntpSources, [pool])
                 tsc = TimeSourceContext(
                     options, cgi_params,
@@ -142,13 +125,12 @@ class TestUtcTime(FlaskTestBase):
                 self.assertEqual(tsc.value, ' '.join(NTP_POOLS[pool]))
 
     def test_set_ntp_servers(self) -> None:
-        defaults = OptionsRepository.get_default_options()
         cgi_params = CgiParameterCollection(
             audio={}, video={}, text={}, manifest={}, patch={}, time={})
         options = OptionsRepository.convert_cgi_options({
             'time': 'ntp',
             'ntp_servers': '1.time.unit.test,2.time.unit.test',
-        }, defaults=defaults)
+        })
         self.assertEqual(options.ntpSources,
                          ['1.time.unit.test', '2.time.unit.test'])
         tsc = TimeSourceContext(

@@ -1,8 +1,17 @@
+#############################################################################
+#
+#  Project Name        :    Simulated MPEG DASH service
+#
+#  Author              :    Alex Ashley
+#
+#############################################################################
+
 import unittest
 
 from dashlive.drm.location import DrmLocation
 from dashlive.server.options.drm_options import DrmSelection
 from dashlive.server.options.container import OptionsContainer
+from dashlive.server.options.options_types import PingOptionsType, PlayreadyOptionsType
 from dashlive.server.options.form_input_field import FieldOption
 from dashlive.server.options.repository import OptionsRepository
 from dashlive.server.options.types import OptionUsage
@@ -99,10 +108,10 @@ class TestCgiOptions(TestCaseMixin, unittest.TestCase):
             'clockDrift': 20,
             'drmSelection': [('playready', set(DrmLocation.all()))],
             'minimumUpdatePeriod': None,
-            'playready': {
-                'piff': True,
-                'version': 2.0,
-            },
+            'playready': PlayreadyOptionsType(
+                piff=True,
+                version=2.0,
+            ),
             'timeShiftBufferDepth': 60,
             'useBaseUrls': True,
             'videoPlayer': 'shaka',
@@ -134,31 +143,22 @@ class TestCgiOptions(TestCaseMixin, unittest.TestCase):
             'ping__timescale': '1000',
             'ping__value': 'hello',
         }
-        expected = {
-            '_type': 'dashlive.server.options.container.OptionsContainer',
-            'audioCodec': 'ec-3',
-            'eventTypes': ['ping'],
-            'ping': {
-                '_type': 'dashlive.server.options.container.OptionsContainer',
-                'inband': True,
-                'duration': 120,
-                'timescale': 1000,
-                'value': 'hello',
-            }
-        }
-        result = OptionsRepository.convert_cgi_options(params).toJSON()
-        self.assertDictEqual(expected, result)
-
-    def test_convert_event_params_to_cgi_parameters(self) -> None:
-        defaults = OptionsRepository.get_default_options()
-        options = OptionsContainer(
-            parameter_map=OptionsRepository.get_parameter_map(),
-            defaults=defaults,
+        expected = OptionsContainer(
             audioCodec='ec-3',
             eventTypes=['ping'],
-            ping=OptionsContainer(
-                parameter_map=OptionsRepository.get_parameter_map(),
-                defaults=defaults['ping'],
+            ping=PingOptionsType(
+                inband=True,
+                duration=120,
+                timescale=1000,
+                value='hello'))
+        result = OptionsRepository.convert_cgi_options(params).toJSON()
+        self.assertDictEqual(expected.toJSON(), result)
+
+    def test_convert_event_params_to_cgi_parameters(self) -> None:
+        options = OptionsContainer(
+            audioCodec='ec-3',
+            eventTypes=['ping'],
+            ping=PingOptionsType(
                 inband=False,
                 duration=120,
                 timescale=1000,
@@ -212,7 +212,6 @@ class TestCgiOptions(TestCaseMixin, unittest.TestCase):
     @MockTime("2023-04-05T06:30:00Z")
     def test_default_values(self) -> None:
         expected = {
-            '_type': 'dashlive.server.options.container.OptionsContainer',
             'abr': True,
             'availabilityStartTime': 'year',
             'audioCodec': 'mp4a',
@@ -220,7 +219,6 @@ class TestCgiOptions(TestCaseMixin, unittest.TestCase):
             'audioErrors': [],
             'bugCompatibility': [],
             'clearkey': {
-                '_type': 'dashlive.server.options.container.OptionsContainer',
                 'licenseUrl': None
             },
             'clockDrift': None,
@@ -236,13 +234,11 @@ class TestCgiOptions(TestCaseMixin, unittest.TestCase):
             'manifestErrors': [],
             'mainText': None,
             'marlin': {
-                '_type': 'dashlive.server.options.container.OptionsContainer',
                 'licenseUrl': None,
             },
             'minimumUpdatePeriod': None,
             'patch': False,
             'ping': {
-                '_type': 'dashlive.server.options.container.OptionsContainer',
                 'count': 0,
                 'duration': 200,
                 'inband': True,
@@ -253,13 +249,11 @@ class TestCgiOptions(TestCaseMixin, unittest.TestCase):
                 'version': 0
             },
             'playready': {
-                '_type': 'dashlive.server.options.container.OptionsContainer',
                 'licenseUrl': None,
                 'piff': True,
                 'version': None,
             },
             'scte35': {
-                '_type': 'dashlive.server.options.container.OptionsContainer',
                 'count': 0,
                 'duration': 200,
                 'inband': True,
@@ -267,7 +261,7 @@ class TestCgiOptions(TestCaseMixin, unittest.TestCase):
                 'program_id': 1620,
                 'start': 0,
                 'timescale': 100,
-                'value': '',
+                'value': None,
                 'version': 0
             },
             'segmentTimeline': False,
@@ -286,8 +280,7 @@ class TestCgiOptions(TestCaseMixin, unittest.TestCase):
             'videoPlayer': 'native',
             'utcValue': None,
         }
-        # print(OptionsRepository.get_default_options())
-        actual = OptionsRepository.get_default_options().toJSON()
+        actual = OptionsContainer().toJSON()
         self.maxDiff = None
         self.assertDictEqual(expected, actual)
 
@@ -296,59 +289,54 @@ class TestCgiOptions(TestCaseMixin, unittest.TestCase):
             'player': 'shaka',
             'shaka': '1.2.3',
         }
-        expected = {
-            '_type': 'dashlive.server.options.container.OptionsContainer',
-            'shakaVersion': '1.2.3',
-            'videoPlayer': 'shaka',
-        }
+        expected = OptionsContainer(
+            shakaVersion='1.2.3',
+            videoPlayer='shaka')
         result = OptionsRepository.convert_cgi_options(params).toJSON()
-        self.assertDictEqual(expected, result)
+        self.assertDictEqual(expected.toJSON(), result)
 
     def test_convert_dashjs_cgi_options(self) -> None:
         params = {
             'player': 'dashjs',
             'dashjs': '1.2.3',
         }
-        expected = {
-            '_type': 'dashlive.server.options.container.OptionsContainer',
-            'dashjsVersion': '1.2.3',
-            'videoPlayer': 'dashjs',
-        }
+        expected = OptionsContainer(
+            dashjsVersion='1.2.3',
+            videoPlayer='dashjs')
         result = OptionsRepository.convert_cgi_options(params).toJSON()
-        self.assertDictEqual(expected, result)
+        self.maxDiff = None
+        self.assertDictEqual(expected.toJSON(), result)
 
     def test_convert_manifest_timeline_options(self) -> None:
         params = {
             'abr': '0',
             'timeline': '1',
         }
-        expected = {
-            '_type': 'dashlive.server.options.container.OptionsContainer',
-            'abr': False,
-            'segmentTimeline': True,
-        }
+        expected = OptionsContainer(
+            abr=False,
+            segmentTimeline=True)
         result = OptionsRepository.convert_cgi_options(params).toJSON()
-        self.assertDictEqual(expected, result)
+        self.assertDictEqual(expected.toJSON(), result)
 
     def test_apply_manifest_timeline_options_to_default(self) -> None:
         form = {
             'abr': '0',
             'timeline': '1',
         }
-        defaults = OptionsRepository.get_default_options()
-        opts = OptionsRepository.convert_cgi_options(form, defaults)
+        opts = OptionsContainer()
+        opts.apply_options(form, is_cgi=True)
         expected = {
-            **defaults.toJSON(),
+            **OptionsContainer().toJSON(),
             'abr': False,
             'segmentTimeline': True,
         }
+        self.maxDiff = None
         self.assertDictEqual(expected, opts.toJSON())
-        opts.remove_unused_parameters('vod')
         for field in {
                 'availabilityStartTime', 'minimumUpdatePeriod', 'timeShiftBufferDepth',
                 'patch', 'ntpSources', 'utcMethod', 'utcValue'}:
-            del expected[field]
-        self.maxDiff = None
+            setattr(opts, field, 'reset-me')
+        opts.reset_unused_parameters('vod')
         self.assertDictEqual(expected, opts.toJSON())
 
     def test_convert_stream_default_options(self) -> None:
@@ -379,15 +367,13 @@ class TestCgiOptions(TestCaseMixin, unittest.TestCase):
             'depth': '1800',
         }
         expected = {
-            "_type": "dashlive.server.options.container.OptionsContainer",
             "abr": True,
             "audioCodec": "mp4a",
             "audioDescription": None,
             "audioErrors": [],
             "availabilityStartTime": "epoch",
             "bugCompatibility": [],
-            'clearkey': {
-                '_type': 'dashlive.server.options.container.OptionsContainer',
+            "clearkey": {
                 'licenseUrl': None
             },
             "clockDrift": None,
@@ -403,7 +389,6 @@ class TestCgiOptions(TestCaseMixin, unittest.TestCase):
             "mainText": None,
             "manifestErrors": [],
             "marlin": {
-                "_type": "dashlive.server.options.container.OptionsContainer",
                 "licenseUrl": None,
             },
             "minimumUpdatePeriod": None,
@@ -411,7 +396,6 @@ class TestCgiOptions(TestCaseMixin, unittest.TestCase):
             'ntpSources': [],
             "patch": False,
             "ping": {
-                "_type": "dashlive.server.options.container.OptionsContainer",
                 "count": 5,
                 "duration": 200,
                 "inband": True,
@@ -422,13 +406,11 @@ class TestCgiOptions(TestCaseMixin, unittest.TestCase):
                 "version": 0
             },
             "playready": {
-                '_type': 'dashlive.server.options.container.OptionsContainer',
                 "licenseUrl": None,
                 "piff": True,
                 "version": None,
             },
             "scte35": {
-                "_type": "dashlive.server.options.container.OptionsContainer",
                 "count": 0,
                 "duration": 200,
                 "inband": True,
@@ -436,7 +418,7 @@ class TestCgiOptions(TestCaseMixin, unittest.TestCase):
                 "program_id": 1620,
                 "start": 0,
                 "timescale": 100,
-                "value": "",
+                "value": None,
                 "version": 0
             },
             "segmentTimeline": False,
@@ -455,11 +437,17 @@ class TestCgiOptions(TestCaseMixin, unittest.TestCase):
             "videoErrors": [],
             "videoPlayer": "native"
         }
-        defaults = OptionsRepository.get_default_options()
-        opts = OptionsRepository.convert_cgi_options(form, defaults)
+        opts = OptionsContainer()
+        opts.apply_options(form, is_cgi=True)
         self.maxDiff = None
+        for key, value in expected["ping"].items():
+            self.assertEqual(value, getattr(opts.ping, key))
+        for key, value in expected["scte35"].items():
+            self.assertEqual(
+                value, getattr(opts.scte35, key),
+                msg=f'Expected scte35.{key} to be "{value}" but found "{getattr(opts.scte35, key)}"')
         self.assertDictEqual(expected, opts.toJSON())
-        result = opts.remove_default_values()
+        result = opts.json_without_default_values()
         without_defaults = {
             'availabilityStartTime': 'epoch',
             'eventTypes': ['ping'],
@@ -468,7 +456,8 @@ class TestCgiOptions(TestCaseMixin, unittest.TestCase):
             },
         }
         self.assertDictEqual(without_defaults, result)
-        new_opts = defaults.clone(**result)
+        new_opts = OptionsContainer()
+        new_opts.update(**result)
         self.assertDictEqual(expected, new_opts.toJSON())
 
     def test_generate_drm_input_fields_playready(self) -> None:
@@ -597,7 +586,7 @@ class TestCgiOptions(TestCaseMixin, unittest.TestCase):
                 'options': options,
                 'rowClass': f'row mb-3 drm-location prefix-{name}'
             })
-        defaults: OptionsContainer = OptionsRepository.get_default_options()
+        defaults: OptionsContainer = OptionsContainer()
         drm_selection = []
         for key in sorted(list(drm_map.keys())):
             drm_selection.append((key, drm_map[key][0]))
@@ -628,6 +617,44 @@ class TestCgiOptions(TestCaseMixin, unittest.TestCase):
             mode='vod', stream=None, restrictions=restrictions, args=args)
         self.assertEqual(opts.audioCodec, 'ec-3')
         self.assertEqual(opts.segmentTimeline, True)
+
+    def test_loading_stream_defaults(self) -> None:
+        test_cases: list[dict] = [
+            {"timeShiftBufferDepth": 240, "minimumUpdatePeriod": 2, "availabilityStartTime": "epoch"},
+            {
+                "timeShiftBufferDepth": 240, "segmentTimeline": True,
+                "drmSelection": [["marlin", ["cenc"]]], "availabilityStartTime": "epoch",
+            },
+            {"utcMethod": "iso", "timeShiftBufferDepth": 240, "availabilityStartTime": "epoch"},
+            {"audioCodec": "ec-3"},
+            {"segmentTimeline": True, "timeShiftBufferDepth": 26176, "minimumUpdatePeriod": 3},
+            {
+                'abr': '0', 'availabilityStartTime': 'epoch', 'ping': {'count': 5}, 'timeShiftBufferDepth': 120,
+                'eventTypes': ['ping'], 'drmSelection': [['clearkey', ['cenc']]],
+            },
+        ]
+        self.maxDiff = None
+        for tc in test_cases:
+            with self.subTest(**tc):
+                opts = OptionsContainer()
+                opts.update(**tc)
+                for key, expected in tc.items():
+                    actual = getattr(opts, key)
+                    if key == 'abr':
+                        expected = expected in {'1', 'true', 'True'}
+                    elif key == 'ping':
+                        expected = PingOptionsType(**expected)
+                    elif key == 'drmSelection':
+                        self.assertIsInstance(actual, list)
+                        for it in actual:
+                            self.assertIsInstance(it, tuple)
+                        expected = [(name, {DrmLocation(loc) for loc in locs},) for name, locs in expected]
+                    self.assertEqual(
+                        expected, actual,
+                        msg=f'Expected {key} to be "{expected}" but found "{actual}"')
+                cgi_str = opts.generate_cgi_parameters()
+                opts_from_cgi = OptionsRepository.convert_cgi_options(cgi_str)
+                self.assertDictEqual(opts.toJSON(), opts_from_cgi.toJSON())
 
 
 if __name__ == "__main__":

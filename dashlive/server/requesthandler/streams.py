@@ -24,7 +24,7 @@ from dashlive.server import models
 from dashlive.server.manifests import default_manifest
 from dashlive.server.models.key import KeyJson
 from dashlive.server.models.token import EncodedJWToken
-from dashlive.server.options.repository import OptionsRepository
+from dashlive.server.options.container import OptionsContainer
 from dashlive.server.options.drm_options import DrmSelection
 from dashlive.server.requesthandler.navbar import NavBarItem
 from dashlive.server.routes import Route
@@ -546,11 +546,9 @@ class EditStreamDefaults(HTMLHandlerBase):
         context = self.create_context()
         csrf_key = self.generate_csrf_cookie()
         context['csrf_token'] = self.generate_csrf_token('streams', csrf_key)
-        defaults = OptionsRepository.get_default_options()
-        if current_stream.defaults is None:
-            options = defaults
-        else:
-            options = defaults.clone(**current_stream.defaults)
+        options = OptionsContainer()
+        if current_stream.defaults is not None:
+            options.update(**current_stream.defaults)
         field_choices = {
             'representation': [
                 dict(value=mf.name, title=mf.name) for mf in current_stream.media_files],
@@ -584,10 +582,9 @@ class EditStreamDefaults(HTMLHandlerBase):
                 return jsonify({'error': f'{err}'}, 401)
             flask.flash(f'CSRF error: {err}', 'error')
             return self.get(spk)
-        defaults = OptionsRepository.get_default_options()
-        form = {**flask.request.form}
+        form: dict[str, str | int] = {**flask.request.form}
         del form['csrf_token']
-        drms = []
+        drms: list[str] = []
         for name in DrmSystem.values():
             if flask.request.form.get(f'drm_{name}', '') != 'on':
                 continue
@@ -595,8 +592,9 @@ class EditStreamDefaults(HTMLHandlerBase):
             drms.append(f'{name}-{loc}')
         form['drm'] = ','.join(drms)
         form['events'] = ','.join(flask.request.form.getlist('events'))
-        opts = OptionsRepository.convert_cgi_options(form, defaults=defaults)
-        current_stream.defaults = flatten(opts.remove_default_values(defaults))
+        opts = OptionsContainer()
+        opts.apply_options(params=form, is_cgi=True)
+        current_stream.defaults = flatten(opts.json_without_default_values())
         models.db.session.commit()
         flask.flash('Saved stream defaults', 'success')
         return flask.redirect(flask.url_for('view-stream', spk=current_stream.pk))

@@ -1,9 +1,23 @@
-from typing import Any, NamedTuple, NotRequired, TypedDict
+from dataclasses import dataclass
+from typing import AbstractSet, Any, NamedTuple, NotRequired, TypedDict
 
-class FieldOption(NamedTuple):
+class FieldOptionJson(TypedDict):
+    title: str
+    value: str | int
+    selected: NotRequired[bool]
+
+@dataclass(slots=True)
+class FieldOption:
     title: str
     value: str | int
     selected: bool
+
+    def toJSON(self, pure: bool = False, exclude: AbstractSet[str] | None = None) -> FieldOptionJson:
+        return {
+            'title': self.title,
+            'value': self.value,
+            'selected': self.selected
+        }
 
 class ColumnClassNames(NamedTuple):
     left: str

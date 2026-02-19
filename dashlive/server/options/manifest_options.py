@@ -77,6 +77,9 @@ class AvailabilityStartTimeDashOption(DashOption[datetime.datetime | str]):
             return cast(str, value)
         return to_iso_datetime(value)
 
+    def python_type_hint(self) -> str:
+        return 'datetime.datetime | str'
+
 
 AvailabilityStartTime = AvailabilityStartTimeDashOption()
 

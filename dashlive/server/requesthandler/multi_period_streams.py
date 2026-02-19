@@ -16,8 +16,8 @@ from dashlive.mpeg.dash.content_role import ContentRole
 from dashlive.mpeg.dash.timing import DashTiming
 from dashlive.server import models
 from dashlive.server.models.adaptation_set import AdaptationSetJson
+from dashlive.server.options.container import OptionsContainer
 from dashlive.server.options.form_input_field import FormInputContext
-from dashlive.server.options.repository import OptionsRepository
 from dashlive.utils.date_time import from_isodatetime, timecode_to_timedelta
 from dashlive.utils.json_object import JsonObject
 from dashlive.utils.timezone import UTC
@@ -80,9 +80,7 @@ def process_period(mp_stream: models.MultiPeriodStream,
     period: models.Period | None = None
     new_period: bool = False
 
-    defaults = OptionsRepository.get_default_options()
-    options = OptionsRepository.convert_cgi_options(
-        {"mode": "vod"}, defaults=defaults)
+    options = OptionsContainer(mode="vod")
     if data['pk'] is not None:
         period = models.Period.get(pk=data['pk'])
     elif mp_stream.pk:
