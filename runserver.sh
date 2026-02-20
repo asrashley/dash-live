@@ -16,4 +16,4 @@ if [ "${UID}" != "0" ]; then
     npm run all-css
 fi
 
-PYTHONPATH=${PWD} flask run --host=0.0.0.0 --debug
+PYTHONPATH=${PWD} uv run -m flask run --host=0.0.0.0 --debug
