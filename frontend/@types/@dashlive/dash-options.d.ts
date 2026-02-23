@@ -44,7 +44,7 @@ export type Scte35OptionsType = {
 
 export type OptionsContainerType = {
   abr: boolean;
-  audioCodec: string;
+  audioCodec: "mp4a" | "ec-3" | "any";
   audioDescription: string | null;
   audioErrors: [number, string][];
   availabilityStartTime: Date | string;
@@ -62,7 +62,7 @@ export type OptionsContainerType = {
   manifestErrors: [number, string][];
   marlin: MarlinOptionsType;
   minimumUpdatePeriod: number | null;
-  mode: string;
+  mode: "vod" | "live" | "odvod";
   ntpSources: string[];
   patch: boolean;
   ping: PingOptionsType;
@@ -87,7 +87,7 @@ export type OptionsContainerType = {
 
 export type ShortOptionsContainerType = {
   ab: boolean;
-  ac: string;
+  ac: "mp4a" | "ec-3" | "any";
   ad: string | null;
   ahe: [number, string][];
   ast: Date | string;
@@ -105,7 +105,7 @@ export type ShortOptionsContainerType = {
   mhe: [number, string][];
   mlu: string | null;
   mup: number | null;
-  md: string;
+  md: "vod" | "live" | "odvod";
   ntps: string[];
   patch: boolean;
   pinCoun: number;
@@ -147,7 +147,7 @@ export type ShortOptionsContainerType = {
 
 export type CgiOptionsContainerType = {
   abr: boolean;
-  acodec: string;
+  acodec: "mp4a" | "ec-3" | "any";
   ad_audio: string | null;
   aerr: [number, string][];
   start: Date | string;
@@ -165,7 +165,7 @@ export type CgiOptionsContainerType = {
   merr: [number, string][];
   marlin__la_url: string | null;
   mup: number | null;
-  mode: string;
+  mode: "vod" | "live" | "odvod";
   ntp_servers: string[];
   patch: boolean;
   ping__count: number;
