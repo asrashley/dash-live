@@ -271,10 +271,6 @@ class OptionsTypesGenerator:
                 for opt in options:
                     dest.write(f'  {opt.name}: {opt.ts_type};\n')
                 dest.write('}\n\n')
-                dest.write(f'export type Short{name} = {{\n')
-                for opt in options:
-                    dest.write(f'  {opt.short}: {opt.ts_type};\n')
-                dest.write('}\n\n')
             dest.write('export type OptionsContainerType = {\n')
             for opt in primary_options:
                 dest.write(f'  {opt.name}: {opt.ts_type};\n')
@@ -282,7 +278,11 @@ class OptionsTypesGenerator:
             dest.write('export type ShortOptionsContainerType = {\n')
             for opt in primary_options:
                 if "OptionsType" in opt.ts_type:
-                    dest.write(f'  {opt.short}: Short{opt.ts_type};\n')
+                    for name, options in sub_options.items():
+                        if name not in opt.ts_type:
+                            continue
+                        for short_opt in options:
+                            dest.write(f'  {short_opt.short}: {short_opt.ts_type};\n')
                 else:
                     dest.write(f'  {opt.short}: {opt.ts_type};\n')
             dest.write('}\n\n')

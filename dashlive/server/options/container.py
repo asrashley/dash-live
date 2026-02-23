@@ -126,6 +126,7 @@ class OptionsContainer(OptionsContainerType):
 
     def _convert_sub_options(self,
                              destination: dict[str, str],
+                             is_cgi: bool,
                              prefix: str,
                              sub_opts: object,
                              use: OptionUsage | None,
@@ -150,7 +151,10 @@ class OptionsContainer(OptionsContainerType):
                 except AttributeError:
                     pass
             if not skip:
-                destination[opt.cgi_name] = opt.to_string(value)
+                if is_cgi:
+                    destination[opt.cgi_name] = opt.to_string(value)
+                else:
+                    destination[opt.short_name] = value
 
     def generate_cgi_parameters(self,
                                 destination: dict[str, str] | None = None,
@@ -162,7 +166,7 @@ class OptionsContainer(OptionsContainerType):
         Any option that matches its default is excluded.
         """
         return self._generate_parameters_dict(
-            'cgi_name', destination=destination, use=use, exclude=exclude,
+            is_cgi=True, destination=destination, use=use, exclude=exclude,
             remove_defaults=remove_defaults)
 
     def generate_short_parameters(self,
@@ -175,11 +179,11 @@ class OptionsContainer(OptionsContainerType):
         Any option that matches its default is excluded.
         """
         return self._generate_parameters_dict(
-            'short_name', destination=destination, use=use, exclude=exclude,
+            is_cgi=False, destination=destination, use=use, exclude=exclude,
             remove_defaults=remove_defaults)
 
     def _generate_parameters_dict(self,
-                                  attr_name: str,
+                                  is_cgi: bool,
                                   destination: dict[str, str] | None,
                                   use: OptionUsage | None,
                                   exclude: AbstractSet | None,
@@ -188,6 +192,7 @@ class OptionsContainer(OptionsContainerType):
         Produces a dictionary of parameters that represent these options.
         Any option that matches its default is excluded if :remove_defaults: is True
         """
+        attr_name: str = 'cgi_name' if is_cgi else 'short_name'
         if exclude is None:
             exclude = {'encrypted', 'mode'}
         if destination is None:
@@ -204,7 +209,7 @@ class OptionsContainer(OptionsContainerType):
                 sub_defaults = getattr(defaults, field.name) if remove_defaults else None
                 self._convert_sub_options(
                     destination=destination, prefix=field.name, sub_opts=value, use=use,
-                    exclude=exclude, defaults=sub_defaults)
+                    exclude=exclude, defaults=sub_defaults, is_cgi=is_cgi)
                 continue
 
             skip: bool = False
