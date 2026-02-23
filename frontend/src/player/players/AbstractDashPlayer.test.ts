@@ -2,16 +2,17 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { mock, mockReset } from "vitest-mock-extended";
 import { AbstractDashPlayer, DashPlayerProps } from "./AbstractDashPlayer";
 import { MediaTrack } from "../types/MediaTrack";
-import { OptionMapWithChildren } from "@dashlive/options";
+import type { OptionsContainerType } from "@dashlive/dash-options";
 import { KeyParameters } from "../types/KeyParameters";
 import { MediaTrackType } from "../types/MediaTrackType";
+import { defaultFullOptions } from '../../test/fixtures/options';
 
 class DUT extends AbstractDashPlayer {
     public mpd?: string;
-    public options?: OptionMapWithChildren;
+    public options?: OptionsContainerType;
     public keys?: Map<string, KeyParameters>;
 
-    async initialize(mpd: string, options: OptionMapWithChildren, keys: Map<string, KeyParameters>): Promise<void> {
+    async initialize(mpd: string, options: OptionsContainerType, keys: Map<string, KeyParameters>): Promise<void> {
         this.props.videoElement.addEventListener('canplay', this.onCanPlayEvent);
         this.mpd = mpd;
         this.options = options;
@@ -70,7 +71,7 @@ describe('AbstractDashPlayer', () => {
         });
         videoElement.muted = false;
         const player = new DUT(props);
-        await player.initialize(mpdUrl, {}, keys);
+        await player.initialize(mpdUrl, defaultFullOptions, keys);
         expect(videoElement.play).not.toHaveBeenCalled();
         expect(videoElement.addEventListener).toHaveBeenCalledWith('canplay', expect.any(Function));
         const ev = new Event('canplay');
@@ -90,7 +91,7 @@ describe('AbstractDashPlayer', () => {
         });
         videoElement.muted = false;
         const player = new DUT(props);
-        await player.initialize(mpdUrl, {}, keys);
+        await player.initialize(mpdUrl, defaultFullOptions, keys);
         expect(videoElement.play).not.toHaveBeenCalled();
         expect(videoElement.addEventListener).toHaveBeenCalledWith('canplay', expect.any(Function));
         const ev = new Event('canplay');
@@ -104,7 +105,7 @@ describe('AbstractDashPlayer', () => {
     test('maybeTracksChanged calls tracksChanged from initial empty list', async () => {
         videoElement.play.mockResolvedValue();
         const player = new DUT(props);
-        await player.initialize(mpdUrl, {}, keys);
+        await player.initialize(mpdUrl, defaultFullOptions, keys);
         const tracks: MediaTrack[] = [{
             id: '1',
             trackType: MediaTrackType.VIDEO,
@@ -122,7 +123,7 @@ describe('AbstractDashPlayer', () => {
     ])('maybeTracksChanged calls tracksChanged when %s changes', async (_title: string, changes: Partial<MediaTrack>) => {
         videoElement.play.mockResolvedValue();
         const player = new DUT(props);
-        await player.initialize(mpdUrl, {}, keys);
+        await player.initialize(mpdUrl, defaultFullOptions, keys);
         const tracks: MediaTrack[] = [{
             id: '1',
             trackType: MediaTrackType.VIDEO,
@@ -152,7 +153,7 @@ describe('AbstractDashPlayer', () => {
     test('maybeTracksChanged calls tracksChanged when track added', async () => {
         videoElement.play.mockResolvedValue();
         const player = new DUT(props);
-        await player.initialize(mpdUrl, {}, keys);
+        await player.initialize(mpdUrl, defaultFullOptions, keys);
         const tracks: MediaTrack[] = [{
             id: '1',
             trackType: MediaTrackType.VIDEO,
@@ -178,7 +179,7 @@ describe('AbstractDashPlayer', () => {
     test('maybeTracksChanged calls tracksChanged when track removed', async () => {
         videoElement.play.mockResolvedValue();
         const player = new DUT(props);
-        await player.initialize(mpdUrl, {}, keys);
+        await player.initialize(mpdUrl, defaultFullOptions, keys);
         const tracks: MediaTrack[] = [{
             id: '1',
             trackType: MediaTrackType.VIDEO,

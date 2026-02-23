@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { signal } from "@preact/signals";
+import { act } from "@testing-library/preact";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import { VideoPlayer } from "./VideoPlayer";
@@ -11,7 +12,7 @@ import { playerFactory } from "../players/playerFactory";
 import { DashPlayerTypes } from "../types/DashPlayerTypes";
 import { DashPlayerProps } from "../players/AbstractDashPlayer";
 import { FakePlayer } from "../players/__mocks__/FakePlayer";
-import { act } from "@testing-library/preact";
+import { defaultFullOptions } from '../../test/fixtures/options';
 
 vi.mock("../players/playerFactory", () => ({
   playerFactory: vi.fn(),
@@ -42,7 +43,7 @@ describe("VideoPlayer component", () => {
       timeSource: null,
       title: "VideoElement test",
     },
-    options: {},
+    options: defaultFullOptions,
     url: "https://unit.test.local/test.mpd",
   };
   const mockedPlayerFactory = vi.mocked(playerFactory);

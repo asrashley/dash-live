@@ -1,4 +1,4 @@
-import type { OptionMapWithChildren } from "@dashlive/options";
+import type { OptionsContainerType } from "@dashlive/dash-options";
 import { KeyParameters } from "../types/KeyParameters";
 import { MediaTrack } from "../types/MediaTrack";
 import isEqual from "lodash.isequal";
@@ -22,7 +22,7 @@ export abstract class AbstractDashPlayer {
         /* no op */
     }
 
-    abstract initialize(mpd: string, options: OptionMapWithChildren, keys: Map<string, KeyParameters>): Promise<void>;
+    abstract initialize(mpd: string, options: OptionsContainerType, keys: Map<string, KeyParameters>): Promise<void>;
 
     abstract destroy(): void;
 
