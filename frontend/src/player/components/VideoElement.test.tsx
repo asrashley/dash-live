@@ -14,6 +14,7 @@ import { DashPlayerProps } from "../players/AbstractDashPlayer";
 import { FakePlayer } from "../players/__mocks__/FakePlayer";
 import { MediaTrack } from "../types/MediaTrack";
 import { MediaTrackType } from "../types/MediaTrackType";
+import { defaultFullOptions } from '../../test/fixtures/options';
 
 vi.mock("../players/playerFactory", () => ({
   playerFactory: vi.fn(),
@@ -55,7 +56,7 @@ describe("VideoElement component", () => {
       timeSource: null,
       title: "VideoElement test",
     },
-    options: {},
+    options: defaultFullOptions,
     url: "https://unit.test.local/test.mpd",
   };
   const dashParams = signal<DashParameters>(params);
@@ -198,7 +199,7 @@ describe("VideoElement component", () => {
       dash: {
         ...params.dash
       },
-      options: {},
+      options: defaultFullOptions,
       url: '',
     };
     const { unmount, rerender } = renderWithProviders(

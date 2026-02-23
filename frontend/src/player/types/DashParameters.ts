@@ -1,4 +1,4 @@
-import type { OptionMapWithChildren } from "@dashlive/options";
+import type { OptionsContainerType } from "@dashlive/dash-options";
 import type { PeriodJson } from "./PeriodsJson";
 
 export interface DashParameters {
@@ -16,6 +16,6 @@ export interface DashParameters {
         timeSource: null;
         title: string;
     },
-    options: OptionMapWithChildren;
+    options: OptionsContainerType;
     url: string;
 }

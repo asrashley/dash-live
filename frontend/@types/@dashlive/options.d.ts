@@ -1,17 +1,13 @@
 import { InputFormGroup } from "../../src/form/types/InputFormGroup";
-import { OptionsContainerType } from "./dash-options";
-
-type OptionMap = {
-  [field: string]: boolean | string | number | null;
-};
+import { CgiOptionsContainerType, DrmSystemType, OptionsContainerType, ShortOptionsContainerType } from "./dash-options";
 
 export const defaultFullOptions: OptionsContainerType;
 
-export const defaultShortOptions: OptionMap;
+export const defaultShortOptions: ShortOptionsContainerType;
 
-export const defaultCgiOptions: OptionMap;
+export const defaultCgiOptions: CgiOptionsContainerType;
 
-export const drmSystems: string[];
+export const drmSystems: DrmSystemType[];
 
 export const groupNames: string[];
 

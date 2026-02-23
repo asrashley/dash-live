@@ -1,8 +1,8 @@
 import type shaka from 'shaka-player';
+import type { OptionsContainerType } from '@dashlive/dash-options';
 
 import { routeMap } from "@dashlive/routemap";
 import { AbstractDashPlayer } from "./AbstractDashPlayer";
-import { OptionMapWithChildren } from '@dashlive/options';
 import { importLibrary } from './importLibrary';
 import { MediaTrack } from '../types/MediaTrack';
 import { MediaTrackType } from '../types/MediaTrackType';
@@ -69,7 +69,7 @@ export class ShakaPlayer extends AbstractDashPlayer {
         return `https://ajax.googleapis.com/ajax/libs/shaka-player/${version}/shaka-player.compiled.js`
     }
 
-    async initialize(mpd: string, options: OptionMapWithChildren) {
+    async initialize(mpd: string, options: OptionsContainerType) {
         const { videoElement, textEnabled, version = ShakaPlayer.LOCAL_VERSIONS[0] } = this.props;
         const jsUrl = ShakaPlayer.cdnTemplate(version);
         await importLibrary(jsUrl);

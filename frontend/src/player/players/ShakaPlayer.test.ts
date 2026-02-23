@@ -3,10 +3,11 @@ import { mock, mockReset } from "vitest-mock-extended";
 import type shaka from 'shaka-player';
 
 import { importLibrary } from "./importLibrary";
-import { AllDrmOptions, ShakaConfig, ShakaPlayer, ShakaTextTrack } from "./ShakaPlayer";
-import { OptionMapWithChildren } from "@dashlive/options";
+import { ShakaConfig, ShakaPlayer, ShakaTextTrack } from "./ShakaPlayer";
+import type { OptionsContainerType } from "@dashlive/dash-options";
 import { MediaTrack } from "../types/MediaTrack";
 import { MediaTrackType } from "../types/MediaTrackType";
+import { defaultFullOptions } from '../../test/fixtures/options';
 
 vi.mock("./importLibrary", () => {
     return {
@@ -116,7 +117,7 @@ describe('ShakaPlayer', () => {
             tracksChanged,
             textEnabled: true, textLanguage: "eng",
         });
-        await player.initialize(mpdSource, {});
+        await player.initialize(mpdSource, defaultFullOptions);
         expect(mockedImportLibrary).toHaveBeenCalledWith(jsUrl);
         expect(playerConstructorSpy).toHaveBeenCalledTimes(1);
         expect(installAll).toHaveBeenCalledTimes(1);
@@ -139,12 +140,15 @@ describe('ShakaPlayer', () => {
     });
 
     test('can configure PlayReady DRM', async () => {
-        const options: AllDrmOptions = {
+        const options: OptionsContainerType = {
+            ...defaultFullOptions,
             drmSelection: ['playready'],
             playready: {
+                ...defaultFullOptions.playready,
                 licenseUrl: 'https://example.local/license',
             },
             clearkey: {
+                ...defaultFullOptions.clearkey,
                 licenseUrl: null,
             },
             marlin: {
@@ -159,7 +163,7 @@ describe('ShakaPlayer', () => {
             textEnabled: true,
             textLanguage: "cym",
         });
-        await player.initialize(mpdSource, options as unknown as OptionMapWithChildren);
+        await player.initialize(mpdSource, options);
         const shakaConfig: ShakaConfig = {
             drm: {
                 servers: {
@@ -172,12 +176,15 @@ describe('ShakaPlayer', () => {
     });
 
     test('can configure ClearKey DRM', async () => {
-        const options: AllDrmOptions = {
+        const options: OptionsContainerType = {
+            ...defaultFullOptions,
             drmSelection: ['clearkey'],
             playready: {
+                ...defaultFullOptions.playready,
                 licenseUrl: null,
             },
             clearkey: {
+                ...defaultFullOptions.clearkey,
                 licenseUrl: 'https://example.local/license',
             },
             marlin: {
@@ -192,7 +199,7 @@ describe('ShakaPlayer', () => {
             textEnabled: false,
             textLanguage: 'fra',
         });
-        await player.initialize(mpdSource, options as unknown as OptionMapWithChildren);
+        await player.initialize(mpdSource, options);
         const shakaConfig: ShakaConfig = {
             drm: {
                 servers: {
@@ -215,7 +222,7 @@ describe('ShakaPlayer', () => {
             textEnabled: false,
             textLanguage: '',
         });
-        await player.initialize(mpdSource, {});
+        await player.initialize(mpdSource, defaultFullOptions);
         expect(playerConstructorSpy).toHaveBeenCalledTimes(1);
         expect(mockPlayer.attach).toHaveBeenCalledWith(videoElement);
         expect(mockPlayer.load).toHaveBeenCalledTimes(1);
@@ -235,7 +242,7 @@ describe('ShakaPlayer', () => {
             textEnabled: false,
             textLanguage: '',
         });
-        await player.initialize(mpdSource, {});
+        await player.initialize(mpdSource, defaultFullOptions);
         expect(mockPlayer.attach).toHaveBeenCalledWith(videoElement);
         expect(mockPlayer.load).toHaveBeenLastCalledWith(mpdSource);
         eventTarget.dispatchEvent(new CustomEvent('error', {
@@ -268,7 +275,7 @@ describe('ShakaPlayer', () => {
             textLanguage: "gre",
         });
         player.setSubtitlesElement(subsElt);
-        await player.initialize(mpdSource, {});
+        await player.initialize(mpdSource, defaultFullOptions);
         expect(mockPlayer.setVideoContainer).toHaveBeenCalledTimes(1);
         expect(mockPlayer.setVideoContainer).toHaveBeenCalledWith(subsElt);
     });
@@ -284,7 +291,7 @@ describe('ShakaPlayer', () => {
             textEnabled: true,
             textLanguage: "pol",
         });
-        await player.initialize(mpdSource, {});
+        await player.initialize(mpdSource, defaultFullOptions);
         expect(mockPlayer.setVideoContainer).not.toHaveBeenCalled();
         player.setSubtitlesElement(subsElt);
         expect(mockPlayer.setVideoContainer).toHaveBeenCalledTimes(1);
@@ -302,7 +309,7 @@ describe('ShakaPlayer', () => {
             textEnabled: true,
             textLanguage: shakaTextTrack.language,
         });
-        await player.initialize(mpdSource, {});
+        await player.initialize(mpdSource, defaultFullOptions);
         player.setSubtitlesElement(subsElt);
         expect(mockPlayer.setTextTrackVisibility).not.toHaveBeenCalled();
         player.setTextTrack(textMediaTrack);
@@ -327,7 +334,7 @@ describe('ShakaPlayer', () => {
             textEnabled: true,
             textLanguage: shakaTextTrack.language,
         });
-        await player.initialize(mpdSource, {});
+        await player.initialize(mpdSource, defaultFullOptions);
         expect(mockEventManager.listen).toHaveBeenCalledWith(expect.anything(), 'loaded', expect.any(Function));
         const loadedHandler = mockEventManager.listen.mock.calls.find((call => call[1] === 'loaded'))?.[2];
         expect(loadedHandler).toBeDefined();
@@ -348,6 +355,4 @@ describe('ShakaPlayer', () => {
         expect(tracksChanged).toHaveBeenLastCalledWith(expectedTracks);
         player.destroy();
     });
-
-
 });
