@@ -9,28 +9,14 @@ export type ClearkeyOptionsType = {
   licenseUrl: string | null;
 }
 
-export type ShortClearkeyOptionsType = {
-  clu: string | null;
-}
-
 export type MarlinOptionsType = {
   licenseUrl: string | null;
-}
-
-export type ShortMarlinOptionsType = {
-  mlu: string | null;
 }
 
 export type PlayreadyOptionsType = {
   licenseUrl: string | null;
   piff: boolean;
   version: number | null;
-}
-
-export type ShortPlayreadyOptionsType = {
-  plu: string | null;
-  pff: boolean;
-  pvn: number | null;
 }
 
 export type PingOptionsType = {
@@ -44,17 +30,6 @@ export type PingOptionsType = {
   version: number;
 }
 
-export type ShortPingOptionsType = {
-  pinCoun: number;
-  pinDura: number;
-  pinInba: boolean;
-  pinInte: number;
-  pinStar: number;
-  pinTime: number;
-  pinValu: string;
-  pinVers: number;
-}
-
 export type Scte35OptionsType = {
   count: number;
   duration: number;
@@ -65,18 +40,6 @@ export type Scte35OptionsType = {
   timescale: number;
   value: string | null;
   version: number;
-}
-
-export type ShortScte35OptionsType = {
-  sctCoun: number;
-  sctDura: number;
-  sctInba: boolean;
-  sctInte: number;
-  sctProg: number;
-  sctStar: number;
-  sctTime: number;
-  sctValu: string | null;
-  sctVers: number;
 }
 
 export type OptionsContainerType = {
@@ -129,7 +92,7 @@ export type ShortOptionsContainerType = {
   ahe: [number, string][];
   ast: Date | string;
   bug: string[];
-  clearkey: ShortClearkeyOptionsType;
+  clu: string | null;
   dft: number | null;
   djVer: string | null;
   drm: unknown[];
@@ -140,14 +103,31 @@ export type ShortOptionsContainerType = {
   ma: string | null;
   mt: string | null;
   mhe: [number, string][];
-  marlin: ShortMarlinOptionsType;
+  mlu: string | null;
   mup: number | null;
   md: string;
   ntps: string[];
   patch: boolean;
-  ping: ShortPingOptionsType;
-  playready: ShortPlayreadyOptionsType;
-  scte35: ShortScte35OptionsType;
+  pinCoun: number;
+  pinDura: number;
+  pinInba: boolean;
+  pinInte: number;
+  pinStar: number;
+  pinTime: number;
+  pinValu: string;
+  pinVers: number;
+  plu: string | null;
+  pff: boolean;
+  pvn: number | null;
+  sctCoun: number;
+  sctDura: number;
+  sctInba: boolean;
+  sctInte: number;
+  sctProg: number;
+  sctStar: number;
+  sctTime: number;
+  sctValu: string | null;
+  sctVers: number;
   st: boolean;
   skVer: string | null;
   tc: string | null;
