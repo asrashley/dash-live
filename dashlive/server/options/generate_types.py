@@ -141,6 +141,8 @@ class OptionsTypesGenerator:
     @staticmethod
     def guess_typescript_type(opt: DashOption) -> str:
         hint = opt.python_type_hint()
+        if hint == 'str' and opt.cgi_choices is not None:
+            hint = None
         if hint is not None:
             if hint.startswith('list['):
                 hint = f"{hint[5:-1]}[]"
@@ -149,10 +151,17 @@ class OptionsTypesGenerator:
             return hint
         value: Any = ''
         if opt.cgi_choices:
-            value = opt.cgi_choices[0]
-            if isinstance(value, tuple):
-                items: set[str] = {OptionsTypesGenerator.typescript_type_from_value(v) for v in value}
-                return '| '.join(items)
+            options: list[str | None] = []
+            for ch in opt.cgi_choices:
+                if ch is None:
+                    options.append(None)
+                elif isinstance(ch, tuple):
+                    options.append(ch[1])
+                else:
+                    options.append(ch)
+            if None in options or len(options) < 2:
+                return 'string'
+            return ' | '.join([f'"{o}"' for o in options])
         if value is None:
             value = 'none'
         value = opt.from_string(value)
