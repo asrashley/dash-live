@@ -37,6 +37,20 @@ export interface InstallStreamCommand {
     prefix: string;
 }
 
+type SocketEventListeners = {
+    connect: () => void;
+    codecs: (codecNames: string[]) => void;
+    disconnect: () => void;
+    error: (err: Error) => void;
+    finished: (data: ValidatorFinishedEvent) => void;
+    install: (cmd: InstallStreamCommand) => void;
+    log: (msg: Omit<LogEntry, 'id'>) => void;
+    manifest: (ev: ManifestEvent) => void;
+    'manifest-errors': (data: ErrorEntry[]) => void;
+    progress: (ev: ValidatorProgressEvent) => void;
+    'validate-errors': (ev: ValidatorErrorEvent) => void;
+};
+
 export enum ValidatorState {
     DISCONNECTED = 'disconnected',
     IDLE = 'idle',
@@ -44,6 +58,7 @@ export enum ValidatorState {
     CANCELLING = 'cancelling',
     CANCELLED = 'cancelled',
     DONE = 'done',
+    CONNECTION_FAILED = 'connection-failed'
 }
 
 export interface UseValidatorWebsocketHook {
@@ -59,7 +74,7 @@ export interface UseValidatorWebsocketHook {
 }
 
 export function useValidatorWebsocket(wssUrl: string): UseValidatorWebsocketHook {
-    const socket = useMemo(() => io(wssUrl, { autoConnect: false }), [wssUrl]);
+    const socket = useMemo(() => io(wssUrl, { autoConnect: false, timeout: 10_000 }), [wssUrl]);
     const log = useSignal<LogEntry[]>([]);
     const progress = useSignal<ProgressState>({ minValue: 0, maxValue: 100, finished: false, error: false, text: ''});
     const manifestText = useSignal<string[]>([]);
@@ -87,14 +102,6 @@ export function useValidatorWebsocket(wssUrl: string): UseValidatorWebsocketHook
     });
     const nextMsgId = useRef<number>(1);
 
-    const onConnected = useCallback(() => {
-        state.value = ValidatorState.IDLE;
-    }, [state]);
-
-    const onDisconnected = useCallback(() => {
-        state.value = ValidatorState.DISCONNECTED;
-    }, [state]);
-
     const addLogMessage = useCallback((msg: Omit<LogEntry, 'id'>) => {
         log.value = [
             ...log.value,
@@ -106,97 +113,119 @@ export function useValidatorWebsocket(wssUrl: string): UseValidatorWebsocketHook
         nextMsgId.current += 1;
     }, [log]);
 
-    const onProgress = useCallback((data: ValidatorProgressEvent) => {
-        const { aborted, pct, text, finished } = data;
-        batch(() => {
-            progress.value = {
-                ...progress.value,
-                text,
-                finished,
-                error: aborted,
-                currentValue: Math.round(10 * pct) / 10,
+    const listeners: SocketEventListeners = useMemo(() => ({
+        connect: () => {
+            state.value = ValidatorState.IDLE;
+        },
+        disconnect: () => {
+            state.value = ValidatorState.DISCONNECTED;
+        },
+        error: (err: Error) => {
+            console.error(`Websocket connection failed: ${err}`);
+            state.value = ValidatorState.CONNECTION_FAILED;
+            const msg: LogEntry = {
+                id: 0,
+                level: "error",
+                text: err.message,
             };
-        });
-        if (finished) {
-           socket.emit('cmd', { method: 'done' });
-        }
-    }, [progress, socket]);
-
-    const onManifest = useCallback(({ text }: ManifestEvent) => {
-        manifestText.value = text;
-    }, [manifestText]);
-
-    const onCodecs = useCallback((codecNames: string[]) => {
-        const data: CodecInformation[] = codecNames.map((codec: string) => {
-            const { error, decodes } = decode(codec);
-            const ci: CodecInformation = {
-                codec,
-                error,
-                details: decodes.map(({parsed, error, label}) => ({
-                    label,
-                    error,
-                    details: parsed.map(p => p.decode),
-                })),
-            };
-            return ci;
-        });
-        codecs.value = data;
-    }, [codecs]);
-
-    const onManifestErrors = useCallback((data: ErrorEntry[]) => {
-        errors.value = data;
-    }, [errors]);
-
-    const onFinished = useCallback((data: ValidatorFinishedEvent) => {
-        batch(() => {
-            if (state.value == ValidatorState.CANCELLING) {
-                state.value = ValidatorState.CANCELLED;
-            } else if (state.value == ValidatorState.ACTIVE) {
-                state.value = ValidatorState.DONE;
-            }
-            progress.value = {
-                ...progress.value,
-                finished: true,
-            };
-            result.value = data;
-        });
-    }, [progress, result, state]);
-
-    const onInstallStream = useCallback(({ filename, title, prefix }: InstallStreamCommand) => {
-        addLogMessage({
-            level: 'info',
-            text: `Installing new stream from ${filename}`,
-        });
-        socket.emit('cmd', {
-            method: 'save',
-            filename,
-            prefix,
-            title,
-        });
-    }, [addLogMessage, socket]);
-
-    const onValidateErrors = useCallback((data: ValidatorErrorEvent) => {
-        batch(() => {
-            for (const text of Object.values(data)) {
-                addLogMessage({
-                    level: 'error',
+            addLogMessage(msg);
+        },
+        log: addLogMessage,
+        progress: (data: ValidatorProgressEvent) => {
+            const { aborted, pct, text, finished } = data;
+            batch(() => {
+                progress.value = {
+                    ...progress.value,
                     text,
-                });
+                    finished,
+                    error: aborted,
+                    currentValue: Math.round(10 * pct) / 10,
+                };
+            });
+            if (finished) {
+                socket.emit('cmd', { method: 'done' });
             }
-            progress.value = {
-                ...progress.value,
-                finished: true,
-            };
-            result.value = {
-                startTime: Date.now(),
-                endTime: Date.now(),
-                aborted: true,
-            };
-            state.value = ValidatorState.DONE;
-        });
-    }, [addLogMessage, progress, result, state]);
+        },
+        manifest: ({ text }: ManifestEvent) => {
+            manifestText.value = text;
+        },
+        codecs: (codecNames: string[]) => {
+            const data: CodecInformation[] = codecNames.map((codec: string) => {
+                const { error, decodes } = decode(codec);
+                const ci: CodecInformation = {
+                    codec,
+                    error,
+                    details: decodes.map(({parsed, error, label}) => ({
+                        label,
+                        error,
+                        details: parsed.map(p => p.decode),
+                    })),
+                };
+                return ci;
+            });
+            codecs.value = data;
+        },
+        'manifest-errors': (data: ErrorEntry[]) => {
+            errors.value = data;
+        },
+        finished: (data: ValidatorFinishedEvent) => {
+            batch(() => {
+                if (state.value == ValidatorState.CANCELLING) {
+                    state.value = ValidatorState.CANCELLED;
+                } else if (state.value == ValidatorState.ACTIVE) {
+                    state.value = ValidatorState.DONE;
+                }
+                progress.value = {
+                    ...progress.value,
+                    finished: true,
+                };
+                result.value = data;
+            });
+        },
+        install: ({ filename, title, prefix }: InstallStreamCommand) => {
+            addLogMessage({
+                level: 'info',
+                text: `Installing new stream from ${filename}`,
+            });
+            socket.emit('cmd', {
+                method: 'save',
+                filename,
+                prefix,
+                title,
+            });
+        },
+        'validate-errors': (data: ValidatorErrorEvent) => {
+            batch(() => {
+                for (const text of Object.values(data)) {
+                    addLogMessage({
+                        level: 'error',
+                        text,
+                    });
+                }
+                progress.value = {
+                    ...progress.value,
+                    finished: true,
+                };
+                result.value = {
+                    startTime: Date.now(),
+                    endTime: Date.now(),
+                    aborted: true,
+                };
+                state.value = ValidatorState.DONE;
+            });
+        },
+    }), [addLogMessage, codecs, errors, manifestText, progress, result, socket, state]);
 
     const start = useCallback((settings: ValidatorSettings) => {
+        if (state.value === ValidatorState.CONNECTION_FAILED || state.value === ValidatorState.DISCONNECTED) {
+            const msg: LogEntry = {
+                id: 0,
+                level: 'error',
+                text: 'Cannot start validation as not connected',
+            };
+            addLogMessage(msg);
+            return;
+        }
         batch(() => {
             state.value = ValidatorState.ACTIVE;
             manifestText.value = [];
@@ -211,7 +240,7 @@ export function useValidatorWebsocket(wssUrl: string): UseValidatorWebsocketHook
             method: 'validate',
             ...settings,
         });
-    }, [errors, log, manifestText, progress, result, socket, state]);
+    }, [addLogMessage, errors, log, manifestText, progress, result, socket, state]);
 
     const cancel = useCallback(() => {
         batch(() => {
@@ -227,35 +256,18 @@ export function useValidatorWebsocket(wssUrl: string): UseValidatorWebsocketHook
     }, [progress, socket, state]);
 
     useEffect(() => {
-        socket.on('connect', onConnected);
-        socket.on('codecs', onCodecs);
-        socket.on('disconnect', onDisconnected);
-        socket.on('finished', onFinished);
-        socket.on('install', onInstallStream);
-        socket.on('log', addLogMessage);
-        socket.on('manifest', onManifest);
-        socket.on('manifest-errors', onManifestErrors);
-        socket.on('progress', onProgress);
-        socket.on('validate-errors', onValidateErrors);
+        for (const [name, handler] of Object.entries(listeners)) {
+            socket.on(name, handler);
+        }
         socket.connect();
 
         return () => {
-            socket.off('connect', onConnected);
-            socket.off('codecs', onCodecs);
-            socket.off('disconnect', onDisconnected);
-            socket.off('finished', onFinished);
-            socket.off('install', onInstallStream);
-            socket.off('log', addLogMessage);
-            socket.off('manifest', onManifest);
-            socket.off('manifest-errors', onManifestErrors);
-            socket.off('progress', onProgress);
-            socket.off('validate-errors', onValidateErrors);
+            for (const [name, handler] of Object.entries(listeners)) {
+                socket.off(name, handler);
+            }
             socket.disconnect();
         };
-    }, [
-        addLogMessage, onCodecs, onFinished, onManifest, onManifestErrors, onProgress,
-        onInstallStream, onValidateErrors, onConnected, onDisconnected, socket,
-    ]);
+    }, [addLogMessage, listeners, socket]);
 
     return { codecs, errors, log, manifest, progress, result, state, start, cancel };
 }

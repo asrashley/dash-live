@@ -13,6 +13,7 @@ const stateClassMap = {
   [ValidatorState.CANCELLING]: "bg-danger",
   [ValidatorState.CANCELLED]: "bg-warning-subtle text-dark",
   [ValidatorState.DONE]: "bg-success",
+  [ValidatorState.CONNECTION_FAILED]: "bg-danger",
 };
 
 export interface ProgressBarWithStateProps {

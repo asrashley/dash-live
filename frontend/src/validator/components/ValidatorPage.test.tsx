@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi, type Mocked } from "vitest";
 import { io, Socket } from "socket.io-client";
 import { mock, mockReset } from "vitest-mock-extended";
 import { act } from "@testing-library/preact";
@@ -28,7 +28,7 @@ describe("ValidatorPage component", () => {
 
   beforeEach(() => {
     wssUrlMock.mockReturnValue(websocketUrl);
-    server = MockWebsocketServer.create(websocketUrl, mockSocket).server;
+    server = MockWebsocketServer.create(websocketUrl, mockSocket as Mocked<Socket>).server;
     ioMock.mockImplementation(() => mockSocket);
   });
 
@@ -50,6 +50,7 @@ describe("ValidatorPage component", () => {
     expect(ioMock).toHaveBeenCalledTimes(1);
     expect(ioMock).toHaveBeenCalledWith(websocketUrl, {
       autoConnect: false,
+      timeout: 10000,
     });
     expect(asFragment()).toMatchSnapshot();
   });

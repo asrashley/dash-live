@@ -1,4 +1,4 @@
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, type Mocked, test, vi } from "vitest";
 import { render, waitFor } from "@testing-library/preact";
 import { useComputed } from "@preact/signals";
 import { mock } from "vitest-mock-extended";
@@ -113,7 +113,7 @@ describe("main entry-point app", () => {
     });
     wssUrlMock.mockReturnValue(websocketUrl);
     resetAllMessages();
-    const { server } = MockWebsocketServer.create(websocketUrl, mockSocket);
+    const { server } = MockWebsocketServer.create(websocketUrl, mockSocket as Mocked<Socket>);
     expect(server).toBeDefined();
     wssServer = server;
     ioMock.mockImplementation(() => mockSocket);

@@ -1,5 +1,5 @@
 import { act, renderHook } from "@testing-library/preact";
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, type Mocked, test, vi } from "vitest";
 import { mock, mockReset } from "vitest-mock-extended";
 import { io, Socket } from 'socket.io-client';
 import log from 'loglevel';
@@ -23,7 +23,7 @@ function normalizeManifestLines(input: ManifestLine[]): ManifestLine[] {
 
 describe('useValidatorWebsocket hook', () => {
     const ioMock = vi.mocked(io);
-    const mockSocket = mock<Socket>();
+    const mockSocket: Mocked<Socket> = mock<Socket>() as Mocked<Socket>;
     const wssUrl = 'wss://localhost:3456';
     const settings: ValidatorSettings = {
         duration: 16,
@@ -40,6 +40,7 @@ describe('useValidatorWebsocket hook', () => {
         'codecs',
         'connect',
         'disconnect',
+        'error',
         'finished',
         'install',
         'log',
@@ -72,6 +73,7 @@ describe('useValidatorWebsocket hook', () => {
         expect(ioMock).toHaveBeenCalledTimes(1);
         expect(ioMock).toHaveBeenCalledWith(wssUrl, {
             autoConnect: false,
+            timeout: 10_000,
         });
         expect(mockSocket.on).toHaveBeenCalledTimes(expectedEvents.length);
         expectedEvents.forEach(ev => expect(mockSocket.on).toHaveBeenCalledWith(ev, expect.any(Function)));
@@ -108,6 +110,51 @@ describe('useValidatorWebsocket hook', () => {
             await server.nextTick(0);
         });
         expect(result.current.state.value).toEqual(ValidatorState.DISCONNECTED);
+        act(() => {
+            result.current.start(settings);
+        });
+        expect(result.current.log.value).toEqual([
+            {
+                level: 'error',
+                text: 'Cannot start validation as not connected',
+                id: 1,
+            },
+        ]);
+    });
+
+    test('fails to connect', async () => {
+        const connected = server.getConnectedPromise();
+        server.setConnectionFailure('connection refused');
+        const { result } = renderHook((url: string) => useValidatorWebsocket(url), {
+            initialProps: wssUrl
+        });
+        await expect(connected).rejects.toThrowError('connection refused');
+        await act(async () => {
+            await server.nextTick(0);
+        });
+        expect(result.current.state.value).toEqual(ValidatorState.CONNECTION_FAILED);
+        expect(result.current.log.value).toEqual([
+            {
+                level: 'error',
+                text: 'connection refused',
+                id: 1
+            },
+        ]);
+        act(() => {
+            result.current.start(settings);
+        });
+        expect(result.current.log.value).toEqual([
+            {
+                level: 'error',
+                text: 'connection refused',
+                id: 1
+            },
+            {
+                level: 'error',
+                text: 'Cannot start validation as not connected',
+                id: 2
+            },
+        ]);
     });
 
     test('validate a stream', async () => {
