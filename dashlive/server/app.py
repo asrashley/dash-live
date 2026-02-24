@@ -152,13 +152,12 @@ def create_app(config: JsonObject | None = None,
 
     if config is not None:
         app.config.update(config)
-    log_level: str | None = app.config.get('LOG_LEVEL')
-    if log_level:
-        logging.getLogger().setLevel(log_level.upper())
+    log_level: str = app.config.get('LOG_LEVEL', 'info' if app.debug else 'error')
+    logging.getLogger().setLevel(log_level.upper())
     for module in ['fio', 'mp4']:
-        log_level = app.config.get(f'{module.upper()}_LOG_LEVEL', 'warning')
         log = logging.getLogger(module)
-        log.setLevel(log_level.upper())
+        mod_log_level: str = app.config.get(f'{module.upper()}_LOG_LEVEL', log_level)
+        log.setLevel(mod_log_level.upper())
     db.init_app(app)
     jwt = JWTManager(app)
     login_manager.anonymous_user = AnonymousUser
@@ -231,10 +230,14 @@ def create_app(config: JsonObject | None = None,
                     except socket.herror as err:
                         logging.warning('Failed to find hostname for IP address %s: %s', addr, err)
         logging.debug('cors_allowed_origins=%s', cors_allowed_origins)
+        wss_log = logging.getLogger('socket.io')
+        mod_log_level: str = app.config.get('SOCKET_IO_LOG_LEVEL', log_level)
+        wss_log.setLevel(mod_log_level.upper())
         socketio = SocketIO(
-            app, async_mode='threading', cors_allowed_origins=cors_allowed_origins)
-        wss = WebsocketHandler(asyncio_loop, socketio)
-        socketio.on_event('connect', wss.connect)
-        socketio.on_event('disconnect', wss.disconnect)
-        socketio.on_event('cmd', wss.event_handler)
+            app, async_mode='threading', cors_allowed_origins=cors_allowed_origins,
+            logger=wss_log, engineio_logger=wss_log)
+        wss_handler: WebsocketHandler = WebsocketHandler(asyncio_loop, socketio)
+        socketio.on_event('connect', wss_handler.connect)
+        socketio.on_event('disconnect', wss_handler.disconnect)
+        socketio.on_event('cmd', wss_handler.event_handler)
     return app
