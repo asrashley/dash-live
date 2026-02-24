@@ -1,5 +1,7 @@
 import { Socket } from 'socket.io-client';
 import log from 'loglevel';
+import type { Mocked } from "vitest";
+
 
 import { InstallStreamCommand, ValidatorFinishedEvent, ValidatorProgressEvent } from "../validator/hooks/useValidatorWebsocket";
 import { ValidatorSettings } from "../validator/types/ValidatorSettings";
@@ -31,6 +33,7 @@ export class MockWebsocketServer {
     private settings?: ValidatorSettings;
     private clientIsConnected = false;
     private connectingTimeout?: number;
+    private connectionError?: string;
     private progress: ValidatorProgressEvent = {
         pct: 0,
         text: '',
@@ -50,7 +53,7 @@ export class MockWebsocketServer {
         log.debug(`MockWebsocketServer(${endpoint.getOrigin()})`)
     }
 
-    static create(websocketUrl: string, mockSocket) {
+    static create(websocketUrl: string, mockSocket: Mocked<Socket>) {
         const endpoint = new FakeEndpoint(websocketUrl);
         const server = new MockWebsocketServer(mockSocket, endpoint);
         mockSocket.connect.mockImplementation(server.connect);
@@ -138,6 +141,14 @@ export class MockWebsocketServer {
             this.connectedPromise = Promise.withResolvers<void>();
         }
         this.connectingTimeout = window.setTimeout(() => {
+            if (this.connectionError) {
+                log.debug(`connectionError: ${this.connectionError}`);
+                const err = new Error(this.connectionError)
+                this.dispatchEvent('error', err);
+                this.connectedPromise?.reject(err);
+                this.connectedPromise = undefined;
+                return;
+            }
             this.clientIsConnected = true;
             this.dispatchEvent('connect');
             this.connectedPromise?.resolve();
@@ -158,6 +169,11 @@ export class MockWebsocketServer {
         this.connectedPromise?.reject(new Error('disconnect'));
         this.connectedPromise = undefined;
         log.debug('disconnected');
+        return this.sock;
+    };
+
+    setConnectionFailure = (reason: string) => {
+        this.connectionError = reason;
         return this.sock;
     };
 
