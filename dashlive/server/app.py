@@ -115,7 +115,7 @@ def create_app(config: JsonObject | None = None,
         'DEFAULT_ADMIN_USERNAME': 'admin',
         'DEFAULT_ADMIN_PASSWORD': secrets.token_urlsafe(10),
     }
-    url_template = environ.get('FLASK_DATABSE_TEMPLATE', r'${DB_URI}')
+    url_template = environ.get('FLASK_DATABASE_TEMPLATE', r'${DB_URI}')
     database_uri = environ.get(
         'SQLALCHEMY_DATABASE_URI',
         make_db_connection_string(folders.instance_path, url_template))
