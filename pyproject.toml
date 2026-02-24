@@ -43,7 +43,7 @@ dependencies = [
     "types-flask-socketio>=5.6.0.20251228",
     "typing-extensions==4.12.2",
     "waitress==3.0.1",
-    "werkzeug==3.1.5",
+    "werkzeug==3.1.6",
 ]
 
 [dependency-groups]
