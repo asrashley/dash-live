@@ -25,6 +25,9 @@ class MediaType(Enum):
                 cls[nm.strip().upper()] for nm in name.split(',')
             }
             return names
+        if '/' in name:
+            type_part = name.split('/')[0].strip().upper()
+            return set([cls[type_part]])
         name = name.strip().upper()
         if name == 'ANY':
             return cls.all()

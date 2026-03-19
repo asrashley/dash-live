@@ -8,15 +8,17 @@
 import datetime
 import io
 from pathlib import Path
-from typing import Optional
+from typing import Optional, cast
 import urllib.parse
 
 from dashlive.mpeg import mp4
 from dashlive.utils.date_time import timecode_to_timedelta, to_iso_datetime
+from dashlive.mpeg.dash.representation import Representation as DashRepresentation
 
 from .dash_element import DashElement
 from .events import InbandEventStream
 from .http_range import HttpRange
+from .init_segment import InitSegment
 
 class MediaSegment(DashElement):
     availability_start_time: datetime.datetime | None = None
@@ -140,18 +142,22 @@ class MediaSegment(DashElement):
             self.elt.check_starts_with(
                 response.headers['Content-Type'], self.parent.mimeType,
                 template=r'HTTP Content-Type "{0}" should match Representation MIME type "{1}"')
+        body: bytes = response.get_data(as_text=False)
         async with self.pool.group(self.progress) as tg:
-            body = response.get_data(as_text=False)
             if self.options.save:
                 tg.submit(self.save, body)
-            parse_task = tg.submit(self.parse_data, body)
+            if self.parent.uses_mp4_format():
+                parse_task = tg.submit(self.parse_data, body)
+        if not self.parent.uses_mp4_format():
+            return
         moof = parse_task.result()
         if not self.elt.check_not_none(
                 moof, msg='Failed to find MOOF box'):
             return
         self.seg_num = moof.mfhd.sequence_number
         self.decode_time = moof.traf.tfdt.base_media_decode_time
-        info = self.parent.init_segment.dash_representation
+        info: DashRepresentation | None = self.parent.init_segment.dash_representation
+        assert info is not None
         if info.encrypted:
             self.check_saio_offset(moof)
         else:
@@ -233,9 +239,9 @@ class MediaSegment(DashElement):
 
     def save(self, body: bytes) -> None:
         if self.parent.id:
-            default = f'media-{self.parent.id}-{self.parent.id}-{self.seg_num}'
+            default = f'media-{self.parent.id}-{self.seg_num}'
         else:
-            default = f'media-{self.parent.id}-{self.parent.bandwidth}-{self.seg_num}'
+            default = f'media-{self.parent.bandwidth}-{self.seg_num}'
         filename = self.output_filename(
             default=default, bandwidth=self.parent.bandwidth,
             prefix=self.options.prefix, elt_id=self.parent.id)
@@ -245,8 +251,10 @@ class MediaSegment(DashElement):
 
     def parse_data(self, body: bytes) -> mp4.Mp4Atom | None:
         src = io.BytesIO(body)
-        options = {"strict": True, "lazy_load": True, "mode": "r"}
-        info = self.parent.init_segment.dash_representation
+        options: mp4.Options = {"strict": True, "lazy_load": True, "mode": "r"}
+        info: DashRepresentation | None = cast(InitSegment, self.parent.init_segment).dash_representation
+        if not self.elt.check_not_none(info, msg='Failed to get representation info from init segment'):
+            return None
         if self.options.encrypted:
             msg = 'Expected an encrypted stream, but fragment is not encrypted'
         else:
@@ -259,7 +267,7 @@ class MediaSegment(DashElement):
         if info.encrypted:
             if not self.elt.check_not_none(
                     info.iv_size, msg='IV size is unknown'):
-                return
+                return None
             options["iv_size"] = info.iv_size
         atoms = mp4.Mp4Atom.load(src, options=options, use_wrapper=True)
         self.elt.check_greater_than(len(atoms), 1)
@@ -267,12 +275,12 @@ class MediaSegment(DashElement):
             moof = atoms.moof
         except AttributeError:
             self.elt.add_error('MOOF box missing from media segment')
-            return
+            return None
         try:
             mdat = atoms.mdat
         except AttributeError:
             self.elt.add_error('MDAT box missing from media segment')
-            return
+            return None
         try:
             self.check_emsg_box(atoms.emsg)
         except AttributeError:

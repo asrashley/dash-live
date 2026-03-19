@@ -15,6 +15,7 @@ import re
 from typing import Any, BinaryIO, ClassVar, Generic, Optional, TypeVar, cast, TYPE_CHECKING
 import urllib.parse
 
+from dashlive.mpeg.dash.mime_types import content_type_file_suffix
 from lxml import etree as ET
 
 from dashlive.utils.date_time import to_iso_datetime
@@ -61,7 +62,7 @@ class DashElement(Generic[T]):
     ID: str
 
     def __init__(self,
-                 elt: ET.ElementBase,
+                 elt: Optional[ET.ElementBase],
                  parent: Optional[T],
                  options: ValidatorOptions | None = None,
                  url: str | None = None) -> None:
@@ -272,13 +273,16 @@ class DashElement(Generic[T]):
             p = p.parent
         return '/'.join(rv)
 
-    def output_filename(self, default: str | None,
+    def output_filename(self,
+                        default: str | None,
                         bandwidth: int | None,
                         elt_id: str | None = None,
                         prefix: str | None = None,
                         filename: str | None = None,
-                        makedirs: bool = False) -> str:
+                        makedirs: bool = False,
+                        content_type: str | None = None) -> str:
         if filename is None:
+            assert self.url is not None
             filename = self.url
         if re.match(r"^https?://", filename, re.IGNORECASE):
             parts = urllib.parse.urlsplit(filename)
@@ -300,19 +304,23 @@ class DashElement(Generic[T]):
         if root == '':
             assert default is not None
             root, ext = os.path.splitext(default)
+        filename = root
         now = self.options.start_time.replace(microsecond=0)
         dest: Path = Path(self.options.dest) / to_iso_datetime(now).replace(':', '-')
+        if content_type is not None:
+            suffix = content_type_file_suffix(content_type)
+            ext = f'.{suffix}'
         if prefix is not None and elt_id is not None:
             elt_id = re.sub(r'[:/\.?#]+', '_', elt_id)
-            filename = f'{prefix}_{elt_id}.mp4'
+            filename = f'{prefix}_{elt_id}'
         elif prefix is not None and bandwidth is not None:
-            filename = f'{prefix}_{bandwidth}.mp4'
+            filename = f'{prefix}_{bandwidth}'
         else:
-            filename = f'{root}{ext}'
+            filename = f'{root}'
+        filename += ext
         self.log.debug('dest=%s, filename=%s', dest, filename)
         if makedirs:
-            if not dest.exists():
-                dest.mkdir(parents=False, exist_ok=True)
+            dest.mkdir(parents=False, exist_ok=True)
         return str(dest / filename)
 
     def open_file(self, filename: str, options: ValidatorOptions) -> BinaryIO:
