@@ -10,7 +10,9 @@ from concurrent.futures import ThreadPoolExecutor
 import copy
 import logging
 import os
-from typing import Any, ClassVar, Generic, Optional, TypeVar, cast, TYPE_CHECKING
+from pathlib import Path
+import re
+from typing import Any, BinaryIO, ClassVar, Generic, Optional, TypeVar, cast, TYPE_CHECKING
 import urllib.parse
 
 from lxml import etree as ET
@@ -278,28 +280,30 @@ class DashElement(Generic[T]):
                         makedirs: bool = False) -> str:
         if filename is None:
             filename = self.url
-        if filename.startswith('http:'):
+        if re.match(r"^https?://", filename, re.IGNORECASE):
             parts = urllib.parse.urlsplit(filename)
-            head, tail = os.path.split(parts.path)
-            if tail and tail[0] != '.':
-                filename = tail
+            url_path: Path = Path(parts.path)
+            if url_path.name and url_path.name[0] != '.':
+                filename = url_path.name
             else:
+                assert default is not None
                 filename = default
         else:
-            head, tail = os.path.split(filename)
-            if tail:
-                filename = tail
+            file_path: Path = Path(filename)
+            if file_path.name and file_path.name[0] != '.':
+                filename = file_path.name
         if '?' in filename:
             filename = filename.split('?')[0]
         if '#' in filename:
             filename = filename.split('#')[0]
         root, ext = os.path.splitext(filename)
         if root == '':
+            assert default is not None
             root, ext = os.path.splitext(default)
         now = self.options.start_time.replace(microsecond=0)
-        dest = os.path.join(self.options.dest,
-                            to_iso_datetime(now).replace(':', '-'))
+        dest: Path = Path(self.options.dest) / to_iso_datetime(now).replace(':', '-')
         if prefix is not None and elt_id is not None:
+            elt_id = re.sub(r'[:/\.?#]+', '_', elt_id)
             filename = f'{prefix}_{elt_id}.mp4'
         elif prefix is not None and bandwidth is not None:
             filename = f'{prefix}_{bandwidth}.mp4'
@@ -307,11 +311,11 @@ class DashElement(Generic[T]):
             filename = f'{root}{ext}'
         self.log.debug('dest=%s, filename=%s', dest, filename)
         if makedirs:
-            if not os.path.exists(dest):
-                os.makedirs(dest)
-        return os.path.join(dest, filename)
+            if not dest.exists():
+                dest.mkdir(parents=False, exist_ok=True)
+        return str(dest / filename)
 
-    def open_file(self, filename: str, options):
+    def open_file(self, filename: str, options: ValidatorOptions) -> BinaryIO:
         self.filenames.add(filename)
         if options.prefix:
             fd = open(filename, 'ab')
