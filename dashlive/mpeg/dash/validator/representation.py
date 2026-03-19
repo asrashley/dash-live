@@ -16,6 +16,7 @@ import urllib.parse
 
 from lxml import etree as ET
 
+from dashlive.mpeg.dash.mime_types import content_type_to_mime_type
 from dashlive.mpeg.dash.representation import Representation as DashRepresentation
 from dashlive.mpeg.dash.validator.segment_template import SegmentTemplate
 from dashlive.utils.date_time import (
@@ -85,6 +86,26 @@ class Representation(RepresentationBaseType["AdaptationSet"]):
     @property
     def target_duration(self) -> datetime.timedelta | None:
         return self.period.target_duration
+
+    def effective_mime_type(self) -> str:
+        """
+        Get the effective MIME type for this Representation, even if the
+        @mimeType attribute is not explicitly set.
+        """
+        if self.mimeType is not None:
+            return self.mimeType
+        return content_type_to_mime_type(self.parent.contentType, self.codecs)
+
+    def uses_mp4_format(self) -> bool:
+        """
+        Returns true if this Representation is expected to use MP4 format for its media segments.
+        """
+        if self.parent.contentType is None and self.mimeType is not None:
+            return re.search(r'(audio|video|text)', self.mimeType, re.IGNORECASE) is not None
+        return self.parent.contentType in {'video', 'audio', 'text'}
+
+    def has_init_segment(self) -> bool:
+        return self.uses_mp4_format()
 
     async def merge_previous_element(self, prev: "Representation") -> bool:
         if self.mode != 'live':
@@ -579,9 +600,10 @@ class Representation(RepresentationBaseType["AdaptationSet"]):
             self.elt.check_not_none(
                 self.segmentTemplate,
                 msg=f'SegmentTemplate is required when using DASH profiles {self.mpd.profiles}')
-            self.elt.check_not_none(
-                self.segmentTemplate.initialization,
-                msg='SegmentTemplate@initialization is missing')
+            if self.has_init_segment():
+                self.elt.check_not_none(
+                    self.segmentTemplate.initialization,
+                    msg='SegmentTemplate@initialization is missing')
         self.elt.check_not_none(self.baseurl, msg='Failed to find BaseURL')
         self.elt.check_not_none(self.init_segment)
         self.elt.check_not_none(self.media_segments)
@@ -597,12 +619,14 @@ class Representation(RepresentationBaseType["AdaptationSet"]):
         self.attrs.check_not_none(
             self.mimeType, msg='Representation@mimeType is a mandatory attribute',
             clause='5.3.7.2')
+
         if ValidationFlag.MEDIA in self.options.verify:
-            moov = await self.init_segment.get_moov()
-            if not self.elt.check_not_none(moov, msg=f'{self.id}: Failed to find MOOV data'):
-                self.log.warning('%s: Failed to get MOOV box from init segment %s', self.id,
-                                 self.init_segment.name)
-                return
+            if self.has_init_segment():
+                moov = await self.init_segment.get_moov()
+                if not self.elt.check_not_none(moov, msg=f'{self.id}: Failed to find MOOV data'):
+                    self.log.warning(
+                        '%s: Failed to get MOOV box from init segment %s', self.id, self.init_segment.name)
+                    return
         if self.options.encrypted:
             if self.options.ivsize is None:
                 self.options.ivsize = self.init_segment.dash_representation.iv_size

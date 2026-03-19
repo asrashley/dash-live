@@ -90,7 +90,7 @@
                    timescale="{{adp.timescale}}"
                    duration="{{rep.segment_duration}}"
                    presentationTimeOffset="{{adp.presentationTimeOffset}}"
-                   initialization="{{adp.initURL|xmlSafe}}"
+                   {%- if adp.initURL %} initialization="{{adp.initURL|xmlSafe}}" {% endif %}
                    media="{{adp.mediaURL|xmlSafe}}">
 		 {%- if options.segmentTimeline %}
 		 {% include "segment/timeline.xml" %}

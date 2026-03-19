@@ -83,6 +83,8 @@ class InitSegment(DashElement):
             return True
         if self.progress.aborted():
             return False
+        if self.url is None and not self.parent.uses_mp4_format():
+            return True
         if not self.elt.check_not_none(self.url, msg='URL of init segment is missing'):
             return False
         headers: dict[str, str] | None = None
@@ -175,7 +177,7 @@ class InitSegment(DashElement):
         filename = self.output_filename(
             default=default, bandwidth=self.parent.bandwidth,
             prefix=self.options.prefix, elt_id=self.parent.id,
-            makedirs=True)
+            makedirs=True, content_type=self.parent.parent.contentType)
         self.log.debug('saving init segment: %s', filename)
         with self.open_file(filename, self.options) as dest:
             dest.write(body)

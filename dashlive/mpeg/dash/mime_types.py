@@ -14,6 +14,8 @@ def content_type_to_mime_type(content_type: str | None, codecs: str | None) -> s
     if content_type == 'text':
         if codecs is not None and 'wvtt' in codecs:
             return 'text/vtt'
+    if content_type == 'image':
+        return 'image/jpeg'
     return 'application/mp4'
 
 def content_type_file_suffix(content_type: str) -> str:
@@ -21,4 +23,6 @@ def content_type_file_suffix(content_type: str) -> str:
         return 'm4a'
     if content_type == 'video':
         return 'm4v'
+    if content_type == 'image':
+        return 'jpg'
     return 'mp4'
