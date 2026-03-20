@@ -7,7 +7,8 @@
 #############################################################################
 
 import binascii
-from datetime import timedelta
+from datetime import timedelta, datetime
+import hashlib
 from importlib import metadata
 import json
 import logging
@@ -27,7 +28,6 @@ from dashlive.server import models
 from dashlive.server.app import create_app
 from dashlive.server.folders import AppFolders
 from dashlive.server.requesthandler.user_management import LoginResponseJson
-from dashlive.utils.date_time import from_isodatetime
 
 from .async_flask_testing import AsyncFlaskTestCase
 from .context_filter import ContextFilter
@@ -115,6 +115,7 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
             },
             'UPLOAD_FOLDER': str(self.app_folders.upload_folder),
             'SECRET_KEY': 'cookie.secret',
+            'JWT_SECRET_KEY': 'jwt.super.secret.key' * 2,
             'STATIC_FOLDER': str(self.app_folders.static_folder),
             'SQLALCHEMY_DATABASE_URI': "sqlite:///:memory:",
             'TESTING': True,
@@ -261,8 +262,9 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
                                 fixture: StreamFixture,
                                 stream: models.Stream,
                                 name: str) -> models.MediaFile:
-        filename = f"{name}.mp4"
-        src_file = self.fixtures_folder / fixture.name / filename
+        filename: str = f"{name}.mp4"
+        src_file: Path = self.fixtures_folder / fixture.name / filename
+        content_type: str
         if '_v' in name:
             content_type = 'video'
         elif '_a' in name:
@@ -270,11 +272,14 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
         else:
             content_type = 'text'
 
+        stats = src_file.stat()
+        sha1_hash = hashlib.sha1()
+        sha1_hash.update(f"{src_file}{stats.st_size}{stats.st_ctime}".encode('utf-8'))
         blob = models.Blob(
             filename=filename,
-            created=from_isodatetime("2022-09-01T12:23:00Z"),
-            size=src_file.stat().st_size,
-            sha1_hash=str(src_file),
+            created=datetime.fromtimestamp(stats.st_ctime),
+            size=stats.st_size,
+            sha1_hash=sha1_hash.hexdigest(),
             content_type=content_type,
             auto_delete=False)
 
