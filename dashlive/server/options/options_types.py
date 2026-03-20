@@ -98,6 +98,7 @@ class OptionsContainerType(OptionsGroup):
     videoCorruptionFrameCount: int | None = None
     videoErrors: list[tuple[int, str]] = field(default_factory=list)
     videoPlayer: str | None = field(default="native")
+    videoThumbnails: bool = False
 
 
 @dataclass
@@ -159,6 +160,7 @@ class ShortOptionsContainerType(OptionsGroup):
     vcfc: int | None = None
     vhe: list[tuple[int, str]] = field(default_factory=list)
     vp: str | None = field(default="native")
+    vt: bool = False
 
 
 @dataclass
@@ -220,3 +222,4 @@ class CgiOptionsContainerType(OptionsGroup):
     frames: int | None = None
     verr: list[tuple[int, str]] = field(default_factory=list)
     player: str | None = field(default="native")
+    thumbnails: bool = False

@@ -274,14 +274,32 @@ class TestCgiOptions(TestCaseMixin, unittest.TestCase):
             'videoCorruption': [],
             'videoCorruptionFrameCount': None,
             'videoErrors': [],
+            'videoPlayer': 'native',
+            'videoThumbnails': False,
             'updateCount': None,
             'utcMethod': None,
             'useBaseUrls': True,
-            'videoPlayer': 'native',
             'utcValue': None,
         }
         actual = OptionsContainer().toJSON()
         self.maxDiff = None
+        self.assertDictEqual(expected, actual)
+
+    @MockTime("2026-03-04T05:06:07Z")
+    def test_default_short_option_values(self) -> None:
+        expected: dict[str, str] = {
+            'ab': '1', 'ac': 'mp4a', 'ad': '', 'ahe': '[]', 'ast': 'year', 'bug': '',
+            'clu': None, 'dft': '', 'djVer': '', 'drm': '', 'evs': '', 'hfc': '', 'fpd': '0',
+            'lee': '16', 'ma': '', 'mt': '', 'mhe': '[]', 'mlu': None, 'mup': '', 'ntps': '',
+            'patch': '0', 'pinCoun': 0, 'pinDura': 200, 'pinInba': True, 'pinInte': 1000,
+            'pinStar': 0, 'pinTime': 100, 'pinValu': '0', 'pinVers': 0, 'plu': None, 'pff': True,
+            'pvn': None, 'sctCoun': 0, 'sctDura': 200, 'sctInba': True, 'sctInte': 1000,
+            'sctProg': 1620, 'sctStar': 0, 'sctTime': 100, 'sctValu': None, 'sctVers': 0,
+            'st': '0', 'skVer': '', 'tc': '', 'the': '[]', 'tl': '', 'ptxLang': '', 'tbd': '1800',
+            'uc': '', 'base': '1', 'utc': '', 'utv': '', 'vcor': '', 'vcfc': '', 'vhe': '[]',
+            'vp': 'native', 'vt': '0',
+        }
+        actual: dict[str, str] = OptionsContainer().generate_short_parameters(remove_defaults=False)
         self.assertDictEqual(expected, actual)
 
     def test_convert_shaka_cgi_options(self) -> None:
@@ -435,7 +453,8 @@ class TestCgiOptions(TestCaseMixin, unittest.TestCase):
             "videoCorruption": [],
             "videoCorruptionFrameCount": None,
             "videoErrors": [],
-            "videoPlayer": "native"
+            "videoPlayer": "native",
+            "videoThumbnails": False,
         }
         opts = OptionsContainer()
         opts.apply_options(form, is_cgi=True)
