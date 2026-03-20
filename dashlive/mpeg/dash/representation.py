@@ -197,7 +197,7 @@ class Representation(ObjectWithFields):
         default_sample_duration = 0
         moov: Optional[mp4.Mp4Atom] = None
         filename = os.path.basename(filename)
-        rep_id = os.path.splitext(filename)[0]
+        rep_id: str = os.path.splitext(filename)[0]
         rv = Representation(id=rep_id.lower(),
                             filename=filename,
                             version=Representation.VERSION)

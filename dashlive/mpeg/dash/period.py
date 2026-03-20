@@ -112,5 +112,7 @@ class Period(ObjectWithFields):
                 if options.mode != 'odvod':
                     adp.initURL = f"{base_url}{adp.initURL}"
                 adp.mediaURL = f"{base_url}{adp.mediaURL}"
+            if adp.content_type == 'image':
+                adp.initURL = None
             if timing:
                 adp.set_dash_timing(timing, self.start, self.time_offset, self.duration)
