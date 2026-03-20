@@ -136,6 +136,7 @@ class DashManifest:
         exclude: Set[str] = {
             'abr', 'bugCompatibility', 'drmSelection',
             'leeway', 'mode', 'minimumUpdatePeriod', 'utcMethod',
+            'videoThumbnails',
         }
         exclude.update(set(kwargs.keys()))
         if simplified:

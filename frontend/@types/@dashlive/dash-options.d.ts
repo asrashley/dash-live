@@ -83,6 +83,7 @@ export type OptionsContainerType = {
   videoCorruptionFrameCount: number | null;
   videoErrors: [number, string][];
   videoPlayer: string | null;
+  videoThumbnails: boolean;
 }
 
 export type ShortOptionsContainerType = {
@@ -143,6 +144,7 @@ export type ShortOptionsContainerType = {
   vcfc: number | null;
   vhe: [number, string][];
   vp: string | null;
+  vt: boolean;
 }
 
 export type CgiOptionsContainerType = {
@@ -203,4 +205,5 @@ export type CgiOptionsContainerType = {
   frames: number | null;
   verr: [number, string][];
   player: string | null;
+  thumbnails: boolean;
 }
