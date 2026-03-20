@@ -327,6 +327,9 @@ class ManifestContext:
             period.adaptationSets.append(video)
             period.adaptationSets += audio_adps
             period.adaptationSets += text_adps
+            if opts.videoThumbnails:
+                period.adaptationSets.append(
+                    self.calculate_thumbnail_adaptation_set(stream))
         if db_period:
             base_url: str = flask.url_for(
                 "mps-base-url", mode=opts.mode, mps_name=db_period.parent.name,
@@ -494,6 +497,23 @@ class ManifestContext:
             else:
                 adp.role = 'alternate'
         return result
+
+    def calculate_thumbnail_adaptation_set(self, stream: models.Stream) -> AdaptationSet:
+        video_files = models.MediaFile.search(
+            content_type='video', encrypted=self.options.encrypted,
+            stream=stream, max_items=1)
+
+        thumbnail = AdaptationSet(
+            mode=self.options.mode, content_type='image', mimeType="image/jpeg", id=999,
+            segment_timeline=False, timescale=1000)
+
+        rep = Representation(
+            id='t999', track_id=999, width=1920, height=1080, segment_duration=30000)
+        if video_files:
+            rep.segment_duration = video_files[0].representation.segment_duration * 4
+            thumbnail.timescale = video_files[0].representation.timescale
+        thumbnail.representations.append(rep)
+        return thumbnail
 
     def calculate_cgi_parameters(
             self,
