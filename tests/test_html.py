@@ -205,33 +205,48 @@ class TestHtmlPageHandlers(FlaskTestBase):
             self.assertEqual(models.Blob.count(), 0)
             self.assertEqual(models.Stream.count(), 0)
 
-    def test_es5_video_playback(self) -> None:
+    def test_es5_vod_video_playback(self) -> None:
         """
         Test generating the ES5 video HTML page.
         Checks every manifest with every CGI parameter causes a valid
         HTML page that allows the video to be watched using a <video> element.
         """
-        only: set[str] = {'audioCodec', 'textCodec', 'drmSelection', 'videoPlayer'}
+        self.check_es5_video_playback('vod')
+
+    def test_es5_odvod_video_playback(self) -> None:
+        self.check_es5_video_playback('odvod')
+
+    def test_es5_live_video_playback(self) -> None:
+        self.check_es5_video_playback('live')
+
+    def check_es5_video_playback(self, mode: str) -> None:
+        """
+        Test generating the ES5 video HTML page.
+        Checks every manifest with every CGI parameter causes a valid
+        HTML page that allows the video to be watched using a <video> element.
+        """
+        only: set[str] = {'audioCodec', 'drmSelection', 'videoPlayer'}
         self.setup_media_fixture(BBB_FIXTURE)
         self.logout_user()
         self.assertGreaterThan(models.MediaFile.count(), 0)
         num_tests = 0
         use = OptionUsage.AUDIO + OptionUsage.VIDEO + OptionUsage.MANIFEST + OptionUsage.HTML
         for manifest in manifests.manifest_map.values():
-            for mode in manifest.supported_modes():
+            if mode in manifest.supported_modes():
                 options = manifest.get_supported_dash_options(
                     mode, simplified=True, only=only, use=use)
                 num_tests += options.num_tests * models.Stream.count()
         count = 0
         for filename, manifest in manifests.manifest_map.items():
-            for mode in manifest.supported_modes():
+            if mode in manifest.supported_modes():
                 options = manifest.get_supported_dash_options(
                     mode, simplified=True, only=only, use=use)
                 for opt in options.cgi_query_combinations():
                     for stream in models.Stream.all():
                         self.progress(count, num_tests)
                         scheme = 'http' if count & 1 else 'https'
-                        self.check_video_html_page(filename, manifest, mode, stream, opt, scheme=scheme)
+                        with self.subTest(filename=filename, options=opt, stream=stream, scheme=scheme):
+                            self.check_video_html_page(filename, manifest, mode, stream, opt, scheme=scheme)
                         count += 1
         self.progress(num_tests, num_tests)
 
