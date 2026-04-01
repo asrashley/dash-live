@@ -28,6 +28,7 @@ from dashlive.utils.lang import UNDEFINED_LANGS
 from dashlive.utils.string import str_or_none
 
 from .base import Base
+from .blob import Blob
 from .error_reason import ErrorReason
 from .key import Key
 from .mediafile_keys import mediafile_keys
@@ -36,7 +37,6 @@ from .mixin import ModelMixin
 from .session import DatabaseSession
 
 if TYPE_CHECKING:
-    from .blob import Blob
     from .stream import Stream
 
 class MediaFile(ModelMixin["MediaFile"], Base):
@@ -51,7 +51,7 @@ class MediaFile(ModelMixin["MediaFile"], Base):
     stream: Mapped["Stream"] = relationship('Stream', back_populates='media_files')
     blob_pk: Mapped[int] = mapped_column(
         'blob', sa.Integer, sa.ForeignKey('Blob.pk'), nullable=False, unique=True)
-    blob: Mapped["Blob"] = relationship(
+    blob: Mapped[Blob] = relationship(
         'Blob', back_populates='mediafile', cascade='all, delete')
     rep: Mapped[JsonObject | None] = mapped_column(
         'rep',
@@ -160,10 +160,11 @@ class MediaFile(ModelMixin["MediaFile"], Base):
         app = flask.current_app
         return Path(app.config['BLOB_FOLDER']) / stream_dir
 
-    def open_file(self, start: int | None = None,
-                  buffer_size: int = 4096) -> contextlib.AbstractContextManager[BinaryIO]:
+    def open_file(self, start: int,
+                  size: int,
+                  buffer_size: int = Blob.BUFFER_SIZE) -> contextlib.AbstractContextManager[BinaryIO]:
         abs_path = self.absolute_path(self.stream.directory)
-        return self.blob.open_file(abs_path, start=start, buffer_size=buffer_size)
+        return self.blob.open_file(abs_path, start=start, size=size, buffer_size=buffer_size)
 
     def delete_file(self) -> None:
         abs_path = self.absolute_path(self.stream.directory)
@@ -218,11 +219,12 @@ class MediaFile(ModelMixin["MediaFile"], Base):
         for err in self.errors:
             session.delete(err)
 
+        abs_path: Path
         if blob_folder is None:
             abs_path = self.absolute_path(self.stream.directory)
         else:
             abs_path = blob_folder / self.stream.directory
-        src_name = abs_path / self.blob.filename
+        src_name: Path = abs_path / self.blob.filename
         if not src_name.exists():
             err = MediaFileError(
                 media_file=self,
@@ -230,7 +232,7 @@ class MediaFile(ModelMixin["MediaFile"], Base):
                 details=f'No such file or directory: {src_name}')
             session.add(err)
             return False
-        with self.blob.open_file(abs_path, start=0, buffer_size=16384) as src:
+        with self.blob.open_file(abs_path, start=0, size=self.blob.size) as src:
             atom = mp4.Wrapper(
                 atom_type='wrap', position=0, size=self.blob.size,
                 parent=None, children=mp4.Mp4Atom.load(src))

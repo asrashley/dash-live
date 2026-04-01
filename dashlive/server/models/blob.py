@@ -9,12 +9,14 @@ import contextlib
 from datetime import datetime
 from io import SEEK_SET
 from pathlib import Path
-from typing import BinaryIO, cast, AbstractSet, TYPE_CHECKING
+from typing import BinaryIO, ClassVar, cast, AbstractSet, TYPE_CHECKING
 
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 
+from dashlive.utils.buffered_reader import BufferedReader
 from dashlive.utils.date_time import to_iso_datetime
+from dashlive.utils.io_with_offset import BytesIoWithOffset
 from dashlive.utils.json_object import JsonObject
 
 from .base import Base
@@ -29,6 +31,7 @@ class Blob(ModelMixin["Blob"], Base):
     """
     __plural__ = 'Blobs'
     __tablename__ = 'Blob'
+    BUFFER_SIZE: ClassVar[int] = 32768
 
     pk: Mapped[int] = mapped_column(sa.Integer, primary_key=True)
     filename: Mapped[str] = mapped_column(sa.String, unique=True, nullable=False)
@@ -60,14 +63,22 @@ class Blob(ModelMixin["Blob"], Base):
                     del rv[k]
         return rv
 
-    def open_file(self, media_directory: Path,
-                  start: int | None,
-                  buffer_size: int) -> contextlib.AbstractContextManager[BinaryIO]:
-        filename = media_directory / self.filename
-        handle = open(filename, mode='rb', buffering=buffer_size)
-        if start is not None:
+    def open_file(self,
+                  media_directory: Path,
+                  start: int,
+                  size: int,
+                  buffer_size: int = BUFFER_SIZE) -> contextlib.AbstractContextManager[BinaryIO]:
+        filename: Path = media_directory / self.filename
+        handle: BinaryIO = open(filename, mode='rb', buffering=buffer_size)
+        if start > 0:
             handle.seek(start, SEEK_SET)
-        return contextlib.closing(handle)
+        if size <= buffer_size:
+            rv = BytesIoWithOffset(handle.read(size), offset=start)
+            handle.close()
+            return contextlib.closing(rv)
+        src = BufferedReader(
+            handle, offset=start, size=size, buffersize=buffer_size, close_reader=True)
+        return contextlib.closing(cast(BinaryIO, src))
 
     def delete_file(self, media_directory: Path) -> None:
         if self.auto_delete:

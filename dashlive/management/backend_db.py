@@ -117,7 +117,7 @@ class BackendDatabaseAccess(DatabaseAccess):
             self.log.error('Failed to find MediaFile %s', name.stem)
             return False
         self.log.info('Indexing file %s', mf.name)
-        with mf.open_file() as src:
+        with mf.open_file(start=0, size=mf.blob.size) as src:
             atom = mp4.Wrapper(
                 atom_type='wrap', position=0, size=mf.blob.size,
                 parent=None, children=mp4.Mp4Atom.load(src))

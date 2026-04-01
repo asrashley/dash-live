@@ -23,7 +23,6 @@ from dashlive.server import models
 from dashlive.server.events.factory import EventFactory
 from dashlive.server.options.container import OptionsContainer
 from dashlive.utils.date_time import UTC, timedelta_to_timecode
-from dashlive.utils.buffered_reader import BufferedReader
 
 from .base import RequestHandlerBase
 from .decorators import (
@@ -61,10 +60,11 @@ class OnDemandMedia(RequestHandlerBase):
             headers['Content-Type'] = 'video/mp4'
         else:
             headers['Content-Type'] = 'application/mp4'
-        data = b''
+        data: bytes = b''
         if status == 206:
-            with current_media_file.open_file(start=start) as reader:
-                data = reader.read(1 + end - start)
+            range_size: int = 1 + end - start
+            with current_media_file.open_file(start=start, size=range_size) as reader:
+                data = reader.read(range_size)
         return flask.make_response((data, status, headers))
 
 
@@ -297,14 +297,12 @@ class MediaRequestBase(RequestHandlerBase):
             mode='rw', lazy_load=True, bug_compatibility=options.bugCompatibility)
         if media.representation.encrypted:
             mp4_options.iv_size = media.representation.iv_size
-        with media.open_file(start=frag.pos, buffer_size=16384) as reader:
-            src = BufferedReader(
-                reader, offset=frag.pos, size=frag.size, buffersize=16384)
-            atom = cast(mp4.Wrapper, mp4.Mp4Atom.load(cast(BinaryIO, src), options=mp4_options, use_wrapper=True))
+        with media.open_file(start=frag.pos, size=frag.size) as src:
+            atom: mp4.Wrapper = cast(mp4.Wrapper, mp4.Mp4Atom.load(
+                cast(BinaryIO, src), options=mp4_options, use_wrapper=True))
             if parse_samples:
                 atom.moof.traf.trun.parse_samples(
                     src, media.representation.nalLengthFieldLength)
-            src.close()
 
         return atom
 
