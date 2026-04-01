@@ -47,7 +47,7 @@ class Buffer:
 
 class BufferedReader(io.RawIOBase):
     __slots__ = ['reader', 'buffers', 'buffersize', 'pos', 'offset', 'size',
-                 'max_buffers', 'num_buffers']
+                 'max_buffers', 'num_buffers', 'close_reader']
     buffersize: int
     offset: int
     max_buffers: int
@@ -55,9 +55,11 @@ class BufferedReader(io.RawIOBase):
     reader: BinaryIO
     size: int | None
     buffers: dict[int, Buffer]
+    close_reader: bool
 
     def __init__(self, reader: BinaryIO, buffersize: int = 16384, data: bytes | None = None,
-                 offset: int = 0, size: int | None = None, max_buffers: int = 30) -> None:
+                 offset: int = 0, size: int | None = None, max_buffers: int = 30,
+                 close_reader: bool = False) -> None:
         super().__init__()
         # print('BufferedReader', reader, buffersize, offset, size)
         self.reader = reader
@@ -68,6 +70,7 @@ class BufferedReader(io.RawIOBase):
         self.size = size
         self.max_buffers = max_buffers
         self.num_buffers = 0
+        self.close_reader = close_reader
         if data is not None:
             self.size = len(data)
             self.buffersize = self.size
@@ -79,6 +82,8 @@ class BufferedReader(io.RawIOBase):
         return not self.closed
 
     def close(self) -> None:
+        if self.close_reader:
+            self.reader.close()
         self.reader = io.BytesIO(b'')
         self.buffers = {}
         super().close()

@@ -1,19 +1,5 @@
 #############################################################################
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
-#############################################################################
-#
 #  Project Name        :    Simulated MPEG DASH service
 #
 #  Author              :    Alex Ashley
@@ -39,6 +25,7 @@ from dashlive.utils.binary import Binary, HexBinary
 from dashlive.utils.date_time import DateTimeField, from_iso_epoch, to_iso_epoch
 from dashlive.utils.fio import FieldReader, BitsFieldReader, FieldWriter, BitsFieldWriter
 from dashlive.utils.hexdump import hexdump_buffer
+from dashlive.utils.io_with_offset import BytesIoWithOffset
 from dashlive.utils.json_object import JsonObject
 from dashlive.utils.list_of import ListOf
 from dashlive.utils.object_with_fields import ObjectWithFields
@@ -85,19 +72,6 @@ def mp4descriptor(tag: int):
         MP4_DESCRIPTORS[tag] = cls
         return cls
     return func
-
-class BytesIoWithOffset(io.BufferedReader):
-    def __init__(self, data: bytes, offset: int) -> None:
-        super().__init__(io.BytesIO(data))
-        self.offset = offset
-
-    def tell(self) -> int:
-        return self.offset + super().tell()
-
-    def seek(self, pos: int, whence: int = os.SEEK_SET) -> int:
-        if whence == os.SEEK_SET:
-            return super().seek(pos - self.offset, whence)
-        return super().seek(pos, whence)
 
 
 class Mp4Atom(ObjectWithFields):
@@ -424,18 +398,15 @@ class Mp4Atom(ObjectWithFields):
                               prefix,
                               hdr['atom_type'], Box.__name__,
                               hdr['position'], hdr['size'])
-            encoded = None
+            encoded: bytes | None = None
             if options.mode == 'rw' and not Box.parse_children:
                 sz = hdr["size"] - hdr["header_size"]
                 if sz == 0:
                     encoded = b''
                 else:
-                    encoded = src.peek(sz)[:sz]
-                    if len(encoded) < sz:
-                        p: int = src.tell()
-                        assert p is not None
-                        encoded = src.read(sz)
-                        src.seek(p)
+                    here: int = src.tell()
+                    encoded = src.read(sz)
+                    src.seek(here)
             if Box.REQUIRED_PEERS is not None:
                 required = set(Box.REQUIRED_PEERS)
                 for atom_name in Box.REQUIRED_PEERS:
@@ -884,9 +855,11 @@ class LazyLoadedBox(Mp4Atom):
             object.__setattr__(
                 self, name, object.__getattribute__(atom, name))
         del self._buffer
-        if src.tell() != (self.position + self.size) and self.options.strict:
+        here: int = src.tell()
+        src.close()
+        if self.options.strict and here != (self.position + self.size):
             raise RuntimeError(
-                f'Expected position {self.position + self.size} but actual position {src.tell()}')
+                f'Expected position {self.position + self.size} but actual position {here}')
         return atom
 
 

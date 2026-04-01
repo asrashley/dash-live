@@ -59,10 +59,10 @@ class TestBlobModel(FlaskTestBase):
         with self.app.app_context():
             blob = Blob.get_one(filename=filename.name)
             self.assertIsNotNone(blob)
-            with blob.open_file(tmpdir, start=None, buffer_size=4096) as src:
+            with blob.open_file(tmpdir, start=0, size=blob.size) as src:
                 data = src.read()
             self.assertEqual(b'a blob file', data)
-            with blob.open_file(tmpdir, start=6, buffer_size=4096) as src:
+            with blob.open_file(tmpdir, start=6, size=5, buffer_size=4096) as src:
                 data = src.read()
             self.assertEqual(b' file', data)
 

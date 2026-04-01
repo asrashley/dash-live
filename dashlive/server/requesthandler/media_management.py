@@ -545,9 +545,7 @@ class MediaSegmentInfo(SegmentInfoBase):
         options = mp4.Options(lazy_load=False)
         if current_media_file.representation.encrypted:
             options.iv_size = current_media_file.representation.iv_size
-        with current_media_file.open_file(start=frag.pos, buffer_size=16384) as reader:
-            src = BufferedReader(
-                reader, offset=frag.pos, size=frag.size, buffersize=16384)
+        with current_media_file.open_file(start=frag.pos, size=frag.size) as src:
             atom: mp4.Mp4Atom = cast(
                 mp4.Mp4Atom, mp4.Mp4Atom.load(src, options=options, use_wrapper=True))
         back_url: str = flask.url_for(
