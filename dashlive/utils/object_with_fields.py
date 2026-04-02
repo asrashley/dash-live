@@ -20,7 +20,7 @@
 #
 #############################################################################
 from collections.abc import MutableMapping
-from typing import AbstractSet, Any
+from typing import AbstractSet, Any, ClassVar
 
 from dashlive.utils.json_object import JsonObject
 from dashlive.utils.list_of import ListOf, clone_object, object_from
@@ -42,19 +42,17 @@ class ObjectFieldIterator:
 
 
 class ObjectWithFields(MutableMapping):
-    OBJECT_FIELDS = None
-    DEFAULT_VALUES = None
-    REQUIRED_FIELDS = None
-    DEFAULT_EXCLUDE = None
-    debug = False
+    OBJECT_FIELDS: ClassVar[dict[str, Any]] = {}
+    DEFAULT_VALUES: ClassVar[dict[str, Any]] = {}
+    REQUIRED_FIELDS: ClassVar[dict[str, type] | None] = None
+    DEFAULT_EXCLUDE: ClassVar[set[str]] = set()
+
+    debug: bool = False
+    _fields: set[str]  # name of the fields in this object
 
     def __init__(self, **kwargs):
         self._fields = set()
-        if self.OBJECT_FIELDS is None:
-            self.OBJECT_FIELDS = dict()
-        if self.DEFAULT_EXCLUDE is None:
-            self.DEFAULT_EXCLUDE = set()
-        if self.DEFAULT_VALUES is not None:
+        if self.DEFAULT_VALUES:
             self._copy_args(self.DEFAULT_VALUES)
         self._copy_args(kwargs)
         if self.REQUIRED_FIELDS is not None:
@@ -165,7 +163,7 @@ class ObjectWithFields(MutableMapping):
                 return [flatten(v, exclude=exclude) for v in value]
         return flatten(value, exclude=exclude)
 
-    def _copy_args(self, args: dict) -> None:
+    def _copy_args(self, args: dict[str, Any]) -> None:
         for key, value in args.items():
             if key[0] == '_':
                 object.__setattr__(self, key, value)
