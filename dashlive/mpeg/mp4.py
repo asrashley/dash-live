@@ -3238,10 +3238,14 @@ class IsoParser:
                 options.log.debug('Failed to read atom type. pos=%d', position)
             return None
         if size == 0:
-            pos = src.tell()
+            # A box size of 0 means the box extends to EOF. The size must
+            # include the already-read header, so compute from the box start
+            # position rather than the current position.
+            current_pos = src.tell()
             src.seek(0, 2)  # seek to end
-            size = src.tell() - pos
-            src.seek(pos)
+            eof_pos = src.tell()
+            size = eof_pos - position
+            src.seek(current_pos)
         elif size == 1:
             size_ext = src.read(8)
             buf.append(size_ext)
