@@ -298,7 +298,7 @@ class MediaRequestBase(RequestHandlerBase):
         if media.representation.encrypted:
             mp4_options.iv_size = media.representation.iv_size
         with media.open_file(start=frag.pos, size=frag.size) as src:
-            atom: mp4.Wrapper = cast(mp4.Wrapper, mp4.Mp4Atom.load(
+            atom: mp4.Wrapper = cast(mp4.Wrapper, mp4.IsoParser.load(
                 cast(BinaryIO, src), options=mp4_options, use_wrapper=True))
             if parse_samples:
                 atom.moof.traf.trun.parse_samples(

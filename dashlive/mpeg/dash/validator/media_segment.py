@@ -269,7 +269,7 @@ class MediaSegment(DashElement):
                     info.iv_size, msg='IV size is unknown'):
                 return None
             options["iv_size"] = info.iv_size
-        atoms = mp4.Mp4Atom.load(src, options=options, use_wrapper=True)
+        atoms = mp4.IsoParser.load(src, options=options, use_wrapper=True)
         self.elt.check_greater_than(len(atoms), 1)
         try:
             moof = atoms.moof

@@ -47,7 +47,7 @@ class ContentProtection(Descriptor):
     def validate_cenc_element(self, child: DescriptorElement) -> None:
         data: bytes = base64.b64decode(child.text)
         src = io.BufferedReader(io.BytesIO(data))
-        atoms: list[mp4.Mp4Atom] = mp4.Mp4Atom.load(src)
+        atoms: list[mp4.Mp4Atom] = mp4.IsoParser.load(src)
         self.elt.check_equal(len(atoms), 1, msg='Expected one child element')
         self.elt.check_equal(
             atoms[0].atom_type, 'pssh',

@@ -685,6 +685,6 @@ if __name__ == '__main__':
     import io
 
     with open(sys.argv[1], 'rb') as src:
-        wrap = mp4.Wrapper(children=mp4.Mp4Atom.load(io.BufferedReader(src)))
+        wrap = mp4.Wrapper(children=mp4.IsoParser.load(io.BufferedReader(src)))
     rep: Representation = Representation.load(filename=sys.argv[1], atoms=wrap.children)
     print(repr(rep))

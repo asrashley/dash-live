@@ -7,14 +7,13 @@
 #############################################################################
 from abc import ABC, abstractmethod
 import datetime
-import io
 import logging
 import os
 from pathlib import Path
 import shutil
 import sys
 import tempfile
-from typing import BinaryIO, Sequence, cast
+from typing import BinaryIO, ClassVar, Sequence, cast
 
 from dashlive.mpeg import mp4
 from dashlive.mpeg.dash.representation import Representation
@@ -25,6 +24,7 @@ from .media_create_options import MediaCreateOptions
 
 class MediaCreationTask(ABC):
     options: MediaCreateOptions
+    BUFFER_SIZE: ClassVar[int] = 65536
 
     def __init__(self, options: MediaCreateOptions) -> None:
         self.options = options
@@ -55,11 +55,10 @@ class MediaCreationTask(ABC):
         mp4_options = mp4.Options(mode='rw', lazy_load=True)
         if encrypted:
             mp4_options.iv_size = self.options.iv_size
-        with src_file.open('rb') as src:
-            with dest_file.open('wb') as dest:
-                reader: io.BufferedReader = io.BufferedReader(src)
-                atoms: list[mp4.Mp4Atom] = cast(list[mp4.Mp4Atom], mp4.Mp4Atom.load(
-                    reader, options=mp4_options, use_wrapper=False))
+        with src_file.open('rb', buffering=self.BUFFER_SIZE) as src:
+            with dest_file.open('wb', buffering=self.BUFFER_SIZE) as dest:
+                atoms: list[mp4.Mp4Atom] = cast(list[mp4.Mp4Atom], mp4.IsoParser.load(
+                    src, options=mp4_options, use_wrapper=False))
                 self.copy_and_modify_atoms(atoms, dest, track_id, language)
 
     def modify_mp4_file(self, mp4file: Path, track_id: int, language: str,
@@ -72,15 +71,14 @@ class MediaCreationTask(ABC):
             mp4_options.iv_size = self.options.iv_size
 
         logging.info('Modifying MP4 file "%s"', mp4file.name)
-        with tempfile.TemporaryFile() as tmp:
-            with mp4file.open('rb') as src:
-                reader: io.BufferedReader = io.BufferedReader(src)
-                atoms: list[mp4.Mp4Atom] = cast(list[mp4.Mp4Atom], mp4.Mp4Atom.load(
-                    reader, options=mp4_options, use_wrapper=False))
+        with tempfile.TemporaryFile(buffering=self.BUFFER_SIZE) as tmp:
+            with mp4file.open('rb', buffering=self.BUFFER_SIZE) as src:
+                atoms: list[mp4.Mp4Atom] = cast(list[mp4.Mp4Atom], mp4.IsoParser.load(
+                    src, options=mp4_options, use_wrapper=False))
                 self.copy_and_modify_atoms(atoms, tmp, track_id, language)
             mp4file.unlink()
             tmp.seek(0)
-            with mp4file.open('wb') as dest:
+            with mp4file.open('wb', buffering=self.BUFFER_SIZE) as dest:
                 shutil.copyfileobj(tmp, dest)
 
     @staticmethod
@@ -123,11 +121,11 @@ class MediaCreationTask(ABC):
         if not moov.exists():
             raise OSError(f'MOOV not found: {moov}')
 
-        with dest_filename.open("wb") as dest:
+        with dest_filename.open("wb", buffering=self.BUFFER_SIZE) as dest:
             if self.options.verbose:
                 sys.stdout.write('I')
                 sys.stdout.flush()
-            with open(moov, "rb") as src:
+            with open(moov, "rb", buffering=self.BUFFER_SIZE) as src:
                 shutil.copyfileobj(src, dest)
             segment = 1
             while True:
@@ -137,7 +135,7 @@ class MediaCreationTask(ABC):
                 if self.options.verbose:
                     sys.stdout.write('f')
                     sys.stdout.flush()
-                with open(moof, "rb") as src:
+                with open(moof, "rb", buffering=self.BUFFER_SIZE) as src:
                     shutil.copyfileobj(src, dest)
                 if not self.options.preserve:
                     os.remove(moof)

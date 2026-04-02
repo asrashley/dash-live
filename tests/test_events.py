@@ -127,7 +127,7 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
             options = {"strict": True}
             frag = mp4.Wrapper(
                 atom_type='wrap',
-                children=mp4.Mp4Atom.load(src, options=options))
+                children=mp4.IsoParser.load(src, options=options))
             media_timescale = rep.init_segment.media_timescale()
             seg_presentation_time = (
                 ev_presentation_time * media_timescale /

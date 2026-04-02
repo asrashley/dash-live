@@ -40,7 +40,7 @@ class SegmentTests(unittest.TestCase):
             with filename.open('rb') as src:
                 wrap = mp4.Wrapper(
                     atom_type='wrap', parent=None,
-                    children=mp4.Mp4Atom.load(BufferedReader(src)))
+                    children=mp4.IsoParser.load(BufferedReader(src)))
             rep = Representation.load(filename=name, atoms=wrap.children)
             self.assertEqual(rep.version, Representation.VERSION)
             if 'v' in name:

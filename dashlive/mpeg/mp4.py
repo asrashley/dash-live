@@ -33,6 +33,8 @@ from dashlive.utils.object_with_fields import ObjectWithFields
 from .event_bus import EventBus
 from .nal import Nal
 
+MODULE_PREFIX: str = 'dashlive.mpeg.mp4.'
+
 @dataclass(slots=True, kw_only=True)
 class Options:
     mode: str = 'r'
@@ -92,8 +94,6 @@ class Mp4Atom(ObjectWithFields):
     # set of boxes that this atom depends upon
     DEPENDS_UPON: ClassVar[set[str]] = set()
 
-    MODULE_PREFIX: ClassVar[str] = 'dashlive.mpeg.mp4.'
-
     def __init__(self, **kwargs) -> None:
         if 'children' in kwargs:
             kwargs['_children'] = kwargs['children']
@@ -132,7 +132,7 @@ class Mp4Atom(ObjectWithFields):
         if self._children is not None:
             for idx, ch in enumerate(self._children):
                 if isinstance(ch, dict):
-                    ch = Mp4Atom.fromJSON(ch)
+                    ch = IsoParser.fromJSON(ch)
                     self._children[idx] = ch
                 ch.parent = self
         self._init_complete = True
@@ -341,244 +341,6 @@ class Mp4Atom(ObjectWithFields):
                 for ch in self.parent._children[idx + 1:]:
                     ch.position += delta
 
-    @classmethod
-    def load(cls,
-             src: BinaryIO,
-             parent: Optional["Mp4Atom"] = None,
-             options: Options | None = None,
-             lazy_load_atoms: bool = False,
-             use_wrapper: bool = False) -> Union["Mp4Atom", list["Mp4Atom"]]:
-        """
-        Parse the given source to create MP4 atoms.
-        :src: a readable (file) source
-        :parent: the parent MP4Atom
-        :options: the mp4.Options to use, or a dictionary of option values
-        """
-        assert src is not None
-        if options is None:
-            options = Options()
-        elif isinstance(options, dict):
-            options = Options(**options)
-        if parent is not None:
-            cursor = parent.payload_start
-            end = parent.position + parent.size
-            prefix = fr'{parent._fullname}: '
-            ev_bus = parent._ev_bus
-        else:
-            parent = Wrapper(position=src.tell(), options=options)
-            end = None
-            cursor = 0
-            prefix = ''
-            ev_bus = EventBus["Mp4Atom"]()
-            parent._ev_bus = ev_bus
-        if options.iv_size and options.iv_size > 16:
-            # assume user has provided IV size in bits rather than bytes
-            options.iv_size = options.iv_size // 8
-            assert options.iv_size in {8, 16}
-        rv = parent._children
-        if end is None:
-            options.log.debug('%sLoad start=%d end=None', prefix, cursor)
-        else:
-            options.log.debug('%sLoad start=%d end=%d (%d)', prefix,
-                              cursor, end, end - cursor)
-        deferred_boxes = []
-        while end is None or cursor < end:
-            assert cursor is not None
-            if src.tell() != cursor:
-                # options.log.debug('Move cursor from %d to %d', src.tell(), cursor)
-                src.seek(cursor)
-            hdr = Mp4Atom.parse(src, parent, options=options)
-            if hdr is None:
-                break
-            try:
-                Box = fourcc.BOXES[hdr['atom_type']]
-            except KeyError:
-                Box = UnknownBox
-            options.log.debug('%sfound atom "%s" type=%s pos=%d size=%d',
-                              prefix,
-                              hdr['atom_type'], Box.__name__,
-                              hdr['position'], hdr['size'])
-            encoded: bytes | None = None
-            if options.mode == 'rw' and not Box.parse_children:
-                sz = hdr["size"] - hdr["header_size"]
-                if sz == 0:
-                    encoded = b''
-                else:
-                    here: int = src.tell()
-                    encoded = src.read(sz)
-                    src.seek(here)
-            if Box.REQUIRED_PEERS is not None:
-                required = set(Box.REQUIRED_PEERS)
-                for atom_name in Box.REQUIRED_PEERS:
-                    if parent.find_child(atom_name) is not None:
-                        required.remove(atom_name)
-                if required:
-                    options.log.debug(
-                        'Defer parsing of "%s" as %s needs to be parsed',
-                        hdr['atom_type'], list(required))
-                    deferred_boxes.append(dict(Box=Box, initial_data=hdr,
-                                               index=len(rv)))
-                    cursor += hdr['size']
-                    continue
-            if lazy_load_atoms and Box != UnknownBox:
-                options.log.debug(
-                    'lazy loading parent=%s this=%s pos=%d', parent.atom_type,
-                    hdr["atom_type"], hdr["position"])
-                kwargs = LazyLoadedBox.parse(src, parent, options=options, initial_data=hdr)
-                # hexdump_buffer(
-                #    f'lazy {kwargs["atom_type"]}@{kwargs["position"]}', kwargs['buffer'], 32)
-            else:
-                del hdr['_buffer']
-                kwargs = Box.parse(src, parent, options=options, initial_data=hdr)
-            kwargs['parent'] = parent
-            kwargs['options'] = options
-            try:
-                if lazy_load_atoms and Box != UnknownBox:
-                    atom = LazyLoadedBox(**kwargs)
-                    atom._box_class = Box
-                    if Box.DEPENDS_UPON:
-                        for name in Box.DEPENDS_UPON:
-                            ev_bus.on(f'change.{name}', atom.atom_changed)
-                else:
-                    atom = Box(**kwargs)
-                    atom.payload_start = src.tell()
-            except TypeError:
-                print(kwargs)
-                raise
-            atom._encoded = encoded
-            atom._ev_bus = ev_bus
-            rv.append(atom)
-            if atom.parse_children:
-                # options.log.debug('Parse %s children', hdr['atom_type'])
-                Mp4Atom.load(src, atom, options, lazy_load_atoms=options.lazy_load)
-            if (src.tell() - atom.position) != atom.size:
-                msg = r'{}: expected "{}" to contain {:d} bytes but parsed {:d} bytes'.format(
-                    prefix, atom.atom_type, atom.size, src.tell() - atom.position)
-                options.log.warning(msg)
-                if options.strict:
-                    raise ValueError(msg)
-            cursor += atom.size
-        if not deferred_boxes:
-            if use_wrapper:
-                return parent
-            return rv
-        cur_pos = src.tell()
-        for item in deferred_boxes:
-            options.log.debug('Parsing deferred box: "%s"',
-                              item['initial_data']['atom_type'])
-            hdr = item['initial_data']
-            Box = item['Box']
-            src.seek(hdr['position'] + hdr['header_size'])
-            kwargs = Box.parse(
-                src, parent, options=options, initial_data=hdr)
-            kwargs['parent'] = parent
-            kwargs['options'] = options
-            new_atom = Box(**kwargs)
-            new_atom.payload_start = src.tell()
-            if Box.parse_children:
-                options.log.debug('Parse %s children', new_atom.atom_type)
-                Mp4Atom.load(src, new_atom, options)
-            options.log.debug('finished parsing of deferred "%s"',
-                              new_atom.atom_type)
-            rv.insert(item['index'], new_atom)
-        src.seek(cur_pos)
-        if use_wrapper:
-            return parent
-        return rv
-
-    @classmethod
-    def fromJSON(cls, src: dict[str, Any], parent: Optional["Mp4Atom"] = None,
-                 options: Options | dict | None = None) -> "Mp4Atom":
-        assert src is not None
-        if options is None:
-            options = Options()
-        elif isinstance(options, dict):
-            options = Options(**options)
-        if isinstance(src, list):
-            return [cls.fromJSON(atom) for atom in src]
-
-        if '_type' in src:
-            name = src['_type']
-            if name.startswith(cls.MODULE_PREFIX):
-                name = name[len(cls.MODULE_PREFIX):]
-            Box = fourcc.BOX_TYPES[name]
-        elif 'atom_type' in src:
-            Box = fourcc.BOXES[src['atom_type']]
-        else:
-            Box = UnknownBox
-        src['parent'] = parent
-        src['options'] = options
-        if 'children' not in src and '_children' not in src:
-            return Box(**src)
-        try:
-            children = src['_children']
-        except KeyError:
-            children = src['children']
-        rv = Box(**src)
-        rv._children = []
-        if children is None:
-            return rv
-        for child in children:
-            if isinstance(child, dict):
-                child['parent'] = rv
-                child['options'] = options
-                rv._children.append(cls.fromJSON(child))
-            else:
-                rv._children.append(child)
-        return rv
-
-    @classmethod
-    def parse(cls, src: BinaryIO, parent: "Mp4Atom", options: Options | None = None, **kwargs) -> dict[str, Any] | None:
-        try:
-            return kwargs['initial_data']
-        except KeyError:
-            pass
-        position = src.tell()
-        data = src.read(8)
-        # hexdump_buffer(f'header position={position}', data)
-        if not data or len(data) != 8:
-            if options is not None:
-                if len(data) == 0:
-                    options.log.debug("EOS at %d", position)
-                else:
-                    options.log.debug(
-                        'Failed to read box length. pos=%d', position)
-            return None
-        buf = [data]
-        size, atom_type = struct.unpack('>I4s', data)
-        if not atom_type or len(atom_type) != 4:
-            if options:
-                options.log.debug('Failed to read atom type. pos=%d', position)
-            return None
-        if size == 0:
-            pos = src.tell()
-            src.seek(0, 2)  # seek to end
-            size = src.tell() - pos
-            src.seek(pos)
-        elif size == 1:
-            size_ext = src.read(8)
-            buf.append(size_ext)
-            size = struct.unpack('>Q', size_ext)[0]
-            if not size:
-                if options:
-                    options.log.debug(
-                        'Failed to read atom size. pos=%d', position)
-                return None
-        if atom_type == b'uuid':
-            uuid_data = src.read(16)
-            buf.append(uuid_data)
-            uuid = str(binascii.b2a_hex(uuid_data), 'ascii')
-            atom_type = f'UUID({uuid})'
-        else:
-            atom_type = str(atom_type, 'ascii')
-        return {
-            "atom_type": atom_type,
-            "position": position,
-            "size": size,
-            "header_size": src.tell() - position,
-            "_buffer": b''.join(buf),
-        }
-
     def encode(self, dest=None, depth=0):
         out = dest
         if out is None:
@@ -721,8 +483,9 @@ class UnknownBox(Mp4Atom):
     OBJECT_FIELDS.update(Mp4Atom.OBJECT_FIELDS)
 
     @classmethod
-    def parse(clz, src, *args, **kwargs):
-        rv = Mp4Atom.parse(src, *args, **kwargs)
+    def parse(clz, src, *args, **kwargs) -> dict[str, Any] | None:
+        rv: dict[str, Any] | None = IsoParser.parse(src, *args, **kwargs)
+        assert rv is not None
         size = rv["size"] - rv["header_size"]
         if size > 0:
             rv["data"] = src.read(size)
@@ -849,7 +612,7 @@ class LazyLoadedBox(Mp4Atom):
             self.parent.replace_child(self, atom)
         if atom.parse_children:
             atom.payload_start = src.tell()
-            Mp4Atom.load(src, atom, options=self.options, lazy_load_atoms=True)
+            IsoParser.load(src, atom, options=self.options, lazy_load_atoms=True)
         self._children = atom._children
         for name in atom._fields:
             object.__setattr__(
@@ -872,7 +635,7 @@ class FileTypeBox(Mp4Atom):
 
     @classmethod
     def parse(cls, src, *args, **kwargs):
-        rv = Mp4Atom.parse(src, *args, **kwargs)
+        rv = IsoParser.parse(src, *args, **kwargs)
         assert rv is not None
         r = FieldReader(cls.classname(), src, rv)
         rv['major_brand'] = str(r.get(4, 'major_brand'), 'ascii')
@@ -1257,7 +1020,7 @@ class FullBox(Mp4Atom):
 
     @classmethod
     def parse(cls, src, parent, options, **kwargs) -> dict[str, Any]:
-        rv = Mp4Atom.parse(src, parent, options=options, **kwargs)
+        rv = IsoParser.parse(src, parent, options=options, **kwargs)
         assert rv is not None
         r = FieldReader(cls.classname(), src, rv, debug=options.debug)
         r.read("B", "version")
@@ -1281,13 +1044,16 @@ class BoxWithChildren(Mp4Atom):
     def encode_fields(self, dest: BinaryIO) -> None:
         pass
 
+    @classmethod
+    def parse(clz, src, parent, options, **kwargs) -> dict[str, Any] | None:
+        return IsoParser.parse(src, parent, options=options, **kwargs)
+
 
 fourcc.BOX_TYPES['BoxWithChildren'] = BoxWithChildren
 
 @fourcc('moov')
 class MovieBox(BoxWithChildren):
     include_atom_type = False
-    pass
 
 
 @fourcc('trak')
@@ -1405,7 +1171,7 @@ class MovieHeaderBox(FullBox):
 class SampleEntry(Mp4Atom):
     @classmethod
     def parse(clz, src, parent, options, **kwargs) -> dict[str, Any]:
-        rv: dict[str, Any] = Mp4Atom.parse(src, parent, **kwargs)
+        rv: dict[str, Any] = IsoParser.parse(src, parent, **kwargs)
         r = FieldReader(clz.classname(), src, rv, debug=options.debug)
         r.skip(6)  # reserved
         r.read('H', 'data_reference_index')
@@ -1528,7 +1294,7 @@ class FontTableBox(Mp4Atom):
 
     @classmethod
     def parse(cls, src: BinaryIO, parent: dict[str, Any], options, **kwargs) -> dict[str, Any]:
-        rv: dict[str, Any] | None = Mp4Atom.parse(src, parent, options=options, **kwargs)
+        rv: dict[str, Any] | None = IsoParser.parse(src, parent, options=options, **kwargs)
         assert rv is not None
         r: FieldReader = FieldReader(cls.classname(), src, rv, debug=options.debug)
         entry_count: int = cast(int, r.get('H', 'entry-count'))
@@ -1631,7 +1397,7 @@ class TextSampleEntry(SampleEntry):
 class WebVTTConfigurationBox(Mp4Atom):
     @classmethod
     def parse(clz, src, parent, options, **kwargs):
-        rv = Mp4Atom.parse(src, parent, options, **kwargs)
+        rv = IsoParser.parse(src, parent, options, **kwargs)
         rv['config'] = str(src.read(rv['size'] - rv['header_size']), 'utf-8')
         return rv
 
@@ -1644,7 +1410,7 @@ class WebVTTConfigurationBox(Mp4Atom):
 class BitRateBox(Mp4Atom):
     @classmethod
     def parse(clz, src, parent, options, **kwargs):
-        rv = Mp4Atom.parse(src, parent, options, **kwargs)
+        rv = IsoParser.parse(src, parent, options, **kwargs)
         r = FieldReader(clz.classname(), src, rv, debug=options.debug)
         r.read('I', 'bufferSizeDB')
         r.read('I', 'maxBitrate')
@@ -1720,7 +1486,7 @@ class AVCConfigurationBox(Mp4Atom):
 
     @classmethod
     def parse(clz, src, parent, options, **kwargs):
-        rv = Mp4Atom.parse(src, parent, options=options, **kwargs)
+        rv = IsoParser.parse(src, parent, options=options, **kwargs)
         r = FieldReader(clz.classname(), src, rv, debug=options.debug)
         r.read('B', "configurationVersion")
         r.read('B', "AVCProfileIndication")
@@ -1846,7 +1612,7 @@ class HEVCConfigurationBox(Mp4Atom):
 
     @classmethod
     def parse(clz, src, parent, options, **kwargs):
-        rv = Mp4Atom.parse(src, parent, options=options, **kwargs)
+        rv = IsoParser.parse(src, parent, options=options, **kwargs)
         r: BitsFieldReader = BitsFieldReader(clz.classname(), src, rv, rv["size"] - rv["header_size"])
         r.read(8, 'configuration_version')
         if rv['configuration_version'] != 1:
@@ -1931,7 +1697,7 @@ class HEVCConfigurationBox(Mp4Atom):
 class PixelAspectRatioBox(Mp4Atom):
     @classmethod
     def parse(clz, src, parent, options, **kwargs):
-        rv = Mp4Atom.parse(src, parent, options=options, **kwargs)
+        rv = IsoParser.parse(src, parent, options=options, **kwargs)
         r = FieldReader(clz.classname(), src, rv)
         r.read('I', 'h_spacing')
         r.read('I', 'v_spacing')
@@ -2025,7 +1791,7 @@ class EAC3SpecificBox(Mp4Atom):
 
     @classmethod
     def parse(clz, src, parent, **kwargs) -> dict[str, Any] | None:
-        rv: dict[str, Any] | None = Mp4Atom.parse(src, parent, **kwargs)
+        rv: dict[str, Any] | None = IsoParser.parse(src, parent, **kwargs)
         if rv is None:
             return None
         r: BitsFieldReader = BitsFieldReader(clz.classname(), src, rv, size=None)
@@ -2072,7 +1838,7 @@ class AC3SpecificBox(Mp4Atom):
 
     @classmethod
     def parse(clz, src, parent, **kwargs):
-        rv = Mp4Atom.parse(src, parent, **kwargs)
+        rv = IsoParser.parse(src, parent, **kwargs)
         r = BitsFieldReader(clz.classname(), src, rv, rv["size"] - rv["header_size"])
         r.read(2, 'fscod')
         r.read(5, 'bsid')
@@ -2103,7 +1869,7 @@ class AC3SpecificBox(Mp4Atom):
 class OriginalFormatBox(Mp4Atom):
     @classmethod
     def parse(clz, src, parent, **kwargs):
-        rv = Mp4Atom.parse(src, parent, **kwargs)
+        rv = IsoParser.parse(src, parent, **kwargs)
         rv["data_format"] = str(src.read(4), 'ascii')
         return rv
 
@@ -2118,7 +1884,7 @@ class MP4AudioSampleEntry(Mp4Atom):
 
     @classmethod
     def parse(clz, src, parent, **kwargs):
-        rv = Mp4Atom.parse(src, parent, **kwargs)
+        rv = IsoParser.parse(src, parent, **kwargs)
         r = FieldReader(clz.classname(), src, rv)
         r.get(6, 'reserved')  # (8)[6] reserved
         r.read('H', "data_reference_index")
@@ -3209,7 +2975,7 @@ class IsoParser:
                 src = open(filename, mode="rb", buffering=16384)
             else:
                 src = filename
-            atoms = Mp4Atom.load(src, options=options)
+            atoms = IsoParser.load(src, options=options)
         finally:
             if src and isinstance(filename, (str, str)):
                 src.close()
@@ -3249,6 +3015,244 @@ class IsoParser:
                     child, atom_types=atom_types, as_json=as_json,
                     with_children=with_children, count=ch_count)
         return count
+
+    @classmethod
+    def load(cls,
+             src: BinaryIO,
+             parent: Mp4Atom | None = None,
+             options: Options | None = None,
+             lazy_load_atoms: bool = False,
+             use_wrapper: bool = False) -> Union[Mp4Atom, list[Mp4Atom]]:
+        """
+        Parse the given source to create MP4 atoms.
+        :src: a readable (file) source
+        :parent: the parent MP4Atom
+        :options: the mp4.Options to use, or a dictionary of option values
+        """
+        assert src is not None
+        if options is None:
+            options = Options()
+        elif isinstance(options, dict):
+            options = Options(**options)
+        if parent is not None:
+            cursor = parent.payload_start
+            end = parent.position + parent.size
+            prefix = fr'{parent._fullname}: '
+            ev_bus = parent._ev_bus
+        else:
+            parent = Wrapper(position=src.tell(), options=options)
+            end = None
+            cursor = 0
+            prefix = ''
+            ev_bus = EventBus["Mp4Atom"]()
+            parent._ev_bus = ev_bus
+        if options.iv_size and options.iv_size > 16:
+            # assume user has provided IV size in bits rather than bytes
+            options.iv_size = options.iv_size // 8
+            assert options.iv_size in {8, 16}
+        rv = parent._children
+        if end is None:
+            options.log.debug('%sLoad start=%d end=None', prefix, cursor)
+        else:
+            options.log.debug('%sLoad start=%d end=%d (%d)', prefix,
+                              cursor, end, end - cursor)
+        deferred_boxes = []
+        while end is None or cursor < end:
+            assert cursor is not None
+            if src.tell() != cursor:
+                # options.log.debug('Move cursor from %d to %d', src.tell(), cursor)
+                src.seek(cursor)
+            hdr = cls.parse(src, parent, options=options)
+            if hdr is None:
+                break
+            try:
+                Box = fourcc.BOXES[hdr['atom_type']]
+            except KeyError:
+                Box = UnknownBox
+            options.log.debug('%sfound atom "%s" type=%s pos=%d size=%d',
+                              prefix,
+                              hdr['atom_type'], Box.__name__,
+                              hdr['position'], hdr['size'])
+            encoded: bytes | None = None
+            if options.mode == 'rw' and not Box.parse_children:
+                sz = hdr["size"] - hdr["header_size"]
+                if sz == 0:
+                    encoded = b''
+                else:
+                    here: int = src.tell()
+                    encoded = src.read(sz)
+                    src.seek(here)
+            if Box.REQUIRED_PEERS is not None:
+                required = set(Box.REQUIRED_PEERS)
+                for atom_name in Box.REQUIRED_PEERS:
+                    if parent.find_child(atom_name) is not None:
+                        required.remove(atom_name)
+                if required:
+                    options.log.debug(
+                        'Defer parsing of "%s" as %s needs to be parsed',
+                        hdr['atom_type'], list(required))
+                    deferred_boxes.append(dict(Box=Box, initial_data=hdr,
+                                               index=len(rv)))
+                    cursor += hdr['size']
+                    continue
+            if lazy_load_atoms and Box != UnknownBox:
+                options.log.debug(
+                    'lazy loading parent=%s this=%s pos=%d', parent.atom_type,
+                    hdr["atom_type"], hdr["position"])
+                kwargs = LazyLoadedBox.parse(src, parent, options=options, initial_data=hdr)
+                # hexdump_buffer(
+                #    f'lazy {kwargs["atom_type"]}@{kwargs["position"]}', kwargs['buffer'], 32)
+            else:
+                del hdr['_buffer']
+                kwargs = Box.parse(src, parent, options=options, initial_data=hdr)
+            kwargs['parent'] = parent
+            kwargs['options'] = options
+            try:
+                if lazy_load_atoms and Box != UnknownBox:
+                    atom = LazyLoadedBox(**kwargs)
+                    atom._box_class = Box
+                    if Box.DEPENDS_UPON:
+                        for name in Box.DEPENDS_UPON:
+                            ev_bus.on(f'change.{name}', atom.atom_changed)
+                else:
+                    atom = Box(**kwargs)
+                    atom.payload_start = src.tell()
+            except TypeError:
+                print(kwargs)
+                raise
+            atom._encoded = encoded
+            atom._ev_bus = ev_bus
+            rv.append(atom)
+            if atom.parse_children:
+                # options.log.debug('Parse %s children', hdr['atom_type'])
+                cls.load(src, atom, options, lazy_load_atoms=options.lazy_load)
+            if (src.tell() - atom.position) != atom.size:
+                msg = r'{}: expected "{}" to contain {:d} bytes but parsed {:d} bytes'.format(
+                    prefix, atom.atom_type, atom.size, src.tell() - atom.position)
+                options.log.warning(msg)
+                if options.strict:
+                    raise ValueError(msg)
+            cursor += atom.size
+        if not deferred_boxes:
+            if use_wrapper:
+                return parent
+            return rv
+        cur_pos = src.tell()
+        for item in deferred_boxes:
+            options.log.debug('Parsing deferred box: "%s"',
+                              item['initial_data']['atom_type'])
+            hdr = item['initial_data']
+            Box = item['Box']
+            src.seek(hdr['position'] + hdr['header_size'])
+            kwargs = Box.parse(
+                src, parent, options=options, initial_data=hdr)
+            kwargs['parent'] = parent
+            kwargs['options'] = options
+            new_atom = Box(**kwargs)
+            new_atom.payload_start = src.tell()
+            if Box.parse_children:
+                options.log.debug('Parse %s children', new_atom.atom_type)
+                cls.load(src, new_atom, options)
+            options.log.debug('finished parsing of deferred "%s"',
+                              new_atom.atom_type)
+            rv.insert(item['index'], new_atom)
+        src.seek(cur_pos)
+        if use_wrapper:
+            return parent
+        return rv
+
+    @classmethod
+    def fromJSON(cls, src: dict[str, Any], parent: Mp4Atom | None = None,
+                 options: Options | dict | None = None) -> Mp4Atom:
+        assert src is not None
+        if options is None:
+            options = Options()
+        elif isinstance(options, dict):
+            options = Options(**options)
+        if isinstance(src, list):
+            return [cls.fromJSON(atom) for atom in src]
+
+        if '_type' in src:
+            name = src['_type']
+            if name.startswith(MODULE_PREFIX):
+                name = name[len(MODULE_PREFIX):]
+            Box = fourcc.BOX_TYPES[name]
+        elif 'atom_type' in src:
+            Box = fourcc.BOXES[src['atom_type']]
+        else:
+            Box = UnknownBox
+        src['parent'] = parent
+        src['options'] = options
+        if 'children' not in src and '_children' not in src:
+            return Box(**src)
+        try:
+            children = src['_children']
+        except KeyError:
+            children = src['children']
+        rv = Box(**src)
+        rv._children = []
+        if children is None:
+            return rv
+        for child in children:
+            if isinstance(child, dict):
+                child['parent'] = rv
+                child['options'] = options
+                rv._children.append(cls.fromJSON(child))
+            else:
+                rv._children.append(child)
+        return rv
+
+    @classmethod
+    def parse(cls, src: BinaryIO, parent: Mp4Atom, options: Options | None = None, **kwargs) -> dict[str, Any] | None:
+        try:
+            return kwargs['initial_data']
+        except KeyError:
+            pass
+        position = src.tell()
+        data = src.read(8)
+        # hexdump_buffer(f'header position={position}', data)
+        if not data or len(data) != 8:
+            if options is not None:
+                if len(data) == 0:
+                    options.log.debug("EOS at %d", position)
+                else:
+                    options.log.debug(
+                        'Failed to read box length. pos=%d', position)
+            return None
+        buf = [data]
+        size, atom_type = struct.unpack('>I4s', data)
+        if not atom_type or len(atom_type) != 4:
+            if options:
+                options.log.debug('Failed to read atom type. pos=%d', position)
+            return None
+        if size == 0:
+            pos = src.tell()
+            src.seek(0, 2)  # seek to end
+            size = src.tell() - pos
+            src.seek(pos)
+        elif size == 1:
+            size_ext = src.read(8)
+            buf.append(size_ext)
+            size = struct.unpack('>Q', size_ext)[0]
+            if not size:
+                if options:
+                    options.log.debug(
+                        'Failed to read atom size. pos=%d', position)
+                return None
+        if atom_type == b'uuid':
+            uuid_data = src.read(16)
+            buf.append(uuid_data)
+            uuid = str(binascii.b2a_hex(uuid_data), 'ascii')
+            atom_type = f'UUID({uuid})'
+        else:
+            atom_type = str(atom_type, 'ascii')
+        return {
+            "atom_type": atom_type,
+            "position": position,
+            "size": size,
+            "header_size": src.tell() - position,
+            "_buffer": b''.join(buf),
+        }
 
     @classmethod
     def main(cls):
