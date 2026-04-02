@@ -293,7 +293,7 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
         if rep is None:
             print(f'Creating Representation cache: {js_filename}')
             with src_file.open(mode="rb", buffering=16384) as src:
-                atoms = mp4.Mp4Atom.load(src)
+                atoms = mp4.IsoParser.load(src)
             rep = Representation.load(filename, atoms)
             rep_js = rep.toJSON(pure=True)
             with js_filename.open('wt', encoding='utf-8') as dest:

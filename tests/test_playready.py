@@ -503,7 +503,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         with filename.open('rb') as f:
             with io.BufferedReader(f) as src:
                 assert src is not None
-                segments = mp4.Mp4Atom.load(src, options=options)
+                segments = mp4.IsoParser.load(src, options=options)
         self.fs.resume()
         init_seg = mp4.Wrapper(atom_type='wrap', options=options)
         for seg in segments:
@@ -527,7 +527,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         # with open('new_init_seg.mp4', 'wb') as tmp:
         #     tmp.write(data)
         src = BufferedReader(None, data=data)
-        new_init_seg = mp4.Mp4Atom.load(src, options=options, use_wrapper=True)
+        new_init_seg = mp4.IsoParser.load(src, options=options, use_wrapper=True)
         self.assertEqual(new_init_seg._children[0].atom_type, 'ftyp')
         self.assertEqual(len(new_init_seg.moov._children), len(init_seg.moov._children))
         expected = init_seg.toJSON()
@@ -715,7 +715,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
                     response = self.client.get(seg.url)
                     self.assertEqual(response.status_code, 200)
                     src = BufferedReader(None, data=response.get_data(as_text=False))
-                    atoms = mp4.Mp4Atom.load(src, options={'iv_size': 64})
+                    atoms = mp4.IsoParser.load(src, options={'iv_size': 64})
                     for a in atoms:
                         if a.atom_type != 'moof':
                             continue

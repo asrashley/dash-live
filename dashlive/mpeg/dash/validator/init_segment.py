@@ -151,7 +151,7 @@ class InitSegment(DashElement):
             return False
         src = io.BufferedReader(io.BytesIO(body))
         atoms: list[mp4.Mp4Atom] = cast(
-            list[mp4.Mp4Atom], mp4.Mp4Atom.load(src, options={'lazy_load': False}))
+            list[mp4.Mp4Atom], mp4.IsoParser.load(src, options={'lazy_load': False}))
         moov: mp4.Mp4Atom | None = None
         for atm in atoms:
             if atm.atom_type == 'moov':

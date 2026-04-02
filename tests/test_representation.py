@@ -25,7 +25,7 @@ from typing import cast
 import unittest
 
 from dashlive.server import models
-from dashlive.mpeg.mp4 import Mp4Atom
+from dashlive.mpeg.mp4 import IsoParser, Mp4Atom
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.utils.json_object import JsonObject
 
@@ -37,7 +37,7 @@ class RepresentationTests(FlaskTestBase, unittest.TestCase):
     @staticmethod
     def load_representation(filename: Path) -> tuple[Representation, list[Mp4Atom]]:
         with filename.open('rb') as src:
-            atoms: list[Mp4Atom] = cast(list[Mp4Atom], Mp4Atom.load(io.BufferedReader(src)))
+            atoms: list[Mp4Atom] = cast(list[Mp4Atom], IsoParser.load(io.BufferedReader(src)))
         rep: Representation = Representation.load(f"{filename}", atoms)
         return (rep, atoms,)
 

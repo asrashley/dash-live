@@ -235,7 +235,7 @@ class MediaFile(ModelMixin["MediaFile"], Base):
         with self.blob.open_file(abs_path, start=0, size=self.blob.size) as src:
             atom = mp4.Wrapper(
                 atom_type='wrap', position=0, size=self.blob.size,
-                parent=None, children=mp4.Mp4Atom.load(src))
+                parent=None, children=mp4.IsoParser.load(src))
         rep = Representation.load(filename=self.name, atoms=atom.children)
         if not rep.segments:
             err = MediaFileError(
@@ -321,7 +321,7 @@ class MediaFile(ModelMixin["MediaFile"], Base):
                         src.seek(frag.pos)
                         reader = BufferedReader(
                             src, offset=frag.pos, size=frag.size, buffersize=16384)
-                        atom = mp4.Mp4Atom.load(
+                        atom = mp4.IsoParser.load(
                             reader, options=mp4_options, use_wrapper=True)
                         changed = modify_atoms(atom)
                         if changed:

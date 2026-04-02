@@ -120,7 +120,7 @@ class BackendDatabaseAccess(DatabaseAccess):
         with mf.open_file(start=0, size=mf.blob.size) as src:
             atom = mp4.Wrapper(
                 atom_type='wrap', position=0, size=mf.blob.size,
-                parent=None, children=mp4.Mp4Atom.load(src))
+                parent=None, children=mp4.IsoParser.load(src))
         rep = Representation.load(filename=mf.name, atoms=atom.children)
         mf.representation = rep
         mf.encryption_keys = []
