@@ -77,9 +77,16 @@ def mp4descriptor(tag: int):
 
 
 class Mp4Atom(ObjectWithFields):
-    _init_complete = False
-    parse_children = False
-    include_atom_type = False
+    parse_children: ClassVar[bool] = False
+    include_atom_type: ClassVar[bool] = False
+
+    _children: list[ObjectWithFields] | None = None
+    atom_type: str
+    init_complete: bool = False
+    options: Options
+    parent: Optional["Mp4Atom"]
+    position: int
+    size: int
 
     OBJECT_FIELDS: ClassVar[dict[str, Any]] = {
         '_children': ListOf(ObjectWithFields),
@@ -138,6 +145,8 @@ class Mp4Atom(ObjectWithFields):
         self._init_complete = True
 
     def __getattr__(self, name: str) -> "Mp4Atom":
+        if name[0] == '_' or "_init_complete" not in self.__dict__ or not self.__getattribute__("_init_complete"):
+            raise AttributeError(name)
         if name in self._fields:
             # __getattribute__ should have responded before __getattr__ called
             raise AttributeError(name)
@@ -161,18 +170,19 @@ class Mp4Atom(ObjectWithFields):
         except AttributeError:
             pass
 
-    def _invalidate(self):
+    def _invalidate(self) -> None:
         if self._encoded is not None:
             self._encoded = None
             if self.parent:
                 self.parent._invalidate()
 
-    def __setattr__(self, name, value):
-        if self._init_complete:
-            if name[0] != '_' and name in self._fields:
-                self._invalidate()
-                self.trigger_change()
+    def __setattr__(self, name: str, value: Any) -> None:
         object.__setattr__(self, name, value)
+        if name[0] == '_' or "_init_complete" not in self.__dict__ or not self.__getattribute__("_init_complete"):
+            return
+        if name in self.__dict__.get("_fields", set()):
+            self._invalidate()
+            self.trigger_change()
 
     def __delattr__(self, name: str) -> None:
         if name[0] == '_':
@@ -192,7 +202,7 @@ class Mp4Atom(ObjectWithFields):
             self.trigger_change()
         raise AttributeError(name)
 
-    def _field_repr(self, exclude):
+    def _field_repr(self, exclude: AbstractSet[str]) -> list[str]:
         if not self.include_atom_type:
             exclude = exclude.union({'atom_type', 'options'})
         return super()._field_repr(exclude)
@@ -341,10 +351,12 @@ class Mp4Atom(ObjectWithFields):
                 for ch in self.parent._children[idx + 1:]:
                     ch.position += delta
 
-    def encode(self, dest=None, depth=0):
-        out = dest
-        if out is None:
+    def encode(self, dest: BinaryIO | None = None, depth: int = 0) -> bytes | BinaryIO:
+        out: BinaryIO
+        if dest is None:
             out = io.BytesIO()
+        else:
+            out = dest
         self.position = out.tell()
         if len(self.atom_type) > 4:
             # 16 hex chars + 'UUID()' == 38
@@ -398,13 +410,13 @@ class Mp4Atom(ObjectWithFields):
     def encode_fields(self, dest: BinaryIO) -> None:
         pass
 
-    def post_encode_all(self, dest):
+    def post_encode_all(self, dest: BinaryIO) -> None:
         if self._children is not None:
             for child in self._children:
                 child.post_encode_all(dest)
         self.post_encode(dest)
 
-    def post_encode(self, dest) -> None:
+    def post_encode(self, dest: BinaryIO) -> None:
         return
 
     def atom_name(self) -> str:
@@ -566,7 +578,7 @@ class LazyLoadedBox(Mp4Atom):
         return atom._children
 
     def __setattr__(self, name, value):
-        if name[0] == '_' or not self.__getattribute__("_init_complete"):
+        if name[0] == '_' or "_init_complete" not in self.__dict__ or not self.__getattribute__("_init_complete"):
             object.__setattr__(self, name, value)
             return
         if name == 'position':
