@@ -19,7 +19,7 @@ RUN tar czf ${HOME}/front-end.tar.gz static/html static/css
 #
 # Build Python server container
 #
-FROM python:3.11 as dashlive
+FROM python:3.12 as dashlive
 EXPOSE 5000
 ARG DEFAULT_PASSWORD=""
 ARG PROXY_DEPTH="1"
