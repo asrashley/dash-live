@@ -81,10 +81,12 @@ class Mp4Atom(ObjectWithFields):
     include_atom_type: ClassVar[bool] = False
 
     _children: list[ObjectWithFields] | None = None
+    _ev_bus: Optional[EventBus["Mp4Atom"]] = None
     atom_type: str
     init_complete: bool = False
     options: Options
     parent: Optional["Mp4Atom"]
+    payload_start: int
     position: int
     size: int
 
@@ -3046,16 +3048,20 @@ class IsoParser:
             options = Options()
         elif isinstance(options, dict):
             options = Options(**options)
+
+        end: int | None = None
+        prefix: str = ''
+        cursor: int
+        ev_bus: EventBus["Mp4Atom"]
         if parent is not None:
             cursor = parent.payload_start
             end = parent.position + parent.size
             prefix = fr'{parent._fullname}: '
+            assert parent._ev_bus is not None
             ev_bus = parent._ev_bus
         else:
+            cursor = src.tell()
             parent = Wrapper(position=src.tell(), options=options)
-            end = None
-            cursor = 0
-            prefix = ''
             ev_bus = EventBus["Mp4Atom"]()
             parent._ev_bus = ev_bus
         if options.iv_size and options.iv_size > 16:
@@ -3078,7 +3084,7 @@ class IsoParser:
             if hdr is None:
                 break
             try:
-                Box = fourcc.BOXES[hdr['atom_type']]
+                Box = fourcc.BOXES[hdr['atom_type']]  # pyright: ignore[reportFunctionMemberAccess]
             except KeyError:
                 Box = UnknownBox
             options.log.debug('%sfound atom "%s" type=%s pos=%d size=%d',
