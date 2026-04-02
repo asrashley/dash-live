@@ -568,7 +568,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         test_la_url = 'https://licence.url.override/'
         await self.check_playready_la_url_value(
             test_la_url,
-            [f'playready_la_url={urllib.parse.quote_plus(test_la_url)}'])
+            [f'playready__la_url={urllib.parse.quote_plus(test_la_url)}'])
 
     def test_is_supported_scheme_id(self):
         self.assertTrue(PlayReady.is_supported_scheme_id(
@@ -643,25 +643,27 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
 
     async def test_playready_piff_sample_encryption_if_flag_present(self):
         """
-        PiffSampleEncryptionBox is inserted when playready_piff=true option is used
+        PiffSampleEncryptionBox is inserted when playready__piff=true option is used
         """
         self.setup_media()
         self.logout_user()
-        args = ['drm=playready', 'playready__version=3.0',
-                'playready_piff=1']
-        await self.check_piff_uuid_is_present(args)
-        args = ['drm=playready', 'playready__version=3.0',
-                'playready_piff=true']
-        await self.check_piff_uuid_is_present(args)
+        with self.subTest(playready__piff=1):
+            args = ['drm=playready', 'playready__version=3.0',
+                    'playready__piff=1']
+            await self.check_piff_uuid_is_present(args)
+        with self.subTest(playready__piff=True):
+            args = ['drm=playready', 'playready__version=3.0',
+                    'playready__piff=true']
+            await self.check_piff_uuid_is_present(args)
 
     async def test_playready_piff_sample_encryption_with_saio_bug(self):
         """
-        PiffSampleEncryptionBox is inserted when playready_piff=true option is used
+        PiffSampleEncryptionBox is inserted when playready__piff=true option is used
         """
         self.setup_media()
         self.logout_user()
         args = ['drm=playready', 'playready__version=3.0',
-                'playready_piff=1', 'bugs=saio']
+                'playready__piff=1', 'bugs=saio']
         with self.assertRaises(AssertionError):
             await self.check_piff_uuid_is_present(args, expect_errors=True)
 
@@ -672,7 +674,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         extras = [
             manifests.SupportedOptionTuple('drm', len(drm_opts), drm_opts),
             manifests.SupportedOptionTuple(
-                'playready_la_url', 2, ['https://some.server/pr', 'http://another.addr/abc']),
+                'playready__la_url', 2, ['https://some.server/pr', 'http://another.addr/abc']),
         ]
         self.setup_media_fixture(BBB_FIXTURE)
         await self.check_a_manifest_using_all_options(
