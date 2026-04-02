@@ -493,7 +493,7 @@ if __name__ == "__main__":
     for arg in sys.argv[1:]:
         data: bytes = base64.b64decode(arg)
         src = io.BufferedReader(io.BytesIO(data))
-        if data[4:8] == 'pssh':
+        if data[4:8] == b'pssh':
             atoms = mp4.IsoParser.load(src)
             assert isinstance(atoms, list)
             assert atoms[0].atom_type == 'pssh'
