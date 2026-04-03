@@ -33,7 +33,10 @@ from typing import Any, ClassVar, NamedTuple, Optional, Set, cast
 from dashlive.drm.keymaterial import KeyMaterial
 from dashlive.mpeg.codec_strings import codec_string_from_avc_box
 from dashlive.mpeg.dash.reference import StreamTimingReference
-from dashlive.mpeg.mp4 import AudioSampleEntry, Mp4Atom, SampleEntry, TrackBox, VisualSampleEntry, XMLSubtitleSampleEntry
+from dashlive.mpeg.mp4 import (
+    AudioSampleEntry, MediaHeaderBox, MovieBox, Mp4Atom, SampleDescriptionBox,
+    SampleEntry, TrackBox, TrackExtendsBox, TrackFragmentBox, TrackFragmentRunBox,
+    VisualSampleEntry, XMLSubtitleSampleEntry)
 from dashlive.utils.date_time import scale_timedelta, timecode_to_timedelta, timedelta_to_timecode
 from dashlive.utils.list_of import ListOf
 from dashlive.utils.object_with_fields import ObjectWithFields
@@ -221,33 +224,37 @@ class Representation(ObjectWithFields):
                     sys.stdout.flush()
                 dur = 0
                 if segment_start_number is None:
-                    segment_start_number = atom.mfhd.sequence_number
+                    segment_start_number = atom['mfhd'].sequence_number
                     rv.start_number = segment_start_number
-                for sample in atom.traf.trun.samples:
+                traf: TrackFragmentBox = atom['traf']
+                trun: TrackFragmentRunBox = traf['trun']
+                trex: TrackExtendsBox = moov['mvex.trex']
+                for sample in trun.samples:
                     if not sample.duration:
-                        sample.duration = moov.mvex.trex.default_sample_duration
+                        sample.duration = trex.default_sample_duration
                     dur += sample.duration
                 seg.duration = dur
                 try:
-                    for kid in atom.pssh.key_ids:
+                    pssh = atom['pssh']
+                    for kid in pssh.key_ids:
                         key_ids.add(KeyMaterial(raw=kid))
-                except AttributeError:
+                except KeyError:
                     pass
-                tfdt = atom.traf.find_child('tfdt')
+                tfdt = traf.find_child('tfdt')
                 if tfdt is None:
                     segment_start_time = segment_end_time
                 else:
-                    segment_start_time = atom.traf.tfdt.base_media_decode_time
+                    segment_start_time = tfdt.base_media_decode_time
                     segment_end_time = segment_start_time
                 if representation_start_time is None:
                     representation_start_time = segment_start_time
-                for sample in atom.traf.trun.samples:
+                for sample in trun.samples:
                     segment_end_time += sample.duration
                 rv.segments.append(seg)
                 if default_sample_duration == 0:
-                    for sample in atom.traf.trun.samples:
+                    for sample in trun.samples:
                         default_sample_duration += sample.duration
-                    default_sample_duration = default_sample_duration // len(atom.traf.trun.samples)
+                    default_sample_duration = default_sample_duration // len(trun.samples)
                     if verbose > 1:
                         print('Average sample duration %d' % default_sample_duration)
                     if rv.content_type == "video" and default_sample_duration:
@@ -300,35 +307,37 @@ class Representation(ObjectWithFields):
         self.presentation_time_offset = timedelta_to_timecode(period_time_offset, self.timescale)
         self.period_duration = duration
 
-    def process_moov(self, moov: Mp4Atom, key_ids: set[KeyMaterial]) -> None:
-        self.timescale = moov.trak.mdia.mdhd.timescale
-        self.lang = moov.trak.mdia.mdhd.language
-        self.track_id = moov.trak.tkhd.track_id
+    def process_moov(self, moov: MovieBox, key_ids: set[KeyMaterial]) -> None:
+        mdhd: MediaHeaderBox = moov['trak.mdia.mdhd']
+        self.timescale = mdhd.timescale
+        self.lang = mdhd.language
+        self.track_id = moov['trak.tkhd'].track_id
+        default_sample_duration: int = 0
         try:
-            default_sample_duration = moov.mvex.trex.default_sample_duration
-        except AttributeError:
+            default_sample_duration = moov['mvex.trex'].default_sample_duration
+        except KeyError:
             print('Warning: Unable to find default_sample_duration')
-            default_sample_duration = 0
         avc: VisualSampleEntry | None = None
-        avc_type = None
+        avc_type: str | None = None
+        stsd: SampleDescriptionBox = moov['trak.mdia.minf.stbl.stsd']
         for box in self.KNOWN_CODEC_BOXES:
             try:
-                avc = getattr(moov.trak.mdia.minf.stbl.stsd, box)
+                avc = stsd[box]
                 avc_type = avc.atom_type
                 break
-            except AttributeError:
+            except KeyError:
                 pass
         if avc_type == 'enca' or avc_type == 'encv':
-            avc_type = avc.sinf.frma.data_format
+            avc_type = avc['sinf.frma'].data_format
             self.encrypted = True
-            self.default_kid = avc.sinf.schi.tenc.default_kid.encode('hex')
-            self.iv_size = avc.sinf.schi.tenc.iv_size
+            self.default_kid = avc['sinf.schi.tenc'].default_kid.encode('hex')
+            self.iv_size = avc['sinf.schi.tenc'].iv_size
             key_ids.add(KeyMaterial(hex=self.default_kid))
-        if moov.trak.mdia.hdlr.handler_type == 'vide':
+        if moov['trak.mdia.hdlr'].handler_type == 'vide':
             self.process_video_avc_box(avc, avc_type, default_sample_duration)
-        elif moov.trak.mdia.hdlr.handler_type == 'soun':
+        elif moov['trak.mdia.hdlr'].handler_type == 'soun':
             self.process_audio_avc_box(avc, avc_type)
-        elif moov.trak.mdia.hdlr.handler_type in {'text', 'subt'}:
+        elif moov['trak.mdia.hdlr'].handler_type in {'text', 'subt'}:
             self.process_text_avc_box(avc, avc_type)
 
     def process_video_avc_box(self,
@@ -341,8 +350,8 @@ class Representation(ObjectWithFields):
         if default_sample_duration > 0:
             self.add_field('frameRate',
                            self.timescale // default_sample_duration)
-        self.add_field('width', int(trak.tkhd.width))
-        self.add_field('height', int(trak.tkhd.height))
+        self.add_field('width', int(trak['tkhd'].width))
+        self.add_field('height', int(trak['tkhd'].height))
         try:
             self.width = avc.width
             self.height = avc.height
@@ -355,17 +364,17 @@ class Representation(ObjectWithFields):
         self.codecs = codec_string_from_avc_box(avc_type, avc)
         if avc_type in {'avc1', 'avc3'}:
             self.add_field('nalLengthFieldLength',
-                           avc.avcC.lengthSizeMinusOne + 1)
+                           avc['avcC'].lengthSizeMinusOne + 1)
         elif avc_type in {'hev1', 'hvc1'}:
             self.add_field('nalLengthFieldLength',
-                           avc.hvcC.length_size_minus_one + 1)
+                           avc['hvcC'].length_size_minus_one + 1)
 
     def process_audio_avc_box(self, avc: AudioSampleEntry, avc_type: str | None) -> None:
         self.content_type = "audio"
         self.mimeType = "audio/mp4"
         self.codecs = codec_string_from_avc_box(avc_type, avc)
         if avc_type == 'mp4a':
-            dsi = avc.esds.descriptor("DecoderSpecificInfo")
+            dsi = avc['esds'].descriptor("DecoderSpecificInfo")
             self.add_field('sampleRate', dsi.sampling_frequency)
             self.add_field('numChannels', dsi.channel_configuration)
             if self.numChannels == 7:
@@ -375,7 +384,7 @@ class Representation(ObjectWithFields):
             try:
                 self.add_field('sampleRate', 48000)
                 self.add_field('numChannels', 0)
-                for s in avc.dec3.substreams:
+                for s in avc['dec3'].substreams:
                     self.sampleRate = s.sampling_frequency
                     self.numChannels += s.channel_count
                     if s.lfeon:
@@ -385,8 +394,8 @@ class Representation(ObjectWithFields):
                 self.add_field('numChannels', 0)
         elif avc_type == 'ac-3':
             try:
-                self.add_field('sampleRate', avc.dac3.sampling_frequency)
-                self.add_field('numChannels', avc.dac3.channel_count)
+                self.add_field('sampleRate', avc['dac3'].sampling_frequency)
+                self.add_field('numChannels', avc['dac3'].channel_count)
             except AttributeError:
                 self.add_field('sampleRate', avc.sampling_frequency)
                 self.add_field('numChannels', avc.channel_count)
@@ -400,15 +409,15 @@ class Representation(ObjectWithFields):
         elif avc_type == 'stpp':
             trak: TrackBox | None = cast(TrackBox | None, avc.find_atom('trak'))
             assert trak is not None
-            stpp: XMLSubtitleSampleEntry = cast(XMLSubtitleSampleEntry, trak.mdia.minf.stbl.stsd.stpp)
+            stpp: XMLSubtitleSampleEntry = cast(XMLSubtitleSampleEntry, trak['mdia.minf.stbl.stsd.stpp'])
             if stpp.mime_types:
                 self.mimeType = stpp.mime_types
             try:
-                parts = stpp.mime.content_type.split(';')
+                parts = stpp['mime'].content_type.split(';')
                 self.mimeType = parts[0]
                 if len(parts) > 1 and parts[1].startswith('codecs='):
                     self.codecs = parts[1][len('codecs='):]
-            except AttributeError:
+            except KeyError:
                 pass
 
     def generateSegmentDurations(self) -> SegmentDurations:

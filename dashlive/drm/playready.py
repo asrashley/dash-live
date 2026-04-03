@@ -400,7 +400,7 @@ class PlayReady(DrmBase):
         return f"urn:uuid:{self.SYSTEM_ID}"
 
     def update_traf_if_required(self, options: OptionsContainer,
-                                traf: mp4.BoxWithChildren) -> bool:
+                                traf: mp4.TrackFragmentBox) -> bool:
         version = options.version
         if version is None:
             version = self.version
@@ -412,7 +412,7 @@ class PlayReady(DrmBase):
         pos = traf.index('saiz')
         piff = mp4.PiffSampleEncryptionBox.clone_from_senc(senc)
         traf.insert_child(pos, piff)
-        traf.trun._invalidate()
+        traf['trun']._invalidate()
         return True
 
     def minimum_header_version(self, keys: dict[str, KeyTuple]) -> float:

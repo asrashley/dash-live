@@ -57,8 +57,8 @@ class MediaCreationTask(ABC):
             mp4_options.iv_size = self.options.iv_size
         with src_file.open('rb', buffering=self.BUFFER_SIZE) as src:
             with dest_file.open('wb', buffering=self.BUFFER_SIZE) as dest:
-                atoms: list[mp4.Mp4Atom] = cast(list[mp4.Mp4Atom], mp4.IsoParser.load(
-                    src, options=mp4_options, use_wrapper=False))
+                atoms: list[mp4.Mp4Atom] = mp4.IsoParser.load(
+                    src, options=mp4_options)
                 self.copy_and_modify_atoms(atoms, dest, track_id, language)
 
     def modify_mp4_file(self, mp4file: Path, track_id: int, language: str,
@@ -73,8 +73,8 @@ class MediaCreationTask(ABC):
         logging.info('Modifying MP4 file "%s"', mp4file.name)
         with tempfile.TemporaryFile(buffering=self.BUFFER_SIZE) as tmp:
             with mp4file.open('rb', buffering=self.BUFFER_SIZE) as src:
-                atoms: list[mp4.Mp4Atom] = cast(list[mp4.Mp4Atom], mp4.IsoParser.load(
-                    src, options=mp4_options, use_wrapper=False))
+                atoms: list[mp4.Mp4Atom] = mp4.IsoParser.load(
+                    src, options=mp4_options)
                 self.copy_and_modify_atoms(atoms, tmp, track_id, language)
             mp4file.unlink()
             tmp.seek(0)
@@ -89,24 +89,24 @@ class MediaCreationTask(ABC):
             if atom.atom_type == 'moov':
                 moov: mp4.MovieBox = cast(mp4.MovieBox, atom)
                 modified: bool = False
-                if moov.trak.tkhd.track_id != track_id:
-                    moov.trak.tkhd.track_id = track_id
+                if moov['trak.tkhd'].track_id != track_id:
+                    moov['trak.tkhd'].track_id = track_id
                     try:
-                        moov.mvex.trex.track_id = track_id
-                    except AttributeError:
+                        moov['mvex.trex'].track_id = track_id
+                    except KeyError:
                         pass
-                    moov.mvhd.next_track_id = track_id + 1
+                    moov['mvhd'].next_track_id = track_id + 1
                     modified = True
-                if moov.trak.mdia.mdhd.language != language:
-                    moov.trak.mdia.mdhd.language = language
+                if moov['trak.mdia.mdhd'].language != language:
+                    moov['trak.mdia.mdhd'].language = language
                     modified = True
                 if modified:
-                    moov.trak.tkhd.modification_time = datetime.datetime.now(tz=UTC())
+                    moov['trak.tkhd'].modification_time = datetime.datetime.now(tz=UTC())
                 return
             elif atom.atom_type == 'moof':
                 moof: mp4.MovieFragmentBox = cast(mp4.MovieFragmentBox, atom)
-                if moof.traf.tfhd.track_id != track_id:
-                    moof.traf.tfhd.track_id = track_id
+                if moof['traf.tfhd'].track_id != track_id:
+                    moof['traf.tfhd'].track_id = track_id
 
         for atom in atoms:
             modify_atom(atom)

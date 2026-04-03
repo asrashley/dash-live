@@ -97,7 +97,7 @@ class SegmentBaseType(DashElement):
     def parse_data(self, body: bytes):
         src = io.BufferedReader(io.BytesIO(body))
         opts = mp4.Options(strict=True, lazy_load=False)
-        atoms = mp4.IsoParser.load(src, options=opts, use_wrapper=True)
+        atoms = mp4.IsoParser.load_wrapped(src, options=opts)
         self.elt.check_equal(
             len(atoms), 1, f'Expected one atom in the SIDX, found {len(atoms)}')
         if not atoms:

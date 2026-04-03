@@ -257,20 +257,20 @@ class EditMedia(HTMLHandlerBase):
             moov = wrap.find_child('moov')
             moof = wrap.find_child('moof')
             if moov is not None:
-                trak = moov.trak
-                if trak.tkhd.track_id != fields['track_id']:
-                    trak.tkhd.track_id = fields['track_id']
-                    moov.mvex.trex.track_id = fields['track_id']
-                    moov.mvhd.next_track_id = fields['track_id'] + 1
+                trak = moov['trak']
+                if trak['tkhd'].track_id != fields['track_id']:
+                    trak['tkhd'].track_id = fields['track_id']
+                    moov['mvex.trex'].track_id = fields['track_id']
+                    moov['mvhd'].next_track_id = fields['track_id'] + 1
                     modified = True
-                if trak.mdia.mdhd.language != fields['lang']:
-                    trak.mdia.mdhd.language = fields['lang']
+                if trak['mdia.mdhd'].language != fields['lang']:
+                    trak['mdia.mdhd'].language = fields['lang']
                     modified = True
                 if modified:
                     trak.tkhd.modification_time = datetime.datetime.now(tz=UTC())
             elif moof is not None:
-                if moof.traf.tfhd.track_id != fields['track_id']:
-                    moof.traf.tfhd.track_id = fields['track_id']
+                if moof['traf.tfhd'].track_id != fields['track_id']:
+                    moof['traf.tfhd'].track_id = fields['track_id']
                     modified = True
             return modified
 
@@ -546,8 +546,7 @@ class MediaSegmentInfo(SegmentInfoBase):
         if current_media_file.representation.encrypted:
             options.iv_size = current_media_file.representation.iv_size
         with current_media_file.open_file(start=frag.pos, size=frag.size) as src:
-            atom: mp4.Mp4Atom = cast(
-                mp4.Mp4Atom, mp4.IsoParser.load(src, options=options, use_wrapper=True))
+            atom: mp4.Mp4Atom = mp4.IsoParser.load_wrapped(src, options=options)
         back_url: str = flask.url_for(
             'list-media-segments', spk=current_stream.pk, mfid=current_media_file.pk)
         full_title: str = f'Segment {segnum} in fille "{current_media_file.blob.filename}"'
@@ -632,8 +631,7 @@ class InspectMediaFile(SegmentInfoBase):
             return flask.make_response('Filename not specified', 400)
         options = mp4.Options(lazy_load=False)
         src = BufferedReader(blob_info)
-        atom: mp4.Mp4Atom = cast(
-            mp4.Mp4Atom, mp4.IsoParser.load(src, options=options, use_wrapper=True))
+        atom: mp4.Mp4Atom = mp4.IsoParser.load_wrapped(src, options=options)
         back_url = flask.url_for('inspect-media')
         full_title: str = f"Contents of {blob_info.filename}"
         short_title: str = blob_info.filename
@@ -649,8 +647,7 @@ class InspectMediaFile(SegmentInfoBase):
             return self.get(
                 error=f"Failed to fetch: {response.status}", form=flask.request.form)
         src = BufferedReader(response, size=int(response.headers['Content-Length'], 10))
-        atom = mp4.IsoParser.load(
-            src, options=mp4.Options(lazy_load=False), use_wrapper=True)
+        atom = mp4.IsoParser.load_wrapped(src, options=mp4.Options(lazy_load=False))
         back_url = flask.url_for('inspect-media')
         full_title: str = f"Contents of {url}"
         short_title: str = url

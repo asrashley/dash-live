@@ -154,24 +154,24 @@ class MediaSegment(DashElement):
         if not self.elt.check_not_none(
                 moof, msg='Failed to find MOOF box'):
             return
-        self.seg_num = moof.mfhd.sequence_number
-        self.decode_time = moof.traf.tfdt.base_media_decode_time
+        self.seg_num = moof['mfhd'].sequence_number
+        self.decode_time = moof['traf.tfdt'].base_media_decode_time
         info: DashRepresentation | None = self.parent.init_segment.dash_representation
         assert info is not None
         if info.encrypted:
             self.check_saio_offset(moof)
         else:
             self.elt.check_not_in(
-                'senc', moof.traf,
+                'senc', moof['traf'],
                 msg='senc box should not be found in a clear stream')
 
         self.log.debug(
             '%s: seg_num=%d (expected %s) base_media_decode_time=%d (expected %s)',
-            self.name, moof.mfhd.sequence_number, self.expected_seg_num,
-            moof.traf.tfdt.base_media_decode_time, self.expected_decode_time)
+            self.name, moof['mfhd'].sequence_number, self.expected_seg_num,
+            moof['traf.tfdt'].base_media_decode_time, self.expected_decode_time)
         if self.expected_seg_num is not None:
             self.elt.check_equal(
-                self.expected_seg_num, moof.mfhd.sequence_number,
+                self.expected_seg_num, moof['mfhd'].sequence_number,
                 template=r'Sequence number error, expected {0}, got {1}')
         if self.expected_decode_time is not None:
             assert self.decode_time is not None
@@ -191,8 +191,10 @@ class MediaSegment(DashElement):
                 moov, msg='Failed to get MOOV box from init segment'):
             return
         pts_values: set[int] = set()
-        dts: int = moof.traf.tfdt.base_media_decode_time
-        for sample in moof.traf.trun.samples:
+        dts: int = moof['traf.tfdt'].base_media_decode_time
+        trun: mp4.TrackFragmentRunBox = moof['traf.trun']
+        trex = moov['mvex.trex']
+        for sample in trun.samples:
             try:
                 pts = dts + sample.composition_time_offset
             except AttributeError:
@@ -209,12 +211,12 @@ class MediaSegment(DashElement):
                 pts_values.add(pts)
 
             if sample.duration is None:
-                samp_dur = moov.mvex.trex.default_sample_duration
+                samp_dur = trex.default_sample_duration
             else:
                 samp_dur = sample.duration
             dts += samp_dur
         # self.log.debug('Last sample duration %d', samp_dur)
-        self.duration = dts - moof.traf.tfdt.base_media_decode_time
+        self.duration = dts - moof['traf.tfdt'].base_media_decode_time
         self.next_decode_time = dts
 
         # Special case - the timescale of media segments doesn't have to be
@@ -269,25 +271,26 @@ class MediaSegment(DashElement):
                     info.iv_size, msg='IV size is unknown'):
                 return None
             options["iv_size"] = info.iv_size
-        atoms = mp4.IsoParser.load(src, options=options, use_wrapper=True)
-        self.elt.check_greater_than(len(atoms), 1)
+        atoms: mp4.Wrapper = mp4.IsoParser.load_wrapped(src, options=options)
+        moof: mp4.MovieFragmentBox
+        mdat: mp4.Mp4Atom
         try:
-            moof = atoms.moof
-        except AttributeError:
+            moof = atoms['moof']
+        except KeyError:
             self.elt.add_error('MOOF box missing from media segment')
             return None
         try:
-            mdat = atoms.mdat
-        except AttributeError:
+            mdat = atoms['mdat']
+        except KeyError:
             self.elt.add_error('MDAT box missing from media segment')
             return None
         try:
-            self.check_emsg_box(atoms.emsg)
-        except AttributeError:
+            self.check_emsg_box(atoms['emsg'])
+        except KeyError:
             pass
-        first_sample_pos = moof.traf.tfhd.base_data_offset + moof.traf.trun.data_offset
+        first_sample_pos = moof['traf.tfhd'].base_data_offset + moof['traf.trun'].data_offset
         last_sample_end = first_sample_pos
-        for samp in moof.traf.trun.samples:
+        for samp in moof['traf.trun'].samples:
             last_sample_end += samp.size
         msg = (
             'trun.data_offset must point inside the MDAT box. ' +
@@ -295,8 +298,8 @@ class MediaSegment(DashElement):
             f'MDAT is at {mdat.position + mdat.header_size}. ' +
             f'trun last sample is {last_sample_end}. End of ' +
             f'MDAT is {mdat.position + mdat.size}. ' +
-            f'tfhd.base_data_offset={moof.traf.tfhd.base_data_offset} and ' +
-            f'trun.data_offset={moof.traf.trun.data_offset}'
+            f'tfhd.base_data_offset={moof["traf.tfhd"].base_data_offset} and ' +
+            f'trun.data_offset={moof["traf.trun"].data_offset}'
         )
         self.elt.check_equal(
             first_sample_pos, mdat.position + mdat.header_size, msg=msg)
@@ -326,18 +329,18 @@ class MediaSegment(DashElement):
 
     def check_saio_offset(self, moof: mp4.Mp4Atom) -> None:
         try:
-            senc = moof.traf.senc
-        except AttributeError:
+            senc = moof['traf.senc']
+        except KeyError:
             self.elt.add_error(
                 'An encrypted stream must contain a senc box')
             return
-        saio = moof.traf.find_child('saio')
+        saio = moof['traf'].find_child('saio')
         self.elt.check_not_none(
             saio, msg='saio box is required for an encrypted stream')
         self.elt.check_equal(
             len(saio.offsets), 1,
             msg='saio box should only have one offset entry')
-        tfhd = moof.traf.find_child('tfhd')
+        tfhd = moof['traf'].find_child('tfhd')
         if tfhd is None:
             base_data_offset = moof.position
         else:
@@ -350,4 +353,4 @@ class MediaSegment(DashElement):
             f'got {saio.offsets[0] + base_data_offset}')
         self.elt.check_equal(
             sample_pos, saio.offsets[0] + base_data_offset, msg=msg)
-        self.elt.check_equal(len(moof.traf.trun.samples), len(senc.samples))
+        self.elt.check_equal(len(moof['traf.trun'].samples), len(senc.samples))

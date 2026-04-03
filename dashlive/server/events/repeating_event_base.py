@@ -21,11 +21,15 @@
 #############################################################################
 
 from abc import abstractmethod
+from typing import TYPE_CHECKING
 
 from dashlive.mpeg.dash.event_stream import EventStream
-from dashlive.mpeg.mp4 import EventMessageBox
+from dashlive.mpeg.mp4 import EventMessageBox, MovieFragmentBox
 
 from .base import EventBase
+
+if TYPE_CHECKING:
+    from dashlive.mpeg.dash.representation import Representation
 
 class RepeatingEventBase(EventBase):
     """
@@ -56,23 +60,27 @@ class RepeatingEventBase(EventBase):
     def get_manifest_event_payload(self, index, presentation_time) -> str:
         return ""
 
-    def create_emsg_boxes(self, segment_num, mod_segment, moof,
-                          representation, **kwargs) -> list[EventMessageBox]:
+    def create_emsg_boxes(self,
+                          segment_num: int,
+                          mod_segment: int,
+                          moof: MovieFragmentBox,
+                          representation: "Representation",
+                          **kwargs) -> list[EventMessageBox]:
         if not self.inband:
             return []
         # start and end time of the fragment (representation timebase)
-        seg_start = moof.traf.tfdt.base_media_decode_time
-        seg_end = seg_start + representation.segments[mod_segment].duration
+        seg_start: int = moof['traf.tfdt'].base_media_decode_time
+        seg_end: int = seg_start + representation.segments[mod_segment].duration
 
         # convert seg_start and seg_end to event timebase
-        seg_start = (seg_start * self.timescale) // representation.timescale
-        seg_end = (seg_end * self.timescale) // representation.timescale
+        seg_start: int = (seg_start * self.timescale) // representation.timescale
+        seg_end: int = (seg_end * self.timescale) // representation.timescale
 
         # print('seg start={} end={} duration={}'.format(
         #    seg_start, seg_end, seg_end - seg_start))
 
         # presentation_time is using event timebase
-        presentation_time = self.start
+        presentation_time: int = self.start
 
         if presentation_time >= seg_end:
             return []
@@ -83,20 +91,20 @@ class RepeatingEventBase(EventBase):
             if ev_end < seg_start:
                 return []
 
-        event_id = 0
+        event_id: int = 0
         if seg_start > presentation_time:
             event_id = ((seg_start - presentation_time) //
                         self.interval)
         assert (event_id >= 0)
         presentation_time += event_id * self.interval
-        retval = []
+        retval: list[EventMessageBox] = []
         while presentation_time < seg_end:
             if presentation_time < seg_start:
                 event_id += 1
                 presentation_time += self.interval
                 continue
             assert (presentation_time >= seg_start)
-            data = self.get_emsg_event_payload(
+            data: bytes = self.get_emsg_event_payload(
                 event_id, presentation_time)
             kwargs = {
                 'version': self.version,
@@ -109,7 +117,7 @@ class RepeatingEventBase(EventBase):
                 'data': data,
             }
             if kwargs['version'] == 0:
-                time_delta = presentation_time - seg_start
+                time_delta: int = presentation_time - seg_start
                 kwargs['presentation_time_delta'] = time_delta
             else:
                 kwargs['presentation_time'] = presentation_time
@@ -121,5 +129,5 @@ class RepeatingEventBase(EventBase):
         return retval
 
     @abstractmethod
-    def get_emsg_event_payload(self, event_id, presentation_time) -> bytes:
+    def get_emsg_event_payload(self, event_id: int, presentation_time: int) -> bytes:
         ...

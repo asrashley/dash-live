@@ -105,15 +105,15 @@ class MediaRequestBase(RequestHandlerBase):
             for drm in drms:
                 if drm.moov is not None:
                     pssh: mp4.ContentProtectionSpecificBox = drm.moov(representation.default_kid)
-                    atom.moov.append_child(pssh)
+                    atom['moov'].append_child(pssh)
         if mode == 'live':
             try:
                 # remove the mehd box as this stream is not supposed to
                 # have a fixed duration
-                del atom.moov.mehd
-            except AttributeError:
+                del atom['moov.mehd']
+            except KeyError:
                 pass
-        data: bytes = atom.encode()
+        data: bytes = atom.encode_as_bytes()
         headers: dict[str, str] = {
             'Accept-Ranges': 'bytes',
             'Content-Type': content_type_to_mime_type(
@@ -176,13 +176,13 @@ class MediaRequestBase(RequestHandlerBase):
         moof_modified: bool = False
         traf_modified: bool = False
 
-        moof: mp4.MovieFragmentBox = cast(mp4.MovieFragmentBox, atom.moof)
-        traf: mp4.TrackFragmentBox = cast(mp4.TrackFragmentBox, moof.traf)
+        moof: mp4.MovieFragmentBox = cast(mp4.MovieFragmentBox, atom['moof'])
+        traf: mp4.TrackFragmentBox = cast(mp4.TrackFragmentBox, moof['traf'])
 
         tfdt: mp4.TrackFragmentDecodeTimeBox
         try:
-            tfdt = cast(mp4.TrackFragmentDecodeTimeBox, traf.tfdt)
-        except AttributeError as err:
+            tfdt = cast(mp4.TrackFragmentDecodeTimeBox, traf['tfdt'])
+        except KeyError as err:
             logging.debug('Adding tfdt box to traf: %s', err)
             base_media_decode_time: int
             base_media_decode_time = sum([
@@ -190,19 +190,22 @@ class MediaRequestBase(RequestHandlerBase):
             tfdt = mp4.TrackFragmentDecodeTimeBox(
                 version=0, flags=0,
                 base_media_decode_time=base_media_decode_time)
-            tfhd_index = atom.moof.traf.index('tfhd')
-            traf.insert_child(tfhd_index + 1, tfdt)
+            try:
+                tfhd_index: int = traf.index('tfhd')
+                traf.insert_child(tfhd_index + 1, tfdt)
+            except IndexError:
+                traf.append_child(tfdt)
             traf_modified = True
             moof_modified = True
             # force trun box to have a data_offset field, as its
             # position will have changed
-            traf.trun.flags |= mp4.TrackFragmentRunBox.data_offset_present
+            traf['trun'].flags |= mp4.TrackFragmentRunBox.data_offset_present
 
         tfdt.base_media_decode_time += origin_time
 
         # Update the sequenceNumber field in the MovieFragmentHeader
         # box
-        moof.mfhd.sequence_number = seg_num
+        moof['mfhd'].sequence_number = seg_num
         diff = None
         if seg_time is not None:
             diff = seg_time - tfdt.base_media_decode_time
@@ -216,8 +219,8 @@ class MediaRequestBase(RequestHandlerBase):
         try:
             # remove any sidx box as it has a baseMediaDecodeTime and it's
             # an optional index
-            del atom.sidx
-        except AttributeError:
+            del atom['sidx']
+        except KeyError:
             pass
 
         if adp_set.content_type == 'video':
@@ -227,7 +230,7 @@ class MediaRequestBase(RequestHandlerBase):
                 moof_idx = atom.index('moof')
                 for evgen in event_generators:
                     boxes = evgen.create_emsg_boxes(
-                        moof=atom.moof,
+                        moof=atom['moof'],
                         adaptation_set=adp_set,
                         segment_num=seg_num,
                         mod_segment=mod_segment,
@@ -301,10 +304,10 @@ class MediaRequestBase(RequestHandlerBase):
         if media.representation.encrypted:
             mp4_options.iv_size = media.representation.iv_size
         with media.open_file(start=frag.pos, size=frag.size) as src:
-            atom: mp4.Wrapper = cast(mp4.Wrapper, mp4.IsoParser.load(
-                cast(BinaryIO, src), options=mp4_options, use_wrapper=True))
+            atom: mp4.Wrapper = mp4.IsoParser.load_wrapped(
+                cast(BinaryIO, src), options=mp4_options)
             if parse_samples:
-                atom.moof.traf.trun.parse_samples(
+                atom['moof.traf.trun'].parse_samples(
                     src, media.representation.nalLengthFieldLength)
 
         return atom
@@ -358,7 +361,8 @@ class MediaRequestBase(RequestHandlerBase):
             return
         if segment_num not in segments:
             return
-        for sample in atom.moof.traf.trun.samples:
+        trun: mp4.TrackFragmentRunBox = atom['moof.traf.trun']
+        for sample in trun.samples:
             if corrupt_frames <= 0:
                 return
             for nal in sample.nals:

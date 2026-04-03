@@ -162,18 +162,18 @@ class EnsureTrackIdsAreUnique(DataMigration):
     @staticmethod
     def set_track_id(wrap: Wrapper, new_track_id: int) -> bool:
         try:
-            moov = wrap.moov
-            moov.trak.tkhd.track_id = new_track_id
-            moov.mvex.trex.track_id = new_track_id
-            moov.mvhd.next_track_id = new_track_id + 1
-            moov.trak.tkhd.modification_time = datetime.datetime.now(tz=UTC())
+            moov = wrap['moov']
+            moov['trak.tkhd'].track_id = new_track_id
+            moov['mvex.trex'].track_id = new_track_id
+            moov['mvhd'].next_track_id = new_track_id + 1
+            moov['trak.tkhd'].modification_time = datetime.datetime.now(tz=UTC())
             return True
-        except AttributeError:
+        except KeyError:
             pass
         try:
-            moof = wrap.moof
-            moof.traf.tfhd.track_id = new_track_id
+            moof = wrap['moof']
+            moof['traf.tfhd'].track_id = new_track_id
             return True
-        except AttributeError:
+        except KeyError:
             pass
         return False
