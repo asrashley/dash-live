@@ -1,19 +1,5 @@
 #############################################################################
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
-#############################################################################
-#
 #  Project Name        :    Simulated MPEG DASH service
 #
 #  Author              :    Alex Ashley
@@ -132,20 +118,21 @@ class TestDashEventGeneration(DashManifestCheckMixin, FlaskTestBase):
             seg_presentation_time = (
                 ev_presentation_time * media_timescale /
                 float(PingPongEvents.DEFAULT_VALUES['timescale']))
-            first_sample_pos = frag.moof.traf.tfhd.base_data_offset + frag.moof.traf.trun.data_offset
+            first_sample_pos = frag['moof.traf.tfhd'].base_data_offset + frag['moof.traf.trun'].data_offset
+            mdat: mp4.Mp4Atom = frag['mdat']
             self.assertGreaterOrEqual(
-                first_sample_pos, frag.mdat.position + frag.mdat.header_size)
-            decode_time = frag.moof.traf.tfdt.base_media_decode_time
+                first_sample_pos, mdat.position + mdat.header_size)
+            decode_time = frag['moof.traf.tfdt'].base_media_decode_time
             seg_end = decode_time + seg.duration
             if seg_presentation_time < decode_time or seg_presentation_time >= seg_end:
                 # check that there are no emsg boxes in fragment
-                with self.assertRaises(AttributeError):
-                    emsg = frag.emsg
+                with self.assertRaises(KeyError):
+                    emsg = frag['emsg']
                 continue
             delta = seg_presentation_time - decode_time
             delta = (delta * PingPongEvents.DEFAULT_VALUES['timescale'] /
                      float(media_timescale))
-            emsg = frag.emsg
+            emsg = frag['emsg']
             self.assertEqual(emsg.scheme_id_uri, PingPongEvents.schemeIdUri)
             self.assertEqual(emsg.value, PingPongEvents.DEFAULT_VALUES['value'])
             self.assertEqual(emsg.presentation_time_delta, delta)

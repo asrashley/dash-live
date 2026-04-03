@@ -19,6 +19,7 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
+from traceback import print_exception
 from typing import Callable, Generic, TypeVar
 
 T = TypeVar('T')
@@ -59,4 +60,5 @@ class EventBus(Generic[T]):
             try:
                 cb(name, payload)
             except Exception as err:
-                print(f'Event listener error: {err}')
+                print(f'EventBus {name} listener error: {err}')
+                print_exception(err)

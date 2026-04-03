@@ -113,7 +113,7 @@ class MediaFile(ModelMixin["MediaFile"], Base):
                 self._representation = None
         return self._representation
 
-    def set_representation(self, rep):
+    def set_representation(self, rep: Representation) -> None:
         self.rep = rep.toJSON(pure=True)
         self._representation = rep
 
@@ -164,10 +164,14 @@ class MediaFile(ModelMixin["MediaFile"], Base):
                   size: int,
                   buffer_size: int = Blob.BUFFER_SIZE) -> contextlib.AbstractContextManager[BinaryIO]:
         abs_path = self.absolute_path(self.stream.directory)
+        if self.blob is None:
+            raise IOError('MediaFile has no blob')
         return self.blob.open_file(abs_path, start=start, size=size, buffer_size=buffer_size)
 
     def delete_file(self) -> None:
         abs_path = self.absolute_path(self.stream.directory)
+        if self.blob is None:
+            raise IOError('MediaFile has no blob')
         self.blob.delete_file(abs_path)
 
     def as_stream_timing_reference(self) -> StreamTimingReference | None:
@@ -321,11 +325,12 @@ class MediaFile(ModelMixin["MediaFile"], Base):
                         src.seek(frag.pos)
                         reader = BufferedReader(
                             src, offset=frag.pos, size=frag.size, buffersize=16384)
-                        atom = mp4.IsoParser.load(
-                            reader, options=mp4_options, use_wrapper=True)
+                        atom: mp4.Wrapper = mp4.IsoParser.load_wrapped(
+                            reader, options=mp4_options)
+                        reader.close()
                         changed = modify_atoms(atom)
                         if changed:
-                            dest.write(atom.encode())
+                            atom.encode(dest)
                         else:
                             src.seek(frag.pos)
                             dest.write(src.read(frag.size))

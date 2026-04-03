@@ -1,6 +1,6 @@
 <ContentProtection xmlns:mspr="urn:microsoft:playready" schemeIdUri="{{DRM.playready.scheme_id}}" value="2.0" cenc:default_KID="{{adp.default_kid|uuid}}">
   {%- if DRM.playready.cenc %}
-  <cenc:pssh>{{DRM.playready.cenc(adp.default_kid).encode()|base64}}</cenc:pssh>
+  <cenc:pssh>{{DRM.playready.cenc(adp.default_kid).encode_as_bytes()|base64}}</cenc:pssh>
   {%- endif %}
   {%- if DRM.playready.pro %}
   <mspr:pro>{{DRM.playready.pro(adp.default_kid)|base64}}</mspr:pro>

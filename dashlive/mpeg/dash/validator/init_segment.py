@@ -137,7 +137,7 @@ class InitSegment(DashElement):
                 return False
         except Exception as exc:
             traceback.print_exception(exc)
-            self.elt.add_error(f'Exception whilst loading init segment: {exc}')
+            self.elt.add_error(f'Exception whilst loading init segment {self.url}: {exc}')
             self.log.error('Exception whilst loading init segment: %s', exc)
             return False
         return True
@@ -149,15 +149,13 @@ class InitSegment(DashElement):
         if not body:
             self.elt.add_error(f'Attempt to parse empty init segment type={type(body)} len={len(body)}')
             return False
-        src = io.BufferedReader(io.BytesIO(body))
-        atoms: list[mp4.Mp4Atom] = cast(
-            list[mp4.Mp4Atom], mp4.IsoParser.load(src, options={'lazy_load': False}))
-        moov: mp4.Mp4Atom | None = None
-        for atm in atoms:
-            if atm.atom_type == 'moov':
-                moov = atm
-        if moov is None:
-            boxes: list[str] = [a.atom_type for a in atoms]
+        src = io.BytesIO(body)
+        wrap: mp4.Wrapper = mp4.IsoParser.load_wrapped(src, options={'lazy_load': False})
+        moov: mp4.Mp4Atom
+        try:
+            moov = wrap['moov']
+        except KeyError:
+            boxes: list[str] = [a.atom_type for a in wrap.children]
             self.elt.add_error(f'Failed to find moov box in {self.url} found {boxes} len={len(body)}')
             return False
         key_ids: set[KeyMaterial] = set()
@@ -165,7 +163,7 @@ class InitSegment(DashElement):
         self.dash_rep.process_moov(moov, key_ids)
         self.dash_rep.segments = None  # type: ignore
         self.dash_rep.start_time = -1
-        self.atoms = atoms
+        self.atoms = wrap.children
         return True
 
     def save(self, body: bytes) -> None:

@@ -19,13 +19,12 @@
 #  Author              :    Alex Ashley
 #
 #############################################################################
-import io
+import logging
 from pathlib import Path
-from typing import cast
 import unittest
 
 from dashlive.server import models
-from dashlive.mpeg.mp4 import IsoParser, Mp4Atom
+from dashlive.mpeg.mp4 import IsoParser, Mp4Atom, Options
 from dashlive.mpeg.dash.representation import Representation
 from dashlive.utils.json_object import JsonObject
 
@@ -36,8 +35,9 @@ class RepresentationTests(FlaskTestBase, unittest.TestCase):
 
     @staticmethod
     def load_representation(filename: Path) -> tuple[Representation, list[Mp4Atom]]:
-        with filename.open('rb') as src:
-            atoms: list[Mp4Atom] = cast(list[Mp4Atom], IsoParser.load(io.BufferedReader(src)))
+        opts = Options(mode='r', lazy_load=True)
+        with filename.open('rb', buffering=32768) as src:
+            atoms: list[Mp4Atom] = IsoParser.load(src, options=opts)
         rep: Representation = Representation.load(f"{filename}", atoms)
         return (rep, atoms,)
 
@@ -63,23 +63,23 @@ class RepresentationTests(FlaskTestBase, unittest.TestCase):
 
     def test_load_ebu_tt_d(self) -> None:
         filename: Path = self.fixtures_folder / "ebuttd.mp4"
-        rep, atoms = self.load_representation(filename)
+        rep, _atoms = self.load_representation(filename)
         self.assertEqual(rep.content_type, 'text')
         self.assertEqual(rep.timescale, 200)
         self.assertEqual(rep.mimeType, 'application/ttml+xml')
         self.assertEqual(rep.codecs, 'im1t|etd1')
 
-    def test_load_bbb_t1(self):
+    def test_load_bbb_t1(self) -> None:
         filename: Path = self.fixtures_folder / "bbb" / "bbb_t1.mp4"
-        rep, atoms = self.load_representation(filename)
+        rep, _atoms = self.load_representation(filename)
         self.assertEqual(rep.content_type, 'text')
         self.assertEqual(rep.timescale, 200)
         self.assertEqual(rep.mimeType, 'application/mp4')
         self.assertEqual(rep.codecs, 'stpp')
 
-    def test_load_web_vtt(self):
+    def test_load_web_vtt(self) -> None:
         filename = self.fixtures_folder / "webvtt.mp4"
-        rep, atoms = self.load_representation(filename)
+        rep, _atoms = self.load_representation(filename)
         self.assertEqual(rep.content_type, 'text')
         self.assertEqual(rep.timescale, 1000)
         self.assertEqual(rep.mimeType, 'text/vtt')
@@ -149,4 +149,7 @@ class RepresentationTests(FlaskTestBase, unittest.TestCase):
 
 
 if __name__ == "__main__":
+    logging.basicConfig()
+    logging.getLogger().setLevel(logging.DEBUG)
+    logging.getLogger('mp4').setLevel(logging.DEBUG)
     unittest.main()

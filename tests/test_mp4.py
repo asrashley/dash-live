@@ -28,6 +28,7 @@ from pathlib import Path
 import struct
 from typing import BinaryIO, ClassVar, cast
 import unittest
+from weakref import ref
 
 from dashlive.mpeg import mp4
 from dashlive.utils.binary import Binary, HexBinary
@@ -37,6 +38,11 @@ from .mixins.mixin import TestCaseMixin
 
 class Mp4Tests(TestCaseMixin, unittest.TestCase):
     FIXTURES_PATH: ClassVar[Path] = Path(__file__).parent / "fixtures"
+    timescale: int
+    mediaDuration: int
+    _segment: bytes | None
+    _moov: bytes | None
+    _enc_moov: bytes | None
 
     def setUp(self):
         self.timescale = 240
@@ -111,18 +117,18 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
             atom_type='pssh',
             position=moov.payload_start,
             size=0,
-            parent=moov,
+            parent=ref(moov),
             version=1,
             flags=0,
             system_id=HexBinary("e2719d58a985b3c9781ab030af78d30e", _type='hex'),
             key_ids=[HexBinary("1AB45440532C439994DC5C5AD9584BAC", _type='hex')],
             data=None
         )
-        enc_pssh = pssh.encode()
+        enc_pssh = pssh.encode_as_bytes()
         moov_size = moov.size
         moov.insert_child(0, pssh)
-        new_moov_data = moov.encode()
-        src = io.BufferedReader(io.BytesIO(new_moov_data))
+        new_moov_data = moov.encode_as_bytes()
+        src = io.BytesIO(new_moov_data)
         new_moov = mp4.IsoParser.load(src)
         self.assertEqual(len(new_moov_data), moov_size + len(enc_pssh))
         self.assertEqual(len(new_moov), 1)
@@ -141,113 +147,137 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         atoms = mp4.IsoParser.load(src, options={'lazy_load': lazy_load, 'mode': 'rw'})
         self.assertEqual(len(atoms), 5)
         self.assertEqual(atoms[2].atom_type, 'moov')
-        moov = atoms[2]
-        mvex = moov.mvex
-        moov_size = moov.size
-        del moov.mvex
-        new_moov_data = moov.encode()
+        moov: mp4.MovieBox = atoms[2]
+        mvex = moov['mvex']
+        moov_size: int = moov.size
+        del moov['mvex']
+        new_moov_data: bytes = moov.encode_as_bytes()
         self.assertEqual(len(new_moov_data), moov_size - mvex.size)
-        src = io.BufferedReader(io.BytesIO(new_moov_data))
+        src = io.BytesIO(new_moov_data)
         new_moov = mp4.IsoParser.load(src)
         self.assertEqual(len(new_moov), 1)
 
-    def test_update_base_media_decode_time(self):
+    def test_update_base_media_decode_time(self) -> None:
         self.check_update_base_media_decode_time(False)
 
-    def test_update_base_media_decode_time_lazy_loaded(self):
+    def test_update_base_media_decode_time_lazy_loaded(self) -> None:
         self.check_update_base_media_decode_time(True)
 
-    def check_update_base_media_decode_time(self, lazy_load: bool):
+    def check_update_base_media_decode_time(self, lazy_load: bool) -> None:
         src = io.BufferedReader(io.BytesIO(self.segment))
-        wrap = mp4.IsoParser.load(src, options={'lazy_load': True, 'mode': 'rw'}, use_wrapper=True)
+        opts = mp4.Options(lazy_load=lazy_load, mode='rw', debug=True)
+        wrap: mp4.Wrapper = mp4.IsoParser.load_wrapped(src, options=opts)
+        assert wrap._children is not None
         self.assertEqual(len(wrap._children), 4)
         self.assertEqual(wrap._children[0].atom_type, 'moof')
-        moof = wrap.moof
-        first_sample_pos = moof.traf.tfhd.base_data_offset + moof.traf.trun.data_offset
-        self.assertGreaterOrEqual(first_sample_pos,
-                                  wrap.mdat.position + wrap.mdat.header_size)
-        if moof.traf.tfdt.version == 1:
+        moof = wrap.get('moof')
+        first_sample_pos = moof.get('traf.tfhd').base_data_offset + moof.get('traf.trun').data_offset
+        mdat = wrap.get('mdat')
+        self.assertGreaterOrEqual(first_sample_pos, mdat.position + mdat.header_size)
+        fmt: str
+        dec_time_sz: int
+        if moof.get('traf.tfdt').version == 1:
             fmt = '>Q'
             dec_time_sz = 8
         else:
             fmt = '>I'
             dec_time_sz = 4
-        offset = moof.traf.tfdt.position + 12  # dec_time_pos - frag_pos
-        base_media_decode_time = struct.unpack(
+        offset: int = moof.get('traf.tfdt').position + 12  # dec_time_pos - frag_pos
+        base_media_decode_time: int = struct.unpack(
             fmt, self.segment[offset:offset + dec_time_sz])[0]
         for loop in range(3):
-            origin_time = loop * self.mediaDuration
-            delta = int(origin_time * self.timescale)
+            origin_time: int = loop * self.mediaDuration
+            delta: int = origin_time * self.timescale
             self.assertGreaterOrEqual(delta, 0)
             base_media_decode_time += delta
             self.assertLess(base_media_decode_time, (1 << (8 * dec_time_sz)))
-            expected_data = b''.join([self.segment[:offset],
-                                     struct.pack(fmt, base_media_decode_time),
-                                     self.segment[offset + dec_time_sz:]])
+            expected_data: bytes = b''.join([self.segment[:offset],
+                                             struct.pack(fmt, base_media_decode_time),
+                                             self.segment[offset + dec_time_sz:]])
             self.assertEqual(len(self.segment), len(expected_data))
-            moof.traf.tfdt.base_media_decode_time = base_media_decode_time
-            first_sample_pos = moof.traf.tfhd.base_data_offset + moof.traf.trun.data_offset
+            moof['traf.tfdt'].base_media_decode_time = base_media_decode_time
+            self.assertEqual(len(wrap._children), 4)
+            first_sample_pos = moof['traf.tfhd'].base_data_offset + moof['traf.trun'].data_offset
             self.assertGreaterOrEqual(
-                first_sample_pos, wrap.mdat.position + wrap.mdat.header_size)
-            dest = io.BytesIO()
-            wrap.encode(dest)
-            data = dest.getvalue()
-            first_sample_pos = moof.traf.tfhd.base_data_offset + moof.traf.trun.data_offset
+                first_sample_pos, wrap.get('mdat').position + wrap.get('mdat').header_size)
+            first_sample_pos = moof.get('traf.tfhd').base_data_offset + moof.get('traf.trun').data_offset
             self.assertGreaterOrEqual(
-                first_sample_pos, wrap.mdat.position + wrap.mdat.header_size)
-            src = io.BufferedReader(io.BytesIO(data))
-            new_wrap = mp4.IsoParser.load(
-                src, options={'lazy_load': True, 'mode': 'rw'}, use_wrapper=True)
+                first_sample_pos, wrap.get('mdat').position + wrap.get('mdat').header_size)
+            data: bytes = wrap.encode_as_bytes(only_children=True)
+            self.assertEqual(len(data), len(self.segment))
             self.assertBuffersEqual(
                 expected_data, data, dump=True, max_length=48, name='media segment')
-            self.assertEqual(new_wrap.moof.traf.tfdt.base_media_decode_time,
+            src = io.BufferedReader(io.BytesIO(data))
+            new_wrap: mp4.Wrapper = mp4.IsoParser.load_wrapped(
+                src, options={'lazy_load': True, 'mode': 'rw'})
+            self.assertEqual(len(new_wrap._children), 4)
+            self.assertEqual(new_wrap._children[0].atom_type, 'moof')
+            self.assertEqual(new_wrap.get('moof.traf.tfdt').base_media_decode_time,
                              base_media_decode_time)
-            first_sample_pos = new_wrap.moof.traf.tfhd.base_data_offset + new_wrap.moof.traf.trun.data_offset
+            first_sample_pos = new_wrap.get('moof.traf.tfhd').base_data_offset + new_wrap.get('moof.traf.trun').data_offset
             self.assertGreaterOrEqual(
-                first_sample_pos, new_wrap.mdat.position + new_wrap.mdat.header_size)
+                first_sample_pos, new_wrap['mdat'].position + new_wrap['mdat'].header_size)
             last_sample_end = first_sample_pos
-            for samp in moof.traf.trun.samples:
+            for samp in new_wrap.get('moof.traf.trun').samples:
                 last_sample_end += samp.size
             self.assertLessThanOrEqual(
-                last_sample_end, new_wrap.mdat.position + new_wrap.mdat.size)
-            sidx_len = wrap.sidx.size
-            del new_wrap.sidx
-            new_wrap.moof.traf.tfhd.base_data_offset = None
+                last_sample_end, new_wrap['mdat'].position + new_wrap['mdat'].size)
+            sidx_len = wrap.get('sidx').size
+            self.assertEqual(len(new_wrap._children), 4)
+            del new_wrap['sidx']
+            self.assertEqual(len(new_wrap._children), 3)
+            new_wrap['moof.traf.tfhd'].base_data_offset = None
             dest = io.BytesIO()
+            pos: int = 0
             for child in new_wrap.children:
+                self.assertEqual(pos, dest.tell())
+                pos += child.size
                 child.encode(dest)
+                self.assertEqual(pos, dest.tell())
             data = dest.getvalue()
-            self.assertEqual(len(expected_data) - sidx_len, len(data))
+            self.assertEqual(
+                len(expected_data) - sidx_len, len(data),
+                msg=f"Expected data length {len(expected_data) - sidx_len} does not match actual data length {len(data)}")
             src = io.BufferedReader(io.BytesIO(data))
-            new_wrap = mp4.IsoParser.load(
-                src, options={'lazy_load': True, 'mode': 'ro'}, use_wrapper=True)
-            first_sample_pos = new_wrap.moof.traf.tfhd.base_data_offset + new_wrap.moof.traf.trun.data_offset
+            new_wrap: mp4.Wrapper = mp4.IsoParser.load_wrapped(
+                src, options={'lazy_load': lazy_load, 'mode': 'ro'})
+            first_sample_pos = new_wrap['moof.traf.tfhd'].base_data_offset + new_wrap['moof.traf.trun'].data_offset
             self.assertGreaterOrEqual(
-                first_sample_pos, new_wrap.mdat.position + new_wrap.mdat.header_size)
+                first_sample_pos, new_wrap['mdat'].position + new_wrap['mdat'].header_size)
 
-    def test_update_base_media_decode_time_over_32_bits(self):
-        src = io.BufferedReader(io.BytesIO(self.segment))
-        wrap = mp4.IsoParser.load(src, options={'lazy_load': True, 'mode': 'rw'}, use_wrapper=True)
+    def test_update_base_media_decode_time_over_32_bits(self) -> None:
+        src = io.BytesIO(self.segment)
+        wrap = mp4.IsoParser.load_wrapped(src, options={'lazy_load': True, 'mode': 'rw'})
         self.assertEqual(len(wrap._children), 4)
-        moof = wrap.moof
-        offset = moof.traf.tfdt.position + 12  # dec_time_pos - frag_pos
-        base_media_decode_time = struct.unpack(
+        moof: mp4.MovieFragmentBox = wrap['moof']
+        offset: int = moof['traf.tfdt'].position + 12  # dec_time_pos - frag_pos
+        base_media_decode_time: int = struct.unpack(
             '>I', self.segment[offset:offset + 4])[0]
-        delta = 1 << 34
+        self.assertEqual(moof['traf.tfdt'].base_media_decode_time, base_media_decode_time)
+        tfdt_size_before: int = moof['traf.tfdt'].size
+        first_sample_pos_before: int = moof['traf.tfhd'].base_data_offset + moof['traf.trun'].data_offset
+        delta: int = 1 << 34
         base_media_decode_time += delta
-        before = moof.traf.tfdt.size
-        moof.traf.tfdt.base_media_decode_time = base_media_decode_time
+        moof['traf.tfdt'].base_media_decode_time = base_media_decode_time
         # force base_data_offset to be re-calculated when the tfhd box is encoded
-        moof.traf.tfhd.base_data_offset = None
-        self.assertEqual(before + 4, moof.traf.tfdt.size)
+        moof['traf.tfhd'].base_data_offset = None
+        self.assertEqual(
+            tfdt_size_before + 4, moof['traf.tfdt'].size,
+            msg=' '.join([
+                "Expected tfdt size to increase by 4 bytes when base_media_decode_time exceeds 32 bits. ",
+                f"Before: {tfdt_size_before}, After: {moof['traf.tfdt'].size}"]))
         dest = io.BytesIO()
         wrap.encode(dest)
         data = dest.getvalue()
-        new_wrap = mp4.IsoParser.load(
-            io.BufferedReader(io.BytesIO(data)), options={'lazy_load': True}, use_wrapper=True)
-        first_sample_pos = new_wrap.moof.traf.tfhd.base_data_offset + new_wrap.moof.traf.trun.data_offset
+        new_wrap = mp4.IsoParser.load_wrapped(
+            io.BufferedReader(io.BytesIO(data)), options=mp4.Options(lazy_load=True, mode='r'))
+        first_sample_pos: int = new_wrap['moof.traf.tfhd'].base_data_offset + new_wrap['moof.traf.trun'].data_offset
+        self.assertEqual(first_sample_pos_before + 4, first_sample_pos)
+        mdat = new_wrap['mdat']
         self.assertEqual(
-            new_wrap.mdat.position + new_wrap.mdat.header_size, first_sample_pos)
+            mdat.position + mdat.header_size, first_sample_pos,
+            msg=(f"First sample position {mdat.position + mdat.header_size}"
+                 f" does not match expected position {first_sample_pos}"))
 
     def test_update_mfhd_sequence_number(self) -> None:
         src: BinaryIO = io.BufferedReader(io.BytesIO(self.segment))
@@ -256,24 +286,25 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         self.assertEqual(len(frag), 4)
         self.assertEqual(frag[0].atom_type, 'moof')
         moof: mp4.MovieFragmentBox = cast(mp4.MovieFragmentBox, frag[0])
-        offset: int = moof.mfhd.position + 12
+        offset: int = moof['mfhd'].position + 12
         segment_num: int = 0x1234
         expected_data: bytes = b''.join([
             self.segment[moof.position:offset],
             struct.pack('>I', segment_num),
             self.segment[offset + 4:moof.position + moof.size]])
-        moof.mfhd.sequence_number = segment_num
-        data = moof.encode()
-        src = io.BufferedReader(io.BytesIO(data))
+        moof['mfhd'].sequence_number = segment_num
+        data: bytes = moof.encode_as_bytes()
+        src = io.BytesIO(data)
         new_moof = mp4.IsoParser.load(src)[0]
         self.assertBuffersEqual(expected_data, data)
-        self.assertEqual(new_moof.mfhd.sequence_number, segment_num)
+        self.assertEqual(new_moof['mfhd'].sequence_number, segment_num)
 
     def test_wrap_boxes(self):
         src = io.BufferedReader(io.BytesIO(self.moov))
-        wrap = mp4.IsoParser.load(src, options={'lazy_load': True}, use_wrapper=True)
+        wrap: mp4.Wrapper = mp4.IsoParser.load_wrapped(src, options={'lazy_load': True})
+        self.assertIsInstance(wrap, mp4.Wrapper)
         self.assertEqual(len(wrap._children), 5)
-        data = wrap.encode()
+        data: bytes = wrap.encode_as_bytes()
         self.assertEqual(len(data), len(self.moov))
         self.assertBuffersEqual(data, self.moov)
 
@@ -283,15 +314,15 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         wrap = mp4.Wrapper(
             size=len(self.moov),
             _children=mp4.IsoParser.load(src, options=options))
-        moov = wrap.moov
+        moov = wrap.get('moov')
         for child in moov.children:
             self.check_create_atom(child, self.moov)
         self.check_create_atom(moov, self.moov)
 
-    def test_create_all_boxes_in_encrypted_moov(self):
+    def test_create_all_boxes_in_encrypted_moov(self) -> None:
         src = io.BufferedReader(io.BytesIO(self.enc_moov))
-        wrap = mp4.Wrapper(size=len(self.enc_moov), children=mp4.IsoParser.load(src))
-        moov = wrap.moov
+        wrap = mp4.IsoParser.load_wrapped(src, options={'lazy_load': True})
+        moov = wrap['moov']
         for child in moov.children:
             self.check_create_atom(child, self.enc_moov)
         self.check_create_atom(moov, self.enc_moov)
@@ -305,8 +336,8 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
     def check_create_all_boxes_in_moof(self, lazy_load: bool):
         src = io.BufferedReader(io.BytesIO(self.segment))
         options = mp4.Options(lazy_load=lazy_load)
-        wrap = mp4.IsoParser.load(src, use_wrapper=True, options=options)
-        moof = wrap.moof
+        wrap = mp4.IsoParser.load_wrapped(src, options=options)
+        moof = wrap['moof']
         for child in moof.children:
             self.check_create_atom(child, self.segment)
         moof_data = self.segment[moof.position:moof.position + moof.size]
@@ -325,8 +356,8 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         for seg in segments:
             if seg.atom_type != 'moof':
                 continue
-            saiz = seg.traf.saiz
-            trun = seg.traf.trun
+            saiz = seg['traf.saiz']
+            trun = seg['traf.trun']
             self.assertEqual(saiz.sample_count, trun.sample_count)
 
     def test_create_all_segments_in_video_file(self):
@@ -376,25 +407,25 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         self.assertBuffersEqual(orig_data, new_child_data, name=name)
 
     def test_avc3_encoding_from_original(self):
-        src = io.BufferedReader(io.BytesIO(self.moov))
+        src = io.BytesIO(self.moov)
         atoms = mp4.IsoParser.load(src, options={'lazy_load': True})
         self.assertEqual(len(atoms), 5)
         self.assertEqual(atoms[2].atom_type, 'moov')
         moov = atoms[2]
-        avc3 = moov.trak.mdia.minf.stbl.stsd.avc3
+        avc3 = moov.get('trak.mdia.minf.stbl.stsd.avc3')
         avc3_data = self.moov[avc3.position:avc3.position + avc3.size]
         dest = io.BytesIO()
         avc3.encode(dest)
         new_avc3_data = dest.getvalue()
         self.assertBuffersEqual(avc3_data, new_avc3_data)
 
-    def test_avc3_encoding_all_boxes(self):
-        src = io.BufferedReader(io.BytesIO(self.moov))
+    def test_avc3_encoding_all_boxes(self) -> None:
+        src = io.BytesIO(self.moov)
         atoms = mp4.IsoParser.load(src)
         self.assertEqual(len(atoms), 5)
         self.assertEqual(atoms[2].atom_type, 'moov')
-        moov = atoms[2]
-        avc3 = moov.trak.mdia.minf.stbl.stsd.avc3
+        moov: mp4.MovieBox = atoms[2]
+        avc3 = moov.get('trak.mdia.minf.stbl.stsd.avc3')
         avc3_data = self.moov[avc3.position:avc3.position + avc3.size]
         dest = io.BytesIO()
         avc3.encode(dest)
@@ -431,7 +462,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         self.assertEqual(len(atoms), 6)
         self.assertEqual(atoms[3].atom_type, 'moov')
         moov = atoms[3]
-        ec3 = moov.trak.mdia.minf.stbl.stsd.ec_3
+        ec3 = moov['trak.mdia.minf.stbl.stsd.ec_3']
         orig_ec3_data = src_data[ec3.position:ec3.position + ec3.size]
         dest = io.BytesIO()
         ec3.encode(dest)
@@ -451,8 +482,8 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         filename: Path = Mp4Tests.FIXTURES_PATH / "emsg.mp4"
         with filename.open("rb") as f:
             src_data = f.read()
-        src = io.BufferedReader(io.BytesIO(src_data))
-        atoms = mp4.IsoParser.load(src)
+        src = io.BytesIO(src_data)
+        atoms = mp4.IsoParser.load(src, options=mp4.Options(lazy_load=False, strict=True))
         self.assertEqual(len(atoms), 9)
         expected_data = [
             "YMID=337880795,YCSP=337880795,YSEQ=1:4,YTYP=S,YDUR=0.00",
@@ -481,7 +512,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
     def test_create_all_segments_in_emsg_file_lazy_loaded(self):
         self.check_create_all_segments_in_file("emsg.mp4", True)
 
-    def test_create_emsg_v1(self):
+    def test_create_emsg_v1(self) -> None:
         emsg = mp4.EventMessageBox(
             atom_type='emsg',
             version=1,
@@ -493,10 +524,10 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
             presentation_time=0x012345,
             event_duration=0x678,
             data=Binary(b'Hello World'))
-        data = emsg.encode()
+        data: bytes = emsg.encode_as_bytes()
         # self.hexdumpBuffer('emsg', data)
         # print(binascii.b2a_hex(data))
-        expected_data = ''.join([
+        expected_data: bytes = binascii.a2b_hex(''.join([
             '00000041',  # length
             '656d7367',  # "emsg"
             '01',  # version
@@ -508,11 +539,9 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
             str(binascii.b2a_hex(b'urn:example:2022:6'), 'ascii'), "00",
             str(binascii.b2a_hex(b'42'), 'ascii'), "00",
             str(binascii.b2a_hex(b'Hello World'), 'ascii'),
-        ])
-        # print(expected_data)
-        expected_data = binascii.a2b_hex(expected_data)
+        ]))
         self.assertBuffersEqual(expected_data, data)
-        src = io.BufferedReader(io.BytesIO(expected_data))
+        src = io.BytesIO(expected_data)
         atoms = mp4.IsoParser.load(src)
         self.assertEqual(len(atoms), 1)
         new_emsg = atoms[0]
@@ -526,7 +555,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         self.assertEqual(emsg.event_duration, new_emsg.event_duration)
         self.assertEqual(emsg.data, new_emsg.data)
 
-    def test_create_emsg_v0_from_scratch(self):
+    def test_create_emsg_v0_from_scratch(self) -> None:
         emsg = mp4.EventMessageBox(
             version=0,
             flags=0,
@@ -538,7 +567,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
             value="3366",
             data=Binary(b'hello world')
         )
-        data = emsg.encode()
+        data: bytes = emsg.encode_as_bytes()
         # self.hexdumpBuffer('data', data)
         atom_data = io.BytesIO()
         for item in [
@@ -556,11 +585,11 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
                 emsg.data.data,
         ]:
             atom_data.write(item)
-        atom = atom_data.getvalue()
+        atom: bytes = atom_data.getvalue()
         length = struct.pack('>I', len(atom) + 4)
         expected = length + atom
         self.assertBuffersEqual(expected, data, name="emsg")
-        src = io.BufferedReader(io.BytesIO(data))
+        src = io.BytesIO(data)
         new_emsg = mp4.IsoParser.load(src)
         self.assertEqual(len(new_emsg), 1)
         self.assertEqual(new_emsg[0].atom_type, 'emsg')
@@ -571,7 +600,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         self.assertEqual(emsg.event_id, new_emsg[0].event_id)
         self.assertEqual(emsg.data, new_emsg[0].data)
 
-    def test_create_emsg_v1_from_scratch(self):
+    def test_create_emsg_v1_from_scratch(self) -> None:
         emsg = mp4.EventMessageBox(
             atom_type='emsg',
             version=1,
@@ -584,7 +613,7 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
             value='3366',
             data=Binary(b'hello world')
         )
-        data = emsg.encode()
+        data: bytes = emsg.encode_as_bytes()
         # self.hexdumpBuffer('data', data)
         atom_data = io.BytesIO()
         for item in [
@@ -620,11 +649,10 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
     def test_parse_senc_box_before_saiz_box(self):
         options = mp4.Options(iv_size=8, strict=True, lazy_load=True, mode='rw')
         filename: Path = Mp4Tests.FIXTURES_PATH / "bbb" / "bbb_v6_enc.mp4"
-        with filename.open('rb') as f:
-            with io.BufferedReader(f) as src:
-                wrap = mp4.IsoParser.load(src, options=options, use_wrapper=True)
-        seg = wrap.moof
-        traf = seg.traf
+        with filename.open('rb', buffering=32768) as src:
+            wrap = mp4.IsoParser.load_wrapped(src, options=options)
+        seg: mp4.MovieFragmentBox = wrap['moof']
+        traf = seg['traf']
         before = len(traf.children)
         pos = traf.index('senc')
         senc = traf.children[pos]
@@ -632,12 +660,13 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         pos = traf.index('saiz')
         traf.insert_child(pos, senc)
         # force base_data_offset to be re-calculated
-        traf.tfhd.base_data_offset = None
+        traf['tfhd'].base_data_offset = None
         self.assertGreaterThan(traf.index('saiz'), traf.index('senc'))
         self.assertEqual(before, len(traf.children))
-        new_moof_data = seg.encode()
-        src = io.BufferedReader(io.BytesIO(new_moof_data))
-        new_moof = mp4.IsoParser.load(src, options=options)[0]
+        new_moof_data: bytes = seg.encode_as_bytes()
+        src = io.BytesIO(new_moof_data)
+        new_moof: mp4.MovieFragmentBox = mp4.IsoParser.load(src, options=options)[0]
+        self.assertEqual(new_moof.atom_type, 'moof')
         expected = seg.toJSON()
         actual = new_moof.toJSON()
         # expected box ordering is [mfhd, traf]
@@ -662,34 +691,34 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
 
     def check_insert_piff_box_before_saiz_box(self, lazy_load: bool) -> None:
         options = mp4.Options(
-            iv_size=8, strict=True, lazy_load=lazy_load, debug=lazy_load, mode='rw')
+            iv_size=8, strict=True, lazy_load=lazy_load, debug=False, mode='rw')
         options.log = logging.getLogger('mp4')
         filename: Path = Mp4Tests.FIXTURES_PATH / "bbb" / "bbb_v6_enc.mp4"
-        with filename.open('rb') as f:
-            with io.BufferedReader(f) as src:
-                wrap = mp4.IsoParser.load(src, options=options, use_wrapper=True)
-        traf = wrap.moof.traf
+        with filename.open('rb', buffering=32768) as src:
+            wrap = mp4.IsoParser.load_wrapped(src, options=options)
+        traf = wrap['moof.traf']
         pos = traf.index('saiz')
-        piff = mp4.PiffSampleEncryptionBox.clone_from_senc(traf.senc)
+        piff = mp4.PiffSampleEncryptionBox.clone_from_senc(traf['senc'])
         traf.insert_child(pos, piff)
         # force base_data_offset to be re-calculated
-        traf.tfhd.base_data_offset = None
+        traf['tfhd'].base_data_offset = None
         # force re-calculation of offset to first senc sample
-        traf.saio.offsets = None
-        new_moof_data = wrap.moof.encode()
-        src = io.BufferedReader(io.BytesIO(new_moof_data))
-        new_moof = mp4.IsoParser.load(src, options=options)[0]
+        traf['saio'].offsets = None
+        new_moof_data: bytes = wrap['moof'].encode_as_bytes()
+        src = io.BytesIO(new_moof_data)
+        new_moof: mp4.MovieFragmentBox = mp4.IsoParser.load(src, options=options)[0]
+        self.assertEqual(new_moof.atom_type, 'moof')
         # expected box ordering is [mfhd, traf]
         self.assertEqual(new_moof.children[0].atom_type, 'mfhd')
         self.assertEqual(new_moof.children[1].atom_type, 'traf')
-        traf = new_moof.traf
+        traf = new_moof['traf']
         # expected box ordering in traf is [tfhd, tfdt, senc, saiz, saio, trun]
         for index, atom_type in enumerate([
                 'tfhd', 'tfdt', 'UUID(a2394f525a9b4f14a2446c427c648df4)',
                 'saiz', 'saio', 'senc', 'trun']):
             self.assertEqual(
                 traf.children[index].atom_name(), atom_type)
-        expected = wrap.moof.toJSON()
+        expected = wrap['moof'].toJSON()
         actual = new_moof.toJSON()
         expected_traf = expected['children'][1]
         # the newly encoded traf will start at position zero
@@ -700,16 +729,17 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         #   PiffSampleEncryptionBox
         #   TrackFragmentRunBox
         boxes_to_patch = {'senc', 'trun', 'UUID(a2394f525a9b4f14a2446c427c648df4)'}
-        for idx, child in enumerate(new_moof.traf.children):
+        traf = new_moof['traf']
+        for idx, child in enumerate(traf.children):
             if child.atom_name() not in boxes_to_patch:
                 continue
             for j, sample in enumerate(expected_traf['children'][idx]['samples']):
-                sample['offset'] = new_moof.traf.children[idx].samples[j].offset
+                sample['offset'] = traf.children[idx].samples[j].offset
         self.assertObjectEqual(expected, actual, list_key=self.list_key_fn)
-        self.assertEqual(len(new_moof.traf.saio.offsets), 1)
+        self.assertEqual(len(traf['saio'].offsets), 1)
         self.assertEqual(
-            new_moof.traf.tfhd.base_data_offset + new_moof.traf.saio.offsets[0],
-            new_moof.traf.senc.position + new_moof.traf.senc.samples[0].offset)
+            traf['tfhd'].base_data_offset + traf['saio'].offsets[0],
+            traf['senc'].position + traf['senc'].samples[0].offset)
 
     def test_parse_ebu_tt_d_subs(self):
         """Test parsing an init segment for a stream containing EBU-TT-D subtitles"""
@@ -744,17 +774,17 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         filename: Path = Mp4Tests.FIXTURES_PATH / filename
         with filename.open("rb") as f:
             src_data = f.read()
-        src = io.BufferedReader(io.BytesIO(src_data))
+        src = io.BytesIO(src_data)
         atoms = mp4.IsoParser.load(src)
         # ftyp, moov and then moof fragments
         self.assertEqual(len(atoms), num_fragments + 2)
         self.assertEqual(atoms[0].atom_type, 'ftyp')
         self.assertEqual(atoms[1].atom_type, 'moov')
-        stpp = atoms[1].trak.mdia.minf.stbl.stsd.stpp
+        stpp = atoms[1]['trak.mdia.minf.stbl.stsd.stpp']
         self.assertEqual(stpp.namespace.split(' '), namespaces)
         if stpp.find_child('mime'):
             self.assertEqual(
-                stpp.mime.content_type,
+                stpp['mime'].content_type,
                 "application/ttml+xml;codecs=im1t|etd1")
         for child in atoms[1].children:
             self.check_create_atom(child, src_data)
@@ -765,12 +795,12 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         filename: Path = Mp4Tests.FIXTURES_PATH / "webvtt.mp4"
         with filename.open("rb") as f:
             src_data = f.read()
-        src = io.BufferedReader(io.BytesIO(src_data))
-        atoms = mp4.IsoParser.load(src)
+        src = io.BytesIO(src_data)
+        atoms = mp4.IsoParser.load(src, options=mp4.Options(lazy_load=False, strict=True))
         self.assertEqual(len(atoms), 9)
         self.assertEqual(atoms[2].atom_type, 'moov')
-        wvtt = atoms[2].trak.mdia.minf.stbl.stsd.wvtt
-        self.assertEqual(wvtt.vttC.config, 'WEBVTT - This file has cues.')
+        vttC = atoms[2]['trak.mdia.minf.stbl.stsd.wvtt.vttC']
+        self.assertEqual(vttC.config, 'WEBVTT - This file has cues.')
         for child in atoms[2].children:
             self.check_create_atom(child, src_data)
         self.check_create_atom(atoms[2], src_data)
@@ -783,13 +813,13 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         atoms = mp4.IsoParser.load(src)
         self.assertEqual(len(atoms), 3)
         self.assertEqual(atoms[2].atom_type, 'moov')
-        hev1 = atoms[2].trak.mdia.minf.stbl.stsd.hev1
+        hev1 = atoms[2]['trak.mdia.minf.stbl.stsd.hev1']
         self.assertEqual(hev1.width, 2048)
         self.assertEqual(hev1.height, 872)
-        self.assertEqual(hev1.hvcC.general_level_idc, 120)
-        self.assertEqual(hev1.hvcC.general_profile_idc, 2)
-        self.assertEqual(hev1.hvcC.luma_bit_depth, 10)
-        self.assertEqual(hev1.hvcC.chroma_bit_depth, 10)
+        self.assertEqual(hev1['hvcC'].general_level_idc, 120)
+        self.assertEqual(hev1['hvcC'].general_profile_idc, 2)
+        self.assertEqual(hev1['hvcC'].luma_bit_depth, 10)
+        self.assertEqual(hev1['hvcC'].chroma_bit_depth, 10)
         for child in atoms[2].children:
             self.check_create_atom(child, src_data)
         self.check_create_atom(atoms[2], src_data)
@@ -873,8 +903,8 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
 
     def test_parsing_pasp_box(self):
         data = binascii.a2b_hex('000000107061737000000663000006b2')
-        src = io.BufferedReader(io.BytesIO(data))
-        atoms = mp4.IsoParser.load(src)
+        src = io.BytesIO(data)
+        atoms = mp4.IsoParser.load(src, options=mp4.Options(lazy_load=False, strict=True))
         self.assertEqual(len(atoms), 1)
         self.assertEqual(atoms[0].atom_type, 'pasp')
         self.assertEqual(atoms[0].h_spacing, 0x663)
@@ -914,10 +944,9 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         # To re-create a JSON fixture:
         # python -m dashlive.mpeg.mp4 --json --show "ftyp,moov+,moof+" ./tests/fixtures/bbb/bbb_v7_enc.mp4
         filename = self.FIXTURES_PATH / f'{name}.mp4'
-        options = mp4.Options(lazy_load=lazy_load)
-        with open(filename, 'rb') as f:
-            with io.BufferedReader(f) as src:
-                segments = mp4.IsoParser.load(src, options=options)
+        options = mp4.Options(lazy_load=lazy_load, iv_size=8)
+        with open(filename, 'rb', buffering=32768) as src:
+            segments = mp4.IsoParser.load(src, options=options)
         filename = self.FIXTURES_PATH / f'{name}.json'
         actual: list[JsonObject] = []
         for atom in segments:
@@ -940,43 +969,44 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
 
     def check_insert_tfdt_box_after_tfhd_box(self, lazy_load: bool) -> None:
         options = mp4.Options(
-            iv_size=8, strict=True, lazy_load=lazy_load, debug=lazy_load, mode='rw')
+            iv_size=8, strict=True, lazy_load=lazy_load, debug=False, mode='rw')
         options.log = logging.getLogger('mp4')
         filename: Path = Mp4Tests.FIXTURES_PATH / "webvtt.mp4"
         with filename.open('rb') as f:
             f.seek(674)
-            src = io.BufferedReader(io.BytesIO(f.read(831 - 674)))
-        wrap = mp4.IsoParser.load(src, options=options, use_wrapper=True)
+            src = io.BytesIO(f.read(831 - 674))
+        wrap = mp4.IsoParser.load_wrapped(src, options=options)
         for index, atom_type in enumerate(['moof', 'mdat']):
             self.assertEqual(
                 wrap.children[index].atom_name(), atom_type)
-        traf = wrap.moof.traf
+        traf = wrap['moof.traf']
         for index, atom_type in enumerate(['tfhd', 'trun']):
             self.assertEqual(
                 traf.children[index].atom_name(), atom_type)
-        pos = traf.index('tfhd')
+        pos: int = traf.index('tfhd')
+        self.assertEqual(pos, 0)
         tfdt = mp4.TrackFragmentDecodeTimeBox(
             version=0, flags=0, base_media_decode_time=0x1234)
         traf.insert_child(pos + 1, tfdt)
 
         # force base_data_offset to be re-calculated
-        traf.tfhd.base_data_offset = None
+        traf['tfhd'].base_data_offset = None
 
         # force trun box to have a data_offset field, as its
         # position will have changed
-        traf.trun.flags |= mp4.TrackFragmentRunBox.data_offset_present
+        traf['trun'].flags |= mp4.TrackFragmentRunBox.data_offset_present
 
-        new_data = wrap.encode()
-        src = io.BufferedReader(io.BytesIO(new_data))
-        new_wrap = mp4.IsoParser.load(src, options=options, use_wrapper=True)
+        new_data: bytes = wrap.encode_as_bytes()
+        src = io.BytesIO(new_data)
+        new_wrap = mp4.IsoParser.load_wrapped(src, options=options)
         for index, atom_type in enumerate(['moof', 'mdat']):
             self.assertEqual(
                 new_wrap.children[index].atom_name(), atom_type)
 
-        new_moof = new_wrap.moof
-        self.assertEqual(new_moof.children[0].atom_type, 'mfhd')
-        self.assertEqual(new_moof.children[1].atom_type, 'traf')
-        traf = new_moof.traf
+        new_moof = new_wrap['moof']
+        for index, atom_type in enumerate(['mfhd', 'traf']):
+            self.assertEqual(new_moof.children[index].atom_type, atom_type)
+        traf = new_moof['traf']
 
         # expected box ordering in traf is [tfhd, tfdt, trun]
         for index, atom_type in enumerate([
@@ -992,25 +1022,25 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
         trun_js = traf_js['children'][2]
         self.assertEqual(trun_js['atom_type'], 'trun')
         for idx, sample in enumerate(trun_js['samples']):
-            sample['offset'] = new_moof.traf.trun.samples[idx].offset
+            sample['offset'] = new_moof['traf.trun'].samples[idx].offset
         actual = new_wrap.toJSON()
         self.assertObjectEqual(expected, actual, list_key=self.list_key_fn)
 
         first_sample_pos: int = (
-            new_moof.traf.tfhd.base_data_offset +
-            new_moof.traf.trun.data_offset)
+            new_moof['traf.tfhd'].base_data_offset +
+            new_moof['traf.trun'].data_offset)
         last_sample_end: int = first_sample_pos
-        for samp in new_moof.traf.trun.samples:
+        for samp in new_moof['traf.trun'].samples:
             last_sample_end += samp.size
-        mdat = new_wrap.mdat
+        mdat = new_wrap['mdat']
         msg = (
             'trun.data_offset must point inside the MDAT box. ' +
             f'trun points to {first_sample_pos} but first sample of ' +
             f'MDAT is at {mdat.position + mdat.header_size}. ' +
             f'trun last sample is {last_sample_end}. End of ' +
             f'MDAT is {mdat.position + mdat.size}. ' +
-            f'tfhd.base_data_offset={new_moof.traf.tfhd.base_data_offset} and ' +
-            f'trun.data_offset={new_moof.traf.trun.data_offset}'
+            f'tfhd.base_data_offset={new_moof["traf.tfhd"].base_data_offset} and ' +
+            f'trun.data_offset={new_moof["traf.trun"].data_offset}'
         )
         self.assertEqual(
             first_sample_pos, mdat.position + mdat.header_size, msg=msg)
@@ -1020,5 +1050,6 @@ class Mp4Tests(TestCaseMixin, unittest.TestCase):
 
 if __name__ == "__main__":
     logging.basicConfig()
-    logging.getLogger().setLevel(logging.INFO)
+    logging.getLogger().setLevel(logging.ERROR)
+    # logging.getLogger('mp4').setLevel(logging.DEBUG)
     unittest.main()

@@ -67,9 +67,10 @@ class H264Codec(CodecData):
 
     @classmethod
     def from_avc_box(cls, avc_type: str, avc: VisualSampleEntry) -> CodecData:
-        profile = avc.avcC.AVCProfileIndication
-        compatibility = avc.avcC.profile_compatibility
-        level: float = avc.avcC.AVCLevelIndication / 10.0
+        avcc = avc['avcC']
+        profile = avcc.AVCProfileIndication
+        compatibility = avcc.profile_compatibility
+        level: float = avcc.AVCLevelIndication / 10.0
         return H264Codec(avc_type, profile, compatibility, level)
 
     @classmethod
@@ -107,17 +108,18 @@ class H265Codec(CodecData):
 
     @classmethod
     def from_avc_box(cls, avc_type: str, avc: VisualSampleEntry) -> CodecData:
+        hvcc = avc['hvcC']
         gpcf = bitstring.BitArray(
-            uint=avc.hvcC.general_profile_compatibility_flags, length=32)
+            uint=hvcc.general_profile_compatibility_flags, length=32)
         gpcf.reverse()
         return H265Codec(
             avc_type=avc_type,
-            profile_idc=avc.hvcC.general_profile_idc,
-            profile_space=avc.hvcC.general_profile_space,
-            level_idc=avc.hvcC.general_level_idc,
-            tier_flag=avc.hvcC.general_tier_flag,
+            profile_idc=hvcc.general_profile_idc,
+            profile_space=hvcc.general_profile_space,
+            level_idc=hvcc.general_level_idc,
+            tier_flag=hvcc.general_tier_flag,
             profile_compatibility_flags=gpcf.uint,
-            constraint_indicator_flags=avc.hvcC.general_constraint_indicator_flags)
+            constraint_indicator_flags=hvcc.general_constraint_indicator_flags)
 
     def to_string(self) -> str:
         # According to ISO 14496-15, the codec string for hev1 and hvc1
@@ -208,7 +210,7 @@ class Mp4AudioCodec(CodecData):
 
     @classmethod
     def from_avc_box(cls, avc_type: str, avc: VisualSampleEntry) -> CodecData:
-        dsi = avc.esds.descriptor("DecoderSpecificInfo")
+        dsi = avc['esds'].descriptor("DecoderSpecificInfo")
         return Mp4AudioCodec(
             avc_type=avc_type,
             object_type=dsi.object_type,
