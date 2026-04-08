@@ -119,11 +119,17 @@ class TestCaseMixin:
                 if strict:
                     self.assertListEqual(value, actual[key], msg=key_name)
                 else:
+                    index: int = 0
                     for e, a in zip(value, act):
-                        self.assertObjectEqual(e, a)
+                        list_msg: str
+                        if list_key is not None:
+                            list_msg = list_key(e, index)
+                        else:
+                            list_msg = f'{key_name}[{index}]'
+                        self.assertObjectEqual(e, a, msg=list_msg)
+                        index += 1
             else:
-                assert_msg = r'{}: expected "{}" got "{}"'.format(
-                    key_name, value, actual[key])
+                assert_msg = f'{key_name}: expected "{value}" got "{actual[key]}"'
                 self.assertEqual(value, actual[key], msg=assert_msg)
 
     def assertGreaterThan(self, a, b, msg=None):
@@ -306,7 +312,6 @@ class TestCaseMixin:
             if '_type' in item:
                 item_type = item["_type"].split('.')[-1]
                 return f'{index}={item_type}'
-            print(item.keys())
             return f'{index}={item["atom_type"]}'
         return f'{index}'
 
