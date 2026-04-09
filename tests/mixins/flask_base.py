@@ -249,12 +249,6 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
         self.fs.add_real_directory(
             self.REAL_FIXTURES_PATH / fixture.name, read_only=True, lazy_read=False,
             target_path=(blob_folder / fixture.name))
-        stream = models.Stream(
-            title=fixture.title,
-            directory=fixture.name,
-            marlin_la_url=f"ms3://localhost/marlin/{fixture.name}",
-            playready_la_url=PlayReady.TEST_LA_URL
-        )
         fixture_files: list[str] = []
         patten: str = f"{fixture.name}_[av]*.mp4"
         if with_subs:
@@ -263,46 +257,51 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
         for item in fixtures_dir.glob(patten):
             fixture_files.append(item.stem)
         fixture_files.sort()
-        media_files: list[models.MediaFile] = []
-        for name in fixture_files:
-            mf = self.add_blob_and_media_file(fixture, stream, name)
-            media_files.append(mf)
-            if stream.timing_reference is None and '_v' in name:
-                stream.timing_reference = mf.as_stream_timing_reference()
         with self.app.app_context():
+            stream = models.Stream(
+                title=fixture.title,
+                directory=fixture.name,
+                marlin_la_url=f"ms3://localhost/marlin/{fixture.name}",
+                playready_la_url=PlayReady.TEST_LA_URL
+            )
             models.db.session.add(stream)
-            for mf in media_files:
-                models.db.session.add(mf.blob)
-                models.db.session.add(mf)
+            models.db.session.flush()
+            for name in fixture_files:
+                mf = self.add_blob_and_media_file(fixture, stream, name)
+                if stream.timing_reference is None and '_v' in name:
+                    stream.timing_reference = mf.as_stream_timing_reference()
             models.db.session.commit()
-        self.add_media_keys()
+            self.add_media_keys()
+            models.db.session.commit()
 
     def add_media_keys(self) -> None:
-        with self.app.app_context():
-            kids: set[bytes] = set()
-            self.assertGreaterThan(models.MediaFile.count(), 0)
-            for mf in models.MediaFile.all():
-                r = mf.representation
-                assert r is not None
-                if not r.encrypted:
+        kids: set[bytes] = set()
+        self.assertGreaterThan(models.MediaFile.count(), 0)
+        for mf in models.MediaFile.all():
+            r = mf.representation
+            assert r is not None
+            if not r.encrypted:
+                continue
+            for kid in r.kids:
+                if kid.raw in kids:
                     continue
-                for kid in r.kids:
-                    if kid.raw in kids:
-                        continue
-                    key = binascii.b2a_hex(PlayReady.generate_content_key(kid.raw))
-                    keypair: models.Key | None = models.Key.get(hkid=kid.hex)
-                    if keypair is None:
-                        keypair = models.Key(hkid=kid.hex, hkey=key, computed=True)
-                        models.db.session.add(keypair)
-                    kids.add(kid.raw)
-            models.db.session.commit()
+                key = binascii.b2a_hex(PlayReady.generate_content_key(kid.raw))
+                keypair: models.Key | None = models.Key.get(hkid=kid.hex)
+                if keypair is None:
+                    keypair = models.Key(hkid=kid.hex, hkey=key, computed=True)
+                    models.db.session.add(keypair)
+                kids.add(kid.raw)
 
     def add_blob_and_media_file(self,
                                 fixture: StreamFixture,
                                 stream: models.Stream,
                                 name: str) -> models.MediaFile:
+        mf: models.MediaFile | None = models.MediaFile.get_one(name=name)
+        if mf is not None:
+            return mf
         filename: str = f"{name}.mp4"
         src_file: Path = self.fixtures_folder / fixture.name / filename
+        assert src_file.exists(), f"Source file not found: {src_file}"
         content_type: str
         if '_v' in name:
             content_type = 'video'
@@ -311,16 +310,20 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
         else:
             content_type = 'text'
 
-        stats = src_file.stat()
-        sha1_hash = hashlib.sha1()
-        sha1_hash.update(f"{src_file}{stats.st_size}{stats.st_ctime}".encode('utf-8'))
-        blob = models.Blob(
-            filename=filename,
-            created=datetime.fromtimestamp(stats.st_ctime),
-            size=stats.st_size,
-            sha1_hash=sha1_hash.hexdigest(),
-            content_type=content_type,
-            auto_delete=False)
+        blob: models.Blob | None = models.Blob.get_one(filename=filename)
+        if blob is None:
+            stats = src_file.stat()
+            sha1_hash = hashlib.sha1()
+            sha1_hash.update(f"{src_file}{stats.st_size}{stats.st_ctime}".encode('utf-8'))
+            blob = models.Blob(
+                filename=filename,
+                created=datetime.fromtimestamp(stats.st_ctime),
+                size=stats.st_size,
+                sha1_hash=sha1_hash.hexdigest(),
+                content_type=content_type,
+                auto_delete=False)
+            models.db.session.add(blob)
+            models.db.session.flush()
 
         js_filename = self.fixtures_folder / fixture.name / f'rep-{name}.json'
         rep: Representation | None = None
@@ -352,6 +355,7 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
         mf = models.MediaFile(
             name=name,
             stream=stream,
+            stream_pk=stream.pk,
             bitrate=rep.bitrate,
             content_type=rep.content_type,
             codec_fourcc=rep.codecs.split('.')[0],
@@ -359,6 +363,8 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
             encrypted=rep.encrypted,
             blob=blob)
         mf.set_representation(rep)
+        models.db.session.add(mf)
+        models.db.session.flush()
 
         return mf
 
