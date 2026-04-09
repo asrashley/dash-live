@@ -186,9 +186,9 @@ class DashManifestCheckMixin:
                     test_duration = int(math.ceil(9 * fixture.segment_duration))
                 ev_interval = fixture.segment_duration * 300
                 if 'ping' in query:
-                    query += f'&ping_interval={ev_interval}&ping_timescale=100'
+                    query += f'&ping__interval={ev_interval}&ping__timescale=100'
                 if 'scte35' in query:
-                    query += f'&scte35_interval={ev_interval}&scte35_timescale=100'
+                    query += f'&scte35__interval={ev_interval}&scte35__timescale=100'
             elif duration == 0:
                 test_duration = int(math.ceil(3 * fixture.segment_duration))
             with self.subTest(query=query, test_duration=test_duration):
