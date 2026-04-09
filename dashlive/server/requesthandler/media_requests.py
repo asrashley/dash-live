@@ -45,6 +45,9 @@ class OnDemandMedia(RequestHandlerBase):
     decorators = [uses_stream, uses_media_file]
 
     def get(self, stream: str, filename: str, ext: str) -> flask.Response:
+        if current_media_file.blob is None:
+            logging.error('Blob not found for media file: %s', current_media_file.name)
+            return flask.make_response('File not found', 404)
         try:
             start, end, status, headers = self.get_http_range(
                 current_media_file.blob.size)
