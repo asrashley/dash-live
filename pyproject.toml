@@ -37,7 +37,7 @@ dependencies = [
     "requests==2.33.0",
     "six==1.16.0",
     "soupsieve==2.4.1",
-    "sqlalchemy==2.0.36",
+    "sqlalchemy>=2.0.36,<2.1",
     "sqlalchemy-jsonfield==1.0.1.post0",
     "ttconv==1.1.1",
     "types-flask-socketio>=5.6.0.20251228",
