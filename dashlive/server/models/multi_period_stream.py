@@ -56,7 +56,7 @@ class MultiPeriodStream(ModelMixin["MultiPeriodStream"], Base):
             "required": True,
             "minlength": 3,
             "maxlength": 62,
-            "pattern": f'[{ self.__ALLOWED_NAME_CHARS }]{{3,62}}',
+            "pattern": f'[{self.__ALLOWED_NAME_CHARS}]{{3,62}}',
             "value": kwargs.get("name", self.name),
         }, {
             "name": "title",
@@ -106,7 +106,7 @@ class MultiPeriodStream(ModelMixin["MultiPeriodStream"], Base):
         elif len(name) < 3:
             errors['name'] = 'Name must be at least 3 characters'
         elif not allowed_name_re.match(name):
-            errors['name'] = f'Name can only use the characters "{ cls.__ALLOWED_NAME_CHARS }"'
+            errors['name'] = f'Name can only use the characters "{cls.__ALLOWED_NAME_CHARS}"'
         else:
             model: MultiPeriodStream | None
             ipk: int = 0

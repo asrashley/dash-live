@@ -221,7 +221,7 @@ class EditMedia(HTMLHandlerBase):
         error: str | None = None
         if mf.errors:
             errs: set[str] = {err.reason.name for err in mf.errors}
-            error = f'{ mf.name } has errors: { " ,".join(errs) }'
+            error = f'{mf.name} has errors: {" ,".join(errs)}'
         context = cast(EditMediaContext, self.create_context(
             form_id='edit_media',
             title=f'Edit file: {mf.name}',
