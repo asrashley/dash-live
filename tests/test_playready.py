@@ -11,24 +11,26 @@ import binascii
 from concurrent.futures import ThreadPoolExecutor
 import io
 import logging
-import os
 from pathlib import Path
 from typing import Any
 import unittest
-import urllib.request
 import urllib.parse
-import urllib.error
 
 import flask
 from lxml import etree
 
 from dashlive.drm.keymaterial import KeyMaterial
 from dashlive.drm.playready import PlayReady, PlayReadyRecord
-from dashlive.mpeg import mp4
 from dashlive.mpeg.dash.validator import ConcurrentWorkerPool
+from dashlive.mpeg.mp4.atom import Mp4Atom
+from dashlive.mpeg.mp4.boxes.moov import MovieBox
+from dashlive.mpeg.mp4.boxes.piff import PiffSampleEncryptionBox
+from dashlive.mpeg.mp4.boxes.pssh import ContentProtectionSpecificBox
+from dashlive.mpeg.mp4.iso_parser import IsoParser
+from dashlive.mpeg.mp4.options import Options
+from dashlive.mpeg.mp4.wrapper import Wrapper
 from dashlive.server import manifests, models
 from dashlive.utils.binary import Binary
-from dashlive.utils.buffered_reader import BufferedReader
 
 from .mixins.flask_base import FlaskTestBase
 from .key_stub import KeyStub
@@ -74,7 +76,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             self.keys[kid.lower()] = KeyStub(kid, key)
         self.default_kid: str = list(self.keys.keys())[0]
 
-    def test_content_key_generation(self):
+    def test_content_key_generation(self) -> None:
         # https://brokenpipe.wordpress.com/2016/10/06/generating-a-playready-content-key-using-a-key-seed-and-key-id/
         kid = binascii.a2b_hex(
             '01020304-0506-0708-090A-AABBCCDDEEFF'.replace('-', ''))
@@ -99,7 +101,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         with self.assertRaises(ValueError):
             PlayReady.generate_content_key(keyId=kid, keySeed=b'123')
 
-    def test_checksum_generation(self):
+    def test_checksum_generation(self) -> None:
         mspr = PlayReady(la_url=self.la_url)
         kid_hex = '01020304-0506-0708-090A-AABBCCDDEEFF'.replace('-', '')
         key_hex = self.to_hex(base64.b64decode('GUf166PQbx+sgBADjyBMvw=='))
@@ -110,7 +112,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             self.to_hex(checksum),
             self.to_hex(expected_checksum))
 
-    def test_wrm_generation(self):
+    def test_wrm_generation(self) -> None:
         expected_wrm = ''.join([
             r'<WRMHEADER xmlns="http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader" version="4.0.0.0">',
             r'<DATA><PROTECTINFO><KEYLEN>16</KEYLEN><ALGID>AESCTR</ALGID></PROTECTINFO>',
@@ -132,7 +134,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             expected_wrm = expected_wrm[2:]
         self.assertBuffersEqual(expected_wrm, wrm, name="WRMHEADER")
 
-    def test_wrm_generation_with_custom_attrs(self):
+    def test_wrm_generation_with_custom_attrs(self) -> None:
         expected_wrm = ''.join([
             r'<WRMHEADER xmlns="http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader" version="4.0.0.0">',
             r'<DATA><PROTECTINFO><KEYLEN>16</KEYLEN><ALGID>AESCTR</ALGID></PROTECTINFO>',
@@ -156,7 +158,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             expected_wrm = expected_wrm[2:]
         self.assertEqual(expected_wrm, wrm)
 
-    def test_wrm_generation_with_sorted_custom_attrs(self):
+    def test_wrm_generation_with_sorted_custom_attrs(self) -> None:
         expected_wrm = ''.join([
             r'<WRMHEADER xmlns="http://schemas.microsoft.com/DRM/2007/03/PlayReadyHeader" version="4.0.0.0">',
             r'<DATA><PROTECTINFO><KEYLEN>16</KEYLEN><ALGID>AESCTR</ALGID></PROTECTINFO>',
@@ -183,7 +185,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             expected_wrm = expected_wrm[2:]
         self.assertEqual(expected_wrm, wrm)
 
-    def test_pro_generation(self):
+    def test_pro_generation(self) -> None:
         self.maxDiff = None
         mspr = PlayReady(
             la_url=self.la_url,
@@ -236,11 +238,11 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             header_version=4.0)
         mspr.generate_checksum = lambda keypair: binascii.a2b_base64(
             'Xy6jKG4PJSY=')
-        pssh = mspr.generate_pssh(
+        pssh: bytes = mspr.generate_pssh(
             self.la_url, self.default_kid, self.keys, self.custom_attributes).encode_as_bytes()
         self.check_generated_pssh_v4_0(self.keys, mspr, pssh)
 
-    def check_generated_pssh_v4_0(self, keys, mspr, pssh):
+    def check_generated_pssh_v4_0(self, keys: dict[str, KeyStub], mspr: PlayReady, pssh: bytes) -> None:
         """
         Check the PSSH matches the v4.0.0.0 Schema
         """
@@ -250,13 +252,13 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         expected_pro = base64.b64decode(self.expected_pro)
         expected_len += 16 + 4 + len(expected_pro)  # PSSH
         self.assertEqual(len(pssh), expected_len)
-        parser = mp4.IsoParser()
-        src = BufferedReader(None, data=pssh)
+        parser = IsoParser()
+        src = io.BytesIO(pssh)
         atoms = parser.walk_atoms(src)
         self.assertEqual(len(atoms), 1)
         self.assertEqual(atoms[0].atom_type, 'pssh')
         self.assertEqual(atoms[0].version, 0)
-        self.assertTrue(isinstance(atoms[0], mp4.ContentProtectionSpecificBox))
+        self.assertTrue(isinstance(atoms[0], ContentProtectionSpecificBox))
         self.assertEqual(len(atoms[0].key_ids), 0)
         self.assertIsInstance(atoms[0].system_id, Binary)
         self.assertEqual(atoms[0].system_id.data, PlayReady.RAW_SYSTEM_ID)
@@ -296,17 +298,17 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         self.check_generated_pssh_v4_1(self.keys, mspr, pssh)
 
     def check_generated_pssh_v4_1(self, keys: dict[str, KeyStub], mspr: PlayReady,
-                                  pssh: mp4.ContentProtectionSpecificBox) -> None:
+                                  pssh: ContentProtectionSpecificBox) -> None:
         """
         Check the PSSH matches the v4.1.0.0 Schema
         """
-        parser = mp4.IsoParser()
-        src = BufferedReader(None, data=pssh)
+        parser = IsoParser()
+        src = io.BytesIO(pssh)
         atoms = parser.walk_atoms(src)
         self.assertEqual(len(atoms), 1)
         self.assertEqual(atoms[0].atom_type, 'pssh')
         self.assertEqual(atoms[0].version, 0)
-        self.assertTrue(isinstance(atoms[0], mp4.ContentProtectionSpecificBox))
+        self.assertTrue(isinstance(atoms[0], ContentProtectionSpecificBox))
         self.assertEqual(len(atoms[0].key_ids), 0)
         self.assertIsInstance(atoms[0].system_id, Binary)
         self.assertEqual(atoms[0].system_id.data, PlayReady.RAW_SYSTEM_ID)
@@ -328,7 +330,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
 
     def test_pssh_generation_v4_2(self):
         """Generate and parse PlayReady Header v4.2.0.0"""
-        keys = {}
+        keys: dict[str, KeyStub] = {}
         for kid, key in [
                 ("1AB45440532C439994DC5C5AD9584BAC",
                  "ccc0f2b3b279926496a7f5d25da692f6"),
@@ -348,12 +350,12 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         """
         Check the PSSH matches the v4.2.0.0 Schema
         """
-        parser = mp4.IsoParser()
-        src = io.BufferedReader(io.BytesIO(pssh))
+        parser = IsoParser()
+        src = io.BytesIO(pssh)
         atoms = parser.walk_atoms(src)
         self.assertEqual(len(atoms), 1)
         self.assertEqual(atoms[0].atom_type, 'pssh')
-        self.assertTrue(isinstance(atoms[0], mp4.ContentProtectionSpecificBox))
+        self.assertTrue(isinstance(atoms[0], ContentProtectionSpecificBox))
         self.assertEqual(len(atoms[0].key_ids), len(keys))
         self.assertIsInstance(atoms[0].system_id, Binary)
         self.assertEqual(atoms[0].system_id.data, PlayReady.RAW_SYSTEM_ID)
@@ -384,7 +386,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         """
         Generate and parse PlayReady Header v4.3.0.0
         """
-        self.keys = None
+        # self.keys = None
         keys: dict[str, KeyStub] = {}
         for kid, key in [
                 ("1AB45440532C439994DC5C5AD9584BAC",
@@ -405,18 +407,16 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         """
         Check the PSSH matches the v4.3.0.0 Schema
         """
-        parser = mp4.IsoParser()
-        src = io.BufferedReader(io.BytesIO(pssh))
-        atoms: list[mp4.Mp4Atom] = parser.walk_atoms(src)
+        parser = IsoParser()
+        src = io.BytesIO(pssh)
+        atoms: list[Mp4Atom] = parser.walk_atoms(src)
         self.assertEqual(len(atoms), 1)
         self.assertEqual(atoms[0].atom_type, 'pssh')
-        self.assertTrue(isinstance(atoms[0], mp4.ContentProtectionSpecificBox))
+        self.assertTrue(isinstance(atoms[0], ContentProtectionSpecificBox))
         self.assertEqual(len(atoms[0].key_ids), len(keys))
         self.assertIsInstance(atoms[0].system_id, Binary)
         self.assertEqual(atoms[0].system_id.data, PlayReady.RAW_SYSTEM_ID)
-        actual_pro = mspr.parse_pro(
-            BufferedReader(
-                None, data=atoms[0].data.data))
+        actual_pro = mspr.parse_pro(io.BytesIO(atoms[0].data.data))
         self.assertEqual(
             actual_pro[0].xml.get("version"),
             '4.3.0.0')
@@ -436,7 +436,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             checksum = self.to_base64(checksum)
             self.assertEqual(kid.get("CHECKSUM"), checksum)
 
-    def test_pssh_generation_auto_header_version(self):
+    def test_pssh_generation_auto_header_version(self) -> None:
         """
         Generate and parse PlayReady object where header version automatically
         chosen
@@ -477,7 +477,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         self.check_generated_pssh_v4_2(keys, mspr, pssh)
 
         # check v4.3 (as defined in PlayReady v4.0)
-        keys = {}
+        keys: dict[str, KeyStub] = {}
         for kid, key in [
                 ("1AB45440532C439994DC5C5AD9584BAC", "ccc0f2b3b279926496a7f5d25da692f6"),
                 ("db06a8feec164de292282c71e9b856ab", "3179923adf3c929892951e62f93a518a")]:
@@ -497,15 +497,13 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         """
         self.assertEqual(len(self.keys), 1)
         filename: Path = self.REAL_FIXTURES_PATH / BBB_FIXTURE.name / 'bbb_a1_enc.mp4'
-        options = mp4.Options(mode='rw')
+        options = Options(mode='rw')
         # loading this MP4 file using pyfakefs fails when it tries to seek inside the file
         self.fs.pause()
-        with filename.open('rb') as f:
-            with io.BufferedReader(f) as src:
-                assert src is not None
-                segments = mp4.IsoParser.load(src, options=options)
+        with filename.open('rb', buffering=32768) as src:
+            segments = IsoParser.load(src, options=options)
         self.fs.resume()
-        init_seg = mp4.Wrapper(atom_type='wrap', options=options)
+        init_seg = Wrapper(atom_type='wrap', options=options)
         for seg in segments:
             if seg.atom_type == 'moof':
                 break
@@ -520,7 +518,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         pssh = mspr.generate_pssh(
             self.la_url, self.default_kid, self.keys)
         self.check_generated_pssh_v4_1(self.keys, mspr, pssh.encode_as_bytes())
-        moov: mp4.MovieBox = init_seg['moov']
+        moov: MovieBox = init_seg['moov']
         before = len(moov._children)
         moov.append_child(pssh)
         self.assertEqual(len(moov._children), before + 1)
@@ -528,7 +526,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         # with open('new_init_seg.mp4', 'wb') as tmp:
         #     tmp.write(data)
         src = io.BytesIO(data)
-        new_init_seg = mp4.IsoParser.load_wrapped(src, options=options)
+        new_init_seg = IsoParser.load_wrapped(src, options=options)
         self.assertEqual(new_init_seg._children[0].atom_type, 'ftyp')
         self.assertEqual(len(new_init_seg['moov']._children), len(init_seg['moov']._children))
         expected = init_seg.toJSON()
@@ -553,7 +551,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             return f'{index}={item["atom_type"]}'
         return f'{index}'
 
-    async def test_playready_la_url(self):
+    async def test_playready_la_url(self) -> None:
         """
         PlayReady LA_URL in the manifest
         """
@@ -562,7 +560,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             cfgs='(kid:QFS0GixTmUOU3Fxa2VhLrA==,persist:false,sl:150)')
         await self.check_playready_la_url_value(test_la_url, [])
 
-    async def test_playready_la_url_override(self):
+    async def test_playready_la_url_override(self) -> None:
         """
         Replace LA_URL in stream with CGI playready_la_url parameter
         """
@@ -571,7 +569,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             test_la_url,
             [f'playready__la_url={urllib.parse.quote_plus(test_la_url)}'])
 
-    def test_is_supported_scheme_id(self):
+    def test_is_supported_scheme_id(self) -> None:
         self.assertTrue(PlayReady.is_supported_scheme_id(
             "urn:uuid:9a04f079-9840-4286-ab92-e65be0885f95"))
         self.assertFalse(PlayReady.is_supported_scheme_id(
@@ -633,7 +631,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
                         self.assertEqual(len(la_urls), 1)
                         self.assertEqual(la_urls[0].text, test_la_url)
 
-    async def test_playready_v1_piff_sample_encryption(self):
+    async def test_playready_v1_piff_sample_encryption(self) -> None:
         """
         PiffSampleEncryptionBox is inserted when using PlayReady v1.0
         """
@@ -642,7 +640,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         args = ['drm=playready', 'playready__version=1.0']
         await self.check_piff_uuid_is_present(args)
 
-    async def test_playready_piff_sample_encryption_if_flag_present(self):
+    async def test_playready_piff_sample_encryption_if_flag_present(self) -> None:
         """
         PiffSampleEncryptionBox is inserted when playready__piff=true option is used
         """
@@ -657,7 +655,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
                     'playready__piff=true']
             await self.check_piff_uuid_is_present(args)
 
-    async def test_playready_piff_sample_encryption_with_saio_bug(self):
+    async def test_playready_piff_sample_encryption_with_saio_bug(self) -> None:
         """
         PiffSampleEncryptionBox is inserted when playready__piff=true option is used
         """
@@ -668,7 +666,7 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         with self.assertRaises(AssertionError):
             await self.check_piff_uuid_is_present(args, expect_errors=True)
 
-    async def test_all_playready_options(self):
+    async def test_all_playready_options(self) -> None:
         filename = 'hand_made.mpd'
         manifest = manifests.manifest_map[filename]
         drm_opts = list(manifest.get_drm_options('vod', only={'playready'}))
@@ -711,21 +709,21 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
                 print(err)
         self.assertFalse(dv.has_errors(), msg='DASH stream validation failed')
         self.assertEqual(len(dv.manifest.periods), 1)
-        piff_uuid = mp4.PiffSampleEncryptionBox.DEFAULT_VALUES['atom_type']
+        piff_uuid = PiffSampleEncryptionBox.DEFAULT_VALUES['atom_type']
         for adap_set in dv.manifest.periods[0].adaptation_sets:
             for rep in adap_set.representations:
                 for seg in rep.media_segments:
                     response = self.client.get(seg.url)
                     self.assertEqual(response.status_code, 200)
-                    src = BufferedReader(None, data=response.get_data(as_text=False))
-                    atoms = mp4.IsoParser.load(src, options={'iv_size': 64})
+                    src = io.BytesIO(response.get_data(as_text=False))
+                    atoms = IsoParser.load(src, options={'iv_size': 64})
                     for a in atoms:
                         if a.atom_type != 'moof':
                             continue
                         piff = a['traf'].find_child(piff_uuid)
                         self.assertIsNotNone(piff, 'PIFF UUID box is missing')
 
-    def _patch_position_values(self, expected, delta):
+    def _patch_position_values(self, expected: dict[str, Any], delta: int) -> None:
         if 'position' in expected:
             expected['position'] += delta
         if 'children' in expected and expected['children'] is not None:
@@ -811,17 +809,11 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         self.assertEqual('', actual)
 
 
-if os.environ.get("TESTS"):
-    def load_tests(loader, tests, pattern):
-        FORMAT = r"%(asctime)-15s:%(levelname)s:%(filename)s@%(lineno)d: %(message)s"
-        logging.basicConfig(format=FORMAT, level=logging.DEBUG)
-        # mp4_log = logging.getLogger('mp4')
-        # mp4_log.setLevel(logging.DEBUG)
-        # fio_log = logging.getLogger('fio')
-        # fio_log.setLevel(logging.DEBUG)
-        return unittest.loader.TestLoader().loadTestsFromNames(
-            os.environ["TESTS"].split(','),
-            PlayreadyTests)
-
 if __name__ == "__main__":
+    FORMAT = r"%(asctime)-15s:%(levelname)s:%(filename)s@%(lineno)d: %(message)s"
+    logging.basicConfig(format=FORMAT, level=logging.DEBUG)
+    # mp4_log = logging.getLogger('mp4')
+    # mp4_log.setLevel(logging.DEBUG)
+    # fio_log = logging.getLogger('fio')
+    # fio_log.setLevel(logging.DEBUG)
     unittest.main()

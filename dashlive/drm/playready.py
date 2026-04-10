@@ -1,19 +1,5 @@
 #############################################################################
 #
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
-#
-#############################################################################
-#
 #  Project Name        :    Simulated MPEG DASH service
 #
 #  Author              :    Alex Ashley
@@ -26,7 +12,7 @@ import re
 import io
 import struct
 import sys
-from typing import AbstractSet, Any, BinaryIO, ClassVar, NamedTuple
+from typing import AbstractSet, Any, BinaryIO, ClassVar, NamedTuple, cast
 import urllib.parse
 
 from xml.etree import ElementTree
@@ -34,9 +20,13 @@ from Crypto.Cipher import AES
 from Crypto.Hash import SHA256
 from jinja2 import DictLoader, Environment, Template, select_autoescape
 
-from dashlive.mpeg import mp4
+from dashlive.mpeg.mp4.boxes.piff import PiffSampleEncryptionBox
+from dashlive.mpeg.mp4.boxes.pssh import ContentProtectionSpecificBox
+from dashlive.mpeg.mp4.boxes.traf import TrackFragmentBox
+from dashlive.mpeg.mp4.iso_parser import IsoParser
 from dashlive.server.models.stream import Stream
-from dashlive.server.options.container import OptionsContainer
+from dashlive.server.options.options_group import OptionsGroup
+from dashlive.server.options.options_types import PlayreadyOptionsType
 
 from .base import DrmBase, CreateDrmData, CreatePsshBox, DrmManifestContext
 from .key_tuple import KeyTuple
@@ -290,7 +280,7 @@ class PlayReady(DrmBase):
         return pro
 
     @classmethod
-    def parse_pro(clz, src: BinaryIO) -> list[PlayReadyRecord]:
+    def parse_pro(cls, src: BinaryIO) -> list[PlayReadyRecord]:
         """Parse a PlayReady Object (PRO)"""
         data: bytes = src.read(6)
         if len(data) != 6:
@@ -324,18 +314,18 @@ class PlayReady(DrmBase):
     def generate_manifest_context(
             self, stream: Stream,
             keys: dict[str, KeyTuple],
-            options: OptionsContainer,
+            options: OptionsGroup,
             la_url: str | None = None,
             https_request: bool = False,
             locations: AbstractSet[DrmLocation] | None = None) -> DrmManifestContext:
-
-        if options.version is None:
+        pr_opts: PlayreadyOptionsType = cast(PlayreadyOptionsType, options)
+        if pr_opts.version is None:
             header_version = self.minimum_header_version(keys)
             version: float = self.minimum_playready_version(header_version)
         else:
-            version = options.version
+            version = pr_opts.version
         if la_url is None:
-            la_url = options.licenseUrl
+            la_url = pr_opts.licenseUrl
             if la_url is not None:
                 la_url = urllib.parse.unquote_plus(la_url)
             elif stream.playready_la_url is not None:
@@ -375,17 +365,17 @@ class PlayReady(DrmBase):
                       la_url: str,
                       default_kid: str,
                       keys: dict[str, KeyTuple],
-                      custom_attributes=None) -> mp4.ContentProtectionSpecificBox:
+                      custom_attributes=None) -> ContentProtectionSpecificBox:
         """Generate a PlayReady Object (PRO) inside a PSSH box"""
         pro = self.generate_pro(la_url, default_kid, keys, custom_attributes)
         if len(keys) < 2:
-            return mp4.ContentProtectionSpecificBox(
+            return ContentProtectionSpecificBox(
                 version=0, flags=0, system_id=PlayReady.RAW_SYSTEM_ID,
                 key_ids=[], data=pro)
         if isinstance(keys, dict):
             keys = list(keys.keys())
         keys = [KeyMaterial(k).raw for k in keys]
-        return mp4.ContentProtectionSpecificBox(
+        return ContentProtectionSpecificBox(
             version=1, flags=0, system_id=PlayReady.RAW_SYSTEM_ID,
             key_ids=keys, data=pro)
 
@@ -399,18 +389,19 @@ class PlayReady(DrmBase):
             return f"urn:uuid:{self.SYSTEM_ID_V10}"
         return f"urn:uuid:{self.SYSTEM_ID}"
 
-    def update_traf_if_required(self, options: OptionsContainer,
-                                traf: mp4.TrackFragmentBox) -> bool:
-        version = options.version
+    def update_traf_if_required(self, options: OptionsGroup,
+                                traf: TrackFragmentBox) -> bool:
+        pr_opts: PlayreadyOptionsType = cast(PlayreadyOptionsType, options)
+        version = pr_opts.version
         if version is None:
             version = self.version
-        if version != 1.0 and not options.piff:
+        if version != 1.0 and not pr_opts.piff:
             return False
         senc = traf.find_child('senc')
         if senc is None:
             return False
         pos = traf.index('saiz')
-        piff = mp4.PiffSampleEncryptionBox.clone_from_senc(senc)
+        piff = PiffSampleEncryptionBox.clone_from_senc(senc)
         traf.insert_child(pos, piff)
         traf['trun']._invalidate()
         return True
@@ -433,7 +424,7 @@ class PlayReady(DrmBase):
             header_version = 4.2
         return header_version
 
-    def minimum_playready_version(self, header_version):
+    def minimum_playready_version(self, header_version: float) -> float:
         """
         Calculate minimum Playready version based upon the header version
         """
@@ -444,7 +435,7 @@ class PlayReady(DrmBase):
         return 2.0
 
     @classmethod
-    def is_supported_scheme_id(cls, uri):
+    def is_supported_scheme_id(cls, uri: str) -> bool:
         uri = uri.lower()
         if not uri.startswith("urn:uuid:"):
             return False
@@ -494,10 +485,10 @@ if __name__ == "__main__":
         data: bytes = base64.b64decode(arg)
         src = io.BufferedReader(io.BytesIO(data))
         if data[4:8] == b'pssh':
-            atoms = mp4.IsoParser.load(src)
+            atoms = IsoParser.load(src)
             assert isinstance(atoms, list)
             assert atoms[0].atom_type == 'pssh'
-            src = io.BufferedReader(io.BytesIO(atoms[0].data.data))
+            src = io.BytesIO(atoms[0].data.data)
         objects = PlayReady.parse_pro(src)
         for pro in objects:
             print(pro)
