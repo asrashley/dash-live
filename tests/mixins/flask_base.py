@@ -14,6 +14,9 @@ import json
 import logging
 import os
 from pathlib import Path
+from random import randint
+import shutil
+import tempfile
 from typing import Any, ClassVar, Optional, cast
 
 from bs4 import element
@@ -64,7 +67,7 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
     fixtures_folder: Path
     site_packages: Path
     app_folders: AppFolders
-
+    temp_dir: str | None = None
     current_url: str | None = None
 
     @classmethod
@@ -104,7 +107,36 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
         self.setup_fake_files()
         super().setUp()
 
+    def tearDown(self) -> None:
+        self.logout_user()
+        if hasattr(DashTestCaseMixin, "_orig_assert_true"):
+            DashTestCaseMixin._assert_true = DashTestCaseMixin._orig_assert_true
+            del DashTestCaseMixin._orig_assert_true
+        with self.app.app_context():
+            models.db.session.remove()
+            models.db.drop_all()
+            models.db.session.close()
+            # conn.invalidate()
+            models.db.engine.dispose()
+
+        if self.temp_dir is not None:
+            self.fs.pause()
+            shutil.rmtree(self.temp_dir)
+            self.temp_dir = None
+            self.fs.resume()
+        super().tearDown()
+
     def create_app(self) -> flask.Flask:
+        self.fs.pause()
+        tmp_dir: Path = Path(self.create_temporary_folder())
+        db_filename: Path
+        while True:
+            seq: int = randint(1, 1 << 30)
+            db_filename = tmp_dir / f"test-{seq}.db3"
+            if not db_filename.exists():
+                break
+        self.fs.resume()
+        logging.debug("Using temporary database file: %s", db_filename)
         config = {
             'BLOB_FOLDER': str(self.app_folders.blob_folder),
             'DASH': {
@@ -117,7 +149,7 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
             'SECRET_KEY': 'cookie.secret',
             'JWT_SECRET_KEY': 'jwt.super.secret.key' * 2,
             'STATIC_FOLDER': str(self.app_folders.static_folder),
-            'SQLALCHEMY_DATABASE_URI': "sqlite:///:memory:",
+            'SQLALCHEMY_DATABASE_URI': f"sqlite:///{db_filename}",
             'TESTING': True,
             'LOG_LEVEL': 'critical',
             'PREFERRED_URL_SCHEME': 'http',
@@ -152,6 +184,13 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
             models.User.get_guest_user()
             models.db.session.commit()
         return app
+
+    def create_temporary_folder(self) -> str:
+        if self.temp_dir is not None:
+            return self.temp_dir
+        tmpdir: str = tempfile.mkdtemp()
+        self.temp_dir = tmpdir
+        return tmpdir
 
     @staticmethod
     def find_site_packages() -> Path:
@@ -371,14 +410,6 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
                     new_filename=new_filename,
                     modify_atoms=lambda atom: models.MediaFile._set_track_id(
                         atom, track_id))
-
-    def tearDown(self):
-        self.logout_user()
-        if hasattr(DashTestCaseMixin, "_orig_assert_true"):
-            DashTestCaseMixin._assert_true = DashTestCaseMixin._orig_assert_true
-            del DashTestCaseMixin._orig_assert_true
-        models.db.session.remove()
-        models.db.drop_all()
 
     def login_user(self, username: str | None = None,
                    password: str | None = None,
