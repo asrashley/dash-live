@@ -25,7 +25,7 @@ from typing import AbstractSet, NamedTuple, Protocol
 
 from dashlive.mpeg.mp4 import BoxWithChildren, ContentProtectionSpecificBox
 from dashlive.server.models.stream import Stream
-from dashlive.server.options.container import OptionsContainer
+from dashlive.server.options.options_group import OptionsGroup
 
 from .key_tuple import KeyTuple
 from .location import DrmLocation
@@ -75,13 +75,13 @@ class DrmBase(ABC):
     @abstractmethod
     def generate_manifest_context(self, stream: Stream,
                                   keys: dict[str, KeyTuple],
-                                  options: OptionsContainer,
+                                  options: OptionsGroup,
                                   la_url: str | None = None,
                                   https_request: bool = False,
                                   locations: AbstractSet[DrmLocation] | None = None) -> DrmManifestContext:
         raise RuntimeError('generate_manifest_context has not been implemented')
 
-    def update_traf_if_required(self, options: OptionsContainer,
+    def update_traf_if_required(self, options: OptionsGroup,
                                 traf: BoxWithChildren) -> bool:
         """
         Hook to allow a DRM system to insert / modify boxes within the "traf"
