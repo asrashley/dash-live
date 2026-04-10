@@ -33,10 +33,11 @@ def make_db_connection_string(instance_path: Path, url_template: str) -> str:
     db_name = environ.get("DB_NAME", DEFAULT_SQLITE_DATABASE_NAME)
     connect_timeout = environ.get("DB_CONNECT_TIMEOUT", "")
 
+    opts: dict[str, str] = {}
     if engine == 'sqlite':
         abs_name = (instance_path / db_name).resolve()
         db_name = abs_name.as_posix()
-    opts = {}
+        opts['autocommit'] = 'false'
     if environ.get("DB_SSL"):
         ssl = json.loads(environ.get("DB_SSL", ""))
         opts['ssl'] = 'true'
