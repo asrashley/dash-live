@@ -90,7 +90,7 @@ class TestHtmlPageHandlers(FlaskTestBase):
             err = models.MediaFileError(
                 media_file=media,
                 reason=models.ErrorReason.INVALID_LANGUAGE_TAG,
-                details=f'Invalid language tag "{ media.lang }"')
+                details=f'Invalid language tag "{media.lang}"')
             models.db.session.add(err)
             models.db.session.commit()
             url = flask.url_for('view-stream', spk=stream.pk)
@@ -162,7 +162,7 @@ class TestHtmlPageHandlers(FlaskTestBase):
                 'filesize': sizeFormat(media.blob.size),
                 'sha1-hash': media.blob.sha1_hash,
                 'media-error': ' '.join([
-                    f'{ err.reason.name }: { err.details }' for err in media.errors
+                    f'{err.reason.name}: {err.details}' for err in media.errors
                 ]),
             }
             found_media.add(media_id)
@@ -185,7 +185,7 @@ class TestHtmlPageHandlers(FlaskTestBase):
                 contents: str = ' '.join(messages.stripped_strings)
                 errs = ' '.join([err.reason.name for err in media.errors])
                 self.assertIn(
-                    f'File {media.name} has errors: { errs }', contents)
+                    f'File {media.name} has errors: {errs}', contents)
 
     def test_delete_stream(self):
         self.setup_media()
