@@ -21,30 +21,33 @@ async def call(f: Callable[[], T]) -> T:
     return await loop.run_in_executor(executor=None, func=f)
 
 
-class AsyncTestClient(FlaskClient):
+class AsyncTestClient:
     """
     A facade for the flask test client that provides an
     async response.
     """
+    client: FlaskClient
+
+    def __init__(self, app: Flask, response_wrapper: type[Response], use_cookies: bool):
+        self.client = FlaskClient(app, response_wrapper, use_cookies)
+
+    async def head(self, *args, **kwargs) -> Response:
+        return self.client.head(*args, **kwargs)
 
     async def get(self, *args, **kwargs) -> Response:
-        parent = super()
-        return await call(lambda: parent.get(*args, **kwargs))
+        return self.client.get(*args, **kwargs)
 
     async def post(self, *args, **kwargs) -> Response:
-        parent = super()
-        return await call(lambda: parent.post(*args, **kwargs))
+        return self.client.post(*args, **kwargs)
 
     async def delete(self, *args, **kwargs) -> Response:
-        parent = super()
-        return await call(lambda: parent.delete(*args, **kwargs))
+        return self.client.delete(*args, **kwargs)
 
     async def put(self, *args, **kwargs) -> Response:
-        parent = super()
-        return await call(lambda: parent.put(*args, **kwargs))
+        return self.client.put(*args, **kwargs)
 
 
-class JsonResponseMixin(object):
+class JsonResponseMixin:
     """
     Mixin with testing helper methods
     """
