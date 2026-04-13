@@ -6,6 +6,7 @@
 #
 #############################################################################
 import logging
+from pathlib import Path
 import unittest
 
 import flask
@@ -89,42 +90,44 @@ class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
                 duration=(2 * BBB_FIXTURE.segment_duration),
                 now='2024-09-03T10:07:00Z', fixture=BBB_FIXTURE)
 
-    def test_generated_vod_manifest_against_fixture(self):
+    def test_generated_vod_manifest_against_fixture(self) -> None:
         self.check_generated_manifest_against_fixture(
             'hand_made.mpd', mode='vod', acodec='mp4a', start='today', drm='none',
             encrypted=False, now="2022-09-06T15:10:02Z")
 
-    def test_generated_vod_drm_manifest_against_fixture(self):
+    def test_generated_vod_drm_manifest_against_fixture(self) -> None:
         self.check_generated_manifest_against_fixture(
             'hand_made.mpd', mode='vod', drm='all', encrypted=True,
             acodec='mp4a', start='today', now="2022-09-06T15:10:00Z")
 
-    def test_generated_live_manifest_against_fixture(self):
+    def test_generated_live_manifest_against_fixture(self) -> None:
         self.check_generated_manifest_against_fixture(
             'hand_made.mpd', mode='live', acodec='mp4a', time='xsd', start='today',
             now="2022-09-06T15:10:02Z", drm='none', encrypted=False)
 
-    def test_generated_live_drm_manifest_against_fixture(self):
+    def test_generated_live_drm_manifest_against_fixture(self) -> None:
         self.check_generated_manifest_against_fixture(
             'hand_made.mpd', mode='live', drm='all', encrypted=True,
             now="2022-09-06T15:10:00Z",
             acodec='mp4a', time='http-ntp', start='today')
 
-    def test_thumbnail_manifest_against_fixture(self):
+    def test_thumbnail_manifest_against_fixture(self) -> None:
         self.check_generated_manifest_against_fixture(
             'hand_made.mpd', mode='vod', acodec='mp4a', start='today', drm='none',
             encrypted=False, now="2022-09-06T15:10:02Z", thumbnails='1')
 
-    async def test_manifest_patch_live(self):
+    async def test_manifest_patch_live(self) -> None:
         await self.check_manifest_patch_live(False)
 
-    async def test_manifest_patch_live_with_subs(self):
+    async def test_manifest_patch_live_with_subs(self) -> None:
         await self.check_manifest_patch_live(True)
 
-    async def check_manifest_patch_live(self, with_subs: bool):
+    async def check_manifest_patch_live(self, with_subs: bool) -> None:
         self.setup_media_fixture(BBB_FIXTURE, with_subs=with_subs)
         self.logout_user()
         self.assertGreaterThan(models.MediaFile.count(), 0)
+        patch_template: Path = self.app_folders.template_folder / "patches" / "hand_made.xml"
+        self.assertTrue(patch_template.exists(), f"Patch template {patch_template} does not exist")
         args = {
             'patch': '1',
             'abr': '0',

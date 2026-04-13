@@ -10,6 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 import datetime
 import io
 import logging
+from pathlib import Path
 import unittest
 
 from lxml import etree
@@ -179,9 +180,15 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                     head.headers['Content-Length'],
                     response.headers['Content-Length'])
 
-    async def test_create_manifest_error(self):
+    async def test_create_manifest_error(self) -> None:
         self.setup_media_fixture(BBB_FIXTURE)
         self.logout_user()
+        manifest: Path = self.app_folders.template_folder / "manifests" / "hand_made.mpd"
+        self.assertTrue(manifest.exists(), f"{manifest} does not exist")
+        for code in [404, 410, 503, 504]:
+            await self.check_create_manifest_error(code)
+
+    async def check_create_manifest_error(self, code: int) -> None:
         start = '2022-01-01T04:02:06Z'
         before = '2022-01-01T04:04:06Z'
         active = '2022-01-01T04:05:06Z'
@@ -191,13 +198,13 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
             manifest='hand_made.mpd',
             stream=BBB_FIXTURE.name,
             mode='live')
-        for code in [404, 410, 503, 504]:
-            params = {
-                'merr': f'{code:3d}={active}',
-                'start': start,
-                'mup': '45',
-            }
-            url = baseurl + dict_to_cgi_params(params)
+        params: dict[str, str] = {
+            'merr': f'{code:3d}={active}',
+            'start': start,
+            'mup': '45',
+        }
+        url = baseurl + dict_to_cgi_params(params)
+        with self.subTest(code=code, time=before):
             with MockTime(before):
                 with ThreadPoolExecutor(max_workers=4) as tpe:
                     pool = ConcurrentWorkerPool(tpe)
@@ -208,11 +215,15 @@ class TestHandlers(DashManifestCheckMixin, FlaskTestBase):
                     self.assertTrue(await dv.load())
                     await dv.validate()
                 self.assertFalse(dv.has_errors(), msg='stream validation failed')
+
+        with self.subTest(code=code, time=active):
             with MockTime(active):
                 response = self.client.get(url)
                 self.assertEqual(
                     response.status_code, code,
                     msg=f'{url}: Expected status code {code} but received {response.status_code}')
+
+        with self.subTest(code=code, time=after):
             with MockTime(after):
                 with ThreadPoolExecutor(max_workers=4) as tpe:
                     pool = ConcurrentWorkerPool(tpe)

@@ -225,8 +225,8 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
             contents=self.INDEX_PAGE)
         self.fs.create_dir(self.app_folders.upload_folder)
 
-    def setup_media(self, with_subs=False) -> None:
-        self.setup_media_fixture(BBB_FIXTURE)
+    def setup_media(self, with_subs: bool = False) -> None:
+        self.setup_media_fixture(BBB_FIXTURE, with_subs=with_subs)
 
     def setup_content_types(self) -> None:
         content_types: list[str] = [
@@ -240,7 +240,7 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
                     models.db.session.add(ct)
             models.db.session.commit()
 
-    def setup_media_fixture(self, fixture: StreamFixture, with_subs=False) -> None:
+    def setup_media_fixture(self, fixture: StreamFixture, with_subs: bool = False) -> None:
         stream: models.Stream | None = models.Stream.get(directory=fixture.name)
         if stream is not None:
             return
