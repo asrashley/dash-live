@@ -23,6 +23,7 @@ class ContentProtection(Descriptor):
     attributes = Descriptor.attributes + [
         ('cenc:default_KID', str, None),
     ]
+    default_KID: str | None
 
     async def validate(self) -> None:
         await super().validate()
