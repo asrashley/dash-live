@@ -216,7 +216,7 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
             self.REAL_FIXTURES_PATH, read_only=True, lazy_read=True, target_path=self.fixtures_folder)
         self.fs.add_real_directory(
             self.REAL_TEMPLATES_PATH, target_path=self.app_folders.template_folder, read_only=True,
-            lazy_read=True)
+            lazy_read=False)
         self.fs.create_dir(self.app_folders.instance_path)
         self.fs.create_dir(self.app_folders.static_folder)
         self.fs.create_dir(self.app_folders.static_folder / 'html')
