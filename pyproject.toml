@@ -54,7 +54,7 @@ dev = [
     "mypy==1.13.0",
     "pyfakefs==6.0.0",
     "pyinstrument==4.6.1",
-    "pytest==7.4.0",
+    "pytest>=7.4.0,<9.1",
     "pytest-xdist==3.3.1",
     "tox>=4.28.4",
     "tox-uv>=1.28.0",
