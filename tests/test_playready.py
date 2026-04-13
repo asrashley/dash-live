@@ -9,6 +9,7 @@
 import base64
 import binascii
 from concurrent.futures import ThreadPoolExecutor
+import hashlib
 import io
 import logging
 from pathlib import Path
@@ -730,13 +731,16 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
             for child in expected['children']:
                 self._patch_position_values(child, delta)
 
+    async def test_single_kid_for_all_adaptation_sets(self) -> None:
+        self.setup_media()
+        await self.check_number_unique_pro_headers(1)
+
     async def test_different_kids(self) -> None:
         """
         Check that each AdaptationSet has different ContentProtection
         descriptors when the Representations use different KIDs
         """
         self.setup_media()
-        await self.check_number_unique_pro_headers(1)
 
         new_kids: list[str] = [
             'a2c786d0-f9ef-4cb3-b333-cd323a4284a5',
@@ -748,14 +752,23 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
                 key = binascii.b2a_hex(PlayReady.generate_content_key(km_kid.raw))
                 keypair = models.Key(hkid=km_kid.hex, hkey=key, computed=True)
                 models.db.session.add(keypair)
+            models.db.session.commit()
             for idx, name in enumerate(['bbb_a1_enc', 'bbb_a2_enc']):
+                kid: str = new_kids[idx]
+                km_kid = KeyMaterial(hex=kid)
+                keypair = models.Key.get_one(hkid=km_kid.hex)
+                self.assertIsNotNone(keypair)
                 mf = models.MediaFile.get(name=name)
                 self.assertIsNotNone(mf)
                 self.assertIsNotNone(mf.rep)
                 rep = mf.get_representation()
                 self.assertIsNotNone(rep)
-                rep.kids = [new_kids[idx]]
+                rep.kids = [kid]
                 mf.set_representation(rep)
+                mf.encryption_keys = [keypair]
+                assert mf in models.db.session.dirty
+                models.db.session.flush()
+                assert mf not in models.db.session.dirty
             models.db.session.commit()
         await self.check_number_unique_pro_headers(3)
 
@@ -770,28 +783,44 @@ class PlayreadyTests(FlaskTestBase, DashManifestCheckMixin):
         baseurl += '?' + '&'.join(args)
         response = self.client.get(baseurl)
         self.assertEqual(response.status_code, 200)
-        xml = etree.parse(io.BytesIO(response.get_data(as_text=False)))
         with ThreadPoolExecutor(max_workers=4) as tpe:
             pool = ConcurrentWorkerPool(tpe)
-            mpd = ViewsTestDashValidator(
+            dv = ViewsTestDashValidator(
                 http_client=self.async_client, mode='vod', url=baseurl,
                 encrypted=True, check_media=False,
                 duration=BBB_FIXTURE.segment_duration, pool=pool)
-            await mpd.load(xml=xml.getroot())
-            await mpd.validate()
-        self.assertFalse(mpd.has_errors())
-        self.assertEqual(len(mpd.manifest.periods), 1)
+            loaded: bool = await dv.load(data=response.get_data(as_text=False))
+            if not loaded:
+                print(response.get_data(as_text=True))
+            self.assertTrue(loaded, msg='Failed to load manifest')
+            timeout: int = 5
+            while loaded and not dv.finished() and timeout > 0:
+                await dv.validate()
+                if dv.has_errors():
+                    break
+                if not dv.finished():
+                    timeout -= 1
+                    await dv.sleep()
+                    logging.info('Refreshing manifest timeout=%d', timeout)
+                    await dv.refresh()
+        self.assertFalse(dv.has_errors())
+        self.assertEqual(len(dv.manifest.periods), 1)
         schemeIdUri = "urn:uuid:" + PlayReady.SYSTEM_ID.lower()
-        pro_tag = "{{{0}}}pro".format(mpd.xmlNamespaces['mspr'])
+        pro_tag = "{{{0}}}pro".format(dv.xmlNamespaces['mspr'])
         pro_data: set[bytes] = set()
-        for adap_set in mpd.manifest.periods[0].adaptation_sets:
+        for adap_set in dv.manifest.periods[0].adaptation_sets:
             for prot in adap_set.contentProtection:
                 if prot.schemeIdUri != schemeIdUri:
                     continue
                 for elt in prot.children():
                     if elt.tag != pro_tag:
                         continue
-                    pro = base64.b64decode(elt.text)
+                    pro: bytes = base64.b64decode(elt.text)
+                    logging.debug(
+                        'Found PRO: %s[%s]',
+                        adap_set.contentType,
+                        adap_set.id,
+                        hashlib.md5(pro).hexdigest())
                     pro_data.add(pro)
         self.assertEqual(len(pro_data), expected_pros)
 
