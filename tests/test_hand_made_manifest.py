@@ -128,7 +128,7 @@ class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
         self.assertGreaterThan(models.MediaFile.count(), 0)
         patch_template: Path = self.app_folders.template_folder / "patches" / "hand_made.xml"
         self.assertTrue(patch_template.exists(), f"Patch template {patch_template} does not exist")
-        args = {
+        args: dict[str, str] = {
             'patch': '1',
             'abr': '0',
             'depth': '20',
@@ -140,7 +140,7 @@ class HandMadeManifestTests(FlaskTestBase, DashManifestCheckMixin):
             manifest='hand_made.mpd',
             mode='live',
             stream=BBB_FIXTURE.name)
-        drm_checks = ['none'] + DrmSystem.values()
+        drm_checks: list[str] = ['none'] + DrmSystem.values()
         for drm in drm_checks:
             args['drm'] = drm
             options = OptionsRepository.convert_cgi_options(args)

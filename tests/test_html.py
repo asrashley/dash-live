@@ -244,8 +244,8 @@ class TestHtmlPageHandlers(FlaskTestBase):
                 for opt in options.cgi_query_combinations():
                     for stream in models.Stream.all():
                         self.progress(count, num_tests)
-                        scheme = 'http' if count & 1 else 'https'
-                        with self.subTest(filename=filename, options=opt, stream=stream, scheme=scheme):
+                        scheme: str = 'http' if count & 1 else 'https'
+                        with self.subTest(filename=filename, options=opt, stream=stream.directory, scheme=scheme):
                             self.check_video_html_page(filename, manifest, mode, stream, opt, scheme=scheme)
                         count += 1
         self.progress(num_tests, num_tests)
