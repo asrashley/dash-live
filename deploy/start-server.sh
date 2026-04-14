@@ -8,7 +8,6 @@ function die() {
 if [ -f /home/dash/.local/bin/env ]; then
     source /home/dash/.local/bin/env
 fi
-source /home/dash/.venv/bin/activate
 source /home/dash/dash-live/.env
 
 if [ -z "${SERVER_NAME}" ]; then
@@ -31,7 +30,7 @@ DB_FILE="/home/dash/instance/models.db3"
 
 if [ ! -f ${DB_FILE} ]; then
     echo "No sqlite database found, creating a new one"
-    python -m dashlive.management.create_db || die "Failed to create database"
+    uv run -m dashlive.management.create_db || die "Failed to create database"
     # tell Alembic that the DB is up to date
     uv run alembic stamp head || die "failed to mark new database version"
 else
