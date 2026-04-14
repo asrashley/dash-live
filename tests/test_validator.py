@@ -23,7 +23,7 @@ class OutputFilenameTestCase(TypedDict):
     filename: NotRequired[str]
     prefix: str
     elt_id: str
-    bandwidth: int
+    bandwidth: int | None
     content_type: str
     expected: str
 
