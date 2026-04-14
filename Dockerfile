@@ -41,7 +41,7 @@ ADD https://astral.sh/uv/${UV_VERSION}/install.sh /uv-installer.sh
 RUN sh /uv-installer.sh && rm /uv-installer.sh
 ENV PATH="${HOME}/.local/bin/:$PATH"
 WORKDIR $HOME/dash-live
-RUN uv sync --locked
+RUN uv sync --locked --group deploy
 COPY static $HOME/dash-live/static
 RUN rm -rf $HOME/dash-live/static/html $HOME/dash-live/static/css
 COPY templates $HOME/dash-live/templates
