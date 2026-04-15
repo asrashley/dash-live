@@ -67,7 +67,8 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
     fixtures_folder: Path
     site_packages: Path
     app_folders: AppFolders
-    temp_dir: str | None = None
+    real_fs_temp_dir: str | None = None
+    fake_fs_temp_dir: str | None = None
     current_url: str | None = None
 
     @classmethod
@@ -119,23 +120,17 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
             # conn.invalidate()
             models.db.engine.dispose()
 
-        if self.temp_dir is not None:
-            self.fs.pause()
-            shutil.rmtree(self.temp_dir)
-            self.temp_dir = None
-            self.fs.resume()
+        if self.real_fs_temp_dir is not None:
+            try:
+                self.fs.pause()
+                shutil.rmtree(self.real_fs_temp_dir)
+                self.real_fs_temp_dir = None
+            finally:
+                self.fs.resume()
         super().tearDown()
 
     def create_app(self) -> flask.Flask:
-        self.fs.pause()
-        tmp_dir: Path = Path(self.create_temporary_folder())
-        db_filename: Path
-        while True:
-            seq: int = randint(1, 1 << 30)
-            db_filename = tmp_dir / f"test-{seq}.db3"
-            if not db_filename.exists():
-                break
-        self.fs.resume()
+        db_filename: Path = self.create_temporary_filename("test", "db3", in_real_filesystem=True)
         logging.debug("Using temporary database file: %s", db_filename)
         config = {
             'BLOB_FOLDER': str(self.app_folders.blob_folder),
@@ -185,12 +180,37 @@ class FlaskTestBase(DashTestCaseMixin, AsyncFlaskTestCase, PyfakefsTestCaseMixin
             models.db.session.commit()
         return app
 
-    def create_temporary_folder(self) -> str:
-        if self.temp_dir is not None:
-            return self.temp_dir
+    def create_temporary_folder(self, in_real_filesystem: bool) -> str:
+        if in_real_filesystem:
+            if self.real_fs_temp_dir is not None:
+                return self.real_fs_temp_dir
+        elif self.fake_fs_temp_dir is not None:
+            return self.fake_fs_temp_dir
         tmpdir: str = tempfile.mkdtemp()
-        self.temp_dir = tmpdir
+        if in_real_filesystem:
+            self.real_fs_temp_dir = tmpdir
+        else:
+            self.fake_fs_temp_dir = tmpdir
         return tmpdir
+
+    def create_temporary_filename(self,
+                                  prefix: str,
+                                  suffix: str,
+                                  in_real_filesystem: bool,
+                                  timeout: int = 1000) -> Path:
+        try:
+            if in_real_filesystem:
+                self.fs.pause()
+            tmp_dir: Path = Path(self.create_temporary_folder(in_real_filesystem))
+            filename: Path
+            while (filename := tmp_dir / f"{prefix}-{randint(1, 1 << 30)}.{suffix}").exists() and timeout > 0:
+                timeout -= 1
+            if timeout == 0:
+                raise IOError("Failed to choose a filename for temporary file")
+            return filename
+        finally:
+            if in_real_filesystem:
+                self.fs.resume()
 
     @staticmethod
     def find_site_packages() -> Path:
