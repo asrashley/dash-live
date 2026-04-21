@@ -28,7 +28,7 @@ dependencies = [
     "netifaces2==0.0.22",
     "ply==3.11",
     "pycryptodome==3.19.1",
-    "python-dotenv==1.0.0",
+    "python-dotenv==1.2.2",
     "python-socketio==5.14.0",
     "requests==2.33.0",
     "soupsieve==2.4.1",
