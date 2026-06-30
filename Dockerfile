@@ -28,6 +28,7 @@ ENV HOME=/home/dash
 ENV FLASK_INSTANCE_PATH=/home/dash/instance
 ENV LOG_LEVEL="info"
 ENV VIRTUAL_ENV="/home/dash/dash-live/.venv"
+ENV DEBUG=""
 RUN apt-get update && \
     apt-get -y -q --force-yes install \
     less \

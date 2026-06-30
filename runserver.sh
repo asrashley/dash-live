@@ -4,6 +4,7 @@ export LANG=C.UTF-8
 export FLASK_APP="dashlive.server.app"
 export SERVER_NAME=$(hostname -f)
 export SERVER_PORT="5000"
+DEBUG=${DEBUG:-"--host=0.0.0.0 --debug"}
 
 if [ ! -z "${VIRTUAL_ENV}" ]; then
     source ${VIRTUAL_ENV}/bin/activate
@@ -16,4 +17,4 @@ if [ "${UID}" != "0" ]; then
     npm run all-css
 fi
 
-PYTHONPATH=${PWD} uv run -m flask run --host=0.0.0.0 --debug
+PYTHONPATH=${PWD} uv run -m flask run 
