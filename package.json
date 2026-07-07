@@ -5,6 +5,10 @@
   "license": "Apache-2.0",
   "repository": "github:asrashley/dash-live",
   "type": "module",
+  "sideEffects": [
+    "*.css",
+    "*.less"
+  ],
   "engines": {
     "node": ">=20.0.0",
     "npm": ">=10.0.0"
@@ -23,6 +27,7 @@
   "devDependencies": {
     "@eslint/compat": "~1.1.1",
     "@fetch-mock/vitest": "^0.2.18",
+    "@teamsupercell/typings-for-css-modules-loader": "^2.5.2",
     "@testing-library/preact": "^3.2.4",
     "@testing-library/user-event": "^14.5.2",
     "@types/eslint__js": "^8.42.3",
@@ -47,6 +52,7 @@
     "ts-loader": "^9.5.4",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.53.1",
+    "typescript-plugin-css-modules": "^5.2.0",
     "vitest": "^4.1.8",
     "vitest-mock-extended": "^3.1.0",
     "webpack": "^5.104.1",

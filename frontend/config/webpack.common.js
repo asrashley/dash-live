@@ -48,7 +48,7 @@ export const commonConfig = ({ publicPath, tsConfigFile, devMode, serverPort = n
     module: true
   },
   resolve: {
-    extensions: [".ts", ".tsx", ".js"],
+    extensions: [".ts", ".tsx", ".js", ".css", ".less"],
   },
   module: {
     rules: [
@@ -61,12 +61,31 @@ export const commonConfig = ({ publicPath, tsConfigFile, devMode, serverPort = n
         }
       },
       {
-        test: /\.tsx?$/,
+        test: /\.module.css$/i,
+        exclude: /node_modules/,
         use: [
+          devMode ? {
+              loader: "style-loader",
+              options: {
+                insert: "head"
+              }
+            }
+            : MiniCssExtractPlugin.loader,
           {
-            loader: "ts-loader",
+	          loader: "@teamsupercell/typings-for-css-modules-loader",
             options: {
-              configFile: tsConfigFile,
+              verifyOnly: !devMode,
+            }
+          },
+          {
+            loader: "css-loader",
+            options: {
+                modules: {
+                  auto: true,
+                  exportLocalsConvention: "camel-case",
+                },
+                importLoaders: 1,
+                sourceMap: true,
             },
           },
         ],
@@ -84,11 +103,22 @@ export const commonConfig = ({ publicPath, tsConfigFile, devMode, serverPort = n
             loader: "less-loader",
             options: {
               lessOptions: {
-              noIeCompat: true,
-              javascriptEnabled: true,
+                noIeCompat: true,
+                javascriptEnabled: true,
               }
             },
           }
+        ],
+      },
+      {
+        test: /\.tsx?$/,
+        use: [
+          {
+            loader: "ts-loader",
+            options: {
+              configFile: tsConfigFile,
+            },
+          },
         ],
       },
     ],
