@@ -1,0 +1,11 @@
+  .scrollBar,
+  .scrollBarContainer {
+      height: 1em;
+      overflow-x: scroll;
+      overflow-y: hidden;
+  }
+
+  .scrollBarContainer {
+      margin: 0.25em 0;
+      width: 100%;
+  }

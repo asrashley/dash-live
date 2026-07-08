@@ -36,12 +36,13 @@
       font-family: SFMono-Regular, Consolas, "Liberation Mono", monospace;
       font-size: @manifestFontSize;
       margin: 1em 0;
-      overflow-x: scroll;
+      min-height: 10em;
+      overflow-x: hidden;
+      width: 80vw;
 
       .manifest-line {
           background-color: #eee;
           line-height: 1rem;
-          width: 150em;
           &:nth-child(2n) {
               background-color: #ddd;
           }

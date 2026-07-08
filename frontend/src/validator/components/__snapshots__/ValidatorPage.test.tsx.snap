@@ -292,7 +292,33 @@ exports[`ValidatorPage component > ProtectedValidatorPage component > initial st
     <div
       class="card"
       id="manifest-text"
-    />
+    >
+      <div>
+        <div
+          data-testid="horizontal-scroll-bar"
+        >
+          <div
+            style="width: 150em;"
+          />
+        </div>
+        <div
+          data-testid="horizontal-scroller-container"
+          style="height: 5em;"
+        >
+          <div
+            data-testid="horizontal-scroll-children"
+            style="left: 0px; width: 150em;"
+          />
+        </div>
+        <div
+          data-testid="horizontal-scroll-bar"
+        >
+          <div
+            style="width: 150em;"
+          />
+        </div>
+      </div>
+    </div>
     <table
       class="d-none"
     >
@@ -641,7 +667,33 @@ exports[`ValidatorPage component > ProtectedValidatorPage component > initial st
     <div
       class="card"
       id="manifest-text"
-    />
+    >
+      <div>
+        <div
+          data-testid="horizontal-scroll-bar"
+        >
+          <div
+            style="width: 150em;"
+          />
+        </div>
+        <div
+          data-testid="horizontal-scroller-container"
+          style="height: 5em;"
+        >
+          <div
+            data-testid="horizontal-scroll-children"
+            style="left: 0px; width: 150em;"
+          />
+        </div>
+        <div
+          data-testid="horizontal-scroll-bar"
+        >
+          <div
+            style="width: 150em;"
+          />
+        </div>
+      </div>
+    </div>
     <table
       class="d-none"
     >
@@ -990,7 +1042,33 @@ exports[`ValidatorPage component > initial state 1`] = `
     <div
       class="card"
       id="manifest-text"
-    />
+    >
+      <div>
+        <div
+          data-testid="horizontal-scroll-bar"
+        >
+          <div
+            style="width: 150em;"
+          />
+        </div>
+        <div
+          data-testid="horizontal-scroller-container"
+          style="height: 5em;"
+        >
+          <div
+            data-testid="horizontal-scroll-children"
+            style="left: 0px; width: 150em;"
+          />
+        </div>
+        <div
+          data-testid="horizontal-scroll-bar"
+        >
+          <div
+            style="width: 150em;"
+          />
+        </div>
+      </div>
+    </div>
     <table
       class="d-none"
     >
