@@ -10,6 +10,7 @@
 
 @tableHeadingBack: #999;
 @tableHeadingBackDark: #777;
+@tableBorderRadius: 0.5rem;
 @navbarActiveColor: #0808c4;
 
 :root {
@@ -987,4 +988,25 @@ li:hover::before {
 
 .not-found-img-credit {
   font-size: 0.8rem;
+}
+
+table.rounded-corners {
+  border: 1px solid @darkGrey;
+  border-spacing: 0;
+  border-collapse: separate;
+  border-radius: @tableBorderRadius;
+  overflow: hidden;
+}
+
+table.rounded-corners > thead > tr > th,
+table.rounded-corners > tbody > tr > td {
+  border: 1px solid @darkGrey;
+}
+
+table.rounded-corners > tbody > tr:last-child > td:first-child {
+  border-bottom-left-radius: @tableBorderRadius;
+}
+
+table.rounded-corners > tbody > tr:last-child > td:last-child {
+  border-bottom-right-radius: @tableBorderRadius;
 }

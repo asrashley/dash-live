@@ -35,7 +35,7 @@ interface CodecsTableProps {
 
 export function CodecsTable({ codecs }: CodecsTableProps) {
   const className = useComputed<string>(() =>
-    codecs.value.length === 0 ? "d-none" : "table table-striped manifest-codecs"
+    codecs.value.length === 0 ? "d-none" : "table table-striped rounded-corners manifest-codecs"
   );
   return (
     <table className={className}>
