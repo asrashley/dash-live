@@ -3,7 +3,7 @@
 exports[`CodecsTable component > matches snapshot 1`] = `
 <DocumentFragment>
   <table
-    class="table table-striped manifest-codecs"
+    class="table table-striped rounded-corners manifest-codecs"
   >
     <thead>
       <tr>
