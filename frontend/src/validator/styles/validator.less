@@ -1,8 +1,10 @@
 #validator {
+    @card_width: 80vw;
 
   #manifest-form {
-    margin: 2em 1em;
+    margin: 2em 0;
     padding: 1em;
+    width: @card_width;
 
     .form-check-inline {
         margin: 0;
@@ -17,6 +19,10 @@
     .btn {
         margin-right: 1em;
     }
+  }
+
+  .progress-bar-state {
+    width: @card_width;
   }
 
   .progress {
@@ -38,7 +44,7 @@
       margin: 1em 0;
       min-height: 10em;
       overflow-x: hidden;
-      width: 80vw;
+      width: @card_width;
 
       .manifest-line {
           background-color: #eee;
@@ -81,11 +87,12 @@
   .results {
       background-color: rgba(210, 220, 230, 0.4);
       font-size: 0.9rem;
-      height: 40em;
+      min-height: 4em;
+      max-height: 30em;
       margin: 2em 0;
       overflow-y: scroll;
       padding: 0.5em 1em;
-      width: 70rem;
+      width: @card_width;
        & > .info {
         margin-bottom: 0;
         padding: 0.1em 1em;
@@ -114,8 +121,9 @@
   }
 
   .manifest-codecs {
+      margin: 1em 0;
       table-layout: fixed;
-      width: 45em;
+      width: @card_width;
 
       .codec-string {
           text-align: center;

@@ -3,7 +3,7 @@
 exports[`ProgressBarWithState component > renders when state=active 1`] = `
 <DocumentFragment>
   <div
-    class="position-relative"
+    class="position-relative progress-bar-state"
   >
     <div
       class="card progress"
@@ -37,7 +37,7 @@ exports[`ProgressBarWithState component > renders when state=active 1`] = `
 exports[`ProgressBarWithState component > renders when state=cancelled 1`] = `
 <DocumentFragment>
   <div
-    class="position-relative"
+    class="position-relative progress-bar-state"
   >
     <div
       class="card progress"
@@ -71,7 +71,7 @@ exports[`ProgressBarWithState component > renders when state=cancelled 1`] = `
 exports[`ProgressBarWithState component > renders when state=cancelling 1`] = `
 <DocumentFragment>
   <div
-    class="position-relative"
+    class="position-relative progress-bar-state"
   >
     <div
       class="card progress"
@@ -105,7 +105,7 @@ exports[`ProgressBarWithState component > renders when state=cancelling 1`] = `
 exports[`ProgressBarWithState component > renders when state=disconnected 1`] = `
 <DocumentFragment>
   <div
-    class="position-relative"
+    class="position-relative progress-bar-state"
   >
     <div
       class="card progress"
@@ -139,7 +139,7 @@ exports[`ProgressBarWithState component > renders when state=disconnected 1`] = 
 exports[`ProgressBarWithState component > renders when state=done 1`] = `
 <DocumentFragment>
   <div
-    class="position-relative"
+    class="position-relative progress-bar-state"
   >
     <div
       class="card progress"
@@ -173,7 +173,7 @@ exports[`ProgressBarWithState component > renders when state=done 1`] = `
 exports[`ProgressBarWithState component > renders when state=idle 1`] = `
 <DocumentFragment>
   <div
-    class="position-relative"
+    class="position-relative progress-bar-state"
   >
     <div
       class="card progress"
