@@ -1,5 +1,6 @@
-import { type ReadonlySignal } from "@preact/signals";
+import { useComputed, useSignal, type ReadonlySignal } from "@preact/signals";
 import { ManifestLine } from "../types/ManifestLine";
+import { HorizontalScroller } from "./HorizontalScroller";
 
 function ManifestRow({ text, line, hasError, errors }: ManifestLine) {
   const className = `manifest-line${hasError ? " error" : ""}`;
@@ -18,14 +19,25 @@ function ManifestRow({ text, line, hasError, errors }: ManifestLine) {
 
 interface ManifestProps {
   manifest: ReadonlySignal<ManifestLine[]>;
+  maxHeight?: number;
+  minHeight?: number;
 }
 
-export function Manifest({ manifest }: ManifestProps) {
+export function Manifest({ manifest, minHeight=5, maxHeight=50 }: ManifestProps) {
+  const left = useSignal<number>(0);
+  const scrollHeight = useComputed<string>(() => {
+    const lines = manifest.value.length;
+    const height = Math.min(Math.max(lines, minHeight), maxHeight);
+    return `${height}em`;
+  });
+
   return (
     <div className="card" id="manifest-text">
-      {manifest.value.map((row) => (
-        <ManifestRow key={row.line} {...row} />
-      ))}
+      <HorizontalScroller height={scrollHeight} width="150em" left={left}>
+        {manifest.value.map((row) => (
+          <ManifestRow key={row.line} {...row} />
+        ))}
+      </HorizontalScroller>
     </div>
   );
 }

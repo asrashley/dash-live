@@ -1,5 +1,6 @@
 import { signal } from "@preact/signals";
-import { beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { act } from "@testing-library/preact";
 
 import { ManifestLine } from "../types/ManifestLine";
 import { renderWithProviders } from "../../test/renderWithProviders";
@@ -12,6 +13,11 @@ describe('Manifest component', () => {
 
     beforeEach(() => {
         endpoint = new FakeEndpoint('http://test.local');
+        manifest.value = [];
+    });
+
+    afterEach(() => {
+        vi.resetAllMocks();
     });
 
     test('matches snapshot for manifest with no errors', async () => {
@@ -41,6 +47,16 @@ describe('Manifest component', () => {
             expect(row.classList.contains('error')).toEqual(hasError);
         });
         expect(asFragment()).toMatchSnapshot();
+    });
+
+    test("passes minHeight and maxHeight props to scroller component", async () => {
+        const { getByTestId } = renderWithProviders(<Manifest manifest={manifest} minHeight={4} maxHeight={45} />);
+        const container = getByTestId("horizontal-scroller-container") as HTMLDivElement;
+        expect(container.style.height).toBe("4em");
+        await act(async () => {
+            manifest.value = await fetchManifest(endpoint);
+        });
+        expect(container.style.height).toBe("45em");
     });
 });
 
