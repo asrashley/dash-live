@@ -33,7 +33,7 @@ export function ProgressBarWithState({
   );
 
   return (
-    <div className="position-relative">
+    <div className="position-relative progress-bar-state">
       <div className="card progress">
         <ProgressBar progress={progress} />
       </div>

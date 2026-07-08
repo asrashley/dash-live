@@ -3019,7 +3019,7 @@ exports[`main entry-point app > matches snapshot for DASH validator 1`] = `
         </div>
       </form>
       <div
-        class="position-relative"
+        class="position-relative progress-bar-state"
       >
         <div
           class="card progress"
