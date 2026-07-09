@@ -15,7 +15,7 @@ export function NavHeader() {
   );
 
   const hideMenu = useCallback(() => {
-    hideMenuTimer.current = null;
+    hideMenuTimer.current = undefined;
     menuVisible.value = !cinemaMode.value;
   }, [cinemaMode.value, menuVisible]);
 

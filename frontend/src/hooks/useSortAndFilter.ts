@@ -10,7 +10,7 @@ export interface UseSortAndFilterHook<T> {
     setFilter: (field: keyof T, value: string) => void;
 }
 
-export function useSortAndFilter<T extends Record<string, string | number | boolean>>(
+export function useSortAndFilter<T extends Record<string, string | number | boolean | null>>(
     data: ReadonlySignal<T[]>,
     initialSortField: keyof T
 ): UseSortAndFilterHook<T> {

@@ -1,5 +1,5 @@
 import { vi } from "vitest";
-import { type ComponentChild } from "preact";
+import type { ComponentChild, ComponentChildren } from "preact";
 import { computed, signal } from "@preact/signals";
 import {
   render,
@@ -90,7 +90,7 @@ export function renderWithProviders(
     static: true,
   });
 
-  const Wrapper = ({ children }) => {
+  const Wrapper = ({ children }: { children: ComponentChildren }) => {
     return (
       <AppStateContext.Provider value={appState}>
         <WhoAmIContext.Provider value={whoAmI}>

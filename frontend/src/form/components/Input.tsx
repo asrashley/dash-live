@@ -49,7 +49,7 @@ export function Input({
   error,
   setValue,
   title,
-  options,
+  options = [],
   placeholder
 }: InputProps) {
   const name = getName({mode, shortName, cgiName, fullName, prefix});
@@ -57,7 +57,15 @@ export function Input({
       if (!data.value) {
         return undefined;
       }
-      const val = (mode === 'fullName' && prefix) ? data.value[prefix][fullName] : data.value[name];
+      let val: string | number | boolean | undefined;
+      if (mode === 'fullName' && prefix) {
+        if (!fullName || !data.value[prefix]) {
+          return undefined;
+        }
+        val = (data.value[prefix] as Record<string, unknown>)[fullName] as string | number | boolean | undefined;
+      } else {
+        val = data.value[name] as string | number | boolean | undefined;
+      }
       if (typeof val === "boolean") {
         return val ? "1": "0";
       }

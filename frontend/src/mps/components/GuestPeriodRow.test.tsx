@@ -52,7 +52,7 @@ describe("GuestPeriodRow component", () => {
       );
       const decStream = streamsMap.value.get(`${item.stream}`);
       expect(decStream).toBeDefined();
-      await findByText(decStream.title);
+      await findByText(decStream!.title);
       expect(asFragment()).toMatchSnapshot();
     }
   );

@@ -174,7 +174,7 @@ export class FakeEndpoint {
 
 export function jsonResponse(payload: object | string, status: number = 200): HttpRequestHandlerResponse {
     const body = status !== 204 ? JSON.stringify(payload) : undefined;
-    const contentLength = status !== 204 ? body.length : 0;
+    const contentLength = status !== 204 ? body?.length ?? 0 : 0;
     return {
         body,
         status,

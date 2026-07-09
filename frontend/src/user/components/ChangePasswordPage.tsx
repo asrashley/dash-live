@@ -30,11 +30,6 @@ export function ChangePassword() {
   });
   const user = useComputed(() => {
     const usr: FlattenedUserState = {
-      adminGroup: false,
-      mediaGroup: false,
-      userGroup: false,
-      mustChange: true,
-      lastLogin: null,
       ...flattened.value,
       ...changes.value,
     };
@@ -53,9 +48,13 @@ export function ChangePassword() {
   );
 
   const saveChanges = useCallback(async () => {
+    if(!apiRequests) {
+      appendMessage("warning", "API requests not available");
+      return;
+    }
     try {
       const result = await apiRequests.editUser(user.value);
-      if (result.success) {
+      if (result.success && result.user) {
         appendMessage("success", "Password successfully modified");
         setUser(result.user);
         setLocation(uiRouteMap.listUsers.url());

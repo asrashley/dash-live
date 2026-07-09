@@ -304,14 +304,14 @@ describe("main entry-point app", () => {
     );
     await findByText("Stream to play");
     const elt = document.querySelector('.modal-backdrop');
-    expect(elt.className).toEqual('modal-backdrop d-none');
+    expect(elt!.className).toEqual('modal-backdrop d-none');
     await user.click(getByText("Open Dialog"));
     await waitFor(() => {
-      expect(elt.className).toEqual('modal-backdrop show');
+      expect(elt!.className).toEqual('modal-backdrop show');
     });
     await user.click(getByText("Close Dialog"));
     await waitFor(() => {
-      expect(elt.className).toEqual('modal-backdrop d-none');
+      expect(elt!.className).toEqual('modal-backdrop d-none');
     });
   });
 
@@ -350,7 +350,7 @@ describe("main entry-point app", () => {
     await findByText("Stream to play");
     const elt = document.querySelector('a[href="/multi-period-streams"]');
     expect(elt).not.toBeNull();
-    expect(elt.classList.contains('spa')).toEqual(true);
+    expect(elt!.classList.contains('spa')).toEqual(true);
   });
 
   test("redirects to login page if refresh token has expired", async () => {

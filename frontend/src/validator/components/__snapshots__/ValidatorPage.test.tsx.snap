@@ -274,8 +274,9 @@ exports[`ValidatorPage component > ProtectedValidatorPage component > initial st
             aria-valuemin="0"
             class="progress-bar progress-bar-striped visually-hidden"
             role="progressbar"
+            style="width: 0%;"
           >
-            NaN%
+            0%
           </div>
           <div
             class="progress-text"
@@ -649,8 +650,9 @@ exports[`ValidatorPage component > ProtectedValidatorPage component > initial st
             aria-valuemin="0"
             class="progress-bar progress-bar-striped visually-hidden"
             role="progressbar"
+            style="width: 0%;"
           >
-            NaN%
+            0%
           </div>
           <div
             class="progress-text"
@@ -1024,8 +1026,9 @@ exports[`ValidatorPage component > initial state 1`] = `
             aria-valuemin="0"
             class="progress-bar progress-bar-striped visually-hidden"
             role="progressbar"
+            style="width: 0%;"
           >
-            NaN%
+            0%
           </div>
           <div
             class="progress-text"

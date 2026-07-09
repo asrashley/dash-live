@@ -11,7 +11,7 @@ export interface AppStateType {
   closeDialog: () => void;
 }
 
-export const AppStateContext = createContext<AppStateType>(null);
+export const AppStateContext = createContext<AppStateType>(null!);
 
 export function createAppState(): AppStateType {
   const dialog = signal<DialogState | null>(null);

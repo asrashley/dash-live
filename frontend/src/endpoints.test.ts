@@ -22,6 +22,11 @@ import { model as demoMps } from './test/fixtures/multi-period-streams/demo.json
 import cgiOptions from './test/fixtures/cgiOptions.json';
 import bbbDashParams from './test/fixtures/play/vod/bbb/hand_made.json';
 
+type ResponseWithBody = {
+    status: number;
+    body: string;
+};
+
 describe('endpoints', () => {
     const needsRefreshToken = vi.fn();
     const hasUserInfo = vi.fn();
@@ -37,7 +42,6 @@ describe('endpoints', () => {
             endpoint
         });
         user = server.login(normalUser.email, normalUser.password);
-        expect(user).not.toBeNull();
         api = new ApiRequests({
             hasUserInfo,
             needsRefreshToken,
@@ -133,10 +137,10 @@ describe('endpoints', () => {
         await expect(api.logoutUser()).resolves.toEqual(expect.objectContaining({
             status: 204,
         }));
-        user = server.getUser(normalUser);
-        expect(user).toBeDefined();
-        expect(user.accessToken).toBeUndefined();
-        expect(user.refreshToken).toBeUndefined();
+        const loggedOut = server.getUser(normalUser);
+        expect(loggedOut).toBeDefined();
+        expect(loggedOut!.accessToken).toBeNull();
+        expect(loggedOut!.refreshToken).toBeNull();
         expect(hasUserInfo).toHaveBeenCalledTimes(1);
         expect(hasUserInfo).toHaveBeenCalledWith(null);
     });
@@ -146,10 +150,10 @@ describe('endpoints', () => {
         await expect(api.logoutUser()).resolves.toEqual(expect.objectContaining({
             status: 204,
         }));
-        user = server.getUser(normalUser);
-        expect(user).toBeDefined();
-        expect(user.accessToken).toBeUndefined();
-        expect(user.refreshToken).toBeUndefined();
+        const loggedOut = server.getUser(normalUser);
+        expect(loggedOut).toBeDefined();
+        expect(loggedOut!.accessToken).toBeNull();
+        expect(loggedOut!.refreshToken).toBeNull();
         expect(hasUserInfo).toHaveBeenCalledTimes(1);
         expect(hasUserInfo).toHaveBeenCalledWith(null);
     });
@@ -231,7 +235,7 @@ describe('endpoints', () => {
 
     test('add a multi-period stream', async () => {
         const periods: MpsPeriod[] = [{
-            parent: null,
+            parent: 1,
             pid: 'p1',
             pk: 'p1',
             new: true,
@@ -261,7 +265,7 @@ describe('endpoints', () => {
 
     test('modify a multi-period stream', async () => {
         const periods: MpsPeriod[] = [{
-            parent: null,
+            parent: 1,
             pid: 'p1',
             pk: 'p1',
             new: true,
@@ -372,7 +376,7 @@ describe('endpoints', () => {
             status: 200,
             body: expect.any(String),
         }));
-        const body = JSON.parse(response['body']);
+        const body = JSON.parse((response as ResponseWithBody)['body'] as string);
         expect(body).toEqual(expect.objectContaining({
             accessToken: {
                 expires: expect.any(String),
@@ -391,7 +395,7 @@ describe('endpoints', () => {
             status: 200,
             body: expect.any(String),
         }));
-        const body = JSON.parse(response['body']);
+        const body = JSON.parse((response as ResponseWithBody)['body']);
         const user = server.getUser({ username: guestUser.username });
         expect(user).toBeDefined();
         expect(body).toEqual(expect.objectContaining({
@@ -407,8 +411,9 @@ describe('endpoints', () => {
             jwt: 'not.valid',
         });
         await expect(api.getMultiPeriodStream('demo')).resolves.toEqual(demoMps);
-        expect(server.getUser({ username })?.accessToken).toBeDefined();
-        expect(server.getUser({ username })?.accessToken.jwt).not.toEqual('not.valid');
+        const normUsr = server.getUser({ username });
+        expect(normUsr!.accessToken).toBeDefined();
+        expect(normUsr!.accessToken!.jwt).not.toEqual('not.valid');
     });
 
     test('refreshes both access token and CSRF tokens', async () => {
@@ -461,8 +466,10 @@ describe('endpoints', () => {
         });
         await expect(api.getMultiPeriodStream('demo', { signal: controller.signal })).rejects.toThrow("aborted");
         expect(responseSpy).toHaveBeenCalledTimes(1);
-        expect(server.getUser({ username })?.accessToken).toBeDefined();
-        expect(server.getUser({ username })?.accessToken.jwt).not.toEqual('not.valid');
+        const theUser = server.getUser({ username });
+        expect(theUser).toBeDefined();
+        expect(theUser!.accessToken).toBeDefined();
+        expect(theUser!.accessToken!.jwt).not.toEqual('not.valid');
     });
 
     test('get list of all users fails for non-admin user', async () => {
@@ -479,7 +486,7 @@ describe('endpoints', () => {
             userToInitialState(mediaUser),
             userToInitialState(adminUser),
         ];
-        userList.sort((a, b) => a.pk - b.pk);
+        userList.sort((a: InitialUserState, b: InitialUserState) => (a.pk ?? 0) - (b.pk ?? 0));
         await expect(api.getAllUsers()).resolves.toEqual(userList);
     });
 

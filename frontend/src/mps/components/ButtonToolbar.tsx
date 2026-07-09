@@ -1,17 +1,19 @@
 import { useContext } from "preact/hooks";
-import { useComputed } from "@preact/signals";
+import { type ReadonlySignal, useComputed } from "@preact/signals";
 import { Link } from "wouter-preact";
 
 import { uiRouteMap } from "@dashlive/routemap";
 
 import { WhoAmIContext } from "../../user/hooks/useWhoAmI";
+import { MpsModelValidationErrors } from "../../hooks/useMultiPeriodStream";
+import { DecoratedMultiPeriodStream } from "../../types/DecoratedMultiPeriodStream";
 
 export interface ButtonToolbarProps {
-  errors,
-  onSaveChanges,
-  deleteStream,
-  model,
-  newStream: boolean;
+  errors: ReadonlySignal<MpsModelValidationErrors>,
+  onSaveChanges: (ev: Event) => void,
+  deleteStream: (ev: Event) => void,
+  model: ReadonlySignal<DecoratedMultiPeriodStream>,
+  newStream: boolean,
 }
 
 export function ButtonToolbar({errors, onSaveChanges, deleteStream, model, newStream}: ButtonToolbarProps) {
@@ -33,7 +35,7 @@ export function ButtonToolbar({errors, onSaveChanges, deleteStream, model, newSt
     return <div className="btn-toolbar">
     <button className="btn btn-success m-2" disabled={disableSave.value}
       onClick={onSaveChanges} >Save new stream</button>
-    <Link class="btn btn-danger m-2" to={cancelUrl}>Cancel</Link>
+    <Link className="btn btn-danger m-2" to={cancelUrl}>Cancel</Link>
   </div>;
   }
 

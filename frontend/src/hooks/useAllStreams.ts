@@ -12,7 +12,7 @@ function findStreamTracks(stream: Stream): StreamTrack[] {
   const tracks = new Map<number, StreamTrack>();
   for (const mf of stream.media_files) {
     const { track_id, content_type, codec_fourcc } = mf;
-    let track: StreamTrack = tracks.get(track_id);
+    let track = tracks.get(track_id);
     if (track === undefined) {
       track = {
         clearBitrates: 0,
@@ -31,7 +31,7 @@ function findStreamTracks(stream: Stream): StreamTrack[] {
   }
   const ids = [...tracks.keys()];
   ids.sort();
-  return ids.map((tid) => tracks.get(tid));
+  return ids.map((tid) => tracks.get(tid)!);
 }
 
 export function decorateAllStreams(streams: Stream[]): DecoratedStream[] {
@@ -51,7 +51,7 @@ export interface UseAllStreamsHook {
   error: ReadonlySignal<string | null>;
 }
 
-export const AllStreamsContext = createContext<UseAllStreamsHook>(null);
+export const AllStreamsContext = createContext<UseAllStreamsHook>(null!);
 
 export function useAllStreams(): UseAllStreamsHook {
   const apiRequests = useContext(EndpointContext);

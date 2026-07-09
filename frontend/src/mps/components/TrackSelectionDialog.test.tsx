@@ -23,26 +23,6 @@ import contentRoles from "../../test/fixtures/content_roles.json";
 describe("TrackSelectionDialog component", () => {
   const onClose = vi.fn();
   const appState = createAppState();
-  const model = signal<DecoratedMultiPeriodStream>();
-  const loaded = signal<string | undefined>();
-  const modified = signal<boolean>(false);
-  const errors = signal<MpsModelValidationErrors>({});
-  const isValid = signal<boolean>(true);
-  const mpsContext: UseMultiPeriodStreamHook = {
-    model,
-    errors,
-    loaded,
-    modified,
-    isValid,
-    setFields: vi.fn(),
-    addPeriod: vi.fn(),
-    setPeriodOrdering: vi.fn(),
-    removePeriod: vi.fn(),
-    modifyPeriod: vi.fn(),
-    saveChanges: vi.fn(),
-    deleteStream: vi.fn(),
-    discardChanges: vi.fn(),
-  };
   const stream: DecoratedStream = {
     tracks: [
       {
@@ -74,7 +54,7 @@ describe("TrackSelectionDialog component", () => {
     media_files: [],
     pk: 10,
     playready_la_url: "",
-    timing_ref: undefined,
+    timing_ref: null,
     title: "stream title",
   };
   const mpsPeriod: MpsPeriod = {
@@ -106,6 +86,34 @@ describe("TrackSelectionDialog component", () => {
       pk: 17,
       role: "alternate"
     }]
+  };
+  const model = signal<DecoratedMultiPeriodStream>({
+    pk: 12,
+    name: "test",
+    title: "mps title",
+    options: null,
+    periods: [mpsPeriod],
+    modified: false,
+    lastModified: 0,
+  });
+  const loaded = signal<string | null>(null);
+  const modified = signal<boolean>(false);
+  const errors = signal<MpsModelValidationErrors>({});
+  const isValid = signal<boolean>(true);
+  const mpsContext: UseMultiPeriodStreamHook = {
+    model,
+    errors,
+    loaded,
+    modified,
+    isValid,
+    setFields: vi.fn(),
+    addPeriod: vi.fn(),
+    setPeriodOrdering: vi.fn(),
+    removePeriod: vi.fn(),
+    modifyPeriod: vi.fn(),
+    saveChanges: vi.fn(),
+    deleteStream: vi.fn(),
+    discardChanges: vi.fn(),
   };
   const trackPicker: TrackPickerDialogState = {
     pk: mpsPeriod.pk,

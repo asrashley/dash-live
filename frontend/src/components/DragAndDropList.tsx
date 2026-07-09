@@ -52,14 +52,21 @@ export class DragAndDropList extends Component<SortableListProps, SortableListSt
 
   private findItem(id: string): object | undefined {
     const { items, dataKey } = this.props;
-    return items.value.find(i => `${i[dataKey]}` === id);
+    return items.value.find(i => `${(i as Record<string, unknown>)[dataKey]}` === id);
   }
 
   private onDragStart = (e: DragEvent) => {
     const target = e.target as HTMLElement;
     const el = target.closest('[data-item-id]');
-    el?.setAttribute('dragging', '');
-    const item = this.findItem(el?.getAttribute('data-item-id'));
+    if (!el) {
+       return;
+    }
+    const itemId = el.getAttribute('data-item-id');
+    if (!itemId) {
+      return;
+    }
+    el.setAttribute('dragging', '');
+    const item = this.findItem(itemId);
     log.debug('start dragging', item);
     this.setState({draggingItem: item});
   };
@@ -72,7 +79,7 @@ export class DragAndDropList extends Component<SortableListProps, SortableListSt
       const {top, height} = nearestItem.getBoundingClientRect();
       const isAfter = lastY > (top + height / 2);
       const after = isAfter ? nearestItem.nextElementSibling : nearestItem;
-      const draggingTarget = this.findItem(after?.getAttribute('data-item-id')) || 'end';
+      const draggingTarget = this.findItem(after?.getAttribute('data-item-id') ?? '') || 'end';
       log.debug('drag event', draggingTarget);
       this.setState({draggingTarget});
     } else {
@@ -100,7 +107,7 @@ export class DragAndDropList extends Component<SortableListProps, SortableListSt
     }
     const nearestItem = (ev.target as HTMLElement).closest(`[data-item-id]`);
     log.debug(`drag enter data-item-id=${nearestItem?.getAttribute('data-item-id')}`);
-    this.setState({nearestItem});
+    this.setState({nearestItem: nearestItem ?? undefined});
   };
 
   private onDragOver = (e: DragEvent) => {
@@ -136,7 +143,7 @@ export class DragAndDropList extends Component<SortableListProps, SortableListSt
     const { dataKey, items } = this.props;
     const { draggingTarget } = this.state;
 
-    const id = item[dataKey];
+    const id = String((item as Record<string, unknown>)[dataKey]);
     const lastItem = items.value[items.value.length - 1];
     let className = '';
 

@@ -19,10 +19,10 @@ function RadioOption({
   setValue,
 }: RadioOptionProps) {
   const onClick = useCallback(() => {
-    setValue(name, value);
+    setValue(name ?? "", value);
   }, [name, setValue, value]);
   const checked = useComputed<boolean>(() => value === currentValue.value);
-  const disabled = useComputed<boolean>(() => !!disabledFields.value[`${name}__${value}`]);
+  const disabled = useComputed<boolean>(() => !!disabledFields?.value[`${name}__${value}`]);
   const id = `radio-${name}-${value}`;
 
   return (

@@ -5,14 +5,14 @@ import { Icon } from "./Icon";
 import { useSortAndFilter } from "../hooks/useSortAndFilter";
 
 export interface SortableTableProps<
-  T extends Record<string, string | number | boolean>
+  T extends Record<string, string | number | boolean | null>
 > {
   data: ReadonlySignal<T[]>;
   caption?: string;
 }
 
 export type SortableTableGenerator<
-  T extends Record<string, string | number | boolean>
+  T extends Record<string, string | number | boolean | null>
 > = (props: SortableTableProps<T>) => JSX.Element;
 
 export type RenderCellProps<T> = {
@@ -20,7 +20,7 @@ export type RenderCellProps<T> = {
     row: T,
     index: number,
 };
-export interface CreateSortableTableProps<T extends Record<string, string | number | boolean>> {
+export interface CreateSortableTableProps<T extends Record<string, string | number | boolean | null>> {
     headings: [keyof T, string][];
     primaryKey: keyof T;
     initialSortField: keyof T;
@@ -28,7 +28,7 @@ export interface CreateSortableTableProps<T extends Record<string, string | numb
 }
 
 export function createSortableTable<
-  T extends Record<string, string | number | boolean>
+  T extends Record<string, string | number | boolean | null>
 >({ headings, primaryKey, initialSortField, renderCell: Cell} : CreateSortableTableProps<T>): SortableTableGenerator<T> {
   const SortableHeading = ({
     name,

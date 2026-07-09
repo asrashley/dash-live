@@ -13,7 +13,7 @@ export interface UseWhoAmIHook {
   setUser: (ius: InitialUserState | null) => void;
 }
 
-export const WhoAmIContext = createContext<UseWhoAmIHook>(null);
+export const WhoAmIContext = createContext<UseWhoAmIHook>(null!);
 
 const blankState: InitialUserState = {
   mustChange: false,

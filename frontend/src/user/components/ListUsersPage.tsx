@@ -15,6 +15,7 @@ import { EndpointContext } from "../../endpoints";
 import { AddUserDialog } from "./AddUserDialog";
 import { FlattenedUserState } from "../types/FlattenedUserState";
 import { EditUserState } from "../types/EditUserState";
+import { ModifyUserResponse } from "../types/ModifyUserResponse";
 
 const headings: [keyof FlattenedUserState, string][] = [
   ["pk", "#"],
@@ -89,9 +90,12 @@ export default function ListUsersPage() {
       if (errs.password) {
         return errs.password;
       }
+      if(!apiRequests) {
+        return "API requests not available";
+      }
       try {
-        const result = await apiRequests.addUser(user);
-        if (result.success) {
+        const result: ModifyUserResponse = await apiRequests.addUser(user);
+        if (result.success && result.user) {
           addUser(result.user);
           return "";
         }

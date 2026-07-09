@@ -6,13 +6,13 @@ import { Route } from "wouter-preact";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import EditStreamPage from "./EditStreamPage";
 import { ApiRequests, EndpointContext } from "../../endpoints";
-import { uiRouteMap } from "../../test/fixtures/routemap.js";
+import { uiRouteMap } from "@dashlive/routemap";
 import { AllStreamsJson } from "../../types/AllStreams";
 import { mediaUser } from "../../test/MockServer";
 
 describe("EditStreamPage component", () => {
   const apiRequests = mock<ApiRequests>();
-  let fetchPromises;
+  let fetchPromises: Promise<void[]>;
 
   beforeEach(() => {
     fetchPromises = Promise.all([

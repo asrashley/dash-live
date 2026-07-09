@@ -47,11 +47,11 @@ describe('AbstractDashPlayer', () => {
     beforeEach(() => {
         keys.clear();
         eventTarget = new EventTarget();
-        videoElement.addEventListener.mockImplementation((evName: string, fn: () => void) => {
-            eventTarget.addEventListener(evName, fn as EventListener);
+        videoElement.addEventListener.mockImplementation((evName, fn, options) => {
+            eventTarget.addEventListener(evName, fn, options);
         });
-        videoElement.removeEventListener.mockImplementation((evName: string, fn: () => void) => {
-            eventTarget.removeEventListener(evName, fn as EventListener);
+        videoElement.removeEventListener.mockImplementation((evName, fn, options) => {
+            eventTarget.removeEventListener(evName, fn, options);
         });
         videoElement.dispatchEvent.mockImplementation((ev: Event) => {
             return eventTarget.dispatchEvent(ev);

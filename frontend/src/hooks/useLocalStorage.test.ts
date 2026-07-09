@@ -90,7 +90,7 @@ describe('useLocalStorage hook', () => {
         const { result } = renderHook(() => useLocalStorage());
         const { setRefreshToken } = result.current;
         setRefreshToken({ expires: 'expires', jwt: 'jwt' });
-        expect(JSON.parse(localStorage.getItem(LocalStorageKeys.REFRESH_TOKEN))).toEqual({
+        expect(JSON.parse(localStorage.getItem(LocalStorageKeys.REFRESH_TOKEN)!)).toEqual({
             expires: 'expires',
             jwt: 'jwt',
         });

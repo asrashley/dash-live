@@ -3,29 +3,28 @@ import { type ReadonlySignal, useComputed } from "@preact/signals";
 
 import { uiRouteMap } from "@dashlive/routemap";
 
-import { NavBarItem } from "../types/NavBarItem";
 import { LoginLogoutLink } from "../../user/components/LoginLogoutLink";
-import { NavItem } from "./NavItem";
+import { NavItem, NavItemProps } from "./NavItem";
 import { WhoAmIContext } from "../../user/hooks/useWhoAmI";
 import { UserState } from "../../user/types/UserState";
 
-export function createNavItems(user: ReadonlySignal<UserState>): NavBarItem[] {
-  const navbar: NavBarItem[] = [
+export function createNavItems(user: ReadonlySignal<UserState>): NavItemProps[] {
+  const navbar: NavItemProps[] = [
     {
-      className: "spa", href: uiRouteMap.home.url(), title: "Home"
+      className: "spa", href: uiRouteMap.home.url(), title: "Home", external: false,
     }, {
-      className: "", href: "/streams", title: "Streams"
+      className: "", href: "/streams", title: "Streams", external: true,
     }, {
-      className: "spa", href: uiRouteMap.listMps.url(), title: "Multi-Period"
+      className: "spa", href: uiRouteMap.listMps.url(), title: "Multi-Period", external: false,
     }, {
-      className: "spa", href: uiRouteMap.validator.url(), title: "Validate"
+      className: "spa", href: uiRouteMap.validator.url(), title: "Validate", external: false,
     }, {
-      className: "", href: "/media/inspect", title: "Inspect"
+      className: "", href: "/media/inspect", title: "Inspect", external: true,
     },
   ];
   if (user.value.permissions.admin) {
     navbar.push({
-      className: "spa", href: uiRouteMap.listUsers.url(), title: "Users"
+      className: "spa", href: uiRouteMap.listUsers.url(), title: "Users", external: false
     });
   }
   return navbar;
@@ -35,7 +34,7 @@ export function NavBar() {
   const { user } = useContext(WhoAmIContext);
   const [expanded, setExpanded] = useState<boolean>(false);
   const toggleExpand = useCallback(() => setExpanded(!expanded), [expanded]);
-  const items = useComputed(() => createNavItems(user));
+  const items = useComputed<NavItemProps[]>(() => createNavItems(user));
 
   const togglerClassName = `navbar-toggler${expanded ? '' : ' collapsed'}`;
   const navbarClassName = `collapse navbar-collapse${ expanded ? ' show' : ''}`;

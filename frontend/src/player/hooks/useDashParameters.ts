@@ -1,17 +1,37 @@
 import { useCallback, useContext } from "preact/hooks";
 import { useComputed, type ReadonlySignal } from "@preact/signals";
 
+import { defaultFullOptions } from "@dashlive/options";
 import { EndpointContext } from "../../endpoints";
 import { useJsonRequest, UseJsonRequestHook } from "../../hooks/useJsonRequest";
 import { DashParameters } from "../types/DashParameters";
 import { KeyParameters } from "../types/KeyParameters";
 
 interface UseDashParametersHook {
-    dashParams: ReadonlySignal<DashParameters | undefined>;
+    dashParams: ReadonlySignal<DashParameters>;
     keys: ReadonlySignal<Map<string, KeyParameters>>;
     error: UseJsonRequestHook<DashParameters | undefined>['error'];
     loaded: UseJsonRequestHook<DashParameters | undefined>['loaded'];
 }
+
+const initialDashParameters: DashParameters = {
+    dash: {
+        locationURL: "",
+        mediaDuration: "",
+        minBufferTime: "",
+        mpd_id: "",
+        now: "",
+        periods: [],
+        profiles: [],
+        publishTime: "",
+        startNumber: 0,
+        suggestedPresentationDelay: 0,
+        timeSource: null,
+        title: ""
+    },
+    options: defaultFullOptions,
+    url: ""
+};
 
 export function useDashParameters(mode: string, stream: string, manifest: string, params: Readonly<URLSearchParams>): UseDashParametersHook {
     const apiRequests = useContext(EndpointContext);
@@ -19,9 +39,9 @@ export function useDashParameters(mode: string, stream: string, manifest: string
         {
             signal,
         }), [apiRequests, manifest, mode, params, stream]);
-    const { data: dashParams, loaded, error } = useJsonRequest<DashParameters | undefined>({
+    const { data: dashParams, loaded, error } = useJsonRequest<DashParameters>({
         request,
-        initialData: undefined,
+        initialData: initialDashParameters,
         name: 'dash parameters',
     });
     const keys = useComputed(() => {

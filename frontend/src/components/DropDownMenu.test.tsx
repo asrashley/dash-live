@@ -25,18 +25,18 @@ describe('DropDownMenu', () => {
 
         const elt = queryBySelector('.dropdown > a');
         expect(elt).not.toBeNull();
-        expect(elt.className).toEqual('btn btn-secondary dropdown-toggle');
+        expect(elt!.className).toEqual('btn btn-secondary dropdown-toggle');
         expect(asFragment()).toMatchSnapshot();
 
-        fireEvent.click(elt);
-        expect(elt.className).toEqual('btn btn-secondary dropdown-toggle show');
-        fireEvent.click((getByTestId('ddi_0') as HTMLElement).querySelector('a'));
+        fireEvent.click(elt!);
+        expect(elt!.className).toEqual('btn btn-secondary dropdown-toggle show');
+        fireEvent.click((getByTestId('ddi_0') as HTMLElement).querySelector('a')!);
         expect(menu[0].onClick).toHaveBeenCalledTimes(1);
         expect(menu[1].onClick).not.toHaveBeenCalled();
-        expect(elt.className).toEqual('btn btn-secondary dropdown-toggle');
+        expect(elt!.className).toEqual('btn btn-secondary dropdown-toggle');
 
-        fireEvent.click(elt);
-        fireEvent.click((getByTestId('ddi_1') as HTMLElement).querySelector('a'));
+        fireEvent.click(elt!);
+        fireEvent.click((getByTestId('ddi_1') as HTMLElement).querySelector('a')!);
         expect(menu[0].onClick).toHaveBeenCalledTimes(1);
         expect(menu[1].onClick).toHaveBeenCalledTimes(1);
       });

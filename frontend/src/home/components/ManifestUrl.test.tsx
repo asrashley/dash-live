@@ -7,7 +7,7 @@ import { renderWithProviders } from "../../test/renderWithProviders";
 import { ManifestUrl } from "./ManifestUrl";
 
 describe("ManifestUrl component", () => {
-  const manifestUrl = signal<URL>();
+  const manifestUrl = signal<URL>(new URL("http://example.local/dash/live/manifest_e.mpd"));
   const editable = signal<boolean>(false);
   const setValue = vi.fn();
 

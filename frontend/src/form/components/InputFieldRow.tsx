@@ -25,10 +25,10 @@ export function InputFieldRow({
 }: InputFieldRowProps) {
   const name: string =
     mode === "shortName"
-      ? shortName
+      ? shortName ?? cgiName
       : mode === "cgi"
       ? cgiName
-      : `${prefix}${prefix ? "__" : ""}${fullName}`;
+      : `${prefix ?? ""}${prefix ? "__" : ""}${fullName ?? cgiName}`;
   const describedBy = text ? `text-${name}`: `label-${name}`;
   const errorSig = useComputed(() => errors?.value[name]);
   const error = errors ? errorSig : undefined;

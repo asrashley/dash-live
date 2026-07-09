@@ -1,4 +1,4 @@
-import type { ComponentChildren } from "preact";
+import type { ComponentChildren, JSX } from "preact";
 import { useCallback, useState } from "preact/hooks";
 import { MenuItemType } from "../types/MenuItemType";
 
@@ -16,7 +16,7 @@ function DropDownItem({
   children,
 }: DropDownItemProps) {
   const click = useCallback(
-    (ev) => {
+    (ev: JSX.TargetedMouseEvent<HTMLAnchorElement>) => {
       ev.preventDefault();
       setExpanded(false);
       onClick(ev);
@@ -44,7 +44,7 @@ export function DropDownMenu({
 }: DropDownMenuProps) {
   const [expanded, setExpanded] = useState(false);
 
-  const toggleMenu = (ev) => {
+  const toggleMenu = (ev: JSX.TargetedMouseEvent<HTMLAnchorElement>) => {
     ev.preventDefault();
     setExpanded(!expanded);
   };

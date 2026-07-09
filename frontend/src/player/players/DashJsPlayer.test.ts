@@ -50,7 +50,7 @@ describe('DashJsPlayer', () => {
 
     beforeEach(() => {
         textTrack = {
-            id: textMediaInfo.id,
+            id: textMediaInfo.id ?? "",
             trackType: MediaTrackType.TEXT,
             language: textMediaInfo.lang || "",
             active: false,
@@ -75,7 +75,7 @@ describe('DashJsPlayer', () => {
                 default: return null;
             }
         });
-        mockMediaPlayer.getCurrentTextTrackIndex.mockImplementation(() => textTrack.active ? textMediaInfo.index : -1);
+        mockMediaPlayer.getCurrentTextTrackIndex.mockImplementation(() => textTrack.active ? textMediaInfo.index ?? -1 : -1);
         mockMediaPlayer.getTracksFor.mockImplementation((type: MediaInfo["type"]) => {
             switch (type) {
                 case 'video': return [videoMediaInfo];
@@ -255,8 +255,8 @@ describe('DashJsPlayer', () => {
         ['audio', MediaTrackType.AUDIO],
         ['text', MediaTrackType.TEXT],
         ['image', MediaTrackType.IMAGE]
-    ])('mediaTrackType %s => %s', (tt: MediaInfo["type"], expected: MediaTrackType) => {
-        expect(mediaTrackType(tt)).toEqual(expected);
+    ])('mediaTrackType %s => %s', (tt: string, expected: MediaTrackType) => {
+        expect(mediaTrackType(tt as MediaInfo["type"])).toEqual(expected);
     });
 
     test('unknown mediaInfo type', () => {

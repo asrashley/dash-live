@@ -1,5 +1,5 @@
 import { Fragment, type JSX } from "preact";
-import { useComputed } from "@preact/signals";
+import { useComputed, useSignal } from "@preact/signals";
 import { useContext, useCallback } from "preact/hooks";
 
 import { AppStateContext } from "../../appState";
@@ -56,14 +56,24 @@ export function PeriodRow({ period }: PeriodRowProps) {
   const { errors, modifyPeriod, addPeriod, removePeriod } = useContext(
     MultiPeriodModelContext
   );
-  const prdErrors = useComputed<MpsPeriodValidationErrors>(() => errors?.[period?.pid] ?? {});
+  const prdErrors = useComputed<MpsPeriodValidationErrors>(() => {
+    if (!errors.value) {
+      return {};
+    }
+    return errors.value?.periods?.[period.pid] ?? {};
+  });
   const pidError = useComputed(() => prdErrors.value.pid);
-
-  const currentStream = streamsMap.value.get(`${period.stream}`);
-  const { pid, pk, start, duration } = period;
+  const currentStream = useComputed(() => streamsMap.value.get(`${period.stream}`));
+  const start = useSignal<string>(period.start);
+  const duration = useSignal<string>(period.duration);
+  const startError = useComputed<string | undefined>(() => prdErrors.value.start);
+  const durationError = useComputed<string | undefined>(() => prdErrors.value.duration);
+  const streamSelectionError = useComputed<string | undefined>(() => prdErrors.value.stream);
+  const { pid, pk } = period;
 
   const selectTracks = useCallback(() => {
-    if (currentStream === undefined) {
+    const stream = currentStream.value;
+    if (!stream) {
       return;
     }
     dialog.value = {
@@ -72,7 +82,7 @@ export function PeriodRow({ period }: PeriodRowProps) {
         pk,
         pid,
         guest: false,
-        stream: currentStream,
+        stream,
       },
     };
   }, [dialog, pid, pk, currentStream]);
@@ -105,7 +115,9 @@ export function PeriodRow({ period }: PeriodRowProps) {
   const setStream = useCallback(
     ({ value }: {name: string, value: number}) => {
       const stream = streamsMap.value.get(`${value}`);
-      setPeriodStream(pk, stream, period.tracks, modifyPeriod);
+      if (stream){
+        setPeriodStream(pk, stream, period.tracks, modifyPeriod);
+      }
     },
     [modifyPeriod, period, pk, streamsMap]
   );
@@ -131,7 +143,7 @@ export function PeriodRow({ period }: PeriodRowProps) {
         name={`stream_${pk}`}
         value={currentStream}
         onChange={setStream}
-        error={prdErrors.value.stream}
+        error={streamSelectionError}
         required />
     </div>
     <div class="col period-start">
@@ -139,7 +151,7 @@ export function PeriodRow({ period }: PeriodRowProps) {
         value={start}
         name={`start_${pk}`}
         onChange={setField}
-        error={prdErrors.value.start}
+        error={startError}
         required />
     </div>
     <div class="col period-duration">
@@ -148,7 +160,7 @@ export function PeriodRow({ period }: PeriodRowProps) {
         name={`duration_${pk}`}
         onChange={setField}
         min="00:00:01"
-        error={prdErrors.value.duration}
+        error={durationError}
         required />
     </div>
     <TrackSelectionButton period={period} stream={currentStream} selectTracks={selectTracks} />

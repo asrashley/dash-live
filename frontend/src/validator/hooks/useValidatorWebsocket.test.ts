@@ -266,7 +266,8 @@ describe('useValidatorWebsocket hook', () => {
             await act(async () => {
                 await server.nextTick(0.5);
             });
-            if (progress.value.currentValue > 5 && !aborted) {
+            const { currentValue = 0 } = progress.value;
+            if (currentValue > 5 && !aborted) {
                 aborted = true;
                 cancel();
                 expect(state.value).toEqual(ValidatorState.CANCELLING)

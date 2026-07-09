@@ -26,10 +26,13 @@ describe("StreamSelection component", () => {
   };
   const onChange = vi.fn();
   const decoratedStreams = decorateAllStreams(streams);
+  const value = signal<DecoratedStream | undefined>(decoratedStreams[0]);
 
   beforeEach(() => {
     allStreams.value = decoratedStreams;
+    value.value = decoratedStreams[0];
     loaded.value = true;
+    error.value = null;
   });
 
   afterEach(() => {
@@ -42,7 +45,7 @@ describe("StreamSelection component", () => {
         <StreamSelection
           name="sel"
           required
-          value={decoratedStreams[0]}
+          value={value}
           onChange={onChange}
         />
       </AllStreamsContext.Provider>
@@ -52,14 +55,15 @@ describe("StreamSelection component", () => {
   });
 
   test('select with an error', () => {
+    const streamSelectionError = signal<string | undefined>("value is bad");
     const { getBySelector } = renderWithProviders(
         <AllStreamsContext.Provider value={useAllStreamsHookMock}>
           <StreamSelection
             name="sel"
             required
-            value={decoratedStreams[0]}
+            value={value}
             onChange={onChange}
-            error="value is bad"
+            error={streamSelectionError}
           />
         </AllStreamsContext.Provider>
       );
@@ -67,10 +71,12 @@ describe("StreamSelection component", () => {
   });
 
   test('select with no value', () => {
+    value.value = undefined;
     const { getBySelector } = renderWithProviders(
         <AllStreamsContext.Provider value={useAllStreamsHookMock}>
           <StreamSelection
             name="sel"
+            value={value}
             required
             onChange={onChange}
           />
@@ -86,7 +92,7 @@ describe("StreamSelection component", () => {
           <StreamSelection
             name="sel"
             required
-            value={decoratedStreams[0]}
+            value={value}
             onChange={onChange}
           />
         </AllStreamsContext.Provider>

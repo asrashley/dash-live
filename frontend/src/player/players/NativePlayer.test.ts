@@ -7,19 +7,19 @@ import { MediaTrackType } from "../types/MediaTrackType";
 class FakeTextTrackList extends Array<TextTrack> implements TextTrackList {
     private eventTarget: EventTarget = new EventTarget();
 
-    onaddtrack: (this: TextTrackList, ev: TrackEvent) => unknown;
-    onchange: (this: TextTrackList, ev: Event) => unknown;
-    onremovetrack: (this: TextTrackList, ev: TrackEvent) => unknown;
+    onaddtrack!: (this: TextTrackList, ev: TrackEvent) => unknown;
+    onchange!: (this: TextTrackList, ev: Event) => unknown;
+    onremovetrack!: (this: TextTrackList, ev: TrackEvent) => unknown;
 
     getTrackById(): TextTrack | null {
         throw new Error("Method not implemented.");
     }
 
-    addEventListener(type: string, listener: EventListener, options?: unknown) {
+    addEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions) {
         this.eventTarget.addEventListener(type, listener, options);
     }
 
-    removeEventListener(type: string, listener: EventListener, options?: unknown): void {
+    removeEventListener(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | EventListenerOptions): void {
         this.eventTarget.removeEventListener(type, listener, options);
     }
 
@@ -47,11 +47,11 @@ describe('NativePlayer', () => {
 
     beforeEach(() => {
         eventTarget = new EventTarget();
-        videoElement.addEventListener.mockImplementation((evName: string, fn: () => void) => {
-            eventTarget.addEventListener(evName, fn as EventListener);
+        videoElement.addEventListener.mockImplementation((evName, fn, options) => {
+            eventTarget.addEventListener(evName, fn, options);
         });
-        videoElement.removeEventListener.mockImplementation((evName: string, fn: () => void) => {
-            eventTarget.removeEventListener(evName, fn as EventListener);
+        videoElement.removeEventListener.mockImplementation((evName, fn, options) => {
+            eventTarget.removeEventListener(evName, fn, options);
         });
         videoElement.dispatchEvent.mockImplementation((ev: Event) => {
             return eventTarget.dispatchEvent(ev);

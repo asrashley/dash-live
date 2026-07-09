@@ -57,7 +57,7 @@ export default function HomePage() {
   const { stream, mode, manifest, nonDefaultOptions, manifestOptions } = streamOptionsHook;
   const genManifest = useComputed<URL>(() => generateUrl(routeMap.dashMpdV3.url, routeMap.mpsManifest.url,
      mode, manifest, stream, manifestOptions));
-  const manifestUrl = useComputed<URL>(() => viewing.value ? editUrl.value : genManifest.value);
+  const manifestUrl = useComputed<URL>(() => viewing.value ? (editUrl.value ?? genManifest.value) : genManifest.value);
   const manifestBaseName = useComputed<string>(() => manifest.value.slice(0, -4));
   const videoUrl = useComputed<URL>(() =>
     generateUrl(uiRouteMap.video.url,

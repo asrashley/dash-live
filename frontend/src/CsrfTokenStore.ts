@@ -12,8 +12,8 @@ export class CsrfTokenStore {
 
   setToken(token: string): void {
     if (this.pending.length) {
-      const {resolve} = this.pending.shift();
-      resolve(token)
+      const pending = this.pending.shift();
+      pending?.resolve(token);
     } else {
       this.token = token;
     }
@@ -31,7 +31,14 @@ export class CsrfTokenStore {
 
     const {promise, resolve, reject} = Promise.withResolvers<string>();
     const abortListener = () => {
-      reject(new Error(signal.reason));
+      if (signal) {
+        const { reason } = signal;
+        if (reason instanceof Error) {
+          reject(reason);
+        } else {
+          reject(new Error(`${reason ?? 'aborted'}`));
+        }
+      }
     };
     try{
       signal?.addEventListener('abort', abortListener);

@@ -8,11 +8,11 @@ import { UserValidationErrors } from "../hooks/useAllUsers";
 import { renderWithProviders } from "../../test/renderWithProviders";
 import { EditUserCard } from "./EditUserCard";
 import { mediaUser } from "../../test/MockServer";
-import { FlattenedUserState } from "../types/FlattenedUserState";
+import { EditUserState } from "../types/EditUserState";
 
 describe("EditUserCard component", () => {
   const backUrl = uiRouteMap.listUsers.url();
-  const user = signal<FlattenedUserState | undefined>();
+  const user = signal<EditUserState|undefined>();
   const errors = signal<UserValidationErrors>({});
   const allUsersError = signal<string | null>(null);
   const disabledFields = signal<Record<string, boolean>>({});
@@ -60,11 +60,11 @@ describe("EditUserCard component", () => {
     const userInp = (await findBySelector(
       'input[name="username"]'
     )) as HTMLInputElement;
-    expect(userInp.value).toEqual(user.value.username);
+    expect(userInp.value).toEqual(user.value!.username);
     const emailInp = (await findBySelector(
       'input[name="email"]'
     )) as HTMLInputElement;
-    expect(emailInp.value).toEqual(user.value.email);
+    expect(emailInp.value).toEqual(user.value!.email);
     const pwdInp = (await findBySelector(
       'input[name="password"]'
     )) as HTMLInputElement;
@@ -171,7 +171,7 @@ describe("EditUserCard component", () => {
     const userInp = (await findBySelector(
       'input[name="username"]'
     )) as HTMLInputElement;
-    expect(userInp.value).toEqual(user.value.username);
+    expect(userInp.value).toEqual(user.value!.username);
     await evUser.clear(userInp);
     await evUser.type(userInp, 'new.username');
     expect(setValue).toHaveBeenLastCalledWith('username', 'new.username');

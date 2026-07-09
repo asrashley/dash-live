@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { fireEvent } from "@testing-library/preact";
-import { mock } from "vitest-mock-extended";
 import userEvent from "@testing-library/user-event";
 import { signal } from "@preact/signals";
 
@@ -28,31 +27,48 @@ describe("PeriodRow component", () => {
   const loaded = signal<boolean>(false);
   const streamsMap = signal<Map<string, DecoratedStream>>(new Map());
   const error = signal<string | null>(null);
+  const modified = signal<boolean>(false);
+  const errors = signal<MpsModelValidationErrors>({});
+  const isValid = signal<boolean>(false);
+  const mpsLoaded = signal(null as string | null);
+  const mpsModel = signal<DecoratedMultiPeriodStream>({
+    ...model,
+    modified: false,
+    lastModified: 0
+  });
   const allStreamsHook: UseAllStreamsHook = {
     allStreams,
     loaded,
     streamsMap,
     error,
   };
-  let multiPeriodStreamHook: UseMultiPeriodStreamHook;
+  const multiPeriodStreamHook: UseMultiPeriodStreamHook = {
+    loaded: mpsLoaded,
+    model: mpsModel,
+    modified,
+    errors,
+    isValid,
+    discardChanges: vi.fn(),
+    setFields: vi.fn(),
+    addPeriod: vi.fn(),
+    setPeriodOrdering: vi.fn(),
+    removePeriod: vi.fn(),
+    modifyPeriod: vi.fn(),
+    saveChanges: vi.fn(),
+    deleteStream: vi.fn(),
+  };
 
   beforeEach(() => {
     loaded.value = true;
     error.value = null;
+    mpsLoaded.value = null;
     allStreams.value = decorateAllStreams(streams);
     const sMap = new Map<string, DecoratedStream>();
     allStreams.value.forEach((item) => {
       sMap.set(`${item.pk}`, item);
     });
     streamsMap.value = sMap;
-    multiPeriodStreamHook = mock<UseMultiPeriodStreamHook>({
-      loaded: signal<string | undefined>(),
-      model: signal<DecoratedMultiPeriodStream>(),
-      modified: signal<boolean>(false),
-      errors: signal<MpsModelValidationErrors>({}),
-      isValid: signal<boolean>(false),
-    });
-    });
+  });
 
   afterEach(() => {
     vi.clearAllMocks();
@@ -70,7 +86,7 @@ describe("PeriodRow component", () => {
       );
       const decStream = streamsMap.value.get(`${item.stream}`);
       expect(decStream).toBeDefined();
-      await findByText(decStream.title);
+      await findByText(decStream!.title);
       expect(asFragment()).toMatchSnapshot();
     }
   );
@@ -136,7 +152,7 @@ describe("PeriodRow component", () => {
     const newPk = (period.stream + 1) % allStreams.value.length;
     const newStream = streamsMap.value.get(`${newPk}`);
     expect(newStream).toBeDefined();
-    await user.selectOptions(selElt, [newStream.title]);
+    await user.selectOptions(selElt, [newStream!.title]);
     expect(multiPeriodStreamHook.modifyPeriod).toHaveBeenLastCalledWith({
       periodPk: period.pk,
       period: {

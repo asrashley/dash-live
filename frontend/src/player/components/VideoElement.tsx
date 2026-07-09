@@ -45,7 +45,7 @@ export interface VideoElementProps {
 }
 
 export class VideoElement
-  extends Component<VideoElementProps, undefined>
+  extends Component<VideoElementProps>
   implements PlayerControls
 {
   static DEFAULT_MAX_EVENTS = 25;
@@ -54,7 +54,7 @@ export class VideoElement
   private playerInitControl?: AbortController;
   private nextId = 1;
   private subtitlesElement: HTMLDivElement | null = null;
-  private signalCleanup: () => void | undefined;
+  private signalCleanup?: () => void;
   private unmountController: AbortController = new AbortController();
   public isPaused = signal<boolean>(false);
   public hasDashPlayer = signal<boolean>(false);
@@ -105,11 +105,11 @@ export class VideoElement
 
   async play() {
     await this.tryInitializePlayer(this.props);
-    await this.videoElt?.play();
+    if (this.videoElt) await this.videoElt.play();
   }
 
   skip(seconds: number) {
-    if (this.videoElt === undefined) {
+    if (!this.videoElt) {
       throw new Error('video element not mounted');
     }
     const video = this.videoElt;
@@ -154,7 +154,7 @@ export class VideoElement
     const playerInitControl = new AbortController();
     this.playerInitControl = playerInitControl;
     const { signal } = this.unmountController;
-    signal.addEventListener('abort', () => this.playerInitControl.abort('unmounting'), { signal });
+    this.unmountController.signal.addEventListener('abort', () => playerInitControl.abort('unmounting'));
     this.videoElt.addEventListener("timeupdate", this.onTimeUpdate, { signal });
     const playerProps: DashPlayerProps = {
       version,
@@ -191,7 +191,7 @@ export class VideoElement
     const status: StatusEvent = {
       id: this.nextId++,
       timecode: new Date().toISOString(),
-      position: this.videoElt?.currentTime,
+      position: this.videoElt?.currentTime ?? 0,
       event,
       text,
     };
@@ -229,7 +229,7 @@ export class VideoElement
     const status: StatusEvent = {
       id: 0,
       timecode: new Date().toISOString(),
-      position: this.videoElt.currentTime,
+      position: this.videoElt?.currentTime ?? 0,
       event: 'TracksChanged',
       text: "",
     };

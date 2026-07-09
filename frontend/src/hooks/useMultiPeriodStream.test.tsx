@@ -28,7 +28,7 @@ describe("useMultiPeriodStream hook", () => {
       </EndpointContext.Provider>
     );
   };
-  let getMultiPeriodStreamPromise;
+  let getMultiPeriodStreamPromise: Promise<void>;
 
   beforeEach(() => {
     getMultiPeriodStreamPromise = new Promise<void>((resolve) => {
@@ -282,7 +282,7 @@ describe("useMultiPeriodStream hook", () => {
     });
     const model = structuredClone(result.current.model.value);
     const modifyMps: ModifyMultiPeriodStreamJson = {
-      csrfTokens: undefined,
+      csrfTokens: {},
       errors: [],
       success: true,
       model,
@@ -319,7 +319,7 @@ describe("useMultiPeriodStream hook", () => {
     });
     const model = structuredClone(result.current.model.value);
     const modifyMps: ModifyMultiPeriodStreamJson = {
-      csrfTokens: undefined,
+      csrfTokens: {},
       errors: [
         'duplicate name',
       ],

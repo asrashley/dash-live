@@ -14,7 +14,7 @@ import { FormRowMode } from "../types/FormRowMode";
 import { InputFormData } from "../types/InputFormData";
 
 describe("TabFormGroup", () => {
-  const data = signal<InputFormData>();
+  const data = signal<InputFormData>({});
   const disabledFields = signal<Record<string, boolean>>({});
   const setValue = vi.fn();
   const formLayout = [3, 4, 5];

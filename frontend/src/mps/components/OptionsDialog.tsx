@@ -46,7 +46,7 @@ export function OptionsDialog({ onClose }: OptionsDialogProps) {
   const { setFields } = useContext(MultiPeriodModelContext);
   const form = useRef(null);
   const isActive = useComputed<boolean>(() => dialog.value?.mpsOptions?.name !== undefined);
-  const data = useSignal<InputFormData | null>(null);
+  const data = useSignal<InputFormData>({});
   const disabledFields = useSignal<Record<string, boolean>>({});
   const lastUpdated = useSignal<null | number>(null);
 
@@ -58,13 +58,13 @@ export function OptionsDialog({ onClose }: OptionsDialogProps) {
   const onSave = useCallback((ev: Event) => {
     ev.preventDefault();
     const options = Object.fromEntries(
-      Object.entries(data.value).filter(([key, value]) => defaultShortOptions[key] !== value));
+      Object.entries(data.value).filter(([key, value]) => defaultShortOptions[key as keyof typeof defaultShortOptions] !== value));
     setFields({ options });
     onClose();
     return false;
   }, [data, setFields, onClose]);
 
-  const setValue = useCallback((name: string, value: string | number) => {
+  const setValue = useCallback((name: string, value: string | number | boolean) => {
     data.value = {
         ...data.value,
         [name]: value,
@@ -86,7 +86,7 @@ export function OptionsDialog({ onClose }: OptionsDialogProps) {
     lastUpdated.value = lastModified;
   });
 
-  if (!isActive.value || data.value === null) {
+  if (!isActive.value) {
     return null;
   }
 

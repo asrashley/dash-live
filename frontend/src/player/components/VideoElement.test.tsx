@@ -4,7 +4,6 @@ import { signal } from "@preact/signals";
 
 import { renderWithProviders } from "../../test/renderWithProviders";
 import { StatusEvent } from "../types/StatusEvent";
-import { PlayerControls } from "../types/PlayerControls";
 import { STATUS_EVENTS, VideoElement, VideoElementProps } from "./VideoElement";
 import { DashParameters } from "../types/DashParameters";
 import { KeyParameters } from "../types/KeyParameters";
@@ -256,7 +255,7 @@ describe("VideoElement component", () => {
     const videoElement = getBySelector("video") as HTMLVideoElement;
     spyOnVideo(videoElement);
     expect(setPlayer).toHaveBeenCalledTimes(1);
-    const controls: PlayerControls | null = setPlayer.mock.calls[0][0];
+    const controls = setPlayer.mock.calls[0][0]!;
     expect(controls).not.toBeNull();
     await expect(controls.play()).resolves.toBeUndefined();
     expect(videoElement.play).toHaveBeenCalledTimes(1);
@@ -285,7 +284,7 @@ describe("VideoElement component", () => {
     spyOnVideo(videoElement);
     expect(videoElement.paused).toEqual(true);
     expect(setPlayer).toHaveBeenCalledTimes(1);
-    const controls: PlayerControls | null = setPlayer.mock.calls[0][0];
+    const controls = setPlayer.mock.calls[0][0]!;
     expect(controls).not.toBeNull();
     expect(controls.hasDashPlayer.value).toEqual(true);
     expect(controls.isPaused.value).toEqual(true);
@@ -326,7 +325,7 @@ describe("VideoElement component", () => {
     spyOnVideo(videoElement);
     videoElement.currentTime = 0;
     expect(setPlayer).toHaveBeenCalledTimes(1);
-    const controls: PlayerControls | null = setPlayer.mock.calls[0][0];
+    const controls = setPlayer.mock.calls[0][0]!;
     expect(controls).not.toBeNull();
     controls.skip(12);
     expect(videoElement.currentTime).toEqual(12);
@@ -351,12 +350,12 @@ describe("VideoElement component", () => {
     );
     await expect(playerFactoryPromise.promise).resolves.toBeDefined();
     expect(setPlayer).toHaveBeenCalledTimes(1);
-    const controls: PlayerControls | null = setPlayer.mock.calls[0][0];
+    const controls = setPlayer.mock.calls[0][0]!;
     expect(controls).not.toBeNull();
     expect(player).toBeDefined();
-    vi.spyOn(player, 'destroy');
+    vi.spyOn(player!, 'destroy');
     controls.stop();
-    expect(player.destroy).toHaveBeenCalledTimes(1);
+    expect(player!.destroy).toHaveBeenCalledTimes(1);
     unmount();
     expect(setPlayer).toHaveBeenCalledTimes(2);
     expect(setPlayer).toHaveBeenLastCalledWith(null);
@@ -480,13 +479,13 @@ describe("VideoElement component", () => {
     await expect(playerFactoryPromise.promise).resolves.toBeDefined();
     const subsElt = getByTestId("subtitles") as HTMLDivElement;
     expect(setPlayer).toHaveBeenCalledTimes(1);
-    const controls: PlayerControls | null = setPlayer.mock.calls[0][0];
+    const controls = setPlayer.mock.calls[0][0]!;
     expect(controls).not.toBeNull();
     expect(player).toBeDefined();
-    expect(player.setSubtitlesElement).not.toHaveBeenCalled();
+    expect(player!.setSubtitlesElement).not.toHaveBeenCalled();
     controls.setSubtitlesElement(subsElt);
-    expect(player.setSubtitlesElement).toHaveBeenCalledTimes(1);
-    expect(player.setSubtitlesElement).toHaveBeenCalledWith(subsElt);
+    expect(player!.setSubtitlesElement).toHaveBeenCalledTimes(1);
+    expect(player!.setSubtitlesElement).toHaveBeenCalledWith(subsElt);
     unmount();
     expect(setPlayer).toHaveBeenCalledTimes(2);
     expect(setPlayer).toHaveBeenLastCalledWith(null);
@@ -534,17 +533,17 @@ describe("VideoElement component", () => {
     const subsElt = getByTestId("subtitles") as HTMLDivElement;
     expect(videoRef).toBeDefined();
     expect(setPlayer).not.toHaveBeenCalled();
-    videoRef.setSubtitlesElement(subsElt);
+    videoRef!.setSubtitlesElement(subsElt);
     expect(setPlayer).not.toHaveBeenCalled();
     await act(async () => {
       blocker.resolve();
     });
     expect(setPlayer).toHaveBeenCalledTimes(1);
-    const controls: PlayerControls | null = setPlayer.mock.calls[0][0];
+    const controls = setPlayer.mock.calls[0][0]!;
     expect(controls).not.toBeNull();
     expect(player).toBeDefined();
-    expect(player.setSubtitlesElement).toHaveBeenCalledTimes(1);
-    expect(player.setSubtitlesElement).toHaveBeenCalledWith(subsElt);
+    expect(player!.setSubtitlesElement).toHaveBeenCalledTimes(1);
+    expect(player!.setSubtitlesElement).toHaveBeenCalledWith(subsElt);
     unmount();
     expect(setPlayer).toHaveBeenCalledTimes(2);
     expect(setPlayer).toHaveBeenLastCalledWith(null);
@@ -568,17 +567,17 @@ describe("VideoElement component", () => {
     await expect(playerFactoryPromise.promise).resolves.toBeDefined();
     expect(player).toBeDefined();
     expect(setPlayer).toHaveBeenCalledTimes(1);
-    const controls: PlayerControls | null = setPlayer.mock.calls[0][0];
+    const controls = setPlayer.mock.calls[0][0]!;
     expect(controls).not.toBeNull();
     const mt: MediaTrack = {
       id: 't1',
       trackType: MediaTrackType.TEXT,
       active: false
     };
-    expect(player.setTextTrack).not.toHaveBeenCalled();
+    expect(player!.setTextTrack).not.toHaveBeenCalled();
     controls.setTextTrack(mt);
-    expect(player.setTextTrack).toHaveBeenCalledTimes(1);
-    expect(player.setTextTrack).toHaveBeenCalledWith(mt);
+    expect(player!.setTextTrack).toHaveBeenCalledTimes(1);
+    expect(player!.setTextTrack).toHaveBeenCalledWith(mt);
     unmount();
   });
 
@@ -600,7 +599,7 @@ describe("VideoElement component", () => {
     await expect(playerFactoryPromise.promise).resolves.toBeDefined();
     expect(player).toBeDefined();
     expect(setPlayer).toHaveBeenCalledTimes(1);
-    const controls: PlayerControls | null = setPlayer.mock.calls[0][0];
+    const controls = setPlayer.mock.calls[0][0]!;
     expect(controls).not.toBeNull();
     const tracks: MediaTrack[] = [{
       id: 'v1',
@@ -613,7 +612,7 @@ describe("VideoElement component", () => {
       active: false
     }];
     expect(tracksChanged).not.toHaveBeenCalled();
-    player.callMaybeTracksChanged(tracks);
+    player!.callMaybeTracksChanged(tracks);
     expect(tracksChanged).toHaveBeenCalledTimes(1);
     expect(tracksChanged).toHaveBeenCalledWith(tracks);
     unmount();

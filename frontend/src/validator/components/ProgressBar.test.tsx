@@ -6,7 +6,10 @@ import { ProgressBar } from "./ProgressBar";
 import { ProgressState } from "../types/ProgressState";
 
 describe("ProgressBar component", () => {
-  const progress = signal<ProgressState>();
+  const progress = signal<ProgressState>({
+    minValue: 0,
+    maxValue: 100,
+  });
 
   test.each([
     [undefined, undefined],

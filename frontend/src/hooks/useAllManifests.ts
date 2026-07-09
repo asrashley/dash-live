@@ -12,7 +12,7 @@ export interface UseAllManifestsHooks {
   error: Signal<string | null>;
 }
 
-export const AllManifestsContext = createContext<UseAllManifestsHooks>(null);
+export const AllManifestsContext = createContext<UseAllManifestsHooks>(null!);
 
 export function useAllManifests(): UseAllManifestsHooks {
   const apiRequests = useContext(EndpointContext);

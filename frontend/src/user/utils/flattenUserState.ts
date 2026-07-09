@@ -1,7 +1,7 @@
 import { FlattenedUserState } from "../types/FlattenedUserState";
-import { UserState } from "../types/UserState";
+import { InitialUserState } from "../types/InitialUserState";
 
-export function flattenUserState({ groups, ...user }: UserState): FlattenedUserState {
+export function flattenUserState({ groups, ...user }: InitialUserState): FlattenedUserState {
     const flat: FlattenedUserState = {
         ...user,
         adminGroup: groups.includes('ADMIN'),

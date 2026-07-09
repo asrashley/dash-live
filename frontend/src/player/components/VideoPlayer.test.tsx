@@ -140,9 +140,12 @@ describe("VideoPlayer component", () => {
     });
 
     expect(setPlayer).toHaveBeenCalledTimes(1);
-    const controls: PlayerControls | null = setPlayer.mock.calls[0][0];
+    const controls = setPlayer.mock.calls[0][0]!;
     expect(controls).not.toBeNull();
     expect(player).toBeDefined();
+    if (!player) { // keep TypeScript happy, but this should never happen
+      throw new Error("player is undefined");
+    }
     vi.spyOn(controls, "pause");
     vi.spyOn(controls, "play");
     vi.spyOn(controls, "skip");

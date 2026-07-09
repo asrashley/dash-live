@@ -112,12 +112,13 @@ describe("PlayVideoButton component", () => {
   });
 
   test("reloads when player changes", () => {
+    const backdrop = signal<boolean>(false);
     const initialAppState: AppStateType = {
       dialog,
       cinemaMode,
       playerLibrary,
-      backdrop: undefined,
-      closeDialog: vi.fn,
+      backdrop,
+      closeDialog: vi.fn(),
     };
     playerLibrary.value = {
       name: "dashjs",
