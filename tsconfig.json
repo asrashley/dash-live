@@ -1,28 +1,3 @@
 {
-  "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
-    "outDir": "./templates/dist/",
-    "jsx": "react-jsx",
-    "jsxImportSource": "preact",
-    "module": "ES2022",
-    "moduleResolution": "bundler",
-    "paths": {
-      "@dashlive/*": ["./frontend/@types/@dashlive/*"]
-    },
-    "resolveJsonModule": true,
-    "sourceMap": true,
-    "target": "ES2023",
-    "lib": ["es2024.promise"],
-    "plugins": [
-      {
-        "name": "typescript-plugin-css-modules"
-      }
-    ]
-  },
-  "include": [
-    "./frontend/@types/global.d.ts",
-    "./frontend/@types/@dashlive/*.d.ts",
-    "./frontend/src/**/*.ts",
-    "./frontend/src/**/*.tsx"
-  ]
+    "extends": "./frontend/config/tsconfig.common.json"
 }

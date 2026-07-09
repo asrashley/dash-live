@@ -3,7 +3,7 @@ import { commonConfig, rootDir } from "./webpack.common.js";
 
 const common = commonConfig({
   publicPath: '/static/html',
-  tsConfigFile: path.resolve(rootDir, "frontend/config/tsconfig.prod.json"),
+  tsConfigFile: path.resolve(rootDir, "tsconfig.prod.json"),
   devMode: false,
 });
 

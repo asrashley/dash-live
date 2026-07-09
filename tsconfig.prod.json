@@ -1,0 +1,11 @@
+{
+    "extends": "./frontend/config/tsconfig.common.json",
+    "compilerOptions": {
+        "rootDir": "./frontend/src"
+    },
+    "exclude": [
+        "./frontend/src/**/*.test.ts",
+        "./frontend/src/**/*.test.tsx",
+        "./frontend/src/test/**/*"
+    ]
+}
