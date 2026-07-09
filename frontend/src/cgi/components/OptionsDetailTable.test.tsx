@@ -20,8 +20,8 @@ function createOptionNames(): InputOptionName[] {
     grp.fields.forEach(({ name, fullName, shortName }) => {
       names.push({
         cgiName: name,
-        fullName,
-        shortName,
+        fullName: fullName!,
+        shortName: shortName!,
       });
     });
   });
@@ -53,13 +53,13 @@ describe("OptionsDetailTable component", () => {
         const row = getBySelector(`#opt_${field.shortName}`) as HTMLElement;
         const full = row.querySelector(".fullName") as HTMLElement | null;
         expect(full).not.toBeNull();
-        expect(full.innerHTML.trim()).toEqual(field.fullName);
+        expect(full!.innerHTML.trim()).toEqual(field.fullName);
         const sn = row.querySelector(".shortName") as HTMLElement | null;
         expect(sn).not.toBeNull();
-        expect(sn.innerHTML.trim()).toEqual(field.shortName);
+        expect(sn!.innerHTML.trim()).toEqual(field.shortName);
         const cgi = row.querySelector(".cgiName") as HTMLElement | null;
         expect(cgi).not.toBeNull();
-        expect(cgi.innerHTML.trim()).toEqual(field.name);
+        expect(cgi!.innerHTML.trim()).toEqual(field.name);
       });
     });
     expect(asFragment()).toMatchSnapshot();
@@ -69,22 +69,23 @@ describe("OptionsDetailTable component", () => {
     ["fullName"],
     ["shortName"],
     ["cgiName"],
-  ])("can sort by %s", (field: keyof InputOptionName) => {
+    ])("can sort by %s", (field: string) => {
+      const sortField = field as keyof InputOptionName;
     const { getBySelector, getAllBySelector } = renderWithProviders(<OptionsDetailTable />);
-    const heading = getBySelector(`th.${field} > a`) as HTMLElement;
+    const heading = getBySelector(`th.${sortField} > a`) as HTMLElement;
     fireEvent.click(heading);
     const items = [...allOptions.value];
     items.sort((a, b) => {
-      const aVal = a[field].toLowerCase();
-      const bVal = b[field].toLowerCase();
-      if (field === "shortName"){
+      const aVal = a[sortField].toLowerCase();
+      const bVal = b[sortField].toLowerCase();
+      if (sortField === "shortName"){
         return bVal.localeCompare(aVal);
       }
       return aVal.localeCompare(bVal);
     });
-    const cols = [...getAllBySelector(`td.${field}`)];
+    const cols = [...getAllBySelector(`td.${sortField}`)];
     cols.forEach((elt, idx) => {
-      expect(elt.innerHTML.trim()).toEqual(items[idx][field]);
+      expect(elt.innerHTML.trim()).toEqual(items[idx][sortField]);
     });
   });
 });

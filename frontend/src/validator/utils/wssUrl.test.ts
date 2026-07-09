@@ -1,6 +1,12 @@
 import { describe, expect, test } from "vitest"
 import { wssUrl } from "./wssUrl";
 
+declare global {
+    interface Window {
+        _SERVER_PORT_: number | null;
+    }
+}
+
 describe('wssUrl function', () => {
 
     test('generates WS url without a server port', () => {

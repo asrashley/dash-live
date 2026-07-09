@@ -63,7 +63,7 @@ export function useLocalStorage(): UseLocalStorageHook {
     dashOptions.value = data;
     const params = Object.fromEntries(
       Object.entries(data).filter(
-        ([key, value]) => defaultCgiOptions[key] !== value
+        ([key, value]) => defaultCgiOptions[key as keyof typeof defaultCgiOptions] !== value
       )
     );
     localStorage.setItem(LocalStorageKeys.DASH_OPTIONS, JSON.stringify(params));

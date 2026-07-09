@@ -11,7 +11,7 @@ export interface AlertProps {
 
 export function Alert({ text, level, onDismiss, id }: AlertProps) {
   const dismiss = useCallback(() => {
-    onDismiss(id);
+    onDismiss?.(id);
   }, [id, onDismiss]);
   const className = `alert alert-${level} ${
     onDismiss ? "alert-dismissible fade " : ""

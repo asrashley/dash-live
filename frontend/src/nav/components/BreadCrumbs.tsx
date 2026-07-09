@@ -10,9 +10,11 @@ function CrumbItem({ title, href, active, id, setLocation }: CrumbItemProps) {
     (ev: Event) => {
       const elt = ev.target as HTMLAnchorElement;
       const href = elt.getAttribute("href");
-      ev.preventDefault();
-      setLocation(href);
-      return false;
+      if (href) {
+        ev.preventDefault();
+        setLocation(href);
+        return false;
+      }
     },
     [setLocation]
   );

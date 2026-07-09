@@ -20,11 +20,14 @@ export default function LoginPage() {
   const error = useSignal<string | undefined>();
   const submitting = useSignal<boolean>(false);
   const onLogin = useCallback((request: LoginRequest) => {
+    if(!apiRequests) {
+        return;
+    }
     submitting.value = true;
     apiRequests.loginUser(request).then((resp: LoginResponse) => {
         if (resp.success) {
             error.value = undefined;
-            setUser(resp.user);
+            setUser(resp.user ?? null);
             setRefreshToken(resp.refreshToken ?? null);
             setLocation(uiRouteMap.home.url());
         } else {

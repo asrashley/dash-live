@@ -9,7 +9,17 @@ import { adminUser, mediaUser, normalUser } from "../../test/MockServer";
 import { UserState } from "../../user/types/UserState";
 
 describe("NavBar component", () => {
-  const user = signal<UserState>();
+  const user = signal<UserState>({
+    isAuthenticated: false,
+    lastLogin: null,
+    mustChange: false,
+    groups: [],
+    permissions: {
+      admin: false,
+      media: false,
+      user: false
+    },
+  });
 
   beforeEach(() => {
     user.value = {

@@ -6,9 +6,17 @@ import { LoadingSpinner } from "../../components/LoadingSpinner";
 import { Card } from "../../components/Card";
 import { Alert } from "../../components/Alert";
 import { EditUserForm, EditUserFormProps } from "./EditUserForm";
+import { EditUserState } from "../types/EditUserState";
+
+function NetworkErrorAlert({ networkError }: { networkError: string | null }) {
+  if (!networkError) {
+    return null;
+  }
+  return <Alert id={0} level="warning" text={networkError} />;
+}
 
 export interface EditUserCardProps {
-  user: EditUserFormProps["user"];
+  user: ReadonlySignal<EditUserState | undefined>;
   networkError?: ReadonlySignal<string | null>;
   validationErrors: EditUserFormProps["errors"];
   disabledFields: EditUserFormProps["disabledFields"];
@@ -41,9 +49,9 @@ export function EditUserCard({
   }
   return (
     <Card id="edit-user" header={header}>
-      {networkError?.value ? <Alert id={0} level="warning" text={networkError} /> : ""}
+      <NetworkErrorAlert networkError={networkError?.value ?? null} />
       <EditUserForm
-        user={user}
+        user={user as ReadonlySignal<EditUserState>}
         setValue={setValue}
         disabledFields={disabledFields}
         errors={validationErrors}

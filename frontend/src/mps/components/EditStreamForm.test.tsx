@@ -32,14 +32,14 @@ vi.mock("wouter-preact", async (importOriginal) => {
 function ConfirmDeleteButton() {
   const { dialog } = useContext(AppStateContext);
   const onClick = () => {
-    console.log('click', dialog.value.confirmDelete);
-    if (!dialog.value?.confirmDelete) {
+    const confirmDelete = dialog.value?.confirmDelete;
+    if (!confirmDelete) {
       return false;
     }
     dialog.value = {
       backdrop: true,
       confirmDelete: {
-        ...dialog.value.confirmDelete,
+        ...confirmDelete,
         confirmed: true,
       },
     };

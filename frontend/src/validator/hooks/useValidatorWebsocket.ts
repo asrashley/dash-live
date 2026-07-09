@@ -158,7 +158,7 @@ export function useValidatorWebsocket(wssUrl: string): UseValidatorWebsocketHook
                     details: decodes.map(({parsed, error, label}) => ({
                         label,
                         error,
-                        details: parsed.map(p => p.decode),
+                        details: parsed.map(p => p.decode ?? p.warning ?? p.error ?? p.title ?? ''),
                     })),
                 };
                 return ci;

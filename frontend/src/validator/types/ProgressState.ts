@@ -2,7 +2,7 @@ export interface ProgressState {
     currentValue?: number;
     minValue: number;
     maxValue: number;
-    text: string;
+    text?: string;
     finished?: boolean;
     error?: boolean;
  }

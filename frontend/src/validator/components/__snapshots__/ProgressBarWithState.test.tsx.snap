@@ -14,8 +14,9 @@ exports[`ProgressBarWithState component > renders when state=active 1`] = `
           aria-valuemin="0"
           class="progress-bar progress-bar-striped visually-hidden"
           role="progressbar"
+          style="width: 0%;"
         >
-          NaN%
+          0%
         </div>
         <div
           class="progress-text"
@@ -48,8 +49,9 @@ exports[`ProgressBarWithState component > renders when state=cancelled 1`] = `
           aria-valuemin="0"
           class="progress-bar progress-bar-striped visually-hidden"
           role="progressbar"
+          style="width: 0%;"
         >
-          NaN%
+          0%
         </div>
         <div
           class="progress-text"
@@ -82,8 +84,9 @@ exports[`ProgressBarWithState component > renders when state=cancelling 1`] = `
           aria-valuemin="0"
           class="progress-bar progress-bar-striped visually-hidden"
           role="progressbar"
+          style="width: 0%;"
         >
-          NaN%
+          0%
         </div>
         <div
           class="progress-text"
@@ -116,8 +119,9 @@ exports[`ProgressBarWithState component > renders when state=disconnected 1`] = 
           aria-valuemin="0"
           class="progress-bar progress-bar-striped visually-hidden"
           role="progressbar"
+          style="width: 0%;"
         >
-          NaN%
+          0%
         </div>
         <div
           class="progress-text"
@@ -150,8 +154,9 @@ exports[`ProgressBarWithState component > renders when state=done 1`] = `
           aria-valuemin="0"
           class="progress-bar progress-bar-striped visually-hidden"
           role="progressbar"
+          style="width: 0%;"
         >
-          NaN%
+          0%
         </div>
         <div
           class="progress-text"
@@ -184,8 +189,9 @@ exports[`ProgressBarWithState component > renders when state=idle 1`] = `
           aria-valuemin="0"
           class="progress-bar progress-bar-striped visually-hidden"
           role="progressbar"
+          style="width: 0%;"
         >
-          NaN%
+          0%
         </div>
         <div
           class="progress-text"

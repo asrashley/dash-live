@@ -5,6 +5,7 @@ import { signal } from "@preact/signals";
 import { useAllStreams, type UseAllStreamsHook } from "./useAllStreams";
 import { useAllMultiPeriodStreams, type UseAllMultiPeriodStreamsHook } from "./useAllMultiPeriodStreams";
 import { DecoratedStream } from "../types/DecoratedStream";
+import { MultiPeriodStreamSummary } from "../types/MultiPeriodStreamSummary";
 import { useCombinedStreams } from "./useCombinedStreams";
 
 vi.mock("./useAllStreams");
@@ -15,11 +16,11 @@ describe("useCombinedStreams", () => {
     const mockUseAllMultiPeriodStreams = vi.mocked(useAllMultiPeriodStreams);
     const allStreamsError = signal<string | null>(null);
     const allStreamsLoaded = signal<boolean>(false);
-    const allStreams = signal([]);
+    const allStreams = signal<DecoratedStream[]>([]);
     const streamsMap = signal<Map<string, DecoratedStream>>(new Map());
     const mpsError = signal<string | null>(null);
     const mpsLoaded = signal<boolean>(false);
-    const mpsStreams = signal([]);
+    const mpsStreams = signal<MultiPeriodStreamSummary[]>([]);
     const allStreamsHook: UseAllStreamsHook = {
         allStreams,
         streamsMap,
@@ -80,12 +81,12 @@ describe("useCombinedStreams", () => {
 
     test("sorts stream names by title", () => {
         allStreams.value = [
-            { directory: "dir1", title: "Bravo" },
-            { directory: "dir2", title: "Alpha" },
+            { directory: "dir1", title: "Bravo" } as unknown as DecoratedStream,
+            { directory: "dir2", title: "Alpha" } as unknown as DecoratedStream,
         ];
         mpsStreams.value = [
-            { name: "mps1", title: "Delta" },
-            { name: "mps2", title: "Charlie" },
+            { name: "mps1", title: "Delta" } as unknown as MultiPeriodStreamSummary,
+            { name: "mps2", title: "Charlie" } as unknown as MultiPeriodStreamSummary,
         ];
         const { result } = renderHook(() => useCombinedStreams());
         expect(mockUseAllStreams).toHaveBeenCalled();

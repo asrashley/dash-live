@@ -17,9 +17,13 @@ import { fireEvent } from "@testing-library/preact";
 
 describe("OptionsRow component", () => {
   const canModify = signal<boolean>(false);
-  const model = signal<DecoratedMultiPeriodStream>();
+  const model = signal<DecoratedMultiPeriodStream>({
+    ...mpsStream,
+    modified: false,
+    lastModified: 0
+  });
   const multiPeriodStreamHook = mock<UseMultiPeriodStreamHook>({
-    loaded: signal<string | undefined>(),
+    loaded: signal<string | null>(null),
     modified: signal<boolean>(false),
     errors: signal<MpsModelValidationErrors>({}),
     isValid: signal<boolean>(true),

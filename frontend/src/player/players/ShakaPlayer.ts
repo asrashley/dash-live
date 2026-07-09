@@ -30,6 +30,24 @@ export interface ShakaError extends Error {
     code: number;
 }
 
+interface WindowWithShaka extends Window {
+    shaka: {
+        polyfill: {
+            installAll(): void;
+        };
+        log?: {
+            setLevel(level: unknown): void;
+            Level: {
+                V1: string;
+            };
+        };
+        Player: new () => shaka.Player;
+        util: {
+            EventManager: new () => shaka.util.EventManager;
+        };
+    };
+}
+
 function isShakaError(err: unknown): err is ShakaError {
     return typeof err === 'object' && err !== null && 'severity' in err && 'category' in err && 'code' in err;
 }
@@ -83,7 +101,7 @@ export class ShakaPlayer extends AbstractDashPlayer {
         if (textEnabled) {
             shakaConfig.preferredTextLanguage = this.props.textLanguage;
         }
-        const { polyfill, log, util, Player } = window['shaka'];
+        const { polyfill, log, util, Player } = (window as unknown as WindowWithShaka).shaka;
         polyfill.installAll();
         if (log?.setLevel) {
             log.setLevel(log.Level.V1);
@@ -94,21 +112,23 @@ export class ShakaPlayer extends AbstractDashPlayer {
         if (drmSelection.includes('clearkey') && clearkey.licenseUrl) {
             shakaConfig.drm.servers['org.w3.clearkey'] = clearkey.licenseUrl;
         }
-        this.player = new Player();
-        this.eventManager = new util.EventManager();
-        this.player.attach(videoElement);
-        this.player.configure(shakaConfig);
+        const player = new Player();
+        this.player = player;
+        const eventManager = new util.EventManager();
+        this.eventManager = eventManager;
+        player.attach(videoElement);
+        player.configure(shakaConfig);
         if (this.subtitlesElement) {
-            this.player.setVideoContainer(this.subtitlesElement);
+            player.setVideoContainer(this.subtitlesElement);
         }
-        this.player.addEventListener('error', this.onErrorEvent);
+        player.addEventListener('error', (ev: Event) => this.onErrorEvent(ev as CustomEvent));
         try {
-            await this.player.load(mpd);
+            await player.load(mpd);
         } catch (err) {
             this.props.logEvent('error', `${err}`);
         }
-        this.eventManager.listen(this.player, 'loaded', this.onLoadedEvent);
-        this.eventManager.listen(this.player, 'trackschanged', this.onTracksChanged);
+        eventManager.listen(player, 'loaded', this.onLoadedEvent);
+        eventManager.listen(player, 'trackschanged', this.onTracksChanged);
         videoElement.addEventListener('canplay', this.onCanPlayEvent);
         const styles: HTMLLinkElement = document.createElement('link');
         styles.setAttribute("rel", "stylesheet");
@@ -128,10 +148,14 @@ export class ShakaPlayer extends AbstractDashPlayer {
         if (!track){
             return;
         }
-        const textTracks: ShakaTextTrack[] = this.player.getTextTracks() || [];
+        const player = this.player;
+        if (!player) {
+            return;
+        }
+        const textTracks: ShakaTextTrack[] = player.getTextTracks() || [];
         const selTrack = textTracks.find((trk: ShakaTextTrack) => track.id === `${trk.id}`);
         if (selTrack) {
-            this.player.selectTextTrack(selTrack as unknown as shaka.extern.Track);
+            player.selectTextTrack(selTrack as unknown as shaka.extern.Track);
         }
     }
 

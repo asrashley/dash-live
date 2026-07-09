@@ -13,7 +13,7 @@ describe("Alert", () => {
     expect(queryBySelector("button")).toBeNull();
     const elt = document.getElementById('alert_2');
     expect(elt).not.toBeNull();
-    expect(elt.className).toEqual('alert alert-warning show');
+    expect(elt!.className).toEqual('alert alert-warning show');
   });
 
   test("should display Alert with dismiss button", () => {
@@ -28,11 +28,11 @@ describe("Alert", () => {
     );
     const elt = document.getElementById('alert_1');
     expect(elt).not.toBeNull();
-    expect(elt.classList.toString()).toEqual('alert alert-info alert-dismissible fade show');
+    expect(elt!.classList.toString()).toEqual('alert alert-info alert-dismissible fade show');
     expect(container.textContent).toMatch("alert text");
     const btn = queryBySelector("button");
     expect(btn).not.toBeNull();
-    fireEvent.click(btn);
+    fireEvent.click(btn!);
     expect(onDismiss).toHaveBeenCalled();
   });
 });

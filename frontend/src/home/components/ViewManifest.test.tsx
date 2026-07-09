@@ -20,7 +20,8 @@ vi.mock("../../hooks/useMessages", async (importOriginal) => {
 describe("ViewManifest component", () => {
   const useMessagesMock = vi.mocked(useMessages);
   const messagesMock = mock<UseMessagesHook>();
-  const manifestUrl = signal<URL>();
+  const manifestUrl = signal<URL>(
+    new URL("/dash/vod/bbb/hand_made.mpd", document.location.href));
   let endpoint: FakeEndpoint;
 
   beforeEach(() => {
@@ -67,9 +68,9 @@ describe("ViewManifest component", () => {
   test("shows error if manifest fetch fails due to a network error", async () => {
     const prom = new Promise<void>((resolve) => {
     endpoint.setResponseModifier(
-      "get", 
+      "get",
       manifestUrl.value.pathname,
-      async () => { 
+      async () => {
         resolve();
         throw new Error("Network error");
     });

@@ -53,7 +53,7 @@ export function EditStreamCard({
   const modelContext = useMultiPeriodStream({ name, newStream });
   const streamsContext = useAllStreams();
   const header = <Header name={name} newStream={newStream} />;
-  const loaded = useComputed<boolean>(() => (newStream || modelContext.loaded.value) && streamsContext.loaded.value);
+  const loaded = useComputed<boolean>(() => (newStream || !!modelContext.loaded.value) && !!streamsContext.loaded.value);
   const error = useComputed<string | null>(() => {
     const errors: string[] = [];
     if (!newStream && modelContext.loaded.value) {

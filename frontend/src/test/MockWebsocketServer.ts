@@ -59,8 +59,8 @@ export class MockWebsocketServer {
         mockSocket.connect.mockImplementation(server.connect);
         mockSocket.disconnect.mockImplementation(server.disconnect);
         mockSocket.on.mockImplementation(server.on);
-        mockSocket.off.mockImplementation(server.off);
-        mockSocket.emit.mockImplementation(server.emit);
+        mockSocket.off.mockImplementation((event) => server.off(event));
+        mockSocket.emit.mockImplementation((event, data) => server.emit(event, data));
         return { endpoint, server };
     }
 
@@ -116,8 +116,10 @@ export class MockWebsocketServer {
         finished ||= pct >= 100;
         const generators: GenerateServerEvent[] = [];
         while (this.pending.length > 0 && this.pending[0].pct <= pct) {
-            const { generate } = this.pending.shift();
-            generators.push(generate);
+            const pendingEvent = this.pending.shift();
+            if (pendingEvent) {
+                generators.push(pendingEvent.generate);
+            }
         }
         finished ||= this.pending.length === 0;
         if (pct !== this.progress.pct || finished !== this.progress.finished) {
@@ -132,7 +134,7 @@ export class MockWebsocketServer {
             const [name, payload] = await generate(pct);
             this.dispatchEvent(name, payload);
         }
-        return this.progress.finished
+        return this.progress.finished === true;
     }
 
     connect = () => {
@@ -182,14 +184,16 @@ export class MockWebsocketServer {
         return this.sock;
     };
 
-    off = (event: string) => {
-        this.listeners.delete(event);
+    off = (event?: string) => {
+        if (event) {
+            this.listeners.delete(event);
+        }
         return this.sock;
     };
 
-    emit = (event: string, data: object) => {
+    emit = (event: string, data?: object) => {
         if (!this.clientIsConnected) {
-            return;
+            return this.sock;
         }
         if (event !== 'cmd') {
             throw new Error(`unknown event "${event}"`);
@@ -291,10 +295,14 @@ export class MockWebsocketServer {
     }
 
     private async cancelValidation() {
+        const settings = this.settings;
+        if (!settings) {
+            return;
+        }
         const stopPct = this.progress.pct + 3;
         log.debug(`cancelling validation at ${stopPct}%`);
         this.pending = this.pending.filter((item) => item.pct <= stopPct);
-        const dur = this.settings.duration * stopPct / 100;
+        const dur = settings.duration * stopPct / 100;
         this.pending.push(mkInfoEvent(stopPct, `Validation aborted after ${dur} seconds`));
         this.pending.push({
             pct: stopPct,
@@ -334,7 +342,11 @@ export class MockWebsocketServer {
     }
 
     private generateManifestEvent: GenerateServerEvent = async () => {
-        const url = new URL(this.settings.manifest);
+        const settings = this.settings;
+        if (!settings) {
+            throw new Error('validation has not started');
+        }
+        const url = new URL(settings.manifest);
         const mpd = await this.endpoint.fetchFixtureText(url.pathname);
         const mpdEv: ManifestEvent = {
             text: mpd.split('\n'),

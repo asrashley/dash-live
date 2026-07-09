@@ -1,38 +1,45 @@
+import { useComputed, type ReadonlySignal } from "@preact/signals";
 import { useCallback, useContext } from "preact/hooks";
 
 import { AllStreamsContext } from '../../hooks/useAllStreams';
 import { DecoratedStream } from "../../types/DecoratedStream";
 
 export interface StreamSelectionProps {
-  value?: DecoratedStream,
-  onChange: (props: {name: string, value: number}) => void;
+  value: ReadonlySignal<DecoratedStream| undefined>,
   name: string;
-  error?: string;
+  error?: ReadonlySignal<string| undefined>;
   required?: boolean;
+  onChange: (props: {name: string, value: number}) => void;
 }
 
 export function StreamSelection({ value, onChange, name, error, required }: StreamSelectionProps) {
   const { allStreams } = useContext(AllStreamsContext);
-  const validationClass = error
-    ? " is-invalid"
-    : value
-    ? " is-valid"
+  const className = useComputed<string>(() => {
+    const validationClass = error?.value
+      ? " is-invalid"
+      : value.value
+      ? " is-valid"
     : "";
-  const className = `form-select${validationClass}`;
+    return `form-select${validationClass}`;
+  });
+  const selectValue = useComputed(() => value.value?.pk ?? "");
 
   const changeHandler = useCallback(
-    (ev) => {
-      onChange({
-        name,
-        value: parseInt(ev.target.value, 10),
-      });
+    (ev: Event) => {
+      const value = parseInt((ev.target as HTMLSelectElement).value, 10);
+      if (!isNaN(value)) {
+        onChange({
+          name,
+          value,
+        });
+      }
     },
     [onChange, name]
   );
 
   return <select
     className={className}
-    value={value?.pk}
+    value={selectValue}
     name={name}
     onChange={changeHandler}
     required={required}

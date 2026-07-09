@@ -12,7 +12,7 @@ describe("useStreamOptions hook", () => {
     const streamNames = signal<string[]>([]);
     const streamsMap = signal<Map<string, CombinedStream>>(new Map());
     const useLocalStorageMock = vi.mocked(useLocalStorage);
-    const dashOptions = signal<{ [key: string]: string | number | boolean }>({});
+    const dashOptions = signal<{ [key: string]: string | number | boolean | undefined }>({});
     const setDashOption = vi.fn();
     const resetDashOptions = vi.fn();
     const refreshToken = signal<JWToken | null>(null);
@@ -155,7 +155,7 @@ describe("useStreamOptions hook", () => {
     test.each([true, false])("disabledFields matches MPS stream value %s", (mps: boolean) => {
         dashOptions.value.stream = mps ? "stream2" : "stream1";
         const { result } = renderHook((() => useStreamOptions({ streamNames, streamsMap })));
-        expect(result.current.disabledFields.value).toEqual({
+        expect(result.current.disabledFields!.value).toEqual({
             mode__odvod: mps,
         });
     });

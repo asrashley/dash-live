@@ -22,6 +22,9 @@ export function LoginLogoutLink() {
     setLocation(uiRouteMap.changePassword.url());
   }, [setLocation]);
   const onLogOut = useCallback(async () => {
+    if (!api) {
+      return;
+    }
     setExpanded(false);
     setUser(null);
     try {

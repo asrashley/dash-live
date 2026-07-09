@@ -14,13 +14,13 @@ export interface UseAllMultiPeriodStreamsHook {
   sortAscending: boolean;
 }
 
-export const AllMultiPeriodStreamsContext = createContext<UseAllMultiPeriodStreamsHook>(null);
+export const AllMultiPeriodStreamsContext = createContext<UseAllMultiPeriodStreamsHook>(null!);
 
 function sortStreams(streams: ReadonlySignal<MultiPeriodStreamSummary[]>, field: string, ascending: boolean): MultiPeriodStreamSummary[] {
   const newOrder = [...streams.value];
   newOrder.sort((a, b) => {
-    const left = a[field];
-    const right = b[field];
+    const left = String(a[field as keyof MultiPeriodStreamSummary]);
+    const right = String(b[field as keyof MultiPeriodStreamSummary]);
     if (left === right) {
       return 0;
     }

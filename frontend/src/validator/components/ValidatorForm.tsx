@@ -84,6 +84,12 @@ const validatorForm: StaticInputProps[] = [
   },
 ];
 
+type DisabledFieldsMap = {
+  prefix?: boolean;
+  title?: boolean;
+  save?: boolean;
+};
+
 export interface ValidatorFormProps {
   data: ReadonlySignal<ValidatorSettings>;
   setValue: SetValueFunc;
@@ -95,15 +101,15 @@ export interface ValidatorFormProps {
 export function ValidatorForm({ state, data, setValue, start, cancel }: ValidatorFormProps) {
   const { user } = useContext(WhoAmIContext);
   const { allStreams } = useAllStreams();
-  const disabledFields = useComputed(() => {
-    const rv = {};
+  const disabledFields = useComputed<DisabledFieldsMap>(() => {
+    const rv: DisabledFieldsMap = {};
     if (!user.value.permissions.media) {
-      rv["prefix"] = true;
-      rv["save"] = true;
-      rv["title"] = true;
+      rv.prefix = true;
+      rv.save = true;
+      rv.title = true;
     } else if (!data.value.save) {
-      rv["prefix"] = true;
-      rv["title"] = true;
+      rv.prefix = true;
+      rv.title = true;
     }
     return rv;
   });

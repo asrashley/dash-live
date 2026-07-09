@@ -53,7 +53,7 @@ export function useStreamOptions({ streamNames, streamsMap }: UseStreamOptionsPr
   const drms = useComputed<EnabledDrmSystems>(() => Object.fromEntries(drmSystems.map(name => [name, data.value[name] === "1"])));
   const nonDefaultOptions = useComputed<InputFormData>(() => {
     const params = Object.entries(data.value)
-      .filter(([key, value]) => defaultCgiOptions[key] != value)
+      .filter(([key, value]) => defaultCgiOptions[key as keyof typeof defaultCgiOptions] != value)
       .filter(([key]) => !skipKeys.test(key));
     const drm = drmSystems.filter(system => data.value[system] === "1").map(system => {
       const drmLoc = data.value[`${system}__drmloc`];

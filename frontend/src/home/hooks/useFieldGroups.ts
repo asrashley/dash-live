@@ -47,12 +47,9 @@ export function useFieldGroups(): UseFieldGroupsHook {
       title: "Manifest",
       text: "Manifest template to use",
       type: "select",
-      options: names.value.map((name: string) => {
-        const msft = allManifests.value[name];
-        return {
-          title: msft.title,
-          value: name,
-        };
+      options: names.value.flatMap((name: string) => {
+        const msft = allManifests.value?.[name];
+        return msft ? [{ title: msft.title, value: name }] : [];
       }),
     };
     const selectStream: StaticInputProps = {
@@ -62,10 +59,10 @@ export function useFieldGroups(): UseFieldGroupsHook {
       title: "Stream",
       text: "Stream to play",
       type: "select",
-      options: streamNames.value.map((value: string) => ({
-        title: streamsMap.value.get(value).title,
-        value,
-      })),
+      options: streamNames.value.flatMap((value: string) => {
+        const stream = streamsMap.value.get(value);
+        return stream ? [{ title: stream.title, value }] : [];
+      }),
     };
     const selectDrmSystem: StaticInputProps = {
       name: "drms",

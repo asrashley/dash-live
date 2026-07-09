@@ -17,7 +17,7 @@ export interface UseCombinedStreamsHook {
   error: Signal<string | null>;
 }
 
-export const UseCombinedStreams = createContext(null);
+export const UseCombinedStreams = createContext<UseCombinedStreamsHook>(null!);
 
 export function useCombinedStreams(): UseCombinedStreamsHook {
   const { allStreams: standardStreams, loaded: streamsLoaded, error: streamsError } = useAllStreams();
@@ -35,10 +35,12 @@ export function useCombinedStreams(): UseCombinedStreamsHook {
   });
   const streamNames = useComputed<string[]>(() => {
     const smap = streamsMap.value;
-    const names = [...smap.keys()];
-    names.sort((a, b) => {
-      const t1 = smap.get(a).title;
-      const t2 = smap.get(b).title;
+    const names: string[] = [...smap.keys()];
+    names.sort((a: string, b: string) => {
+      const streamA = smap.get(a);
+      const streamB = smap.get(b);
+      const t1 = streamA?.title ?? '';
+      const t2 = streamB?.title ?? '';
       return t1.localeCompare(t2);
     });
     return names;

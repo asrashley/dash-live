@@ -23,7 +23,7 @@ function MultiSelectCheckbox({
   onClick,
 }: MultiSelectCheckboxProps) {
   const checked = useComputed<boolean>(() => data.value[name] === "1" || data.value[name] === true);
-  const disabled = useComputed<boolean>(() => !!disabledFields.value[name]);
+  const disabled = useComputed<boolean>(() => !!disabledFields?.value[name]);
 
   return (
     <div className="form-check form-check-inline" key={name}>

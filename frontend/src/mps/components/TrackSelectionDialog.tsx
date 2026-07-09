@@ -28,7 +28,7 @@ function generateMediaTracks(
       enabled: trk !== undefined,
       ...stk,
       ...trk,
-    };
+    } as DecoratedMpsTrack;
   });
 }
 
@@ -57,7 +57,7 @@ export function TrackSelectionDialog({ onClose }: TrackSelectionDialogProps) {
   );
 
   const updateTrack = useCallback(
-    (track) => {
+    (track: DecoratedMpsTrack) => {
       if (!trackPicker.value) {
         return;
       }
@@ -70,13 +70,17 @@ export function TrackSelectionDialog({ onClose }: TrackSelectionDialogProps) {
   );
 
   const selectAllTracks = useCallback(() => {
+    const picker = trackPicker.value;
+    if (!picker) {
+      return;
+    }
     const newTracks = mediaTracks.value.map((trk) => ({
       ...trk,
       enabled: !allSelected.value,
     }));
     newTracks.forEach((trk) => {
       modifyPeriod({
-        periodPk: trackPicker.value.pk,
+        periodPk: picker.pk,
         track: trk,
       });
     });

@@ -7,6 +7,12 @@ import { InputFormGroup } from '../types/InputFormGroup';
 import { SetValueFunc } from '../types/SetValueFunc';
 import { FormRowMode } from '../types/FormRowMode';
 import { InputProps } from '../types/InputProps';
+import type { JSX } from 'preact';
+
+interface AnchorProps extends JSX.HTMLAttributes<HTMLAnchorElement> {
+  href: string;
+  'aria-disabled'?: boolean;
+}
 
 interface TabLinkProps {
   activeTab: string;
@@ -16,12 +22,12 @@ interface TabLinkProps {
 }
 function TabLink({activeTab, setActive, disabled, name}: TabLinkProps) {
     const active = activeTab === name;
-    const props = {
+    const props: AnchorProps = {
         className: `nav-link ${active ? "active" : ""}`,
         href: '#',
         id: `${name}-tab`,
     };
-    const onClick = useCallback((ev) => {
+    const onClick = useCallback((ev: Event) => {
         ev.preventDefault();
         setActive(name);
     }, [setActive, name]);

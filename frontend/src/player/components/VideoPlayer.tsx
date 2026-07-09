@@ -9,9 +9,9 @@ import { PlayerControls } from "../types/PlayerControls";
 export type VideoPlayerProps = Omit<VideoElementProps, 'subtitlesElement'>;
 
 export function VideoPlayer({setPlayer, ...props}: VideoPlayerProps) {
-  const subtitlesElement = useSignal<HTMLDivElement | undefined>();
+  const subtitlesElement = useSignal<HTMLDivElement | null>(null);
   const vidControls = useSignal<PlayerControls | null>(null);
-  const setSubsElt = useCallback((elt: HTMLDivElement) => {
+  const setSubsElt = useCallback((elt: HTMLDivElement | null) => {
     subtitlesElement.value = elt;
   }, [subtitlesElement]);
   const activeIcon = useSignal<PlaybackIconType | null>(null);
@@ -55,10 +55,9 @@ export function VideoPlayer({setPlayer, ...props}: VideoPlayerProps) {
   }, [setIcon, setPlayer, vidControls]);
 
   useSignalEffect(() => {
-    const subs = subtitlesElement.value;
     const controls = vidControls.value;
-    if (controls && subs) {
-      controls.setSubtitlesElement(subs);
+    if (controls) {
+      controls.setSubtitlesElement(subtitlesElement.value);
     }
   });
 

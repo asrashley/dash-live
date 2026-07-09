@@ -35,8 +35,8 @@ export function EditStreamForm({ name, newStream }: EditStreamFormProps) {
       ? "was-validated"
       : "has-validation";
   });
-  const nameError = useComputed<string>(() => errors.value.name);
-  const titleError = useComputed<string>(() => errors.value.title);
+  const nameError = useComputed<string>(() => errors.value.name ?? "");
+  const titleError = useComputed<string>(() => errors.value.title ?? "");
 
   const setName = useCallback(
     (ev: Event) => {

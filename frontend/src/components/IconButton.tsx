@@ -1,7 +1,7 @@
 import { type JSX } from "preact";
 import { Icon, IconProps } from "./Icon";
 
-function doNothing(ev) {
+function doNothing(ev: JSX.TargetedEvent<HTMLAnchorElement>) {
     ev.preventDefault();
     return false;
   }

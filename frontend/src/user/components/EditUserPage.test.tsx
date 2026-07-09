@@ -49,8 +49,11 @@ describe("EditUserPage component", () => {
     server = new MockDashServer({
       endpoint,
     });
-    user = server.login(adminUser.username, adminUser.password);
-    expect(user).not.toBeNull();
+    const admin = server.login(adminUser.username, adminUser.password);
+    if (!admin) {
+      throw new Error("Failed to login as admin user");
+    }
+    user = admin;
     apiReq = new ApiRequests({ needsRefreshToken, hasUserInfo });
     apiReq.setRefreshToken(user.refreshToken);
     apiReq.setAccessToken(user.accessToken);
@@ -144,7 +147,7 @@ describe("EditUserPage component", () => {
       if (success) {
         const newUser = server.getUser({ username });
         expect(newUser).toBeDefined();
-        expect(newUser.password).toEqual(password);
+        expect(newUser!.password).toEqual(password);
         expect(body).toEqual({
           errors: [],
           success,

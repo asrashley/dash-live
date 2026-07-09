@@ -1,4 +1,5 @@
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { signal } from "@preact/signals";
 import { fireEvent } from "@testing-library/preact";
 
 import { MpsPeriod } from "../../types/MpsPeriod";
@@ -44,11 +45,20 @@ describe("TrackSelectionButton component", () => {
     stream: dStream.pk,
     tracks,
   };
+  const stream = signal<DecoratedStream | undefined>(dStream);
   const selectTracks = vi.fn();
+
+  beforeEach(() => {
+    stream.value = undefined;
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
 
   test("no selected stream", () => {
     const { getByText, getBySelector } = renderWithProviders(
-      <TrackSelectionButton period={period} selectTracks={selectTracks} />
+      <TrackSelectionButton period={period} stream={stream} selectTracks={selectTracks} />
     );
     getByText("----");
     const elt = getBySelector('.btn') as HTMLAnchorElement;
@@ -60,7 +70,7 @@ describe("TrackSelectionButton component", () => {
     prd.tracks[0].enabled = false;
     prd.tracks[1].enabled = false;
     const { getByText, getBySelector } = renderWithProviders(
-      <TrackSelectionButton period={prd} selectTracks={selectTracks} />
+      <TrackSelectionButton period={prd} stream={stream} selectTracks={selectTracks} />
     );
     getByText("----");
     const elt = getBySelector('.btn') as HTMLAnchorElement;
@@ -73,10 +83,11 @@ describe("TrackSelectionButton component", () => {
     prd.tracks = [period.tracks[0]];
     const dStream2 = structuredClone(dStream);
     dStream2.tracks = [dStream.tracks[0]];
+    stream.value = dStream2;
     const { getByText } = renderWithProviders(
       <TrackSelectionButton
         period={prd}
-        stream={dStream2}
+        stream={stream}
         selectTracks={selectTracks}
       />
     );
@@ -86,10 +97,11 @@ describe("TrackSelectionButton component", () => {
   test("1/3 selected tracks", () => {
     const prd = structuredClone(period);
     prd.tracks[1].enabled = false;
+    stream.value = dStream;
     const { getByText } = renderWithProviders(
       <TrackSelectionButton
         period={prd}
-        stream={dStream}
+        stream={stream}
         selectTracks={selectTracks}
       />
     );
@@ -97,10 +109,11 @@ describe("TrackSelectionButton component", () => {
   });
 
   test("2/3 selected tracks", () => {
+    stream.value = dStream;
     const { getByText } = renderWithProviders(
       <TrackSelectionButton
         period={period}
-        stream={dStream}
+        stream={stream}
         selectTracks={selectTracks}
       />
     );
@@ -108,10 +121,11 @@ describe("TrackSelectionButton component", () => {
   });
 
   test('change selection', () => {
+    stream.value = dStream;
     const { getBySelector } = renderWithProviders(
         <TrackSelectionButton
           period={period}
-          stream={dStream}
+          stream={stream}
           selectTracks={selectTracks}
         />
       );

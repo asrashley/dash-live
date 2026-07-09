@@ -12,7 +12,7 @@ export interface UseContentRolesHook {
   error: ReadonlySignal<string | null>;
 }
 
-export const ContentRolesContext = createContext<UseContentRolesHook>(null);
+export const ContentRolesContext = createContext<UseContentRolesHook>(null!);
 
 export function useContentRoles(): UseContentRolesHook {
   const apiRequests = useContext(EndpointContext);

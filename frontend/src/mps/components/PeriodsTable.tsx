@@ -3,11 +3,11 @@ import { useComputed } from "@preact/signals";
 
 import { Alert } from '../../components/Alert';
 import { RenderItemProps, DragAndDropList } from '../../components/DragAndDropList';
+import { GuestPeriodRow } from "./GuestPeriodRow";
+import { PeriodRow } from "./PeriodRow";
 
 import { MultiPeriodModelContext } from '../../hooks/useMultiPeriodStream';
 import { MpsPeriod } from "../../types/MpsPeriod";
-import { GuestPeriodRow } from "./GuestPeriodRow";
-import { PeriodRow } from "./PeriodRow";
 import { WhoAmIContext } from "../../user/hooks/useWhoAmI";
 import { rowColours } from "./rowColours";
 
@@ -44,8 +44,8 @@ export function PeriodsTable() {
   });
 
   const setPeriodOrder = useCallback(
-    (items: MpsPeriod[]) => {
-      const pks = items.map((prd: MpsPeriod) => prd.pk);
+    (items: object[]) => {
+      const pks = (items as MpsPeriod[]).map((prd: MpsPeriod) => prd.pk);
       setPeriodOrdering(pks);
     },
     [setPeriodOrdering]

@@ -36,6 +36,7 @@ export function PlaybackControls({
 
   const playPause = () => {
     const player = controls.value;
+    if (!player) return;
     if (!player.hasDashPlayer.value || player.isPaused.value) {
       player.play();
     } else {
@@ -60,23 +61,23 @@ export function PlaybackControls({
       id="playback-controls"
       data-testid="playback-controls"
       className="d-flex flex-row btn-group border border-secondary">
-      <button class="btn btn-secondary pe-1" disabled={disablePlayBtn} onClick={playPause} data-testid="play-pause-btn">
+      <button className="btn btn-secondary pe-1" disabled={disablePlayBtn} onClick={playPause} data-testid="play-pause-btn">
         <Icon name={playPauseIcon} />
       </button>
       <button
-        class="btn btn-secondary"
+        className="btn btn-secondary"
         onClick={skipBackwards}
         disabled={disableTrickButtons} data-testid="skip-back-btn">
         <Icon name="skip-backward-fill" />
       </button>
       <button
-        class="btn btn-secondary"
+        className="btn btn-secondary"
         onClick={stop}
         disabled={disableTrickButtons}  data-testid="stop-btn">
         <Icon name="stop-fill" />
       </button>
       <button
-        class="btn btn-secondary"
+        className="btn btn-secondary"
         onClick={skipForward}
         disabled={disableTrickButtons}  data-testid="skip-fwd-btn">
         <Icon name="skip-forward-fill" />

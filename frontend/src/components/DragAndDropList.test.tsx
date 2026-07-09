@@ -24,7 +24,7 @@ function createDragOver(elt: HTMLElement, y: number): DragEvent {
     y,
     target: { y },
     });
-    dragOver['y'] = y;
+    (dragOver as unknown as { y: number }).y = y;
     return dragOver as DragEvent;
 }
 

@@ -65,8 +65,8 @@ describe("Input component", () => {
       <Input {...props} />
     );
     const elts = getAllBySelector('input[type="radio"]');
-    expect(elts.length).toEqual(playbackMode.options.length);
-    playbackMode.options.forEach((opt: SelectOptionType, idx: number) => {
+    expect(elts.length).toEqual(playbackMode.options!.length);
+    playbackMode.options!.forEach((opt: SelectOptionType, idx: number) => {
       const elt = elts[idx] as HTMLInputElement;
       expect(elt.value).toEqual(opt.value);
       expect(elt.name).toEqual(playbackMode.name);
@@ -74,7 +74,7 @@ describe("Input component", () => {
       const label = getBySelector(`label[for="radio-mode-${opt.value}"]`);
       expect(label.innerHTML).toEqual(opt.title);
     });
-    const opt = getByLabelText(playbackMode.options[2].title) as HTMLInputElement;
+    const opt = getByLabelText(playbackMode.options![2].title) as HTMLInputElement;
     expect(opt.value).toEqual('odvod');
     expect(opt.disabled).toEqual(true);
     expect(asFragment()).toMatchSnapshot();
@@ -92,7 +92,7 @@ describe("Input component", () => {
         text: "Manifest template to use",
         type: "select",
         options: names.map((name) => {
-          const msft = allManifests[name];
+          const msft = allManifests[name as keyof typeof allManifests];
           return {
             title: msft.title,
             value: name,
@@ -117,8 +117,8 @@ describe("Input component", () => {
         <Input {...props} />
       );
       const elts = getAllBySelector('#model-manifest option');
-      expect(elts.length).toEqual(selectManifest.options.length);
-      selectManifest.options.forEach((opt: SelectOptionType, idx: number) => {
+      expect(elts.length).toEqual(selectManifest.options!.length);
+      selectManifest.options!.forEach((opt: SelectOptionType, idx: number) => {
         const elt = elts[idx] as HTMLInputElement;
         expect(elt.value).toEqual(opt.value);
         expect(elt.innerHTML).toEqual(opt.title);
@@ -168,10 +168,10 @@ describe("Input component", () => {
         getByTestId('msi-drms');
         const elts = getAllBySelector('.form-check-input');
         expect(elts.length).toEqual(drmSystems.length);
-        selectDrmSystem.options.forEach((opt: SelectOptionType, idx: number) => {
+        selectDrmSystem.options!.forEach((opt: SelectOptionType, idx: number) => {
             const elt = elts[idx] as HTMLInputElement;
             expect(elt.name).toEqual(opt.name);
-            expect(elt.checked).toEqual(data.value[opt.name]);
+            expect(elt.checked).toEqual(data.value[opt.name!]);
             const label = getBySelector(`label[for="${elt.getAttribute('id')}"]`);
             expect(label.innerHTML).toEqual(opt.title);
         });
@@ -184,7 +184,7 @@ describe("Input component", () => {
         expect(asFragment()).toMatchSnapshot();
     });
 
-    test.each(['text', 'email', 'password'])('renders a %s input', async (type: StaticInputProps["type"]) => {
+    test.each(['text', 'email', 'password'])('renders a %s input', async (type: string) => {
       const user = userEvent.setup();
       const inp: StaticInputProps = {
         name: "test",
@@ -193,7 +193,7 @@ describe("Input component", () => {
         text: `test of input type ${type}`,
         title: "Input title",
         placeholder: 'placeholder text',
-        type,
+        type: type as StaticInputProps["type"],
       };
       const props: InputProps = {
         ...inp,

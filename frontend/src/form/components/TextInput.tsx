@@ -3,7 +3,7 @@ import { useComputed, type ReadonlySignal } from "@preact/signals";
 
 export interface TextInputProps extends Omit<JSX.InputHTMLAttributes<HTMLInputElement>, 'name'> {
   name: string;
-  error?: ReadonlySignal<string>;
+  error?: ReadonlySignal<string | undefined>;
 }
 
 export function TextInput({name, error, ...props}: TextInputProps) {

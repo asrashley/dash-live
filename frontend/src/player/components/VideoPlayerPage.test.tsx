@@ -212,7 +212,7 @@ describe("VideoPlayerPage", () => {
       document.body.dispatchEvent(ev);
     });
     await findBySelector("#vid-window .bi-pause-fill");
-    expect(player.pause).toHaveBeenCalledTimes(1);
+    expect(player!.pause).toHaveBeenCalledTimes(1);
     // check that icon is cleared after 2 seconds
     act(() => {
       vi.advanceTimersByTime(2001);
@@ -232,6 +232,9 @@ describe("VideoPlayerPage", () => {
     );
     await findBySelector("#vid-window");
     expect(player).toBeDefined();
+    if (!player) {  // keep TypeScript happy, but this should never happen
+      throw new Error("player is undefined");
+    }
     vi.spyOn(player, 'setTextTrack');
     player.callMaybeTracksChanged([videoTrack, audioTrack, textTrackOne, textTrackTwo]);
     const toggler = getByTestId("track-track-toggle") as HTMLButtonElement;

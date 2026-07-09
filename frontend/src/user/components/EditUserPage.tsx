@@ -21,7 +21,7 @@ export default function EditUserPage() {
   const apiRequests = useContext(EndpointContext);
   const { appendMessage } = useMessages();
   const { flattenedUsers, error, validateUser, updateUser } = useAllUsers();
-  const { username } = useParams<RouteParamsType>();
+  const { username = "user" } = useParams<RouteParamsType>();
   const changes = useSignal<Partial<FlattenedUserState>>({});
   const disabledFields = useSignal<Record<string, boolean>>({});
   const userEntry = useComputed<FlattenedUserState | undefined>(() =>
@@ -53,16 +53,20 @@ export default function EditUserPage() {
   );
 
   const saveChanges = useCallback(async () => {
+    if(!apiRequests) {
+      appendMessage("warning", "API requests not available");
+      return;
+    }
     try {
       const result = await apiRequests.editUser(user.value);
-      if (result.success) {
+      if (result.success && result.user) {
         appendMessage("success", `User ${username} successfully modified`);
         updateUser(result.user);
         setLocation(uiRouteMap.listUsers.url());
       } else {
         appendMessage("warning", `Failed to modify user ${username}`);
       }
-    } catch(err) {
+    } catch (err) {
       appendMessage("warning", `Failed to modify user ${username} - ${err}`);
     }
   }, [apiRequests, appendMessage, setLocation, updateUser, user, username]);
@@ -78,16 +82,22 @@ export default function EditUserPage() {
   }, [dialog, username]);
 
   const onConfirmDelete = useCallback(async () => {
-    try {
-      const result = await apiRequests.deleteUser(user.value.pk);
-      if (result.ok) {
-        appendMessage("success", `User ${username} successfully deleted`);
-        setLocation(uiRouteMap.listUsers.url());
-      } else {
-        appendMessage("warning", "Failed to delete user");
+    if (!apiRequests) {
+      appendMessage("warning", "API requests not available");
+      return;
+    }
+    if (user.value?.pk) {
+      try {
+        const result = await apiRequests.deleteUser(user.value.pk);
+        if (result.ok) {
+          appendMessage("success", `User ${username} successfully deleted`);
+          setLocation(uiRouteMap.listUsers.url());
+        } else {
+          appendMessage("warning", "Failed to delete user");
+        }
+      } catch (err) {
+        appendMessage("warning", `Failed to delete user - ${err}`);
       }
-    } catch (err) {
-      appendMessage("warning", `Failed to delete user - ${err}`);
     }
     closeDialog();
   }, [apiRequests, appendMessage, closeDialog, setLocation, user, username]);

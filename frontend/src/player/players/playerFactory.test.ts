@@ -7,7 +7,7 @@ describe('playerFactory', () => {
     const logEvent = vi.fn();
     const tracksChanged = vi.fn();
 
-    test.each(['dashjs', 'native', 'shaka'])('creates player of type %s', (playerType: DashPlayerTypes) => {
+    test.each(['dashjs', 'native', 'shaka'])('creates player of type %s', (playerType: string) => {
         const videoElement = document.createElement('video');
 
         const props: DashPlayerProps = {
@@ -17,7 +17,7 @@ describe('playerFactory', () => {
             textLanguage: "",
             textEnabled: false,
         };
-        const player = playerFactory(playerType, props);
+        const player = playerFactory(playerType as DashPlayerTypes, props);
         expect(player).toBeDefined();
     });
 });

@@ -1,5 +1,6 @@
 import { type JSX } from 'preact';
-import { useCallback, useMemo } from "preact/hooks";
+import { useCallback } from "preact/hooks";
+import { useComputed, type ReadonlySignal } from "@preact/signals";
 import { Temporal } from "temporal-polyfill";
 
 function pad(num: number): string {
@@ -27,11 +28,12 @@ function valueToIsoDuration(value: string): string {
 
 export interface TimeDeltaInputProps {
   disabled?: boolean;
-  value: string | null | undefined;
+  value: ReadonlySignal<string | null | undefined>;
   name: string;
-  error?: string;
+  error?: ReadonlySignal<string | undefined>;
   min?: string;
   required?: boolean;
+  step?: string;
   onChange?: (name: string, value: string) => void;
 }
 
@@ -40,6 +42,7 @@ export function TimeDeltaInput({
   name,
   error,
   min = "00:00:00",
+  step = "1",
   onChange,
   disabled,
 }: TimeDeltaInputProps) {
@@ -47,21 +50,21 @@ export function TimeDeltaInput({
     (ev: JSX.TargetedEvent<HTMLInputElement>) => {
       ev.preventDefault();
       const dur = valueToIsoDuration((ev.target as HTMLInputElement).value);
-      onChange(name, dur);
+      onChange?.(name, dur);
     },
     [name, onChange]
   );
-  const timeValue = useMemo(() => isoDurationToValue(value), [value]);
-  const className = `form-control ${
-    disabled ? "" : error ? "is-invalid" : "is-valid"
-  }`;
+  const timeValue = useComputed<string>(() => isoDurationToValue(value.value));
+  const className = useComputed<string>(() => `form-control ${
+    disabled ? "" : error?.value ? "is-invalid" : "is-valid"
+  }`);
   return (
     <input
       type="time"
       className={className}
       value={timeValue}
       name={name}
-      step="1"
+      step={step}
       min={min}
       onInput={changeHandler}
       disabled={disabled}

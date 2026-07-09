@@ -61,14 +61,14 @@ describe('ShakaPlayer', () => {
     beforeEach(() => {
         shakaTextTrack.active = false;
         eventTarget = new EventTarget();
-        mockPlayer.addEventListener.mockImplementation((evName: string, fn: () => void) => {
-            eventTarget.addEventListener(evName, fn as EventListener);
+        mockPlayer.addEventListener.mockImplementation((evName, fn, options) => {
+            eventTarget.addEventListener(evName, fn, options);
         });
-        mockPlayer.removeEventListener.mockImplementation((evName: string, fn: () => void) => {
-            eventTarget.removeEventListener(evName, fn as EventListener);
+        mockPlayer.removeEventListener.mockImplementation((evName, fn, options) => {
+            eventTarget.removeEventListener(evName, fn, options ?? false);
         });
         mockPlayer.getTextTracks.mockReturnValue([shakaTextTrack as unknown as shaka.extern.Track]);
-        mockEventManager.listen.mockImplementation((target: EventTarget, evName: string, fn: () => void) => {
+        mockEventManager.listen.mockImplementation((target, evName, fn) => {
             if (target === mockPlayer) {
                 eventTarget.addEventListener(evName, fn as EventListener);
             }
@@ -167,7 +167,7 @@ describe('ShakaPlayer', () => {
         const shakaConfig: ShakaConfig = {
             drm: {
                 servers: {
-                    'com.microsoft.playready': options.playready.licenseUrl
+                    'com.microsoft.playready': options.playready.licenseUrl ?? ""
                 },
             },
             preferredTextLanguage: 'cym',
@@ -203,7 +203,7 @@ describe('ShakaPlayer', () => {
         const shakaConfig: ShakaConfig = {
             drm: {
                 servers: {
-                    'org.w3.clearkey': options.clearkey.licenseUrl
+                    'org.w3.clearkey': options.clearkey.licenseUrl ?? ""
                 },
             },
         };
@@ -307,7 +307,7 @@ describe('ShakaPlayer', () => {
             autoplay: true,
             version: ShakaPlayer.LOCAL_VERSIONS[0],
             textEnabled: true,
-            textLanguage: shakaTextTrack.language,
+            textLanguage: shakaTextTrack.language ?? "",
         });
         await player.initialize(mpdSource, defaultFullOptions);
         player.setSubtitlesElement(subsElt);
@@ -332,7 +332,7 @@ describe('ShakaPlayer', () => {
             autoplay: true,
             version: ShakaPlayer.LOCAL_VERSIONS[0],
             textEnabled: true,
-            textLanguage: shakaTextTrack.language,
+            textLanguage: shakaTextTrack.language ?? "",
         });
         await player.initialize(mpdSource, defaultFullOptions);
         expect(mockEventManager.listen).toHaveBeenCalledWith(expect.anything(), 'loaded', expect.any(Function));

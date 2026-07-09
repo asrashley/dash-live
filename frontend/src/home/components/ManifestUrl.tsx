@@ -9,13 +9,16 @@ interface ManifestUrlProps {
 }
 
 export function ManifestUrl({ manifestUrl, editable, setValue }: ManifestUrlProps) {
-  const inpElt = useRef<HTMLInputElement>();
+  const inpElt = useRef<HTMLInputElement>(null);
   const inputClass = useComputed<string>(() => `form-control${ editable.value ? "" : " d-none"}`);
   const linkClass = useComputed<string>(() => editable.value ? "d-none": "link link-underline-opacity-25");
   const onSubmit = useCallback(
     (ev: Event) => {
       ev.preventDefault();
-      setValue(inpElt.current.value);
+      const input = inpElt.current;
+      if (input) {
+        setValue(input.value);
+      }
     },
     [setValue]
   );

@@ -62,7 +62,7 @@ describe("ProtectedPage component", () => {
           const login: LoginResponse = {
             success: true,
             csrf_token: "123",
-            user,
+            user: user ?? undefined,
           };
           blocker.resolve(user ? login : new Response(null, { status: 401 }));
         }

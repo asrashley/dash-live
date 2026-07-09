@@ -130,14 +130,15 @@ export class ApiRequests {
     };
     try {
       const response = await this.sendApiRequest<LoginResponse | Response>(routeMap.login.url(), options);
-      if (response['success']) {
-        const loginResp = (response as LoginResponse)
-        this.accessToken = loginResp.accessToken;
-        this.hasUserInfo(loginResp.user);
+      if (typeof response === 'object' && 'success' in response && (response as LoginResponse).success) {
+          const loginResp = response as LoginResponse;
+          this.accessToken = loginResp.accessToken ?? null;
+          this.hasUserInfo(loginResp.user ?? null);
+          this.refreshTokenChecker?.resolve(true);
       } else {
         this.hasUserInfo(null);
+        this.refreshTokenChecker?.resolve(false);
       }
-      this.refreshTokenChecker?.resolve(!!response['success']);
       return response;
     } catch(err) {
       this.refreshTokenChecker?.reject(err);
@@ -166,7 +167,7 @@ export class ApiRequests {
       if (response.refreshToken) {
         this.refreshToken = response.refreshToken;
       }
-      this.hasUserInfo(response.user);
+      this.hasUserInfo(response.user ?? null);
     }
     this.refreshTokenNeedsCheck = false;
     if (this.refreshTokenChecker === undefined) {
@@ -368,7 +369,9 @@ export class ApiRequests {
     log.trace(`url=${url} status=${fetchResult.status} usedAccessToken=${usedAccessToken}`);
     if (fetchResult.status === 401 && usedAccessToken && this.refreshToken) {
       await this.getAccessToken(signal);
-      headers.set('Authorization', `Bearer ${this.accessToken.jwt}`);
+      if (this.accessToken) {
+        headers.set('Authorization', `Bearer ${this.accessToken.jwt}`);
+      }
       log.trace(`retrying sendApiRequest(${url})`);
       fetchResult = await fetch(url, {
           cache,
@@ -399,7 +402,9 @@ export class ApiRequests {
     } else if(typeof(data?.csrf_tokens) === "object") {
       this.updateCsrfTokens(data.csrf_tokens);
     } else if (typeof(data?.csrf_token) === "string") {
-      this.updateCsrfTokens({[service]: data.csrf_token});
+      if (service) {
+        this.updateCsrfTokens({ [service]: data.csrf_token });
+      }
     }
 
     return data as T;
@@ -407,15 +412,19 @@ export class ApiRequests {
 
   private updateCsrfTokens(tokens: Partial<CsrfTokenCollection>) {
     for (const [key, value] of Object.entries(tokens)) {
-      if (this.csrfTokens[key] === undefined) {
-        this.csrfTokens[key] = new CsrfTokenStore(value);
+      if (!value) {
+        continue;
+      }
+      const k = key as keyof TokenStoreCollection;
+      if (this.csrfTokens[k] === undefined) {
+        this.csrfTokens[k] = new CsrfTokenStore(value);
       } else {
-        this.csrfTokens[key].setToken(value);
+        this.csrfTokens[k].setToken(value);
       }
     }
   }
 
-  private async getAccessToken(signal: AbortSignal): Promise<JWToken> {
+  private async getAccessToken(signal?: AbortSignal): Promise<JWToken> {
     const options: ApiRequestOptions = {
       method: 'GET',
       authorization: this.refreshToken?.jwt || null,
@@ -431,14 +440,14 @@ export class ApiRequests {
     if (!accessToken) {
       throw new Error('Failed to refresh access token');
     }
-    this.accessToken = accessToken;
+    this.accessToken = accessToken ?? null;
     if (csrfTokens) {
       this.updateCsrfTokens(csrfTokens);
     }
     return accessToken;
   }
 
-  private getCsrfTokens = async (signal: AbortSignal): Promise<void> => {
+  private getCsrfTokens = async (signal?: AbortSignal): Promise<void> => {
     if (!this.accessToken && this.refreshToken) {
       await this.getAccessToken(signal);
     }
@@ -457,4 +466,4 @@ export class ApiRequests {
   };
 }
 
-export const EndpointContext = createContext<ApiRequests>(null);
+export const EndpointContext = createContext<ApiRequests>(null!);

@@ -10,8 +10,8 @@ function createOptionNames(): InputOptionName[] {
         grp.fields.forEach(({ name, fullName, shortName }) => {
             names.push({
                 cgiName: name,
-                fullName,
-                shortName,
+                fullName: fullName ?? name,
+                shortName: shortName ?? name,
             });
         });
     });

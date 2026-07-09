@@ -2,8 +2,8 @@ import { createContext } from "preact";
 import { useCallback, useContext, useEffect, useRef } from "preact/hooks";
 import { useSignal, useSignalEffect, useComputed, type Signal, type ReadonlySignal, batch } from "@preact/signals";
 
-import { EndpointContext } from "../endpoints";
-import { useMessages } from "./useMessages";
+import { ApiRequests, EndpointContext } from "../endpoints";
+import { useMessages, type AppendMessageFn } from "./useMessages";
 import { MultiPeriodStream } from "../types/MultiPeriodStream";
 import { DecoratedMultiPeriodStream } from "../types/DecoratedMultiPeriodStream";
 import { MpsPeriod } from "../types/MpsPeriod";
@@ -158,7 +158,7 @@ function addPeriodToModel({ model }: {model: Signal<DecoratedMultiPeriodStream>}
   const ordering = 1 + periods.reduce((a, c) => Math.max(a, c.ordering), 0);
 
   const newPeriod: MpsPeriod = {
-    parent: model.value.pk,
+    parent: model.value.pk!,
     pid: newPid,
     pk: newPid,
     new: true,
@@ -203,7 +203,7 @@ function createDataFromModel(model: Signal<DecoratedMultiPeriodStream>): Decorat
       pk: typeof prd.pk === "number" ? prd.pk : null,
       tracks: prd.tracks.filter((tk) => tk.enabled),
     };
-    return period;
+    return period as MpsPeriod;
   });
   return {
     ...model.value,
@@ -211,21 +211,28 @@ function createDataFromModel(model: Signal<DecoratedMultiPeriodStream>): Decorat
   };
 }
 
-async function deleteMpsStream({ apiRequests, name, signal, appendMessage }): Promise<boolean> {
+async function deleteMpsStream({
+  apiRequests,
+  name,
+  signal,
+  appendMessage,
+}: {
+  apiRequests: ApiRequests;
+  name: string;
+  signal: AbortSignal;
+  appendMessage: AppendMessageFn;
+}): Promise<boolean> {
   try {
     const result = await apiRequests.deleteMultiPeriodStream(name, {
       signal,
     });
     if (result.ok) {
-      appendMessage(`Deleted stream ${name}`, "success");
+      appendMessage("success", `Deleted stream ${name}`);
       return true;
     }
-    appendMessage(
-      `Failed to delete {name}: {result.status} {result.statusText}`,
-      "warning"
-    );
+    appendMessage("warning", `Failed to delete ${name}: ${result.status} ${result.statusText}`);
   } catch (err) {
-    appendMessage(`${err}`, "warning");
+    appendMessage("warning", `${err}`);
   }
   return false;
 }
@@ -259,7 +266,7 @@ export interface UseMultiPeriodStreamProps {
   newStream: boolean;
 }
 
-export const MultiPeriodModelContext = createContext<UseMultiPeriodStreamHook>(null);
+export const MultiPeriodModelContext = createContext<UseMultiPeriodStreamHook>(null as unknown as UseMultiPeriodStreamHook);
 
 export function useMultiPeriodStream({ name, newStream }: UseMultiPeriodStreamProps): UseMultiPeriodStreamHook {
   const apiRequests = useContext(EndpointContext);
@@ -296,7 +303,7 @@ export function useMultiPeriodStream({ name, newStream }: UseMultiPeriodStreamPr
   );
 
   const setPeriodOrdering = useCallback(
-    (periodPks) => setOrdering({ model, periodPks }),
+    (periodPks: (number | string)[]) => setOrdering({ model, periodPks }),
     [model]
   );
 
@@ -352,7 +359,7 @@ export function useMultiPeriodStream({ name, newStream }: UseMultiPeriodStreamPr
   );
 
   const deleteStream = useCallback(
-    ({ signal }) =>
+    ({ signal }: { signal: AbortSignal }) =>
       deleteMpsStream({ apiRequests, name, signal, appendMessage }),
     [apiRequests, appendMessage, name]
   );
@@ -396,11 +403,12 @@ export function useMultiPeriodStream({ name, newStream }: UseMultiPeriodStreamPr
   });
 
   const discardChanges = useCallback(() => {
-    if (loaded.value !== name || !originalData.current) {
+    const original = originalData.current;
+    if (loaded.value !== name || !original) {
       return;
     }
     batch(() => {
-      model.value = decorateMultiPeriodStream(originalData.current);
+      model.value = decorateMultiPeriodStream(original);
       loaded.value = null;
     });
   }, [loaded, model, name]);

@@ -174,7 +174,7 @@ describe("HomePage", () => {
     const btn = (await findByText("View Manifest")) as HTMLButtonElement;
     await user.click(btn);
     await findByText("urn:mpeg:dash:profile:isoff-live:2011", { exact: false });
-    expect(asFragment).toMatchSnapshot();
+    expect(asFragment()).toMatchSnapshot();
   });
 
   test('set an advanced option', async () => {
@@ -190,7 +190,11 @@ describe("HomePage", () => {
     await user.click(btn);
     const inp = await findByLabelText("Availability start time:") as HTMLInputElement;
     await user.type(inp, 'month{enter}');
-    expect(JSON.parse(localStorage.getItem(LocalStorageKeys.DASH_OPTIONS))).toEqual({
+    const optStr = localStorage.getItem(LocalStorageKeys.DASH_OPTIONS);
+    if (!optStr) {
+      throw new Error("No options in localStorage");
+    }
+    expect(JSON.parse(optStr)).toEqual({
       manifest: "hand_made.mpd",
       mode: "vod",
       start: 'month',

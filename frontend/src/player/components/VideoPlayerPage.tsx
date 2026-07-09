@@ -83,7 +83,7 @@ export function keyHandler(
 
 export default function VideoPlayerPage() {
   const [, setLocation] = useLocation();
-  const { mode, stream, manifest } = useParams<RouteParamsType>();
+  const { mode='vod', stream='', manifest='' } = useParams<RouteParamsType>();
   const { searchParams } = useSearchParams();
   const { cinemaMode } = useContext(AppStateContext);
   const currentTime = useSignal<number>(0);

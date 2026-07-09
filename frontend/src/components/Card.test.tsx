@@ -11,7 +11,7 @@ describe("Card", () => {
     expect(container.textContent).toMatch("Hello World");
     const elt = document.getElementById("cid");
     expect(elt).not.toBeNull();
-    expect(elt.className.trim()).toEqual("card");
+    expect(elt!.className.trim()).toEqual("card");
     expect(queryBySelector("img")).toBeNull();
   });
 
@@ -26,7 +26,7 @@ describe("Card", () => {
     expect(container.textContent).toMatch("Hello World");
     const elt = document.getElementById("head");
     expect(elt).not.toBeNull();
-    expect(elt.textContent).toEqual("My Header");
+    expect(elt!.textContent).toEqual("My Header");
     expect(queryBySelector("img")).toBeNull();
   });
 
@@ -41,8 +41,8 @@ describe("Card", () => {
     expect(container.textContent).toMatch("Hello World");
     const elt = queryBySelector("img");
     expect(elt).not.toBeNull();
-    expect(elt.className).toEqual("card-img-top");
-    expect(elt.getAttribute("src")).toEqual(image.src);
-    expect(elt.getAttribute("alt")).toEqual(image.alt);
+    expect(elt!.className).toEqual("card-img-top");
+    expect(elt!.getAttribute("src")).toEqual(image.src);
+    expect(elt!.getAttribute("alt")).toEqual(image.alt);
   });
 });

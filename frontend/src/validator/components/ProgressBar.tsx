@@ -22,7 +22,7 @@ export function ProgressBar({ progress }: ProgressBarProps) {
   );
   const pct = useComputed<string>(
     () => {
-      const { minValue, maxValue, currentValue } = progress.value;
+      const { minValue, maxValue, currentValue = 0 } = progress.value;
       return `${(100 * (currentValue - minValue)) / Math.max(1, maxValue - minValue)}%`;
     });
   const style = useComputed(() => ({

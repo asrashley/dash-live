@@ -21,5 +21,5 @@ export function PlaybackIcon({ active }: PlaybackIconProps) {
   if (name.value === null) {
     return null;
   }
-  return <Icon name={name} />;
+  return <Icon name={name as ReadonlySignal<string>} />;
 }

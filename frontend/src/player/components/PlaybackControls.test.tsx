@@ -19,7 +19,7 @@ describe("PlaybackControls", () => {
   const setTextTrack = vi.fn();
   const setSubtitlesElement = vi.fn();
 
-  const controls = signal<PlayerControls>();
+  const controls = signal<PlayerControls|null>(null);
 
   beforeEach(() => {
     isPaused.value = true;
