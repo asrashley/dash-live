@@ -166,7 +166,9 @@ def create_app(config: JsonObject | None = None,
     # pylint: disable=unused-variable
     @jwt.user_lookup_loader
     def user_loader_callback(_jwt_header: dict, jwt_payload: DecodedJwtToken) -> User | None:
-        identity: str = jwt_payload['sub']
+        identity: str | None = jwt_payload['sub']
+        if identity is None:
+            return None
         return User.get_one(username=identity)
 
     # pylint: disable=unused-variable
@@ -229,13 +231,16 @@ def create_app(config: JsonObject | None = None,
                         cors_allowed_origins.append(f"http://{hostname}:{frontend_port}")
                     except socket.herror as err:
                         logging.warning('Failed to find hostname for IP address %s: %s', addr, err)
-        logging.debug('cors_allowed_origins=%s', cors_allowed_origins)
-        wss_log = logging.getLogger('socket.io')
-        mod_log_level: str = app.config.get('SOCKET_IO_LOG_LEVEL', log_level)
+        logging.info('cors_allowed_origins=%s', cors_allowed_origins)
+        wss_log: logging.Logger = logging.getLogger('socket.io')
+        mod_log_level: str = app.config.get('SOCKET_IO_LOG_LEVEL', '')
+        if not mod_log_level:
+            mod_log_level = 'warning' if log_level == 'info' else log_level
         wss_log.setLevel(mod_log_level.upper())
+        engineio_log: logging.Logger | bool = wss_log if mod_log_level.lower() in {'debug', 'info'} else False
         socketio = SocketIO(
             app, async_mode='threading', cors_allowed_origins=cors_allowed_origins,
-            logger=wss_log, engineio_logger=wss_log)
+            logger=wss_log, engineio_logger=engineio_log)
         wss_handler: WebsocketHandler = WebsocketHandler(asyncio_loop, socketio)
         socketio.on_event('connect', wss_handler.connect)
         socketio.on_event('disconnect', wss_handler.disconnect)
