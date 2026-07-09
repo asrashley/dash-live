@@ -1,8 +1,0 @@
-{
-    "extends": "../../tsconfig.json",
-    "exclude": [
-        "../frontend/src/**/*.test.ts",
-        "../frontend/src/**/*.test.tsx",
-        "../frontend/src/test/**/*"
-    ]
-}
