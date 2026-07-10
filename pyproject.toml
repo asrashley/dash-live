@@ -31,7 +31,7 @@ dependencies = [
     "python-dotenv==1.2.2",
     "python-socketio==5.16.2",
     "requests==2.33.0",
-    "soupsieve==2.4.1",
+    "soupsieve==2.8.4",
     "sqlalchemy>=2.0.36,<2.1",
     "sqlalchemy-jsonfield==1.0.1.post0",
     "ttconv==1.1.1",
