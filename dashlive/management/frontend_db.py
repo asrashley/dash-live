@@ -76,6 +76,14 @@ class FrontendDatabaseAccess(DatabaseAccess):
             return False
         try:
             user: UserSummaryJson = js['user']  # pyright: ignore[reportTypedDictNotRequiredAccess]
+            try:
+                # previous versions of the server used 'last_login' rather than 'lastLogin' in its
+                # JSON response
+                last_login: str | None = user['last_login']  # type: ignore
+                user['lastLogin'] = last_login
+                del user['last_login']  # type: ignore
+            except KeyError:
+                pass
             self.user = UserInfo(**user)
             return True
         except KeyError as err:
