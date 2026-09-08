@@ -8,7 +8,7 @@ export type BaseInputProps = {
   className: string | ReadonlySignal<string>;
   title: string;
   placeholder?: string;
-  "aria-describedby": string;
+  "aria-describedby"?: string;
   disabled: ReadonlySignal<boolean>;
   onInput: (ev: Event) => void;
 };
