@@ -1,9 +1,17 @@
 import { resolve } from 'path';
 import { defineConfig } from 'vitest/config';
+import preact from '@preact/preset-vite';
 
-const projectRootDir = resolve(__dirname);
+const projectRootDir = new URL('.', import.meta.url).pathname;
 
 export default defineConfig({
+    build: {
+        target: 'es2023',
+        sourcemap: true,
+    },
+    plugins: [preact({
+        jsxImportSource: 'preact'
+    })],
 	test: {
 		environment: 'jsdom',
         globalSetup: 'frontend/src/test/globalSetup.ts',
