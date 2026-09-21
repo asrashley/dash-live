@@ -15,6 +15,10 @@ export default defineConfig({
 	test: {
 		environment: 'jsdom',
         globalSetup: 'frontend/src/test/globalSetup.ts',
+        include: [
+            "frontend/src/**/*.test.ts",
+            "frontend/src/**/*.test.tsx",
+        ],
         setupFiles: 'frontend/src/test/setup.ts',
         chaiConfig: {
             includeStack: true
@@ -31,6 +35,7 @@ export default defineConfig({
                 "frontend/src/test/*.tsx",
                 "frontend/src/types/*.ts",
                 "frontend/src/*/types/*.ts",
+                "frontend/src/**/*.d.ts",
                 "frontend/src/**/*.test.ts",
                 "frontend/src/**/*.test.tsx",
             ],
