@@ -55,7 +55,7 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.65.0",
     "typescript-plugin-css-modules": "^5.2.0",
-    "vitest": "^4.1.8",
+    "vitest": "^4.1.11",
     "vitest-mock-extended": "^4.0.0",
     "webpack": "^5.104.1",
     "webpack-cli": "^6.0.1",
