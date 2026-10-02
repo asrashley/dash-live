@@ -1,3 +1,6 @@
 {
-    "extends": "./frontend/config/tsconfig.common.json"
+    "extends": "./frontend/config/tsconfig.common.json",
+    "compilerOptions": {
+      "rootDir": "./frontend/src"
+    }
 }
