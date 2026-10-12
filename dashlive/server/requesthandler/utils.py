@@ -7,7 +7,7 @@
 #############################################################################
 from os import environ
 import re
-from typing import Any, Pattern
+from typing import Any, Pattern, cast
 import urllib.parse
 
 import flask  # type: ignore
@@ -53,18 +53,20 @@ def add_allowed_origins(headers: dict[str, str],
         if isinstance(allowed_domains, str) and allowed_domains != "*":
             allowed_domains = re.compile(allowed_domains)
         flask.g.allowed_domains = allowed_domains
+    if allowed_domains is None:
+        return
     if methods is None:
         methods = DEFAULT_ALLOWED_METHODS
     if allowed_domains == "*":
         headers["Access-Control-Allow-Origin"] = "*"
         headers["Access-Control-Allow-Methods"] = ", ".join(methods)
         return
-    try:
-        if allowed_domains.search(origin):
-            headers["Access-Control-Allow-Origin"] = origin
-            headers["Access-Control-Allow-Methods"] = ", ".join(methods)
-    except KeyError:
-        pass
+    if isinstance(allowed_domains, str) and allowed_domains == origin:
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Methods"] = ", ".join(methods)
+    elif cast(Pattern, allowed_domains).search(origin):
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Methods"] = ", ".join(methods)
 
 
 def jsonify(data: Any, status: int | None = None,

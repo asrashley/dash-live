@@ -12,7 +12,6 @@ from logging.config import dictConfig
 from os import environ
 import mimetypes
 import secrets
-import socket
 
 from dotenv import load_dotenv
 from flask import Flask, request, Response  # type: ignore
@@ -21,8 +20,8 @@ from flask_socketio import SocketIO
 from werkzeug.routing import BaseConverter, Map  # type: ignore
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_jwt_extended import JWTManager
-from netifaces import interfaces, ifaddresses, AF_INET
 
+from dashlive.server.cors import create_cors_allowed_origins
 from dashlive.server.models.all import create_all_tables
 from dashlive.server.models.connection import make_db_connection_string
 from dashlive.server.models.content_type import ContentType
@@ -203,34 +202,9 @@ def create_app(config: JsonObject | None = None,
     if wss:
         server_name: str = environ.get('SERVER_NAME', '')
         port: str = environ.get('SERVER_PORT', '80')
-        if port == '80':
-            port = ''
-        else:
-            port = f':{port}'
-        cors_allowed_origins: list[str] = [
-            f'http://127.0.0.1{port}',
-            f'http://localhost{port}'
-        ]
-        if server_name:
-            cors_allowed_origins.append(f'http://{server_name}{port}')
-            cors_allowed_origins.append(f'https://{server_name}{port}')
-        if app.debug:
-            frontend_port: str = environ.get('FRONTEND_PORT', '8765')
-            cors_allowed_origins.append(f"http://127.0.0.1:{frontend_port}")
-            cors_allowed_origins.append(f"http://localhost:{frontend_port}")
-            for ifaceName in interfaces():
-                for i in ifaddresses(ifaceName).setdefault(AF_INET, [{'addr': ''}]):
-                    addr = i['addr']
-                    if not addr or addr.startswith('127'):
-                        continue
-                    cors_allowed_origins.append(f"http://{addr}{port}")
-                    cors_allowed_origins.append(f"http://{addr}:{frontend_port}")
-                    try:
-                        hostname: str = socket.gethostbyaddr(addr)[0]
-                        cors_allowed_origins.append(f"http://{hostname}{port}")
-                        cors_allowed_origins.append(f"http://{hostname}:{frontend_port}")
-                    except socket.herror as err:
-                        logging.warning('Failed to find hostname for IP address %s: %s', addr, err)
+        frontend_port: str = environ.get('FRONTEND_PORT', '8765')
+        cors_allowed_origins: set[str] = create_cors_allowed_origins(
+            server_name, port, frontend_port, app.debug)
         logging.info('cors_allowed_origins=%s', cors_allowed_origins)
         wss_log: logging.Logger = logging.getLogger('socket.io')
         mod_log_level: str = app.config.get('SOCKET_IO_LOG_LEVEL', '')
@@ -239,7 +213,7 @@ def create_app(config: JsonObject | None = None,
         wss_log.setLevel(mod_log_level.upper())
         engineio_log: logging.Logger | bool = wss_log if mod_log_level.lower() in {'debug', 'info'} else False
         socketio = SocketIO(
-            app, async_mode='threading', cors_allowed_origins=cors_allowed_origins,
+            app, async_mode='threading', cors_allowed_origins=list(cors_allowed_origins),
             logger=wss_log, engineio_logger=engineio_log)
         wss_handler: WebsocketHandler = WebsocketHandler(asyncio_loop, socketio)
         socketio.on_event('connect', wss_handler.connect)

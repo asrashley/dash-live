@@ -175,7 +175,11 @@ class HTMLHandlerBase(RequestHandlerBase):
 
     def create_context(self, **kwargs) -> TemplateContext:
         context: TemplateContext = super().create_context(**kwargs)
-        route: Route = routes[flask.request.endpoint]
+        route: Route
+        if flask.request.endpoint is None:
+            route = routes['home']
+        else:
+            route = routes[flask.request.endpoint]
         navbar: list[NavBarItem] = create_navbar_context()
         context.update({
             "title": kwargs.get('title', route.title),
