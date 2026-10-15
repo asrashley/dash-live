@@ -1,8 +1,9 @@
 import { resolve } from 'path';
+import { fileURLToPath } from 'url';
 import { defineConfig } from 'vitest/config';
 import preact from '@preact/preset-vite';
 
-const projectRootDir = new URL('.', import.meta.url).pathname;
+const projectRootDir = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig({
     build: {
