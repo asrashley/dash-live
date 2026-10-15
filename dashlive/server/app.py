@@ -12,6 +12,7 @@ from logging.config import dictConfig
 from os import environ
 import mimetypes
 import secrets
+import socket
 
 from dotenv import load_dotenv
 from flask import Flask, request, Response  # type: ignore
@@ -201,10 +202,12 @@ def create_app(config: JsonObject | None = None,
         )
     if wss:
         server_name: str = environ.get('SERVER_NAME', '')
-        port: str = environ.get('SERVER_PORT', '80')
-        frontend_port: str = environ.get('FRONTEND_PORT', '8765')
+        port: int = int(environ.get('SERVER_PORT', '80'), 10)
+        frontend_port: int | None = None
+        if app.debug:
+            frontend_port = int(environ.get('FRONTEND_PORT', '8765'), 10)
         cors_allowed_origins: set[str] = create_cors_allowed_origins(
-            server_name, port, frontend_port, app.debug)
+            server_name, port, frontend_port, enable_ipv6=socket.has_ipv6)
         logging.info('cors_allowed_origins=%s', cors_allowed_origins)
         wss_log: logging.Logger = logging.getLogger('socket.io')
         mod_log_level: str = app.config.get('SOCKET_IO_LOG_LEVEL', '')

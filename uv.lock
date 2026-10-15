@@ -208,6 +208,7 @@ dependencies = [
     { name = "flask-socketio" },
     { name = "flask-sqlalchemy" },
     { name = "idna" },
+    { name = "ifaddr" },
     { name = "jinja2" },
     { name = "langcodes" },
     { name = "language-data" },
@@ -216,7 +217,6 @@ dependencies = [
     { name = "lxml" },
     { name = "marisa-trie" },
     { name = "markupsafe" },
-    { name = "netifaces2" },
     { name = "ply" },
     { name = "pycryptodome" },
     { name = "python-dotenv" },
@@ -263,6 +263,7 @@ requires-dist = [
     { name = "flask-socketio", specifier = "==5.6.1" },
     { name = "flask-sqlalchemy", specifier = ">=3.1.1" },
     { name = "idna", specifier = "==3.15" },
+    { name = "ifaddr", specifier = ">=0.2.0" },
     { name = "jinja2", specifier = "==3.1.6" },
     { name = "langcodes", specifier = "==3.4.0" },
     { name = "language-data", specifier = "==1.2.0" },
@@ -271,7 +272,6 @@ requires-dist = [
     { name = "lxml", specifier = "==6.1.0" },
     { name = "marisa-trie", specifier = "==1.2.0" },
     { name = "markupsafe", specifier = "==2.1.3" },
-    { name = "netifaces2", specifier = "==0.0.22" },
     { name = "ply", specifier = "==3.11" },
     { name = "pycryptodome", specifier = "==3.19.1" },
     { name = "python-dotenv", specifier = "==1.2.2" },
@@ -484,6 +484,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/82/77/7b3966d0b9d1d31a36ddf1746926a11dface89a83409bf1483f0237aa758/idna-3.15.tar.gz", hash = "sha256:ca962446ea538f7092a95e057da437618e886f4d349216d2b1e294abfdb65fdc", size = 199245, upload-time = "2026-05-12T22:45:57.011Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d2/23/408243171aa9aaba178d3e2559159c24c1171a641aa83b67bdd3394ead8e/idna-3.15-py3-none-any.whl", hash = "sha256:048adeaf8c2d788c40fee287673ccaa74c24ffd8dcf09ffa555a2fbb59f10ac8", size = 72340, upload-time = "2026-05-12T22:45:55.733Z" },
+]
+
+[[package]]
+name = "ifaddr"
+version = "0.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/e8/ac/fb4c578f4a3256561548cd825646680edcadb9440f3f68add95ade1eb791/ifaddr-0.2.0.tar.gz", hash = "sha256:cc0cbfcaabf765d44595825fb96a99bb12c79716b73b44330ea38ee2b0c4aed4", size = 10485, upload-time = "2022-06-15T21:40:27.561Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9c/1f/19ebc343cc71a7ffa78f17018535adc5cbdd87afb31d7c34874680148b32/ifaddr-0.2.0-py3-none-any.whl", hash = "sha256:085e0305cfe6f16ab12d72e2024030f5d52674afad6911bb1eee207177b8a748", size = 12314, upload-time = "2022-06-15T21:40:25.756Z" },
 ]
 
 [[package]]
@@ -732,27 +741,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/a2/6e/371856a3fb9d31ca8dac321cda606860fa4548858c0cc45d9d1d4ca2628b/mypy_extensions-1.1.0.tar.gz", hash = "sha256:52e68efc3284861e772bbcd66823fde5ae21fd2fdb51c62a211403730b916558", size = 6343, upload-time = "2025-04-22T14:54:24.164Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/79/7b/2c79738432f5c924bef5071f933bcc9efd0473bac3b4aa584a6f7c1c8df8/mypy_extensions-1.1.0-py3-none-any.whl", hash = "sha256:1be4cccdb0f2482337c4743e60421de3a356cd97508abadd57d47403e94f5505", size = 4963, upload-time = "2025-04-22T14:54:22.983Z" },
-]
-
-[[package]]
-name = "netifaces2"
-version = "0.0.22"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/19/40/8818b20a921c39fc6d6a508f180b9ae97e35b90a8d8b91d64db54f625225/netifaces2-0.0.22.tar.gz", hash = "sha256:c872a54e1a0e2bf078593b4460013996de804e40cab1b0ebc377b0e74b52a244", size = 21203, upload-time = "2024-02-28T21:14:00.969Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/9f/8a/dce8b32aad8d2d338c75590656c270214a89d7a41df9b8b936d0c5d31438/netifaces2-0.0.22-cp37-abi3-macosx_10_12_x86_64.whl", hash = "sha256:4b7073aabee570466373e312b7f92a81e669f2462051eaefafb8a3d9ba078a35", size = 250954, upload-time = "2024-02-28T21:13:41.437Z" },
-    { url = "https://files.pythonhosted.org/packages/ba/cb/78613bbabe140763fa5ffb9e9098c35c74440b091a21025ad4acc8e6c2a4/netifaces2-0.0.22-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:2f6fa1ca50ede5d148a9c378ab08e093418666b58353a2fe31b02d772f568231", size = 1012931, upload-time = "2024-02-28T21:13:43.088Z" },
-    { url = "https://files.pythonhosted.org/packages/36/1d/4dfb25228d9047ae9bc2f72f14260ffdc6a72b436dc1af6c954e50d45cce/netifaces2-0.0.22-cp37-abi3-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:e1393ddecc35fcbb5ca89c90783ef44c1cae3f93b60bbdcb2e2ebd20783b9e06", size = 1033527, upload-time = "2024-02-28T21:13:44.455Z" },
-    { url = "https://files.pythonhosted.org/packages/b2/f1/acf33b20232e4bceb838712ab42294d1a4a658f4ed1d4176596ea8d2d5db/netifaces2-0.0.22-cp37-abi3-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:150804d34f1a97d07ec7032573561267e1753c30670df5e32021a2cf4e3f76b5", size = 1048825, upload-time = "2024-02-28T21:13:46.285Z" },
-    { url = "https://files.pythonhosted.org/packages/e5/e3/c6b0840e163d2b97e49029d90674eeb1cd41308bc47acae7f27906e28ec5/netifaces2-0.0.22-cp37-abi3-manylinux_2_17_ppc64.manylinux2014_ppc64.whl", hash = "sha256:47d15b7235804e4b506298d757856c97e9d969be9cf91642581bf314f98cdefa", size = 1140127, upload-time = "2024-02-28T21:13:47.763Z" },
-    { url = "https://files.pythonhosted.org/packages/83/a2/a534c8362e8ac9c23497496eef39f193de37c1e10b3781bc5b3d54f9893e/netifaces2-0.0.22-cp37-abi3-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:c0f59974328a3481eb0b3264a1cb479f2058cc8f09a3a0097a24d306fd59ec5e", size = 1124535, upload-time = "2024-02-28T21:13:49.826Z" },
-    { url = "https://files.pythonhosted.org/packages/0e/56/f9ef7fcfa04ed4dcf0a5b631f82d131ddc9fe3df7c457a52f20fb21e0682/netifaces2-0.0.22-cp37-abi3-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:69689cf211d17968e020582ddf3b023b0b956c003571e088a86ad21e27b678d9", size = 1148253, upload-time = "2024-02-28T21:13:51.195Z" },
-    { url = "https://files.pythonhosted.org/packages/d4/e9/fcbf4c0e84037e072364696927e6e12d78ce69c93eaaf9b382b8655bbdc8/netifaces2-0.0.22-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:043ddcd4b09f9b8e86c2bd54214a90904c2fec8869d0cfd295c671c2f4cb27b3", size = 1022475, upload-time = "2024-02-28T21:13:52.597Z" },
-    { url = "https://files.pythonhosted.org/packages/77/88/3e250f667ae24f8e30a651a938a27d8281e6e3c818b70e1151ba6a25654d/netifaces2-0.0.22-cp37-abi3-musllinux_1_1_aarch64.whl", hash = "sha256:e24c4089c743ad61c59e988d2c2de9ba2c91f1dccaecd57cf1d03c4414946a8f", size = 1186644, upload-time = "2024-02-28T21:13:53.799Z" },
-    { url = "https://files.pythonhosted.org/packages/52/7a/63c6607f5b12c2367d8bc37025bde067ec8eecad9b97c8d8c39eadd1411b/netifaces2-0.0.22-cp37-abi3-musllinux_1_1_armv7l.whl", hash = "sha256:03151c24171e6da9079e5abcd303f3e0d8ac275a8fe4e178f82fdf1590f989e4", size = 1290641, upload-time = "2024-02-28T21:13:55.021Z" },
-    { url = "https://files.pythonhosted.org/packages/15/51/54ecfb98ccacad6ff9353c3267bdea60e2cd27179440f00dc25e76b51486/netifaces2-0.0.22-cp37-abi3-musllinux_1_1_i686.whl", hash = "sha256:db607a05fa9e7b4791649b83bdc260dcc2f1082e502e6c9e22eb3853a5ff1485", size = 1210018, upload-time = "2024-02-28T21:13:56.321Z" },
-    { url = "https://files.pythonhosted.org/packages/6e/55/290a663e7334cce09d87e70d7c162e9141fe9ea7eb0861594ec3774babe4/netifaces2-0.0.22-cp37-abi3-musllinux_1_1_x86_64.whl", hash = "sha256:a203a34be5976a747777add600d3d9942bd87b8252bbb7d250273ec4f23744f4", size = 1191490, upload-time = "2024-02-28T21:13:57.902Z" },
-    { url = "https://files.pythonhosted.org/packages/df/c0/5b5c33aae4d07a4292bc6c4159222d04a1dbc4907d20863a8800e6f20ffd/netifaces2-0.0.22-cp37-abi3-win_amd64.whl", hash = "sha256:c31ef56334aa73d0cb81d49e7a9bc3cdd8822e566594038b76c27eaf0334ea6d", size = 138125, upload-time = "2024-02-28T21:13:59.808Z" },
 ]
 
 [[package]]
