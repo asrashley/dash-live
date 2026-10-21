@@ -11,7 +11,7 @@ of different combinations.
 
 ## Installation
 
-Python v3.12 or greater and Node.js v20 or greater is required by this
+Python v3.12 or greater and Node.js v22 or greater is required by this
 application. It has been tested on both Linux and Windows operating systems.
 
 A `.env` needs to be created that contains
